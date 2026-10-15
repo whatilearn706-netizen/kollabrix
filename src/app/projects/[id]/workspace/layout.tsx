@@ -52,6 +52,9 @@ export default function WorkspaceLayout({
   const { user, isLoading: isAuthLoading } = useAuth();
   const projectId = params?.id as string;
 
+  const userRef = React.useRef(user);
+  userRef.current = user;
+
   const [project, setProject] = useState<Project | null>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [currentUserMember, setCurrentUserMember] = useState<ProjectMember | null>(null);
@@ -59,7 +62,8 @@ export default function WorkspaceLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   const loadWorkspaceData = async (isInitial = false) => {
-    if (!projectId || !user) return;
+    const currentUserId = userRef.current?.id;
+    if (!projectId || !currentUserId) return;
     if (isInitial) {
       setIsLoading(true);
     }
@@ -102,10 +106,10 @@ export default function WorkspaceLayout({
       const memList = (membersData as unknown as ProjectMember[]) || [];
       setMembers(memList);
 
-      const userMember = memList.find((m) => m.user_id === user.id) || null;
+      const userMember = memList.find((m) => m.user_id === currentUserId) || null;
       setCurrentUserMember(userMember);
 
-      const isOwner = projData.owner_id === user.id;
+      const isOwner = projData.owner_id === currentUserId;
       const hasMembership = Boolean(userMember);
 
       if (isOwner || hasMembership) {
@@ -124,7 +128,7 @@ export default function WorkspaceLayout({
 
   useEffect(() => {
     if (!isAuthLoading) {
-      if (!user) {
+      if (!user?.id) {
         setIsAuthorized(false);
         setIsLoading(false);
       } else {
@@ -161,7 +165,7 @@ export default function WorkspaceLayout({
         }
       }
     }
-  }, [projectId, user, isAuthLoading]);
+  }, [projectId, user?.id, isAuthLoading]);
 
   if (isAuthLoading || isLoading) {
     return (

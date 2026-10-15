@@ -27,8 +27,12 @@ function MyProjectsContent() {
   const [activeTab, setActiveTab] = useState<'leading' | 'joined'>('leading');
   const [isLoading, setIsLoading] = useState(true);
 
+  const userRef = React.useRef(user);
+  userRef.current = user;
+
   const loadProjects = useCallback(async (isInitial = false) => {
-    if (!user) return;
+    const currentUserId = userRef.current?.id;
+    if (!currentUserId) return;
     if (isInitial) {
       setIsLoading(true);
     }
@@ -38,7 +42,7 @@ function MyProjectsContent() {
       const { data: ownedData } = await supabase
         .from('projects')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('owner_id', currentUserId)
         .order('created_at', { ascending: false });
 
       if (ownedData) {
@@ -63,11 +67,11 @@ function MyProjectsContent() {
             created_at
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', currentUserId);
 
       if (memberData) {
         const joined = memberData
-          .filter((m) => m.project && (m.project as unknown as Project).owner_id !== user.id)
+          .filter((m) => m.project && (m.project as unknown as Project).owner_id !== currentUserId)
           .map((m) => ({
             ...(m.project as unknown as Project),
             userRole: m.role,
@@ -81,40 +85,43 @@ function MyProjectsContent() {
         setIsLoading(false);
       }
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
     loadProjects(true);
 
-    if (user) {
-      let debounceTimer: NodeJS.Timeout | null = null;
-      const handleSmoothUpdate = () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          loadProjects(false);
-        }, 200);
-      };
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const handleSmoothUpdate = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadProjects(false);
+      }, 200);
+    };
 
-      const channel = supabase
-        .channel(`my-projects-live-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'project_members',
-            filter: `user_id=eq.${user.id}`,
-          },
-          handleSmoothUpdate
-        )
-        .subscribe();
+    const channel = supabase
+      .channel(`my-projects-live-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_members',
+          filter: `user_id=eq.${user.id}`,
+        },
+        handleSmoothUpdate
+      )
+      .subscribe();
 
-      return () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [loadProjects, user]);
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadProjects]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Project, ProjectApplication, ProjectMember } from '@/types/database';
@@ -39,9 +39,15 @@ export default function ProjectDetailsPage() {
   const { user, openAuthModal } = useAuth();
   const projectId = params?.id as string;
 
+  const userRef = useRef(user);
+  userRef.current = user;
+
   const [project, setProject] = useState<Project | null>(
     () => DEMO_PROJECTS.find((p) => p.id === projectId) || null
   );
+  const projectRef = useRef<Project | null>(project);
+  projectRef.current = project;
+
   const [isLoading, setIsLoading] = useState(
     () => !DEMO_PROJECTS.some((p) => p.id === projectId)
   );
@@ -107,7 +113,14 @@ export default function ProjectDetailsPage() {
   }, [projectId]);
 
   const loadCollaborationStatus = useCallback(async () => {
-    if (!user || !projectId || !isSupabaseConfigured()) return;
+    const currentUserId = userRef.current?.id;
+    if (!currentUserId || !projectId || !isSupabaseConfigured()) {
+      setIsMember(false);
+      setMemberRole(null);
+      setUserApplication(null);
+      setPendingApplicationsCount(0);
+      return;
+    }
 
     try {
       // 1. Check membership
@@ -115,7 +128,7 @@ export default function ProjectDetailsPage() {
         .from('project_members')
         .select('*')
         .eq('project_id', projectId)
-        .eq('user_id', user.id)
+        .eq('user_id', currentUserId)
         .maybeSingle();
 
       if (memberData) {
@@ -131,7 +144,7 @@ export default function ProjectDetailsPage() {
         .from('project_applications')
         .select('*')
         .eq('project_id', projectId)
-        .eq('applicant_id', user.id)
+        .eq('applicant_id', currentUserId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -143,7 +156,7 @@ export default function ProjectDetailsPage() {
       }
 
       // 3. If user is owner, count pending applications
-      if (project && project.owner_id === user.id) {
+      if (projectRef.current && projectRef.current.owner_id === currentUserId) {
         const { count } = await supabase
           .from('project_applications')
           .select('id', { count: 'exact', head: true })
@@ -155,58 +168,81 @@ export default function ProjectDetailsPage() {
     } catch {
       // Fallback silently if tables are still initializing
     }
-  }, [user, projectId, project]);
+  }, [projectId]);
 
+  // 1. Initial project fetch (only runs when projectId changes)
   useEffect(() => {
     if (projectId) {
       loadProjectData(true);
-
-      // Smooth live subscription without screen flicker
-      let debounceTimer: NodeJS.Timeout | null = null;
-      const handleSmoothUpdate = () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          loadProjectData(false);
-          loadCollaborationStatus();
-        }, 200);
-      };
-
-      const channel = supabase
-        .channel(`project-live-${projectId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'project_members',
-            filter: `project_id=eq.${projectId}`,
-          },
-          handleSmoothUpdate
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'projects',
-            filter: `id=eq.${projectId}`,
-          },
-          handleSmoothUpdate
-        )
-        .subscribe();
-
-      return () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        supabase.removeChannel(channel);
-      };
     }
-  }, [projectId, loadProjectData, loadCollaborationStatus]);
+  }, [projectId, loadProjectData]);
 
+  // 2. Collaboration status (runs when projectId, user ID, or project owner changes)
   useEffect(() => {
-    if (project && user) {
+    if (projectId && user?.id) {
       loadCollaborationStatus();
+    } else {
+      setIsMember(false);
+      setMemberRole(null);
+      setUserApplication(null);
+      setPendingApplicationsCount(0);
     }
-  }, [project, user, loadCollaborationStatus]);
+  }, [projectId, user?.id, project?.owner_id, loadCollaborationStatus]);
+
+  // 3. Realtime listener for live updates without page reload or spinner flicker
+  useEffect(() => {
+    if (!projectId) return;
+
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const handleSmoothUpdate = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadProjectData(false);
+        if (userRef.current?.id) {
+          loadCollaborationStatus();
+        }
+      }, 250);
+    };
+
+    const channel = supabase
+      .channel(`project-live-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_members',
+          filter: `project_id=eq.${projectId}`,
+        },
+        handleSmoothUpdate
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `id=eq.${projectId}`,
+        },
+        handleSmoothUpdate
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_applications',
+          filter: `project_id=eq.${projectId}`,
+        },
+        handleSmoothUpdate
+      )
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, loadProjectData, loadCollaborationStatus]);
 
   const handleWithdrawApplication = async () => {
     if (!userApplication || userApplication.status !== 'Pending') return;
