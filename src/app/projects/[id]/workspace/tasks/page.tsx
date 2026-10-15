@@ -57,6 +57,8 @@ export default function WorkspaceTasksPage() {
   const [taskAssigneeId, setTaskAssigneeId] = useState<string>('');
   const [taskMilestoneId, setTaskMilestoneId] = useState<string>('');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskEvidenceUrl, setTaskEvidenceUrl] = useState('');
+  const [taskEvidenceNote, setTaskEvidenceNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -142,6 +144,8 @@ export default function WorkspaceTasksPage() {
     setTaskAssigneeId('');
     setTaskMilestoneId('');
     setTaskDueDate('');
+    setTaskEvidenceUrl('');
+    setTaskEvidenceNote('');
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -155,6 +159,8 @@ export default function WorkspaceTasksPage() {
     setTaskAssigneeId(task.assignee_id || '');
     setTaskMilestoneId(task.milestone_id || '');
     setTaskDueDate(task.due_date || '');
+    setTaskEvidenceUrl(task.evidence_url || '');
+    setTaskEvidenceNote(task.evidence_note || '');
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -172,32 +178,6 @@ export default function WorkspaceTasksPage() {
     setFormError(null);
 
     try {
-      // Step A: Attempt atomic save_project_task RPC function
-      const { data: rpcData, error: rpcError } = await supabase.rpc('save_project_task', {
-        p_project_id: project.id,
-        p_title: taskTitle.trim(),
-        p_description: taskDescription.trim() || null,
-        p_status: taskStatus,
-        p_priority: taskPriority,
-        p_assignee_id: taskAssigneeId || null,
-        p_milestone_id: taskMilestoneId || null,
-        p_due_date: taskDueDate || null,
-        task_id: editingTask ? editingTask.id : null,
-      });
-
-      if (!rpcError && rpcData) {
-        if (rpcData.success) {
-          setIsModalOpen(false);
-          await loadTasksAndMilestones();
-          return;
-        } else {
-          setFormError(rpcData.error || 'Failed to save task.');
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      // Step B: Direct table fallback if RPC is not yet installed
       const payload = {
         project_id: project.id,
         title: taskTitle.trim(),
@@ -207,6 +187,8 @@ export default function WorkspaceTasksPage() {
         assignee_id: taskAssigneeId || null,
         milestone_id: taskMilestoneId || null,
         due_date: taskDueDate || null,
+        evidence_url: taskEvidenceUrl.trim() || null,
+        evidence_note: taskEvidenceNote.trim() || null,
       };
 
       if (editingTask) {
@@ -591,6 +573,13 @@ export default function WorkspaceTasksPage() {
                             </div>
                           )}
 
+                          {(task.evidence_url || task.evidence_note) && (
+                            <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-medium">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>Evidence Attached</span>
+                            </div>
+                          )}
+
                           {/* Meta footer: Due date & Assignee */}
                           <div className="pt-2 border-t border-charcoal-750 flex items-center justify-between text-xs">
                             {task.due_date ? (
@@ -871,6 +860,40 @@ export default function WorkspaceTasksPage() {
                   onChange={(e) => setTaskDueDate(e.target.value)}
                   className="w-full px-3 py-2 bg-charcoal-850 border border-charcoal-750 rounded-lg text-xs text-white focus:outline-none"
                 />
+              </div>
+
+              {/* Contribution Evidence Fields */}
+              <div className="pt-3 border-t border-charcoal-800 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Contribution Evidence (Deliverable Proof)</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Attach a pull request URL or deliverable note to showcase in your verified student portfolio upon task completion.
+                </p>
+
+                <div>
+                  <label className="text-[11px] font-medium text-slate-300 block mb-1">
+                    Deliverable / PR / Commit URL
+                  </label>
+                  <Input
+                    type="url"
+                    placeholder="https://github.com/.../pull/12 or live demo"
+                    value={taskEvidenceUrl}
+                    onChange={(e) => setTaskEvidenceUrl(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-medium text-slate-300 block mb-1">
+                    Contribution Description / Evidence Note
+                  </label>
+                  <Input
+                    placeholder="e.g. Implemented JWT auth middleware with 95% unit test coverage"
+                    value={taskEvidenceNote}
+                    onChange={(e) => setTaskEvidenceNote(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-3">

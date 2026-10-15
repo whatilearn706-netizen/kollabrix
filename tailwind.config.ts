@@ -22,6 +22,14 @@ const config: Config = {
           600: '#3C4564',
           500: '#64748B',
         },
+        midnight: {
+          950: '#07090E',
+          900: '#0B0E17',
+          850: '#101420',
+          800: '#161C2C',
+          750: '#1E253A',
+          700: '#252F4A',
+        },
         brand: {
           50: '#EEF2FF',
           100: '#E0E7FF',
@@ -53,6 +61,12 @@ const config: Config = {
         'elevated': '0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3)',
         'glow-sm': '0 0 15px -3px rgba(99, 102, 241, 0.15)',
         'glow-md': '0 0 30px -4px rgba(99, 102, 241, 0.25)',
+        'card': '0 4px 20px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06)',
+        'card-hover': '0 16px 36px -6px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(99, 102, 241, 0.35)',
+      },
+      backgroundImage: {
+        'subtle-grid': 'radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0)',
+        'hero-radial': 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(99, 102, 241, 0.14), transparent 70%)',
       },
     },
   },

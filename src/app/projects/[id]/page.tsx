@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Project, ProjectApplication, ProjectMember } from '@/types/database';
+import { Project, ProjectApplication, ProjectMember, ProjectMentoringNote } from '@/types/database';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { DeleteProjectDialog } from '@/components/projects/DeleteProjectDialog';
 import { ApplyModal } from '@/components/applications/ApplyModal';
+import { GithubActivitySection } from '@/components/github/GithubActivitySection';
 import {
   Users,
   Calendar,
@@ -31,6 +32,9 @@ import {
   AlertCircle,
   Send,
   ShieldCheck,
+  BookOpen,
+  ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 
 export default function ProjectDetailsPage() {
@@ -63,6 +67,9 @@ export default function ProjectDetailsPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
+  // Phase 3 College Adoption State
+  const [mentoringNotes, setMentoringNotes] = useState<ProjectMentoringNote[]>([]);
+
   const loadProjectData = useCallback(async (isInitial = false) => {
     if (isInitial) {
       setIsLoading(true);
@@ -93,6 +100,16 @@ export default function ProjectDetailsPage() {
               course,
               bio,
               skills
+            ),
+            problem_statement:problem_statements!projects_problem_statement_id_fkey(
+              id,
+              title,
+              category,
+              difficulty,
+              author:profiles!problem_statements_author_id_fkey(
+                display_name,
+                avatar_url
+              )
             )
           `)
           .eq('id', projectId)
@@ -101,7 +118,27 @@ export default function ProjectDetailsPage() {
         if (dbError) {
           if (isInitial) setError('Project not found or could not be loaded from database.');
         } else if (data) {
-          setProject(data as Project);
+          setProject(data as unknown as Project);
+        }
+
+        // Fetch faculty mentoring notes
+        const { data: notesData } = await supabase
+          .from('project_mentoring_notes')
+          .select(`
+            *,
+            mentor:profiles!project_mentoring_notes_mentor_id_fkey(
+              user_id,
+              display_name,
+              avatar_url,
+              college,
+              role
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+
+        if (notesData) {
+          setMentoringNotes(notesData as unknown as ProjectMentoringNote[]);
         }
       } catch (err: unknown) {
         if (isInitial) setError(err instanceof Error ? err.message : 'Error fetching project.');
@@ -388,7 +425,7 @@ export default function ProjectDetailsPage() {
       </div>
 
       {/* Main Project Hero Card */}
-      <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750/80 p-6 md:p-8 space-y-6">
+      <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 md:p-8 space-y-6 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="category">{project.category}</Badge>
@@ -408,7 +445,7 @@ export default function ProjectDetailsPage() {
         </div>
 
         {/* Project Meta Bar: Team Size, Deadline, Created Date */}
-        <div className="pt-4 border-t border-charcoal-800 flex flex-wrap items-center gap-6 text-xs text-slate-400">
+        <div className="pt-4 border-t border-midnight-800 flex flex-wrap items-center gap-6 text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-brand-400" />
             <span>
@@ -446,15 +483,15 @@ export default function ProjectDetailsPage() {
           )}
         </div>
 
-        {/* External Action Links (Repo / Demo) */}
-        {(project.repository_url || project.demo_url) && (
+        {/* External Action Links (Repo / Demo / Docs) */}
+        {(project.repository_url || project.demo_url || project.documentation_url) && (
           <div className="pt-2 flex flex-wrap items-center gap-3">
             {project.repository_url && (
               <a
                 href={project.repository_url}
                 target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-charcoal-850 hover:bg-charcoal-800 text-xs text-slate-200 border border-charcoal-700 transition-colors"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-midnight-850 hover:bg-midnight-800 text-xs text-slate-200 border border-midnight-700/80 transition-colors"
               >
                 <Github className="w-4 h-4 text-slate-400" />
                 <span>View Repository</span>
@@ -465,13 +502,58 @@ export default function ProjectDetailsPage() {
               <a
                 href={project.demo_url}
                 target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-charcoal-850 hover:bg-charcoal-800 text-xs text-slate-200 border border-charcoal-700 transition-colors"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-midnight-850 hover:bg-midnight-800 text-xs text-slate-200 border border-midnight-700/80 transition-colors"
               >
                 <Globe className="w-4 h-4 text-brand-400" />
                 <span>Live Prototype / Demo</span>
               </a>
             )}
+
+            {project.documentation_url && (
+              <a
+                href={project.documentation_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-midnight-850 hover:bg-midnight-800 text-xs text-slate-200 border border-midnight-700/80 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-400" />
+                <span>Project Documentation</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Problem Statement Link Banner */}
+        {project.problem_statement && (
+          <div className="mt-3 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <GraduationCap className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 block">
+                  Addressing Faculty Problem Statement
+                </span>
+                <Link
+                  href={`/problems/${project.problem_statement.id}`}
+                  className="text-sm font-bold text-white hover:text-indigo-200 transition-colors"
+                >
+                  {project.problem_statement.title}
+                </Link>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Category: {project.problem_statement.category} • Faculty Mentor:{' '}
+                  {project.problem_statement.author?.display_name || 'Academic Faculty'}
+                </p>
+              </div>
+            </div>
+            <Link href={`/problems/${project.problem_statement.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/20 shrink-0"
+              >
+                View Statement
+              </Button>
+            </Link>
           </div>
         )}
       </div>
@@ -480,8 +562,8 @@ export default function ProjectDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left: Detailed Problem & Solution */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 md:p-8 space-y-4">
-            <h2 className="text-lg font-bold text-white border-b border-charcoal-800 pb-3">
+          <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 md:p-8 space-y-4 shadow-card">
+            <h2 className="text-lg font-bold text-white border-b border-midnight-800 pb-3">
               Detailed Specifications
             </h2>
             <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-line space-y-3">
@@ -489,8 +571,59 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
 
+          {/* Live GitHub Repository Activity */}
+          <GithubActivitySection
+            repositoryUrl={project.repository_url}
+            projectId={project.id}
+            isOwnerOrLead={isOwner || isMember}
+          />
+
+          {/* Faculty Mentoring & Feedback */}
+          {mentoringNotes.length > 0 && (
+            <div id="mentor-feedback" className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-4 shadow-card">
+              <div className="flex items-center justify-between border-b border-midnight-800 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-brand-400" />
+                  <span>Faculty Mentoring Feedback ({mentoringNotes.length})</span>
+                </h3>
+                <span className="text-xs text-slate-400">Institutional Review</span>
+              </div>
+
+              <div className="space-y-3">
+                {mentoringNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="p-4 rounded-xl bg-midnight-850/80 border border-midnight-750"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          name={note.mentor?.display_name || 'Faculty Mentor'}
+                          src={note.mentor?.avatar_url}
+                          size="sm"
+                        />
+                        <span className="text-xs font-semibold text-white">
+                          {note.mentor?.display_name || 'Faculty Mentor'}
+                        </span>
+                        <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/30">
+                          {note.feedback_type}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500">
+                        {new Date(note.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed pl-7">
+                      {note.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Dynamic Collaboration Status Box */}
-          <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-4">
+          <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-4 shadow-card">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-400" />
@@ -505,7 +638,7 @@ export default function ProjectDetailsPage() {
             </div>
 
             {isOwner ? (
-              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-white">You own this project</p>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -526,7 +659,7 @@ export default function ProjectDetailsPage() {
                 </div>
               </div>
             ) : isMember ? (
-              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-white flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -581,7 +714,7 @@ export default function ProjectDetailsPage() {
                 )}
               </div>
             ) : userApplication && userApplication.status === 'Rejected' ? (
-              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex items-center gap-3 text-xs text-slate-400">
+              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex items-center gap-3 text-xs text-slate-400">
                 <XCircle className="w-5 h-5 text-slate-500 shrink-0" />
                 <div>
                   <p className="font-semibold text-slate-300">Application Not Selected</p>
@@ -591,7 +724,7 @@ export default function ProjectDetailsPage() {
                 </div>
               </div>
             ) : !isRecruiting ? (
-              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex items-center gap-3 text-xs text-slate-400">
+              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex items-center gap-3 text-xs text-slate-400">
                 <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
                 <div>
                   <p className="font-semibold text-slate-300">Recruitment Closed</p>
@@ -601,7 +734,7 @@ export default function ProjectDetailsPage() {
                 </div>
               </div>
             ) : isTeamFull ? (
-              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex items-center gap-3 text-xs text-slate-400">
+              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex items-center gap-3 text-xs text-slate-400">
                 <Users className="w-4 h-4 text-amber-400 shrink-0" />
                 <div>
                   <p className="font-semibold text-slate-300">Team Full</p>
@@ -644,7 +777,7 @@ export default function ProjectDetailsPage() {
         <div className="lg:col-span-4 space-y-6">
           {/* Quick Apply CTA in Sidebar for Non-members */}
           {canApply && (
-            <div className="rounded-xl bg-gradient-to-br from-brand-950/60 to-charcoal-900 border border-brand-500/30 p-5 space-y-3 shadow-glow-sm">
+            <div className="rounded-2xl bg-gradient-to-br from-brand-950/40 via-midnight-900 to-indigo-950/30 border border-brand-500/30 p-5 space-y-3 shadow-card">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-400" />
                 <span>Ready to Collaborate?</span>
@@ -671,8 +804,8 @@ export default function ProjectDetailsPage() {
           )}
 
           {/* Creator Information Card */}
-          <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-4 shadow-card">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
               Project Lead / Creator
             </h3>
 
@@ -710,8 +843,8 @@ export default function ProjectDetailsPage() {
 
           {/* Roles Sought */}
           {project.desired_roles && project.desired_roles.length > 0 && (
-            <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-3 shadow-card">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
                 Open Roles Needed
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -729,8 +862,8 @@ export default function ProjectDetailsPage() {
 
           {/* Required Skills */}
           {project.required_skills && project.required_skills.length > 0 && (
-            <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-3 shadow-card">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
                 Required Teammate Skills
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -745,15 +878,15 @@ export default function ProjectDetailsPage() {
 
           {/* Technologies Stack */}
           {project.technologies && project.technologies.length > 0 && (
-            <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-3 shadow-card">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
                 Technologies Used
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {project.technologies.map((tech, idx) => (
                   <span
                     key={idx}
-                    className="text-xs font-mono px-2 py-0.5 rounded bg-charcoal-850 text-slate-300 border border-charcoal-750"
+                    className="text-xs font-mono px-2 py-0.5 rounded bg-midnight-850 text-slate-300 border border-midnight-750"
                   >
                     {tech}
                   </span>

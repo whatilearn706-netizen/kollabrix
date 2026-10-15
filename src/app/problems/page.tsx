@@ -1,0 +1,334 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { ProblemStatement, ProjectCategory, ProjectDifficulty } from '@/types/database';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Avatar } from '@/components/ui/Avatar';
+import {
+  FileCode2,
+  PlusCircle,
+  Search,
+  Filter,
+  Calendar,
+  Sparkles,
+  ArrowRight,
+  GraduationCap,
+  Layers,
+  CheckCircle2,
+  Clock,
+  BookOpen,
+} from 'lucide-react';
+
+import { DEMO_PROBLEMS } from '@/data/mockProblems';
+
+const CATEGORIES: (ProjectCategory | 'All')[] = [
+  'All',
+  'Web Development',
+  'AI/ML',
+  'Mobile Apps',
+  'Developer Tools',
+  'Social Impact',
+  'IoT/Hardware',
+  'Other',
+];
+
+const DIFFICULTIES: (ProjectDifficulty | 'All')[] = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+
+export default function ProblemStatementsPage() {
+  const { user, profile } = useAuth();
+  const [problems, setProblems] = useState<ProblemStatement[]>(() => DEMO_PROBLEMS);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | 'All'>('All');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<ProjectDifficulty | 'All'>('All');
+
+  const isTeacher =
+    (profile?.role === 'teacher' || profile?.role === 'admin') &&
+    (!profile?.birth_year || profile?.birth_year <= 2003);
+
+  const loadProblems = useCallback(async () => {
+    setIsLoading(true);
+    if (!isSupabaseConfigured()) {
+      setProblems(DEMO_PROBLEMS);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('problem_statements')
+        .select(`
+          *,
+          author:profiles!problem_statements_author_id_fkey(
+            user_id,
+            display_name,
+            username,
+            avatar_url,
+            college,
+            course,
+            role
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      let list: ProblemStatement[] = [];
+      if (!error && data && data.length > 0) {
+        list = data as unknown as ProblemStatement[];
+      }
+
+      const existingIds = new Set(list.map((p) => p.id));
+      for (const demo of DEMO_PROBLEMS) {
+        if (!existingIds.has(demo.id)) {
+          list.push(demo);
+        }
+      }
+      setProblems(list);
+    } catch {
+      setProblems(DEMO_PROBLEMS);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProblems();
+  }, [loadProblems]);
+
+  const filteredProblems = useMemo(() => {
+    return problems.filter((p) => {
+      // Filter out drafts if not author
+      if (p.status !== 'Published' && p.author_id !== user?.id) {
+        return false;
+      }
+
+      const matchesSearch =
+        !searchTerm.trim() ||
+        p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.required_skills?.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        p.author?.display_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+      const matchesDifficulty = selectedDifficulty === 'All' || p.difficulty === selectedDifficulty;
+
+      return matchesSearch && matchesCategory && matchesDifficulty;
+    });
+  }, [problems, searchTerm, selectedCategory, selectedDifficulty, user?.id]);
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-charcoal-800 pb-6">
+        <div>
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-brand-400 uppercase tracking-wider mb-2">
+            <GraduationCap className="w-4 h-4" />
+            <span>Faculty Problem Statements</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Curated Collegiate Challenges
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
+            Real-world challenges and academic problem statements proposed by college faculty and mentors. Form a team, claim a challenge, and build impactful solutions.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {isTeacher ? (
+            <Link href="/problems/new">
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<PlusCircle className="w-4 h-4" />}
+              >
+                Post Problem Statement
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/projects/new">
+              <Button
+                variant="outline"
+                size="md"
+                leftIcon={<Sparkles className="w-4 h-4 text-brand-400" />}
+              >
+                Start Independent Project
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750/80 p-4 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative md:col-span-1">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by challenge title, skills, or faculty..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-charcoal-850 border border-charcoal-750 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+            />
+          </div>
+
+          <Select
+            options={CATEGORIES.map((c) => ({ value: c, label: c === 'All' ? 'All Categories' : c }))}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value as ProjectCategory | 'All')}
+          />
+
+          <Select
+            options={DIFFICULTIES.map((d) => ({ value: d, label: d === 'All' ? 'All Difficulties' : d }))}
+            value={selectedDifficulty}
+            onChange={(e) => setSelectedDifficulty(e.target.value as ProjectDifficulty | 'All')}
+          />
+        </div>
+      </div>
+
+      {/* List of Problem Statements */}
+      {isLoading ? (
+        <div className="py-20 text-center space-y-4">
+          <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
+          <p className="text-xs text-slate-400 font-mono">Loading problem statements...</p>
+        </div>
+      ) : filteredProblems.length === 0 ? (
+        <div className="rounded-2xl bg-charcoal-900 border border-charcoal-800 p-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-charcoal-800 flex items-center justify-center mx-auto text-slate-400">
+            <FileCode2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-white">No Problem Statements Found</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            {searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All'
+              ? 'No challenges match your active filters. Try resetting search filters.'
+              : 'Faculty mentors have not posted any problem statements yet. Check back soon or propose an independent project.'}
+          </p>
+          {isTeacher && (
+            <Link href="/problems/new">
+              <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                Post the First Problem Statement
+              </Button>
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredProblems.map((problem) => {
+            const isAuthor = Boolean(user && user.id === problem.author_id);
+            const authorName = problem.author?.display_name || 'Faculty Mentor';
+            const collegeName = problem.author?.college || 'Department of Computer Science';
+
+            return (
+              <div
+                key={problem.id}
+                className="rounded-2xl bg-charcoal-900 border border-charcoal-750/80 hover:border-charcoal-600 p-6 flex flex-col justify-between gap-6 transition-all shadow-elevated group"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="category">{problem.category}</Badge>
+                      <Badge variant="difficulty" difficulty={problem.difficulty} />
+                    </div>
+                    {problem.status !== 'Published' && (
+                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        {problem.status}
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <Link
+                      href={`/problems/${problem.id}`}
+                      className="text-lg font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-2"
+                    >
+                      {problem.title}
+                    </Link>
+                    <p className="mt-2 text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                      {problem.description}
+                    </p>
+                  </div>
+
+                  {/* Required Skills Tags */}
+                  {problem.required_skills && problem.required_skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {problem.required_skills.slice(0, 4).map((skill, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] px-2 py-0.5 rounded bg-charcoal-800 text-slate-300 border border-charcoal-700"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {problem.required_skills.length > 4 && (
+                        <span className="text-[10px] text-slate-500 self-center">
+                          +{problem.required_skills.length - 4} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-charcoal-800 space-y-4">
+                  {/* Faculty Author Info */}
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <Avatar
+                        name={authorName}
+                        src={problem.author?.avatar_url}
+                        size="sm"
+                      />
+                      <div>
+                        <p className="font-semibold text-slate-200">{authorName}</p>
+                        <p className="text-[10px] text-slate-500">{collegeName}</p>
+                      </div>
+                    </div>
+
+                    {problem.deadline && (
+                      <div className="flex items-center gap-1 text-[11px] text-amber-400/90">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Due {problem.deadline}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <Link href={`/problems/${problem.id}`}>
+                      <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                        View Details
+                      </Button>
+                    </Link>
+
+                    {isAuthor ? (
+                      <Link href={`/problems/${problem.id}/edit`}>
+                        <Button variant="secondary" size="sm">
+                          Edit Problem
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href={`/problems/${problem.id}`}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+                        >
+                          Apply to Join
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

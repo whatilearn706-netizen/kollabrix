@@ -12,7 +12,18 @@ import { Select } from '@/components/ui/Select';
 import { TagInput } from '@/components/ui/TagInput';
 import { Button } from '@/components/ui/Button';
 import { ProfileCompleteness } from '@/components/profile/ProfileCompleteness';
-import { Save, AlertCircle, CheckCircle2, User, Globe, Github } from 'lucide-react';
+import {
+  Save,
+  AlertCircle,
+  CheckCircle2,
+  User,
+  Globe,
+  Github,
+  GraduationCap,
+  KeyRound,
+  ShieldCheck,
+} from 'lucide-react';
+import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 
 export interface ProfileFormProps {
   initialProfile?: Profile | null;
@@ -55,10 +66,50 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   );
   const [githubUrl, setGithubUrl] = useState(initialProfile?.github_url || '');
   const [portfolioUrl, setPortfolioUrl] = useState(initialProfile?.portfolio_url || '');
+  const [isPortfolioPublic, setIsPortfolioPublic] = useState<boolean>(
+    initialProfile?.is_portfolio_public ?? true
+  );
+  const [profileRole, setProfileRole] = useState(initialProfile?.role || 'student');
+  const [facultyCode, setFacultyCode] = useState('');
+  const [isVerifyingFaculty, setIsVerifyingFaculty] = useState(false);
+  const [facultyVerifyMsg, setFacultyVerifyMsg] = useState<{ text: string; isError: boolean } | null>(
+    null
+  );
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const handleVerifyFacultyCode = async () => {
+    setFacultyVerifyMsg(null);
+    if (!facultyCode.trim()) {
+      setFacultyVerifyMsg({ text: 'Please enter a faculty verification code.', isError: true });
+      return;
+    }
+    try {
+      setIsVerifyingFaculty(true);
+      const { data, error: rpcError } = await supabase.rpc('verify_faculty_code', {
+        access_code: facultyCode.trim(),
+      });
+      if (rpcError) {
+        setFacultyVerifyMsg({ text: rpcError.message, isError: true });
+      } else if (data && data.success) {
+        setProfileRole('teacher');
+        setFacultyVerifyMsg({ text: 'Verified! You now have faculty mentor permissions.', isError: false });
+        await refreshProfile();
+      } else {
+        setFacultyVerifyMsg({ text: data?.error || 'Invalid verification code.', isError: true });
+      }
+    } catch (err: unknown) {
+      setFacultyVerifyMsg({
+        text: err instanceof Error ? err.message : 'Verification failed.',
+        isError: true,
+      });
+    } finally {
+      setIsVerifyingFaculty(false);
+    }
+  };
 
   const previewProfile: Partial<Profile> = {
     display_name: displayName,
@@ -145,6 +196,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         preferred_roles: preferredRoles,
         github_url: githubUrl.trim() || null,
         portfolio_url: portfolioUrl.trim() || null,
+        is_portfolio_public: isPortfolioPublic,
       };
 
       const { error: upsertError } = await supabase
@@ -371,6 +423,116 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
             placeholder="https://yourportfolio.me"
             leftIcon={<Globe className="w-4 h-4" />}
           />
+        </div>
+      </div>
+
+      {/* Portfolio Privacy & College Role */}
+      <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-5">
+        <div className="border-b border-charcoal-800 pb-3">
+          <h2 className="text-base font-semibold text-white">Portfolio Visibility & Institutional Role</h2>
+          <p className="text-xs text-slate-400">
+            Control the public visibility of your verified portfolio and access faculty mentor tools.
+          </p>
+        </div>
+
+        {/* Public Portfolio Toggle */}
+        <div className="flex items-start justify-between gap-4 p-4 rounded-xl bg-charcoal-850 border border-charcoal-750">
+          <div>
+            <p className="text-sm font-semibold text-white">Public Student Portfolio</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              When enabled, your profile, founded projects, team memberships, and verified contribution evidence are public at /profile/{username || 'username'}.
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+            <input
+              type="checkbox"
+              checked={isPortfolioPublic}
+              onChange={(e) => setIsPortfolioPublic(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-charcoal-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+          </label>
+        </div>
+
+        {/* Faculty & Educator Role Verification */}
+        <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-brand-400" />
+              <span className="text-sm font-semibold text-white">Institutional Role</span>
+            </div>
+            <span className="text-xs font-semibold uppercase px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
+              {initialProfile?.birth_year && initialProfile.birth_year > 2003
+                ? `Student (Born ${initialProfile.birth_year})`
+                : profileRole === 'teacher'
+                ? 'Faculty / Mentor'
+                : profileRole === 'admin'
+                ? 'Administrator'
+                : 'Student'}
+            </span>
+          </div>
+
+          {profileRole !== 'teacher' || (initialProfile?.birth_year && initialProfile.birth_year > 2003) ? (
+            <div className="pt-2 border-t border-charcoal-750 space-y-3">
+              <p className="text-xs text-slate-400">
+                Are you a college professor or academic mentor? Enter your institutional faculty passcode to activate educator privileges (authoring problem statements and providing project reviews).
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  placeholder="e.g. FACULTY2026"
+                  value={facultyCode}
+                  onChange={(e) => setFacultyCode(e.target.value)}
+                  className="bg-charcoal-900 border-charcoal-700 font-mono uppercase text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleVerifyFacultyCode}
+                  isLoading={isVerifyingFaculty}
+                  leftIcon={<KeyRound className="w-3.5 h-3.5" />}
+                >
+                  Verify Code
+                </Button>
+              </div>
+
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => setIsDocModalOpen(true)}
+                  leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
+                >
+                  Or Verify with Aadhaar / Class 12th Marksheet
+                </Button>
+              </div>
+
+              <FacultyVerificationModal
+                isOpen={isDocModalOpen}
+                onClose={() => setIsDocModalOpen(false)}
+                onSuccess={async () => {
+                  setProfileRole('teacher');
+                  await refreshProfile();
+                }}
+              />
+              <p className="text-[11px] text-slate-500">
+                Institutional demo key: <code className="text-brand-300 font-bold">FACULTY2026</code> (Requires birthdate &le; 2003)
+              </p>
+              {facultyVerifyMsg && (
+                <p className={`text-xs ${facultyVerifyMsg.isError ? 'text-red-400' : 'text-emerald-400'}`}>
+                  {facultyVerifyMsg.text}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-emerald-400 flex items-center gap-1.5 pt-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Verified Educator Status: You have access to post problem statements and evaluate student projects in the Mentor Dashboard.</span>
+            </p>
+          )}
         </div>
       </div>
 

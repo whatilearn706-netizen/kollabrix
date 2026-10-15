@@ -28,16 +28,40 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #22283C;
+  background: #1E253A;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #343E5C;
+  background: #2D3754;
 }
 
 /* Accessible focus ring */
 *:focus-visible {
   outline: 2px solid #6366F1;
   outline-offset: 2px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Futuristic Subtle Background Grid */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+}
+
+.bg-glass {
+  background-color: rgba(11, 14, 23, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }

@@ -2,91 +2,120 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Layers, Github, BookOpen, Heart, Shield, Sparkles } from 'lucide-react';
+import { BrandLogo } from '@/components/ui/BrandLogo';
+import { Shield, Sparkles, Terminal, Code2, Users, Trophy } from 'lucide-react';
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-charcoal-800 bg-charcoal-950 text-slate-400 py-12 text-sm">
+    <footer className="w-full border-t border-charcoal-800/80 bg-midnight-950 text-slate-400 py-12 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-charcoal-850">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-charcoal-800/60">
           {/* Brand Info */}
-          <div className="space-y-3 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white">
-                <Layers className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-slate-100 text-base">TeamForge</span>
+          <div className="space-y-3.5 md:col-span-1">
+            <Link href="/" className="inline-block focus-visible:outline-none">
+              <BrandLogo size="sm" />
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed">
-              A student-first project collaboration platform helping college makers discover ideas, assemble complementary teams, and build meaningful software together.
+              The collegiate innovation workspace connecting student makers, campus project teams, faculty mentors, and competitive hackathons.
             </p>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-1 font-mono">
+              <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Verified Collegiate Collaboration</span>
+            </div>
           </div>
 
-          {/* Platform Navigation */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-200">
+          {/* Platform Destinations */}
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-200 font-mono">
               Platform
             </h4>
-            <ul className="space-y-1.5 text-xs">
+            <ul className="space-y-2 text-xs">
               <li>
                 <Link href="/explore" className="hover:text-white transition-colors">
                   Explore Projects
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="hover:text-white transition-colors">
-                  How It Works
+                <Link href="/teammates" className="hover:text-white transition-colors">
+                  Find Teammates
                 </Link>
               </li>
               <li>
-                <Link href="/projects/new" className="hover:text-white transition-colors">
-                  Publish a Project Idea
+                <Link href="/hackathons" className="hover:text-white transition-colors">
+                  College Hackathons
+                </Link>
+              </li>
+              <li>
+                <Link href="/planner" className="hover:text-white transition-colors">
+                  AI Project Planner
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Categories */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-200">
-              Focus Areas
+          {/* Student & Faculty Pathways */}
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-200 font-mono">
+              Workspaces
             </h4>
-            <ul className="space-y-1.5 text-xs text-slate-400">
-              <li>Web Development</li>
-              <li>AI / Machine Learning</li>
-              <li>Developer Tooling</li>
-              <li>Social Impact & Community</li>
-              <li>IoT & Embedded Systems</li>
+            <ul className="space-y-2 text-xs text-slate-400">
+              <li>
+                <Link href="/projects/new" className="hover:text-white transition-colors">
+                  Launch a Project
+                </Link>
+              </li>
+              <li>
+                <Link href="/my-projects" className="hover:text-white transition-colors">
+                  Project Workboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/teacher/dashboard" className="hover:text-white transition-colors">
+                  Faculty Mentor Portal
+                </Link>
+              </li>
+              <li>
+                <Link href="/problems" className="hover:text-white transition-colors">
+                  Academic Challenges
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Phase 1 Notice & Architecture */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-200">
-              Architecture & Trust
+          {/* Technical Architecture */}
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-200 font-mono">
+              Architecture
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Phase 1 architecture built with Next.js App Router, Tailwind CSS, and Supabase PostgreSQL. Protected with strict Row Level Security (RLS).
+              Engineered with Next.js App Router, Supabase PostgreSQL, and cryptographic access control.
             </p>
-            <div className="pt-2 flex items-center gap-2 text-[11px] text-slate-500">
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Zero client credential leaks &middot; Privacy focused</span>
+            <div className="pt-2 flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <span className="px-2 py-0.5 rounded bg-charcoal-900 border border-charcoal-800 text-slate-400">
+                PostgreSQL RLS
+              </span>
+              <span className="px-2 py-0.5 rounded bg-charcoal-900 border border-charcoal-800 text-slate-400">
+                GitHub Webhooks
+              </span>
+              <span className="px-2 py-0.5 rounded bg-charcoal-900 border border-charcoal-800 text-slate-400">
+                Scrypt Salting
+              </span>
             </div>
           </div>
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} TeamForge. Empowering collegiate makers and developers.</p>
+          <p>&copy; {new Date().getFullYear()} TeamForge. Empowering collegiate makers to build together.</p>
           <div className="flex items-center gap-4">
             <Link href="/explore" className="hover:text-slate-400 transition-colors">
-              Directory
+              Project Directory
             </Link>
             <span>&middot;</span>
-            <Link href="/#how-it-works" className="hover:text-slate-400 transition-colors">
-              Guide
+            <Link href="/teammates" className="hover:text-slate-400 transition-colors">
+              Campus Matching
             </Link>
             <span>&middot;</span>
-            <span className="text-brand-400/80 font-mono">v1.0.0-phase1</span>
+            <span className="text-indigo-400 font-mono text-[11px]">Production</span>
           </div>
         </div>
       </div>

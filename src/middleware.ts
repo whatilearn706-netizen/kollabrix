@@ -2,6 +2,21 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();
+
+  // If a custom admin route path is configured and matches the request, rewrite to the internal /control-center-7x9 page
+  if (configuredAdminPath !== '/control-center-7x9' && pathname === configuredAdminPath) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/control-center-7x9';
+    return NextResponse.rewrite(url);
+  }
+
+  // If a custom admin route is active and someone attempts to access the default /control-center-7x9 path directly, deny
+  if (configuredAdminPath !== '/control-center-7x9' && pathname === '/control-center-7x9') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

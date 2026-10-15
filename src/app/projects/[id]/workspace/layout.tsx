@@ -19,6 +19,8 @@ import {
   Settings,
   ShieldCheck,
   ExternalLink,
+  Bot,
+  GitBranch,
 } from 'lucide-react';
 
 interface WorkspaceContextType {
@@ -98,22 +100,57 @@ export default function WorkspaceLayout({
             college,
             course,
             skills,
-            interests
+            interests,
+            is_suspended,
+            status
           )
         `)
         .eq('project_id', projectId);
 
-      const memList = (membersData as unknown as ProjectMember[]) || [];
+      // Fetch platform suspended user registry
+      let suspendedIds: string[] = [];
+      try {
+        const { data: settingData } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'match_scoring_config')
+          .maybeSingle();
+        if (Array.isArray(settingData?.value?.suspended_user_ids)) {
+          suspendedIds = settingData.value.suspended_user_ids;
+        }
+      } catch {}
+
+      const rawMemList = (membersData as unknown as ProjectMember[]) || [];
+      const memList = rawMemList.filter((m: any) => {
+        const prof = m.profile;
+        if (prof?.is_suspended || prof?.status === 'suspended') return false;
+        if (suspendedIds.includes(m.user_id)) return false;
+        return true;
+      });
       setMembers(memList);
 
       const userMember = memList.find((m) => m.user_id === currentUserId) || null;
       setCurrentUserMember(userMember);
 
       const isOwner = projData.owner_id === currentUserId;
-      const hasMembership = Boolean(userMember);
+      const isCurrentUserSuspended = suspendedIds.includes(currentUserId);
+      const hasMembership = Boolean(userMember) && !isCurrentUserSuspended;
 
-      if (isOwner || hasMembership) {
+      if ((isOwner || hasMembership) && !isCurrentUserSuspended) {
         setIsAuthorized(true);
+
+        // Self-heal: If user is owner but not in project_members, register as Project Lead
+        if (isOwner && !hasMembership) {
+          try {
+            await supabase.from('project_members').insert({
+              project_id: projectId,
+              user_id: currentUserId,
+              role: 'Project Lead',
+            });
+          } catch {
+            // non-blocking
+          }
+        }
       } else {
         setIsAuthorized(false);
       }
@@ -221,6 +258,16 @@ export default function WorkspaceLayout({
       label: 'Milestones',
       href: `/projects/${projectId}/workspace/milestones`,
       icon: Milestone,
+    },
+    {
+      label: 'AI Planner',
+      href: `/projects/${projectId}/workspace/planner`,
+      icon: Bot,
+    },
+    {
+      label: 'GitHub Activity',
+      href: `/projects/${projectId}/workspace/github`,
+      icon: GitBranch,
     },
     {
       label: 'Discussions',

@@ -18,13 +18,19 @@ import {
   ShieldCheck,
   Calendar,
   Sparkles,
+  Trophy,
+  Lock,
+  KeyRound,
+  ExternalLink,
 } from 'lucide-react';
 
 function MyProjectsContent() {
   const { user } = useAuth();
   const [leadingProjects, setLeadingProjects] = useState<Project[]>([]);
   const [joinedProjects, setJoinedProjects] = useState<(Project & { userRole?: string })[]>([]);
-  const [activeTab, setActiveTab] = useState<'leading' | 'joined'>('leading');
+  const [enrolledHackathons, setEnrolledHackathons] = useState<any[]>([]);
+  const [hackathonCodeInput, setHackathonCodeInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'leading' | 'joined' | 'hackathons'>('leading');
   const [isLoading, setIsLoading] = useState(true);
 
   const userRef = React.useRef(user);
@@ -77,6 +83,30 @@ function MyProjectsContent() {
             userRole: m.role,
           }));
         setJoinedProjects(joined);
+      }
+
+      // 3. Fetch hackathon enrollments
+      try {
+        const { data: hackData } = await supabase
+          .from('hackathon_participants')
+          .select(`
+            hackathon_id,
+            team_id,
+            role,
+            hackathon:hackathons(*),
+            team:hackathon_teams(
+              id,
+              name,
+              status
+            )
+          `)
+          .eq('user_id', currentUserId);
+
+        if (hackData && hackData.length > 0) {
+          setEnrolledHackathons(hackData);
+        }
+      } catch {
+        // ignore
       }
     } catch {
       // ignore
@@ -181,6 +211,25 @@ function MyProjectsContent() {
             {joinedProjects.length}
           </span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('hackathons')}
+          className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 ${
+            activeTab === 'hackathons'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850'
+          }`}
+        >
+          <Trophy className="w-4 h-4 text-amber-400" />
+          <span>Private College Hackathons</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs ${
+              activeTab === 'hackathons' ? 'bg-amber-500 text-white' : 'bg-charcoal-750 text-slate-400'
+            }`}
+          >
+            {enrolledHackathons.length}
+          </span>
+        </button>
       </div>
 
       {/* Content */}
@@ -263,7 +312,8 @@ function MyProjectsContent() {
             ))}
           </div>
         )
-      ) : joinedProjects.length === 0 ? (
+      ) : activeTab === 'joined' ? (
+        joinedProjects.length === 0 ? (
         <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
           <Users className="w-10 h-10 text-slate-500 mx-auto" />
           <h3 className="text-base font-semibold text-white">You haven&apos;t joined any teams yet</h3>
@@ -326,7 +376,138 @@ function MyProjectsContent() {
             </div>
           ))}
         </div>
-      )}
+        )
+      ) : activeTab === 'hackathons' ? (
+        enrolledHackathons.length === 0 ? (
+          <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-6">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mx-auto">
+              <Trophy className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5 max-w-lg mx-auto">
+              <h3 className="text-lg font-bold text-white">No College Hackathons Joined Yet</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Faculty mentors create private campus hackathons protected by salted passcodes. Enter your event join code below to unlock released tracks, form your student team, and access your dedicated hackathon workspace.
+              </p>
+            </div>
+
+            {/* Quick Join Code Form */}
+            <div className="max-w-md mx-auto p-4 rounded-xl bg-charcoal-950 border border-amber-500/30">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (hackathonCodeInput.trim()) {
+                    let clean = hackathonCodeInput.trim();
+                    if (clean.includes('/h/')) clean = clean.split('/h/')[1];
+                    clean = clean.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+                    window.location.href = `/h/${clean}`;
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Enter join code (e.g. col-apex26)..."
+                  value={hackathonCodeInput}
+                  onChange={(e) => setHackathonCodeInput(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
+                  leftIcon={<Lock className="w-3.5 h-3.5" />}
+                >
+                  Join
+                </Button>
+              </form>
+            </div>
+
+            {/* Quick suggestion chip */}
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+              <span>Featured Campus Event:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = '/h/col-apex26';
+                }}
+                className="font-mono text-amber-300 hover:underline px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30"
+              >
+                col-apex26 (Apex 2026 Inter-College Hackathon)
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Link href="/hackathons">
+                <Button variant="outline" size="sm" leftIcon={<Trophy className="w-4 h-4 text-amber-400" />}>
+                  Browse All College Events
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {enrolledHackathons.map((item: any, idx: number) => {
+              const h = item.hackathon;
+              if (!h) return null;
+              return (
+                <div
+                  key={item.hackathon_id || idx}
+                  className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-750/80 hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 font-semibold">
+                        <Lock className="w-3 h-3" />
+                        Private College Event
+                      </span>
+                      {item.role && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
+                          {item.role}
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-base font-bold text-white hover:text-amber-300 transition-colors">
+                        {h.title}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        {h.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-charcoal-800 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                      {item.team?.name && (
+                        <span className="flex items-center gap-1 text-slate-300">
+                          <Users className="w-3.5 h-3.5 text-brand-400" />
+                          Team: <strong className="text-white">{item.team.name}</strong>
+                        </span>
+                      )}
+                      <span>Organizer: {h.organizer}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2">
+                    <Link href={`/hackathons/${h.id}/workspace`}>
+                      <Button variant="primary" size="sm" className="bg-amber-600 hover:bg-amber-500 text-white" leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}>
+                        Open Hackathon Workspace
+                      </Button>
+                    </Link>
+                    {h.join_code && (
+                      <Link href={`/h/${h.join_code}`}>
+                        <Button variant="ghost" size="sm" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
+                          Passcode Portal
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : null}
     </div>
   );
 }

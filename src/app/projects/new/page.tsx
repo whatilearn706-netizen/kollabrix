@@ -3,7 +3,7 @@
 import React from 'react';
 import { ProtectedPageGuard } from '@/components/auth/ProtectedPageGuard';
 import { ProjectForm } from '@/components/projects/ProjectForm';
-import { PlusCircle, Sparkles } from 'lucide-react';
+import { PlusCircle, Sparkles, GraduationCap } from 'lucide-react';
 
 export default function NewProjectPage() {
   return (
@@ -23,6 +23,26 @@ export default function NewProjectPage() {
           <p className="mt-1 text-xs sm:text-sm text-slate-400">
             Publish your project concept to the college community. Describe your technical architecture, specify the roles you need, and recruit passionate student builders.
           </p>
+        </div>
+
+        {/* Quick Mentor Portal Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs text-indigo-200">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-semibold text-white">Are you a faculty mentor or professor?</span>{' '}
+              <span>Post official problem statements and supervise student teams directly in the <strong>Mentor Portal</strong>.</span>
+            </div>
+          </div>
+          <a
+            href="/teacher/dashboard"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/50 text-indigo-200 hover:text-white font-medium shrink-0 transition-colors self-start sm:self-auto"
+          >
+            <span>Go to Mentor Portal</span>
+            <span>&rarr;</span>
+          </a>
         </div>
 
         <ProjectForm />

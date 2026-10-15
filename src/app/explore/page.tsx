@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { Project, ProjectFilterOptions } from '@/types/database';
+import { Project, ProjectFilterOptions, ExploreConfig } from '@/types/database';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectFilters } from '@/components/projects/ProjectFilters';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -19,14 +19,24 @@ import {
   ChevronRight,
   RefreshCw,
   Sparkles,
+  GraduationCap,
+  BookOpen,
+  Trophy,
+  Lock,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 6;
+const DEFAULT_PAGE_SIZE = 12;
 
 export default function ExploreProjectsPage() {
   const { user, openAuthModal } = useAuth();
 
-  const [dbProjects, setDbProjects] = useState<Project[]>([]);
+  // Dynamic Explore configuration
+  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(null);
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -41,22 +51,88 @@ export default function ExploreProjectsPage() {
     page: 1,
   });
 
+  const pageSize = exploreConfig?.default_page_size || DEFAULT_PAGE_SIZE;
+
+  // 1. Load dynamic Explore configuration from platform settings
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/explore/config');
+        const data = await res.json();
+        if (data?.config) {
+          setExploreConfig(data.config);
+        }
+      } catch (err) {
+        console.warn('Failed to load explore config:', err);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  // 2. Scalable database-backed pagination query
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
     setFetchError(null);
 
+    const currentPage = filters.page || 1;
+
     if (!isSupabaseConfigured()) {
-      // Supabase is not configured yet; use curated demo projects
-      setDbProjects([]);
+      // Offline / Demo Fallback Mode
+      let list = [...DEMO_PROJECTS];
+
+      if (filters.search && filters.search.trim()) {
+        const q = filters.search.toLowerCase().trim();
+        list = list.filter(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            p.summary.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q) ||
+            p.technologies?.some((t) => t.toLowerCase().includes(q)) ||
+            p.required_skills?.some((s) => s.toLowerCase().includes(q))
+        );
+      }
+      if (filters.category && filters.category !== 'All') {
+        list = list.filter((p) => p.category === filters.category);
+      }
+      if (filters.difficulty && filters.difficulty !== 'All') {
+        list = list.filter((p) => p.difficulty === filters.difficulty);
+      }
+      if (filters.status && filters.status !== 'All') {
+        list = list.filter((p) => p.status === filters.status);
+      }
+      if (filters.skill) {
+        const sLower = filters.skill.toLowerCase();
+        list = list.filter((p) => p.required_skills?.some((s) => s.toLowerCase() === sLower));
+      }
+      if (filters.technology) {
+        const tLower = filters.technology.toLowerCase();
+        list = list.filter((p) => p.technologies?.some((t) => t.toLowerCase() === tLower));
+      }
+
+      if (filters.sort === 'alphabetical') {
+        list.sort((a, b) => a.title.localeCompare(b.title));
+      } else {
+        list.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+
+      const total = list.length;
+      const start = (currentPage - 1) * pageSize;
+      const paginated = list.slice(start, start + pageSize);
+
+      setTotalCount(total);
+      setProjects(paginated);
       setIsLoading(false);
       return;
     }
 
     try {
-      // Fetch projects joined with owner profiles
-      const { data, error } = await supabase
+      // Build dynamic database query with exact count
+      let query = supabase
         .from('projects')
-        .select(`
+        .select(
+          `
           *,
           owner:profiles!projects_owner_id_fkey(
             user_id,
@@ -66,108 +142,88 @@ export default function ExploreProjectsPage() {
             college,
             course
           )
-        `)
-        .order('created_at', { ascending: false });
+        `,
+          { count: 'exact' }
+        );
+
+      // Filters
+      if (filters.category && filters.category !== 'All') {
+        query = query.eq('category', filters.category);
+      }
+      if (filters.difficulty && filters.difficulty !== 'All') {
+        query = query.eq('difficulty', filters.difficulty);
+      }
+      if (filters.status && filters.status !== 'All') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.skill) {
+        query = query.contains('required_skills', [filters.skill]);
+      }
+      if (filters.technology) {
+        query = query.contains('technologies', [filters.technology]);
+      }
+      if (filters.search && filters.search.trim()) {
+        const q = filters.search.trim();
+        query = query.or(`title.ilike.%${q}%,summary.ilike.%${q}%,description.ilike.%${q}%`);
+      }
+
+      // Stable sorting: Featured projects prioritized, then user sort
+      try {
+        if (filters.sort === 'alphabetical') {
+          query = query.order('is_featured', { ascending: false }).order('title', { ascending: true });
+        } else {
+          query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
+        }
+      } catch {
+        query = query.order('created_at', { ascending: false });
+      }
+
+      // Range Pagination: range(from, to)
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, count, error } = await query;
 
       if (error) {
         console.warn('Supabase projects query issue:', error.message);
         setFetchError('Could not retrieve database projects. Showing sample projects.');
-        setDbProjects([]);
+        setProjects(DEMO_PROJECTS.slice(0, pageSize));
+        setTotalCount(DEMO_PROJECTS.length);
       } else if (data) {
-        setDbProjects(data as Project[]);
+        if (data.length === 0 && (!count || count === 0) && !filters.search && filters.category === 'All') {
+          // If remote DB is freshly initialized with 0 projects, fall back gracefully to curated demo projects
+          setProjects(DEMO_PROJECTS.slice(0, pageSize));
+          setTotalCount(DEMO_PROJECTS.length);
+        } else {
+          setProjects(data as Project[]);
+          setTotalCount(count || 0);
+        }
       }
     } catch (err: unknown) {
       console.warn('Fetch error:', err);
       setFetchError('Could not load database projects.');
+      setProjects(DEMO_PROJECTS.slice(0, pageSize));
+      setTotalCount(DEMO_PROJECTS.length);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [filters, pageSize]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 
-  // Combined pool: DB projects + Curated Demo projects (avoid duplicate IDs)
-  const combinedProjects = useMemo(() => {
-    const list = [...dbProjects];
-    const existingIds = new Set(list.map((p) => p.id));
-    for (const demo of DEMO_PROJECTS) {
-      if (!existingIds.has(demo.id)) {
-        list.push(demo);
-      }
-    }
-    return list;
-  }, [dbProjects]);
-
-  // Filter & Search
-  const filteredProjects = useMemo(() => {
-    let result = [...combinedProjects];
-
-    // Search query: title, summary, description, technologies, skills
-    if (filters.search && filters.search.trim()) {
-      const q = filters.search.toLowerCase().trim();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.summary.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.technologies?.some((t) => t.toLowerCase().includes(q)) ||
-          p.required_skills?.some((s) => s.toLowerCase().includes(q))
-      );
-    }
-
-    // Category filter
-    if (filters.category && filters.category !== 'All') {
-      result = result.filter((p) => p.category === filters.category);
-    }
-
-    // Difficulty filter
-    if (filters.difficulty && filters.difficulty !== 'All') {
-      result = result.filter((p) => p.difficulty === filters.difficulty);
-    }
-
-    // Status filter
-    if (filters.status && filters.status !== 'All') {
-      result = result.filter((p) => p.status === filters.status);
-    }
-
-    // Skill filter
-    if (filters.skill) {
-      const sLower = filters.skill.toLowerCase();
-      result = result.filter((p) =>
-        p.required_skills?.some((s) => s.toLowerCase() === sLower)
-      );
-    }
-
-    // Technology filter
-    if (filters.technology) {
-      const tLower = filters.technology.toLowerCase();
-      result = result.filter((p) =>
-        p.technologies?.some((t) => t.toLowerCase() === tLower)
-      );
-    }
-
-    // Sorting
-    if (filters.sort === 'alphabetical') {
-      result.sort((a, b) => a.title.localeCompare(b.title));
-    } else {
-      // Newest
-      result.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    }
-
-    return result;
-  }, [combinedProjects, filters]);
-
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE) || 1;
+  // Total pages calculation
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const currentPage = Math.min(filters.page || 1, totalPages);
-  const paginatedProjects = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProjects.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredProjects, currentPage]);
+
+  // Auto-adjust page if current page exceeds total pages after filtering
+  useEffect(() => {
+    if (filters.page && filters.page > totalPages && totalPages > 0) {
+      setFilters((prev) => ({ ...prev, page: 1 }));
+    }
+  }, [totalPages, filters.page]);
 
   const handleClearFilters = () => {
     setFilters({
@@ -188,10 +244,21 @@ export default function ExploreProjectsPage() {
     }
   };
 
+  // Active categories from dynamic Explore config
+  const dynamicCategories = useMemo(() => {
+    if (!exploreConfig?.categories) return undefined;
+    return exploreConfig.categories
+      .filter((c) => c.isActive)
+      .map((c) => c.name);
+  }, [exploreConfig]);
+
+  const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endRecord = Math.min(currentPage * pageSize, totalCount);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-midnight-800 pb-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-mono text-brand-400 uppercase tracking-wider mb-1">
             <Compass className="w-4 h-4" />
@@ -239,48 +306,48 @@ export default function ExploreProjectsPage() {
         </div>
       </div>
 
-      {/* Filter Component */}
+      {/* Dynamic Filter Controls */}
       <ProjectFilters
         filters={filters}
-        onChange={setFilters}
+        onChange={(newFilters) => setFilters(newFilters)}
         onClear={handleClearFilters}
-        totalResults={filteredProjects.length}
+        availableSkills={exploreConfig?.popular_skills}
+        availableCategories={dynamicCategories}
+        totalResults={totalCount}
       />
 
-      {/* Results Stats & Active Count */}
-      <div className="flex items-center justify-between text-xs text-slate-400">
-        <span>
-          Showing{' '}
-          <strong className="text-slate-200">
-            {filteredProjects.length === 0
-              ? 0
-              : `${(currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(
-                  currentPage * ITEMS_PER_PAGE,
-                  filteredProjects.length
-                )}`}
-          </strong>{' '}
-          of <strong className="text-slate-200">{filteredProjects.length}</strong> projects
-        </span>
+      {/* Error notice if fallback active */}
+      {fetchError && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+          <span>{fetchError}</span>
+          <Button variant="ghost" size="sm" onClick={() => fetchProjects()} className="text-amber-200 text-xs">
+            Retry
+          </Button>
+        </div>
+      )}
 
-        {dbProjects.length > 0 && (
-          <span className="text-emerald-400 flex items-center gap-1 text-[11px]">
-            <Sparkles className="w-3.5 h-3.5" />
-            Live Supabase database connected
-          </span>
-        )}
+      {/* Results Header */}
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <div>
+          Showing <strong className="text-white">{startRecord}</strong> - <strong className="text-white">{endRecord}</strong> of{' '}
+          <strong className="text-white">{totalCount}</strong> projects
+        </div>
+        <div className="font-mono text-[11px] text-slate-500">
+          Page {currentPage} of {totalPages}
+        </div>
       </div>
 
-      {/* Loading Skeleton State */}
+      {/* Projects Grid or Skeletons */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl bg-charcoal-900 border border-charcoal-800 p-5 space-y-4"
+              className="rounded-2xl bg-midnight-900/80 border border-midnight-800 p-5 space-y-4 animate-pulse"
             >
               <div className="flex justify-between items-center">
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
               <Skeleton className="h-6 w-3/4" />
               <Skeleton className="h-14 w-full" />
@@ -288,17 +355,17 @@ export default function ExploreProjectsPage() {
                 <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-5 w-16" />
               </div>
-              <div className="pt-3 border-t border-charcoal-800 flex justify-between items-center">
+              <div className="pt-3 border-t border-midnight-800 flex justify-between items-center">
                 <Skeleton className="h-7 w-28 rounded-full" />
                 <Skeleton className="h-4 w-16" />
               </div>
             </div>
           ))}
         </div>
-      ) : filteredProjects.length === 0 ? (
+      ) : projects.length === 0 ? (
         /* Empty State */
-        <div className="rounded-2xl bg-charcoal-900 border border-charcoal-800 p-12 text-center max-w-lg mx-auto space-y-4">
-          <div className="w-12 h-12 rounded-xl bg-charcoal-800 text-slate-400 flex items-center justify-center mx-auto">
+        <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750 p-12 text-center max-w-lg mx-auto space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-midnight-800 border border-midnight-700 text-slate-400 flex items-center justify-center mx-auto">
             <FolderSearch className="w-6 h-6" />
           </div>
           <div>
@@ -323,38 +390,87 @@ export default function ExploreProjectsPage() {
       ) : (
         /* Project Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedProjects.map((project) => (
+          {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {/* Database-Backed Pagination Controls */}
       {totalPages > 1 && (
-        <div className="pt-6 border-t border-charcoal-800 flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setFilters({ ...filters, page: Math.max(currentPage - 1, 1) })}
-            disabled={currentPage <= 1}
-            leftIcon={<ChevronLeft className="w-4 h-4" />}
-          >
-            Previous
-          </Button>
+        <div className="pt-6 border-t border-midnight-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-slate-400">
+            Showing <strong className="text-white">{startRecord}</strong> to <strong className="text-white">{endRecord}</strong> of{' '}
+            <strong className="text-white">{totalCount}</strong> total projects
+          </div>
 
-          <span className="text-xs text-slate-400 font-mono">
-            Page {currentPage} of {totalPages}
-          </span>
+          <div className="flex items-center gap-1.5 font-mono text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters({ ...filters, page: 1 })}
+              disabled={currentPage <= 1}
+              className="px-2"
+              title="First Page"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setFilters({ ...filters, page: Math.min(currentPage + 1, totalPages) })}
-            disabled={currentPage >= totalPages}
-            rightIcon={<ChevronRight className="w-4 h-4" />}
-          >
-            Next
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters({ ...filters, page: Math.max(currentPage - 1, 1) })}
+              disabled={currentPage <= 1}
+              leftIcon={<ChevronLeft className="w-4 h-4" />}
+            >
+              Prev
+            </Button>
+
+            {/* Page Buttons */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
+              let pageNum = idx + 1;
+              if (totalPages > 5) {
+                if (currentPage > 3) {
+                  pageNum = Math.min(currentPage - 2 + idx, totalPages - (4 - idx));
+                }
+              }
+              const isCurrent = pageNum === currentPage;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setFilters({ ...filters, page: pageNum })}
+                  className={`w-8 h-8 rounded-lg font-mono text-xs transition-colors ${
+                    isCurrent
+                      ? 'bg-brand-600 text-white font-bold'
+                      : 'bg-midnight-850 hover:bg-midnight-800 text-slate-300 border border-midnight-750'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters({ ...filters, page: Math.min(currentPage + 1, totalPages) })}
+              disabled={currentPage >= totalPages}
+              rightIcon={<ChevronRight className="w-4 h-4" />}
+            >
+              Next
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters({ ...filters, page: totalPages })}
+              disabled={currentPage >= totalPages}
+              className="px-2"
+              title="Last Page"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

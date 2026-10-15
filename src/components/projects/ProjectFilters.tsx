@@ -12,10 +12,11 @@ export interface ProjectFiltersProps {
   onChange: (newFilters: ProjectFilterOptions) => void;
   onClear: () => void;
   availableSkills?: string[];
+  availableCategories?: string[];
   totalResults: number;
 }
 
-const CATEGORIES: (ProjectCategory | 'All')[] = [
+const DEFAULT_CATEGORIES: (ProjectCategory | 'All')[] = [
   'All',
   'Web Development',
   'AI/ML',
@@ -34,8 +35,12 @@ export function ProjectFilters({
   onChange,
   onClear,
   availableSkills = ['React', 'Python', 'TypeScript', 'PyTorch', 'UI/UX', 'Node.js', 'Next.js', 'Flutter'],
+  availableCategories,
   totalResults,
 }: ProjectFiltersProps) {
+  const activeCategories: (ProjectCategory | 'All')[] = availableCategories && availableCategories.length > 0
+    ? (availableCategories.includes('All') ? (availableCategories as any) : ['All', ...(availableCategories as any)])
+    : DEFAULT_CATEGORIES;
   const hasActiveFilters =
     Boolean(filters.search) ||
     (filters.category && filters.category !== 'All') ||
@@ -45,7 +50,7 @@ export function ProjectFilters({
     Boolean(filters.technology);
 
   return (
-    <div className="space-y-4 rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-5">
+    <div className="space-y-4 rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-5 shadow-card">
       {/* Top Search Bar & Sort Row */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="flex-1">
@@ -100,7 +105,7 @@ export function ProjectFilters({
       {/* Category Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         <span className="text-xs text-slate-500 font-medium mr-1 shrink-0">Category:</span>
-        {CATEGORIES.map((cat) => {
+        {activeCategories.map((cat) => {
           const isSelected = (!filters.category && cat === 'All') || filters.category === cat;
           return (
             <button
@@ -110,7 +115,7 @@ export function ProjectFilters({
               className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-medium ${
                 isSelected
                   ? 'bg-brand-600 text-white shadow-subtle'
-                  : 'bg-charcoal-850 hover:bg-charcoal-800 text-slate-400 hover:text-slate-200 border border-charcoal-700/60'
+                  : 'bg-midnight-850 hover:bg-midnight-800 text-slate-400 hover:text-slate-200 border border-midnight-700/60'
               }`}
             >
               {cat}
@@ -120,7 +125,7 @@ export function ProjectFilters({
       </div>
 
       {/* Secondary Filter Row: Difficulty & Status Dropdowns & Quick Skill Pills */}
-      <div className="pt-3 border-t border-charcoal-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="pt-3 border-t border-midnight-800 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-slate-400 font-medium">Difficulty:</span>
@@ -176,7 +181,7 @@ export function ProjectFilters({
                 className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors ${
                   isSelected
                     ? 'bg-brand-500/20 text-brand-300 border-brand-500/50 font-medium'
-                    : 'bg-charcoal-850 hover:bg-charcoal-800 text-slate-400 border-charcoal-700/60'
+                    : 'bg-midnight-850 hover:bg-midnight-800 text-slate-400 border border-midnight-700/60'
                 }`}
               >
                 {skill}
