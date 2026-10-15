@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { ComposedHeroPreview } from '@/components/landing/ComposedHeroPreview';
+import { HeroCommandCenter } from '@/components/landing/HeroCommandCenter';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
@@ -25,15 +26,18 @@ import {
   CheckCircle2,
   KeyRound,
   ShieldCheck,
-  Bot,
+  Layers,
+  Kanban,
   ExternalLink,
 } from 'lucide-react';
 
 export default function HomePage() {
+  const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [showcaseTab, setShowcaseTab] = useState<'projects' | 'hackathons'>('projects');
   const [quickPasscode, setQuickPasscode] = useState('');
 
   const isTeacher =
@@ -106,97 +110,100 @@ export default function HomePage() {
       .replace(/.*\/h\//, '')
       .replace(/[^a-zA-Z0-9_-]/g, '')
       .toLowerCase();
-    window.location.href = `/h/${clean}`;
+    if (clean) {
+      router.push(`/h/${clean}`);
+    }
   };
 
   return (
     <div className="flex flex-col w-full overflow-hidden bg-midnight-950">
       {/* =========================================================================
-          1. HERO SECTION — FOCUSED, MEMORABLE, UNCLUTTERED
+          1. HERO SECTION & INTERACTIVE COMMAND CENTER (UNCLUTTERED, INSTANT UNDERSTANDING)
          ========================================================================= */}
-      <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 border-b border-charcoal-800/70 overflow-hidden bg-hero-radial">
+      <section className="relative pt-12 pb-20 md:pt-16 md:pb-28 border-b border-charcoal-800/70 overflow-hidden bg-hero-radial">
         {/* Subtle Background Grid Accent */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-            {/* Left Column: Clear Message & Dominant Actions */}
-            <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-              {/* Collegiate Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-xs text-indigo-300 font-mono">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Collegiate Collaboration &amp; Hackathon Workspace</span>
-              </div>
-
-              {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.1]">
-                Big ideas don’t happen{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-brand-300 to-violet-400">
-                  alone.
-                </span>
-              </h1>
-
-              {/* Plain-Language Supporting Message */}
-              <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Find your team. Build something real. Show the world what you can do.
-                Connect with campus peers by skills, launch semester projects, and compete in verified college hackathons.
-              </p>
-
-              {/* Exactly Two Dominant Primary Calls to Action */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2">
-                <Link href="/explore" className="w-full sm:w-auto">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="w-full sm:w-auto font-semibold px-6"
-                    leftIcon={<Compass className="w-4 h-4" />}
-                  >
-                    Explore Projects
-                  </Button>
-                </Link>
-
-                <Link href="/teammates" className="w-full sm:w-auto">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="w-full sm:w-auto font-semibold px-6 border-charcoal-700 hover:border-indigo-500/40"
-                    leftIcon={<Users className="w-4 h-4 text-indigo-400" />}
-                  >
-                    Find Teammates
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Minimal Trust Indicator */}
-              <div className="pt-2 flex items-center justify-center lg:justify-start gap-6 text-xs text-slate-400 font-mono">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Skill-Weighted Matching
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                  GitHub Task Evidence
-                </span>
-                <span className="flex items-center gap-1.5 hidden sm:flex">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                  Private Campus Passcodes
-                </span>
-              </div>
+          {/* Main Hero Header */}
+          <div className="text-center max-w-4xl mx-auto space-y-6 pt-2 pb-10">
+            {/* Collegiate Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-xs text-indigo-300 font-mono shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Collegiate Collaboration &amp; Hackathon Workspace</span>
             </div>
 
-            {/* Right Column: Interactive Authentic Collaboration Preview */}
-            <div className="lg:col-span-6">
-              <ComposedHeroPreview />
+            {/* Main Punchy Headline */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08]">
+              Find your squad.{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-brand-300 to-violet-400">
+                Build real projects.
+              </span>
+            </h1>
+
+            {/* Plain-Language Supporting Message */}
+            <p className="text-base sm:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto font-normal">
+              The platform where college students assemble by skills, launch semester projects,
+              compete in private hackathons, and verify deliverables on GitHub.
+            </p>
+
+            {/* Two Dominant Primary Calls to Action */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+              <Link href="/explore">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="font-semibold px-7 shadow-glow-sm hover:shadow-glow-md"
+                  leftIcon={<Compass className="w-4 h-4" />}
+                >
+                  Explore Projects
+                </Button>
+              </Link>
+
+              <Link href="/teammates">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="font-semibold px-7 border-charcoal-700 hover:border-indigo-500/40"
+                  leftIcon={<Users className="w-4 h-4 text-indigo-400" />}
+                >
+                  Find Teammates
+                </Button>
+              </Link>
             </div>
+
+            {/* Minimal Trust Indicator */}
+            <div className="pt-2 flex items-center justify-center gap-6 text-xs text-slate-400 font-mono">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                Skill-Weighted Matching
+              </span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+                GitHub Task Evidence
+              </span>
+              <span className="flex items-center gap-1.5 hidden sm:flex">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                Private Campus Passcodes
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive Hero Command Center (Instantly Demonstrates Platform Pillars) */}
+          <div className="mt-2">
+            <HeroCommandCenter
+              featuredProjects={featuredProjects}
+              activeHackathons={activeHackathons}
+            />
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          2. AUTH-ADAPTIVE STATE MODULE (FOR SIGNED-IN STUDENTS / EDUCATORS)
+          2. AUTH-ADAPTIVE BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
          ========================================================================= */}
       {user && (
-        <section className="border-b border-charcoal-800/70 bg-midnight-900/80 py-6">
+        <section className="border-b border-charcoal-800/70 bg-midnight-900/80 py-5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-charcoal-900/90 border border-charcoal-750">
               <div className="flex items-center gap-3">
@@ -250,280 +257,292 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
-          3. MAIN STUDENT PATHWAYS — 4 SIMPLE CHOICES
+          3. HOW IT WORKS — THE 3-STEP COLLEGIATE BUILDER CYCLE
          ========================================================================= */}
-      <section className="py-16 md:py-20 border-b border-charcoal-800/70">
+      <section className="py-16 md:py-24 border-b border-charcoal-800/70 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Four paths to build your collegiate journey
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-2.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-xs text-indigo-300 font-mono">
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span>The Builder Cycle</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+              From idea to verified career proof in 3 steps
             </h2>
-            <p className="text-sm text-slate-400">
-              No complex setup required. Choose what you want to accomplish today.
+            <p className="text-sm sm:text-base text-slate-400">
+              Built specifically for college students, semester teams, and university hackathons.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Path 1: Explore Projects */}
-            <Link
-              href="/explore"
-              className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-indigo-500/50 hover:bg-charcoal-850/80 transition-all shadow-subtle hover:shadow-card group flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
-                  <Compass className="w-5 h-5" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+            {/* Step 1: Match */}
+            <div className="p-7 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-indigo-500/50 transition-all shadow-subtle group flex flex-col justify-between space-y-5">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono text-indigo-400/60 group-hover:text-indigo-400 transition-colors">
+                    01
+                  </span>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
+                    <Users className="w-5 h-5" />
+                  </div>
                 </div>
-                <h3 className="font-bold text-white text-base group-hover:text-indigo-300 transition-colors">
-                  Explore Projects
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Browse student-founded repositories across AI, web, mobile, and dev tools actively looking for collaborators.
-                </p>
-              </div>
-              <div className="pt-4 flex items-center text-xs font-semibold text-indigo-400 group-hover:text-indigo-300 transition-colors">
-                <span>Browse projects</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
 
-            {/* Path 2: Find Teammates */}
-            <Link
-              href="/teammates"
-              className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-indigo-500/50 hover:bg-charcoal-850/80 transition-all shadow-subtle hover:shadow-card group flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/25 flex items-center justify-center text-violet-400 group-hover:scale-105 transition-transform">
-                  <Users className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-white text-base group-hover:text-violet-300 transition-colors">
-                  Find Teammates
+                <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
+                  Assemble by Skills
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Discover student engineers whose technical skills, preferred roles, and availability complement your own.
-                </p>
-              </div>
-              <div className="pt-4 flex items-center text-xs font-semibold text-violet-400 group-hover:text-violet-300 transition-colors">
-                <span>Match teammates</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
 
-            {/* Path 3: Join a Hackathon */}
-            <Link
-              href="/hackathons"
-              className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-amber-500/50 hover:bg-charcoal-850/80 transition-all shadow-subtle hover:shadow-card group flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
-                  <Trophy className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors">
-                  Join a Hackathon
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Enter private college hackathons with a passcode, register a team, solve problem statements, and submit code.
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Discover peers across campus whose tech stacks complement yours. Filter by languages,
+                  commit hours, and preferred roles to recruit a balanced squad.
                 </p>
               </div>
-              <div className="pt-4 flex items-center text-xs font-semibold text-amber-400 group-hover:text-amber-300 transition-colors">
-                <span>View competitions</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
 
-            {/* Path 4: Launch a Project */}
-            <Link
-              href="/projects/new"
-              className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-emerald-500/50 hover:bg-charcoal-850/80 transition-all shadow-subtle hover:shadow-card group flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
-                  <PlusCircle className="w-5 h-5" />
+              <Link
+                href="/teammates"
+                className="inline-flex items-center text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors pt-2"
+              >
+                <span>Find Teammates</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+
+            {/* Step 2: Sprint */}
+            <div className="p-7 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-amber-500/50 transition-all shadow-subtle group flex flex-col justify-between space-y-5">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono text-amber-400/60 group-hover:text-amber-400 transition-colors">
+                    02
+                  </span>
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400">
+                    <Kanban className="w-5 h-5" />
+                  </div>
                 </div>
-                <h3 className="font-bold text-white text-base group-hover:text-emerald-300 transition-colors">
-                  Start a Project
+
+                <h3 className="text-lg font-bold text-white group-hover:text-amber-300 transition-colors">
+                  Sprint in Workspaces
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Post an engineering challenge or app vision. Define open team roles and recruit fellow students to build with you.
+
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Collaborate in dedicated team workspaces with sprint kanbans, real-time discussions,
+                  and private collegiate hackathon problem statement tracks.
                 </p>
               </div>
-              <div className="pt-4 flex items-center text-xs font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors">
-                <span>Create project</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
+
+              <Link
+                href="/hackathons"
+                className="inline-flex items-center text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors pt-2"
+              >
+                <span>Browse Competitions</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+
+            {/* Step 3: Prove */}
+            <div className="p-7 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-emerald-500/50 transition-all shadow-subtle group flex flex-col justify-between space-y-5">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono text-emerald-400/60 group-hover:text-emerald-400 transition-colors">
+                    03
+                  </span>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                  Verify Career Proof
+                </h3>
+
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Link GitHub pull requests and commit hashes directly to completed tasks. Earn faculty reviews
+                  and export tamper-resistant proof of work to your portfolio.
+                </p>
               </div>
-            </Link>
+
+              <Link
+                href="/explore"
+                className="inline-flex items-center text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors pt-2"
+              >
+                <span>Explore Live Projects</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          4. LIVE ACTIVE PROJECTS (FETCHED FROM SUPABASE WITH CLEAN CARDS)
+          4. CAMPUS PULSE — UNIFIED SHOWCASE (PROJECTS & HACKATHONS TABBED)
          ========================================================================= */}
       <section className="py-16 md:py-24 border-b border-charcoal-800/70 bg-charcoal-950/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          {/* Header with Segmented Switcher */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-indigo-400 mb-2">
                 <Compass className="w-3.5 h-3.5" />
-                <span>Active Student Collaborations</span>
+                <span>Campus Pulse</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Featured Projects Recruiting Teammates
+                Live Collegiate Activity
               </h2>
               <p className="mt-1 text-sm text-slate-400 max-w-xl">
-                Real student engineering teams actively building software. Apply with your skills to join.
+                Explore active projects recruiting collaborators, or enter upcoming university competitions.
               </p>
             </div>
 
-            <Link href="/explore">
-              <Button variant="outline" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                Browse All Projects
-              </Button>
-            </Link>
+            {/* Segmented Switcher */}
+            <div className="p-1 rounded-xl bg-midnight-900 border border-charcoal-750 flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowcaseTab('projects')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  showcaseTab === 'projects'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Compass className="w-4 h-4" />
+                <span>Featured Projects</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowcaseTab('hackathons')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  showcaseTab === 'hackathons'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Campus Hackathons</span>
+              </button>
+            </div>
           </div>
 
-          {/* Project Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        </div>
-      </section>
+          {/* TAB 1: FEATURED PROJECTS */}
+          {showcaseTab === 'projects' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {featuredProjects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
 
-      {/* =========================================================================
-          5. CAMPUS HACKATHONS & QUICK PASSCODE ENTRY
-         ========================================================================= */}
-      <section className="py-16 md:py-24 border-b border-charcoal-800/70 bg-gradient-to-b from-charcoal-950 via-charcoal-900/40 to-charcoal-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="p-8 sm:p-10 rounded-3xl bg-midnight-900/90 border border-charcoal-750/90 shadow-elevated relative overflow-hidden">
-            {/* Ambient amber glow */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="pt-2 text-center">
+                <Link href="/explore">
+                  <Button variant="outline" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                    Browse All Projects in Directory
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-              {/* Left Info */}
-              <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-amber-400">
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Private Campus Hackathons</span>
+          {/* TAB 2: CAMPUS HACKATHONS WITH PASSCODE FORM */}
+          {showcaseTab === 'hackathons' && (
+            <div className="space-y-6">
+              {/* Passcode Quick Entry Card */}
+              <div className="p-6 sm:p-8 rounded-2xl bg-midnight-900/90 border border-amber-500/30 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-1.5 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-amber-400">
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Private Collegiate Access</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">
+                    Have a College Join Code or Passcode?
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Enter your university passcode to unlock problem statements, create your team, and access rubric judging.
+                  </p>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  Have a College Join Code or Passcode?
-                </h3>
-                <p className="text-sm text-slate-300 leading-relaxed max-w-xl">
-                  Authorized faculty create private collegiate competitions protected by server-side salted access passwords.
-                  Enter your invite code to immediately access problem statements, team formation, and rubric judging.
-                </p>
 
-                {/* Quick Passcode Form */}
-                <form onSubmit={handleQuickJoin} className="flex items-center gap-2 max-w-md pt-2">
-                  <input
-                    type="text"
-                    value={quickPasscode}
-                    onChange={(e) => setQuickPasscode(e.target.value)}
-                    placeholder="Enter join code (e.g. col-apex26)..."
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
-                    required
-                  />
+                <form onSubmit={handleQuickJoin} className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <div className="relative flex-1 md:w-64">
+                    <KeyRound className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={quickPasscode}
+                      onChange={(e) => setQuickPasscode(e.target.value)}
+                      placeholder="Passcode (e.g. col-apex26)"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-midnight-950 border border-charcoal-700 text-xs font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
+                      required
+                    />
+                  </div>
                   <Button
                     type="submit"
                     variant="primary"
                     size="md"
                     className="bg-amber-600 hover:bg-amber-500 text-white shrink-0 font-semibold"
                   >
-                    Enter Event
+                    Enter
                   </Button>
                 </form>
               </div>
 
-              {/* Right Quick Summary Row */}
-              <div className="lg:col-span-5 space-y-3">
-                <div className="p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-white">Private &amp; Salted Passcode</span>
-                    <span className="font-mono text-amber-400 text-[11px]">Server Verified</span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    No public links. Access passwords are authenticated server-side before problem statements unlock.
-                  </p>
-                </div>
+              {/* Hackathons Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeHackathons.map((hackathon) => (
+                  <div
+                    key={hackathon.id}
+                    className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/90 hover:border-amber-500/40 transition-all shadow-subtle flex flex-col justify-between space-y-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          <span>{hackathon.access_type === 'private' ? 'Private' : 'Open'}</span>
+                        </span>
+                        <span className="text-xs font-mono text-slate-400">
+                          {hackathon.mode}
+                        </span>
+                      </div>
 
-                <div className="p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-white">Team Cap Enforcement</span>
-                    <span className="font-mono text-indigo-400 text-[11px]">2–4 Members</span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Students can join exactly 1 team per hackathon, ensuring clean rubric scoring and podium awards.
-                  </p>
-                </div>
+                      <h4 className="text-base font-bold text-white line-clamp-1">
+                        {hackathon.title}
+                      </h4>
 
-                <div className="pt-1">
-                  <Link href="/hackathons">
-                    <Button variant="outline" size="sm" className="w-full justify-center text-xs">
-                      Browse Open Competitions
-                    </Button>
-                  </Link>
-                </div>
+                      <p className="text-xs text-slate-400 line-clamp-2">
+                        {hackathon.description || 'Collegiate hackathon competition track.'}
+                      </p>
+
+                      <div className="pt-2 border-t border-charcoal-800 text-xs text-slate-300">
+                        Prize Pool: <strong className="text-amber-300 font-mono">{hackathon.prize_pool || 'TBA'}</strong>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        href={
+                          hackathon.join_code
+                            ? `/h/${hackathon.join_code}`
+                            : `/hackathons/${hackathon.id}`
+                        }
+                      >
+                        <Button variant="outline" size="sm" className="w-full justify-center text-xs">
+                          View Details &amp; Register
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 text-center">
+                <Link href="/hackathons">
+                  <Button variant="outline" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                    Browse All Hackathons
+                  </Button>
+                </Link>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
       {/* =========================================================================
-          6. VERIFIED CONTRIBUTION PROOF (HOW TEAMFORGE BUILDS STUDENT CAREERS)
-         ========================================================================= */}
-      <section className="py-16 md:py-24 border-b border-charcoal-800/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Tamper-Resistant Engineering Proof</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Turn Completed Tasks Into Verified Proof
-            </h2>
-            <p className="text-sm text-slate-400">
-              Anyone can claim skills on a resume. TeamForge anchors your technical contributions to verifiable database deliverables.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/80 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
-                <GitPullRequest className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-white text-base">GitHub &amp; PR Links</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Attach pull requests and commit hashes directly to completed tasks. Real technical proof verified by project leads.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/80 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
-                <GraduationCap className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-white text-base">Faculty Milestone Review</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                College professors evaluate capstones and research challenges, providing official feedback logged on student records.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-charcoal-900/90 border border-charcoal-750/80 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/25 flex items-center justify-center text-brand-400">
-                <Bot className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-white text-base">AI Sprint Roadmapping</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Turn raw project ideas into structured milestones, prioritized sprints, and assigned team roles with the AI Planner.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          7. FINAL FOCUSED CALL TO ACTION
+          5. FINAL FOCUSED CALL TO ACTION
          ========================================================================= */}
       <section className="py-20 md:py-28 relative text-center">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
