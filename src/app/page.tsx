@@ -29,6 +29,7 @@ import {
   CheckCircle2,
   KeyRound,
   Zap,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -39,6 +40,25 @@ export default function HomePage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showcaseTab, setShowcaseTab] = useState<'projects' | 'hackathons'>('projects');
   const [quickPasscode, setQuickPasscode] = useState('');
+  const [oauthErrorNotice, setOauthErrorNotice] = useState<string | null>(null);
+
+  // Catch incoming OAuth or URL authentication errors
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error_description') || params.get('error');
+      if (urlError) {
+        const decoded = decodeURIComponent(urlError.replace(/\+/g, ' '));
+        if (decoded.includes('Unable to exchange external code')) {
+          setOauthErrorNotice(
+            'Google OAuth Configuration Notice: Supabase was unable to exchange the authorization code with Google. This happens when the Google Client Secret in Supabase is incorrect, or the Authorized redirect URI in Google Cloud Console is not set to "https://bmiwmlfraaridbekuily.supabase.co/auth/v1/callback".'
+          );
+        } else {
+          setOauthErrorNotice(decoded);
+        }
+      }
+    }
+  }, []);
 
   const isTeacher =
     (profile?.role === 'teacher' || profile?.role === 'admin') &&
@@ -117,6 +137,30 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col w-full overflow-hidden bg-[#fafbfc] text-slate-900">
+      {/* OAuth Notice Banner */}
+      {oauthErrorNotice && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-xs font-medium text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-start gap-2.5 max-w-4xl">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{oauthErrorNotice}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => openAuthModal('login')}
+              className="px-3 py-1.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black transition-colors"
+            >
+              Sign In with Email / Phone
+            </button>
+            <button
+              onClick={() => setOauthErrorNotice(null)}
+              className="text-amber-800 hover:text-black font-bold px-2 py-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* =========================================================================
           HERO: BALANCED SPLIT STAGE (HEADLINE + 3D LINKORA ORIGAMI BIRD)
          ========================================================================= */}

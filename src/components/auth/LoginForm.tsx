@@ -64,6 +64,24 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
+  // Check for incoming OAuth or URL error parameters
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error_description') || params.get('error');
+      if (urlError) {
+        const decoded = decodeURIComponent(urlError.replace(/\+/g, ' '));
+        if (decoded.includes('Unable to exchange external code')) {
+          setError(
+            'Google OAuth Setup Error: Unable to exchange external code with Google. Please verify that: 1) The Google Client Secret in your Supabase dashboard matches your Google Cloud Console secret. 2) The Authorized redirect URI in Google Cloud Console is exactly "https://bmiwmlfraaridbekuily.supabase.co/auth/v1/callback".'
+          );
+        } else {
+          setError(decoded);
+        }
+      }
+    }
+  }, []);
+
   const handleAuthSuccess = () => {
     if (onSuccess) {
       onSuccess();
