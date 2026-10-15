@@ -4,7 +4,7 @@
 --         project_tasks, project_discussions, project_discussion_replies, notifications
 -- Functions: is_project_member, is_project_owner, is_project_lead,
 --            accept_project_application, reject_project_application
--- Triggers: handle_new_project_lead, updated_at
+-- Triggers: handle_new_project_lead, updated_at, notifications
 -- ==============================================================================
 
 -- 1. Create project_members table
@@ -142,9 +142,12 @@ CREATE INDEX IF NOT EXISTS idx_project_discussion_replies_disc ON public.project
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(recipient_id, is_read);
 
--- 9. Helper Security Functions (SECURITY DEFINER to avoid RLS recursion)
+-- 9. Helper Security Functions (SECURITY DEFINER with fixed search_path)
 CREATE OR REPLACE FUNCTION public.is_project_owner(check_project_id UUID, check_user_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 BEGIN
     IF check_user_id IS NULL OR check_project_id IS NULL THEN
         RETURN FALSE;
@@ -154,10 +157,13 @@ BEGIN
         WHERE id = check_project_id AND owner_id = check_user_id
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE OR REPLACE FUNCTION public.is_project_member(check_project_id UUID, check_user_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 BEGIN
     IF check_user_id IS NULL OR check_project_id IS NULL THEN
         RETURN FALSE;
@@ -170,10 +176,13 @@ BEGIN
         WHERE id = check_project_id AND owner_id = check_user_id
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE OR REPLACE FUNCTION public.is_project_lead(check_project_id UUID, check_user_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 BEGIN
     IF check_user_id IS NULL OR check_project_id IS NULL THEN
         RETURN FALSE;
@@ -186,7 +195,7 @@ BEGIN
         WHERE project_id = check_project_id AND user_id = check_user_id AND role = 'Project Lead'
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 10. Enable Row Level Security (RLS)
 ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
@@ -221,30 +230,45 @@ CREATE POLICY "Members can leave or leads can remove"
         OR public.is_project_lead(project_id, auth.uid())
     );
 
--- 12. Policies for project_applications
+-- 12. Policies for project_applications (Direct, Bulletproof Subqueries)
 DROP POLICY IF EXISTS "Applicants and owners can view applications" ON public.project_applications;
 CREATE POLICY "Applicants and owners can view applications"
     ON public.project_applications FOR SELECT
+    TO authenticated
     USING (
         auth.uid() = applicant_id 
-        OR public.is_project_owner(project_id, auth.uid())
+        OR EXISTS (
+            SELECT 1 FROM public.projects p 
+            WHERE p.id = project_applications.project_id AND p.owner_id = auth.uid()
+        )
     );
 
 DROP POLICY IF EXISTS "Authenticated non-members can apply" ON public.project_applications;
 CREATE POLICY "Authenticated non-members can apply"
     ON public.project_applications FOR INSERT
+    TO authenticated
     WITH CHECK (
         auth.uid() = applicant_id 
-        AND NOT public.is_project_owner(project_id, auth.uid())
-        AND NOT public.is_project_member(project_id, auth.uid())
+        AND NOT EXISTS (
+            SELECT 1 FROM public.projects p 
+            WHERE p.id = project_applications.project_id AND p.owner_id = auth.uid()
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM public.project_members pm 
+            WHERE pm.project_id = project_applications.project_id AND pm.user_id = auth.uid()
+        )
     );
 
 DROP POLICY IF EXISTS "Applicants can withdraw or owners can review" ON public.project_applications;
 CREATE POLICY "Applicants can withdraw or owners can review"
     ON public.project_applications FOR UPDATE
+    TO authenticated
     USING (
         (auth.uid() = applicant_id AND status = 'Pending') 
-        OR public.is_project_owner(project_id, auth.uid())
+        OR EXISTS (
+            SELECT 1 FROM public.projects p 
+            WHERE p.id = project_applications.project_id AND p.owner_id = auth.uid()
+        )
     );
 
 -- 13. Policies for project_milestones (Private Workspace)
@@ -363,7 +387,7 @@ CREATE POLICY "Users can mark their own notifications as read"
 DROP POLICY IF EXISTS "Authenticated users or functions can insert notifications" ON public.notifications;
 CREATE POLICY "Authenticated users or functions can insert notifications"
     ON public.notifications FOR INSERT
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK (true);
 
 -- 18. Updated_at Trigger function and hooks
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -400,7 +424,10 @@ CREATE TRIGGER set_project_discussions_updated_at
 
 -- 18b. Recount current_team_size on member removal/leave
 CREATE OR REPLACE FUNCTION public.handle_project_member_deleted()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 DECLARE
     m_count INT;
 BEGIN
@@ -411,7 +438,7 @@ BEGIN
     WHERE id = OLD.project_id;
     RETURN OLD;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_project_member_deleted ON public.project_members;
 CREATE TRIGGER on_project_member_deleted
@@ -419,9 +446,12 @@ CREATE TRIGGER on_project_member_deleted
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_project_member_deleted();
 
--- 18c. Notify project owner when application submitted
+-- 18c. Notify project owner when application submitted (Safe fallback)
 CREATE OR REPLACE FUNCTION public.handle_new_application_notification()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 DECLARE
     proj RECORD;
     applicant_name TEXT;
@@ -429,7 +459,7 @@ BEGIN
     SELECT title, owner_id INTO proj FROM public.projects WHERE id = NEW.project_id;
     SELECT display_name INTO applicant_name FROM public.profiles WHERE user_id = NEW.applicant_id;
     
-    IF FOUND AND proj.owner_id IS NOT NULL THEN
+    IF proj.owner_id IS NOT NULL THEN
         INSERT INTO public.notifications (
             recipient_id,
             sender_id,
@@ -442,13 +472,16 @@ BEGIN
             NEW.applicant_id,
             'application_received',
             'New Application Received 📩',
-            COALESCE(applicant_name, 'A student') || ' applied to join "' || proj.title || '".',
+            COALESCE(applicant_name, 'A student') || ' applied to join "' || COALESCE(proj.title, 'your project') || '".',
             '/projects/' || NEW.project_id || '/applications'
         );
     END IF;
     RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_application_created_notify_owner ON public.project_applications;
 CREATE TRIGGER on_application_created_notify_owner
@@ -456,9 +489,12 @@ CREATE TRIGGER on_application_created_notify_owner
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_new_application_notification();
 
--- 18d. Notify assignee when task assigned
+-- 18d. Notify assignee when task assigned (Safe fallback)
 CREATE OR REPLACE FUNCTION public.handle_task_assignment_notification()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 DECLARE
     proj RECORD;
     assigner_name TEXT;
@@ -486,8 +522,11 @@ BEGIN
         END IF;
     END IF;
     RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_task_assigned_notify ON public.project_tasks;
 CREATE TRIGGER on_task_assigned_notify
@@ -497,14 +536,17 @@ CREATE TRIGGER on_task_assigned_notify
 
 -- 19. Automatically assign Project Lead membership upon project creation
 CREATE OR REPLACE FUNCTION public.handle_new_project_lead()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 BEGIN
     INSERT INTO public.project_members (project_id, user_id, role)
     VALUES (NEW.id, NEW.owner_id, 'Project Lead')
     ON CONFLICT (project_id, user_id) DO NOTHING;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_project_created_add_lead ON public.projects;
 CREATE TRIGGER on_project_created_add_lead
@@ -523,7 +565,10 @@ CREATE OR REPLACE FUNCTION public.accept_project_application(
     app_id UUID,
     assigned_role TEXT DEFAULT 'Contributor'
 )
-RETURNS JSONB AS $$
+RETURNS JSONB 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 DECLARE
     target_app RECORD;
     target_project RECORD;
@@ -595,21 +640,25 @@ BEGIN
     WHERE id = target_app.project_id;
 
     -- 8. Notify the applicant
-    INSERT INTO public.notifications (
-        recipient_id,
-        sender_id,
-        type,
-        title,
-        message,
-        link
-    ) VALUES (
-        target_app.applicant_id,
-        auth.uid(),
-        'application_accepted',
-        'Application Accepted! 🎉',
-        'Your application to join "' || target_project.title || '" has been accepted as ' || COALESCE(assigned_role, 'Contributor') || '.',
-        '/projects/' || target_app.project_id || '/workspace'
-    );
+    BEGIN
+        INSERT INTO public.notifications (
+            recipient_id,
+            sender_id,
+            type,
+            title,
+            message,
+            link
+        ) VALUES (
+            target_app.applicant_id,
+            auth.uid(),
+            'application_accepted',
+            'Application Accepted! 🎉',
+            'Your application to join "' || target_project.title || '" has been accepted as ' || COALESCE(assigned_role, 'Contributor') || '.',
+            '/projects/' || target_app.project_id || '/workspace'
+        );
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     RETURN jsonb_build_object(
         'success', true, 
@@ -618,13 +667,16 @@ BEGIN
         'new_team_size', new_member_count
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 21. Atomic Function to Reject Application
 CREATE OR REPLACE FUNCTION public.reject_project_application(
     app_id UUID
 )
-RETURNS JSONB AS $$
+RETURNS JSONB 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
 DECLARE
     target_app RECORD;
     target_project RECORD;
@@ -658,27 +710,38 @@ BEGIN
     WHERE id = app_id;
 
     -- Notify applicant politely
-    INSERT INTO public.notifications (
-        recipient_id,
-        sender_id,
-        type,
-        title,
-        message,
-        link
-    ) VALUES (
-        target_app.applicant_id,
-        auth.uid(),
-        'application_rejected',
-        'Application Update',
-        'Your application to join "' || target_project.title || '" was not selected at this time.',
-        '/my-applications'
-    );
+    BEGIN
+        INSERT INTO public.notifications (
+            recipient_id,
+            sender_id,
+            type,
+            title,
+            message,
+            link
+        ) VALUES (
+            target_app.applicant_id,
+            auth.uid(),
+            'application_rejected',
+            'Application Update',
+            'Your application to join "' || target_project.title || '" was not selected at this time.',
+            '/my-applications'
+        );
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     RETURN jsonb_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
--- 22. Enable Supabase Realtime publication on relevant tables
+-- 22. Grants for functions
+GRANT EXECUTE ON FUNCTION public.is_project_owner(UUID, UUID) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_project_member(UUID, UUID) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_project_lead(UUID, UUID) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.accept_project_application(UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reject_project_application(UUID) TO authenticated;
+
+-- 23. Enable Supabase Realtime publication on relevant tables
 DO $$
 BEGIN
     IF NOT EXISTS (

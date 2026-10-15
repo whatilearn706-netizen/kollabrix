@@ -693,9 +693,12 @@ export default function ProjectDetailsPage() {
         onClose={() => setIsApplyModalOpen(false)}
         projectId={project.id}
         projectTitle={project.title}
+        projectOwnerId={project.owner_id}
+        isMember={isMember}
         desiredRoles={project.desired_roles}
         onSuccess={() => {
           loadCollaborationStatus();
+          loadProjectData();
         }}
       />
 

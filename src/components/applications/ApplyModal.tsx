@@ -14,6 +14,8 @@ interface ApplyModalProps {
   onClose: () => void;
   projectId: string;
   projectTitle: string;
+  projectOwnerId?: string;
+  isMember?: boolean;
   desiredRoles?: string[];
   onSuccess?: () => void;
 }
@@ -33,6 +35,8 @@ export function ApplyModal({
   onClose,
   projectId,
   projectTitle,
+  projectOwnerId,
+  isMember = false,
   desiredRoles = [],
   onSuccess,
 }: ApplyModalProps) {
@@ -44,6 +48,8 @@ export function ApplyModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const isOwner = Boolean(user && projectOwnerId && user.id === projectOwnerId);
 
   if (!isOpen) return null;
 
@@ -58,6 +64,16 @@ export function ApplyModal({
     e.preventDefault();
     if (!user) {
       setError('You must be signed in to submit an application.');
+      return;
+    }
+
+    if (isOwner) {
+      setError('You are the owner of this project and cannot apply to your own team.');
+      return;
+    }
+
+    if (isMember) {
+      setError('You are already an active member of this project team.');
       return;
     }
 
@@ -108,6 +124,10 @@ export function ApplyModal({
       if (insertError) {
         if (insertError.code === '23505') {
           setError('You already have an active pending application for this project.');
+        } else if (insertError.code === '42501') {
+          setError(
+            'Application not permitted: You may be the project owner, an existing member, or the collaboration migration needs to be executed in the Supabase SQL editor.'
+          );
         } else {
           setError(insertError.message || 'Failed to submit application. Please try again.');
         }
@@ -168,72 +188,102 @@ export function ApplyModal({
               </div>
             )}
 
-            <Select
-              label="Proposed Role"
-              options={roleOptions}
-              value={proposedRole}
-              onChange={(e) => setProposedRole(e.target.value)}
-              helperText="Select the role that best matches your skills and interests."
-            />
-
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-medium text-slate-300">
-                  Application Pitch & Relevant Skills <span className="text-red-400">*</span>
-                </label>
-                <span className="text-[11px] text-slate-500">
-                  {message.length} / 1000
-                </span>
-              </div>
-              <Textarea
-                placeholder="Explain why you want to collaborate on this project, what relevant experience or coursework you have, and what you hope to build..."
-                rows={5}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                maxLength={1000}
-                required
-              />
-              <p className="text-[11px] text-slate-400 mt-1">
-                Minimum 10 characters. Highlight coursework, past projects, or tools from your profile.
-              </p>
-            </div>
-
-            {profile && profile.skills && profile.skills.length > 0 && (
-              <div className="p-3 rounded-lg bg-charcoal-850/80 border border-charcoal-750 text-xs">
-                <p className="text-slate-400 mb-1.5 font-medium">Your Profile Skills attached:</p>
-                <div className="flex flex-wrap gap-1">
-                  {profile.skills.map((skill, i) => (
-                    <span
-                      key={i}
-                      className="text-[11px] px-2 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/30"
-                    >
-                      {skill}
-                    </span>
-                  ))}
+            {isOwner ? (
+              <div className="p-5 rounded-xl bg-charcoal-850 border border-charcoal-750 text-center space-y-3">
+                <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
+                <p className="text-sm font-semibold text-white">You own this project</p>
+                <p className="text-xs text-slate-400">
+                  Project owners manage member applications and team workspaces from their dashboard instead of applying.
+                </p>
+                <div className="pt-2">
+                  <Button type="button" variant="primary" size="sm" onClick={onClose}>
+                    Close
+                  </Button>
                 </div>
               </div>
-            )}
+            ) : isMember ? (
+              <div className="p-5 rounded-xl bg-charcoal-850 border border-charcoal-750 text-center space-y-3">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                <p className="text-sm font-semibold text-white">You are already a team member</p>
+                <p className="text-xs text-slate-400">
+                  You are already an active member of this project team. You can access the workspace anytime.
+                </p>
+                <div className="pt-2">
+                  <Button type="button" variant="primary" size="sm" onClick={onClose}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Select
+                  label="Proposed Role"
+                  options={roleOptions}
+                  value={proposedRole}
+                  onChange={(e) => setProposedRole(e.target.value)}
+                  helperText="Select the role that best matches your skills and interests."
+                />
 
-            <div className="pt-2 flex items-center justify-end gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                isLoading={isSubmitting}
-                leftIcon={<Send className="w-3.5 h-3.5" />}
-              >
-                Submit Application
-              </Button>
-            </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-medium text-slate-300">
+                      Application Pitch & Relevant Skills <span className="text-red-400">*</span>
+                    </label>
+                    <span className="text-[11px] text-slate-500">
+                      {message.length} / 1000
+                    </span>
+                  </div>
+                  <Textarea
+                    placeholder="Explain why you want to collaborate on this project, what relevant experience or coursework you have, and what you hope to build..."
+                    rows={5}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    maxLength={1000}
+                    required
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Minimum 10 characters. Highlight coursework, past projects, or tools from your profile.
+                  </p>
+                </div>
+
+                {profile && profile.skills && profile.skills.length > 0 && (
+                  <div className="p-3 rounded-lg bg-charcoal-850/80 border border-charcoal-750 text-xs">
+                    <p className="text-slate-400 mb-1.5 font-medium">Your Profile Skills attached:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.skills.map((skill, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] px-2 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/30"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    isLoading={isSubmitting}
+                    leftIcon={<Send className="w-3.5 h-3.5" />}
+                  >
+                    Submit Application
+                  </Button>
+                </div>
+              </>
+            )}
           </form>
         )}
       </div>
