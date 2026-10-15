@@ -1,0 +1,194 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+export interface SignupFormProps {
+  onSuccess?: () => void;
+  onSwitchToLogin?: () => void;
+  redirectUrl?: string;
+}
+
+export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile/setup' }: SignupFormProps) {
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!isSupabaseConfigured()) {
+      setError(
+        'Supabase is not yet configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file to enable registration.'
+      );
+      return;
+    }
+
+    if (!displayName.trim()) {
+      setError('Please provide your full or display name.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must contain at least 6 characters.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match. Please re-enter your password confirmation.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const generatedUsername =
+        displayName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') +
+        Math.floor(100 + Math.random() * 900);
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            display_name: displayName.trim(),
+            username: generatedUsername,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile/setup`,
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      // Check if session was immediately created (e.g. email confirmations turned off)
+      if (data.session) {
+        setSuccessMessage('Account created successfully! Taking you to profile setup...');
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push(redirectUrl);
+            router.refresh();
+          }
+        }, 1200);
+      } else if (data.user && !data.session) {
+        // Confirmation email was sent by Supabase
+        setSuccessMessage(
+          `Confirmation email sent to ${email}. Please check your inbox and click the verification link to complete registration.`
+        );
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred during account creation.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full space-y-5">
+      {error && (
+        <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-300 leading-relaxed">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-300 leading-relaxed">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Your Name"
+          type="text"
+          required
+          autoComplete="name"
+          placeholder="e.g. Alex Morgan"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          leftIcon={<User className="w-4 h-4" />}
+        />
+
+        <Input
+          label="College or Personal Email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="alex@university.edu"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          leftIcon={<Mail className="w-4 h-4" />}
+          helperText="We never share or expose your email on public profiles."
+        />
+
+        <Input
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          required
+          autoComplete="new-password"
+          placeholder="At least 6 characters"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          leftIcon={<Lock className="w-4 h-4" />}
+          rightIcon={
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          }
+        />
+
+        <Input
+          label="Confirm Password"
+          type={showPassword ? 'text' : 'password'}
+          required
+          autoComplete="new-password"
+          placeholder="Re-enter password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          leftIcon={<Lock className="w-4 h-4" />}
+        />
+
+        <Button type="submit" className="w-full mt-2" isLoading={isLoading} size="lg">
+          Create Student Account
+        </Button>
+      </form>
+
+      {onSwitchToLogin && (
+        <div className="text-center pt-2 border-t border-charcoal-800 text-xs text-slate-400">
+          Already have an account?{' '}
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="font-medium text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            Log in instead
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
