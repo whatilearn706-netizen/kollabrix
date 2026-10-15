@@ -42,8 +42,12 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
 
     try {
       setIsLoading(true);
+      const normalizedEmail = email.trim().includes('@')
+        ? email.trim()
+        : `${email.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '')}@teamforge.local`;
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: normalizedEmail,
         password,
       });
 
@@ -118,11 +122,10 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="College or Personal Email"
-          type="email"
+          label="Student ID or Email"
+          type="text"
           required
-          autoComplete="email"
-          placeholder="student@university.edu"
+          placeholder="e.g. alex or alex@university.edu"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           leftIcon={<Mail className="w-4 h-4" />}

@@ -55,12 +55,16 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     try {
       setIsLoading(true);
 
+      const normalizedEmail = email.trim().includes('@')
+        ? email.trim()
+        : `${email.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '')}@teamforge.local`;
+
       const generatedUsername =
         displayName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') +
         Math.floor(100 + Math.random() * 900);
 
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: normalizedEmail,
         password,
         options: {
           data: {
@@ -72,12 +76,27 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        if (signUpError.message.includes('Email signups are disabled') || signUpError.message.includes('disabled')) {
+          setError(
+            "Email Signups are currently turned OFF in your Supabase dashboard. Please go to Authentication -> Providers -> Email and turn 'Enable Email provider' ON."
+          );
+        } else {
+          setError(signUpError.message);
+        }
         return;
       }
 
-      // Check if session was immediately created (e.g. email confirmations turned off)
-      if (data.session) {
+      // Check if session was immediately created, or auto sign in
+      let activeSession = data.session;
+      if (!activeSession && data.user) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        activeSession = signInData.session;
+      }
+
+      if (activeSession) {
         setSuccessMessage('Account created successfully! Taking you to profile setup...');
         setTimeout(() => {
           if (onSuccess) {
@@ -86,11 +105,10 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
             router.push(redirectUrl);
             router.refresh();
           }
-        }, 1200);
-      } else if (data.user && !data.session) {
-        // Confirmation email was sent by Supabase
+        }, 800);
+      } else {
         setSuccessMessage(
-          `Confirmation email sent to ${email}. Please check your inbox and click the verification link to complete registration.`
+          `Account registered. Please verify your email or log in with your credentials.`
         );
       }
     } catch (err: unknown) {
@@ -129,15 +147,14 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         />
 
         <Input
-          label="College or Personal Email"
-          type="email"
+          label="Student ID or Email"
+          type="text"
           required
-          autoComplete="email"
-          placeholder="alex@university.edu"
+          placeholder="e.g. alex or alex@university.edu"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           leftIcon={<Mail className="w-4 h-4" />}
-          helperText="We never share or expose your email on public profiles."
+          helperText="You can use any unique Student ID or your email."
         />
 
         <Input
