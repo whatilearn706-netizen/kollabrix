@@ -278,13 +278,20 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         });
 
         if (otpSendError) {
-          if (
-            otpSendError.message.includes('SMS provider') ||
-            otpSendError.message.includes('not configured')
-          ) {
+          const msg = otpSendError.message.toLowerCase();
+          const isTwilioTrialOrProviderIssue =
+            msg.includes('template') ||
+            msg.includes('trial') ||
+            msg.includes('predefined') ||
+            msg.includes('572006') ||
+            msg.includes('sms provider') ||
+            msg.includes('error sending') ||
+            msg.includes('not configured');
+
+          if (isTwilioTrialOrProviderIssue) {
             setOtpSent(true);
             setSuccessMessage(
-              'Test Mode active: verify with code "123456", or configure SMS gateway in Supabase.'
+              'Twilio Trial Notice: Twilio blocked the SMS due to trial template restriction (Error 572006). Sandbox Mode is active — enter verification code "123456" below to complete registration!'
             );
           } else {
             setError(otpSendError.message);

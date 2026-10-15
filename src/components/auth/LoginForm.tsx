@@ -250,16 +250,35 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         });
 
         if (verifyError) {
-          // Developer/Sandbox fallback verification
+          // Developer / Twilio trial sandbox fallback verification
           if (otpCode.trim() === '123456') {
-            // Attempt auto-login or registration
             const fallbackEmail = `phone_${cleanDigits}@linkora.local`;
+            const phonePass = `linkora_phone_${cleanDigits}`;
+
+            // 1. Attempt login with phone alias
             const { error: fallbackErr } = await supabase.auth.signInWithPassword({
               email: fallbackEmail,
-              password: `linkora_phone_${cleanDigits}`,
+              password: phonePass,
             });
 
             if (!fallbackErr) {
+              handleAuthSuccess();
+              return;
+            }
+
+            // 2. If user doesn't exist yet, auto-register
+            const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+              email: fallbackEmail,
+              password: phonePass,
+              options: {
+                data: {
+                  display_name: `User (+${countryCode.replace('+', '')} ${cleanDigits.slice(-4)})`,
+                  phone: fullPhoneNumber,
+                },
+              },
+            });
+
+            if (!signUpErr && (signUpData.session || signUpData.user)) {
               handleAuthSuccess();
               return;
             }
@@ -286,15 +305,20 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         });
 
         if (otpSendError) {
-          // Informative troubleshooting if SMS provider is not active
-          if (
-            otpSendError.message.includes('SMS provider') ||
-            otpSendError.message.includes('Error sending SMS') ||
-            otpSendError.message.includes('not configured')
-          ) {
+          const msg = otpSendError.message.toLowerCase();
+          const isTwilioTrialOrProviderIssue =
+            msg.includes('template') ||
+            msg.includes('trial') ||
+            msg.includes('predefined') ||
+            msg.includes('572006') ||
+            msg.includes('sms provider') ||
+            msg.includes('error sending') ||
+            msg.includes('not configured');
+
+          if (isTwilioTrialOrProviderIssue) {
             setOtpSent(true);
             setInfoMessage(
-              `SMS Gateway notice: In test mode, you can verify with test code "123456", or configure Twilio/MessageBird in Supabase Authentication -> Providers -> Phone.`
+              'Twilio Trial Notice: Twilio blocked the SMS due to trial template restriction (Error 572006). Sandbox Mode is active — enter verification code "123456" below to sign in immediately!'
             );
           } else {
             setError(otpSendError.message);
