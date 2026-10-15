@@ -172,6 +172,32 @@ export default function WorkspaceTasksPage() {
     setFormError(null);
 
     try {
+      // Step A: Attempt atomic save_project_task RPC function
+      const { data: rpcData, error: rpcError } = await supabase.rpc('save_project_task', {
+        p_project_id: project.id,
+        p_title: taskTitle.trim(),
+        p_description: taskDescription.trim() || null,
+        p_status: taskStatus,
+        p_priority: taskPriority,
+        p_assignee_id: taskAssigneeId || null,
+        p_milestone_id: taskMilestoneId || null,
+        p_due_date: taskDueDate || null,
+        task_id: editingTask ? editingTask.id : null,
+      });
+
+      if (!rpcError && rpcData) {
+        if (rpcData.success) {
+          setIsModalOpen(false);
+          await loadTasksAndMilestones();
+          return;
+        } else {
+          setFormError(rpcData.error || 'Failed to save task.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Step B: Direct table fallback if RPC is not yet installed
       const payload = {
         project_id: project.id,
         title: taskTitle.trim(),
@@ -191,7 +217,13 @@ export default function WorkspaceTasksPage() {
           .eq('id', editingTask.id);
 
         if (error) {
-          setFormError(error.message || 'Could not update task.');
+          if (error.code === '42501') {
+            setFormError(
+              'Permission check failed: Please execute the latest migration in your Supabase SQL Editor.'
+            );
+          } else {
+            setFormError(error.message || 'Could not update task.');
+          }
           setIsSubmitting(false);
           return;
         }
@@ -203,7 +235,13 @@ export default function WorkspaceTasksPage() {
         });
 
         if (error) {
-          setFormError(error.message || 'Could not create task.');
+          if (error.code === '42501') {
+            setFormError(
+              'Permission check failed: Please execute the latest migration in your Supabase SQL Editor.'
+            );
+          } else {
+            setFormError(error.message || 'Could not create task.');
+          }
           setIsSubmitting(false);
           return;
         }
@@ -225,12 +263,33 @@ export default function WorkspaceTasksPage() {
         prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
       );
 
-      const { error } = await supabase
-        .from('project_tasks')
-        .update({ status: newStatus })
-        .eq('id', taskId);
+      const existingTask = tasks.find((t) => t.id === taskId);
+      if (!existingTask) return;
 
-      if (error) {
+      // Try atomic RPC first
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('save_project_task', {
+        p_project_id: project.id,
+        p_title: existingTask.title,
+        p_description: existingTask.description || null,
+        p_status: newStatus,
+        p_priority: existingTask.priority,
+        p_assignee_id: existingTask.assignee_id || null,
+        p_milestone_id: existingTask.milestone_id || null,
+        p_due_date: existingTask.due_date || null,
+        task_id: taskId,
+      });
+
+      if (rpcErr || (rpcData && !rpcData.success)) {
+        // Fallback to direct update
+        const { error } = await supabase
+          .from('project_tasks')
+          .update({ status: newStatus })
+          .eq('id', taskId);
+
+        if (error) {
+          await loadTasksAndMilestones();
+        }
+      } else {
         await loadTasksAndMilestones();
       }
     } catch {

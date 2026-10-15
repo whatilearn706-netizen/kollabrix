@@ -292,31 +292,79 @@ CREATE POLICY "Leads can delete milestones"
     ON public.project_milestones FOR DELETE
     USING (public.is_project_lead(project_id, auth.uid()));
 
--- 14. Policies for project_tasks (Private Workspace)
+-- 14. Policies for project_tasks (Private Workspace - Direct Subqueries)
 DROP POLICY IF EXISTS "Workspace members can view tasks" ON public.project_tasks;
 CREATE POLICY "Workspace members can view tasks"
     ON public.project_tasks FOR SELECT
-    USING (public.is_project_member(project_id, auth.uid()));
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.projects p
+            WHERE p.id = project_tasks.project_id AND p.owner_id = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.project_members pm
+            WHERE pm.project_id = project_tasks.project_id AND pm.user_id = auth.uid()
+        )
+    );
 
 DROP POLICY IF EXISTS "Workspace members can create tasks" ON public.project_tasks;
 CREATE POLICY "Workspace members can create tasks"
     ON public.project_tasks FOR INSERT
+    TO authenticated
     WITH CHECK (
-        public.is_project_member(project_id, auth.uid()) 
-        AND auth.uid() = creator_id
+        auth.uid() = creator_id
+        AND (
+            EXISTS (
+                SELECT 1 FROM public.projects p
+                WHERE p.id = project_tasks.project_id AND p.owner_id = auth.uid()
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.project_members pm
+                WHERE pm.project_id = project_tasks.project_id AND pm.user_id = auth.uid()
+            )
+        )
     );
 
 DROP POLICY IF EXISTS "Workspace members can update tasks" ON public.project_tasks;
 CREATE POLICY "Workspace members can update tasks"
     ON public.project_tasks FOR UPDATE
-    USING (public.is_project_member(project_id, auth.uid()));
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.projects p
+            WHERE p.id = project_tasks.project_id AND p.owner_id = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.project_members pm
+            WHERE pm.project_id = project_tasks.project_id AND pm.user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.projects p
+            WHERE p.id = project_tasks.project_id AND p.owner_id = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.project_members pm
+            WHERE pm.project_id = project_tasks.project_id AND pm.user_id = auth.uid()
+        )
+    );
 
 DROP POLICY IF EXISTS "Creators or leads can delete tasks" ON public.project_tasks;
 CREATE POLICY "Creators or leads can delete tasks"
     ON public.project_tasks FOR DELETE
+    TO authenticated
     USING (
         auth.uid() = creator_id 
-        OR public.is_project_lead(project_id, auth.uid())
+        OR EXISTS (
+            SELECT 1 FROM public.projects p
+            WHERE p.id = project_tasks.project_id AND p.owner_id = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.project_members pm
+            WHERE pm.project_id = project_tasks.project_id AND pm.user_id = auth.uid() AND pm.role = 'Project Lead'
+        )
     );
 
 -- 15. Policies for project_discussions (Private Workspace)
@@ -768,3 +816,125 @@ EXCEPTION
     WHEN OTHERS THEN
         NULL; -- Skip if supabase_realtime publication is managed differently
 END $$;
+
+-- 24. Atomic Function to Create or Update Tasks Concurrency-Safe
+CREATE OR REPLACE FUNCTION public.save_project_task(
+    p_project_id UUID,
+    p_title TEXT,
+    p_description TEXT DEFAULT NULL,
+    p_status TEXT DEFAULT 'To Do',
+    p_priority TEXT DEFAULT 'Medium',
+    p_assignee_id UUID DEFAULT NULL,
+    p_milestone_id UUID DEFAULT NULL,
+    p_due_date DATE DEFAULT NULL,
+    task_id UUID DEFAULT NULL
+)
+RETURNS JSONB
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql AS $$
+DECLARE
+    is_authorized BOOLEAN;
+    saved_task RECORD;
+    proj_title TEXT;
+    creator_display_name TEXT;
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Authentication required');
+    END IF;
+
+    SELECT (
+        EXISTS (
+            SELECT 1 FROM public.projects p
+            WHERE p.id = p_project_id AND p.owner_id = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.project_members pm
+            WHERE pm.project_id = p_project_id AND pm.user_id = auth.uid()
+        )
+    ) INTO is_authorized;
+
+    IF NOT is_authorized THEN
+        RETURN jsonb_build_object('success', false, 'error', 'You must be a team member or project owner to manage tasks.');
+    END IF;
+
+    IF char_length(trim(p_title)) < 3 THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Task title must be at least 3 characters.');
+    END IF;
+
+    IF task_id IS NOT NULL THEN
+        UPDATE public.project_tasks
+        SET title = trim(p_title),
+            description = trim(p_description),
+            status = p_status,
+            priority = p_priority,
+            assignee_id = p_assignee_id,
+            milestone_id = p_milestone_id,
+            due_date = p_due_date,
+            updated_at = timezone('utc'::text, now())
+        WHERE id = task_id AND project_id = p_project_id
+        RETURNING * INTO saved_task;
+
+        IF NOT FOUND THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Task not found or access denied');
+        END IF;
+    ELSE
+        INSERT INTO public.project_tasks (
+            project_id,
+            creator_id,
+            title,
+            description,
+            status,
+            priority,
+            assignee_id,
+            milestone_id,
+            due_date
+        ) VALUES (
+            p_project_id,
+            auth.uid(),
+            trim(p_title),
+            trim(p_description),
+            COALESCE(p_status, 'To Do'),
+            COALESCE(p_priority, 'Medium'),
+            p_assignee_id,
+            p_milestone_id,
+            p_due_date
+        )
+        RETURNING * INTO saved_task;
+    END IF;
+
+    IF p_assignee_id IS NOT NULL AND p_assignee_id != auth.uid() THEN
+        BEGIN
+            SELECT title INTO proj_title FROM public.projects WHERE id = p_project_id;
+            SELECT display_name INTO creator_display_name FROM public.profiles WHERE user_id = auth.uid();
+
+            INSERT INTO public.notifications (
+                recipient_id,
+                sender_id,
+                type,
+                title,
+                message,
+                link
+            ) VALUES (
+                p_assignee_id,
+                auth.uid(),
+                'task_assigned',
+                'Task Assigned to You 📋',
+                COALESCE(creator_display_name, 'A teammate') || ' assigned you to "' || saved_task.title || '" in ' || COALESCE(proj_title, 'the project') || '.',
+                '/projects/' || p_project_id || '/workspace/tasks'
+            );
+        EXCEPTION
+            WHEN OTHERS THEN NULL;
+        END;
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'task_id', saved_task.id,
+        'task', row_to_json(saved_task)
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.save_project_task(UUID, TEXT, TEXT, TEXT, TEXT, UUID, UUID, DATE, UUID) TO authenticated;
+
