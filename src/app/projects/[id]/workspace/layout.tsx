@@ -58,8 +58,11 @@ export default function WorkspaceLayout({
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadWorkspaceData = async () => {
+  const loadWorkspaceData = async (isInitial = false) => {
     if (!projectId || !user) return;
+    if (isInitial) {
+      setIsLoading(true);
+    }
 
     try {
       // 1. Fetch project
@@ -71,14 +74,14 @@ export default function WorkspaceLayout({
 
       if (projError || !projData) {
         setIsAuthorized(false);
-        setIsLoading(false);
+        if (isInitial) setIsLoading(false);
         return;
       }
 
       setProject(projData as Project);
 
       // 2. Fetch project members with profiles
-      const { data: membersData, error: memError } = await supabase
+      const { data: membersData } = await supabase
         .from('project_members')
         .select(`
           *,
@@ -113,7 +116,9 @@ export default function WorkspaceLayout({
     } catch {
       setIsAuthorized(false);
     } finally {
-      setIsLoading(false);
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -123,9 +128,17 @@ export default function WorkspaceLayout({
         setIsAuthorized(false);
         setIsLoading(false);
       } else {
-        loadWorkspaceData();
+        loadWorkspaceData(true);
 
-        // Live subscription to team membership updates (join, leave, remove, role change)
+        // Smooth live subscription to team membership updates without full-page re-renders
+        let debounceTimer: NodeJS.Timeout | null = null;
+        const handleSmoothUpdate = () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            loadWorkspaceData(false);
+          }, 200);
+        };
+
         if (projectId) {
           const channel = supabase
             .channel(`workspace-roster-${projectId}`)
@@ -137,13 +150,12 @@ export default function WorkspaceLayout({
                 table: 'project_members',
                 filter: `project_id=eq.${projectId}`,
               },
-              () => {
-                loadWorkspaceData();
-              }
+              handleSmoothUpdate
             )
             .subscribe();
 
           return () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
             supabase.removeChannel(channel);
           };
         }

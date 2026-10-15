@@ -56,9 +56,9 @@ export default function ProjectApplicationsPage() {
   // Reject dialog state
   const [rejectingApp, setRejectingApp] = useState<ProjectApplication | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isInitial = false) => {
     if (!projectId) return;
-    setIsLoading(true);
+    if (isInitial) setIsLoading(true);
 
     try {
       // 1. Fetch project details
@@ -69,7 +69,7 @@ export default function ProjectApplicationsPage() {
         .single();
 
       if (projErr || !projData) {
-        setIsLoading(false);
+        if (isInitial) setIsLoading(false);
         return;
       }
 
@@ -105,15 +105,23 @@ export default function ProjectApplicationsPage() {
     } catch {
       // Catch errors
     } finally {
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
     }
   }, [projectId]);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
 
-    // Realtime listener for incoming applications
+    // Smooth Realtime listener for incoming applications
     if (projectId) {
+      let debounceTimer: NodeJS.Timeout | null = null;
+      const handleSmoothUpdate = () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadData(false);
+        }, 200);
+      };
+
       const channel = supabase
         .channel(`project-applications-${projectId}`)
         .on(
@@ -124,13 +132,12 @@ export default function ProjectApplicationsPage() {
             table: 'project_applications',
             filter: `project_id=eq.${projectId}`,
           },
-          () => {
-            loadData();
-          }
+          handleSmoothUpdate
         )
         .subscribe();
 
       return () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
         supabase.removeChannel(channel);
       };
     }

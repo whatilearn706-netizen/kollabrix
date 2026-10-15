@@ -57,15 +57,17 @@ export default function ProjectDetailsPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
-  const loadProjectData = useCallback(async () => {
-    setIsLoading(true);
+  const loadProjectData = useCallback(async (isInitial = false) => {
+    if (isInitial) {
+      setIsLoading(true);
+    }
     setError(null);
 
     // Check in demo projects first
     const demoMatch = DEMO_PROJECTS.find((p) => p.id === projectId);
     if (demoMatch) {
       setProject(demoMatch);
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
       return;
     }
 
@@ -91,17 +93,17 @@ export default function ProjectDetailsPage() {
           .single();
 
         if (dbError) {
-          setError('Project not found or could not be loaded from database.');
+          if (isInitial) setError('Project not found or could not be loaded from database.');
         } else if (data) {
           setProject(data as Project);
         }
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Error fetching project.');
+        if (isInitial) setError(err instanceof Error ? err.message : 'Error fetching project.');
       }
     } else {
-      setError('Project not found.');
+      if (isInitial) setError('Project not found.');
     }
-    setIsLoading(false);
+    if (isInitial) setIsLoading(false);
   }, [projectId]);
 
   const loadCollaborationStatus = useCallback(async () => {
@@ -157,9 +159,18 @@ export default function ProjectDetailsPage() {
 
   useEffect(() => {
     if (projectId) {
-      loadProjectData();
+      loadProjectData(true);
 
-      // Live subscription to project updates and member roster changes
+      // Smooth live subscription without screen flicker
+      let debounceTimer: NodeJS.Timeout | null = null;
+      const handleSmoothUpdate = () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadProjectData(false);
+          loadCollaborationStatus();
+        }, 200);
+      };
+
       const channel = supabase
         .channel(`project-live-${projectId}`)
         .on(
@@ -170,10 +181,7 @@ export default function ProjectDetailsPage() {
             table: 'project_members',
             filter: `project_id=eq.${projectId}`,
           },
-          () => {
-            loadProjectData();
-            loadCollaborationStatus();
-          }
+          handleSmoothUpdate
         )
         .on(
           'postgres_changes',
@@ -183,13 +191,12 @@ export default function ProjectDetailsPage() {
             table: 'projects',
             filter: `id=eq.${projectId}`,
           },
-          () => {
-            loadProjectData();
-          }
+          handleSmoothUpdate
         )
         .subscribe();
 
       return () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
         supabase.removeChannel(channel);
       };
     }

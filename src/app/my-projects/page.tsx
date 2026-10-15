@@ -27,9 +27,11 @@ function MyProjectsContent() {
   const [activeTab, setActiveTab] = useState<'leading' | 'joined'>('leading');
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (isInitial = false) => {
     if (!user) return;
-    setIsLoading(true);
+    if (isInitial) {
+      setIsLoading(true);
+    }
 
     try {
       // 1. Fetch projects where user is owner
@@ -75,14 +77,24 @@ function MyProjectsContent() {
     } catch {
       // ignore
     } finally {
-      setIsLoading(false);
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   }, [user]);
 
   useEffect(() => {
-    loadProjects();
+    loadProjects(true);
 
     if (user) {
+      let debounceTimer: NodeJS.Timeout | null = null;
+      const handleSmoothUpdate = () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadProjects(false);
+        }, 200);
+      };
+
       const channel = supabase
         .channel(`my-projects-live-${user.id}`)
         .on(
@@ -93,13 +105,12 @@ function MyProjectsContent() {
             table: 'project_members',
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            loadProjects();
-          }
+          handleSmoothUpdate
         )
         .subscribe();
 
       return () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
         supabase.removeChannel(channel);
       };
     }
