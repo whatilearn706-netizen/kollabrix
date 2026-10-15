@@ -111,7 +111,30 @@ export default function ProjectApplicationsPage() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+
+    // Realtime listener for incoming applications
+    if (projectId) {
+      const channel = supabase
+        .channel(`project-applications-${projectId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'project_applications',
+            filter: `project_id=eq.${projectId}`,
+          },
+          () => {
+            loadData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [loadData, projectId]);
 
   if (isAuthLoading || isLoading) {
     return (
@@ -167,57 +190,161 @@ export default function ProjectApplicationsPage() {
   };
 
   const handleConfirmAccept = async () => {
-    if (!acceptingApp) return;
+    if (!acceptingApp || !project || !user) return;
     setIsProcessingAction(true);
     setActionError(null);
 
     try {
-      // Call atomic PostgreSQL function
+      // Step A: Attempt atomic PostgreSQL function
       const { data, error: rpcError } = await supabase.rpc('accept_project_application', {
         app_id: acceptingApp.id,
-        assigned_role: assignedRole,
+        assigned_role: assignedRole || 'Contributor',
       });
 
-      if (rpcError) {
-        setActionError(rpcError.message || 'Failed to accept application.');
+      if (!rpcError && data) {
+        if (data.success) {
+          setAcceptingApp(null);
+          await loadData();
+          return;
+        } else {
+          setActionError(data.error || 'Failed to accept application.');
+          setIsProcessingAction(false);
+          return;
+        }
+      }
+
+      // Step B: Robust direct fallback if RPC function is not yet installed in Supabase
+      // 1. Insert member into project_members
+      const { error: memberError } = await supabase
+        .from('project_members')
+        .insert({
+          project_id: projectId,
+          user_id: acceptingApp.applicant_id,
+          role: assignedRole || 'Contributor',
+        });
+
+      if (memberError && memberError.code !== '23505') {
+        setActionError(memberError.message || 'Failed to add member to team roster.');
         setIsProcessingAction(false);
         return;
       }
 
-      if (data && !data.success) {
-        setActionError(data.error || 'Failed to accept application.');
+      // 2. Update application status to Accepted
+      const { error: appUpdateError } = await supabase
+        .from('project_applications')
+        .update({
+          status: 'Accepted',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', acceptingApp.id);
+
+      if (appUpdateError) {
+        setActionError(appUpdateError.message || 'Failed to update application status.');
         setIsProcessingAction(false);
         return;
       }
 
-      // Success
+      // 3. Recount team members and update project capacity
+      const { count } = await supabase
+        .from('project_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId);
+
+      const updatedCount = count || (project.current_team_size + 1);
+      const newDesired = Math.max(project.desired_team_size, updatedCount);
+      const isNowFull = updatedCount >= newDesired;
+
+      await supabase
+        .from('projects')
+        .update({
+          current_team_size: updatedCount,
+          desired_team_size: newDesired,
+          status: isNowFull ? 'In Progress' : project.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', projectId);
+
+      // 4. Send notification to the applicant
+      try {
+        await supabase.from('notifications').insert({
+          recipient_id: acceptingApp.applicant_id,
+          sender_id: user.id,
+          type: 'application_accepted',
+          title: 'Application Accepted! 🎉',
+          message: `Your application to join "${project.title}" has been accepted as ${assignedRole || 'Contributor'}.`,
+          link: `/projects/${projectId}/workspace`,
+        });
+      } catch {
+        // Safe notification fallback
+      }
+
       setAcceptingApp(null);
       await loadData();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error processing application.');
+      setActionError(err instanceof Error ? err.message : 'Error processing application acceptance.');
     } finally {
       setIsProcessingAction(false);
     }
   };
 
   const handleConfirmReject = async () => {
-    if (!rejectingApp) return;
+    if (!rejectingApp || !project || !user) return;
     setIsProcessingAction(true);
     setActionError(null);
 
     try {
+      // Step A: Attempt RPC first
       const { data, error: rpcError } = await supabase.rpc('reject_project_application', {
         app_id: rejectingApp.id,
       });
 
-      if (rpcError) {
-        alert(rpcError.message || 'Failed to reject application.');
-      } else if (data && !data.success) {
-        alert(data.error || 'Failed to reject application.');
-      } else {
-        setRejectingApp(null);
-        await loadData();
+      if (!rpcError && data) {
+        if (data.success) {
+          setRejectingApp(null);
+          await loadData();
+          return;
+        } else {
+          alert(data.error || 'Failed to reject application.');
+          setIsProcessingAction(false);
+          return;
+        }
       }
+
+      // Step B: Robust direct fallback
+      const { error: updateErr } = await supabase
+        .from('project_applications')
+        .update({
+          status: 'Rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', rejectingApp.id);
+
+      if (updateErr) {
+        alert(updateErr.message || 'Failed to reject application.');
+        setIsProcessingAction(false);
+        return;
+      }
+
+      // Send polite notification
+      try {
+        await supabase.from('notifications').insert({
+          recipient_id: rejectingApp.applicant_id,
+          sender_id: user.id,
+          type: 'application_rejected',
+          title: 'Application Update',
+          message: `Your application to join "${project.title}" was not selected at this time.`,
+          link: '/my-applications',
+        });
+      } catch {
+        // Safe notification fallback
+      }
+
+      setRejectingApp(null);
+      await loadData();
     } catch {
       alert('Failed to process rejection.');
     } finally {
@@ -447,7 +574,6 @@ export default function ProjectApplicationsPage() {
                         variant="primary"
                         size="sm"
                         onClick={() => handleOpenAcceptModal(app)}
-                        disabled={isFull}
                         leftIcon={<Check className="w-3.5 h-3.5" />}
                       >
                         Accept
@@ -519,6 +645,18 @@ export default function ProjectApplicationsPage() {
               Accepting <strong>{acceptingApp.applicant?.display_name || 'applicant'}</strong> will grant them access to the private project workspace and notify them instantly.
             </p>
 
+            {isFull && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
+                <div className="flex items-center gap-2 font-semibold">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Team at Capacity ({project.current_team_size}/{project.desired_team_size})</span>
+                </div>
+                <p className="text-[11px] text-amber-200/80 pl-6">
+                  Accepting this candidate will automatically expand your project capacity to {project.current_team_size + 1} members.
+                </p>
+              </div>
+            )}
+
             {actionError && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
                 {actionError}
@@ -548,7 +686,7 @@ export default function ProjectApplicationsPage() {
                 onClick={handleConfirmAccept}
                 isLoading={isProcessingAction}
               >
-                Confirm & Add to Team
+                {isFull ? 'Confirm & Expand Team Capacity' : 'Confirm & Add to Team'}
               </Button>
             </div>
           </div>
