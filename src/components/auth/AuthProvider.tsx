@@ -69,19 +69,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // If profile record does not exist yet (e.g. trigger didn't run), create initial record
       if (currentUser) {
-        const email = currentUser.email || 'student';
-        const initialUsername =
-          (currentUser.user_metadata?.username ||
-            email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') + Math.floor(100 + Math.random() * 900))
-            .slice(0, 20);
+        const email = currentUser.email || '';
+        const phone = currentUser.phone || '';
+        const rawIdentifier = email || phone || 'student';
+        const cleanedId = rawIdentifier.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+
+        const initialUsername = (
+          currentUser.user_metadata?.username ||
+          (cleanedId || 'user') + Math.floor(100 + Math.random() * 900)
+        ).slice(0, 20);
+
         const initialDisplayName =
-          currentUser.user_metadata?.display_name || email.split('@')[0] || 'Student';
+          currentUser.user_metadata?.full_name ||
+          currentUser.user_metadata?.name ||
+          currentUser.user_metadata?.display_name ||
+          (email ? email.split('@')[0] : phone ? `User (${phone.slice(-4)})` : 'Student');
+
+        const initialAvatar =
+          currentUser.user_metadata?.avatar_url ||
+          currentUser.user_metadata?.picture ||
+          null;
 
         const newProfile: Partial<Profile> = {
           user_id: userId,
           username: initialUsername,
           display_name: initialDisplayName,
-          bio: 'College student excited to build and collaborate on innovative projects.',
+          avatar_url: initialAvatar,
+          bio: 'College builder excited to collaborate on Linkora projects.',
           skills: [],
           interests: [],
           preferred_roles: [],
