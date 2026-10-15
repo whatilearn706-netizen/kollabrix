@@ -357,12 +357,14 @@ export default function WorkspaceDiscussionsPage() {
                         )}
                       </div>
                       <span className="text-[11px] text-slate-500">
-                        {new Date(d.created_at).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
+                        {d.created_at
+                          ? new Date(d.created_at).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })
+                          : 'Recently'}
                       </span>
                     </div>
                   </div>
@@ -469,10 +471,12 @@ export default function WorkspaceDiscussionsPage() {
                                 {repAuthorName}
                               </span>
                               <span className="text-[10px] text-slate-500">
-                                {new Date(reply.created_at).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
+                                {reply.created_at
+                                  ? new Date(reply.created_at).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : ''}
                               </span>
                             </div>
 

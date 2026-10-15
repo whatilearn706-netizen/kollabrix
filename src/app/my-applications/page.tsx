@@ -214,11 +214,11 @@ function MyApplicationsContent() {
                       )}
                       <span>
                         Applied:{' '}
-                        {new Date(app.created_at).toLocaleDateString('en-US', {
+                        {app.created_at ? new Date(app.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
-                        })}
+                        }) : 'Recent'}
                       </span>
                       {app.reviewed_at && (
                         <span className="text-slate-500">

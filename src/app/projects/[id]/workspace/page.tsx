@@ -172,7 +172,12 @@ export default function WorkspaceOverviewPage() {
             )}
             <div className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-slate-500" />
-              <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
+              <span>
+                Created:{' '}
+                {project.created_at
+                  ? new Date(project.created_at).toLocaleDateString()
+                  : 'Recently'}
+              </span>
             </div>
           </div>
         </div>

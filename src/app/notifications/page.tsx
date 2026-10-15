@@ -22,6 +22,23 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
+const formatNotificationDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime())
+      ? ''
+      : d.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+  } catch {
+    return '';
+  }
+};
+
 function NotificationsContent() {
   const router = useRouter();
   const { user } = useAuth();
@@ -244,12 +261,7 @@ function NotificationsContent() {
                     {n.title}
                   </h4>
                   <span className="text-[11px] text-slate-500 shrink-0">
-                    {new Date(n.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
+                    {formatNotificationDate(n.created_at)}
                   </span>
                 </div>
 

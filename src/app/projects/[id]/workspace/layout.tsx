@@ -46,7 +46,8 @@ export default function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   const params = useParams();
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || '';
   const router = useRouter();
   const { user, isLoading: isAuthLoading } = useAuth();
   const projectId = params?.id as string;

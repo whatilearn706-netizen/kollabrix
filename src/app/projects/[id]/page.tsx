@@ -347,11 +347,13 @@ export default function ProjectDetailsPage() {
             <span>
               Posted:{' '}
               <strong className="text-slate-200">
-                {new Date(project.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                {project.created_at
+                  ? new Date(project.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'Recently'}
               </strong>
             </span>
           </div>
@@ -473,7 +475,9 @@ export default function ProjectDetailsPage() {
                     <p className="text-xs text-slate-300 mt-1">
                       You applied on{' '}
                       <strong>
-                        {new Date(userApplication.created_at).toLocaleDateString()}
+                        {userApplication.created_at
+                          ? new Date(userApplication.created_at).toLocaleDateString()
+                          : 'Recently'}
                       </strong>{' '}
                       for the role{' '}
                       <strong className="text-brand-300">

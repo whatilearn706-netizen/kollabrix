@@ -427,11 +427,14 @@ export default function ProjectApplicationsPage() {
                           </span>
                         )}
                         <span className="text-slate-500">
-                          Applied {new Date(app.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                          Applied{' '}
+                          {app.created_at
+                            ? new Date(app.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'Recently'}
                         </span>
                       </div>
                     </div>

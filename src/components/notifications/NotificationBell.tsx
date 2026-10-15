@@ -4,19 +4,16 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Notification } from '@/types/database';
 import {
   Bell,
-  Check,
   CheckCheck,
-  Clock,
   Inbox,
-  UserPlus,
   CheckCircle2,
   XCircle,
   FileCheck,
-  MessageSquare,
 } from 'lucide-react';
 
 export function NotificationBell() {
@@ -27,24 +24,29 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<string>(
+    'notif-' + Math.random().toString(36).substring(2, 9)
+  );
 
   const fetchUnreadCount = useCallback(async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured()) return;
     try {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('notifications')
         .select('id', { count: 'exact', head: true })
         .eq('recipient_id', user.id)
         .eq('is_read', false);
 
-      setUnreadCount(count || 0);
+      if (!error && typeof count === 'number') {
+        setUnreadCount(count);
+      }
     } catch {
-      // ignore
+      // Fallback silently
     }
   }, [user]);
 
   const fetchRecentNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured()) return;
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -54,41 +56,51 @@ export function NotificationBell() {
         .order('created_at', { ascending: false })
         .limit(6);
 
-      if (!error && data) {
+      if (!error && Array.isArray(data)) {
         setRecentNotifications(data as Notification[]);
       }
     } catch {
-      // ignore
+      // Fallback silently
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured()) return;
 
     fetchUnreadCount();
 
-    // Subscribe to real-time notifications
-    const channel = supabase
-      .channel(`user-notifications-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        () => {
-          fetchUnreadCount();
-          fetchRecentNotifications();
-        }
-      )
-      .subscribe();
+    let channelInstance: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channelInstance = supabase
+        .channel(channelRef.current)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `recipient_id=eq.${user.id}`,
+          },
+          () => {
+            fetchUnreadCount();
+            fetchRecentNotifications();
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Realtime notifications channel unavailable:', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelInstance) {
+        try {
+          supabase.removeChannel(channelInstance);
+        } catch {
+          // ignore
+        }
+      }
     };
   }, [user, fetchUnreadCount, fetchRecentNotifications]);
 
@@ -112,25 +124,27 @@ export function NotificationBell() {
 
   const handleMarkAsRead = async (notifId: string, link: string) => {
     try {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notifId)
-        .eq('recipient_id', user?.id || '');
+      if (isSupabaseConfigured() && user) {
+        await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', notifId)
+          .eq('recipient_id', user.id);
+      }
 
       setRecentNotifications((prev) =>
         prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
       setIsOpen(false);
-      router.push(link);
+      if (link) router.push(link);
     } catch {
-      router.push(link);
+      if (link) router.push(link);
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured()) return;
     try {
       await supabase
         .from('notifications')
@@ -144,6 +158,18 @@ export function NotificationBell() {
       setUnreadCount(0);
     } catch {
       // ignore
+    }
+  };
+
+  const formatTimestamp = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime())
+        ? ''
+        : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
     }
   };
 
@@ -244,10 +270,7 @@ export function NotificationBell() {
                       {n.message}
                     </p>
                     <span className="text-[10px] text-slate-500 block pt-0.5">
-                      {new Date(n.created_at).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatTimestamp(n.created_at)}
                     </span>
                   </div>
                 </div>
