@@ -20,15 +20,186 @@ import {
 
 export interface ProjectCardProps {
   project: Project;
+  variant?: 'dark' | 'light';
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, variant = 'dark' }: ProjectCardProps) {
   const creatorName = project.owner?.display_name || 'Student Creator';
   const creatorUsername = project.owner?.username;
   const creatorAvatar = project.owner?.avatar_url;
   const isFacultyChallenge = Boolean(project.problem_statement_id || project.problem_statement);
   const isTeamFull = (project.current_team_size || 1) >= (project.desired_team_size || 4);
 
+  if (variant === 'light') {
+    return (
+      <div
+        className={`group flex flex-col justify-between rounded-3xl bg-white border-2 ${
+          project.is_featured
+            ? 'border-amber-300 shadow-xl shadow-amber-500/10'
+            : 'border-slate-100'
+        } hover:border-violet-300 hover:shadow-2xl hover:shadow-violet-500/10 p-6 transition-all duration-300 relative overflow-hidden`}
+      >
+        {/* Colorful top accent gradient stripe */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400" />
+
+        <div className="space-y-3.5 pt-1">
+          {/* Top Badges Row */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {project.is_featured && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                  <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  <span>Featured</span>
+                </span>
+              )}
+              <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-violet-100 text-violet-800 border border-violet-200">
+                {project.category}
+              </span>
+              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                {project.difficulty}
+              </span>
+              {isFacultyChallenge && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                  <GraduationCap className="w-3 h-3 text-blue-600" />
+                  <span>Faculty Challenge</span>
+                </span>
+              )}
+            </div>
+
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                project.status === 'Recruiting'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                  : project.status === 'In Progress'
+                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                  : 'bg-blue-100 text-blue-800 border-blue-300'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  project.status === 'Recruiting' ? 'bg-emerald-500 animate-pulse' : 'bg-current'
+                }`}
+              />
+              {project.status}
+            </span>
+          </div>
+
+          {/* Project Title */}
+          <Link href={`/projects/${project.id}`} className="block focus:outline-none">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-violet-600 transition-colors line-clamp-2 leading-snug">
+              {project.title}
+            </h3>
+          </Link>
+
+          {/* Short Plain-Language Summary */}
+          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed">
+            {project.summary}
+          </p>
+
+          {/* Technologies List */}
+          {project.technologies && project.technologies.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {project.technologies.slice(0, 4).map((tech, idx) => (
+                <span
+                  key={idx}
+                  className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80"
+                >
+                  {tech}
+                </span>
+              ))}
+              {project.technologies.length > 4 && (
+                <span className="text-[10px] text-slate-500 font-mono font-medium">
+                  +{project.technologies.length - 4}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Required Open Skills */}
+          {project.required_skills && project.required_skills.length > 0 && (
+            <div className="pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-1 text-[11px] text-violet-700 font-semibold mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                <span>Open Engineering Roles:</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {project.required_skills.slice(0, 3).map((skill, idx) => (
+                  <span
+                    key={idx}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200/80"
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {project.required_skills.length > 3 && (
+                  <span className="text-[10px] text-slate-500 self-center font-medium">
+                    +{project.required_skills.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Card Footer: Creator info & Team Capacity */}
+        <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
+          {/* Creator Info */}
+          <div className="flex items-center gap-2 min-w-0">
+            {creatorUsername ? (
+              <Link
+                href={`/profile/${creatorUsername}`}
+                className="flex items-center gap-2 hover:text-slate-900 transition-colors truncate group/creator"
+              >
+                <Avatar name={creatorName} src={creatorAvatar} size="sm" />
+                <div className="truncate">
+                  <span className="font-bold text-slate-800 group-hover/creator:text-violet-600 truncate block">
+                    {creatorName}
+                  </span>
+                  {project.owner?.college && (
+                    <span className="text-[10px] text-slate-500 truncate block">
+                      {project.owner.college}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2 truncate">
+                <Avatar name={creatorName} src={creatorAvatar} size="sm" />
+                <span className="font-bold text-slate-800 truncate">{creatorName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Team Capacity & Link */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div
+              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
+                isTeamFull
+                  ? 'bg-slate-100 text-slate-500'
+                  : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              <Users className="w-3 h-3 text-emerald-600" />
+              <span>
+                {project.current_team_size || 1}/{project.desired_team_size || 4} Joined
+              </span>
+            </div>
+
+            <Link
+              href={`/projects/${project.id}`}
+              className="inline-flex items-center gap-1 font-bold text-xs text-violet-600 hover:text-violet-800 transition-colors group-hover:translate-x-0.5 duration-150"
+              aria-label={`View details for ${project.title}`}
+            >
+              <span>View</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default Dark Variant
   return (
     <div
       className={`group flex flex-col justify-between rounded-2xl bg-charcoal-900/95 border ${
