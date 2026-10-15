@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import {
   Sparkles,
   Compass,
@@ -17,13 +18,16 @@ import {
   X,
   ChevronDown,
   Layers,
+  Inbox,
+  Bell,
+  Briefcase,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, signOut, openAuthModal, isConfigured } = useAuth();
+  const { user, profile, signOut, openAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,7 +66,7 @@ export function Navbar() {
         {/* Brand Logo & Wordmark */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 group focus:outline-none"
+          className="flex items-center gap-2.5 group focus:outline-none shrink-0"
           aria-label="TeamForge Home"
         >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-subtle group-hover:shadow-glow-sm transition-all duration-200">
@@ -72,7 +76,7 @@ export function Navbar() {
             <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
               TeamForge
               <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/30">
-                Phase 1
+                Phase 2
               </span>
             </span>
           </div>
@@ -92,6 +96,36 @@ export function Navbar() {
             <Compass className="w-4 h-4 text-brand-400" />
             <span>Explore Projects</span>
           </Link>
+
+          {user && (
+            <>
+              <Link
+                href="/my-projects"
+                className={clsx(
+                  'px-3.5 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2',
+                  pathname.startsWith('/my-projects')
+                    ? 'text-white bg-charcoal-800/90 font-semibold'
+                    : 'text-slate-300 hover:text-white hover:bg-charcoal-800/50'
+                )}
+              >
+                <Briefcase className="w-4 h-4 text-brand-400" />
+                <span>My Projects</span>
+              </Link>
+
+              <Link
+                href="/my-applications"
+                className={clsx(
+                  'px-3.5 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2',
+                  pathname.startsWith('/my-applications')
+                    ? 'text-white bg-charcoal-800/90 font-semibold'
+                    : 'text-slate-300 hover:text-white hover:bg-charcoal-800/50'
+                )}
+              >
+                <Inbox className="w-4 h-4 text-brand-400" />
+                <span>My Applications</span>
+              </Link>
+            </>
+          )}
 
           <Link
             href="/#how-it-works"
@@ -113,58 +147,93 @@ export function Navbar() {
           </Button>
 
           {user ? (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2.5 p-1.5 pl-2 rounded-xl bg-charcoal-850 hover:bg-charcoal-800 border border-charcoal-700/80 hover:border-charcoal-600 transition-all text-left"
-                aria-expanded={userDropdownOpen}
-              >
-                <Avatar name={displayName} src={profile?.avatar_url} size="sm" />
-                <span className="text-xs font-medium text-slate-200 max-w-[120px] truncate">
-                  {displayName}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <NotificationBell />
 
-              {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl bg-charcoal-900 border border-charcoal-700 shadow-elevated p-1.5 z-50 text-xs">
-                  <div className="px-3 py-2 border-b border-charcoal-800 mb-1">
-                    <p className="font-medium text-slate-200 truncate">{displayName}</p>
-                    <p className="text-slate-500 truncate">@{username || 'student'}</p>
-                  </div>
+              {/* User Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2.5 p-1.5 pl-2 rounded-xl bg-charcoal-850 hover:bg-charcoal-800 border border-charcoal-700/80 hover:border-charcoal-600 transition-all text-left"
+                  aria-expanded={userDropdownOpen}
+                >
+                  <Avatar name={displayName} src={profile?.avatar_url} size="sm" />
+                  <span className="text-xs font-medium text-slate-200 max-w-[120px] truncate">
+                    {displayName}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
 
-                  {username && (
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-charcoal-900 border border-charcoal-750 shadow-elevated p-1.5 z-50 text-xs animate-fadeIn">
+                    <div className="px-3 py-2 border-b border-charcoal-800 mb-1">
+                      <p className="font-medium text-slate-200 truncate">{displayName}</p>
+                      <p className="text-slate-500 truncate">@{username || 'student'}</p>
+                    </div>
+
                     <Link
-                      href={`/profile/${username}`}
+                      href="/my-projects"
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-charcoal-800 transition-colors"
                     >
-                      <User className="w-3.5 h-3.5 text-brand-400" />
-                      <span>View Public Profile</span>
+                      <Briefcase className="w-3.5 h-3.5 text-brand-400" />
+                      <span>My Projects & Teams</span>
                     </Link>
-                  )}
 
-                  <Link
-                    href="/settings/profile"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-charcoal-800 transition-colors"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-brand-400" />
-                    <span>Edit Profile & Skills</span>
-                  </Link>
+                    <Link
+                      href="/my-applications"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-charcoal-800 transition-colors"
+                    >
+                      <Inbox className="w-3.5 h-3.5 text-brand-400" />
+                      <span>My Applications</span>
+                    </Link>
 
-                  <button
-                    onClick={() => {
-                      setUserDropdownOpen(false);
-                      signOut();
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
-              )}
+                    <Link
+                      href="/notifications"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-charcoal-800 transition-colors"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-brand-400" />
+                      <span>Notification Center</span>
+                    </Link>
+
+                    <div className="my-1 border-t border-charcoal-800" />
+
+                    {username && (
+                      <Link
+                        href={`/profile/${username}`}
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-charcoal-800 transition-colors"
+                      >
+                        <User className="w-3.5 h-3.5 text-brand-400" />
+                        <span>View Public Profile</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/settings/profile"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-charcoal-800 transition-colors"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-brand-400" />
+                      <span>Edit Profile & Skills</span>
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        signOut();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -186,8 +255,10 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile Hamburger Button */}
+        {/* Mobile Actions: Notification Bell + Hamburger */}
         <div className="flex items-center gap-2 md:hidden">
+          {user && <NotificationBell />}
+
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-charcoal-800 transition-colors"
@@ -208,6 +279,34 @@ export function Navbar() {
             <Compass className="w-4 h-4 text-brand-400" />
             <span>Explore Projects</span>
           </Link>
+
+          {user && (
+            <>
+              <Link
+                href="/my-projects"
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-charcoal-800 transition-colors"
+              >
+                <Briefcase className="w-4 h-4 text-brand-400" />
+                <span>My Projects & Teams</span>
+              </Link>
+
+              <Link
+                href="/my-applications"
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-charcoal-800 transition-colors"
+              >
+                <Inbox className="w-4 h-4 text-brand-400" />
+                <span>My Applications</span>
+              </Link>
+
+              <Link
+                href="/notifications"
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-charcoal-800 transition-colors"
+              >
+                <Bell className="w-4 h-4 text-brand-400" />
+                <span>Notifications</span>
+              </Link>
+            </>
+          )}
 
           <Link
             href="/#how-it-works"

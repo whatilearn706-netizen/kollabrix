@@ -12,11 +12,12 @@ export interface SelectOption {
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  helperText?: string;
   options: SelectOption[];
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, options, id, ...props }, ref) => {
+  ({ className, label, error, helperText, options, id, ...props }, ref) => {
     const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
     return (
@@ -55,7 +56,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             <ChevronDown className="w-4 h-4" />
           </div>
         </div>
-        {error && <p className="text-xs text-red-400 font-normal">{error}</p>}
+        {error ? (
+          <p className="text-xs text-red-400 font-normal">{error}</p>
+        ) : helperText ? (
+          <p className="text-xs text-slate-400 font-normal">{helperText}</p>
+        ) : null}
       </div>
     );
   }
