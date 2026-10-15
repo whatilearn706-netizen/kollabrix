@@ -1,6 +1,5 @@
 -- ==============================================================================
--- TeamForge Phase 1 Supabase Database Migration
--- Includes: profiles, projects, automated user sync trigger, indexes, and RLS
+-- TeamForge Phase 1 Supabase Database Migration (Safe & Idempotent)
 -- ==============================================================================
 
 -- 1. Create profiles table
@@ -72,44 +71,44 @@ CREATE INDEX IF NOT EXISTS idx_profiles_skills ON public.profiles USING GIN(skil
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 
--- 5. Profiles RLS Policies
--- Anyone can view public profiles (does not expose email since email is kept in auth.users)
+-- 5. Profiles RLS Policies (Safely drop if exists, then recreate)
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
 CREATE POLICY "Public profiles are viewable by everyone" 
     ON public.profiles FOR SELECT 
     USING (true);
 
--- Authenticated users can insert their own profile
+DROP POLICY IF EXISTS "Users can create their own profile" ON public.profiles;
 CREATE POLICY "Users can create their own profile" 
     ON public.profiles FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
--- Authenticated users can update only their own profile
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" 
     ON public.profiles FOR UPDATE 
     USING (auth.uid() = user_id);
 
--- Authenticated users can delete their own profile
+DROP POLICY IF EXISTS "Users can delete their own profile" ON public.profiles;
 CREATE POLICY "Users can delete their own profile" 
     ON public.profiles FOR DELETE 
     USING (auth.uid() = user_id);
 
--- 6. Projects RLS Policies
--- Anyone can view projects
+-- 6. Projects RLS Policies (Safely drop if exists, then recreate)
+DROP POLICY IF EXISTS "Projects are viewable by everyone" ON public.projects;
 CREATE POLICY "Projects are viewable by everyone" 
     ON public.projects FOR SELECT 
     USING (true);
 
--- Authenticated users can create projects under their own owner_id
+DROP POLICY IF EXISTS "Authenticated users can create projects" ON public.projects;
 CREATE POLICY "Authenticated users can create projects" 
     ON public.projects FOR INSERT 
     WITH CHECK (auth.uid() = owner_id);
 
--- Only project owners can update their projects
+DROP POLICY IF EXISTS "Owners can update their projects" ON public.projects;
 CREATE POLICY "Owners can update their projects" 
     ON public.projects FOR UPDATE 
     USING (auth.uid() = owner_id);
 
--- Only project owners can delete their projects
+DROP POLICY IF EXISTS "Owners can delete their projects" ON public.projects;
 CREATE POLICY "Owners can delete their projects" 
     ON public.projects FOR DELETE 
     USING (auth.uid() = owner_id);
@@ -150,7 +149,6 @@ BEGIN
         initial_username := 'student_' || substr(md5(random()::text), 1, 6);
     END IF;
 
-    -- Avoid collisions
     WHILE EXISTS (SELECT 1 FROM public.profiles WHERE username = initial_username) LOOP
         counter := counter + 1;
         initial_username := LOWER(REGEXP_REPLACE(split_part(NEW.email, '@', 1), '[^a-zA-Z0-9_]', '', 'g')) || counter::text;
