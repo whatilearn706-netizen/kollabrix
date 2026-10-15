@@ -20,15 +20,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-medium text-slate-300 select-none"
+            className="block text-xs font-bold text-slate-700 select-none"
           >
             {label}
-            {props.required && <span className="text-brand-400 ml-1">*</span>}
+            {props.required && <span className="text-pink-500 ml-1">*</span>}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
               {leftIcon}
             </div>
           )}
@@ -36,27 +36,27 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={clsx(
-              'w-full rounded-lg bg-charcoal-850 border text-sm text-slate-100 placeholder-slate-500 transition-colors duration-150',
-              'focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500',
+              'w-full rounded-2xl bg-slate-50 border text-sm font-medium text-slate-900 placeholder-slate-400 transition-colors duration-150',
+              'focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600',
               'disabled:opacity-50 disabled:cursor-not-allowed',
-              leftIcon ? 'pl-9' : 'pl-3.5',
-              rightIcon ? 'pr-9' : 'pr-3.5',
+              leftIcon ? 'pl-10' : 'pl-3.5',
+              rightIcon ? 'pr-10' : 'pr-3.5',
               'py-2.5',
               error
-                ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/50'
-                : 'border-charcoal-700/80 hover:border-charcoal-600',
+                ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50/30'
+                : 'border-slate-200 hover:border-slate-300',
               className
             )}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 flex items-center text-slate-400">
+            <div className="absolute right-3.5 flex items-center text-slate-400">
               {rightIcon}
             </div>
           )}
         </div>
         {error ? (
-          <p className="text-xs text-red-400 font-normal">{error}</p>
+          <p className="text-xs text-red-500 font-semibold">{error}</p>
         ) : helperText ? (
           <p className="text-xs text-slate-500">{helperText}</p>
         ) : null}

@@ -28,25 +28,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-200 select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-900 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100';
+      'inline-flex items-center justify-center font-bold transition-all duration-200 select-none rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer';
 
     const variants = {
       primary:
-        'bg-brand-600 hover:bg-brand-500 text-white shadow-subtle hover:shadow-glow-sm border border-brand-500/40',
+        'bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-md hover:shadow-lg border-0',
       secondary:
-        'bg-charcoal-800 hover:bg-charcoal-750 text-slate-100 border border-charcoal-700/80 hover:border-charcoal-600',
+        'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200 hover:border-slate-300',
       outline:
-        'bg-transparent hover:bg-charcoal-800/60 text-slate-200 border border-charcoal-700 hover:border-charcoal-600',
+        'bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-slate-300 shadow-xs',
       ghost:
-        'bg-transparent hover:bg-charcoal-800/80 text-slate-300 hover:text-white',
+        'bg-transparent hover:bg-slate-100 text-slate-700 hover:text-slate-900',
       danger:
-        'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50',
+        'bg-red-500 hover:bg-red-600 text-white shadow-sm border-0',
     };
 
     const sizes = {
-      sm: 'text-xs px-3 py-1.5 gap-1.5',
-      md: 'text-sm px-4 py-2 gap-2',
-      lg: 'text-base px-5 py-2.5 gap-2.5',
+      sm: 'text-xs px-3.5 py-1.5 gap-1.5',
+      md: 'text-sm px-4 py-2.5 gap-2',
+      lg: 'text-base px-6 py-3 gap-2.5',
     };
 
     return (

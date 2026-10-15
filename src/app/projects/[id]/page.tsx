@@ -355,7 +355,7 @@ export default function ProjectDetailsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Link
           href="/explore"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Project Directory</span>
@@ -368,11 +368,11 @@ export default function ProjectDetailsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  leftIcon={<Inbox className="w-3.5 h-3.5 text-brand-400" />}
+                  leftIcon={<Inbox className="w-3.5 h-3.5 text-violet-600" />}
                 >
                   <span>Applications</span>
                   {pendingApplicationsCount > 0 && (
-                    <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-brand-500 text-white text-[10px] font-bold">
+                    <span className="ml-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600 to-pink-600 text-white text-[10px] font-black">
                       {pendingApplicationsCount}
                     </span>
                   )}
@@ -393,7 +393,7 @@ export default function ProjectDetailsPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  leftIcon={<Edit3 className="w-3.5 h-3.5 text-brand-400" />}
+                  leftIcon={<Edit3 className="w-3.5 h-3.5 text-slate-700" />}
                 >
                   Edit
                 </Button>
@@ -425,7 +425,9 @@ export default function ProjectDetailsPage() {
       </div>
 
       {/* Main Project Hero Card */}
-      <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 md:p-8 space-y-6 shadow-card">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400" />
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="category">{project.category}</Badge>
@@ -436,31 +438,31 @@ export default function ProjectDetailsPage() {
         </div>
 
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
             {project.title}
           </h1>
-          <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-3xl">
+          <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl font-medium">
             {project.summary}
           </p>
         </div>
 
         {/* Project Meta Bar: Team Size, Deadline, Created Date */}
-        <div className="pt-4 border-t border-midnight-800 flex flex-wrap items-center gap-6 text-xs text-slate-400">
+        <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-6 text-xs text-slate-600 font-medium">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-brand-400" />
+            <Users className="w-4 h-4 text-violet-600" />
             <span>
               Team Size:{' '}
-              <strong className="text-slate-200">
+              <strong className="text-slate-900 font-black">
                 {project.current_team_size} / {project.desired_team_size} members
               </strong>
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-brand-400" />
+            <Calendar className="w-4 h-4 text-pink-600" />
             <span>
               Posted:{' '}
-              <strong className="text-slate-200">
+              <strong className="text-slate-900 font-black">
                 {project.created_at
                   ? new Date(project.created_at).toLocaleDateString('en-US', {
                       month: 'short',
@@ -474,10 +476,10 @@ export default function ProjectDetailsPage() {
 
           {project.application_deadline && (
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" />
+              <Clock className="w-4 h-4 text-amber-500" />
               <span>
                 Target Cutoff:{' '}
-                <strong className="text-amber-300">{project.application_deadline}</strong>
+                <strong className="text-amber-700 font-black">{project.application_deadline}</strong>
               </span>
             </div>
           )}
@@ -491,9 +493,9 @@ export default function ProjectDetailsPage() {
                 href={project.repository_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-midnight-850 hover:bg-midnight-800 text-xs text-slate-200 border border-midnight-700/80 transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-800 border border-slate-200 shadow-xs transition-colors"
               >
-                <Github className="w-4 h-4 text-slate-400" />
+                <Github className="w-4 h-4 text-slate-700" />
                 <span>View Repository</span>
               </a>
             )}
@@ -503,9 +505,9 @@ export default function ProjectDetailsPage() {
                 href={project.demo_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-midnight-850 hover:bg-midnight-800 text-xs text-slate-200 border border-midnight-700/80 transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-violet-50 hover:bg-violet-100 text-xs font-bold text-violet-800 border border-violet-200 shadow-xs transition-colors"
               >
-                <Globe className="w-4 h-4 text-brand-400" />
+                <Globe className="w-4 h-4 text-violet-600" />
                 <span>Live Prototype / Demo</span>
               </a>
             )}
@@ -515,9 +517,9 @@ export default function ProjectDetailsPage() {
                 href={project.documentation_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-midnight-850 hover:bg-midnight-800 text-xs text-slate-200 border border-midnight-700/80 transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-indigo-800 border border-indigo-200 shadow-xs transition-colors"
               >
-                <BookOpen className="w-4 h-4 text-indigo-400" />
+                <BookOpen className="w-4 h-4 text-indigo-600" />
                 <span>Project Documentation</span>
               </a>
             )}
@@ -526,20 +528,20 @@ export default function ProjectDetailsPage() {
 
         {/* Problem Statement Link Banner */}
         {project.problem_statement && (
-          <div className="mt-3 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="mt-3 p-5 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-pink-50/60 border-2 border-indigo-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-start gap-3">
-              <GraduationCap className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              <GraduationCap className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 block">
                   Addressing Faculty Problem Statement
                 </span>
                 <Link
                   href={`/problems/${project.problem_statement.id}`}
-                  className="text-sm font-bold text-white hover:text-indigo-200 transition-colors"
+                  className="text-sm font-black text-slate-900 hover:text-indigo-600 transition-colors"
                 >
                   {project.problem_statement.title}
                 </Link>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 mt-0.5 font-medium">
                   Category: {project.problem_statement.category} • Faculty Mentor:{' '}
                   {project.problem_statement.author?.display_name || 'Academic Faculty'}
                 </p>
@@ -549,7 +551,7 @@ export default function ProjectDetailsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/20 shrink-0"
+                className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-100 shrink-0 font-bold"
               >
                 View Statement
               </Button>
@@ -562,11 +564,11 @@ export default function ProjectDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left: Detailed Problem & Solution */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 md:p-8 space-y-4 shadow-card">
-            <h2 className="text-lg font-bold text-white border-b border-midnight-800 pb-3">
+          <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 md:p-8 space-y-4 shadow-sm">
+            <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3">
               Detailed Specifications
             </h2>
-            <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-line space-y-3">
+            <div className="prose prose-slate max-w-none text-slate-700 text-sm leading-relaxed whitespace-pre-line space-y-3 font-normal">
               {project.description}
             </div>
           </div>
@@ -580,20 +582,20 @@ export default function ProjectDetailsPage() {
 
           {/* Faculty Mentoring & Feedback */}
           {mentoringNotes.length > 0 && (
-            <div id="mentor-feedback" className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-4 shadow-card">
-              <div className="flex items-center justify-between border-b border-midnight-800 pb-3">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-brand-400" />
+            <div id="mentor-feedback" className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-violet-600" />
                   <span>Faculty Mentoring Feedback ({mentoringNotes.length})</span>
                 </h3>
-                <span className="text-xs text-slate-400">Institutional Review</span>
+                <span className="text-xs font-bold text-slate-500">Institutional Review</span>
               </div>
 
               <div className="space-y-3">
                 {mentoringNotes.map((note) => (
                   <div
                     key={note.id}
-                    className="p-4 rounded-xl bg-midnight-850/80 border border-midnight-750"
+                    className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
@@ -602,18 +604,18 @@ export default function ProjectDetailsPage() {
                           src={note.mentor?.avatar_url}
                           size="sm"
                         />
-                        <span className="text-xs font-semibold text-white">
+                        <span className="text-xs font-bold text-slate-900">
                           {note.mentor?.display_name || 'Faculty Mentor'}
                         </span>
-                        <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/30">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
                           {note.feedback_type}
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] font-semibold text-slate-500">
                         {new Date(note.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed pl-7">
+                    <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed pl-7 font-medium">
                       {note.content}
                     </p>
                   </div>
@@ -623,25 +625,25 @@ export default function ProjectDetailsPage() {
           )}
 
           {/* Dynamic Collaboration Status Box */}
-          <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-4 shadow-card">
+          <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-brand-400" />
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-600" />
                 <span>Team Collaboration</span>
               </h3>
               {isMember && (
-                <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-medium flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold flex items-center gap-1.5 shadow-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   {memberRole || 'Team Member'}
                 </span>
               )}
             </div>
 
             {isOwner ? (
-              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-white">You own this project</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-sm font-black text-slate-900">You own this project</p>
+                  <p className="text-xs text-slate-600 mt-0.5 font-medium">
                     Manage team applications, assign roles, and track project tasks in your private workspace.
                   </p>
                 </div>
@@ -659,13 +661,13 @@ export default function ProjectDetailsPage() {
                 </div>
               </div>
             ) : isMember ? (
-              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-white flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <p className="text-sm font-black text-emerald-950 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     You are an active team member
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-emerald-800 mt-0.5 font-medium">
                     Access private tasks, Kanban board, team milestones, and internal discussions.
                   </p>
                 </div>
@@ -676,26 +678,26 @@ export default function ProjectDetailsPage() {
                 </Link>
               </div>
             ) : userApplication && userApplication.status === 'Pending' ? (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-3">
+              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" /> Application Under Review
+                    <span className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" /> Application Under Review
                     </span>
-                    <p className="text-xs text-slate-300 mt-1">
+                    <p className="text-xs text-slate-700 mt-1 font-medium">
                       You applied on{' '}
-                      <strong>
+                      <strong className="text-slate-900 font-bold">
                         {userApplication.created_at
                           ? new Date(userApplication.created_at).toLocaleDateString()
                           : 'Recently'}
                       </strong>{' '}
                       for the role{' '}
-                      <strong className="text-brand-300">
+                      <strong className="text-violet-700 font-bold">
                         {userApplication.proposed_role || 'Contributor'}
                       </strong>
                       .
                     </p>
-                    <p className="text-xs text-slate-400 mt-1 italic line-clamp-2">
+                    <p className="text-xs text-slate-600 mt-1 italic line-clamp-2">
                       &quot;{userApplication.application_message}&quot;
                     </p>
                   </div>
@@ -704,50 +706,50 @@ export default function ProjectDetailsPage() {
                     size="sm"
                     onClick={handleWithdrawApplication}
                     isLoading={isWithdrawing}
-                    className="text-red-400 border-red-500/30 hover:bg-red-500/10 shrink-0"
+                    className="text-red-600 border-red-200 hover:bg-red-50 shrink-0 font-bold"
                   >
                     Withdraw
                   </Button>
                 </div>
                 {withdrawSuccess && (
-                  <p className="text-xs text-emerald-400">Application successfully withdrawn.</p>
+                  <p className="text-xs font-bold text-emerald-600">Application successfully withdrawn.</p>
                 )}
               </div>
             ) : userApplication && userApplication.status === 'Rejected' ? (
-              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex items-center gap-3 text-xs text-slate-400">
-                <XCircle className="w-5 h-5 text-slate-500 shrink-0" />
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-xs text-slate-600">
+                <XCircle className="w-5 h-5 text-slate-400 shrink-0" />
                 <div>
-                  <p className="font-semibold text-slate-300">Application Not Selected</p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="font-bold text-slate-800">Application Not Selected</p>
+                  <p className="text-[11px] text-slate-500">
                     Your previous application was not selected for this project. Keep exploring other active listings!
                   </p>
                 </div>
               </div>
             ) : !isRecruiting ? (
-              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex items-center gap-3 text-xs text-slate-400">
-                <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-xs text-slate-600">
+                <AlertCircle className="w-5 h-5 text-slate-400 shrink-0" />
                 <div>
-                  <p className="font-semibold text-slate-300">Recruitment Closed</p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="font-bold text-slate-800">Recruitment Closed</p>
+                  <p className="text-[11px] text-slate-500">
                     This project is currently {project.status.toLowerCase()} and is not accepting new member applications.
                   </p>
                 </div>
               </div>
             ) : isTeamFull ? (
-              <div className="p-4 rounded-xl bg-midnight-850 border border-midnight-750 flex items-center gap-3 text-xs text-slate-400">
-                <Users className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-xs text-amber-900">
+                <Users className="w-5 h-5 text-amber-600 shrink-0" />
                 <div>
-                  <p className="font-semibold text-slate-300">Team Full</p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="font-bold text-amber-950">Team Full</p>
+                  <p className="text-[11px] text-amber-800">
                     This team has reached its target capacity of {project.desired_team_size} members.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-brand-500/10 border border-brand-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-violet-50/90 via-pink-50/60 to-amber-50/60 border-2 border-violet-200/90 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-white">Join this Team</p>
-                  <p className="text-xs text-slate-300 mt-0.5">
+                  <p className="text-sm font-black text-slate-900">Join this Team</p>
+                  <p className="text-xs text-slate-600 mt-0.5 font-medium">
                     {project.desired_roles && project.desired_roles.length > 0
                       ? `Looking for: ${project.desired_roles.join(', ')}`
                       : 'Looking for collaborative contributors.'}
@@ -777,12 +779,12 @@ export default function ProjectDetailsPage() {
         <div className="lg:col-span-4 space-y-6">
           {/* Quick Apply CTA in Sidebar for Non-members */}
           {canApply && (
-            <div className="rounded-2xl bg-gradient-to-br from-brand-950/40 via-midnight-900 to-indigo-950/30 border border-brand-500/30 p-5 space-y-3 shadow-card">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-brand-400" />
+            <div className="rounded-3xl bg-gradient-to-br from-violet-50 via-pink-50/50 to-amber-50/50 border-2 border-violet-200/90 p-6 space-y-3 shadow-sm">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-600" />
                 <span>Ready to Collaborate?</span>
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
                 Submit an application explaining what skills you bring to this project. The lead will review and respond.
               </p>
               <Button
@@ -804,8 +806,8 @@ export default function ProjectDetailsPage() {
           )}
 
           {/* Creator Information Card */}
-          <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-4 shadow-card">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
+          <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm">
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-mono">
               Project Lead / Creator
             </h3>
 
@@ -816,16 +818,16 @@ export default function ProjectDetailsPage() {
                 size="lg"
               />
               <div className="min-w-0">
-                <h4 className="text-sm font-semibold text-white truncate">{creatorName}</h4>
+                <h4 className="text-sm font-black text-slate-900 truncate">{creatorName}</h4>
                 {creatorUsername && (
-                  <p className="text-xs text-slate-400 font-mono">@{creatorUsername}</p>
+                  <p className="text-xs text-violet-600 font-bold font-mono">@{creatorUsername}</p>
                 )}
               </div>
             </div>
 
             {project.owner?.college && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <GraduationCap className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+                <GraduationCap className="w-3.5 h-3.5 text-violet-600 shrink-0" />
                 <span className="truncate">{project.owner.college}</span>
               </div>
             )}
@@ -843,15 +845,15 @@ export default function ProjectDetailsPage() {
 
           {/* Roles Sought */}
           {project.desired_roles && project.desired_roles.length > 0 && (
-            <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-3 shadow-card">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
+            <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-3 shadow-sm">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-mono">
                 Open Roles Needed
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {project.desired_roles.map((role, idx) => (
                   <span
                     key={idx}
-                    className="text-xs px-2.5 py-1 rounded-md bg-indigo-950/40 text-indigo-300 border border-indigo-800/40 font-medium"
+                    className="text-xs font-bold px-3 py-1 rounded-xl bg-violet-100 text-violet-800 border border-violet-200 shadow-xs"
                   >
                     {role}
                   </span>
@@ -862,8 +864,8 @@ export default function ProjectDetailsPage() {
 
           {/* Required Skills */}
           {project.required_skills && project.required_skills.length > 0 && (
-            <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-3 shadow-card">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
+            <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-3 shadow-sm">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-mono">
                 Required Teammate Skills
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -878,15 +880,15 @@ export default function ProjectDetailsPage() {
 
           {/* Technologies Stack */}
           {project.technologies && project.technologies.length > 0 && (
-            <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-6 space-y-3 shadow-card">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
+            <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-3 shadow-sm">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-mono">
                 Technologies Used
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {project.technologies.map((tech, idx) => (
                   <span
                     key={idx}
-                    className="text-xs font-mono px-2 py-0.5 rounded bg-midnight-850 text-slate-300 border border-midnight-750"
+                    className="text-xs font-bold font-mono px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 shadow-xs"
                   >
                     {tech}
                   </span>

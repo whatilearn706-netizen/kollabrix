@@ -18,10 +18,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="block text-xs font-medium text-slate-300 select-none"
+            className="block text-xs font-bold text-slate-700 select-none"
           >
             {label}
-            {props.required && <span className="text-brand-400 ml-1">*</span>}
+            {props.required && <span className="text-pink-500 ml-1">*</span>}
           </label>
         )}
         <textarea
@@ -29,18 +29,18 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           rows={rows}
           className={clsx(
-            'w-full rounded-lg bg-charcoal-850 border text-sm text-slate-100 placeholder-slate-500 transition-colors duration-150 p-3',
-            'focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500',
+            'w-full rounded-2xl bg-slate-50 border text-sm font-medium text-slate-900 placeholder-slate-400 transition-colors duration-150 p-3.5',
+            'focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600',
             'disabled:opacity-50 disabled:cursor-not-allowed resize-y',
             error
-              ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/50'
-              : 'border-charcoal-700/80 hover:border-charcoal-600',
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50/30'
+              : 'border-slate-200 hover:border-slate-300',
             className
           )}
           {...props}
         />
         {error ? (
-          <p className="text-xs text-red-400 font-normal">{error}</p>
+          <p className="text-xs text-red-500 font-semibold">{error}</p>
         ) : helperText ? (
           <p className="text-xs text-slate-500">{helperText}</p>
         ) : null}

@@ -267,16 +267,16 @@ export default function HackathonsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-midnight-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-amber-400 uppercase tracking-wider mb-2">
-            <Trophy className="w-4 h-4" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">
+            <Trophy className="w-3.5 h-3.5 text-amber-600" />
             <span>Campus Innovation Hub</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Collegiate Hackathons
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Collegiate <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 bg-clip-text text-transparent">Hackathons</span>
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-600 max-w-2xl font-medium">
             Explore college hackathons, form student teams with campus teammates, and compete in private university challenges or national tournaments.
           </p>
         </div>
@@ -286,6 +286,7 @@ export default function HackathonsPage() {
             variant="outline"
             size="sm"
             onClick={loadHackathons}
+            className="border-slate-300 hover:bg-slate-100 text-slate-800 font-bold"
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
           >
             Refresh Events
@@ -296,7 +297,7 @@ export default function HackathonsPage() {
               <Button
                 variant="primary"
                 size="sm"
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
+                className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-md border-0"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
               >
                 Host College Hackathon
@@ -309,19 +310,19 @@ export default function HackathonsPage() {
       {/* ========================================================================= */}
       {/* DEDICATED PRIVATE COLLEGE HACKATHON SECTION / QUICK ACCESS HUB */}
       {/* ========================================================================= */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-amber-500/10 via-midnight-900 to-indigo-950/20 border border-amber-500/30 shadow-card space-y-4">
+      <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-amber-50/90 via-rose-50/60 to-violet-50/70 border-2 border-amber-200/90 shadow-sm space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-              <span className="p-1 rounded bg-amber-500/20 border border-amber-500/30">
-                <Lock className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-800 uppercase tracking-wider">
+              <span className="p-1 rounded bg-amber-200/80 border border-amber-300">
+                <Lock className="w-3.5 h-3.5 text-amber-900" />
               </span>
               <span>Private College Hackathon Portal</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Join Campus Hackathons with Your Teammates
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
               Did your professor or college department announce a private hackathon? Enter your event join code or link to unlock problem statements, register your team, and submit project deliverables.
             </p>
           </div>
@@ -332,20 +333,20 @@ export default function HackathonsPage() {
             className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-md shrink-0"
           >
             <div className="relative flex-1">
-              <KeyRound className="w-4 h-4 text-amber-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <KeyRound className="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Join Code (e.g. col-apex26 or /h/...)"
                 value={quickJoinCode}
                 onChange={(e) => setQuickJoinCode(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-midnight-950 border border-midnight-700/80 text-xs font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
+                className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-white border-2 border-amber-200/90 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-sm transition-colors"
               />
             </div>
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              className="bg-amber-600 hover:bg-amber-500 text-white font-semibold whitespace-nowrap py-2.5"
+              className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold whitespace-nowrap py-2.5 shadow-md border-0"
               leftIcon={<Lock className="w-3.5 h-3.5" />}
             >
               Enter Passcode
@@ -354,16 +355,16 @@ export default function HackathonsPage() {
         </div>
 
         {quickJoinError && (
-          <div className="p-2.5 rounded-lg bg-red-500/15 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+          <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-xs font-medium text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
             <span>{quickJoinError}</span>
           </div>
         )}
 
         {/* Quick Suggestion Chips if Private Hackathons Exist */}
         {privateHackathons.length > 0 && (
-          <div className="pt-2 border-t border-midnight-800 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-400 font-medium">Active Campus Events:</span>
+          <div className="pt-2 border-t border-amber-200/60 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-slate-600 font-bold">Active Campus Events:</span>
             {privateHackathons.map((ph) => (
               <button
                 key={ph.id}
@@ -373,11 +374,11 @@ export default function HackathonsPage() {
                     router.push(`/h/${ph.join_code}`);
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-midnight-900/90 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-mono transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-bold font-mono transition-colors shadow-xs"
               >
-                <Lock className="w-3 h-3" />
+                <Lock className="w-3 h-3 text-amber-600" />
                 <span>{ph.title}</span>
-                <span className="text-[10px] text-slate-400">({ph.join_code})</span>
+                <span className="text-[10px] text-slate-500">({ph.join_code})</span>
               </button>
             ))}
           </div>
@@ -385,15 +386,15 @@ export default function HackathonsPage() {
       </div>
 
       {/* Tabs & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-midnight-800 pb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-2">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap ${
               activeTab === 'all'
-                ? 'bg-midnight-800 text-white shadow-subtle border border-midnight-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             All Competitions ({hackathons.length})
@@ -402,10 +403,10 @@ export default function HackathonsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('private')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'private'
-                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
@@ -415,10 +416,10 @@ export default function HackathonsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('my-events')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'my-events'
-                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -428,10 +429,10 @@ export default function HackathonsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('saved')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'saved'
-                ? 'bg-brand-500/15 text-brand-300 border border-brand-500/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Bookmark className="w-3.5 h-3.5" />
@@ -439,19 +440,19 @@ export default function HackathonsPage() {
           </button>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer self-start sm:self-auto shrink-0">
+        <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer self-start sm:self-auto shrink-0">
           <input
             type="checkbox"
             checked={onlyOpen}
             onChange={(e) => setOnlyOpen(e.target.checked)}
-            className="rounded bg-midnight-800 border-midnight-700 text-brand-500 focus:ring-0"
+            className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
           />
           <span>Open for Registration Only</span>
         </label>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750 p-5 space-y-4 shadow-card">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-5 space-y-4 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Keyword Search */}
           <div className="relative">
@@ -461,7 +462,7 @@ export default function HackathonsPage() {
               placeholder="Search hackathons by name, theme..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
+              className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-violet-500 transition-colors"
             />
           </div>
 
@@ -469,7 +470,7 @@ export default function HackathonsPage() {
           <select
             value={selectedMode}
             onChange={(e) => setSelectedMode(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value="All">All Formats (Online & In-Person)</option>
             <option value="Online">Online / Virtual</option>
@@ -481,7 +482,7 @@ export default function HackathonsPage() {
           <select
             value={selectedTheme}
             onChange={(e) => setSelectedTheme(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value="All">All Domains & Themes</option>
             {availableThemes.map((th) => (
@@ -492,9 +493,9 @@ export default function HackathonsPage() {
           </select>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+        <div className="flex items-center justify-between text-xs text-slate-600 pt-1 font-medium">
           <span>
-            Showing <strong className="text-white">{filteredHackathons.length}</strong> event
+            Showing <strong className="text-slate-900 font-black">{filteredHackathons.length}</strong> event
             {filteredHackathons.length !== 1 ? 's' : ''}
           </span>
           {(searchQuery || selectedMode !== 'All' || selectedTheme !== 'All' || onlyOpen) && (
@@ -505,7 +506,7 @@ export default function HackathonsPage() {
                 setSelectedTheme('All');
                 setOnlyOpen(false);
               }}
-              className="text-brand-400 hover:text-brand-300 font-medium"
+              className="text-violet-600 hover:text-violet-700 font-bold"
             >
               Reset Filters
             </button>
@@ -519,7 +520,7 @@ export default function HackathonsPage() {
           {[1, 2, 3, 4, 5, 6].map((n) => (
             <div
               key={n}
-              className="h-72 rounded-2xl bg-midnight-900/80 border border-midnight-800 animate-pulse p-6"
+              className="h-72 rounded-3xl bg-slate-100 border border-slate-200 animate-pulse p-6"
             />
           ))}
         </div>
@@ -536,18 +537,18 @@ export default function HackathonsPage() {
           ))}
         </div>
       ) : (
-        <div className="p-12 rounded-2xl bg-midnight-900/90 border border-midnight-750 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-midnight-800 border border-midnight-700 flex items-center justify-center mx-auto text-slate-400">
-            {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-400" /> : <Trophy className="w-6 h-6" />}
+        <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-500">
+            {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
           </div>
-          <h3 className="text-base font-bold text-white">
+          <h3 className="text-base font-black text-slate-900">
             {activeTab === 'private'
               ? 'No Private College Hackathons Found'
               : activeTab === 'my-events'
               ? 'You Haven\'t Enrolled in Any Hackathons Yet'
               : 'No Hackathons Matched'}
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <p className="text-xs text-slate-600 max-w-sm mx-auto font-medium">
             {activeTab === 'private'
               ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
               : activeTab === 'my-events'

@@ -25,23 +25,23 @@ export function Badge({
   if (variant === 'status' && status) {
     const statusConfig = {
       Recruiting: {
-        bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-        dot: 'bg-emerald-400 animate-pulse',
+        bg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        dot: 'bg-emerald-500 animate-pulse',
       },
       'In Progress': {
-        bg: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-        dot: 'bg-amber-400',
+        bg: 'bg-amber-100 text-amber-800 border-amber-300',
+        dot: 'bg-amber-500',
       },
       Completed: {
-        bg: 'bg-blue-500/10 text-blue-300 border-blue-500/30',
-        dot: 'bg-blue-400',
+        bg: 'bg-blue-100 text-blue-800 border-blue-300',
+        dot: 'bg-blue-500',
       },
     }[status];
 
     return (
       <span
         className={clsx(
-          'inline-flex items-center gap-1.5 font-medium rounded-full border',
+          'inline-flex items-center gap-1.5 font-bold rounded-full border shadow-2xs',
           statusConfig.bg,
           sizeClasses,
           className
@@ -56,15 +56,15 @@ export function Badge({
 
   if (variant === 'difficulty' && difficulty) {
     const diffConfig = {
-      Beginner: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/40',
-      Intermediate: 'bg-indigo-950/60 text-indigo-300 border-indigo-800/40',
-      Advanced: 'bg-purple-950/60 text-purple-300 border-purple-800/40',
+      Beginner: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      Intermediate: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      Advanced: 'bg-purple-100 text-purple-800 border-purple-200',
     }[difficulty];
 
     return (
       <span
         className={clsx(
-          'inline-flex items-center font-medium rounded-md border',
+          'inline-flex items-center font-bold rounded-xl border shadow-2xs',
           diffConfig,
           sizeClasses,
           className
@@ -80,7 +80,7 @@ export function Badge({
     return (
       <span
         className={clsx(
-          'inline-flex items-center font-medium rounded-md bg-brand-950/60 text-brand-300 border border-brand-800/50',
+          'inline-flex items-center font-bold rounded-xl bg-violet-100 text-violet-800 border border-violet-200 shadow-2xs',
           sizeClasses,
           className
         )}
@@ -95,7 +95,7 @@ export function Badge({
     return (
       <span
         className={clsx(
-          'inline-flex items-center gap-1 font-semibold tracking-wider uppercase text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30',
+          'inline-flex items-center gap-1 font-bold tracking-wider uppercase text-[10px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs',
           className
         )}
         title="Curated realistic sample project for discovery"
@@ -110,7 +110,7 @@ export function Badge({
     return (
       <span
         className={clsx(
-          'inline-flex items-center font-normal rounded-md bg-charcoal-800/80 text-slate-300 border border-charcoal-700/60 hover:border-charcoal-600 transition-colors',
+          'inline-flex items-center font-semibold rounded-xl bg-slate-100 text-slate-800 border border-slate-200 hover:border-slate-300 shadow-2xs transition-colors',
           sizeClasses,
           className
         )}
@@ -124,7 +124,7 @@ export function Badge({
   return (
     <span
       className={clsx(
-        'inline-flex items-center font-medium rounded-md bg-charcoal-800 text-slate-300 border border-charcoal-700/70',
+        'inline-flex items-center font-bold rounded-xl bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs',
         sizeClasses,
         className
       )}

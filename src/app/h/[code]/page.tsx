@@ -324,68 +324,69 @@ export default function JoinHackathonPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-8">
       {/* Top Banner & Header */}
-      <div className="rounded-3xl bg-gradient-to-b from-charcoal-850 via-charcoal-900 to-charcoal-950 border border-charcoal-750 p-6 sm:p-10 shadow-elevated relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-10 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-400 via-rose-500 to-violet-500" />
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-6 relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1.5">
-                <Trophy className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1.5">
+                <Trophy className="w-3.5 h-3.5 text-amber-600" />
                 <span>Private College Hackathon</span>
               </span>
 
               {hackathon.access_type === 'private' && (
-                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                  <Lock className="w-3 h-3" />
+                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 border border-rose-200 font-bold flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-rose-600" />
                   <span>Password Protected</span>
                 </span>
               )}
             </div>
 
-            <span className="text-xs font-mono text-slate-400">
-              Join Code: <strong className="text-white">{hackathon.join_code}</strong>
+            <span className="text-xs font-mono font-bold text-slate-500">
+              Join Code: <strong className="text-slate-900 font-black">{hackathon.join_code}</strong>
             </span>
           </div>
 
           <div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
               {hackathon.title}
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-600 mt-2 leading-relaxed font-medium">
               {hackathon.description}
             </p>
-            <p className="text-xs text-slate-400 mt-2">
-              Organized by: <strong className="text-white">{hackathon.organizer}</strong>
+            <p className="text-xs text-slate-500 mt-2 font-medium">
+              Organized by: <strong className="text-slate-900 font-black">{hackathon.organizer}</strong>
             </p>
           </div>
 
           {/* Quick Schedule Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="p-3 rounded-2xl bg-charcoal-800/80 border border-charcoal-700/80 space-y-1">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">Event Start</span>
-              <span className="text-xs font-bold text-white block truncate">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-500 block">Event Start</span>
+              <span className="text-xs font-black text-slate-900 block truncate">
                 {new Date(hackathon.start_date).toLocaleDateString()}
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-charcoal-800/80 border border-charcoal-700/80 space-y-1">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">Registration Due</span>
-              <span className="text-xs font-bold text-rose-300 block truncate">
+            <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase text-rose-700 block">Registration Due</span>
+              <span className="text-xs font-black text-rose-800 block truncate">
                 {new Date(hackathon.registration_deadline).toLocaleDateString()}
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-charcoal-800/80 border border-charcoal-700/80 space-y-1">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">Team Size</span>
-              <span className="text-xs font-bold text-indigo-300 block">
+            <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase text-indigo-700 block">Team Size</span>
+              <span className="text-xs font-black text-indigo-900 block">
                 {hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Members
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-charcoal-800/80 border border-charcoal-700/80 space-y-1">
-              <span className="text-[10px] font-mono uppercase text-slate-400 block">Format</span>
-              <span className="text-xs font-bold text-emerald-300 block">
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 block">Format</span>
+              <span className="text-xs font-black text-emerald-900 block">
                 {hackathon.mode}
               </span>
             </div>
@@ -393,28 +394,28 @@ export default function JoinHackathonPage() {
 
           {/* Rules & Eligibility summary */}
           {hackathon.rules && (
-            <div className="p-4 rounded-2xl bg-charcoal-800/50 border border-charcoal-700/70 space-y-1.5 text-xs">
-              <span className="font-semibold text-slate-200 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-brand-400" />
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs font-medium">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-violet-600" />
                 <span>Rules & Requirements:</span>
               </span>
-              <p className="text-slate-300 whitespace-pre-line leading-relaxed">
+              <p className="text-slate-600 whitespace-pre-line leading-relaxed">
                 {hackathon.rules}
               </p>
             </div>
           )}
 
           {/* Action / Join Area */}
-          <div className="pt-4 border-t border-charcoal-800">
+          <div className="pt-4 border-t border-slate-100">
             {isAlreadyEnrolled ? (
-              <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">You Are Registered!</h4>
-                    <p className="text-xs text-slate-300">
+                    <h4 className="text-sm font-black text-emerald-950">You Are Registered!</h4>
+                    <p className="text-xs text-emerald-800 font-medium">
                       Access the team registration, challenges, and submission portal inside the workspace.
                     </p>
                   </div>
@@ -423,7 +424,7 @@ export default function JoinHackathonPage() {
                 <Link href={`/hackathons/${hackathon.id}/workspace`} className="w-full sm:w-auto">
                   <Button
                     variant="primary"
-                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white"
+                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-md border-0"
                     rightIcon={<ArrowRight className="w-4 h-4" />}
                   >
                     Enter Workspace
@@ -431,12 +432,12 @@ export default function JoinHackathonPage() {
                 </Link>
               </div>
             ) : isClosed ? (
-              <div className="p-4 rounded-2xl bg-charcoal-800 text-center text-xs text-slate-400">
+              <div className="p-4 rounded-2xl bg-slate-100 text-center text-xs font-semibold text-slate-600">
                 Registration for this hackathon has been closed by the organizer.
               </div>
             ) : !user ? (
-              <div className="p-6 rounded-2xl bg-charcoal-800/80 border border-charcoal-700 text-center space-y-3">
-                <p className="text-sm text-slate-200 font-semibold">
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
+                <p className="text-sm text-slate-800 font-bold">
                   Sign in with your college account to join this hackathon.
                 </p>
                 <Button
@@ -450,15 +451,15 @@ export default function JoinHackathonPage() {
             ) : (
               <form onSubmit={handleJoin} className="space-y-4 max-w-md mx-auto">
                 {error && (
-                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-xs font-medium text-red-700 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
 
                 {success && (
-                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span>{success}</span>
                   </div>
                 )}
@@ -478,7 +479,7 @@ export default function JoinHackathonPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3"
+                  className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black py-3 shadow-md border-0"
                   isLoading={isJoining}
                   leftIcon={<Trophy className="w-4 h-4" />}
                 >

@@ -316,16 +316,16 @@ export default function TeammatesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-charcoal-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-brand-400 uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-pink-600 uppercase tracking-wider mb-2 font-bold">
+            <Sparkles className="w-4 h-4 text-pink-500" />
             <span>Collegiate Matchmaking Engine</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Find Teammates
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Find <span className="bg-gradient-to-r from-fuchsia-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Teammates</span>
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
+          <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl">
             Discover student collaborators with complementary skills and shared project goals. Our transparent algorithm scores matches based on project requirements, preferred roles, and technical skills.
           </p>
         </div>
@@ -336,6 +336,7 @@ export default function TeammatesPage() {
             size="sm"
             onClick={loadData}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
+            className="border-slate-200 text-slate-700 hover:text-slate-900 font-bold"
           >
             Refresh Candidates
           </Button>
@@ -344,6 +345,7 @@ export default function TeammatesPage() {
               variant="primary"
               size="sm"
               leftIcon={<FolderPlus className="w-4 h-4" />}
+              className="bg-gradient-to-r from-fuchsia-600 via-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-500/20"
             >
               Start New Project
             </Button>
@@ -352,19 +354,19 @@ export default function TeammatesPage() {
       </div>
 
       {/* Compact Campus Hackathon Quick-Join Callout */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-midnight-900 to-indigo-950/20 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-50 via-rose-50 to-violet-50 border-2 border-amber-200/90 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm text-slate-900">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
-            <Lock className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-700 shadow-xs">
+            <Lock className="w-4 h-4 text-amber-600" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">Assembling for a College Hackathon?</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase tracking-wide">
+              <span className="text-sm font-black text-slate-900">Assembling for a College Hackathon?</span>
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold uppercase tracking-wide">
                 Campus Portal
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5 font-normal">
               Enter your department passcode to unlock private challenge guidelines and recruit your 2–4 student squad.
             </p>
           </div>
@@ -393,20 +395,20 @@ export default function TeammatesPage() {
             className="flex items-center gap-2 flex-1 md:flex-initial"
           >
             <div className="relative flex-1 md:w-48">
-              <KeyRound className="w-3.5 h-3.5 text-amber-400/80 absolute left-3 top-1/2 -translate-y-1/2" />
+              <KeyRound className="w-3.5 h-3.5 text-amber-600 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Passcode (e.g. col-apex26)"
                 value={hackathonCode}
                 onChange={(e) => setHackathonCode(e.target.value)}
-                className="w-full pl-8 pr-2.5 py-1.5 rounded-xl bg-midnight-950 border border-midnight-700/80 text-xs font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/80 transition-colors"
+                className="w-full pl-8 pr-2.5 py-2 rounded-xl bg-white border-2 border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-sm"
               />
             </div>
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs whitespace-nowrap py-1.5 px-3"
+              className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs whitespace-nowrap py-2 px-4 shadow-sm"
             >
               Unlock
             </Button>
@@ -416,7 +418,7 @@ export default function TeammatesPage() {
             <Button
               variant="outline"
               size="sm"
-              className="text-xs border-midnight-700/80 text-slate-300 hover:text-white hover:bg-midnight-800 whitespace-nowrap py-1.5 px-3"
+              className="text-xs border-slate-200 text-slate-700 hover:text-slate-900 bg-white whitespace-nowrap py-2 px-3 font-bold"
             >
               Browse All
             </Button>
@@ -425,19 +427,19 @@ export default function TeammatesPage() {
       </div>
 
       {hackathonError && (
-        <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center gap-2">
-          <span className="font-semibold">Error:</span> {hackathonError}
+        <div className="p-3 rounded-2xl bg-rose-100 border border-rose-300 text-xs text-rose-800 font-semibold flex items-center gap-2">
+          <span>Error:</span> {hackathonError}
         </div>
       )}
 
       {/* Target Matching Context Selector */}
-      <div className="rounded-2xl bg-midnight-900/90 border border-midnight-700/60 p-5 space-y-4">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm text-slate-900">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-brand-400" />
-            <h3 className="text-sm font-bold text-white">Target Project for Recommendations:</h3>
+            <Briefcase className="w-4 h-4 text-violet-600" />
+            <h3 className="text-sm font-bold text-slate-900">Target Project for Recommendations:</h3>
           </div>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500 font-medium">
             {activeProject
               ? `Matching students for "${activeProject.title}"`
               : 'Matching peers based on your profile skills & interests'}
@@ -449,10 +451,10 @@ export default function TeammatesPage() {
             <button
               key={p.id}
               onClick={() => setSelectedProjectId(p.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
                 selectedProjectId === p.id
-                  ? 'bg-brand-500/20 text-brand-300 border-brand-500/50 shadow-sm'
-                  : 'bg-midnight-850 text-slate-400 border-midnight-700/60 hover:text-white hover:border-midnight-600'
+                  ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-sm border-transparent'
+                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
               }`}
             >
               {p.title}
@@ -461,10 +463,10 @@ export default function TeammatesPage() {
 
           <button
             onClick={() => setSelectedProjectId('peer')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
               selectedProjectId === 'peer'
-                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-sm'
-                : 'bg-midnight-850 text-slate-400 border-midnight-700/60 hover:text-white hover:border-midnight-600'
+                ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-sm border-transparent'
+                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
             }`}
           >
             General Peer Match (Across Campus)
@@ -472,20 +474,20 @@ export default function TeammatesPage() {
         </div>
 
         {activeProject && (
-          <div className="p-3 rounded-xl bg-midnight-850/80 border border-midnight-750 text-xs text-slate-300 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex flex-wrap items-center gap-x-6 gap-y-2">
             <div>
-              <span className="text-slate-400">Category:</span>{' '}
-              <strong className="text-white">{activeProject.category}</strong>
+              <span className="text-slate-500 font-medium">Category:</span>{' '}
+              <strong className="text-slate-900 font-bold">{activeProject.category}</strong>
             </div>
             <div>
-              <span className="text-slate-400">Required Skills:</span>{' '}
-              <span className="text-brand-300 font-mono">
+              <span className="text-slate-500 font-medium">Required Skills:</span>{' '}
+              <span className="text-violet-700 font-mono font-bold">
                 {activeProject.required_skills?.join(', ') || 'None specified'}
               </span>
             </div>
             <div>
-              <span className="text-slate-400">Open Roles:</span>{' '}
-              <span className="text-indigo-300">
+              <span className="text-slate-500 font-medium">Open Roles:</span>{' '}
+              <span className="text-pink-700 font-semibold">
                 {activeProject.desired_roles?.join(', ') || 'Any roles'}
               </span>
             </div>
@@ -494,17 +496,17 @@ export default function TeammatesPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750 p-5 space-y-4">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm text-slate-900">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-violet-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by name, skill, bio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
+              className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500 transition-colors shadow-xs"
             />
           </div>
 
@@ -512,7 +514,7 @@ export default function TeammatesPage() {
           <select
             value={selectedSkill}
             onChange={(e) => setSelectedSkill(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value="All">All Technical Skills</option>
             {availableSkills.map((sk) => (
@@ -526,7 +528,7 @@ export default function TeammatesPage() {
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value="All">All Preferred Roles</option>
             {availableRoles.map((r) => (
@@ -540,7 +542,7 @@ export default function TeammatesPage() {
           <select
             value={minScore}
             onChange={(e) => setMinScore(Number(e.target.value))}
-            className="w-full px-3 py-2 rounded-xl bg-midnight-850 border border-midnight-700/80 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-violet-500 transition-colors"
           >
             <option value={0}>Any Match Score</option>
             <option value={50}>50%+ Compatibility</option>
@@ -549,9 +551,9 @@ export default function TeammatesPage() {
           </select>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-1 font-medium">
           <span>
-            Showing <strong className="text-white">{filteredMatches.length}</strong> recommended teammate
+            Showing <strong className="text-slate-900 font-bold">{filteredMatches.length}</strong> recommended teammate
             {filteredMatches.length !== 1 ? 's' : ''}
           </span>
           {(searchQuery || selectedSkill !== 'All' || selectedRole !== 'All' || minScore > 0) && (
@@ -562,7 +564,7 @@ export default function TeammatesPage() {
                 setSelectedRole('All');
                 setMinScore(0);
               }}
-              className="text-brand-400 hover:text-brand-300 font-medium"
+              className="text-pink-600 hover:text-pink-700 font-bold"
             >
               Reset Filters
             </button>
@@ -576,7 +578,7 @@ export default function TeammatesPage() {
           {[1, 2, 3, 4, 5, 6].map((n) => (
             <div
               key={n}
-              className="h-64 rounded-2xl bg-midnight-900/80 border border-midnight-800 animate-pulse p-6"
+              className="h-64 rounded-3xl bg-white border-2 border-slate-100 animate-pulse p-6 shadow-sm"
             />
           ))}
         </div>
@@ -592,12 +594,12 @@ export default function TeammatesPage() {
           ))}
         </div>
       ) : (
-        <div className="p-12 rounded-2xl bg-midnight-900/90 border border-midnight-750 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-midnight-800 border border-midnight-700 flex items-center justify-center mx-auto text-slate-400">
+        <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-pink-50 border border-pink-200 flex items-center justify-center mx-auto text-pink-500">
             <Users className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-bold text-white">No Matching Students Found</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <h3 className="text-lg font-black text-slate-900">No Matching Students Found</h3>
+          <p className="text-xs text-slate-600 max-w-sm mx-auto">
             Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
           </p>
         </div>

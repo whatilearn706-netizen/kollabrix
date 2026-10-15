@@ -107,15 +107,15 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
   return (
     <div className="w-full space-y-5">
       {error && (
-        <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-300 leading-relaxed">
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+        <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs font-medium text-red-700 leading-relaxed">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {forgotPasswordSent && (
-        <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-300 leading-relaxed">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs font-medium text-emerald-800 leading-relaxed">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
           <span>If an account exists for {email}, a password reset link has been dispatched to your inbox.</span>
         </div>
       )}
@@ -145,7 +145,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+                className="text-slate-400 hover:text-slate-700 transition-colors p-1"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -157,7 +157,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
               type="button"
               onClick={handleForgotPassword}
               disabled={isResetting}
-              className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+              className="text-xs font-bold text-violet-600 hover:text-violet-700 transition-colors"
             >
               {isResetting ? 'Sending link...' : 'Forgot password?'}
             </button>
@@ -170,12 +170,12 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       </form>
 
       {onSwitchToSignup && (
-        <div className="text-center pt-2 border-t border-charcoal-800 text-xs text-slate-400">
+        <div className="text-center pt-2 border-t border-slate-100 text-xs font-medium text-slate-600">
           New to TeamForge?{' '}
           <button
             type="button"
             onClick={onSwitchToSignup}
-            className="font-medium text-brand-400 hover:text-brand-300 transition-colors"
+            className="font-bold text-violet-600 hover:text-violet-700 transition-colors underline underline-offset-2"
           >
             Create student account
           </button>

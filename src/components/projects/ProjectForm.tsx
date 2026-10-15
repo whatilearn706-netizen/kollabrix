@@ -338,16 +338,16 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
       {/* Creator Track Selector (New Project only) */}
       {!isEditing && (
-        <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-4">
-          <div className="border-b border-charcoal-800 pb-3 flex items-center justify-between">
+        <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 space-y-5 shadow-sm">
+          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <span>Project Creator Track</span>
-                <span className="text-[11px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-300 border border-brand-500/20 font-medium">
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200 font-bold">
                   Role Identification
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Are you creating this project as a Student or as a Teacher / Mentor / Professor?
               </p>
             </div>
@@ -358,22 +358,22 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
             <button
               type="button"
               onClick={() => setCreatorRole('student')}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-5 rounded-2xl border-2 text-left transition-all ${
                 creatorRole === 'student'
-                  ? 'border-brand-500 bg-brand-500/10 text-white shadow-lg shadow-brand-500/5'
-                  : 'border-charcoal-750 bg-charcoal-850/60 text-slate-400 hover:border-charcoal-700'
+                  ? 'border-violet-500 bg-violet-50/70 text-violet-950 shadow-md ring-2 ring-violet-500/20'
+                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-9 h-9 rounded-lg bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
+                <div className="w-10 h-10 rounded-xl bg-violet-100 border border-violet-200 flex items-center justify-center text-violet-600 shrink-0">
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Student / Maker</h4>
-                  <span className="text-[10px] text-brand-300">Undergraduate / Graduate</span>
+                  <h4 className="text-sm font-bold text-slate-900">Student / Maker</h4>
+                  <span className="text-[11px] font-semibold text-violet-600">Undergraduate / Graduate</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
                 Build a semester project, form a student team, and recruit peers across campus departments.
               </p>
             </button>
@@ -382,20 +382,20 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
             <button
               type="button"
               onClick={handleSelectTeacherRole}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-5 rounded-2xl border-2 text-left transition-all ${
                 creatorRole === 'teacher'
-                  ? 'border-indigo-500 bg-indigo-500/10 text-white shadow-lg shadow-indigo-500/5'
-                  : 'border-charcoal-750 bg-charcoal-850/60 text-slate-400 hover:border-charcoal-700'
+                  ? 'border-indigo-500 bg-indigo-50/70 text-indigo-950 shadow-md ring-2 ring-indigo-500/20'
+                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
                     <GraduationCap className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Teacher / Mentor / Professor</h4>
-                    <span className="text-[10px] text-indigo-300">
+                    <h4 className="text-sm font-bold text-slate-900">Teacher / Mentor / Professor</h4>
+                    <span className="text-[10px] text-indigo-600 font-semibold">
                       {profile?.birth_year && profile.birth_year > 2003
                         ? `❌ Student Only (Born ${profile.birth_year})`
                         : profile?.role === 'teacher' && profile?.faculty_verified && profile?.birth_year && profile.birth_year <= 2003
@@ -404,20 +404,20 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold">
                   Go to Mentor Portal &rarr;
                 </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
                 Lead a faculty-supervised capstone or research initiative. Click to open the Mentor Portal prompt.
               </p>
             </button>
           </div>
 
           {creatorRole === 'teacher' && (
-            <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-300 flex items-center justify-between">
+            <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900 flex items-center justify-between font-medium">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span>
                   Authenticated as <strong>Verified Faculty Member</strong>. This project will carry the official Faculty Mentor badge.
                 </span>
@@ -428,10 +428,10 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       )}
 
       {/* Section 1: Overview */}
-      <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-5">
-        <div className="border-b border-charcoal-800 pb-3">
-          <h2 className="text-base font-semibold text-white">Project Overview</h2>
-          <p className="text-xs text-slate-400">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 className="text-lg font-black text-slate-900">Project Overview</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Provide a clear, engaging title and concise summary to hook potential student collaborators.
           </p>
         </div>
@@ -483,10 +483,10 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       </div>
 
       {/* Section 2: Detailed Problem & Solution */}
-      <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-4">
-        <div className="border-b border-charcoal-800 pb-3">
-          <h2 className="text-base font-semibold text-white">Detailed Problem & Proposed Solution</h2>
-          <p className="text-xs text-slate-400">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 className="text-lg font-black text-slate-900">Detailed Problem & Proposed Solution</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Explain the technical details, architecture, roadmap, and what you aim to build together. Markdown is supported.
           </p>
         </div>
@@ -501,10 +501,10 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       </div>
 
       {/* Section 3: Tech Stack & Teammate Requirements */}
-      <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-6">
-        <div className="border-b border-charcoal-800 pb-3">
-          <h2 className="text-base font-semibold text-white">Tech Stack & Collaborator Needs</h2>
-          <p className="text-xs text-slate-400">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 className="text-lg font-black text-slate-900">Tech Stack & Collaborator Needs</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Specify the technologies used and the specific roles/skills you are looking for in new team members.
           </p>
         </div>
@@ -559,10 +559,10 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       </div>
 
       {/* Section 4: External Links & Timeline */}
-      <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-5">
-        <div className="border-b border-charcoal-800 pb-3">
-          <h2 className="text-base font-semibold text-white">External Links & Application Window (Optional)</h2>
-          <p className="text-xs text-slate-400">
+      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 space-y-6 shadow-sm">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 className="text-lg font-black text-slate-900">External Links & Application Window (Optional)</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Connect your project GitHub repository, live demo URL, or set a target cutoff date.
           </p>
         </div>
@@ -604,8 +604,8 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         </div>
 
         {/* Problem Statement Selection */}
-        <div className="pt-2 border-t border-charcoal-800">
-          <label className="block text-sm font-medium text-slate-200 mb-1.5">
+        <div className="pt-2 border-t border-slate-100">
+          <label className="block text-sm font-bold text-slate-700 mb-1.5">
             Faculty Problem Statement Reference (Optional)
           </label>
           <Select
@@ -619,7 +619,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
               })),
             ]}
           />
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Linking your project to a faculty problem statement allows the authoring professor to monitor milestones and provide academic mentoring.
           </p>
         </div>
@@ -629,7 +629,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       <div className="flex items-center justify-between pt-4">
         <Link
           href="/explore"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Cancel & Return</span>
@@ -640,7 +640,11 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           size="lg"
           isLoading={isLoading}
           leftIcon={creatorRole === 'teacher' ? <GraduationCap className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          className={creatorRole === 'teacher' ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : ''}
+          className={
+            creatorRole === 'teacher'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black shadow-md border-0'
+              : 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-black shadow-md border-0'
+          }
         >
           {isEditing
             ? 'Save Changes'

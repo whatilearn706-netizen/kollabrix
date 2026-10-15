@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #090B10;
-  --foreground: #F1F5F9;
+  --background: #fafbfc;
+  --foreground: #0f172a;
 }
 
 body {
@@ -17,28 +17,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom subtle scrollbar */
+/* Custom modern colorful scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0D13;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1E253A;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D3754;
+  background: #a855f7;
 }
 
 /* Accessible focus ring */
 *:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
 
@@ -54,14 +54,14 @@ body {
   }
 }
 
-/* Futuristic Subtle Background Grid */
+/* Subtle Background Grid Pattern for colorful canvas */
 .bg-grid-pattern {
   background-size: 32px 32px;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(139, 92, 246, 0.12) 1px, transparent 1px);
 }
 
 .bg-glass {
-  background-color: rgba(11, 14, 23, 0.78);
+  background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }

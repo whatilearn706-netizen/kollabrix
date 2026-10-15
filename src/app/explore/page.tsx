@@ -258,16 +258,16 @@ export default function ExploreProjectsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-midnight-800 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-brand-400 uppercase tracking-wider mb-1">
-            <Compass className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-xs font-mono text-violet-700 uppercase tracking-wider mb-1 font-bold">
+            <Compass className="w-4 h-4 text-violet-600" />
             <span>Collegiate Project Directory</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Explore Active Projects
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Explore <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">Active Projects</span>
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400">
+          <p className="mt-1 text-xs sm:text-sm text-slate-600">
             Discover student-led initiatives seeking collaborators, filtered by skill, tech stack, and category.
           </p>
         </div>
@@ -279,6 +279,7 @@ export default function ExploreProjectsPage() {
             onClick={() => fetchProjects()}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
             disabled={isLoading}
+            className="border-slate-200 text-slate-700 hover:text-slate-900 font-bold"
           >
             Refresh
           </Button>
@@ -289,6 +290,7 @@ export default function ExploreProjectsPage() {
                 variant="primary"
                 size="sm"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
+                className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold shadow-md shadow-violet-500/20"
               >
                 Start a Project
               </Button>
@@ -299,6 +301,7 @@ export default function ExploreProjectsPage() {
               size="sm"
               onClick={handleCreateProjectClick}
               leftIcon={<PlusCircle className="w-4 h-4" />}
+              className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold shadow-md shadow-violet-500/20"
             >
               Start a Project
             </Button>
@@ -318,19 +321,19 @@ export default function ExploreProjectsPage() {
 
       {/* Error notice if fallback active */}
       {fetchError && (
-        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs flex items-center justify-between font-medium">
           <span>{fetchError}</span>
-          <Button variant="ghost" size="sm" onClick={() => fetchProjects()} className="text-amber-200 text-xs">
+          <Button variant="ghost" size="sm" onClick={() => fetchProjects()} className="text-amber-900 text-xs font-bold">
             Retry
           </Button>
         </div>
       )}
 
       {/* Results Header */}
-      <div className="flex items-center justify-between text-xs text-slate-400">
+      <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
         <div>
-          Showing <strong className="text-white">{startRecord}</strong> - <strong className="text-white">{endRecord}</strong> of{' '}
-          <strong className="text-white">{totalCount}</strong> projects
+          Showing <strong className="text-slate-900">{startRecord}</strong> - <strong className="text-slate-900">{endRecord}</strong> of{' '}
+          <strong className="text-violet-700 font-bold">{totalCount}</strong> projects
         </div>
         <div className="font-mono text-[11px] text-slate-500">
           Page {currentPage} of {totalPages}
@@ -343,7 +346,7 @@ export default function ExploreProjectsPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl bg-midnight-900/80 border border-midnight-800 p-5 space-y-4 animate-pulse"
+              className="rounded-3xl bg-white border-2 border-slate-100 p-6 space-y-4 animate-pulse shadow-sm"
             >
               <div className="flex justify-between items-center">
                 <Skeleton className="h-5 w-24 rounded-full" />
@@ -355,7 +358,7 @@ export default function ExploreProjectsPage() {
                 <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-5 w-16" />
               </div>
-              <div className="pt-3 border-t border-midnight-800 flex justify-between items-center">
+              <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
                 <Skeleton className="h-7 w-28 rounded-full" />
                 <Skeleton className="h-4 w-16" />
               </div>
@@ -364,23 +367,23 @@ export default function ExploreProjectsPage() {
         </div>
       ) : projects.length === 0 ? (
         /* Empty State */
-        <div className="rounded-2xl bg-midnight-900/90 border border-midnight-750 p-12 text-center max-w-lg mx-auto space-y-4">
-          <div className="w-12 h-12 rounded-xl bg-midnight-800 border border-midnight-700 text-slate-400 flex items-center justify-center mx-auto">
+        <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-12 text-center max-w-lg mx-auto space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-200 text-violet-600 flex items-center justify-center mx-auto">
             <FolderSearch className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-white">No matching projects found</h3>
-            <p className="mt-1 text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-lg font-black text-slate-900">No matching projects found</h3>
+            <p className="mt-1 text-xs text-slate-600 leading-relaxed">
               We couldn&apos;t find any projects matching your current combination of keywords and filters. Try adjusting your search or clearing active filters.
             </p>
           </div>
           <div className="pt-2 flex justify-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleClearFilters}>
+            <Button variant="outline" size="sm" onClick={handleClearFilters} className="font-bold border-slate-200">
               Clear All Filters
             </Button>
             {user ? (
               <Link href="/projects/new">
-                <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />}>
+                <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold">
                   Publish this Idea
                 </Button>
               </Link>
@@ -391,17 +394,17 @@ export default function ExploreProjectsPage() {
         /* Project Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} variant="light" />
           ))}
         </div>
       )}
 
       {/* Database-Backed Pagination Controls */}
       {totalPages > 1 && (
-        <div className="pt-6 border-t border-midnight-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-400">
-            Showing <strong className="text-white">{startRecord}</strong> to <strong className="text-white">{endRecord}</strong> of{' '}
-            <strong className="text-white">{totalCount}</strong> total projects
+        <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-slate-600">
+            Showing <strong className="text-slate-900">{startRecord}</strong> to <strong className="text-slate-900">{endRecord}</strong> of{' '}
+            <strong className="text-slate-900">{totalCount}</strong> total projects
           </div>
 
           <div className="flex items-center gap-1.5 font-mono text-xs">

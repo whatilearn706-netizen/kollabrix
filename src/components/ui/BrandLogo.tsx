@@ -5,12 +5,14 @@ interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg';
   showWordmark?: boolean;
   className?: string;
+  wordmarkColor?: 'dark' | 'light';
 }
 
 export function BrandLogo({
   size = 'md',
   showWordmark = true,
   className = '',
+  wordmarkColor = 'dark',
 }: BrandLogoProps) {
   const iconSizes = {
     sm: 'w-7 h-7',
@@ -26,17 +28,17 @@ export function BrandLogo({
 
   return (
     <div className={`flex items-center gap-2.5 group select-none ${className}`}>
-      {/* Precision Geometric Forge Insignia */}
+      {/* Precision Geometric Forge Insignia with Vibrant Gradient */}
       <div
-        className={`${iconSizes[size]} relative rounded-xl bg-gradient-to-br from-indigo-500 via-brand-600 to-violet-700 p-[1px] shadow-sm group-hover:shadow-glow-sm transition-all duration-300 shrink-0`}
+        className={`${iconSizes[size]} relative rounded-xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 p-[1.5px] shadow-md shadow-violet-500/20 group-hover:shadow-violet-500/40 transition-all duration-300 shrink-0`}
       >
-        <div className="w-full h-full rounded-[11px] bg-midnight-950 flex items-center justify-center relative overflow-hidden">
+        <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center relative overflow-hidden">
           {/* Subtle Ambient Radial Glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.35)_0%,transparent_70%)] opacity-80 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,70,239,0.35)_0%,transparent_70%)] opacity-80 group-hover:opacity-100 transition-opacity" />
 
           {/* Precision Interlocking Anvil & Spark Icon */}
           <svg
-            className="w-5 h-5 text-indigo-300 relative z-10 transition-transform duration-300 group-hover:scale-105"
+            className="w-5 h-5 text-pink-300 relative z-10 transition-transform duration-300 group-hover:scale-105"
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -62,21 +64,26 @@ export function BrandLogo({
             <circle cx="12" cy="13" r="1.5" fill="#FFFFFF" />
             <defs>
               <linearGradient id="forge-grad" x1="7" y1="10" x2="17" y2="17" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#818CF8" />
-                <stop offset="1" stopColor="#6366F1" />
+                <stop stopColor="#F472B6" />
+                <stop offset="1" stopColor="#A855F7" />
               </linearGradient>
             </defs>
           </svg>
         </div>
       </div>
 
-      {/* Typography Wordmark */}
+      {/* Typography Wordmark with Colorful Punch */}
       {showWordmark && (
         <span
-          className={`font-extrabold ${textSizes[size]} tracking-tight text-white flex items-center gap-1.5`}
+          className={`font-black ${textSizes[size]} tracking-tight flex items-center gap-1 ${
+            wordmarkColor === 'dark' ? 'text-slate-900' : 'text-white'
+          }`}
         >
-          <span>TeamForge</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 group-hover:bg-indigo-300 transition-colors inline-block" />
+          <span>Team</span>
+          <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
+            Forge
+          </span>
+          <span className="w-2 h-2 rounded-full bg-gradient-to-r from-violet-600 to-pink-500 inline-block shadow-sm" />
         </span>
       )}
     </div>

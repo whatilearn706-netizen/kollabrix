@@ -63,11 +63,11 @@ export function TagInput({
     <div className="w-full space-y-2">
       {label && (
         <div className="flex items-center justify-between">
-          <label className="block text-xs font-medium text-slate-300 select-none">
+          <label className="block text-xs font-bold text-slate-700 select-none">
             {label}
-            {required && <span className="text-brand-400 ml-1">*</span>}
+            {required && <span className="text-pink-500 ml-1">*</span>}
           </label>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[11px] font-semibold text-slate-500">
             {tags.length}/{maxTags}
           </span>
         </div>
@@ -75,22 +75,22 @@ export function TagInput({
 
       <div
         className={clsx(
-          'min-h-[46px] p-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-charcoal-850 border transition-colors duration-150',
+          'min-h-[48px] p-2 flex flex-wrap items-center gap-2 rounded-2xl bg-slate-50 border border-slate-200 transition-colors duration-150',
           error
-            ? 'border-red-500/70 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/50'
-            : 'border-charcoal-700/80 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500'
+            ? 'border-red-400 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 bg-red-50/30'
+            : 'focus-within:bg-white focus-within:border-violet-600 focus-within:ring-2 focus-within:ring-violet-500/20'
         )}
       >
         {tags.map((tag, idx) => (
           <span
             key={`${tag}-${idx}`}
-            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-charcoal-750 text-slate-200 border border-charcoal-700 select-none"
+            className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-violet-100 text-violet-800 border border-violet-200 select-none shadow-xs"
           >
             <span>{tag}</span>
             <button
               type="button"
               onClick={() => removeTag(idx)}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-violet-500 hover:text-violet-900 transition-colors"
               aria-label={`Remove tag ${tag}`}
             >
               <X className="w-3 h-3" />
@@ -108,22 +108,22 @@ export function TagInput({
               if (inputValue) addTag(inputValue);
             }}
             placeholder={tags.length === 0 ? placeholder : 'Add another...'}
-            className="flex-1 min-w-[120px] bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none px-1 py-0.5"
+            className="flex-1 min-w-[120px] bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 outline-none px-2 py-1"
           />
         )}
       </div>
 
       {unselectedSuggestions.length > 0 && tags.length < maxTags && (
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="text-[11px] text-slate-500 mr-1">Suggestions:</span>
+          <span className="text-[11px] font-bold text-slate-500 mr-1">Suggestions:</span>
           {unselectedSuggestions.slice(0, 6).map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => addTag(item)}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-charcoal-800 hover:bg-charcoal-750 text-slate-400 hover:text-slate-200 border border-charcoal-700/60 transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 hover:bg-violet-100 text-slate-700 hover:text-violet-800 border border-slate-200 hover:border-violet-300 transition-colors"
             >
-              <Plus className="w-2.5 h-2.5" />
+              <Plus className="w-2.5 h-2.5 text-violet-600" />
               {item}
             </button>
           ))}
@@ -131,7 +131,7 @@ export function TagInput({
       )}
 
       {error ? (
-        <p className="text-xs text-red-400 font-normal">{error}</p>
+        <p className="text-xs text-red-500 font-semibold">{error}</p>
       ) : helperText ? (
         <p className="text-xs text-slate-500">{helperText}</p>
       ) : null}

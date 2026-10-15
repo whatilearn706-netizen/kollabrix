@@ -64,28 +64,30 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={clsx(
-          'relative w-full max-h-[92vh] flex flex-col rounded-2xl bg-charcoal-900 border border-charcoal-700/80 shadow-2xl z-10 transition-all text-slate-100 my-auto',
+          'relative w-full max-h-[92vh] flex flex-col rounded-3xl bg-white border-2 border-slate-200/90 shadow-2xl z-10 transition-all text-slate-900 my-auto overflow-hidden',
           maxWidths[maxWidth]
         )}
       >
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400" />
+
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-20 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-charcoal-800 transition-colors"
+          className="absolute right-4 top-4 z-20 p-2 rounded-2xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           aria-label="Close dialog"
         >
           <X className="w-5 h-5" />
         </button>
 
         {title && (
-          <div className="p-5 sm:p-6 pb-4 border-b border-charcoal-800 shrink-0 pr-12">
-            <h3 className="text-lg sm:text-xl font-bold text-slate-100">{title}</h3>
+          <div className="p-6 sm:p-7 pb-4 border-b border-slate-100 shrink-0 pr-12">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">{title}</h3>
             {description && (
-              <p className="mt-1 text-xs sm:text-sm text-slate-400">{description}</p>
+              <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">{description}</p>
             )}
           </div>
         )}
 
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1 overscroll-contain">
+        <div className="p-6 sm:p-7 overflow-y-auto flex-1 overscroll-contain">
           {children}
         </div>
       </div>

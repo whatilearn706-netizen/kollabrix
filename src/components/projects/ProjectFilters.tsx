@@ -50,7 +50,7 @@ export function ProjectFilters({
     Boolean(filters.technology);
 
   return (
-    <div className="space-y-4 rounded-2xl bg-midnight-900/90 border border-midnight-750/70 p-5 shadow-card">
+    <div className="space-y-4 rounded-3xl bg-white border-2 border-slate-200/90 p-6 shadow-sm text-slate-900">
       {/* Top Search Bar & Sort Row */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="flex-1">
@@ -58,13 +58,13 @@ export function ProjectFilters({
             placeholder="Search projects by title, keywords, tech stack, or skills..."
             value={filters.search || ''}
             onChange={(e) => onChange({ ...filters, search: e.target.value, page: 1 })}
-            leftIcon={<Search className="w-4 h-4" />}
+            leftIcon={<Search className="w-4 h-4 text-violet-500" />}
             rightIcon={
               filters.search ? (
                 <button
                   type="button"
                   onClick={() => onChange({ ...filters, search: '', page: 1 })}
-                  className="p-1 hover:text-white"
+                  className="p-1 hover:text-violet-600"
                   aria-label="Clear search text"
                 >
                   <X className="w-4 h-4" />
@@ -75,7 +75,7 @@ export function ProjectFilters({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-44">
+          <div className="w-48">
             <Select
               value={filters.sort || 'newest'}
               onChange={(e) =>
@@ -93,8 +93,8 @@ export function ProjectFilters({
               variant="ghost"
               size="sm"
               onClick={onClear}
-              leftIcon={<X className="w-3.5 h-3.5 text-slate-400" />}
-              className="text-slate-400 hover:text-white"
+              leftIcon={<X className="w-3.5 h-3.5 text-slate-500" />}
+              className="text-slate-600 hover:text-slate-900 font-bold"
             >
               Clear
             </Button>
@@ -102,9 +102,9 @@ export function ProjectFilters({
         </div>
       </div>
 
-      {/* Category Pills */}
+      {/* Category Pills with Colorful Active States */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        <span className="text-xs text-slate-500 font-medium mr-1 shrink-0">Category:</span>
+        <span className="text-xs text-slate-500 font-bold mr-1 shrink-0">Category:</span>
         {activeCategories.map((cat) => {
           const isSelected = (!filters.category && cat === 'All') || filters.category === cat;
           return (
@@ -112,10 +112,10 @@ export function ProjectFilters({
               key={cat}
               type="button"
               onClick={() => onChange({ ...filters, category: cat, page: 1 })}
-              className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-medium ${
+              className={`text-xs px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all font-bold ${
                 isSelected
-                  ? 'bg-brand-600 text-white shadow-subtle'
-                  : 'bg-midnight-850 hover:bg-midnight-800 text-slate-400 hover:text-slate-200 border border-midnight-700/60'
+                  ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white shadow-md shadow-violet-500/25'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/90'
               }`}
             >
               {cat}
@@ -125,10 +125,10 @@ export function ProjectFilters({
       </div>
 
       {/* Secondary Filter Row: Difficulty & Status Dropdowns & Quick Skill Pills */}
-      <div className="pt-3 border-t border-midnight-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Difficulty:</span>
+            <span className="text-slate-500 font-bold">Difficulty:</span>
             <div className="w-36">
               <Select
                 value={filters.difficulty || 'All'}
@@ -145,7 +145,7 @@ export function ProjectFilters({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Status:</span>
+            <span className="text-slate-500 font-bold">Status:</span>
             <div className="w-36">
               <Select
                 value={filters.status || 'All'}
@@ -162,33 +162,35 @@ export function ProjectFilters({
           </div>
         </div>
 
-        {/* Quick Skill Filters */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-slate-500 text-[11px]">Popular Skills:</span>
-          {availableSkills.slice(0, 5).map((skill) => {
-            const isSelected = filters.skill?.toLowerCase() === skill.toLowerCase();
-            return (
-              <button
-                key={skill}
-                type="button"
-                onClick={() =>
-                  onChange({
-                    ...filters,
-                    skill: isSelected ? undefined : skill,
-                    page: 1,
-                  })
-                }
-                className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors ${
-                  isSelected
-                    ? 'bg-brand-500/20 text-brand-300 border-brand-500/50 font-medium'
-                    : 'bg-midnight-850 hover:bg-midnight-800 text-slate-400 border border-midnight-700/60'
-                }`}
-              >
-                {skill}
-              </button>
-            );
-          })}
-        </div>
+        {/* Quick Skill Badges */}
+        {availableSkills && availableSkills.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
+            <span className="text-slate-400 font-medium mr-1 hidden sm:inline">Skills:</span>
+            {availableSkills.slice(0, 5).map((skill) => {
+              const isSelected = filters.skill === skill;
+              return (
+                <button
+                  key={skill}
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...filters,
+                      skill: isSelected ? undefined : skill,
+                      page: 1,
+                    })
+                  }
+                  className={`text-[11px] font-mono px-2 py-0.5 rounded-md transition-colors ${
+                    isSelected
+                      ? 'bg-violet-600 text-white font-bold shadow-xs'
+                      : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'
+                  }`}
+                >
+                  {skill}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
