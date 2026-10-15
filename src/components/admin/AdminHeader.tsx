@@ -51,7 +51,7 @@ export function AdminHeader({
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-extrabold text-white tracking-tight">
-                  TeamForge Admin Control Center
+                  Linkora Admin Control Center
                 </h1>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-red-500/15 border border-red-500/30 text-red-300">
                   <Lock className="w-3 h-3" />

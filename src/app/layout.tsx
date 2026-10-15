@@ -7,7 +7,7 @@ import { SetupBanner } from '@/components/layout/SetupBanner';
 import { AuthModal } from '@/components/auth/AuthModal';
 
 export const metadata: Metadata = {
-  title: 'TeamForge — College-Wide Student Project Collaboration Platform',
+  title: 'Linkora — College-Wide Student Project Collaboration Platform',
   description:
     'Discover project ideas, meet people who complement your skills, and build meaningful software projects together.',
   keywords: [

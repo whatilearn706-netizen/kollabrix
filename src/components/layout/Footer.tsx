@@ -105,7 +105,7 @@ export function Footer() {
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} TeamForge. Empowering collegiate makers to build together.</p>
+          <p>&copy; {new Date().getFullYear()} Linkora. Empowering collegiate makers to build together.</p>
           <div className="flex items-center gap-4 font-medium">
             <Link href="/explore" className="hover:text-violet-600 transition-colors">
               Project Directory

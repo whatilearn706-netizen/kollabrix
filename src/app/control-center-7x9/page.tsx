@@ -130,7 +130,7 @@ export default function AdminControlCenterPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-extrabold text-white">Authentication Required</h1>
           <p className="text-xs text-slate-400 leading-relaxed">
-            This private control center requires sign-in with an authorized TeamForge administrator account.
+            This private control center requires sign-in with an authorized Linkora administrator account.
           </p>
         </div>
         <Button
@@ -139,7 +139,7 @@ export default function AdminControlCenterPage() {
           className="w-full"
           onClick={() => openAuthModal('login')}
         >
-          Sign In to TeamForge
+          Sign In to Linkora
         </Button>
       </div>
     );

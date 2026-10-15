@@ -165,13 +165,13 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         </div>
 
         <Button type="submit" className="w-full mt-2" isLoading={isLoading} size="lg">
-          Log In to TeamForge
+          Log In to Linkora
         </Button>
       </form>
 
       {onSwitchToSignup && (
         <div className="text-center pt-2 border-t border-slate-100 text-xs font-medium text-slate-600">
-          New to TeamForge?{' '}
+          New to Linkora?{' '}
           <button
             type="button"
             onClick={onSwitchToSignup}

@@ -17,7 +17,7 @@ export default function LoginPage() {
             </div>
           </Link>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Log in to <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">TeamForge</span>
+            Log in to Linkora
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-medium">
             Welcome back! Connect with your collegiate team and explore new projects.

@@ -102,7 +102,7 @@ export function Navbar() {
         <Link
           href="/"
           className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg shrink-0"
-          aria-label="TeamForge Home"
+          aria-label="Linkora Home"
         >
           <BrandLogo size="md" wordmarkColor="dark" />
         </Link>
