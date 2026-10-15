@@ -81,7 +81,29 @@ function MyProjectsContent() {
 
   useEffect(() => {
     loadProjects();
-  }, [loadProjects]);
+
+    if (user) {
+      const channel = supabase
+        .channel(`my-projects-live-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'project_members',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            loadProjects();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [loadProjects, user]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">

@@ -124,6 +124,29 @@ export default function WorkspaceLayout({
         setIsLoading(false);
       } else {
         loadWorkspaceData();
+
+        // Live subscription to team membership updates (join, leave, remove, role change)
+        if (projectId) {
+          const channel = supabase
+            .channel(`workspace-roster-${projectId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'project_members',
+                filter: `project_id=eq.${projectId}`,
+              },
+              () => {
+                loadWorkspaceData();
+              }
+            )
+            .subscribe();
+
+          return () => {
+            supabase.removeChannel(channel);
+          };
+        }
       }
     }
   }, [projectId, user, isAuthLoading]);

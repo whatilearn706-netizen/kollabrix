@@ -158,8 +158,42 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     if (projectId) {
       loadProjectData();
+
+      // Live subscription to project updates and member roster changes
+      const channel = supabase
+        .channel(`project-live-${projectId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'project_members',
+            filter: `project_id=eq.${projectId}`,
+          },
+          () => {
+            loadProjectData();
+            loadCollaborationStatus();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'projects',
+            filter: `id=eq.${projectId}`,
+          },
+          () => {
+            loadProjectData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [projectId, loadProjectData]);
+  }, [projectId, loadProjectData, loadCollaborationStatus]);
 
   useEffect(() => {
     if (project && user) {

@@ -94,18 +94,70 @@ export default function WorkspaceOverviewPage() {
 
     setIsLeaving(true);
     try {
-      const { error } = await supabase
+      // 1. Try atomic database RPC first
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('leave_project_team', {
+        target_project_id: project.id,
+      });
+
+      if (!rpcErr && rpcData?.success) {
+        router.push('/my-projects');
+        return;
+      }
+
+      // 2. Direct fallback: Delete from project_members
+      const { error: delError } = await supabase
         .from('project_members')
         .delete()
         .eq('project_id', project.id)
         .eq('user_id', user.id);
 
-      if (error) {
-        alert(error.message || 'Failed to leave team.');
+      if (delError) {
+        alert(delError.message || 'Failed to leave team.');
         setIsLeaving(false);
-      } else {
-        router.push('/my-projects');
+        return;
       }
+
+      // 3. Mark previous application as Withdrawn so user is not stuck in Accepted state
+      await supabase
+        .from('project_applications')
+        .update({
+          status: 'Withdrawn',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('project_id', project.id)
+        .eq('applicant_id', user.id);
+
+      // 4. Recount remaining members and update project current_team_size
+      const { count } = await supabase
+        .from('project_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', project.id);
+
+      const newSize = Math.max(1, count || 1);
+      await supabase
+        .from('projects')
+        .update({
+          current_team_size: newSize,
+          status: newSize < project.desired_team_size ? 'Recruiting' : project.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', project.id);
+
+      // 5. Notify project owner that member has left
+      try {
+        await supabase.from('notifications').insert({
+          recipient_id: project.owner_id,
+          sender_id: user.id,
+          type: 'member_left',
+          title: 'Team Member Left',
+          message: `${currentUserMember?.profile?.display_name || 'A teammate'} has left "${project.title}".`,
+          link: `/projects/${project.id}/workspace`,
+        });
+      } catch {
+        // Safe notification fallback
+      }
+
+      router.push('/my-projects');
     } catch {
       alert('Error leaving team.');
       setIsLeaving(false);
@@ -113,23 +165,66 @@ export default function WorkspaceOverviewPage() {
   };
 
   const handleConfirmRemoveMember = async () => {
-    if (!removingMember) return;
+    if (!removingMember || !user) return;
     setIsRemoving(true);
     setActionError(null);
 
     try {
-      const { error } = await supabase
+      // 1. Delete from project_members
+      const { error: delError } = await supabase
         .from('project_members')
         .delete()
         .eq('id', removingMember.id)
         .eq('project_id', project.id);
 
-      if (error) {
-        setActionError(error.message || 'Failed to remove member.');
-      } else {
-        setRemovingMember(null);
-        await refreshWorkspace();
+      if (delError) {
+        setActionError(delError.message || 'Failed to remove member.');
+        setIsRemoving(false);
+        return;
       }
+
+      // 2. Mark application as Withdrawn
+      await supabase
+        .from('project_applications')
+        .update({
+          status: 'Withdrawn',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('project_id', project.id)
+        .eq('applicant_id', removingMember.user_id);
+
+      // 3. Recount remaining members and update project current_team_size
+      const { count } = await supabase
+        .from('project_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', project.id);
+
+      const newSize = Math.max(1, count || 1);
+      await supabase
+        .from('projects')
+        .update({
+          current_team_size: newSize,
+          status: newSize < project.desired_team_size ? 'Recruiting' : project.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', project.id);
+
+      // 4. Notify removed member
+      try {
+        await supabase.from('notifications').insert({
+          recipient_id: removingMember.user_id,
+          sender_id: user.id,
+          type: 'member_removed',
+          title: 'Removed from Team',
+          message: `You were removed from "${project.title}" roster.`,
+          link: `/projects/${project.id}`,
+        });
+      } catch {
+        // Safe notification fallback
+      }
+
+      setRemovingMember(null);
+      await refreshWorkspace();
     } catch {
       setActionError('Error removing member.');
     } finally {
