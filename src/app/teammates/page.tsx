@@ -323,7 +323,7 @@ export default function TeammatesPage() {
             <span>Collegiate Matchmaking Engine</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Find <span className="bg-gradient-to-r from-fuchsia-600 via-pink-600 to-rose-500 bg-clip-text text-transparent">Teammates</span>
+            Find Teammates
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl">
             Discover student collaborators with complementary skills and shared project goals. Our transparent algorithm scores matches based on project requirements, preferred roles, and technical skills.
@@ -345,7 +345,7 @@ export default function TeammatesPage() {
               variant="primary"
               size="sm"
               leftIcon={<FolderPlus className="w-4 h-4" />}
-              className="bg-gradient-to-r from-fuchsia-600 via-pink-600 to-rose-500 text-white font-bold shadow-md shadow-pink-500/20"
+              className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
             >
               Start New Project
             </Button>
@@ -354,15 +354,15 @@ export default function TeammatesPage() {
       </div>
 
       {/* Compact Campus Hackathon Quick-Join Callout */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-50 via-rose-50 to-violet-50 border-2 border-amber-200/90 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm text-slate-900">
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs text-slate-900">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-700 shadow-xs">
-            <Lock className="w-4 h-4 text-amber-600" />
+          <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0 text-slate-700 shadow-2xs">
+            <Lock className="w-4 h-4 text-violet-600" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-slate-900">Assembling for a College Hackathon?</span>
-              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold uppercase tracking-wide">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-900 border border-violet-200 font-bold uppercase tracking-wide">
                 Campus Portal
               </span>
             </div>
@@ -395,20 +395,20 @@ export default function TeammatesPage() {
             className="flex items-center gap-2 flex-1 md:flex-initial"
           >
             <div className="relative flex-1 md:w-48">
-              <KeyRound className="w-3.5 h-3.5 text-amber-600 absolute left-3 top-1/2 -translate-y-1/2" />
+              <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Passcode (e.g. col-apex26)"
                 value={hackathonCode}
                 onChange={(e) => setHackathonCode(e.target.value)}
-                className="w-full pl-8 pr-2.5 py-2 rounded-xl bg-white border-2 border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-sm"
+                className="w-full pl-8 pr-2.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500 shadow-2xs"
               />
             </div>
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs whitespace-nowrap py-2 px-4 shadow-sm"
+              className="bg-slate-900 hover:bg-black text-white font-bold text-xs whitespace-nowrap py-2 px-4 shadow-xs"
             >
               Unlock
             </Button>

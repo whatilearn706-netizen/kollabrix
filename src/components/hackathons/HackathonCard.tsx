@@ -46,11 +46,8 @@ export function HackathonCard({
   const isUrgent = diffDays >= 0 && diffDays <= 7;
 
   return (
-    <div className="rounded-3xl bg-white border-2 border-slate-100 hover:border-amber-300 p-6 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-2xl hover:shadow-amber-500/10 group relative overflow-hidden space-y-4 text-slate-900">
-      {/* Top Colorful Accent Stripe */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-rose-500 to-violet-500" />
-
-      <div className="space-y-3.5 pt-1">
+    <div className="rounded-3xl bg-white border border-slate-200/90 hover:border-slate-400 p-6 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-xl group relative overflow-hidden space-y-4 text-slate-900">
+      <div className="space-y-3.5">
         {/* Header: Mode, Deadline & Bookmark */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">

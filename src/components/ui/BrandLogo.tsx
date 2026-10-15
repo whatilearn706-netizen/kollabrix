@@ -72,18 +72,15 @@ export function BrandLogo({
         </div>
       </div>
 
-      {/* Typography Wordmark with Colorful Punch */}
+      {/* Typography Wordmark with High-Contrast Editorial Authority */}
       {showWordmark && (
         <span
-          className={`font-black ${textSizes[size]} tracking-tight flex items-center gap-1 ${
+          className={`font-black ${textSizes[size]} tracking-tight flex items-center gap-0.5 ${
             wordmarkColor === 'dark' ? 'text-slate-900' : 'text-white'
           }`}
         >
-          <span>Team</span>
-          <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
-            Forge
-          </span>
-          <span className="w-2 h-2 rounded-full bg-gradient-to-r from-violet-600 to-pink-500 inline-block shadow-sm" />
+          <span>TeamForge</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-600 inline-block ml-0.5" />
         </span>
       )}
     </div>

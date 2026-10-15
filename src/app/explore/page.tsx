@@ -265,7 +265,7 @@ export default function ExploreProjectsPage() {
             <span>Collegiate Project Directory</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Explore <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">Active Projects</span>
+            Explore Active Projects
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-600">
             Discover student-led initiatives seeking collaborators, filtered by skill, tech stack, and category.
@@ -290,7 +290,7 @@ export default function ExploreProjectsPage() {
                 variant="primary"
                 size="sm"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
-                className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold shadow-md shadow-violet-500/20"
+                className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
               >
                 Start a Project
               </Button>
@@ -301,7 +301,7 @@ export default function ExploreProjectsPage() {
               size="sm"
               onClick={handleCreateProjectClick}
               leftIcon={<PlusCircle className="w-4 h-4" />}
-              className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold shadow-md shadow-violet-500/20"
+              className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
             >
               Start a Project
             </Button>

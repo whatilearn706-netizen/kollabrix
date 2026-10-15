@@ -67,31 +67,31 @@ export function Navbar() {
     (profile?.role === 'teacher' || profile?.role === 'admin') &&
     (!profile?.birth_year || profile?.birth_year <= 2003);
 
-  // Core public links: Focused and high-signal with dedicated vibrant accents
+  // Core public links: Focused, clean architectural navigation
   const navLinks = [
     {
       href: '/explore',
       label: 'Explore',
       icon: Compass,
-      activeColor: 'bg-violet-100 text-violet-800 border-violet-200',
-      hoverColor: 'hover:text-violet-700 hover:bg-violet-50',
-      iconColor: 'text-violet-600',
+      activeColor: 'bg-slate-100 text-slate-900 border-slate-200 font-bold',
+      hoverColor: 'hover:text-slate-900 hover:bg-slate-100',
+      iconColor: 'text-slate-900',
     },
     {
       href: '/teammates',
       label: 'Teammates',
       icon: Users,
-      activeColor: 'bg-pink-100 text-pink-800 border-pink-200',
-      hoverColor: 'hover:text-pink-700 hover:bg-pink-50',
-      iconColor: 'text-pink-600',
+      activeColor: 'bg-slate-100 text-slate-900 border-slate-200 font-bold',
+      hoverColor: 'hover:text-slate-900 hover:bg-slate-100',
+      iconColor: 'text-slate-900',
     },
     {
       href: '/hackathons',
       label: 'Hackathons',
       icon: Trophy,
-      activeColor: 'bg-amber-100 text-amber-900 border-amber-300',
-      hoverColor: 'hover:text-amber-800 hover:bg-amber-50',
-      iconColor: 'text-amber-600',
+      activeColor: 'bg-slate-100 text-slate-900 border-slate-200 font-bold',
+      hoverColor: 'hover:text-slate-900 hover:bg-slate-100',
+      iconColor: 'text-slate-900',
     },
   ];
 
@@ -178,11 +178,11 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Primary Colorful CTA */}
+          {/* Primary Crisp Slate CTA */}
           <button
             type="button"
             onClick={handleStartProjectClick}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-md shadow-violet-500/20 transition-all hover:shadow-violet-500/35"
+            className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white shadow-xs transition-all active:scale-[0.98]"
           >
             <PlusCircle className="w-3.5 h-3.5 text-white" />
             <span>Start Project</span>
@@ -301,7 +301,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => openAuthModal('signup')}
-                className="text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm"
+                className="text-xs font-bold px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white shadow-xs transition-all active:scale-[0.98]"
               >
                 Join Free
               </button>
@@ -390,7 +390,7 @@ export function Navbar() {
             <button
               type="button"
               onClick={handleStartProjectClick}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white font-bold shadow-md shadow-violet-500/20"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all active:scale-[0.98]"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Start a Project</span>

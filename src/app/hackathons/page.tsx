@@ -274,7 +274,7 @@ export default function HackathonsPage() {
             <span>Campus Innovation Hub</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Collegiate <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 bg-clip-text text-transparent">Hackathons</span>
+            Collegiate Hackathons
           </h1>
           <p className="mt-1.5 text-xs sm:text-sm text-slate-600 max-w-2xl font-medium">
             Explore college hackathons, form student teams with campus teammates, and compete in private university challenges or national tournaments.
@@ -297,7 +297,7 @@ export default function HackathonsPage() {
               <Button
                 variant="primary"
                 size="sm"
-                className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-md border-0"
+                className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
               >
                 Host College Hackathon
@@ -310,11 +310,11 @@ export default function HackathonsPage() {
       {/* ========================================================================= */}
       {/* DEDICATED PRIVATE COLLEGE HACKATHON SECTION / QUICK ACCESS HUB */}
       {/* ========================================================================= */}
-      <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-amber-50/90 via-rose-50/60 to-violet-50/70 border-2 border-amber-200/90 shadow-sm space-y-4">
+      <div className="p-6 sm:p-7 rounded-3xl bg-slate-50 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1.5 max-w-2xl">
             <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-800 uppercase tracking-wider">
-              <span className="p-1 rounded bg-amber-200/80 border border-amber-300">
+              <span className="p-1 rounded bg-amber-100 border border-amber-300">
                 <Lock className="w-3.5 h-3.5 text-amber-900" />
               </span>
               <span>Private College Hackathon Portal</span>
@@ -333,20 +333,20 @@ export default function HackathonsPage() {
             className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-md shrink-0"
           >
             <div className="relative flex-1">
-              <KeyRound className="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Join Code (e.g. col-apex26 or /h/...)"
                 value={quickJoinCode}
                 onChange={(e) => setQuickJoinCode(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-white border-2 border-amber-200/90 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-sm transition-colors"
+                className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-2xs transition-colors"
               />
             </div>
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold whitespace-nowrap py-2.5 shadow-md border-0"
+              className="bg-slate-900 hover:bg-black text-white font-bold whitespace-nowrap py-2.5 shadow-xs"
               leftIcon={<Lock className="w-3.5 h-3.5" />}
             >
               Enter Passcode

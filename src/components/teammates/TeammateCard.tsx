@@ -27,17 +27,14 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
 
   const scoreBadgeColor =
     match_score >= 80
-      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
       : match_score >= 60
-      ? 'bg-pink-100 text-pink-800 border-pink-300'
-      : 'bg-violet-100 text-violet-800 border-violet-300';
+      ? 'bg-blue-50 text-blue-800 border-blue-200'
+      : 'bg-slate-100 text-slate-700 border-slate-200';
 
   return (
-    <div className="rounded-3xl bg-white border-2 border-slate-100 hover:border-pink-300 p-6 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-2xl hover:shadow-pink-500/10 group relative overflow-hidden text-slate-900">
-      {/* Top Colorful Accent Stripe */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500" />
-
-      <div className="space-y-4 pt-1">
+    <div className="rounded-3xl bg-white border border-slate-200/90 hover:border-slate-400 p-6 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-xl group relative overflow-hidden text-slate-900">
+      <div className="space-y-4">
         {/* Header: Avatar, Info, Match Score */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -46,17 +43,17 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                 name={profile.display_name}
                 src={profile.avatar_url}
                 size="lg"
-                className="ring-2 ring-pink-100 group-hover:ring-pink-300 transition-all"
+                className="ring-2 ring-slate-100 group-hover:ring-slate-300 transition-all"
               />
             </Link>
             <div className="min-w-0">
               <Link
                 href={`/profile/${profile.username}`}
-                className="font-black text-sm sm:text-base text-slate-900 group-hover:text-pink-600 transition-colors truncate block"
+                className="font-black text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors truncate block"
               >
                 {profile.display_name}
               </Link>
-              <p className="text-xs text-pink-600 font-mono font-bold truncate">@{profile.username}</p>
+              <p className="text-xs text-slate-500 font-mono font-bold truncate">@{profile.username}</p>
               {(profile.college || profile.course) && (
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1 truncate">
                   <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -171,14 +168,14 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
       <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
         <Link
           href={`/profile/${profile.username}`}
-          className="text-xs text-slate-700 hover:text-pink-600 inline-flex items-center gap-1 font-bold transition-colors"
+          className="text-xs text-slate-700 hover:text-black inline-flex items-center gap-1 font-bold transition-colors"
         >
           <span>View Profile</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </Link>
 
         {isInvited ? (
-          <span className="text-xs text-emerald-800 flex items-center gap-1 font-bold bg-emerald-100 px-3.5 py-1.5 rounded-xl border border-emerald-300">
+          <span className="text-xs text-emerald-800 flex items-center gap-1 font-bold bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Invited</span>
           </span>
@@ -186,7 +183,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
           <button
             type="button"
             onClick={() => onInvite(match)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white shadow-md shadow-pink-500/20 transition-all"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black text-white shadow-xs transition-all"
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>Invite to Project</span>

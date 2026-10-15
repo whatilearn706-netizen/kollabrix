@@ -33,29 +33,26 @@ export function ProjectCard({ project, variant = 'dark' }: ProjectCardProps) {
   if (variant === 'light') {
     return (
       <div
-        className={`group flex flex-col justify-between rounded-3xl bg-white border-2 ${
+        className={`group flex flex-col justify-between rounded-3xl bg-white border ${
           project.is_featured
-            ? 'border-amber-300 shadow-xl shadow-amber-500/10'
-            : 'border-slate-100'
-        } hover:border-violet-300 hover:shadow-2xl hover:shadow-violet-500/10 p-6 transition-all duration-300 relative overflow-hidden`}
+            ? 'border-amber-300 shadow-md ring-1 ring-amber-300/40'
+            : 'border-slate-200/90'
+        } hover:border-slate-400 hover:shadow-xl p-6 sm:p-7 transition-all duration-200 relative overflow-hidden`}
       >
-        {/* Colorful top accent gradient stripe */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400" />
-
-        <div className="space-y-3.5 pt-1">
+        <div className="space-y-3.5">
           {/* Top Badges Row */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 flex-wrap">
               {project.is_featured && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
                   <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
                   <span>Featured</span>
                 </span>
               )}
-              <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-violet-100 text-violet-800 border border-violet-200">
+              <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800 border border-slate-200">
                 {project.category}
               </span>
-              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+              <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200">
                 {project.difficulty}
               </span>
               {isFacultyChallenge && (
@@ -86,13 +83,13 @@ export function ProjectCard({ project, variant = 'dark' }: ProjectCardProps) {
 
           {/* Project Title */}
           <Link href={`/projects/${project.id}`} className="block focus:outline-none">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-violet-600 transition-colors line-clamp-2 leading-snug">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
               {project.title}
             </h3>
           </Link>
 
           {/* Short Plain-Language Summary */}
-          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed font-medium">
             {project.summary}
           </p>
 
@@ -102,7 +99,7 @@ export function ProjectCard({ project, variant = 'dark' }: ProjectCardProps) {
               {project.technologies.slice(0, 4).map((tech, idx) => (
                 <span
                   key={idx}
-                  className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80"
+                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200/80"
                 >
                   {tech}
                 </span>
@@ -118,15 +115,15 @@ export function ProjectCard({ project, variant = 'dark' }: ProjectCardProps) {
           {/* Required Open Skills */}
           {project.required_skills && project.required_skills.length > 0 && (
             <div className="pt-2 border-t border-slate-100">
-              <div className="flex items-center gap-1 text-[11px] text-violet-700 font-semibold mb-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                <span>Open Engineering Roles:</span>
+              <div className="flex items-center gap-1 text-[11px] text-slate-700 font-bold mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span>Open Team Roles:</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {project.required_skills.slice(0, 3).map((skill, idx) => (
                   <span
                     key={idx}
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200/80"
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-50 text-slate-700 border border-slate-200"
                   >
                     {skill}
                   </span>
@@ -187,7 +184,7 @@ export function ProjectCard({ project, variant = 'dark' }: ProjectCardProps) {
 
             <Link
               href={`/projects/${project.id}`}
-              className="inline-flex items-center gap-1 font-bold text-xs text-violet-600 hover:text-violet-800 transition-colors group-hover:translate-x-0.5 duration-150"
+              className="inline-flex items-center gap-1 font-bold text-xs text-slate-900 hover:text-blue-600 transition-colors group-hover:translate-x-0.5 duration-150"
               aria-label={`View details for ${project.title}`}
             >
               <span>View</span>
