@@ -90,8 +90,12 @@ export function IntentConsole({
     router.push(`/h/${clean}`);
   };
 
-  const candidates = intentConfig.candidates || DEFAULT_HOMEPAGE_INTENT_CONFIG.candidates;
-  const projectSlots = intentConfig.projectSlots || DEFAULT_HOMEPAGE_INTENT_CONFIG.projectSlots;
+  const candidates = Array.isArray(intentConfig?.candidates)
+    ? intentConfig.candidates
+    : DEFAULT_HOMEPAGE_INTENT_CONFIG.candidates;
+  const projectSlots = Array.isArray(intentConfig?.projectSlots)
+    ? intentConfig.projectSlots
+    : DEFAULT_HOMEPAGE_INTENT_CONFIG.projectSlots;
 
   return (
     <div className="w-full max-w-5xl mx-auto rounded-3xl bg-white border border-slate-200/90 shadow-xl overflow-hidden text-slate-900 transition-all">
@@ -200,9 +204,15 @@ export function IntentConsole({
 
             {/* Live Teammate Candidate Cards (Admin Controlled) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {candidates
-                .filter((cand) => selectedRole === 'all' || cand.type === selectedRole)
-                .map((cand) => (
+              {candidates.length === 0 ? (
+                <div className="col-span-full p-8 text-center rounded-2xl bg-slate-50 border border-slate-200">
+                  <p className="text-sm font-bold text-slate-700">No candidates currently listed.</p>
+                  <p className="text-xs text-slate-500 mt-1">Check back soon or explore all student builders in the directory.</p>
+                </div>
+              ) : (
+                candidates
+                  .filter((cand) => selectedRole === 'all' || cand.type === selectedRole)
+                  .map((cand) => (
                   <div
                     key={cand.id || cand.name}
                     className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
@@ -254,7 +264,8 @@ export function IntentConsole({
                       </Link>
                     </div>
                   </div>
-                ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -289,62 +300,69 @@ export function IntentConsole({
 
             {/* Live Recruiting Project Slots (Admin Controlled) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {projectSlots.map((proj) => (
-                <div
-                  key={proj.id || proj.title}
-                  className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                        {proj.category}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-500 font-mono">
-                        {proj.teamStatus}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-black text-slate-900 leading-snug line-clamp-2">
-                        {proj.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 font-medium mt-1">{proj.owner}</p>
-                    </div>
-
-                    <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
-                      <span className="text-[10px] font-bold uppercase text-slate-400 block font-mono">
-                        OPEN ROLE NEEDED
-                      </span>
-                      <span className="text-xs font-bold text-slate-900 block truncate">
-                        {proj.neededRole}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1">
-                      {proj.tech.map((t, tidx) => (
-                        <span
-                          key={tidx}
-                          className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-200/60 text-slate-700"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 mt-3 border-t border-slate-200/60">
-                    <Link href="/explore">
-                      <button
-                        type="button"
-                        className="w-full py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <span>Apply to Open Slot</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </Link>
-                  </div>
+              {projectSlots.length === 0 ? (
+                <div className="col-span-full p-8 text-center rounded-2xl bg-slate-50 border border-slate-200">
+                  <p className="text-sm font-bold text-slate-700">No open project roles currently listed.</p>
+                  <p className="text-xs text-slate-500 mt-1">Explore all projects seeking teammates in the project directory.</p>
                 </div>
-              ))}
+              ) : (
+                projectSlots.map((proj) => (
+                  <div
+                    key={proj.id || proj.title}
+                    className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                          {proj.category}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500 font-mono">
+                          {proj.teamStatus}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 leading-snug line-clamp-2">
+                          {proj.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-medium mt-1">{proj.owner}</p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 block font-mono">
+                          OPEN ROLE NEEDED
+                        </span>
+                        <span className="text-xs font-bold text-slate-900 block truncate">
+                          {proj.neededRole}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1">
+                        {proj.tech.map((t, tidx) => (
+                          <span
+                            key={tidx}
+                            className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-200/60 text-slate-700"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-3 border-t border-slate-200/60">
+                      <Link href="/explore">
+                        <button
+                          type="button"
+                          className="w-full py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <span>Apply to Open Slot</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

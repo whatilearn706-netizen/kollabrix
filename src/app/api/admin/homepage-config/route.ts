@@ -10,6 +10,8 @@ import {
 } from '@/types/homepageConfig';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export const runtime = 'nodejs';
 
 const INTENT_KEY = 'homepage_intent_config';
@@ -37,11 +39,26 @@ export async function GET(request: NextRequest) {
         if (rows && rows.length > 0) {
           const intentRow = rows.find((r: any) => r.key === INTENT_KEY);
           if (intentRow?.value) {
-            intentConfig = { ...DEFAULT_HOMEPAGE_INTENT_CONFIG, ...intentRow.value };
+            intentConfig = {
+              ...DEFAULT_HOMEPAGE_INTENT_CONFIG,
+              ...intentRow.value,
+              candidates: Array.isArray(intentRow.value.candidates)
+                ? intentRow.value.candidates
+                : DEFAULT_HOMEPAGE_INTENT_CONFIG.candidates,
+              projectSlots: Array.isArray(intentRow.value.projectSlots)
+                ? intentRow.value.projectSlots
+                : DEFAULT_HOMEPAGE_INTENT_CONFIG.projectSlots,
+            };
           }
           const showcaseRow = rows.find((r: any) => r.key === SHOWCASE_KEY);
           if (showcaseRow?.value) {
-            showcaseConfig = { ...DEFAULT_HOMEPAGE_SHOWCASE_CONFIG, ...showcaseRow.value };
+            showcaseConfig = {
+              ...DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
+              ...showcaseRow.value,
+              selectedProjectIds: Array.isArray(showcaseRow.value.selectedProjectIds)
+                ? showcaseRow.value.selectedProjectIds
+                : DEFAULT_HOMEPAGE_SHOWCASE_CONFIG.selectedProjectIds,
+            };
           }
         }
       } catch (dbErr) {

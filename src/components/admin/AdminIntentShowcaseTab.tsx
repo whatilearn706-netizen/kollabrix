@@ -215,10 +215,6 @@ export function AdminIntentShowcaseTab({ authToken }: AdminIntentShowcaseTabProp
   };
 
   const handleDeleteCandidate = (id: string) => {
-    if (intentConfig.candidates.length <= 1) {
-      alert('You must have at least 1 candidate in the Intent Console.');
-      return;
-    }
     const updated = {
       ...intentConfig,
       candidates: intentConfig.candidates.filter((c) => c.id !== id),
@@ -290,10 +286,6 @@ export function AdminIntentShowcaseTab({ authToken }: AdminIntentShowcaseTabProp
   };
 
   const handleDeleteSlot = (id: string) => {
-    if (intentConfig.projectSlots.length <= 1) {
-      alert('You must have at least 1 open project slot in the Intent Console.');
-      return;
-    }
     const updated = {
       ...intentConfig,
       projectSlots: intentConfig.projectSlots.filter((s) => s.id !== id),
@@ -493,7 +485,15 @@ export function AdminIntentShowcaseTab({ authToken }: AdminIntentShowcaseTabProp
 
               {/* Candidates Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {intentConfig.candidates.map((cand) => (
+                {intentConfig.candidates.length === 0 ? (
+                  <div className="col-span-full p-8 text-center rounded-2xl bg-charcoal-900 border border-charcoal-750">
+                    <p className="text-sm font-bold text-slate-300">No Candidate Profiles Configured</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Click &quot;Add Candidate Profile&quot; to configure candidate profiles for the Intent Console.
+                    </p>
+                  </div>
+                ) : (
+                  intentConfig.candidates.map((cand) => (
                   <div
                     key={cand.id}
                     className="p-5 rounded-2xl bg-charcoal-900 border border-charcoal-750 flex flex-col justify-between space-y-4 hover:border-charcoal-600 transition-all"
@@ -552,8 +552,9 @@ export function AdminIntentShowcaseTab({ authToken }: AdminIntentShowcaseTabProp
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
+            </div>
             </div>
           )}
 
@@ -584,63 +585,72 @@ export function AdminIntentShowcaseTab({ authToken }: AdminIntentShowcaseTabProp
 
               {/* Project Slots Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {intentConfig.projectSlots.map((slot) => (
-                  <div
-                    key={slot.id}
-                    className="p-5 rounded-2xl bg-charcoal-900 border border-charcoal-750 flex flex-col justify-between space-y-4 hover:border-charcoal-600 transition-all"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                          {slot.category}
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400">{slot.teamStatus}</span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-bold text-white leading-snug line-clamp-2">{slot.title}</h4>
-                        <p className="text-xs text-slate-400 mt-1">{slot.owner}</p>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-charcoal-850 border border-charcoal-800 space-y-0.5">
-                        <span className="text-[10px] uppercase font-mono text-slate-500 block">NEEDED ROLE</span>
-                        <span className="text-xs font-bold text-amber-300 block truncate">{slot.neededRole}</span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1">
-                        {slot.tech.map((t) => (
-                          <span
-                            key={t}
-                            className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-charcoal-800 text-slate-300 border border-charcoal-700"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-charcoal-800 flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenEditSlot(slot)}
-                        leftIcon={<Edit2 className="w-3.5 h-3.5" />}
-                        className="text-slate-300 hover:text-white"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteSlot(slot.id)}
-                        leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        Delete
-                      </Button>
-                    </div>
+                {intentConfig.projectSlots.length === 0 ? (
+                  <div className="col-span-full p-8 text-center rounded-2xl bg-charcoal-900 border border-charcoal-750">
+                    <p className="text-sm font-bold text-slate-300">No Open Project Slots Configured</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Click &quot;Add Project Slot&quot; to configure open project opportunities for Mode 2.
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  intentConfig.projectSlots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className="p-5 rounded-2xl bg-charcoal-900 border border-charcoal-750 flex flex-col justify-between space-y-4 hover:border-charcoal-600 transition-all"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            {slot.category}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">{slot.teamStatus}</span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-bold text-white leading-snug line-clamp-2">{slot.title}</h4>
+                          <p className="text-xs text-slate-400 mt-1">{slot.owner}</p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-charcoal-850 border border-charcoal-800 space-y-0.5">
+                          <span className="text-[10px] uppercase font-mono text-slate-500 block">NEEDED ROLE</span>
+                          <span className="text-xs font-bold text-amber-300 block truncate">{slot.neededRole}</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1">
+                          {slot.tech.map((t) => (
+                            <span
+                              key={t}
+                              className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-charcoal-800 text-slate-300 border border-charcoal-700"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-charcoal-800 flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenEditSlot(slot)}
+                          leftIcon={<Edit2 className="w-3.5 h-3.5" />}
+                          className="text-slate-300 hover:text-white"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteSlot(slot.id)}
+                          leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

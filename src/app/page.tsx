@@ -109,6 +109,25 @@ export default function HomePage() {
         setIntentConfig(liveIntent);
         setShowcaseConfig(liveShowcase);
 
+        // 1. Check deleted projects tombstone from platform_settings
+        let deletedSet = new Set<string>();
+        if (isSupabaseConfigured()) {
+          try {
+            const { data: sRow } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'deleted_projects')
+              .maybeSingle();
+
+            if (sRow?.value) {
+              const raw = sRow.value;
+              const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
+              const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
+              deletedSet = new Set([...ids, ...titles].map((s: string) => (s || '').trim().toLowerCase()));
+            }
+          } catch {}
+        }
+
         // Fetch all active or featured projects
         let poolProjects: Project[] = [];
         if (isSupabaseConfigured()) {
@@ -134,25 +153,31 @@ export default function HomePage() {
           }
         }
 
-        // Combine pool with DEMO_PROJECTS
+        // Combine pool with DEMO_PROJECTS, strictly excluding any deleted projects
         const poolMap = new Map<string, Project>();
-        for (const dp of DEMO_PROJECTS) poolMap.set(dp.id, dp);
-        for (const pp of poolProjects) poolMap.set(pp.id, pp);
+        for (const dp of DEMO_PROJECTS) {
+          if (!deletedSet.has((dp.id || '').toLowerCase()) && !deletedSet.has((dp.title || '').trim().toLowerCase())) {
+            poolMap.set(dp.id, dp);
+          }
+        }
+        for (const pp of poolProjects) {
+          if (!deletedSet.has((pp.id || '').toLowerCase()) && !deletedSet.has((pp.title || '').trim().toLowerCase())) {
+            poolMap.set(pp.id, pp);
+          }
+        }
 
         // Select exact showcase projects configured by Admin
-        if (liveShowcase.selectedProjectIds && liveShowcase.selectedProjectIds.length > 0) {
+        if (Array.isArray(liveShowcase.selectedProjectIds)) {
           const curated: Project[] = [];
           for (const pid of liveShowcase.selectedProjectIds) {
             const found = poolMap.get(pid);
-            if (found) curated.push(found);
+            if (found && !deletedSet.has((found.id || '').toLowerCase()) && !deletedSet.has((found.title || '').trim().toLowerCase())) {
+              curated.push(found);
+            }
           }
-          if (curated.length > 0) {
-            setFeaturedProjects(curated);
-          } else {
-            setFeaturedProjects(poolProjects.slice(0, 3).length > 0 ? poolProjects.slice(0, 3) : DEMO_PROJECTS.slice(0, 3));
-          }
+          setFeaturedProjects(curated);
         } else {
-          setFeaturedProjects(poolProjects.slice(0, 3).length > 0 ? poolProjects.slice(0, 3) : DEMO_PROJECTS.slice(0, 3));
+          setFeaturedProjects(poolProjects.slice(0, 3).length > 0 ? poolProjects.slice(0, 3) : Array.from(poolMap.values()).slice(0, 3));
         }
 
         // Fetch live published hackathons
@@ -629,11 +654,25 @@ export default function HomePage() {
           {/* TAB 1: PROJECTS */}
           {showcaseTab === 'projects' && (
             <div className="space-y-8 animate-fadeIn">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredProjects.map((project) => (
-                  <ProjectCard key={project.id} project={project} variant="light" />
-                ))}
-              </div>
+              {featuredProjects.length === 0 ? (
+                <div className="p-12 text-center rounded-3xl bg-slate-50 border border-slate-200/80 max-w-lg mx-auto">
+                  <p className="text-base font-bold text-slate-800">No projects currently featured.</p>
+                  <p className="text-xs text-slate-500 mt-1">Explore all collegiate projects recruiting collaborators across campus.</p>
+                  <div className="pt-4">
+                    <Link href="/explore">
+                      <Button variant="primary" size="sm" className="bg-slate-900 text-white font-bold">
+                        Browse Project Directory
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredProjects.map((project) => (
+                    <ProjectCard key={project.id} project={project} variant="light" />
+                  ))}
+                </div>
+              )}
 
               <div className="pt-2 text-center">
                 <Link href="/explore">
