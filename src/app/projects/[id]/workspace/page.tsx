@@ -11,7 +11,6 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
-import { TeamCharterWidget } from '@/components/workspace/TeamCharterWidget';
 import { SquadShareModal } from '@/components/projects/SquadShareModal';
 import { ProjectCertificateModal } from '@/components/workspace/ProjectCertificateModal';
 import {
@@ -526,13 +525,6 @@ export default function WorkspaceOverviewPage() {
           </div>
         )}
       </div>
-
-      {/* Feature 4: Team Accountability Charter (Prevents Ghosting) */}
-      <TeamCharterWidget
-        project={project}
-        members={members}
-        currentUserId={user?.id}
-      />
 
       {/* Leave Team Confirmation Modal */}
       {isLeaveModalOpen && (

@@ -32,7 +32,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
-import { HackathonCountdownBanner } from '@/components/hackathons/HackathonCountdownBanner';
 import { ProjectSparkGeneratorModal } from '@/components/ai/ProjectSparkGeneratorModal';
 import { CampusLeaderboard } from '@/components/landing/CampusLeaderboard';
 
@@ -158,9 +157,6 @@ export default function HomePage() {
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
-      {/* Live Hackathon Countdown Banner */}
-      <HackathonCountdownBanner />
-
       {/* OAuth Notice Banner */}
       {oauthErrorNotice && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-xs font-medium text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
