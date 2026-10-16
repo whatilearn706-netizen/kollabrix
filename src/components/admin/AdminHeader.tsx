@@ -18,11 +18,13 @@ import {
   Palette,
   Server,
   FolderKanban,
+  StickyNote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
+  | 'notes'
   | 'users'
   | 'content'
   | 'faculty'
@@ -48,6 +50,7 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const tabs = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
+    { id: 'notes' as AdminTab, label: 'Admin Notes & Ideas', icon: StickyNote },
     { id: 'users' as AdminTab, label: 'User & Team Moderation', icon: Users },
     { id: 'content' as AdminTab, label: 'Projects & Faculty Problems', icon: FolderKanban },
     { id: 'faculty' as AdminTab, label: 'Faculty Passcodes', icon: KeyRound },

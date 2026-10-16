@@ -28,6 +28,7 @@ import { AdminHackathonsTab } from '@/components/admin/AdminHackathonsTab';
 import { AdminThemeTab } from '@/components/admin/AdminThemeTab';
 import { AdminEnterpriseTab } from '@/components/admin/AdminEnterpriseTab';
 import { AdminContentTab } from '@/components/admin/AdminContentTab';
+import { AdminNotesTab } from '@/components/admin/AdminNotesTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
@@ -228,6 +229,10 @@ WHERE user_id = '${user.id}';`;
           isLoading={isOverviewLoading}
           onNavigateTab={setCurrentTab}
         />
+      )}
+
+      {currentTab === 'notes' && (
+        <AdminNotesTab authToken={authToken} />
       )}
 
       {currentTab === 'users' && (
