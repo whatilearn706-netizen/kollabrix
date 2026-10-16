@@ -33,7 +33,6 @@ import {
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { ProjectSparkGeneratorModal } from '@/components/ai/ProjectSparkGeneratorModal';
-import { CampusLeaderboard } from '@/components/landing/CampusLeaderboard';
 
 export default function HomePage() {
   const router = useRouter();
@@ -738,11 +737,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* =========================================================================
-          CAMPUS LEADERBOARD & PROJECT OF THE WEEK
-         ========================================================================= */}
-      <CampusLeaderboard />
 
       {/* =========================================================================
           SECTION 5: BEGIN (CLOSING CALL TO ACTION)
