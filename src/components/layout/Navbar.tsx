@@ -25,6 +25,8 @@ import {
   Inbox,
   Bot,
   Sparkles,
+  BookOpen,
+  Shield,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -194,6 +196,26 @@ export function Navbar() {
               <span>Faculty Portal</span>
             </Link>
           )}
+
+          {/* Contextual link: Faculty Problems (Visible for all logged-in students & faculty) */}
+          {user && (
+            <Link
+              href="/problems"
+              className={clsx(
+                'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all inline-flex items-center gap-2 border',
+                pathname.startsWith('/problems')
+                  ? isNavbarDark
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-sm'
+                    : 'bg-amber-100 text-amber-800 border-amber-200 shadow-sm'
+                  : isNavbarDark
+                  ? 'text-slate-300 border-transparent hover:text-amber-400 hover:bg-white/5'
+                  : 'text-slate-600 border-transparent hover:text-amber-700 hover:bg-amber-50'
+              )}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+              <span>Faculty Problems</span>
+            </Link>
+          )}
         </nav>
 
         {/* Desktop Right Actions */}
@@ -308,6 +330,18 @@ export function Navbar() {
                       <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
                       <span>Faculty Portal</span>
                     </Link>
+
+                    {/* Private Admin Control Center - ONLY visible to verified platform administrators */}
+                    {profile?.role === 'admin' && (
+                      <Link
+                        href="/control-center-7x9"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Admin Control Center</span>
+                      </Link>
+                    )}
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
@@ -432,6 +466,26 @@ export function Navbar() {
                   <GraduationCap className="w-4 h-4 text-purple-500" />
                   <span>Faculty Portal</span>
                 </Link>
+
+                <Link
+                  href="/problems"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/10 transition-colors"
+                >
+                  <BookOpen className="w-4 h-4 text-amber-500" />
+                  <span>Faculty Problems</span>
+                </Link>
+
+                {profile?.role === 'admin' && (
+                  <Link
+                    href="/control-center-7x9"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-500 hover:bg-amber-500/10 transition-colors"
+                  >
+                    <Shield className="w-4 h-4 text-amber-500" />
+                    <span>Admin Control Center</span>
+                  </Link>
+                )}
               </>
             )}
           </div>

@@ -136,7 +136,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-3 border-t border-slate-200 dark:border-slate-800 pt-6">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Contact &amp; Governance</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              If you have questions regarding these Terms or wish to report a violation, contact your collegiate administrator via the Admin Control Center or email{' '}
+              If you have questions regarding these Terms or wish to report a violation, email{' '}
               <a href="mailto:legal@linkora.edu" className="text-violet-600 dark:text-violet-400 underline font-medium">
                 legal@linkora.edu
               </a>.

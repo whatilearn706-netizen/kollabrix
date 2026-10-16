@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Clock,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
@@ -42,7 +43,7 @@ const CATEGORIES: (ProjectCategory | 'All')[] = [
 const DIFFICULTIES: (ProjectDifficulty | 'All')[] = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
 export default function ProblemStatementsPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, isLoading: isAuthLoading, openAuthModal } = useAuth();
   const [problems, setProblems] = useState<ProblemStatement[]>(() => DEMO_PROBLEMS);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,6 +122,56 @@ export default function ProblemStatementsPage() {
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
   }, [problems, searchTerm, selectedCategory, selectedDifficulty, user?.id]);
+
+  // Loading skeleton while checking session
+  if (isAuthLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full space-y-6 animate-pulse">
+        <div className="h-28 rounded-2xl bg-slate-200 dark:bg-charcoal-900 border border-slate-300 dark:border-charcoal-800" />
+        <div className="h-64 rounded-2xl bg-slate-200 dark:bg-charcoal-900 border border-slate-300 dark:border-charcoal-800" />
+      </div>
+    );
+  }
+
+  // Not visible on first view for public visitors - Require login to view Faculty Problems
+  if (!user) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center px-4 py-16 text-center max-w-lg mx-auto">
+        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mb-6 text-amber-500 shadow-lg shadow-amber-500/5">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="inline-flex items-center gap-1.5 text-xs font-mono text-amber-500 uppercase tracking-wider mb-2 font-bold">
+          <GraduationCap className="w-4 h-4" />
+          <span>Members Exclusive</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
+          Faculty Problem Statements
+        </h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+          Curated academic problem statements and research challenges proposed by college faculty mentors are available exclusively to registered Linkora students. Sign in to browse challenges and form teams.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => openAuthModal('login')}
+            className="w-full sm:w-auto shadow-md"
+            leftIcon={<Sparkles className="w-4 h-4" />}
+          >
+            Sign In to View Problems
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => openAuthModal('signup')}
+            className="w-full sm:w-auto"
+          >
+            Create Student Account
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
