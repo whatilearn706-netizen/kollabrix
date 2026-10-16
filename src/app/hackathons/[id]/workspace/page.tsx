@@ -38,6 +38,7 @@ import {
   FileText,
   PlusCircle,
   Copy,
+  Check,
   CheckCircle2,
   AlertCircle,
   Award,
@@ -49,6 +50,7 @@ import {
   Code2,
   Layers,
   ChevronRight,
+  Search,
 } from 'lucide-react';
 import { AddChallengeModal } from '@/components/hackathons/AddChallengeModal';
 import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementModal';
@@ -115,6 +117,8 @@ export default function HackathonWorkspacePage() {
   // Copied states
   const [copiedJoinLink, setCopiedJoinLink] = useState(false);
   const [copiedTeamCode, setCopiedTeamCode] = useState(false);
+  const [copiedTeamCodeId, setCopiedTeamCodeId] = useState<string | null>(null);
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
 
   // Role checks
   const isOrganizer = Boolean(
@@ -488,14 +492,16 @@ export default function HackathonWorkspacePage() {
   };
 
   // Handle Join Team via Code
-  const handleJoinTeam = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoinTeam = async (e?: React.FormEvent, directCode?: string) => {
+    if (e) e.preventDefault();
     setTeamActionError(null);
     setTeamActionSuccess(null);
 
     if (!user || !hackathon) return;
 
-    if (!joinTeamCode.trim()) {
+    const codeToUse = (directCode || joinTeamCode).trim().toUpperCase();
+
+    if (!codeToUse) {
       setTeamActionError('Please enter a valid team invite code.');
       return;
     }
@@ -513,7 +519,7 @@ export default function HackathonWorkspacePage() {
         .from('hackathon_teams')
         .select('*, members:hackathon_team_members(id)')
         .eq('hackathon_id', hackathon.id)
-        .eq('invite_code', joinTeamCode.trim().toUpperCase())
+        .eq('invite_code', codeToUse)
         .single();
 
       if (findErr || !targetTeam) {
@@ -1366,6 +1372,215 @@ export default function HackathonWorkspacePage() {
               </div>
             </div>
           )}
+
+          {/* ========================================================================= */}
+          {/* ALL REGISTERED TEAMS DIRECTORY */}
+          {/* ========================================================================= */}
+          <div className="pt-6 border-t border-charcoal-800 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-brand-400" />
+                  <h3 className="text-lg font-bold text-white">
+                    All Registered Teams ({teams.length})
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  Browse registered teams, find teammates, or copy an invite code to join directly.
+                </p>
+              </div>
+
+              {teams.length > 0 && (
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    placeholder="Search teams, codes, tracks..."
+                    value={teamSearchQuery}
+                    onChange={(e) => setTeamSearchQuery(e.target.value)}
+                    className="pl-9 py-1.5 text-xs bg-charcoal-900 border-charcoal-800"
+                  />
+                </div>
+              )}
+            </div>
+
+            {teams.length === 0 ? (
+              <div className="p-8 rounded-2xl border border-dashed border-charcoal-800 text-center space-y-2 bg-charcoal-900/30">
+                <Users className="w-8 h-8 text-slate-500 mx-auto" />
+                <p className="text-sm font-semibold text-slate-300">No teams registered yet</p>
+                <p className="text-xs text-slate-500">
+                  Be the first to register a team and invite your classmates to compete!
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teams
+                  .filter((t) => {
+                    if (!teamSearchQuery.trim()) return true;
+                    const q = teamSearchQuery.toLowerCase();
+                    return (
+                      t.team_name.toLowerCase().includes(q) ||
+                      (t.description && t.description.toLowerCase().includes(q)) ||
+                      (t.challenge?.title && t.challenge.title.toLowerCase().includes(q)) ||
+                      (t.invite_code && t.invite_code.toLowerCase().includes(q))
+                    );
+                  })
+                  .map((t) => {
+                    const isMyTeamCard = myTeam?.id === t.id;
+                    const isTeamFull = (t.members?.length || 0) >= (hackathon.max_team_size || 4);
+                    const isCopied = copiedTeamCodeId === t.id;
+
+                    return (
+                      <div
+                        key={t.id}
+                        className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
+                          isMyTeamCard
+                            ? 'bg-brand-500/[0.04] border-brand-500/40 shadow-lg shadow-brand-500/5 ring-1 ring-brand-500/30'
+                            : 'bg-charcoal-900/70 border-charcoal-800 hover:border-charcoal-700'
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          {/* Card Header: Team Name & Member Cap */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-bold text-white text-base leading-snug truncate">
+                                  {t.team_name}
+                                </h4>
+                                {isMyTeamCard && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30 shrink-0">
+                                    Your Team
+                                  </span>
+                                )}
+                              </div>
+                              {t.description && (
+                                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                                  {t.description}
+                                </p>
+                              )}
+                            </div>
+
+                            <span
+                              className={`text-[11px] font-semibold px-2 py-1 rounded-md shrink-0 ${
+                                isTeamFull
+                                  ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              }`}
+                            >
+                              {t.members?.length || 0} / {hackathon.max_team_size || 4}
+                            </span>
+                          </div>
+
+                          {/* Challenge Track */}
+                          {t.challenge?.title && (
+                            <div className="text-xs text-slate-300 bg-charcoal-950/70 border border-charcoal-800/80 px-2.5 py-1.5 rounded-lg flex items-center gap-2">
+                              <Code2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+                              <span className="truncate">Track: {t.challenge.title}</span>
+                            </div>
+                          )}
+
+                          {/* Member Avatars */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                              Members
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {t.members && t.members.length > 0 ? (
+                                t.members.map((m) => (
+                                  <div
+                                    key={m.id}
+                                    className="flex items-center gap-1.5 bg-charcoal-950/90 border border-charcoal-800 px-2 py-1 rounded-md text-xs text-slate-200"
+                                  >
+                                    <Avatar
+                                      name={m.profile?.display_name || 'Member'}
+                                      src={m.profile?.avatar_url}
+                                      size="sm"
+                                    />
+                                    <span className="truncate max-w-[100px]">
+                                      {m.profile?.display_name || 'Member'}
+                                    </span>
+                                    {m.role === 'Leader' && (
+                                      <span className="text-amber-400 text-[10px] font-bold" title="Team Leader">
+                                        ★
+                                      </span>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-500 italic">No members yet</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Invite Code Box & Join Button */}
+                        <div className="mt-4 pt-3.5 border-t border-charcoal-800/80 space-y-2.5">
+                          {t.invite_code ? (
+                            <div className="flex items-center justify-between gap-2 bg-charcoal-950/90 border border-charcoal-800 px-3 py-2 rounded-xl">
+                              <div className="flex items-center gap-2 truncate">
+                                <span className="text-[11px] text-slate-400 font-medium">Join Code:</span>
+                                <span className="font-mono text-xs font-bold text-brand-400 tracking-wider">
+                                  {t.invite_code}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (t.invite_code) {
+                                    navigator.clipboard.writeText(t.invite_code);
+                                    setCopiedTeamCodeId(t.id);
+                                    setTimeout(() => setCopiedTeamCodeId(null), 2000);
+                                  }
+                                }}
+                                className="text-slate-400 hover:text-white p-1 rounded transition-colors flex items-center gap-1 text-[11px]"
+                                title="Copy Team Code"
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span className="text-emerald-400 font-semibold">Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-slate-500 italic">
+                              No invite code generated
+                            </div>
+                          )}
+
+                          {/* Action Button */}
+                          {!myTeam ? (
+                            <Button
+                              type="button"
+                              variant={isTeamFull ? 'outline' : 'primary'}
+                              size="sm"
+                              className="w-full text-xs font-semibold"
+                              disabled={isTeamFull || isSubmittingTeam}
+                              onClick={() => {
+                                if (t.invite_code) {
+                                  handleJoinTeam(undefined, t.invite_code);
+                                }
+                              }}
+                            >
+                              {isTeamFull ? 'Team Full' : 'Join this Team'}
+                            </Button>
+                          ) : isMyTeamCard ? (
+                            <div className="text-center py-1 text-xs text-brand-400 font-semibold">
+                              ✓ You are in this team
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
