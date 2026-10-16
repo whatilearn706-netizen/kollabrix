@@ -9,15 +9,11 @@ import { Button } from '@/components/ui/Button';
 import {
   Mail,
   Lock,
-  Phone,
   Eye,
   EyeOff,
   AlertCircle,
   CheckCircle2,
   Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  KeyRound,
 } from 'lucide-react';
 
 export interface LoginFormProps {
@@ -26,37 +22,14 @@ export interface LoginFormProps {
   redirectUrl?: string;
 }
 
-const COUNTRY_CODES = [
-  { code: '+91', country: 'IN', label: '+91 (India)' },
-  { code: '+1', country: 'US', label: '+1 (US/Canada)' },
-  { code: '+44', country: 'UK', label: '+44 (UK)' },
-  { code: '+61', country: 'AU', label: '+61 (Australia)' },
-  { code: '+65', country: 'SG', label: '+65 (Singapore)' },
-  { code: '+971', country: 'AE', label: '+971 (UAE)' },
-  { code: '+49', country: 'DE', label: '+49 (Germany)' },
-];
-
 export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore' }: LoginFormProps) {
   const router = useRouter();
-
-  // Primary Method: 'email' (Email / Gmail) or 'phone' (Phone Auth)
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
 
   // Email / Gmail State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
-
-  // Phone Auth State
-  const [countryCode, setCountryCode] = useState('+91');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [phonePassword, setPhonePassword] = useState('');
-  const [phoneAuthType, setPhoneAuthType] = useState<'otp' | 'password'>('otp');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [freeOtpCode, setFreeOtpCode] = useState<string | null>(null);
-  const [otpTimer, setOtpTimer] = useState(0);
 
   // General States
   const [isLoading, setIsLoading] = useState(false);
@@ -145,19 +118,20 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       return;
     }
 
-    if (!email || !password) {
-      setError('Please provide your email address and password.');
+    if (!email || !email.includes('@')) {
+      setError('Please provide a valid Gmail or email address.');
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password.');
       return;
     }
 
     try {
       setIsLoading(true);
-      const normalizedEmail = email.trim().includes('@')
-        ? email.trim()
-        : `${email.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '')}@linkora.local`;
-
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -195,7 +169,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
     try {
       setIsLoading(true);
       const { error: magicError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${redirectUrl}`,
         },
@@ -214,167 +188,9 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
     }
   };
 
-  // 4. Phone OTP / Password Submit
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setInfoMessage(null);
-
-    if (!isSupabaseConfigured()) {
-      setError('Supabase is not configured yet in .env.local.');
-      return;
-    }
-
-    const cleanDigits = phoneNumber.replace(/[^0-9]/g, '');
-    if (cleanDigits.length < 8) {
-      setError('Please provide a valid phone number (at least 8-10 digits).');
-      return;
-    }
-
-    const fullPhoneNumber = `${countryCode}${cleanDigits}`;
-
-    // MODE A: Verify OTP (100% Free Forever)
-    if (phoneAuthType === 'otp' && otpSent) {
-      if (!otpCode.trim()) {
-        setError('Please enter the 6-digit verification code.');
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-
-        const enteredCode = otpCode.trim();
-        const isFreeCodeMatch = (freeOtpCode && enteredCode === freeOtpCode) || enteredCode === '123456';
-
-        if (isFreeCodeMatch) {
-          const fallbackEmail = `phone_${cleanDigits}@linkora.local`;
-          const phonePass = `linkora_phone_${cleanDigits}`;
-
-          // 1. Attempt login with phone credentials
-          const { error: fallbackErr } = await supabase.auth.signInWithPassword({
-            email: fallbackEmail,
-            password: phonePass,
-          });
-
-          if (!fallbackErr) {
-            handleAuthSuccess();
-            return;
-          }
-
-          // 2. If user doesn't exist yet, auto-register them
-          const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-            email: fallbackEmail,
-            password: phonePass,
-            options: {
-              data: {
-                display_name: `User (+${countryCode.replace('+', '')} ${cleanDigits.slice(-4)})`,
-                phone: fullPhoneNumber,
-              },
-            },
-          });
-
-          if (!signUpErr && (signUpData.session || signUpData.user)) {
-            handleAuthSuccess();
-            return;
-          }
-        }
-
-        // Try standard Supabase SMS verification if free code wasn't matched
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          phone: fullPhoneNumber,
-          token: enteredCode,
-          type: 'sms',
-        });
-
-        if (verifyError) {
-          setError(
-            freeOtpCode
-              ? `Invalid code. Please enter the verification code shown above (${freeOtpCode}).`
-              : verifyError.message
-          );
-          return;
-        }
-
-        handleAuthSuccess();
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'OTP verification failed.');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // MODE B: Generate & Send OTP Code (100% Free Forever - Zero SMS Carrier Fees)
-    if (phoneAuthType === 'otp' && !otpSent) {
-      try {
-        setIsLoading(true);
-
-        // Generate authentic dynamic 6-digit verification code
-        const dynamicCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setFreeOtpCode(dynamicCode);
-        setOtpSent(true);
-        setOtpTimer(60);
-
-        // Attempt background provider SMS if configured, without blocking or throwing trial errors
-        try {
-          await supabase.auth.signInWithOtp({
-            phone: fullPhoneNumber,
-          });
-        } catch {
-          // Free in-app OTP guarantees 100% reliability with zero carrier costs
-        }
-
-        setInfoMessage('Instant verification code generated! 100% free with no SMS carrier fees or 30-day limits.');
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to generate verification code.');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // MODE C: Phone + Password Login
-    if (phoneAuthType === 'password') {
-      if (!phonePassword) {
-        setError('Please enter your account password.');
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-
-        // First attempt direct Supabase phone sign-in
-        const { error: phonePassErr } = await supabase.auth.signInWithPassword({
-          phone: fullPhoneNumber,
-          password: phonePassword,
-        });
-
-        if (phonePassErr) {
-          // Try fallback deterministic phone alias
-          const fallbackEmail = `phone_${cleanDigits}@linkora.local`;
-          const { error: aliasErr } = await supabase.auth.signInWithPassword({
-            email: fallbackEmail,
-            password: phonePassword,
-          });
-
-          if (aliasErr) {
-            setError('Invalid phone number or password. Check credentials or sign in with OTP.');
-            return;
-          }
-        }
-
-        handleAuthSuccess();
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Sign in failed.');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // 5. Password Reset Link
+  // 4. Password Reset Link
   const handleForgotPassword = async () => {
-    if (!email) {
+    if (!email || !email.includes('@')) {
       setError('Please enter your email or Gmail address above first to receive a password reset link.');
       return;
     }
@@ -386,7 +202,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
     try {
       setIsLoading(true);
       setError(null);
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
       });
 
@@ -411,7 +227,6 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         disabled={isGoogleLoading || isLoading}
         className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
       >
-        {/* Official Multi-colored Google Icon */}
         <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
           <path
             fill="#4285F4"
@@ -437,48 +252,11 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       <div className="relative flex items-center justify-center">
         <div className="border-t border-slate-200 w-full" />
         <span className="bg-white px-3 text-[11px] font-mono uppercase tracking-wider text-slate-400 absolute font-semibold">
-          or use credentials
+          or continue with email
         </span>
       </div>
 
-      {/* Auth Method Segmented Tabs: Email vs Phone */}
-      <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-bold">
-        <button
-          type="button"
-          onClick={() => {
-            setAuthMethod('email');
-            setError(null);
-            setInfoMessage(null);
-          }}
-          className={`flex items-center justify-center gap-2 py-2 rounded-xl transition-all ${
-            authMethod === 'email'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Mail className="w-3.5 h-3.5" />
-          <span>Email / Gmail</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setAuthMethod('phone');
-            setError(null);
-            setInfoMessage(null);
-          }}
-          className={`flex items-center justify-center gap-2 py-2 rounded-xl transition-all ${
-            authMethod === 'phone'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Phone className="w-3.5 h-3.5" />
-          <span>Phone Number</span>
-        </button>
-      </div>
-
-      {/* Alert Notices */}
+      {/* Alerts */}
       {error && (
         <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs font-medium text-red-700 leading-relaxed">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
@@ -500,246 +278,72 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         </div>
       )}
 
-      {/* =========================================================================
-          TAB 1: EMAIL / GMAIL AUTH
-         ========================================================================= */}
-      {authMethod === 'email' && (
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
+      {/* Standard Email Form */}
+      <form onSubmit={handleEmailSubmit} className="space-y-4">
+        <Input
+          label="Email or Gmail Address"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="e.g. yourname@gmail.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          leftIcon={<Mail className="w-4 h-4" />}
+        />
+
+        <div className="space-y-1">
           <Input
-            label="Email or Gmail Address"
-            type="text"
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
             required
-            autoComplete="email"
-            placeholder="e.g. yourname@gmail.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            leftIcon={<Mail className="w-4 h-4" />}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            leftIcon={<Lock className="w-4 h-4" />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-slate-400 hover:text-slate-700 transition-colors p-1"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            }
           />
 
-          <div className="space-y-1">
-            <Input
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              rightIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-slate-700 transition-colors p-1"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              }
-            />
+          <div className="flex items-center justify-between pt-1 text-xs">
+            <button
+              type="button"
+              onClick={handleSendMagicLink}
+              disabled={isLoading || isMagicLinkSent}
+              className="font-bold text-slate-600 hover:text-slate-900 transition-colors inline-flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3 text-emerald-600" />
+              <span>Send Magic Link</span>
+            </button>
 
-            <div className="flex items-center justify-between pt-1 text-xs">
-              <button
-                type="button"
-                onClick={handleSendMagicLink}
-                disabled={isLoading || isMagicLinkSent}
-                className="font-bold text-slate-600 hover:text-slate-900 transition-colors inline-flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3 text-emerald-600" />
-                <span>Send Magic Link</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                disabled={isLoading}
-                className="font-bold text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                Forgot password?
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={isLoading}
+              className="font-bold text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              Forgot password?
+            </button>
           </div>
+        </div>
 
-          <Button
-            type="submit"
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl shadow-xs"
-            isLoading={isLoading}
-            size="lg"
-          >
-            Sign In with Email
-          </Button>
-        </form>
-      )}
-
-      {/* =========================================================================
-          TAB 2: PHONE AUTH
-         ========================================================================= */}
-      {authMethod === 'phone' && (
-        <form onSubmit={handlePhoneSubmit} className="space-y-4">
-          {/* Sub-toggle: Free OTP vs Password */}
-          <div className="flex items-center justify-between text-xs pb-1">
-            <span className="font-bold text-slate-700">Phone Verification Mode:</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setPhoneAuthType('otp');
-                  setOtpSent(false);
-                }}
-                className={`font-mono text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
-                  phoneAuthType === 'otp'
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                Free OTP
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPhoneAuthType('password');
-                  setOtpSent(false);
-                }}
-                className={`font-mono text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
-                  phoneAuthType === 'password'
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                Password
-              </button>
-            </div>
-          </div>
-
-          {/* 100% Free Forever Notice */}
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 font-medium bg-emerald-50/90 px-3 py-1.5 rounded-xl border border-emerald-200/80">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>100% Free Forever • Zero carrier SMS fees or 30-day limits</span>
-          </div>
-
-          {/* Country Code & Phone Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-700">Phone Number</label>
-            <div className="flex gap-2">
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                disabled={otpSent}
-                className="px-2.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-slate-900 shadow-2xs"
-              >
-                {COUNTRY_CODES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-
-              <div className="relative flex-1">
-                <input
-                  type="tel"
-                  required
-                  disabled={otpSent}
-                  placeholder="98765 43210"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 shadow-2xs"
-                />
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              </div>
-            </div>
-          </div>
-
-          {/* OTP Code Input (when OTP mode is active and code dispatched) */}
-          {phoneAuthType === 'otp' && otpSent && (
-            <div className="space-y-3 pt-1 animate-fadeIn">
-              {/* Free Instant Verification Badge */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-slate-800 text-xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold flex items-center gap-1.5 text-emerald-800">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    Free Instant Verification
-                  </span>
-                  <span className="text-[10px] font-mono uppercase bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full text-emerald-800 font-black">
-                    100% Free Forever
-                  </span>
-                </div>
-                <p className="text-slate-600 text-[11px] leading-relaxed">
-                  No paid Twilio SMS gateway, credit card, or 30-day trial expiration required. Use your instant verification code below:
-                </p>
-                <div className="flex items-center justify-center py-1">
-                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border-2 border-emerald-400 shadow-xs">
-                    <span className="font-mono text-xl sm:text-2xl font-black tracking-[0.35em] text-emerald-950">
-                      {freeOtpCode || '123456'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setOtpCode(freeOtpCode || '123456')}
-                      className="text-[10px] uppercase font-mono font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-md transition-all shrink-0 ml-1"
-                    >
-                      Auto-Fill
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">
-                  Enter 6-Digit Code
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    required
-                    autoFocus
-                    placeholder="123456"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    className="w-full tracking-[0.4em] font-mono text-center text-lg font-black py-2.5 rounded-xl bg-white border-2 border-slate-900 text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-0.5 text-slate-500">
-                <button
-                  type="button"
-                  onClick={() => setOtpSent(false)}
-                  className="font-bold text-slate-700 hover:text-black underline"
-                >
-                  Change phone number
-                </button>
-                <span>Valid for instant sign in</span>
-              </div>
-            </div>
-          )}
-
-          {/* Phone Password Input (when Password mode is selected) */}
-          {phoneAuthType === 'password' && (
-            <Input
-              label="Account Password"
-              type="password"
-              required
-              placeholder="••••••••"
-              value={phonePassword}
-              onChange={(e) => setPhonePassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-            />
-          )}
-
-          <Button
-            type="submit"
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl shadow-xs"
-            isLoading={isLoading}
-            size="lg"
-          >
-            {phoneAuthType === 'otp'
-              ? otpSent
-                ? 'Verify Code & Sign In'
-                : 'Send Free Verification Code'
-              : 'Sign In with Phone'}
-          </Button>
-        </form>
-      )}
+        <Button
+          type="submit"
+          className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl shadow-xs"
+          isLoading={isLoading}
+          size="lg"
+        >
+          Sign In with Email
+        </Button>
+      </form>
 
       {/* Switch to Sign Up */}
       {onSwitchToSignup && (
