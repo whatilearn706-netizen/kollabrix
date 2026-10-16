@@ -34,11 +34,16 @@ import { AdminIntentShowcaseTab } from '@/components/admin/AdminIntentShowcaseTa
 import { AdminMasterControlTab } from '@/components/admin/AdminMasterControlTab';
 
 export default function AdminControlCenterPage() {
-  const { user, profile, openAuthModal, loginWithAdminPasscode, isLoading: isAuthLoading } = useAuth();
+  const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
     if (typeof window !== 'undefined') {
-      if (localStorage.getItem('linkora_admin_session') === 'true') return true;
+      if (
+        localStorage.getItem('linkora_admin_session') === 'true' ||
+        document.cookie.includes('linkora_admin_session=true')
+      ) {
+        return true;
+      }
     }
     return null;
   });
@@ -69,17 +74,26 @@ export default function AdminControlCenterPage() {
   // Authoritative server-side verification with Owner Bypass
   useEffect(() => {
     async function verify() {
-      // Check stored admin session
-      if (typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true') {
-        setIsAdmin(true);
-        setAdminUser({ id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' });
-        setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
+      // Check stored admin session or cookie
+      if (typeof window !== 'undefined') {
+        const hasAdmin =
+          localStorage.getItem('linkora_admin_session') === 'true' ||
+          document.cookie.includes('linkora_admin_session=true');
+        if (hasAdmin) {
+          setIsAdmin(true);
+          setAdminUser({ id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' });
+          setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
+        }
       }
 
       if (isAuthLoading) return;
 
       if (!user) {
-        if (typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true') {
+        if (
+          typeof window !== 'undefined' &&
+          (localStorage.getItem('linkora_admin_session') === 'true' ||
+            document.cookie.includes('linkora_admin_session=true'))
+        ) {
           setIsAdmin(true);
         } else {
           setIsAdmin(false);
@@ -96,6 +110,8 @@ export default function AdminControlCenterPage() {
           setAdminProfile({ ...(profile || {}), role: 'admin' });
           try {
             localStorage.setItem('linkora_admin_session', 'true');
+            document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
+            document.cookie = 'linkora_user_email=goyalmayank142@gmail.com; path=/; max-age=31536000; SameSite=Lax';
           } catch (e) {}
         }
 
@@ -118,7 +134,10 @@ export default function AdminControlCenterPage() {
           setAdminProfile(data.profile);
         } else if (isOwner) {
           setIsAdmin(true);
-        } else if (localStorage.getItem('linkora_admin_session') === 'true') {
+        } else if (
+          localStorage.getItem('linkora_admin_session') === 'true' ||
+          document.cookie.includes('linkora_admin_session=true')
+        ) {
           setIsAdmin(true);
         } else {
           setIsAdmin(false);
@@ -126,7 +145,11 @@ export default function AdminControlCenterPage() {
       } catch (err) {
         console.warn('Admin verification check note:', err);
         const email = (user?.email || '').trim().toLowerCase();
-        if (email === 'goyalmayank142@gmail.com' || localStorage.getItem('linkora_admin_session') === 'true') {
+        if (
+          email === 'goyalmayank142@gmail.com' ||
+          localStorage.getItem('linkora_admin_session') === 'true' ||
+          document.cookie.includes('linkora_admin_session=true')
+        ) {
           setIsAdmin(true);
         }
       }
@@ -200,6 +223,27 @@ export default function AdminControlCenterPage() {
           <p className="text-xs text-slate-400 leading-relaxed">
             Private platform governance suite. Sign in with your administrator account or enter the emergency founder passcode.
           </p>
+        </div>
+
+        {/* 1-Click Fast Unlock as Founder */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-500/30 text-center space-y-2.5 shadow-elevated">
+          <p className="text-xs font-semibold text-amber-300">
+            Platform Owner: Mayank Goyal (goyalmayank142@gmail.com)
+          </p>
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            className="w-full bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-black shadow-elevated border-none py-3 text-sm"
+            onClick={() => {
+              loginAsOwner();
+              setIsAdmin(true);
+              setAdminUser({ id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' });
+              setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
+            }}
+          >
+            ⚡ 1-Click Founder Access (Authorize Now)
+          </Button>
         </div>
 
         {/* 1-Click Fast Unlock with Passcode */}

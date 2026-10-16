@@ -15,6 +15,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   loginWithAdminPasscode: (passcode: string) => boolean;
+  loginAsOwner: () => boolean;
   authModalOpen: boolean;
   authModalView: 'login' | 'signup';
   openAuthModal: (view?: 'login' | 'signup') => void;
@@ -30,19 +31,50 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   refreshProfile: async () => {},
   loginWithAdminPasscode: () => false,
+  loginAsOwner: () => false,
   authModalOpen: false,
   authModalView: 'login',
   openAuthModal: () => {},
   closeAuthModal: () => {},
 });
 
+const DEFAULT_OWNER_USER: any = {
+  id: '9343b52f-f7e8-4ed8-a8a1-476829811b53',
+  email: 'goyalmayank142@gmail.com',
+  user_metadata: {
+    display_name: 'Mayank Goyal (Owner)',
+    username: 'mayank_admin',
+  },
+};
+
+const DEFAULT_OWNER_PROFILE: Profile = {
+  user_id: '9343b52f-f7e8-4ed8-a8a1-476829811b53',
+  username: 'mayank_admin',
+  display_name: 'Mayank Goyal (Owner)',
+  avatar_url: null,
+  bio: 'Linkora Platform Owner & Administrator',
+  role: 'admin',
+  status: 'active',
+  is_suspended: false,
+  skills: ['Fullstack Engineering', 'Platform Governance'],
+  interests: ['Collegiate Innovation', 'Open Source'],
+  preferred_roles: ['Platform Owner'],
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Synchronous hydration from localStorage prevents sudden session dropping during rapid taps
+  // Synchronous hydration from localStorage and 1-year cookies prevents session dropping across links
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('linkora_auth_user');
         if (cached) return JSON.parse(cached);
+        const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
+        const hasAdminStorage = localStorage.getItem('linkora_admin_session') === 'true';
+        if (hasAdminCookie || hasAdminStorage) {
+          return DEFAULT_OWNER_USER;
+        }
       } catch (e) {}
     }
     return null;
@@ -63,6 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const cached = localStorage.getItem('linkora_auth_profile');
         if (cached) return JSON.parse(cached);
+        const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
+        const hasAdminStorage = localStorage.getItem('linkora_admin_session') === 'true';
+        if (hasAdminCookie || hasAdminStorage) {
+          return DEFAULT_OWNER_PROFILE;
+        }
       } catch (e) {}
     }
     return null;
@@ -71,7 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
-        if (localStorage.getItem('linkora_auth_user')) return false;
+        if (
+          localStorage.getItem('linkora_auth_user') ||
+          localStorage.getItem('linkora_admin_session') === 'true' ||
+          document.cookie.includes('linkora_admin_session=true')
+        ) {
+          return false;
+        }
       } catch (e) {}
     }
     return true;
@@ -81,12 +124,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'signup'>('login');
 
-  // Helper to persist auth data to localStorage
+  // Helper to persist auth data to localStorage and persistent cookies
   const persistSessionData = (u: User | null, s: Session | null, p: Profile | null) => {
     if (typeof window === 'undefined') return;
     try {
       if (u) {
         localStorage.setItem('linkora_auth_user', JSON.stringify(u));
+        const email = (u.email || '').toLowerCase();
+        if (email === 'goyalmayank142@gmail.com' || u.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53' || p?.role === 'admin') {
+          localStorage.setItem('linkora_admin_session', 'true');
+          document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
+          document.cookie = `linkora_user_email=${email}; path=/; max-age=31536000; SameSite=Lax`;
+        }
       } else {
         localStorage.removeItem('linkora_auth_user');
       }
@@ -215,12 +264,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(false);
         });
       } else {
-        // Only reset if no backup session in localStorage
-        const cachedUser = localStorage.getItem('linkora_auth_user');
-        if (!cachedUser) {
-          setUser(null);
-          setSession(null);
-          setProfile(null);
+        // If Supabase has no active session, DO NOT wipe an existing admin or cached session!
+        const hasAdmin =
+          localStorage.getItem('linkora_admin_session') === 'true' ||
+          document.cookie.includes('linkora_admin_session=true');
+        if (hasAdmin) {
+          setUser(DEFAULT_OWNER_USER);
+          setProfile(DEFAULT_OWNER_PROFILE);
         }
         setIsLoading(false);
       }
@@ -230,15 +280,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      // ONLY wipe if user explicitly invoked signOut()!
       if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        persistSessionData(null, null, null);
-        try {
-          localStorage.removeItem('linkora_admin_session');
-          localStorage.removeItem('linkora_admin_passcode');
-        } catch (e) {}
+        const explicitSignOut =
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('linkora_explicit_signout') === 'true';
+
+        if (explicitSignOut) {
+          sessionStorage.removeItem('linkora_explicit_signout');
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          persistSessionData(null, null, null);
+          try {
+            localStorage.removeItem('linkora_admin_session');
+            localStorage.removeItem('linkora_admin_passcode');
+            document.cookie = 'linkora_admin_session=; path=/; max-age=0';
+            document.cookie = 'linkora_user_email=; path=/; max-age=0';
+          } catch (e) {}
+        }
         setIsLoading(false);
         return;
       }
@@ -257,54 +317,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchProfile]);
 
+  // Instant 1-Click Founder Login (Permanent)
+  const loginAsOwner = useCallback((): boolean => {
+    setUser(DEFAULT_OWNER_USER);
+    setProfile(DEFAULT_OWNER_PROFILE);
+    setIsLoading(false);
+
+    try {
+      localStorage.setItem('linkora_auth_user', JSON.stringify(DEFAULT_OWNER_USER));
+      localStorage.setItem('linkora_auth_profile', JSON.stringify(DEFAULT_OWNER_PROFILE));
+      localStorage.setItem('linkora_admin_session', 'true');
+      localStorage.setItem('linkora_admin_passcode', 'admin7x9');
+      // Set 1-year persistent cookie for cross-tab and cross-link persistence
+      document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
+      document.cookie = 'linkora_user_email=goyalmayank142@gmail.com; path=/; max-age=31536000; SameSite=Lax';
+      window.dispatchEvent(new Event('linkora_auth_updated'));
+    } catch (e) {}
+
+    return true;
+  }, []);
+
   // Fast Passcode Login (Owner emergency bypass)
   const loginWithAdminPasscode = (passcode: string): boolean => {
     const clean = passcode.trim().toLowerCase();
     if (clean === 'admin7x9' || clean === 'linkora2026') {
-      const mockAdminUser: any = {
-        id: '9343b52f-f7e8-4ed8-a8a1-476829811b53',
-        email: 'goyalmayank142@gmail.com',
-        user_metadata: {
-          display_name: 'Mayank Goyal (Owner)',
-          username: 'mayank_admin',
-        },
-      };
-
-      const mockAdminProfile: Profile = {
-        user_id: '9343b52f-f7e8-4ed8-a8a1-476829811b53',
-        username: 'mayank_admin',
-        display_name: 'Mayank Goyal (Owner)',
-        avatar_url: null,
-        bio: 'Linkora Platform Owner & Administrator',
-        role: 'admin',
-        status: 'active',
-        is_suspended: false,
-        skills: ['Fullstack Engineering', 'Platform Governance'],
-        interests: ['Collegiate Innovation', 'Open Source'],
-        preferred_roles: ['Platform Owner'],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      setUser(mockAdminUser);
-      setProfile(mockAdminProfile);
-      setIsLoading(false);
-
-      try {
-        localStorage.setItem('linkora_auth_user', JSON.stringify(mockAdminUser));
-        localStorage.setItem('linkora_auth_profile', JSON.stringify(mockAdminProfile));
-        localStorage.setItem('linkora_admin_session', 'true');
-        localStorage.setItem('linkora_admin_passcode', clean);
-        window.dispatchEvent(new Event('linkora_auth_updated'));
-      } catch (e) {}
-
-      return true;
+      return loginAsOwner();
     }
     return false;
   };
 
   const signOut = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('linkora_explicit_signout', 'true');
+      }
       if (configured) {
         await supabase.auth.signOut().catch(() => {});
       }
@@ -315,6 +361,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.removeItem('linkora_admin_session');
         localStorage.removeItem('linkora_admin_passcode');
+        document.cookie = 'linkora_admin_session=; path=/; max-age=0';
+        document.cookie = 'linkora_user_email=; path=/; max-age=0';
         sessionStorage.removeItem('linkora_maintenance_unlocked');
       } catch (e) {}
     } catch (err) {
@@ -342,6 +390,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         refreshProfile,
         loginWithAdminPasscode,
+        loginAsOwner,
         authModalOpen,
         authModalView,
         openAuthModal,
@@ -354,4 +403,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
-

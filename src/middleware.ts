@@ -19,6 +19,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  const isAdminCookie = request.cookies.get('linkora_admin_session')?.value === 'true';
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -40,13 +42,16 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          // NEVER wipe valid cookies on GET requests due to unverified background calls
+          cookiesToSet.forEach(({ name, value }) => {
+            if (value) request.cookies.set(name, value);
+          });
           response = NextResponse.next({
             request,
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            if (value) response.cookies.set(name, value, options);
+          });
         },
       },
     });
@@ -56,6 +61,7 @@ export async function middleware(request: NextRequest) {
   } catch (err) {
     // Fail safely without disrupting the page request
   }
+
 
   return response;
 }
