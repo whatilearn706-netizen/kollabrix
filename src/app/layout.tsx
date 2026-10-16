@@ -8,17 +8,58 @@ import { AuthModal } from '@/components/auth/AuthModal';
 
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://teamforge-pink.vercel.app';
+
 export const metadata: Metadata = {
-  title: 'Linkora — College-Wide Student Project Collaboration Platform',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'Linkora — College-Wide Student Project Collaboration Platform',
+    template: '%s | Linkora',
+  },
   description:
-    'Discover project ideas, meet people who complement your skills, and build meaningful software projects together.',
+    'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
   keywords: [
+    'Linkora',
+    'TeamForge',
     'student projects',
     'college collaboration',
     'hackathon teams',
     'developer platform',
     'student portfolio',
+    'university software development',
   ],
+  authors: [{ name: 'Linkora Team' }],
+  creator: 'Linkora',
+  publisher: 'Linkora',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: siteUrl,
+    title: 'Linkora — College-Wide Student Project Collaboration Platform',
+    description:
+      'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
+    siteName: 'Linkora',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Linkora — College-Wide Student Project Collaboration Platform',
+    description:
+      'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({
