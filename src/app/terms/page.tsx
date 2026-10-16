@@ -49,7 +49,7 @@ export default function TermsOfServicePage() {
               <span>Acceptance of Terms</span>
             </h2>
             <p>
-              By accessing, browsing, registering for, or using the <strong>Linkora (TeamForge)</strong> collegiate collaboration platform (&quot;Platform&quot;), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, you may not access or use the Platform.
+              By accessing, browsing, registering for, or using the <strong>Linkora</strong> collegiate collaboration platform (&quot;Platform&quot;), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, you may not access or use the Platform.
             </p>
           </section>
 

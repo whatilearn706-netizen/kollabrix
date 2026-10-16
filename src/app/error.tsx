@@ -14,7 +14,7 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     // Log the error for debugging
-    console.error('Captured client error in TeamForge:', error);
+    console.error('Captured client error in Linkora:', error);
   }, [error]);
 
   return (

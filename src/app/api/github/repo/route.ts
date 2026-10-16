@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github.v3+json',
-    'User-Agent': 'TeamForge-College-Collaboration-App',
+    'User-Agent': 'Linkora-College-Collaboration-App',
   };
 
   const serverGithubToken = process.env.GITHUB_TOKEN || process.env.GITHUB_PERSONAL_ACCESS_TOKEN;

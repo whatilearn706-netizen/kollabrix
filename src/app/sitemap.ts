@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://teamforge-pink.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://linkora-edu.vercel.app';
   const currentDate = new Date().toISOString();
 
   return [

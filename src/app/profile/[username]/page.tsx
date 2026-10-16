@@ -439,7 +439,7 @@ export default function PublicProfilePage() {
                 </h2>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Factual log of deliverables completed by this student across TeamForge collegiate workspaces.
+                Factual log of deliverables completed by this student across Linkora collegiate workspaces.
               </p>
             </div>
             <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-charcoal-850 text-slate-300 border border-charcoal-750 self-start">

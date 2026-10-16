@@ -8,7 +8,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://teamforge-pink.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://linkora-edu.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -20,7 +20,6 @@ export const metadata: Metadata = {
     'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
   keywords: [
     'Linkora',
-    'TeamForge',
     'student projects',
     'college collaboration',
     'hackathon teams',

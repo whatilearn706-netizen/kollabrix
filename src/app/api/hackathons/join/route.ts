@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'You must sign in to your TeamForge account before joining a hackathon.' },
+        { error: 'You must sign in to your Linkora account before joining a hackathon.' },
         { status: 401 }
       );
     }

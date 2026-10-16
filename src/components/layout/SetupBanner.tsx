@@ -47,7 +47,7 @@ export function SetupBanner() {
       <Modal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
-        title="Connect Supabase to TeamForge"
+        title="Connect Supabase to Linkora"
         description="Follow these 3 simple steps to enable live database storage and authentication:"
         maxWidth="lg"
       >
@@ -58,7 +58,7 @@ export function SetupBanner() {
               <span>Step 1: Create a Supabase Project</span>
             </div>
             <p className="text-slate-400 leading-relaxed">
-              Visit <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-brand-400 underline inline-flex items-center gap-0.5">supabase.com <ExternalLink className="w-3 h-3" /></a> and create a new free PostgreSQL project named <code>teamforge</code>.
+              Visit <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-brand-400 underline inline-flex items-center gap-0.5">supabase.com <ExternalLink className="w-3 h-3" /></a> and create a new free PostgreSQL project named <code>linkora</code>.
             </p>
           </div>
 

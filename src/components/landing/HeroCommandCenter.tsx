@@ -186,7 +186,7 @@ export function HeroCommandCenter({
             <span className="w-3 h-3 rounded-full bg-amber-400 inline-block" />
             <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
             <span className="ml-2 font-mono text-[11px] text-slate-500 hidden sm:inline">
-              teamforge.campus/console/
+              linkora.campus/console/
               <strong className="text-violet-700 font-bold">{activeTab}</strong>
             </span>
           </div>

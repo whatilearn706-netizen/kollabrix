@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://teamforge-pink.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://linkora-edu.vercel.app';
 
   return {
     rules: [

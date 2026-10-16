@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github.v3+json',
-    'User-Agent': 'TeamForge-College-Collaboration-App',
+    'User-Agent': 'Linkora-College-Collaboration-App',
   };
 
   // Optional: If server has a GITHUB_TOKEN configured, use it to increase rate limit from 60 to 5000 req/hr
