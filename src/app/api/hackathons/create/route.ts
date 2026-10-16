@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
       password = '',
       minTeamSize = 1,
       maxTeamSize = 4,
+      bannerUrl,
+      banner_url,
     } = body;
 
     if (!creatorId) {
@@ -76,6 +78,8 @@ export async function POST(request: NextRequest) {
       passwordSalt = hashed.salt;
     }
 
+    const resolvedBannerUrl = bannerUrl?.trim() || banner_url?.trim() || null;
+
     // Embed resilient metadata comment so it's readable even if columns are missing
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
       access_type: accessType,
@@ -84,6 +88,7 @@ export async function POST(request: NextRequest) {
       password_salt: passwordSalt,
       min_team_size: minTeamSize,
       max_team_size: maxTeamSize,
+      banner_url: resolvedBannerUrl,
     })} -->`;
 
     const payload = {
@@ -101,6 +106,7 @@ export async function POST(request: NextRequest) {
       themes,
       prize_pool: prizePool?.trim() || null,
       website_url: `https://teamforge.college/h/${joinCode}`,
+      banner_url: resolvedBannerUrl,
       rules: rules?.trim() || null,
       contact_info: contactInfo?.trim() || null,
       access_type: accessType,
@@ -142,6 +148,7 @@ export async function POST(request: NextRequest) {
           themes,
           prize_pool: prizePool?.trim() || null,
           website_url: `https://teamforge.college/h/${joinCode}`,
+          banner_url: resolvedBannerUrl,
           is_verified: true,
         };
 

@@ -54,6 +54,17 @@ export function HackathonCard({
       }}
       className="site-card border hover:border-slate-400 p-6 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-xl group relative overflow-hidden space-y-4"
     >
+      {hackathon.banner_url && (
+        <div className="-mx-6 -mt-6 mb-1 h-32 overflow-hidden relative border-b border-white/10">
+          <img
+            src={hackathon.banner_url}
+            alt={hackathon.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        </div>
+      )}
+
       <div className="space-y-3.5">
         {/* Header: Mode, Deadline & Bookmark */}
         <div className="flex items-center justify-between gap-2">

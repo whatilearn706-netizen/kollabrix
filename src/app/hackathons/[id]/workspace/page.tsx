@@ -364,7 +364,64 @@ export default function HackathonWorkspacePage() {
 
   useEffect(() => {
     loadWorkspace();
-  }, [loadWorkspace]);
+
+    // Supabase Realtime subscription for live hackathon workspace sync
+    const channel = supabase
+      .channel(`hackathon-workspace-${hackathonId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hackathon_announcements',
+          filter: `hackathon_id=eq.${hackathonId}`,
+        },
+        () => {
+          loadWorkspace();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hackathon_teams',
+          filter: `hackathon_id=eq.${hackathonId}`,
+        },
+        () => {
+          loadWorkspace();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hackathon_challenges',
+          filter: `hackathon_id=eq.${hackathonId}`,
+        },
+        () => {
+          loadWorkspace();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hackathon_submissions',
+          filter: `hackathon_id=eq.${hackathonId}`,
+        },
+        () => {
+          loadWorkspace();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [hackathonId, loadWorkspace]);
 
   // Handle Create Team
   const handleCreateTeam = async (e: React.FormEvent) => {
@@ -665,6 +722,11 @@ export default function HackathonWorkspacePage() {
 
               <span className="text-[11px] font-mono text-slate-300 bg-midnight-800 px-2.5 py-0.5 rounded-full border border-midnight-700">
                 Mode: {hackathon.mode} {hackathon.location ? `• ${hackathon.location}` : ''}
+              </span>
+
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live Synced
               </span>
 
               {isOrganizer && (

@@ -16,6 +16,7 @@ import {
   KeyRound,
   Trophy,
   Palette,
+  Server,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -25,6 +26,7 @@ export type AdminTab =
   | 'faculty'
   | 'hackathons'
   | 'theme'
+  | 'enterprise'
   | 'explore'
   | 'taxonomy'
   | 'audit';
@@ -48,6 +50,7 @@ export function AdminHeader({
     { id: 'faculty' as AdminTab, label: 'Faculty Passcodes', icon: KeyRound },
     { id: 'hackathons' as AdminTab, label: 'Hackathons', icon: Trophy },
     { id: 'theme' as AdminTab, label: 'Design & Colors', icon: Palette },
+    { id: 'enterprise' as AdminTab, label: 'Enterprise Setup', icon: Server },
     { id: 'explore' as AdminTab, label: 'Explore & Featured', icon: Compass },
     { id: 'taxonomy' as AdminTab, label: 'Taxonomy & Match Scoring', icon: Sliders },
     { id: 'audit' as AdminTab, label: 'Audit Logs', icon: FileText },

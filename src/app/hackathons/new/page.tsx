@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { FileUpload } from '@/components/ui/FileUpload';
 import {
   Trophy,
   Calendar,
@@ -48,6 +49,7 @@ export default function NewHackathonPage() {
       : 'College Department of CSE'
   );
   const [description, setDescription] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
   const [mode, setMode] = useState<HackathonMode>('In-Person');
   const [location, setLocation] = useState('Campus Turing Computer Lab, Tech Block');
   const [accessType, setAccessType] = useState<'private' | 'public'>('private');
@@ -136,6 +138,7 @@ export default function NewHackathonPage() {
           contactInfo: contactInfo.trim() || null,
           prizePool: prizePool.trim() || null,
           websiteUrl: websiteUrl.trim() || null,
+          bannerUrl: bannerUrl.trim() || null,
         }),
       });
 
@@ -155,6 +158,7 @@ export default function NewHackathonPage() {
             password_salt: resData.hackathon.password_salt,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
+            banner_url: bannerUrl.trim() || null,
           })} -->`;
 
           const clientPayload = {
@@ -171,6 +175,7 @@ export default function NewHackathonPage() {
             themes,
             prize_pool: prizePool.trim() || null,
             website_url: `https://teamforge.college/h/${resData.joinCode}`,
+            banner_url: bannerUrl.trim() || null,
             is_verified: true,
           };
 
@@ -387,6 +392,17 @@ export default function NewHackathonPage() {
                   required
                 />
               </div>
+
+              <FileUpload
+                label="Event Banner Image (Optional)"
+                helperText="Drag & drop a banner image or click to browse (16:9 recommended)"
+                value={bannerUrl}
+                onChange={(url) => setBannerUrl(url)}
+                options={{
+                  bucket: 'hackathon-banners',
+                  folder: `banners/${user?.id || 'public'}`,
+                }}
+              />
 
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1.5">

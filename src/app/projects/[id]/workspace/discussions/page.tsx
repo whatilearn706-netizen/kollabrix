@@ -397,6 +397,13 @@ export default function WorkspaceDiscussionsPage() {
             Private thread for workspace ideas, technical architecture, and team syncs.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Live Synced
+          </span>
+        </div>
       </div>
 
       {/* New Post Box */}

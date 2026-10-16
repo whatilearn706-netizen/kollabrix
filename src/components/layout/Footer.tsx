@@ -154,17 +154,28 @@ export function Footer() {
         {/* Bottom Credits */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs opacity-70">
           <p>© {new Date().getFullYear()} {theme.siteTitle || 'Linkora'} Collegiate Innovation Network. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <Link href="/explore" className="hover:underline">
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/terms" className="hover:underline hover:opacity-100 transition-opacity">
+              Terms of Service
+            </Link>
+            <span className="opacity-40">•</span>
+            <Link href="/privacy" className="hover:underline hover:opacity-100 transition-opacity">
+              Privacy Policy
+            </Link>
+            <span className="opacity-40">•</span>
+            <Link href="/explore" className="hover:underline hover:opacity-100 transition-opacity">
               Directory
             </Link>
-            <Link href="/teammates" className="hover:underline">
+            <span className="opacity-40">•</span>
+            <Link href="/teammates" className="hover:underline hover:opacity-100 transition-opacity">
               Network
             </Link>
-            <Link href="/hackathons" className="hover:underline">
+            <span className="opacity-40">•</span>
+            <Link href="/hackathons" className="hover:underline hover:opacity-100 transition-opacity">
               Events
             </Link>
-            <Link href="/control-center-7x9" className="hover:underline opacity-50">
+            <span className="opacity-40">•</span>
+            <Link href="/control-center-7x9" className="hover:underline opacity-50 hover:opacity-100 transition-opacity">
               Admin
             </Link>
           </div>

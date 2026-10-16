@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { TagInput } from '@/components/ui/TagInput';
 import { Button } from '@/components/ui/Button';
+import { FileUpload } from '@/components/ui/FileUpload';
 import { ProfileCompleteness } from '@/components/profile/ProfileCompleteness';
 import {
   Save,
@@ -281,13 +282,12 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           />
         </div>
 
-        <Input
-          label="Avatar Image URL (Optional)"
-          type="url"
+        <FileUpload
+          label="Profile Photo / Avatar"
+          helperText="Upload a photo (PNG, JPG, WebP up to 5MB) or keep empty for initials"
           value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://example.com/avatar.jpg"
-          helperText="Leave empty to use elegant automatic monogram initials."
+          onChange={setAvatarUrl}
+          options={{ bucket: 'avatars', folder: 'profiles', maxSizeMB: 5 }}
         />
 
         <Textarea

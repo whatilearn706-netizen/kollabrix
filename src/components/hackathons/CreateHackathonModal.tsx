@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { FileUpload } from '@/components/ui/FileUpload';
 import Link from 'next/link';
 import {
   Trophy,
@@ -42,6 +43,7 @@ export function CreateHackathonModal({
   const [title, setTitle] = useState('');
   const [organizer, setOrganizer] = useState(profile?.display_name ? `${profile.display_name} (Faculty)` : 'College Faculty / CS Dept');
   const [description, setDescription] = useState('');
+  const [bannerUrl, setBannerUrl] = useState('');
   const [mode, setMode] = useState<HackathonMode>('Online');
   const [location, setLocation] = useState('');
   const [accessType, setAccessType] = useState<'private' | 'public'>('private');
@@ -126,6 +128,7 @@ export function CreateHackathonModal({
           contactInfo: contactInfo.trim() || null,
           prizePool: prizePool.trim() || null,
           websiteUrl: websiteUrl.trim() || null,
+          bannerUrl: bannerUrl.trim() || null,
         }),
       });
 
@@ -145,6 +148,7 @@ export function CreateHackathonModal({
             password_salt: resData.hackathon.password_salt,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
+            banner_url: bannerUrl.trim() || null,
           })} -->`;
 
           const clientPayload = {
@@ -161,6 +165,7 @@ export function CreateHackathonModal({
             themes,
             prize_pool: prizePool.trim() || null,
             website_url: `https://teamforge.college/h/${resData.joinCode}`,
+            banner_url: bannerUrl.trim() || null,
             is_verified: true,
           };
 
@@ -343,6 +348,18 @@ export function CreateHackathonModal({
               required
             />
           </div>
+
+          {/* Banner Upload */}
+          <FileUpload
+            label="Event Banner Image (Optional)"
+            helperText="Drag & drop a banner image or click to browse (16:9 recommended)"
+            value={bannerUrl}
+            onChange={(url) => setBannerUrl(url)}
+            options={{
+              bucket: 'hackathon-banners',
+              folder: `banners/${user?.id || 'public'}`,
+            }}
+          />
 
           {/* Access Security Settings */}
           <div className="p-4 bg-charcoal-900/80 border border-charcoal-750 rounded-xl space-y-3">
