@@ -18,7 +18,7 @@ export default function SignupPage() {
             Join Linkora
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
-            Create your account with Google, GitHub, or Apple to start collaborating.
+            Create your account with Google or GitHub to start collaborating.
           </p>
         </div>
 
@@ -26,14 +26,6 @@ export default function SignupPage() {
         <div className="rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xl relative overflow-hidden">
           <SignupForm redirectUrl="/profile/setup" />
         </div>
-
-        {/* Switch Link */}
-        <p className="text-center text-xs sm:text-sm text-slate-600 font-medium">
-          Already have an account?{' '}
-          <Link href="/login" className="font-bold text-slate-900 hover:underline underline-offset-2">
-            Log in instead
-          </Link>
-        </p>
       </div>
     </div>
   );

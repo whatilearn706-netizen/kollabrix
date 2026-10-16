@@ -18,7 +18,7 @@ export default function LoginPage() {
             Log in to Linkora
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
-            Sign in with Google, GitHub, or Apple for instant, 100% free access.
+            Sign in with Google or GitHub for instant, 100% free access.
           </p>
         </div>
 
@@ -26,14 +26,6 @@ export default function LoginPage() {
         <div className="rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xl relative overflow-hidden">
           <LoginForm redirectUrl="/explore" />
         </div>
-
-        {/* Switch Link */}
-        <p className="text-center text-xs sm:text-sm text-slate-600 font-medium">
-          Don&apos;t have a student account yet?{' '}
-          <Link href="/signup" className="font-bold text-slate-900 hover:underline underline-offset-2">
-            Sign up now
-          </Link>
-        </p>
       </div>
     </div>
   );
