@@ -11,6 +11,9 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
+import { TeamCharterWidget } from '@/components/workspace/TeamCharterWidget';
+import { SquadShareModal } from '@/components/projects/SquadShareModal';
+import { ProjectCertificateModal } from '@/components/workspace/ProjectCertificateModal';
 import {
   Users,
   ShieldCheck,
@@ -24,6 +27,8 @@ import {
   Inbox,
   Clock,
   ArrowRight,
+  Share2,
+  Award,
 } from 'lucide-react';
 
 const TEAM_ROLES: TeamRole[] = [
@@ -39,7 +44,7 @@ const TEAM_ROLES: TeamRole[] = [
 
 export default function WorkspaceOverviewPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { project, members, isOwner, isLead, currentUserMember, refreshWorkspace } = useWorkspace();
 
   // Role editing state
@@ -53,6 +58,10 @@ export default function WorkspaceOverviewPage() {
   const [removingMember, setRemovingMember] = useState<ProjectMember | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // High-Impact Collegiate Tools Modals
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
 
   const handleStartEditRole = (member: ProjectMember) => {
     setEditingMemberId(member.id);
@@ -309,7 +318,27 @@ export default function WorkspaceOverviewPage() {
             )}
           </div>
 
-          <div className="pt-4 border-t border-charcoal-800">
+          <div className="pt-4 border-t border-charcoal-800 space-y-2.5">
+            {/* Squad Sharing & Certificate Quick Buttons */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsShareModalOpen(true)}
+              className="w-full justify-center text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 font-bold"
+              leftIcon={<Share2 className="w-4 h-4" />}
+            >
+              Invite Squad Teammates
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCertificateModalOpen(true)}
+              className="w-full justify-center text-amber-400 border-amber-500/30 hover:bg-amber-500/10 font-bold"
+              leftIcon={<Award className="w-4 h-4" />}
+            >
+              Verified Certificate
+            </Button>
+
             {!isOwner && (
               <Button
                 variant="outline"
@@ -498,6 +527,13 @@ export default function WorkspaceOverviewPage() {
         )}
       </div>
 
+      {/* Feature 4: Team Accountability Charter (Prevents Ghosting) */}
+      <TeamCharterWidget
+        project={project}
+        members={members}
+        currentUserId={user?.id}
+      />
+
       {/* Leave Team Confirmation Modal */}
       {isLeaveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/80 backdrop-blur-sm animate-fadeIn">
@@ -565,6 +601,22 @@ export default function WorkspaceOverviewPage() {
           </div>
         </div>
       )}
+
+      {/* 1-Click WhatsApp, Telegram & Discord Squad Share Modal (Feature 1) */}
+      <SquadShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        project={project}
+      />
+
+      {/* Exportable Verified Collegiate Project Certificate (Feature 3) */}
+      <ProjectCertificateModal
+        isOpen={isCertificateModalOpen}
+        onClose={() => setIsCertificateModalOpen(false)}
+        project={project}
+        profile={profile}
+        roleTitle={currentUserMember?.role || (isOwner ? 'Project Lead' : 'Core Squad Member')}
+      />
     </div>
   );
 }

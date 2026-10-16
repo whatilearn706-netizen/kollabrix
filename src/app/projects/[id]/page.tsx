@@ -14,6 +14,8 @@ import { Avatar } from '@/components/ui/Avatar';
 import { DeleteProjectDialog } from '@/components/projects/DeleteProjectDialog';
 import { ApplyModal } from '@/components/applications/ApplyModal';
 import { GithubActivitySection } from '@/components/github/GithubActivitySection';
+import { SquadShareModal } from '@/components/projects/SquadShareModal';
+import { ProjectCertificateModal } from '@/components/workspace/ProjectCertificateModal';
 import {
   Users,
   Calendar,
@@ -35,6 +37,8 @@ import {
   BookOpen,
   ExternalLink,
   MessageSquare,
+  Share2,
+  Award,
 } from 'lucide-react';
 
 export default function ProjectDetailsPage() {
@@ -58,6 +62,8 @@ export default function ProjectDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
 
   // Phase 2 Collaboration State
   const [isMember, setIsMember] = useState(false);
@@ -363,6 +369,26 @@ export default function ProjectDetailsPage() {
         </Link>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Share Squad Invite Link (Feature 1) */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsShareModalOpen(true)}
+            leftIcon={<Share2 className="w-3.5 h-3.5 text-indigo-600" />}
+          >
+            Invite Squad
+          </Button>
+
+          {/* Verifiable Project Certificate (Feature 3) */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCertificateModalOpen(true)}
+            leftIcon={<Award className="w-3.5 h-3.5 text-amber-600" />}
+          >
+            Certificate
+          </Button>
+
           {isOwner && (
             <>
               <Link href={`/projects/${project.id}/applications`}>
@@ -932,6 +958,22 @@ export default function ProjectDetailsPage() {
         onClose={() => setIsDeleteDialogOpen(false)}
         projectId={project.id}
         projectTitle={project.title}
+      />
+
+      {/* 1-Click WhatsApp, Telegram & Discord Squad Share Modal (Feature 1) */}
+      <SquadShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        project={project}
+      />
+
+      {/* Exportable Verified Collegiate Project Certificate (Feature 3) */}
+      <ProjectCertificateModal
+        isOpen={isCertificateModalOpen}
+        onClose={() => setIsCertificateModalOpen(false)}
+        project={project}
+        profile={profile}
+        roleTitle={memberRole || (isOwner ? 'Project Lead & Architect' : 'Core Squad Member')}
       />
     </div>
   );

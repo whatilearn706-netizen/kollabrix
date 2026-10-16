@@ -32,6 +32,9 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { HackathonCountdownBanner } from '@/components/hackathons/HackathonCountdownBanner';
+import { ProjectSparkGeneratorModal } from '@/components/ai/ProjectSparkGeneratorModal';
+import { CampusLeaderboard } from '@/components/landing/CampusLeaderboard';
 
 export default function HomePage() {
   const router = useRouter();
@@ -43,6 +46,7 @@ export default function HomePage() {
   const [showcaseTab, setShowcaseTab] = useState<'projects' | 'hackathons'>('projects');
   const [quickPasscode, setQuickPasscode] = useState('');
   const [oauthErrorNotice, setOauthErrorNotice] = useState<string | null>(null);
+  const [isSparkModalOpen, setIsSparkModalOpen] = useState(false);
 
   // Catch incoming OAuth or URL authentication errors
   useEffect(() => {
@@ -154,6 +158,9 @@ export default function HomePage() {
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
+      {/* Live Hackathon Countdown Banner */}
+      <HackathonCountdownBanner />
+
       {/* OAuth Notice Banner */}
       {oauthErrorNotice && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-xs font-medium text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
@@ -246,6 +253,15 @@ export default function HomePage() {
                     {theme.secondaryCtaText || 'Find Teammates'}
                   </Button>
                 </Link>
+
+                <button
+                  onClick={() => setIsSparkModalOpen(true)}
+                  style={{ borderRadius: theme.borderRadius }}
+                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 text-amber-900 font-bold text-sm hover:border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-2xs active:scale-[0.98]"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>AI Spark Generator</span>
+                </button>
               </div>
 
               {/* High-signal Trust Chips */}
@@ -728,6 +744,11 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================================
+          CAMPUS LEADERBOARD & PROJECT OF THE WEEK
+         ========================================================================= */}
+      <CampusLeaderboard />
+
+      {/* =========================================================================
           SECTION 5: BEGIN (CLOSING CALL TO ACTION)
          ========================================================================= */}
       <section className="py-20 md:py-28 relative text-center bg-white overflow-hidden">
@@ -786,6 +807,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Linkora Spark: AI Blueprint & Squad Generator Modal */}
+      <ProjectSparkGeneratorModal
+        isOpen={isSparkModalOpen}
+        onClose={() => setIsSparkModalOpen(false)}
+      />
     </div>
   );
 }
