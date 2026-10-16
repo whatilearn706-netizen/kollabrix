@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { TeammateMatch } from '@/types/database';
 import { Avatar } from '@/components/ui/Avatar';
-import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { useSiteTheme, isColorDark } from '@/components/theme/SiteThemeProvider';
 import {
   Sparkles,
   ExternalLink,
@@ -22,6 +22,10 @@ interface TeammateCardProps {
 export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCardProps) {
   const { theme, isDark } = useSiteTheme();
   const { profile, match_score, matching_skills, matching_roles, reasons } = match;
+
+  const isCardDark = isDark || isColorDark(theme.surfaceColor);
+  const teammateNameColor = isCardDark ? '#ffffff' : (theme.headingColor || '#0f172a');
+  const teammateUsernameColor = isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#64748b');
 
   const scoreBadgeColor =
     match_score >= 80
@@ -54,12 +58,14 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
             <div className="min-w-0">
               <Link
                 href={`/profile/${profile.username}`}
-                style={{ color: theme.headingColor }}
-                className="font-black text-sm sm:text-base truncate block hover:opacity-80 transition-opacity"
+                style={{ color: teammateNameColor }}
+                className={`font-black text-sm sm:text-base truncate block hover:opacity-80 transition-opacity ${
+                  isCardDark ? 'text-white site-heading-white' : ''
+                }`}
               >
                 {profile.display_name}
               </Link>
-              <p style={{ color: theme.mutedTextColor }} className="text-xs font-mono font-bold truncate">
+              <p style={{ color: teammateUsernameColor }} className="text-xs font-mono font-bold truncate">
                 @{profile.username}
               </p>
               {(profile.college || profile.course) && (

@@ -35,7 +35,10 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
           />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl md:text-2xl font-bold text-white">
+              <h1
+                style={{ color: '#ffffff' }}
+                className="text-xl md:text-2xl font-black text-white site-heading-white tracking-tight"
+              >
                 {profile.display_name}
               </h1>
               {isOwner && (
@@ -44,7 +47,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-400 font-mono">@{profile.username}</p>
+            <p className="text-sm text-slate-300 font-mono font-medium">@{profile.username}</p>
           </div>
         </div>
 

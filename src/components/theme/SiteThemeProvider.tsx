@@ -23,7 +23,7 @@ const SiteThemeContext = createContext<SiteThemeContextValue>({
 /**
  * Helper to determine if a hex color or rgb string is perceptually dark
  */
-function isColorDark(colorStr?: string): boolean {
+export function isColorDark(colorStr?: string): boolean {
   if (!colorStr) return false;
   const hex = colorStr.replace('#', '').trim();
   if (hex.length === 3) {
@@ -123,17 +123,30 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         font-family: var(--site-font-body) !important;
       }
 
-      h1:not(.text-transparent):not(.begin-colorful),
-      h2:not(.text-transparent):not(.begin-colorful),
-      h3:not(.text-transparent):not(.begin-colorful),
-      h4:not(.text-transparent):not(.begin-colorful),
-      h5:not(.text-transparent):not(.begin-colorful),
-      h6:not(.text-transparent):not(.begin-colorful),
-      .font-heading:not(.text-transparent):not(.begin-colorful) {
+      h1:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
+      h2:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
+      h3:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
+      h4:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
+      h5:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
+      h6:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
+      .font-heading:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white) {
         font-family: var(--site-font-heading) !important;
         font-weight: var(--site-heading-weight) !important;
         letter-spacing: var(--site-letter-spacing) !important;
         color: var(--site-heading) !important;
+      }
+
+      /* Explicit White Headings inside Dark Cards & Hero Sections */
+      .text-white,
+      [class*="text-white"],
+      .site-heading-white,
+      .bg-charcoal-900 h1,
+      .bg-charcoal-900 h2,
+      .bg-charcoal-900 h3,
+      .bg-charcoal-950 h1,
+      .bg-slate-900 h1,
+      .bg-black h1 {
+        color: #ffffff !important;
       }
 
       .begin-colorful {

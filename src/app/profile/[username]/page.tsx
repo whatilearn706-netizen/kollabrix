@@ -285,13 +285,13 @@ export default function PublicProfilePage() {
       <ProfileCard profile={profile} isOwner={isOwner} />
 
       {/* Portfolio Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-charcoal-800">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-charcoal-800">
         <button
           onClick={() => setActiveTab('owned')}
           className={`pb-3 px-3 text-sm font-semibold transition-all relative ${
             activeTab === 'owned'
-              ? 'text-white border-b-2 border-brand-500'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-indigo-600 dark:text-brand-400 border-b-2 border-indigo-600 dark:border-brand-500 font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Founded Projects ({userProjects.length})
@@ -301,8 +301,8 @@ export default function PublicProfilePage() {
           onClick={() => setActiveTab('teams')}
           className={`pb-3 px-3 text-sm font-semibold transition-all relative ${
             activeTab === 'teams'
-              ? 'text-white border-b-2 border-brand-500'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-indigo-600 dark:text-brand-400 border-b-2 border-indigo-600 dark:border-brand-500 font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Team Roles ({memberProjects.length})
@@ -312,8 +312,8 @@ export default function PublicProfilePage() {
           onClick={() => setActiveTab('evidence')}
           className={`pb-3 px-3 text-sm font-semibold transition-all relative ${
             activeTab === 'evidence'
-              ? 'text-white border-b-2 border-brand-500'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-indigo-600 dark:text-brand-400 border-b-2 border-indigo-600 dark:border-brand-500 font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           Verified Contributions ({completedTasks.length})
@@ -323,8 +323,8 @@ export default function PublicProfilePage() {
           onClick={() => setActiveTab('github')}
           className={`pb-3 px-3 text-sm font-semibold transition-all relative ${
             activeTab === 'github'
-              ? 'text-white border-b-2 border-brand-500'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-indigo-600 dark:text-brand-400 border-b-2 border-indigo-600 dark:border-brand-500 font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           GitHub & Open Source
@@ -336,8 +336,8 @@ export default function PublicProfilePage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FolderKanban className="w-5 h-5 text-brand-400" />
-              <h2 className="text-lg font-bold text-white">
+              <FolderKanban className="w-5 h-5 text-brand-500" />
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Projects Founded by {profile.display_name} ({userProjects.length})
               </h2>
             </div>
@@ -347,7 +347,7 @@ export default function PublicProfilePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  leftIcon={<PlusCircle className="w-3.5 h-3.5 text-brand-400" />}
+                  leftIcon={<PlusCircle className="w-3.5 h-3.5 text-brand-500" />}
                 >
                   Publish New Project
                 </Button>
@@ -356,7 +356,7 @@ export default function PublicProfilePage() {
           </div>
 
           {userProjects.length === 0 ? (
-            <div className="rounded-xl bg-charcoal-900 border border-charcoal-800 p-8 text-center text-xs text-slate-400">
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-8 text-center text-xs text-slate-600 dark:text-slate-400 shadow-xs">
               <p>This student has not founded any projects yet.</p>
             </div>
           ) : (
@@ -373,14 +373,14 @@ export default function PublicProfilePage() {
       {activeTab === 'teams' && (
         <div className="space-y-6">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-brand-400" />
-            <h2 className="text-lg font-bold text-white">
+            <Users className="w-5 h-5 text-brand-500" />
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Team Memberships & Active Roles ({memberProjects.length})
             </h2>
           </div>
 
           {memberProjects.length === 0 ? (
-            <div className="rounded-xl bg-charcoal-900 border border-charcoal-800 p-8 text-center text-xs text-slate-400">
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-8 text-center text-xs text-slate-600 dark:text-slate-400 shadow-xs">
               <p>No external team collaborations recorded yet.</p>
             </div>
           ) : (
@@ -388,34 +388,34 @@ export default function PublicProfilePage() {
               {memberProjects.map((record) => (
                 <div
                   key={record.id}
-                  className="p-5 rounded-2xl border border-charcoal-800 bg-charcoal-900/50 hover:border-charcoal-700 transition-all flex flex-col justify-between"
+                  className="p-5 rounded-2xl border border-slate-200 dark:border-charcoal-800 bg-white dark:bg-charcoal-900/50 hover:border-slate-300 dark:hover:border-charcoal-700 transition-all flex flex-col justify-between shadow-xs"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <Badge variant="category" size="sm">
                         {record.project.category}
                       </Badge>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-medium">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 font-medium">
                         Role: {record.role}
                       </span>
                     </div>
 
                     <Link
                       href={`/projects/${record.project.id}`}
-                      className="text-base font-bold text-white hover:text-brand-300 transition-colors block mb-1"
+                      className="text-base font-bold text-slate-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-300 transition-colors block mb-1"
                     >
                       {record.project.title}
                     </Link>
-                    <p className="text-xs text-slate-400 line-clamp-2 mb-3">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
                       {record.project.summary}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-charcoal-800">
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100 dark:border-charcoal-800">
                     <span>Joined {new Date(record.joined_at).toLocaleDateString()}</span>
                     <Link
                       href={`/projects/${record.project.id}`}
-                      className="text-brand-400 hover:text-brand-300 font-medium"
+                      className="text-brand-600 dark:text-brand-400 hover:underline font-medium"
                     >
                       View Project →
                     </Link>
@@ -433,24 +433,24 @@ export default function PublicProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <FileCheck2 className="w-5 h-5 text-emerald-400" />
-                <h2 className="text-lg font-bold text-white">
+                <FileCheck2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   System-Verified Contribution Evidence ({completedTasks.length})
                 </h2>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                 Factual log of deliverables completed by this student across Linkora collegiate workspaces.
               </p>
             </div>
-            <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-charcoal-850 text-slate-300 border border-charcoal-750 self-start">
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-slate-100 dark:bg-charcoal-850 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-charcoal-750 self-start">
               Tamper-Resistant Records
             </span>
           </div>
 
           {completedTasks.length === 0 ? (
-            <div className="rounded-xl bg-charcoal-900 border border-charcoal-800 p-8 text-center text-xs text-slate-400">
-              <Sparkles className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <p className="font-semibold text-slate-300 mb-1">No Completed Tasks Recorded</p>
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-8 text-center text-xs text-slate-600 dark:text-slate-400 shadow-xs">
+              <Sparkles className="w-8 h-8 text-slate-400 dark:text-slate-600 mx-auto mb-2" />
+              <p className="font-semibold text-slate-900 dark:text-slate-300 mb-1">No Completed Tasks Recorded</p>
               <p>
                 When tasks assigned to this student in project workspaces reach &quot;Completed&quot; status,
                 they will be verified and showcased here.
@@ -461,32 +461,32 @@ export default function PublicProfilePage() {
               {completedTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="p-5 rounded-2xl border border-charcoal-800 bg-charcoal-900/50 space-y-3"
+                  className="p-5 rounded-2xl border border-slate-200 dark:border-charcoal-800 bg-white dark:bg-charcoal-900/50 space-y-3 shadow-xs"
                 >
                   {/* Task Header */}
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
                           System Verified
                         </span>
 
                         {task.milestone && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-300 border border-brand-500/20">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/10 text-brand-600 dark:text-brand-300 border border-brand-500/20">
                             Milestone: {task.milestone.title}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-base font-bold text-white">{task.title}</h3>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{task.title}</h3>
                     </div>
 
                     <div className="text-right text-xs">
                       {task.project && (
                         <Link
                           href={`/projects/${task.project.id}`}
-                          className="font-medium text-brand-400 hover:text-brand-300 block"
+                          className="font-medium text-brand-600 dark:text-brand-400 hover:underline block"
                         >
                           Project: {task.project.title}
                         </Link>
@@ -499,16 +499,16 @@ export default function PublicProfilePage() {
 
                   {/* Task Description */}
                   {task.description && (
-                    <p className="text-xs text-slate-300 bg-charcoal-850/50 p-3 rounded-lg border border-charcoal-800">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-charcoal-850/50 p-3 rounded-xl border border-slate-200 dark:border-charcoal-800">
                       {task.description}
                     </p>
                   )}
 
                   {/* Student-Submitted Evidence Note & URL */}
                   {(task.evidence_note || task.evidence_url) && (
-                    <div className="p-3.5 rounded-xl bg-charcoal-850 border border-charcoal-750 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
-                        <span className="flex items-center gap-1.5 text-brand-300">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-charcoal-850 border border-slate-200 dark:border-charcoal-750 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <span className="flex items-center gap-1.5 text-brand-600 dark:text-brand-300">
                           <Sparkles className="w-3.5 h-3.5" />
                           Student-Submitted Deliverable Evidence
                         </span>
@@ -517,7 +517,7 @@ export default function PublicProfilePage() {
                             href={task.evidence_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-brand-400 hover:text-brand-300 font-medium"
+                            className="inline-flex items-center gap-1 text-[11px] text-brand-600 dark:text-brand-400 hover:underline font-medium"
                           >
                             <span>Open Deliverable</span>
                             <ExternalLink className="w-3 h-3" />
@@ -526,7 +526,7 @@ export default function PublicProfilePage() {
                       </div>
 
                       {task.evidence_note && (
-                        <p className="text-xs text-slate-300 leading-relaxed italic">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic">
                           &ldquo;{task.evidence_note}&rdquo;
                         </p>
                       )}

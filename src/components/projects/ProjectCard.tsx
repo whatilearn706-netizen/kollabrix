@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Project } from '@/types/database';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { useSiteTheme, isColorDark } from '@/components/theme/SiteThemeProvider';
 import {
   Users,
   Calendar,
@@ -32,6 +32,8 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
 
   // Determine effective darkness based on theme or explicit variant
   const effectiveDark = variant ? variant === 'dark' : isDark;
+  const isCardDark = effectiveDark || isColorDark(theme.surfaceColor);
+  const cardHeadingColor = isCardDark ? '#ffffff' : (theme.headingColor || '#0f172a');
 
   return (
     <div
@@ -108,8 +110,8 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         {/* Project Title */}
         <Link href={`/projects/${project.id}`} className="block focus:outline-none">
           <h3
-            style={{ color: theme.headingColor }}
-            className="text-base sm:text-lg font-black transition-colors line-clamp-2 leading-snug hover:opacity-80"
+            style={{ color: cardHeadingColor }}
+            className={`text-base sm:text-lg font-black transition-colors line-clamp-2 leading-snug hover:opacity-80 ${isCardDark ? 'text-white site-heading-white' : ''}`}
           >
             {project.title}
           </h3>
@@ -195,11 +197,11 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
             >
               <Avatar name={creatorName} src={creatorAvatar} size="sm" />
               <div className="truncate">
-                <span style={{ color: theme.headingColor }} className="font-bold truncate block">
+                <span style={{ color: cardHeadingColor }} className={`font-bold truncate block ${isCardDark ? 'text-white site-heading-white' : ''}`}>
                   {creatorName}
                 </span>
                 {project.owner?.college && (
-                  <span style={{ color: theme.mutedTextColor }} className="text-[10px] truncate block">
+                  <span style={{ color: isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#64748b') }} className="text-[10px] truncate block">
                     {project.owner.college}
                   </span>
                 )}
@@ -208,7 +210,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           ) : (
             <div className="flex items-center gap-2 truncate">
               <Avatar name={creatorName} src={creatorAvatar} size="sm" />
-              <span style={{ color: theme.headingColor }} className="font-bold truncate">
+              <span style={{ color: cardHeadingColor }} className={`font-bold truncate ${isCardDark ? 'text-white site-heading-white' : ''}`}>
                 {creatorName}
               </span>
             </div>
