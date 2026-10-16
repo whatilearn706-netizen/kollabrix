@@ -39,6 +39,10 @@ import {
   DEFAULT_HOMEPAGE_INTENT_CONFIG,
   DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
 } from '@/types/homepageConfig';
+import {
+  HomepageSectionToggles,
+  DEFAULT_MASTER_CONTROL_CONFIG,
+} from '@/types/masterControl';
 
 export default function HomePage() {
   const router = useRouter();
@@ -53,6 +57,7 @@ export default function HomePage() {
   const [isSparkModalOpen, setIsSparkModalOpen] = useState(false);
   const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(DEFAULT_HOMEPAGE_INTENT_CONFIG);
   const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(DEFAULT_HOMEPAGE_SHOWCASE_CONFIG);
+  const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionToggles>(DEFAULT_MASTER_CONTROL_CONFIG.sections);
 
   // Catch incoming OAuth or URL authentication errors
   useEffect(() => {
@@ -105,6 +110,23 @@ export default function HomePage() {
             }
           }
         } catch {}
+
+        // Load Live Master Control Config (Sections toggles & titles)
+        try {
+          const cachedM = localStorage.getItem('linkora_master_control_v1');
+          if (cachedM) {
+            const parsed = JSON.parse(cachedM);
+            if (parsed?.sections) setSectionsConfig(parsed.sections);
+          }
+          const mRes = await fetch(`/api/master-control?_t=${Date.now()}`, { cache: 'no-store' });
+          const mData = await mRes.json();
+          if (mRes.ok && mData?.config?.sections) {
+            setSectionsConfig(mData.config.sections);
+            try {
+              localStorage.setItem('linkora_master_control_v1', JSON.stringify(mData.config));
+            } catch (e) {}
+          }
+        } catch (e) {}
 
         setIntentConfig(liveIntent);
         setShowcaseConfig(liveShowcase);
@@ -202,6 +224,20 @@ export default function HomePage() {
     }
 
     loadLiveData();
+
+    const handleMasterUpdate = () => {
+      try {
+        const cachedM = localStorage.getItem('linkora_master_control_v1');
+        if (cachedM) {
+          const parsed = JSON.parse(cachedM);
+          if (parsed?.sections) setSectionsConfig(parsed.sections);
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('linkora_master_control_updated', handleMasterUpdate);
+    return () => {
+      window.removeEventListener('linkora_master_control_updated', handleMasterUpdate);
+    };
   }, []);
 
   const handleQuickJoin = (e: React.FormEvent) => {
@@ -251,108 +287,110 @@ export default function HomePage() {
       {/* =========================================================================
           HERO: BALANCED SPLIT STAGE (HEADLINE + 3D LINKORA ORIGAMI BIRD)
          ========================================================================= */}
-      <section className="relative pt-8 pb-14 md:pt-14 md:pb-20 overflow-hidden border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
-            {/* Left Column: Brand, Editorial Headline & Primary Actions */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div
-                style={{ borderRadius: theme.borderRadius }}
-                className="inline-flex items-center gap-2 px-3.5 py-1 bg-slate-100 border border-slate-200/90 text-slate-700 text-xs font-mono font-bold tracking-wider uppercase"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{theme.heroBadgeText || 'Linkora • Student Collaboration Network'}</span>
-              </div>
-
-              <h1
-                style={{
-                  color: theme.headingColor,
-                  fontFamily: `var(--site-font-heading, "${theme.headingFont}")`,
-                  letterSpacing: theme.letterSpacing,
-                  fontWeight: theme.headingWeight,
-                }}
-                className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
-              >
-                {theme.heroHeadline || 'Build something bigger, together.'}
-              </h1>
-
-              <p
-                style={{
-                  color: theme.bodyTextColor,
-                  fontFamily: `var(--site-font-body, "${theme.bodyFont}")`,
-                }}
-                className="text-base sm:text-xl leading-relaxed font-normal max-w-xl"
-              >
-                {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
-              </p>
-
-              {/* Direct Primary & Secondary Action CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link href="/explore">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    style={{
-                      backgroundColor: theme.brandColor,
-                      borderRadius: theme.borderRadius,
-                    }}
-                    className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-sm border-0 transition-all active:scale-[0.98]"
-                    leftIcon={<Compass className="w-4 h-4" />}
-                  >
-                    {theme.primaryCtaText || 'Explore Projects'}
-                  </Button>
-                </Link>
-
-                <Link href="/teammates">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    style={{
-                      borderRadius: theme.borderRadius,
-                    }}
-                    className="border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold px-7 py-3.5 bg-white shadow-2xs transition-all active:scale-[0.98]"
-                    leftIcon={<Users className="w-4 h-4 text-slate-700" />}
-                  >
-                    {theme.secondaryCtaText || 'Find Teammates'}
-                  </Button>
-                </Link>
-
-                <button
-                  onClick={() => setIsSparkModalOpen(true)}
+      {sectionsConfig.hero && (
+        <section className="relative pt-8 pb-14 md:pt-14 md:pb-20 overflow-hidden border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
+              {/* Left Column: Brand, Editorial Headline & Primary Actions */}
+              <div className="lg:col-span-7 space-y-6 text-left">
+                <div
                   style={{ borderRadius: theme.borderRadius }}
-                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 text-amber-900 font-bold text-sm hover:border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-2xs active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 px-3.5 py-1 bg-slate-100 border border-slate-200/90 text-slate-700 text-xs font-mono font-bold tracking-wider uppercase"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  <span>AI Spark Generator</span>
-                </button>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>{theme.heroBadgeText || 'Linkora • Student Collaboration Network'}</span>
+                </div>
+
+                <h1
+                  style={{
+                    color: theme.headingColor,
+                    fontFamily: `var(--site-font-heading, "${theme.headingFont}")`,
+                    letterSpacing: theme.letterSpacing,
+                    fontWeight: theme.headingWeight,
+                  }}
+                  className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
+                >
+                  {theme.heroHeadline || 'Build something bigger, together.'}
+                </h1>
+
+                <p
+                  style={{
+                    color: theme.bodyTextColor,
+                    fontFamily: `var(--site-font-body, "${theme.bodyFont}")`,
+                  }}
+                  className="text-base sm:text-xl leading-relaxed font-normal max-w-xl"
+                >
+                  {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
+                </p>
+
+                {/* Direct Primary & Secondary Action CTAs */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Link href="/explore">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      style={{
+                        backgroundColor: theme.brandColor,
+                        borderRadius: theme.borderRadius,
+                      }}
+                      className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-sm border-0 transition-all active:scale-[0.98]"
+                      leftIcon={<Compass className="w-4 h-4" />}
+                    >
+                      {theme.primaryCtaText || 'Explore Projects'}
+                    </Button>
+                  </Link>
+
+                  <Link href="/teammates">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      style={{
+                        borderRadius: theme.borderRadius,
+                      }}
+                      className="border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold px-7 py-3.5 bg-white shadow-2xs transition-all active:scale-[0.98]"
+                      leftIcon={<Users className="w-4 h-4 text-slate-700" />}
+                    >
+                      {theme.secondaryCtaText || 'Find Teammates'}
+                    </Button>
+                  </Link>
+
+                  <button
+                    onClick={() => setIsSparkModalOpen(true)}
+                    style={{ borderRadius: theme.borderRadius }}
+                    className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 text-amber-900 font-bold text-sm hover:border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-2xs active:scale-[0.98]"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <span>AI Spark Generator</span>
+                  </button>
+                </div>
+
+                {/* High-signal Trust Chips */}
+                <div className="pt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Verified GitHub Proof</span>
+                  </div>
+                  <span className="text-slate-300">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>College Hackathons</span>
+                  </div>
+                  <span className="text-slate-300">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>Faculty Mentorship</span>
+                  </div>
+                </div>
               </div>
 
-              {/* High-signal Trust Chips */}
-              <div className="pt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Verified GitHub Proof</span>
-                </div>
-                <span className="text-slate-300">•</span>
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
-                  <span>College Hackathons</span>
-                </div>
-                <span className="text-slate-300">•</span>
-                <div className="flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Faculty Mentorship</span>
-                </div>
+              {/* Right Column: Signature 3D Linkora Origami Bird */}
+              <div className="lg:col-span-5 flex items-center justify-center relative">
+                <OrigamiBirdSculpture />
               </div>
-            </div>
-
-            {/* Right Column: Signature 3D Linkora Origami Bird */}
-            <div className="lg:col-span-5 flex items-center justify-center relative">
-              <OrigamiBirdSculpture />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
@@ -434,42 +472,45 @@ export default function HomePage() {
       {/* =========================================================================
           SECTION 1: INTENT (INTERACTIVE BUILDER CONSOLE)
          ========================================================================= */}
-      <section className="py-16 md:py-20 relative bg-white border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-700 font-bold">
-              <Zap className="w-3.5 h-3.5 text-emerald-600" />
-              <span>01 • LINKORA CONSOLE</span>
+      {sectionsConfig.intent && (
+        <section className="py-16 md:py-20 relative bg-white border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-700 font-bold">
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>01 • LINKORA CONSOLE</span>
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+                Intent
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-normal">
+                Choose your goal to instantly match with builders, open project slots, or campus competitions.
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-              Intent
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 font-normal">
-              Choose your goal to instantly match with builders, open project slots, or campus competitions.
-            </p>
-          </div>
 
-          <IntentConsole sampleProjects={featuredProjects} config={intentConfig} />
-        </div>
-      </section>
+            <IntentConsole sampleProjects={featuredProjects} config={intentConfig} />
+          </div>
+        </section>
+      )}
 
       {/* =========================================================================
           SECTION 2: WORKFLOW (FROM CONCEPT TO PROOF)
          ========================================================================= */}
-      <section className="py-16 md:py-24 relative bg-[#fafbfc] border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-600 font-bold">
-              <Layers className="w-3.5 h-3.5 text-slate-500" />
-              <span>02 • ARCHITECTURE</span>
+      {sectionsConfig.workflow && (
+        <section className="py-16 md:py-24 relative bg-[#fafbfc] border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-600 font-bold">
+                <Layers className="w-3.5 h-3.5 text-slate-500" />
+                <span>02 • ARCHITECTURE</span>
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+                {sectionsConfig.workflowTitle || 'Workflow'}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-normal">
+                {sectionsConfig.workflowSubtitle || 'From raw concept to verified career proof in three collegiate stages.'}
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-              Workflow
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 font-normal">
-              From raw concept to verified career proof in three collegiate stages.
-            </p>
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Stage 1: Connect */}
@@ -600,26 +641,28 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* =========================================================================
           SECTION 3: SHOWCASE (LIVE ACTIVE PROJECTS & HACKATHONS)
          ========================================================================= */}
-      <section className="py-16 md:py-24 bg-white border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Header with Segmented Switcher */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-500 font-bold mb-1">
-                <Compass className="w-3.5 h-3.5" />
-                <span>03 • CAMPUS ACTIVITY</span>
+      {sectionsConfig.showcase && (
+        <section className="py-16 md:py-24 bg-white border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+            {/* Header with Segmented Switcher */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-500 font-bold mb-1">
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>03 • CAMPUS ACTIVITY</span>
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+                  {sectionsConfig.showcaseTitle || 'Showcase'}
+                </h2>
+                <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-xl font-normal">
+                  {sectionsConfig.showcaseSubtitle || 'Explore active projects recruiting collaborators, or enter upcoming university competitions.'}
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                Showcase
-              </h2>
-              <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-xl font-normal">
-                Explore active projects recruiting collaborators, or enter upcoming university competitions.
-              </p>
-            </div>
 
             {/* Segmented Switcher */}
             <div className="p-1 rounded-2xl bg-slate-100 border border-slate-200 flex items-center gap-1 shrink-0">
@@ -762,123 +805,128 @@ export default function HomePage() {
           )}
         </div>
       </section>
+      )}
 
       {/* =========================================================================
           SECTION 4: COMPETE (CAMPUS PASSCODE & PRIVATE CHALLENGES)
          ========================================================================= */}
-      <section className="py-16 md:py-24 bg-[#fafbfc] border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-rose-600 font-bold">
-              <Lock className="w-3.5 h-3.5" />
-              <span>04 • UNIVERSITY PORTAL</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-              Compete
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 font-normal">
-              Enter your department passcode to unlock private hackathon guidelines and form teams.
-            </p>
-          </div>
-
-          {/* Passcode Quick Entry Card */}
-          <div className="max-w-3xl mx-auto p-7 sm:p-9 rounded-3xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
-            <div className="space-y-1.5 max-w-md">
-              <div className="flex items-center gap-2">
-                <span className="text-base font-black text-slate-900">Department Challenge Passcode</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-bold uppercase">
-                  Encrypted
-                </span>
+      {sectionsConfig.hackathons && (
+        <section className="py-16 md:py-24 bg-[#fafbfc] border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-rose-600 font-bold">
+                <Lock className="w-3.5 h-3.5" />
+                <span>04 • UNIVERSITY PORTAL</span>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Announced by your faculty or hackathon leads? Enter the event code below.
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+                Compete
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-normal">
+                Enter your department passcode to unlock private hackathon guidelines and form teams.
               </p>
             </div>
 
-            <form onSubmit={handleQuickJoin} className="flex items-center gap-2 flex-1 sm:max-w-sm">
-              <div className="relative flex-1">
-                <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={quickPasscode}
-                  onChange={(e) => setQuickPasscode(e.target.value)}
-                  placeholder="e.g. col-apex26"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-slate-900 transition-colors shadow-2xs"
-                  required
-                />
+            {/* Passcode Quick Entry Card */}
+            <div className="max-w-3xl mx-auto p-7 sm:p-9 rounded-3xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+              <div className="space-y-1.5 max-w-md">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-black text-slate-900">Department Challenge Passcode</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-bold uppercase">
+                    Encrypted
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  Announced by your faculty or hackathon leads? Enter the event code below.
+                </p>
               </div>
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                className="bg-slate-900 hover:bg-black text-white shrink-0 font-bold py-2.5 px-5 shadow-2xs rounded-xl"
-              >
-                Unlock
-              </Button>
-            </form>
+
+              <form onSubmit={handleQuickJoin} className="flex items-center gap-2 flex-1 sm:max-w-sm">
+                <div className="relative flex-1">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={quickPasscode}
+                    onChange={(e) => setQuickPasscode(e.target.value)}
+                    placeholder="e.g. col-apex26"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-slate-900 transition-colors shadow-2xs"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  className="bg-slate-900 hover:bg-black text-white shrink-0 font-bold py-2.5 px-5 shadow-2xs rounded-xl"
+                >
+                  Unlock
+                </Button>
+              </form>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* =========================================================================
           SECTION 5: BEGIN (CLOSING CALL TO ACTION)
          ========================================================================= */}
-      <section className="py-20 md:py-28 relative text-center bg-white overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col items-center justify-center text-center space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono font-bold">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                <span>05 • JOIN LINKORA</span>
+      {sectionsConfig.ctaBanner && (
+        <section className="py-20 md:py-28 relative text-center bg-white overflow-hidden">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col items-center justify-center text-center space-y-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>05 • JOIN LINKORA</span>
+                </div>
               </div>
-            </div>
 
-            <h2 className="text-4xl sm:text-7xl font-black tracking-tight leading-tight w-full text-center">
-              <span className="begin-colorful">Begin</span>
-            </h2>
+              <h2 className="text-4xl sm:text-7xl font-black tracking-tight leading-tight w-full text-center">
+                <span className="begin-colorful">Begin</span>
+              </h2>
 
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed font-normal">
-              Stop coding in isolation. Find your squad, build production software, and prove your engineering caliber today.
-            </p>
+              <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed font-normal">
+                Stop coding in isolation. Find your squad, build production software, and prove your engineering caliber today.
+              </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-              <Link href="/explore">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="font-bold px-8 py-3.5 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 shadow-sm border-none transition-all"
-                  leftIcon={<Compass className="w-4 h-4 text-slate-900" />}
-                >
-                  Explore Projects
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+                <Link href="/explore">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="font-bold px-8 py-3.5 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 shadow-sm border-none transition-all"
+                    leftIcon={<Compass className="w-4 h-4 text-slate-900" />}
+                  >
+                    Explore Projects
+                  </Button>
+                </Link>
 
-              {user ? (
-                <Link href="/projects/new">
+                {user ? (
+                  <Link href="/projects/new">
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
+                      leftIcon={<PlusCircle className="w-4 h-4 text-white" />}
+                    >
+                      Start a Project
+                    </Button>
+                  </Link>
+                ) : (
                   <Button
                     variant="ghost"
                     size="lg"
                     className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
-                    leftIcon={<PlusCircle className="w-4 h-4 text-white" />}
+                    onClick={() => openAuthModal('signup')}
+                    leftIcon={<Users className="w-4 h-4 text-white" />}
                   >
-                    Start a Project
+                    Join Linkora Free
                   </Button>
-                </Link>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
-                  onClick={() => openAuthModal('signup')}
-                  leftIcon={<Users className="w-4 h-4 text-white" />}
-                >
-                  Join Linkora Free
-                </Button>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Linkora Spark: AI Blueprint & Squad Generator Modal */}
       <ProjectSparkGeneratorModal

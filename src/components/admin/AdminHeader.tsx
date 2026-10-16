@@ -20,11 +20,13 @@ import {
   FolderKanban,
   StickyNote,
   Sparkles,
+  Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
+  | 'master'
   | 'intent'
   | 'notes'
   | 'users'
@@ -52,6 +54,7 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const tabs = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
+    { id: 'master' as AdminTab, label: 'Site Master Control (All 6)', icon: Crown },
     { id: 'intent' as AdminTab, label: 'Intent & Showcase', icon: Sparkles },
     { id: 'notes' as AdminTab, label: 'Admin Notes & Ideas', icon: StickyNote },
     { id: 'users' as AdminTab, label: 'User & Team Moderation', icon: Users },

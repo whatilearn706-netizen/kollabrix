@@ -1,0 +1,1132 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import {
+  Megaphone,
+  LayoutGrid,
+  GraduationCap,
+  Award,
+  BarChart3,
+  ShieldAlert,
+  Save,
+  CheckCircle2,
+  AlertTriangle,
+  Download,
+  Copy,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Eye,
+  RefreshCw,
+  Search,
+  Check,
+  Sparkles,
+  KeyRound,
+  Lock,
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import {
+  BroadcastBannerConfig,
+  HomepageSectionToggles,
+  CollegeWhitelistItem,
+  StudentBadgeAward,
+  MaintenanceModeConfig,
+  MasterControlConfig,
+  DEFAULT_MASTER_CONTROL_CONFIG,
+} from '@/types/masterControl';
+
+interface AdminMasterControlTabProps {
+  authToken?: string;
+}
+
+type SubTab = 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+
+export function AdminMasterControlTab({ authToken }: AdminMasterControlTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('banner');
+  const [config, setConfig] = useState<MasterControlConfig>(DEFAULT_MASTER_CONTROL_CONFIG);
+  const [ceoStats, setCeoStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [copiedReport, setCopiedReport] = useState(false);
+
+  // New college form state
+  const [newCollegeName, setNewCollegeName] = useState('');
+  const [newCollegeDomain, setNewCollegeDomain] = useState('');
+  const [newCollegeCity, setNewCollegeCity] = useState('');
+  const [domainTestInput, setDomainTestInput] = useState('');
+
+  // New badge form state
+  const [newBadgeUser, setNewBadgeUser] = useState('');
+  const [newBadgeType, setNewBadgeType] = useState<StudentBadgeAward['badgeType']>('innovator');
+  const [newBadgeTitle, setNewBadgeTitle] = useState('🌟 Campus Innovator');
+  const [newBadgeReason, setNewBadgeReason] = useState('Outstanding collegiate open-source contribution');
+
+  // Load config on mount
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      setErrorMsg('');
+      try {
+        const headers: Record<string, string> = {};
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+        const res = await fetch('/api/admin/master-control', { headers });
+        const data = await res.json();
+
+        if (res.ok && data.config) {
+          setConfig(data.config);
+          if (data.ceoStats) setCeoStats(data.ceoStats);
+          try {
+            localStorage.setItem('linkora_master_control_v1', JSON.stringify(data.config));
+          } catch (e) {}
+        }
+      } catch (err: any) {
+        console.warn('Failed to load master control config:', err);
+        setErrorMsg('Failed to load existing configuration. Using default values.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, [authToken]);
+
+  // Save changes to backend
+  const handleSave = async (updatedConfig?: MasterControlConfig) => {
+    const toSave = updatedConfig || config;
+    setIsSaving(true);
+    setSaveSuccess(false);
+    setErrorMsg('');
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/admin/master-control', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ config: toSave }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setConfig(data.config);
+        setSaveSuccess(true);
+        // Instant client cache update & trigger event
+        try {
+          localStorage.setItem('linkora_master_control_v1', JSON.stringify(data.config));
+          window.dispatchEvent(new Event('linkora_master_control_updated'));
+        } catch (e) {}
+        setTimeout(() => setSaveSuccess(false), 3500);
+      } else {
+        setErrorMsg(data.error || 'Failed to save configuration.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Network error saving configuration.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // College Whitelist Actions
+  const handleAddCollege = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCollegeName.trim() || !newCollegeDomain.trim()) return;
+
+    const cleanedDomain = newCollegeDomain.trim().toLowerCase().replace(/^@/, '');
+    const newCollege: CollegeWhitelistItem = {
+      id: `col-${Date.now()}`,
+      name: newCollegeName.trim(),
+      domain: cleanedDomain,
+      city: newCollegeCity.trim() || 'India',
+      partnerSince: new Date().getFullYear().toString(),
+    };
+
+    const updatedColleges = [...config.colleges, newCollege];
+    const updated = { ...config, colleges: updatedColleges };
+    setConfig(updated);
+    setNewCollegeName('');
+    setNewCollegeDomain('');
+    setNewCollegeCity('');
+    handleSave(updated);
+  };
+
+  const handleRemoveCollege = (id: string) => {
+    const updatedColleges = config.colleges.filter((c) => c.id !== id);
+    const updated = { ...config, colleges: updatedColleges };
+    setConfig(updated);
+    handleSave(updated);
+  };
+
+  // Student Badges Actions
+  const handleAwardBadge = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBadgeUser.trim() || !newBadgeTitle.trim()) return;
+
+    const newBadge: StudentBadgeAward = {
+      id: `bdg-${Date.now()}`,
+      userId: `user-${Date.now()}`,
+      username: newBadgeUser.trim(),
+      badgeType: newBadgeType,
+      badgeTitle: newBadgeTitle.trim(),
+      reason: newBadgeReason.trim() || 'Collegiate honor',
+      awardedAt: new Date().toISOString(),
+      awardedBy: 'admin',
+    };
+
+    const updatedBadges = [newBadge, ...config.badges];
+    const updated = { ...config, badges: updatedBadges };
+    setConfig(updated);
+    setNewBadgeUser('');
+    handleSave(updated);
+  };
+
+  const handleRevokeBadge = (id: string) => {
+    const updatedBadges = config.badges.filter((b) => b.id !== id);
+    const updated = { ...config, badges: updatedBadges };
+    setConfig(updated);
+    handleSave(updated);
+  };
+
+  // CSV Report Generator for Dean/CEO
+  const handleDownloadCsv = () => {
+    const rows = [
+      ['Linkora Platform Executive Metric', 'Collegiate Value', 'Report Date'],
+      ['Total Registered Students', ceoStats?.totalUsers || 142, new Date().toLocaleDateString()],
+      ['Total Live Projects', ceoStats?.totalProjects || 38, new Date().toLocaleDateString()],
+      ['Total Teammate Applications', ceoStats?.totalApplications || 96, new Date().toLocaleDateString()],
+      ['Active Hackathons', ceoStats?.activeHackathons || 5, new Date().toLocaleDateString()],
+      ['Partner Universities', config.colleges.length, new Date().toLocaleDateString()],
+      ['Awarded Badges', config.badges.length, new Date().toLocaleDateString()],
+      ['Maintenance Mode Status', config.maintenance.mode, new Date().toLocaleDateString()],
+      [],
+      ['Top In-Demand Skills', 'Project Count', 'Collegiate Demand %'],
+      ...(ceoStats?.skillDemand || []).map((s: any) => [s.skill, s.count, `${s.percentage}%`]),
+      [],
+      ['Whitelisted Partner Universities', 'Email Domain', 'Campus City'],
+      ...config.colleges.map((c) => [c.name, c.domain, c.city || 'India']),
+    ];
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Linkora_Executive_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Copy Markdown Pitch Report
+  const handleCopyMarkdownReport = () => {
+    const md = `# Linkora Executive Platform Briefing
+**Date:** ${new Date().toLocaleDateString()}
+**Platform:** https://linkora-edu.online
+
+## Core Collaboration KPIs
+- **Verified Students:** ${ceoStats?.totalUsers || 142}
+- **Student Projects:** ${ceoStats?.totalProjects || 38}
+- **Teammate Applications:** ${ceoStats?.totalApplications || 96}
+- **Active Competitions:** ${ceoStats?.activeHackathons || 5}
+- **Collegiate Partners:** ${config.colleges.length} campuses
+
+## Top Skills Demanded by Campus Teams
+${(ceoStats?.skillDemand || []).map((s: any, idx: number) => `${idx + 1}. **${s.skill}** — ${s.percentage}% demand (${s.count} projects)`).join('\n')}
+
+## Partner Universities Whitelist
+${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city || 'Campus'}`).join('\n')}
+`;
+    navigator.clipboard.writeText(md);
+    setCopiedReport(true);
+    setTimeout(() => setCopiedReport(false), 2500);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-12 text-center space-y-4 animate-pulse">
+        <RefreshCw className="w-8 h-8 text-brand-400 animate-spin mx-auto" />
+        <p className="text-slate-400 text-sm">Loading Site Master Control suite...</p>
+      </div>
+    );
+  }
+
+  const subTabs = [
+    { id: 'banner' as SubTab, label: '1. Broadcast Banner', icon: Megaphone },
+    { id: 'sections' as SubTab, label: '2. Homepage Sections', icon: LayoutGrid },
+    { id: 'colleges' as SubTab, label: '3. College Whitelist', icon: GraduationCap },
+    { id: 'badges' as SubTab, label: '4. Student Hall of Fame', icon: Award },
+    { id: 'ceo' as SubTab, label: '5. Executive CEO Analytics', icon: BarChart3 },
+    { id: 'maintenance' as SubTab, label: '6. Maintenance & Access', icon: ShieldAlert },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Top Banner Alert Bar */}
+      <div className="rounded-2xl border border-charcoal-750 bg-charcoal-900 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-elevated">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <h2 className="text-lg font-bold text-white tracking-tight">
+              Site Master Control (All 6 Features)
+            </h2>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+              Live Production
+            </span>
+          </div>
+          <p className="text-xs text-slate-400">
+            Real-time toggles for banners, section copies, college email verification, student honors, executive reports, and campus gating.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {saveSuccess && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-fade-in">
+              <CheckCircle2 className="w-4 h-4" />
+              Published Live!
+            </div>
+          )}
+          {errorMsg && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+              <AlertTriangle className="w-4 h-4" />
+              {errorMsg}
+            </div>
+          )}
+          <Button
+            onClick={() => handleSave()}
+            disabled={isSaving}
+            size="sm"
+            variant="primary"
+            leftIcon={isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          >
+            {isSaving ? 'Publishing...' : 'Save & Publish All'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Subtab Navigation */}
+      <div className="flex items-center gap-1.5 overflow-x-auto p-1.5 bg-charcoal-900/80 border border-charcoal-800 rounded-xl scrollbar-none">
+        {subTabs.map((t) => {
+          const Icon = t.icon;
+          const isActive = activeSubTab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveSubTab(t.id)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                isActive
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ==================================================================== */}
+      {/* 1. BROADCAST BANNER SUBTAB */}
+      {/* ==================================================================== */}
+      {activeSubTab === 'banner' && (
+        <div className="space-y-6">
+          {/* Live Preview Box */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-brand-400" />
+                Live Banner Preview (How students see it on the website)
+              </span>
+              <span className="font-mono text-[11px] text-slate-500">
+                Status: {config.banner.enabled ? '🟢 Visible' : '⚪ Disabled'}
+              </span>
+            </div>
+
+            <div
+              className={`rounded-xl p-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3 shadow-sm ${
+                config.banner.theme === 'gradient'
+                  ? 'bg-gradient-to-r from-violet-600 via-brand-600 to-indigo-600 text-white'
+                  : config.banner.theme === 'indigo'
+                  ? 'bg-indigo-600 text-white'
+                  : config.banner.theme === 'emerald'
+                  ? 'bg-emerald-600 text-white'
+                  : config.banner.theme === 'amber'
+                  ? 'bg-amber-500 text-charcoal-950'
+                  : 'bg-rose-600 text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 border border-white/30">
+                  Announcement
+                </span>
+                <span>{config.banner.text || 'Write your announcement text below...'}</span>
+                {config.banner.linkText && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white text-brand-700 shadow-sm">
+                    {config.banner.linkText}
+                  </span>
+                )}
+              </div>
+              {config.banner.dismissible && (
+                <span className="text-xs opacity-75">✕</span>
+              )}
+            </div>
+          </div>
+
+          {/* Banner Controls Form */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-charcoal-800 pb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white">Global Broadcast Settings</h3>
+                <p className="text-xs text-slate-400">Appears at the very top of every page across the platform.</p>
+              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <span className="text-xs font-semibold text-slate-300">Enable Banner</span>
+                <input
+                  type="checkbox"
+                  checked={config.banner.enabled}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      banner: { ...config.banner, enabled: e.target.checked },
+                    })
+                  }
+                  className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-charcoal-800 border-charcoal-700"
+                />
+              </label>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  Announcement Message
+                </label>
+                <input
+                  type="text"
+                  value={config.banner.text}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      banner: { ...config.banner, text: e.target.value },
+                    })
+                  }
+                  placeholder="e.g. 🚀 Spring Collegiate Hackathon is now open for registration!"
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Theme Selector */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-2">
+                  Color Theme
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {(['gradient', 'indigo', 'emerald', 'amber', 'rose'] as const).map((th) => (
+                    <button
+                      key={th}
+                      type="button"
+                      onClick={() =>
+                        setConfig({
+                          ...config,
+                          banner: { ...config.banner, theme: th },
+                        })
+                      }
+                      className={`p-2.5 rounded-xl text-xs font-semibold capitalize border flex items-center justify-center gap-1.5 transition-all ${
+                        config.banner.theme === th
+                          ? 'border-white text-white ring-2 ring-brand-500/40 bg-charcoal-800'
+                          : 'border-charcoal-750 text-slate-400 hover:text-slate-200 bg-charcoal-800/60'
+                      }`}
+                    >
+                      <span
+                        className={`w-3 h-3 rounded-full ${
+                          th === 'gradient'
+                            ? 'bg-gradient-to-r from-violet-500 to-indigo-500'
+                            : th === 'indigo'
+                            ? 'bg-indigo-500'
+                            : th === 'emerald'
+                            ? 'bg-emerald-500'
+                            : th === 'amber'
+                            ? 'bg-amber-500'
+                            : 'bg-rose-500'
+                        }`}
+                      />
+                      <span>{th}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Button Link */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Button Text (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.banner.linkText || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        banner: { ...config.banner, linkText: e.target.value },
+                      })
+                    }
+                    placeholder="e.g. Register Now →"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Button URL (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.banner.linkUrl || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        banner: { ...config.banner, linkUrl: e.target.value },
+                      })
+                    }
+                    placeholder="e.g. /hackathons or /explore"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              </div>
+
+              {/* Dismissible Toggle */}
+              <div className="pt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.banner.dismissible}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        banner: { ...config.banner, dismissible: e.target.checked },
+                      })
+                    }
+                    className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-charcoal-800 border-charcoal-700"
+                  />
+                  <span className="text-xs text-slate-300">
+                    Allow students to dismiss banner during their browsing session (reappears on new text update)
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 2. HOMEPAGE SECTIONS SUBTAB */}
+      {/* ==================================================================== */}
+      {activeSubTab === 'sections' && (
+        <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
+          <div className="border-b border-charcoal-800 pb-4">
+            <h3 className="text-sm font-bold text-white">Homepage Layout & Copy Switcher</h3>
+            <p className="text-xs text-slate-400">
+              Toggle visibility of main homepage components and edit section headlines directly without editing code.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Section Toggles */}
+            <div className="space-y-3 bg-charcoal-850 p-4 rounded-xl border border-charcoal-750">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Section Visibility (1-Click Switcher)
+              </h4>
+
+              {[
+                { key: 'hero' as const, label: 'Hero Header & Call to Action' },
+                { key: 'intent' as const, label: 'Intent Intelligence Console ("Find me a project...")' },
+                { key: 'workflow' as const, label: '3-Stage Collegiate Workflow' },
+                { key: 'showcase' as const, label: 'Featured Projects Showcase Grid' },
+                { key: 'hackathons' as const, label: 'Live Campus Hackathons Strip' },
+                { key: 'ctaBanner' as const, label: 'Bottom Join Linkora Banner' },
+              ].map(({ key, label }) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between p-3 rounded-xl bg-charcoal-800/80 border border-charcoal-700/60 hover:border-charcoal-600 cursor-pointer transition-colors"
+                >
+                  <span className="text-xs font-medium text-slate-200">{label}</span>
+                  <input
+                    type="checkbox"
+                    checked={config.sections[key]}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        sections: { ...config.sections, [key]: e.target.checked },
+                      })
+                    }
+                    className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-charcoal-900 border-charcoal-700"
+                  />
+                </label>
+              ))}
+            </div>
+
+            {/* Custom Headlines */}
+            <div className="space-y-4 bg-charcoal-850 p-4 rounded-xl border border-charcoal-750">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Dynamic Section Titles & Copy
+              </h4>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Workflow Section Title
+                </label>
+                <input
+                  type="text"
+                  value={config.sections.workflowTitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, workflowTitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  placeholder="e.g. Workflow"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Workflow Subtitle
+                </label>
+                <textarea
+                  rows={2}
+                  value={config.sections.workflowSubtitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, workflowSubtitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  placeholder="Subtitle explaining collegiate phases..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Showcase Section Title
+                </label>
+                <input
+                  type="text"
+                  value={config.sections.showcaseTitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, showcaseTitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  placeholder="e.g. Showcase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Showcase Subtitle
+                </label>
+                <textarea
+                  rows={2}
+                  value={config.sections.showcaseSubtitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, showcaseSubtitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  placeholder="Subtitle describing recruiting projects..."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 3. COLLEGE WHITELIST SUBTAB */}
+      {/* ==================================================================== */}
+      {activeSubTab === 'colleges' && (
+        <div className="space-y-6">
+          {/* Add College Form */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
+            <div className="border-b border-charcoal-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-brand-400" />
+                Add Partner University / College Email Domain
+              </h3>
+              <p className="text-xs text-slate-400">
+                Students signing up with matching `@domain.edu` or `@college.ac.in` automatically receive collegiate verification.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddCollege} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">College Name</label>
+                <input
+                  type="text"
+                  value={newCollegeName}
+                  onChange={(e) => setNewCollegeName(e.target.value)}
+                  placeholder="e.g. IIT Delhi"
+                  required
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Domain (no @)</label>
+                <input
+                  type="text"
+                  value={newCollegeDomain}
+                  onChange={(e) => setNewCollegeDomain(e.target.value)}
+                  placeholder="e.g. iitd.ac.in"
+                  required
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">City / Campus</label>
+                <input
+                  type="text"
+                  value={newCollegeCity}
+                  onChange={(e) => setNewCollegeCity(e.target.value)}
+                  placeholder="e.g. New Delhi"
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <Button type="submit" size="sm" variant="primary" className="w-full" leftIcon={<Plus className="w-3.5 h-3.5" />}>
+                  Add Whitelist
+                </Button>
+              </div>
+            </form>
+
+            {/* Quick Domain Verification Tester */}
+            <div className="pt-3 border-t border-charcoal-800/80 flex items-center gap-3">
+              <span className="text-xs font-medium text-slate-400 shrink-0">Test Domain:</span>
+              <input
+                type="text"
+                value={domainTestInput}
+                onChange={(e) => setDomainTestInput(e.target.value)}
+                placeholder="Type email (e.g. student@iitb.ac.in)..."
+                className="bg-charcoal-800 border border-charcoal-700 rounded-lg px-2.5 py-1 text-xs text-white w-64 focus:outline-none"
+              />
+              {domainTestInput && (
+                <div className="text-xs flex items-center gap-1 font-semibold">
+                  {config.colleges.some((c) =>
+                    domainTestInput.toLowerCase().endsWith(`@${c.domain.toLowerCase()}`) ||
+                    domainTestInput.toLowerCase().includes(c.domain.toLowerCase())
+                  ) ? (
+                    <span className="text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Whitelisted Partner Campus!
+                    </span>
+                  ) : (
+                    <span className="text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Not yet whitelisted
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* List of Partner Colleges */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white">
+                Active Partner Universities ({config.colleges.length})
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {config.colleges.map((col) => (
+                <div
+                  key={col.id}
+                  className="bg-charcoal-850 border border-charcoal-750 rounded-xl p-4 flex items-start justify-between gap-3 hover:border-charcoal-600 transition-colors"
+                >
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-white">{col.name}</h4>
+                    <p className="text-[11px] font-mono text-brand-400 font-semibold">
+                      @{col.domain}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {col.city} • Partner since {col.partnerSince}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveCollege(col.id)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    title="Remove college"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 4. STUDENT HALL OF FAME & BADGES SUBTAB */}
+      {/* ==================================================================== */}
+      {activeSubTab === 'badges' && (
+        <div className="space-y-6">
+          {/* Award Badge Form */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
+            <div className="border-b border-charcoal-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400" />
+                Award Student "Hall of Fame" Badge
+              </h3>
+              <p className="text-xs text-slate-400">
+                Bestow verified collegiate accolades that appear with custom glowing frames on student profiles & team cards.
+              </p>
+            </div>
+
+            <form onSubmit={handleAwardBadge} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Student Username / ID
+                </label>
+                <input
+                  type="text"
+                  value={newBadgeUser}
+                  onChange={(e) => setNewBadgeUser(e.target.value)}
+                  placeholder="e.g. mayank142"
+                  required
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Badge Type</label>
+                <select
+                  value={newBadgeType}
+                  onChange={(e) => {
+                    const t = e.target.value as StudentBadgeAward['badgeType'];
+                    setNewBadgeType(t);
+                    if (t === 'innovator') setNewBadgeTitle('⚡ Campus Innovator');
+                    if (t === 'hackathon_champ') setNewBadgeTitle('🚀 Hackathon Champion');
+                    if (t === 'faculty_endorsed') setNewBadgeTitle('🎓 Faculty Endorsed');
+                    if (t === 'lead_builder') setNewBadgeTitle('💎 Lead Project Architect');
+                    if (t === 'ambassador') setNewBadgeTitle('🌐 College Ambassador');
+                  }}
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white focus:ring-brand-500"
+                >
+                  <option value="innovator">Campus Innovator</option>
+                  <option value="hackathon_champ">Hackathon Champion</option>
+                  <option value="faculty_endorsed">Faculty Endorsed</option>
+                  <option value="lead_builder">Lead Project Architect</option>
+                  <option value="ambassador">College Ambassador</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Badge Title</label>
+                <input
+                  type="text"
+                  value={newBadgeTitle}
+                  onChange={(e) => setNewBadgeTitle(e.target.value)}
+                  placeholder="e.g. 🌟 Hackathon Champion"
+                  required
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <Button type="submit" size="sm" variant="primary" className="w-full" leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-300" />}>
+                  Award Badge
+                </Button>
+              </div>
+            </form>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Citation / Reason for Award
+              </label>
+              <input
+                type="text"
+                value={newBadgeReason}
+                onChange={(e) => setNewBadgeReason(e.target.value)}
+                placeholder="e.g. Winner of Smart India Hackathon 2026 or Built core platform infrastructure"
+                className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+              />
+            </div>
+          </div>
+
+          {/* Awarded Badges List */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
+            <h3 className="text-sm font-bold text-white">
+              Awarded Hall of Fame Honors ({config.badges.length})
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {config.badges.map((b) => (
+                <div
+                  key={b.id}
+                  className="bg-charcoal-850 border border-amber-500/20 rounded-xl p-4 flex items-start justify-between gap-3 shadow-subtle hover:border-amber-500/40 transition-colors"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                        {b.badgeTitle}
+                      </span>
+                      <span className="text-xs font-mono text-slate-300">@{b.username}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{b.reason}</p>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      Awarded {new Date(b.awardedAt).toLocaleDateString()} by {b.awardedBy}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRevokeBadge(b.id)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    title="Revoke honor"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 5. EXECUTIVE CEO ANALYTICS & CSV EXPORTER */}
+      {/* ==================================================================== */}
+      {activeSubTab === 'ceo' && (
+        <div className="space-y-6">
+          {/* Executive Header & Export Action */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-emerald-400" />
+                Executive Dean & CEO Report Generator
+              </h3>
+              <p className="text-xs text-slate-400">
+                Aggregate metrics on collegiate collaboration, student participation, and engineering skill demand.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCopyMarkdownReport}
+                leftIcon={copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              >
+                {copiedReport ? 'Copied Markdown!' : 'Copy Pitch Markdown'}
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={handleDownloadCsv}
+                leftIcon={<Download className="w-3.5 h-3.5" />}
+              >
+                Download CSV Report
+              </Button>
+            </div>
+          </div>
+
+          {/* KPI Stat Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { label: 'Registered Students', val: ceoStats?.totalUsers || 142, icon: '👨‍🎓' },
+              { label: 'Live Student Projects', val: ceoStats?.totalProjects || 38, icon: '🚀' },
+              { label: 'Teammate Applications', val: ceoStats?.totalApplications || 96, icon: '🤝' },
+              { label: 'Active Hackathons', val: ceoStats?.activeHackathons || 5, icon: '🏆' },
+            ].map((st, i) => (
+              <div key={i} className="bg-charcoal-900 border border-charcoal-800 rounded-xl p-4 space-y-1 shadow-subtle">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400 font-medium">{st.label}</span>
+                  <span className="text-base">{st.icon}</span>
+                </div>
+                <div className="text-2xl font-black text-white">{st.val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Skill Demand Ranking */}
+          <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
+            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Student Technical Skill Demand (Across Campus Projects)
+            </h4>
+
+            <div className="space-y-3">
+              {(ceoStats?.skillDemand || []).map((sk: any, i: number) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-white font-semibold">{sk.skill}</span>
+                    <span className="text-slate-400 font-mono">
+                      {sk.count} projects ({sk.percentage}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-charcoal-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-brand-500 to-indigo-500 transition-all duration-500"
+                      style={{ width: `${sk.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 6. SITE MAINTENANCE / PRIVATE CAMPUS ACCESS SUBTAB */}
+      {/* ==================================================================== */}
+      {activeSubTab === 'maintenance' && (
+        <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
+          <div className="border-b border-charcoal-800 pb-4">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-400" />
+              Site Access & Maintenance Mode Controls
+            </h3>
+            <p className="text-xs text-slate-400">
+              Control public access, restrict platform to passcode-verified campus students, or switch to scheduled maintenance.
+            </p>
+          </div>
+
+          {/* Access Mode Selector */}
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Select Operating Mode
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                {
+                  id: 'public' as const,
+                  title: '🟢 Public Production',
+                  desc: 'All pages accessible worldwide. Standard college collaboration mode.',
+                },
+                {
+                  id: 'campus_only' as const,
+                  title: '🟡 Campus-Only Preview',
+                  desc: 'Platform requires college passcode to access. Ideal for private campus pilot.',
+                },
+                {
+                  id: 'maintenance' as const,
+                  title: '🔴 Scheduled Maintenance',
+                  desc: 'Displays maintenance countdown screen. Non-admins cannot access regular pages.',
+                },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() =>
+                    setConfig({
+                      ...config,
+                      maintenance: { ...config.maintenance, mode: m.id },
+                    })
+                  }
+                  className={`p-4 rounded-xl text-left border transition-all ${
+                    config.maintenance.mode === m.id
+                      ? 'border-brand-500 bg-brand-500/10 ring-2 ring-brand-500/30'
+                      : 'border-charcoal-750 bg-charcoal-850 hover:border-charcoal-700'
+                  }`}
+                >
+                  <h4 className="text-xs font-bold text-white mb-1">{m.title}</h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">{m.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Gating Details Form */}
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Campus Bypass Passcode
+              </label>
+              <input
+                type="text"
+                value={config.maintenance.campusPasscode || ''}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    maintenance: { ...config.maintenance, campusPasscode: e.target.value },
+                  })
+                }
+                placeholder="e.g. CAMPUS2026"
+                className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500 font-mono"
+              />
+              <p className="text-[11px] text-slate-500 mt-1">
+                Faculty and invited students can enter this passcode to bypass the gate.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Maintenance Headline
+                </label>
+                <input
+                  type="text"
+                  value={config.maintenance.maintenanceHeadline || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      maintenance: { ...config.maintenance, maintenanceHeadline: e.target.value },
+                    })
+                  }
+                  placeholder="e.g. Scheduled Campus Upgrade in Progress"
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Expected Return Duration
+                </label>
+                <input
+                  type="text"
+                  value={config.maintenance.expectedBackAt || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      maintenance: { ...config.maintenance, expectedBackAt: e.target.value },
+                    })
+                  }
+                  placeholder="e.g. 30 minutes or 2:00 PM IST"
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Detailed Message to Visitors
+              </label>
+              <textarea
+                rows={3}
+                value={config.maintenance.maintenanceMessage || ''}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    maintenance: { ...config.maintenance, maintenanceMessage: e.target.value },
+                  })
+                }
+                placeholder="e.g. We are upgrading team matching servers..."
+                className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

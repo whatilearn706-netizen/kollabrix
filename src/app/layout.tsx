@@ -7,6 +7,8 @@ import { SetupBanner } from '@/components/layout/SetupBanner';
 import { AuthModal } from '@/components/auth/AuthModal';
 
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
+import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner';
+import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-edu.online';
 
@@ -74,11 +76,14 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white">
         <AuthProvider>
           <SiteThemeProvider>
-            <SetupBanner />
-            <Navbar />
-            <main className="flex-1 flex flex-col">{children}</main>
-            <Footer />
-            <AuthModal />
+            <GlobalBroadcastBanner />
+            <MaintenanceModeGate>
+              <SetupBanner />
+              <Navbar />
+              <main className="flex-1 flex flex-col">{children}</main>
+              <Footer />
+              <AuthModal />
+            </MaintenanceModeGate>
           </SiteThemeProvider>
         </AuthProvider>
       </body>

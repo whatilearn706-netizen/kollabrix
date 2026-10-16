@@ -30,6 +30,7 @@ import { AdminEnterpriseTab } from '@/components/admin/AdminEnterpriseTab';
 import { AdminContentTab } from '@/components/admin/AdminContentTab';
 import { AdminNotesTab } from '@/components/admin/AdminNotesTab';
 import { AdminIntentShowcaseTab } from '@/components/admin/AdminIntentShowcaseTab';
+import { AdminMasterControlTab } from '@/components/admin/AdminMasterControlTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
@@ -230,6 +231,10 @@ WHERE user_id = '${user.id}';`;
           isLoading={isOverviewLoading}
           onNavigateTab={setCurrentTab}
         />
+      )}
+
+      {currentTab === 'master' && (
+        <AdminMasterControlTab authToken={authToken} />
       )}
 
       {currentTab === 'intent' && (
