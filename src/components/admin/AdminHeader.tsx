@@ -53,8 +53,8 @@ export function AdminHeader({
   adminRole = 'admin',
 }: AdminHeaderProps) {
   const tabs = [
+    { id: 'master' as AdminTab, label: '👑 ALL 6 MASTER CONTROLS', icon: Crown },
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
-    { id: 'master' as AdminTab, label: 'Site Master Control (All 6)', icon: Crown },
     { id: 'intent' as AdminTab, label: 'Intent & Showcase', icon: Sparkles },
     { id: 'notes' as AdminTab, label: 'Admin Notes & Ideas', icon: StickyNote },
     { id: 'users' as AdminTab, label: 'User & Team Moderation', icon: Users },
@@ -107,22 +107,41 @@ export function AdminHeader({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-6 border-t border-charcoal-800/80 mt-6 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pt-6 border-t border-charcoal-800/80 mt-6 scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;
+            const isMaster = tab.id === 'master';
+
             return (
               <button
                 key={tab.id}
                 onClick={() => onSelectTab(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-150 ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 ${
                   isActive
-                    ? 'bg-brand-600 text-white shadow-sm'
+                    ? isMaster
+                      ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-charcoal-950 font-black shadow-lg ring-2 ring-amber-400'
+                      : 'bg-brand-600 text-white shadow-sm'
+                    : isMaster
+                    ? 'text-amber-300 bg-amber-500/15 border border-amber-500/50 hover:bg-amber-500/25 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon
+                  className={`w-4 h-4 ${
+                    isActive && isMaster
+                      ? 'text-charcoal-950'
+                      : isActive
+                      ? 'text-white'
+                      : isMaster
+                      ? 'text-amber-400'
+                      : 'text-slate-400'
+                  }`}
+                />
                 <span>{tab.label}</span>
+                {isMaster && !isActive && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping ml-1" />
+                )}
               </button>
             );
           })}

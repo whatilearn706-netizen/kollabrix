@@ -39,12 +39,24 @@ export default function AdminControlCenterPage() {
   const [authToken, setAuthToken] = useState<string | undefined>();
   const [adminUser, setAdminUser] = useState<any>(null);
   const [adminProfile, setAdminProfile] = useState<any>(null);
-  const [currentTab, setCurrentTab] = useState<AdminTab>('overview');
+  const [currentTab, setCurrentTab] = useState<AdminTab>('master');
+  const [masterSubTab, setMasterSubTab] = useState<'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance'>('banner');
   const [overviewStats, setOverviewStats] = useState<any>(null);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [isOverviewLoading, setIsOverviewLoading] = useState(false);
   const [isSetupHelpOpen, setIsSetupHelpOpen] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
+
+  // Parse URL query params (?tab=master&sub=colleges)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AdminTab;
+      const subParam = params.get('sub') as any;
+      if (tabParam) setCurrentTab(tabParam);
+      if (subParam) setMasterSubTab(subParam);
+    }
+  }, []);
 
   // Authoritative server-side verification
   useEffect(() => {
@@ -230,11 +242,12 @@ WHERE user_id = '${user.id}';`;
           recentLogs={recentLogs}
           isLoading={isOverviewLoading}
           onNavigateTab={setCurrentTab}
+          onNavigateMasterSubTab={setMasterSubTab}
         />
       )}
 
       {currentTab === 'master' && (
-        <AdminMasterControlTab authToken={authToken} />
+        <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} />
       )}
 
       {currentTab === 'intent' && (

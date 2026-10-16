@@ -36,14 +36,21 @@ import {
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
+type SubTab = 'all' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+
 interface AdminMasterControlTabProps {
   authToken?: string;
+  initialSubTab?: SubTab;
 }
 
-type SubTab = 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+export function AdminMasterControlTab({ authToken, initialSubTab }: AdminMasterControlTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab || 'all');
 
-export function AdminMasterControlTab({ authToken }: AdminMasterControlTabProps) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('banner');
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
   const [config, setConfig] = useState<MasterControlConfig>(DEFAULT_MASTER_CONTROL_CONFIG);
   const [ceoStats, setCeoStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -256,6 +263,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
   }
 
   const subTabs = [
+    { id: 'all' as SubTab, label: '⚡ All 6 Modules (Full Studio)', icon: Sparkles },
     { id: 'banner' as SubTab, label: '1. Broadcast Banner', icon: Megaphone },
     { id: 'sections' as SubTab, label: '2. Homepage Sections', icon: LayoutGrid },
     { id: 'colleges' as SubTab, label: '3. College Whitelist', icon: GraduationCap },
@@ -333,7 +341,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* ==================================================================== */}
       {/* 1. BROADCAST BANNER SUBTAB */}
       {/* ==================================================================== */}
-      {activeSubTab === 'banner' && (
+      {(activeSubTab === 'all' || activeSubTab === 'banner') && (
         <div className="space-y-6">
           {/* Live Preview Box */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-5 space-y-3">
@@ -525,7 +533,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* ==================================================================== */}
       {/* 2. HOMEPAGE SECTIONS SUBTAB */}
       {/* ==================================================================== */}
-      {activeSubTab === 'sections' && (
+      {(activeSubTab === 'all' || activeSubTab === 'sections') && (
         <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
           <div className="border-b border-charcoal-800 pb-4">
             <h3 className="text-sm font-bold text-white">Homepage Layout & Copy Switcher</h3>
@@ -654,7 +662,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* ==================================================================== */}
       {/* 3. COLLEGE WHITELIST SUBTAB */}
       {/* ==================================================================== */}
-      {activeSubTab === 'colleges' && (
+      {(activeSubTab === 'all' || activeSubTab === 'colleges') && (
         <div className="space-y-6">
           {/* Add College Form */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
@@ -780,7 +788,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* ==================================================================== */}
       {/* 4. STUDENT HALL OF FAME & BADGES SUBTAB */}
       {/* ==================================================================== */}
-      {activeSubTab === 'badges' && (
+      {(activeSubTab === 'all' || activeSubTab === 'badges') && (
         <div className="space-y-6">
           {/* Award Badge Form */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
@@ -906,7 +914,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* ==================================================================== */}
       {/* 5. EXECUTIVE CEO ANALYTICS & CSV EXPORTER */}
       {/* ==================================================================== */}
-      {activeSubTab === 'ceo' && (
+      {(activeSubTab === 'all' || activeSubTab === 'ceo') && (
         <div className="space-y-6">
           {/* Executive Header & Export Action */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -989,7 +997,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* ==================================================================== */}
       {/* 6. SITE MAINTENANCE / PRIVATE CAMPUS ACCESS SUBTAB */}
       {/* ==================================================================== */}
-      {activeSubTab === 'maintenance' && (
+      {(activeSubTab === 'all' || activeSubTab === 'maintenance') && (
         <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
           <div className="border-b border-charcoal-800 pb-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">

@@ -18,6 +18,12 @@ import {
   KeyRound,
   Trash2,
   Palette,
+  Crown,
+  Megaphone,
+  LayoutGrid,
+  Award,
+  BarChart3,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AdminTab } from './AdminHeader';
@@ -55,6 +61,7 @@ interface AdminOverviewTabProps {
   recentLogs: any[];
   isLoading: boolean;
   onNavigateTab: (tab: AdminTab) => void;
+  onNavigateMasterSubTab?: (subTab: 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance') => void;
 }
 
 export function AdminOverviewTab({
@@ -62,6 +69,7 @@ export function AdminOverviewTab({
   recentLogs,
   isLoading,
   onNavigateTab,
+  onNavigateMasterSubTab,
 }: AdminOverviewTabProps) {
   if (isLoading || !stats) {
     return (
@@ -78,6 +86,220 @@ export function AdminOverviewTab({
 
   return (
     <div className="space-y-6">
+      {/* =========================================================================
+          HEROIC MASTER CONTROL COMMAND CENTER: ALL 6 FEATURES
+         ========================================================================= */}
+      <div className="rounded-3xl border-2 border-amber-500/40 bg-gradient-to-b from-amber-950/25 via-charcoal-900 to-charcoal-950 p-6 sm:p-7 shadow-elevated space-y-6 relative overflow-hidden">
+        {/* Glow blur background */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10 border-b border-charcoal-800 pb-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                ALL 6 MASTER PLATFORM CONTROLS
+              </span>
+              <span className="text-xs text-slate-400 font-mono">Live on linkora-edu.online</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Site Master Control Command Suite
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+              Instant god-mode governance: broadcast announcements, toggle homepage sections, whitelist university email domains, award honors, download CEO reports, and gate platform access.
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => onNavigateTab('master')}
+            className="bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-black shadow-elevated border-none shrink-0"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+          >
+            Open Full Master Suite (All 6)
+          </Button>
+        </div>
+
+        {/* 6 Grid Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 relative z-10">
+          {/* 1. Broadcast Banner */}
+          <div
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('banner');
+              onNavigateTab('master');
+            }}
+            className="rounded-2xl border border-charcoal-750 bg-charcoal-850/80 p-4 space-y-2.5 hover:border-amber-500/50 hover:bg-charcoal-800 cursor-pointer transition-all group shadow-subtle"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-400 flex items-center justify-center font-bold">
+                <Megaphone className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                Feature 1
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                1. Broadcast Announcement Banner
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Manage platform-wide announcement bar with 5 color themes, custom CTA buttons, and dismiss toggles.
+              </p>
+            </div>
+            <div className="pt-1 flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+              <span>Launch Banner Manager →</span>
+            </div>
+          </div>
+
+          {/* 2. Homepage Section Switcher */}
+          <div
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('sections');
+              onNavigateTab('master');
+            }}
+            className="rounded-2xl border border-charcoal-750 bg-charcoal-850/80 p-4 space-y-2.5 hover:border-amber-500/50 hover:bg-charcoal-800 cursor-pointer transition-all group shadow-subtle"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold">
+                <LayoutGrid className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                Feature 2
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                2. Homepage Section Switcher
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                1-click show/hide toggles for Hero, Intent, Workflow, Showcase, Hackathons, Footer CTA & edit headlines.
+              </p>
+            </div>
+            <div className="pt-1 flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+              <span>Launch Section Switcher →</span>
+            </div>
+          </div>
+
+          {/* 3. College Whitelist */}
+          <div
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('colleges');
+              onNavigateTab('master');
+            }}
+            className="rounded-2xl border border-charcoal-750 bg-charcoal-850/80 p-4 space-y-2.5 hover:border-amber-500/50 hover:bg-charcoal-800 cursor-pointer transition-all group shadow-subtle"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold">
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                Feature 3
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                3. College & University Whitelist
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Manage partner colleges, whitelist @iitb.ac.in, @dtu.ac.in domains, and test student email verification.
+              </p>
+            </div>
+            <div className="pt-1 flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+              <span>Launch Whitelist Manager →</span>
+            </div>
+          </div>
+
+          {/* 4. Student Hall of Fame & Badges */}
+          <div
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('badges');
+              onNavigateTab('master');
+            }}
+            className="rounded-2xl border border-charcoal-750 bg-charcoal-850/80 p-4 space-y-2.5 hover:border-amber-500/50 hover:bg-charcoal-800 cursor-pointer transition-all group shadow-subtle"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold">
+                <Award className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                Feature 4
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                4. Student Hall of Fame & Badges
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Award glowing badges (Innovator, Hackathon Champ, Faculty Endorsed) to students with custom citations.
+              </p>
+            </div>
+            <div className="pt-1 flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+              <span>Launch Badges & Honors →</span>
+            </div>
+          </div>
+
+          {/* 5. Executive CEO Analytics */}
+          <div
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('ceo');
+              onNavigateTab('master');
+            }}
+            className="rounded-2xl border border-charcoal-750 bg-charcoal-850/80 p-4 space-y-2.5 hover:border-amber-500/50 hover:bg-charcoal-800 cursor-pointer transition-all group shadow-subtle"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-bold">
+                <BarChart3 className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                Feature 5
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                5. Executive CEO & Dean Analytics
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Real-time KPIs, collegiate skill demand ranking, 1-click CSV download & Markdown pitch report generator.
+              </p>
+            </div>
+            <div className="pt-1 flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+              <span>Launch CEO Analytics →</span>
+            </div>
+          </div>
+
+          {/* 6. Site Maintenance & Access */}
+          <div
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('maintenance');
+              onNavigateTab('master');
+            }}
+            className="rounded-2xl border border-charcoal-750 bg-charcoal-850/80 p-4 space-y-2.5 hover:border-amber-500/50 hover:bg-charcoal-800 cursor-pointer transition-all group shadow-subtle"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center font-bold">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                Feature 6
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                6. Site Maintenance & Campus Passcode
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Switch between Public Production, Campus-Only (passcode protected), or Scheduled Maintenance with bypass.
+              </p>
+            </div>
+            <div className="pt-1 flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+              <span>Launch Access Controls →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 4 Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Users Card */}
