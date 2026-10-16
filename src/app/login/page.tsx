@@ -18,7 +18,7 @@ export default function LoginPage() {
             Log in to Linkora
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
-            Sign in with your Google account, phone number, or student credentials.
+            Sign in with Google, Apple, or your email with verification code.
           </p>
         </div>
 

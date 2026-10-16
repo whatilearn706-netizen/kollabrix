@@ -18,7 +18,7 @@ export default function SignupPage() {
             Join Linkora
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
-            Create your account with Google, phone number, or email to start collaborating.
+            Create your account with Google, Apple, or your email to start collaborating.
           </p>
         </div>
 
