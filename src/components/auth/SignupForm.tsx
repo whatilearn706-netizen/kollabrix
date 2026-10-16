@@ -502,40 +502,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
             </div>
             <h3 className="text-sm font-bold text-slate-900">Verify Your Email</h3>
             <p className="text-xs text-slate-600 max-w-xs mx-auto">
-              We generated a 6-digit verification code for <strong className="text-slate-900">{email}</strong>.
+              We sent a 6-digit verification code to <strong className="text-slate-900">{email}</strong>. Please check your inbox and Spam folder.
             </p>
           </div>
-
-          {/* Verification Code Box / Assistant */}
-          {securityCode && !isEmailSentBySupabase && (
-            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 text-left space-y-2.5">
-              <div className="flex items-start gap-2.5 text-xs text-amber-900">
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center justify-between flex-wrap gap-1">
-                    <span className="font-semibold text-amber-900">Your Verification Code:</span>
-                    <span className="font-mono font-extrabold text-amber-950 text-base tracking-widest bg-white px-2.5 py-0.5 rounded-lg border border-amber-300 shadow-xs">
-                      {securityCode}
-                    </span>
-                  </div>
-                  <p className="text-[11px] font-normal text-amber-800 leading-relaxed">
-                    Enter this 6-digit code below to activate your account, or click the button below for instant 1-click confirmation.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setOtpCode(securityCode);
-                  handleVerifySignupOtp(securityCode);
-                }}
-                className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-[0.99]"
-              >
-                <span>Autofill {securityCode} & Activate Account</span>
-                <Check className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
 
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-700 block text-center">
