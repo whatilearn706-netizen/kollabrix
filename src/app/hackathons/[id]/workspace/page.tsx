@@ -179,20 +179,31 @@ export default function HackathonWorkspacePage() {
         }
       } catch {}
 
-      // 1. Fetch Hackathon
+      // 1. Fetch Hackathon from Supabase safely
       let currentHack: Hackathon | null = null;
-      try {
-        const { data: hackData } = await supabase
-          .from('hackathons')
-          .select('*')
-          .eq('id', hackathonId)
-          .maybeSingle();
+      const isParamUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hackathonId);
 
-        if (hackData) {
-          currentHack = hackData as Hackathon;
+      try {
+        if (isParamUUID) {
+          const { data: hackData } = await supabase
+            .from('hackathons')
+            .select('*')
+            .eq('id', hackathonId)
+            .maybeSingle();
+
+          if (hackData) currentHack = hackData as Hackathon;
+        } else {
+          // If hackathonId is a join code (e.g. col-c8c89ed6)
+          const { data: hackDataByCode } = await supabase
+            .from('hackathons')
+            .select('*')
+            .eq('join_code', hackathonId)
+            .maybeSingle();
+
+          if (hackDataByCode) currentHack = hackDataByCode as Hackathon;
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn('Error fetching hackathon from Supabase:', err);
       }
 
       if (!currentHack && typeof window !== 'undefined') {
@@ -210,6 +221,22 @@ export default function HackathonWorkspacePage() {
 
       if (!currentHack) {
         throw new Error('Hackathon not found.');
+      }
+
+      // If loaded from local storage but matching hackathon exists in Supabase, resolve real UUID
+      if (currentHack && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentHack.id)) {
+        try {
+          if (currentHack.join_code) {
+            const { data: dbMatch } = await supabase
+              .from('hackathons')
+              .select('*')
+              .eq('join_code', currentHack.join_code)
+              .maybeSingle();
+            if (dbMatch) {
+              currentHack = { ...currentHack, id: dbMatch.id };
+            }
+          }
+        } catch {}
       }
 
       if (currentHack.description?.includes('<!-- HACKATHON_META:')) {
@@ -238,100 +265,108 @@ export default function HackathonWorkspacePage() {
 
       setHackathon(currentHack);
 
-      const targetHackId = currentHack.id || hackathonId;
-      const hackFilter = hackathonId && hackathonId !== targetHackId
-        ? `hackathon_id.eq.${targetHackId},hackathon_id.eq.${hackathonId}`
-        : `hackathon_id.eq.${targetHackId}`;
+      const canonicalHackId = currentHack.id;
+      const isCanonicalUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalHackId);
 
       // 2. Fetch Participants
-      const { data: partData } = await supabase
-        .from('hackathon_participants')
-        .select('*')
-        .or(hackFilter);
+      if (isCanonicalUUID) {
+        try {
+          const { data: partData } = await supabase
+            .from('hackathon_participants')
+            .select('*')
+            .eq('hackathon_id', canonicalHackId);
 
-      if (partData) {
-        setParticipants(partData as HackathonParticipant[]);
+          if (partData) {
+            setParticipants(partData as HackathonParticipant[]);
+          }
+        } catch {}
+
+        // 3. Fetch Challenges
+        try {
+          const { data: chalData } = await supabase
+            .from('hackathon_challenges')
+            .select('*')
+            .eq('hackathon_id', canonicalHackId)
+            .order('created_at', { ascending: true });
+
+          if (chalData) {
+            setChallenges(chalData as HackathonChallenge[]);
+          }
+        } catch {}
+
+        // 4. Fetch Announcements
+        try {
+          const { data: annData } = await supabase
+            .from('hackathon_announcements')
+            .select('*')
+            .eq('hackathon_id', canonicalHackId)
+            .order('is_pinned', { ascending: false })
+            .order('created_at', { ascending: false });
+
+          if (annData) {
+            setAnnouncements(annData as HackathonAnnouncement[]);
+          }
+        } catch {}
       }
 
-      // 3. Fetch Challenges
-      const { data: chalData } = await supabase
-        .from('hackathon_challenges')
-        .select('*')
-        .or(hackFilter)
-        .order('created_at', { ascending: true });
-
-      if (chalData) {
-        setChallenges(chalData as HackathonChallenge[]);
-      }
-
-      // 4. Fetch Announcements
-      const { data: annData } = await supabase
-        .from('hackathon_announcements')
-        .select('*')
-        .or(hackFilter)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (annData) {
-        setAnnouncements(annData as HackathonAnnouncement[]);
-      }
-
-      // 5. Fetch Teams with Members safely (hydrating profiles separately to prevent PGRST200 schema cache error)
+      // 5. Fetch Teams with Members safely
       let allTeams: TeamWithMembers[] = [];
-      try {
-        const { data: teamData, error: teamFetchErr } = await supabase
-          .from('hackathon_teams')
-          .select(`
-            *,
-            challenge:hackathon_challenges(*),
-            members:hackathon_team_members(*)
-          `)
-          .or(hackFilter);
+      if (isCanonicalUUID) {
+        try {
+          const { data: teamData, error: teamFetchErr } = await supabase
+            .from('hackathon_teams')
+            .select(`
+              *,
+              challenge:hackathon_challenges(*),
+              members:hackathon_team_members(*)
+            `)
+            .eq('hackathon_id', canonicalHackId);
 
-        if (teamFetchErr) {
-          console.warn('Could not fetch teams from Supabase:', teamFetchErr.message);
-        }
-
-        if (teamData && teamData.length > 0) {
-          // Hydrate member profiles safely in one batch
-          const memberUserIds = Array.from(
-            new Set(teamData.flatMap((t: any) => (t.members || []).map((m: any) => m.user_id)).filter(Boolean))
-          );
-
-          const profileMap = new Map<string, any>();
-          if (memberUserIds.length > 0) {
-            try {
-              const { data: profilesData } = await supabase
-                .from('profiles')
-                .select('user_id, display_name, avatar_url, college')
-                .in('user_id', memberUserIds);
-
-              (profilesData || []).forEach((p: any) => profileMap.set(p.user_id, p));
-            } catch (pErr) {
-              console.warn('Error hydrating member profiles:', pErr);
-            }
+          if (teamFetchErr) {
+            console.error('Could not fetch teams from Supabase:', teamFetchErr.message);
           }
 
-          allTeams = teamData.map((t: any) => ({
-            ...t,
-            members: (t.members || []).map((m: any) => ({
-              ...m,
-              profile: profileMap.get(m.user_id) || {
-                display_name: m.user_id === user?.id ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member',
-                avatar_url: m.user_id === user?.id ? profile?.avatar_url : null,
-                college: m.user_id === user?.id ? profile?.college : null,
-              },
-            })),
-          })) as TeamWithMembers[];
+          if (teamData && teamData.length > 0) {
+            // Hydrate member profiles safely in one batch
+            const memberUserIds = Array.from(
+              new Set(teamData.flatMap((t: any) => (t.members || []).map((m: any) => m.user_id)).filter(Boolean))
+            );
+
+            const profileMap = new Map<string, any>();
+            if (memberUserIds.length > 0) {
+              try {
+                const { data: profilesData } = await supabase
+                  .from('profiles')
+                  .select('user_id, display_name, avatar_url, college')
+                  .in('user_id', memberUserIds);
+
+                (profilesData || []).forEach((p: any) => profileMap.set(p.user_id, p));
+              } catch (pErr) {
+                console.warn('Error hydrating member profiles:', pErr);
+              }
+            }
+
+            allTeams = teamData.map((t: any) => ({
+              ...t,
+              members: (t.members || []).map((m: any) => ({
+                ...m,
+                profile: profileMap.get(m.user_id) || {
+                  display_name: m.user_id === user?.id ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member',
+                  avatar_url: m.user_id === user?.id ? profile?.avatar_url : null,
+                  college: m.user_id === user?.id ? profile?.college : null,
+                },
+              })),
+            })) as TeamWithMembers[];
+          }
+        } catch (err) {
+          console.warn('Error loading hackathon teams:', err);
         }
-      } catch (err) {
-        console.warn('Error loading hackathon teams:', err);
       }
 
       // Check localStorage for local/mock hackathon teams
       if (typeof window !== 'undefined') {
         try {
-          const localKey1 = `teamforge_teams_${targetHackId}`;
+          const localKey1 = `teamforge_teams_${canonicalHackId}`;
           const localKey2 = `teamforge_teams_${hackathonId}`;
           const raw1 = JSON.parse(localStorage.getItem(localKey1) || '[]');
           const raw2 = JSON.parse(localStorage.getItem(localKey2) || '[]');
@@ -383,41 +418,49 @@ export default function HackathonWorkspacePage() {
       }
 
       // 6. Fetch Judging Criteria
-      const { data: critData } = await supabase
-        .from('hackathon_judging_criteria')
-        .select('*')
-        .eq('hackathon_id', hackathonId)
-        .order('weight', { ascending: false });
+      if (isCanonicalUUID) {
+        try {
+          const { data: critData } = await supabase
+            .from('hackathon_judging_criteria')
+            .select('*')
+            .eq('hackathon_id', canonicalHackId)
+            .order('weight', { ascending: false });
 
-      if (critData) {
-        setCriteria(critData as HackathonJudgingCriteria[]);
-      }
+          if (critData) {
+            setCriteria(critData as HackathonJudgingCriteria[]);
+          }
+        } catch {}
 
-      // 7. If organizer or judge, or if results published, load submissions and evaluations
-      const { data: allSubs } = await supabase
-        .from('hackathon_submissions')
-        .select(`
-          *,
-          team:hackathon_teams(team_name)
-        `)
-        .eq('hackathon_id', hackathonId);
+        // 7. If organizer or judge, or if results published, load submissions and evaluations
+        try {
+          const { data: allSubs } = await supabase
+            .from('hackathon_submissions')
+            .select(`
+              *,
+              team:hackathon_teams(team_name)
+            `)
+            .eq('hackathon_id', canonicalHackId);
 
-      if (allSubs) {
-        const formatted = allSubs.map((s: any) => ({
-          ...s,
-          team_name: s.team?.team_name || 'Team',
-        }));
-        setAllSubmissions(formatted);
-      }
+          if (allSubs) {
+            const formatted = allSubs.map((s: any) => ({
+              ...s,
+              team_name: s.team?.team_name || 'Team',
+            }));
+            setAllSubmissions(formatted);
+          }
+        } catch {}
 
-      // Fetch evaluations
-      const { data: evalData } = await supabase
-        .from('hackathon_evaluations')
-        .select('*')
-        .eq('hackathon_id', hackathonId);
+        // Fetch evaluations
+        try {
+          const { data: evalData } = await supabase
+            .from('hackathon_evaluations')
+            .select('*')
+            .eq('hackathon_id', canonicalHackId);
 
-      if (evalData) {
-        setEvaluations(evalData as HackathonEvaluation[]);
+          if (evalData) {
+            setEvaluations(evalData as HackathonEvaluation[]);
+          }
+        } catch {}
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error loading hackathon workspace.');
@@ -429,63 +472,79 @@ export default function HackathonWorkspacePage() {
   useEffect(() => {
     loadWorkspace();
 
+    const activeHackId = hackathon?.id || hackathonId;
+    const isUUID = activeHackId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activeHackId);
+
     // Supabase Realtime subscription for live hackathon workspace sync
-    const channel = supabase
-      .channel(`hackathon-workspace-${hackathonId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hackathon_announcements',
-          filter: `hackathon_id=eq.${hackathonId}`,
-        },
-        () => {
-          loadWorkspace();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hackathon_teams',
-          filter: `hackathon_id=eq.${hackathonId}`,
-        },
-        () => {
-          loadWorkspace();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hackathon_challenges',
-          filter: `hackathon_id=eq.${hackathonId}`,
-        },
-        () => {
-          loadWorkspace();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hackathon_submissions',
-          filter: `hackathon_id=eq.${hackathonId}`,
-        },
-        () => {
-          loadWorkspace();
-        }
-      )
-      .subscribe();
+    const channelBuilder = supabase.channel(`hackathon-workspace-${activeHackId}`);
+
+    if (isUUID) {
+      channelBuilder
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'hackathon_announcements',
+            filter: `hackathon_id=eq.${activeHackId}`,
+          },
+          () => {
+            loadWorkspace();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'hackathon_teams',
+            filter: `hackathon_id=eq.${activeHackId}`,
+          },
+          () => {
+            loadWorkspace();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'hackathon_challenges',
+            filter: `hackathon_id=eq.${activeHackId}`,
+          },
+          () => {
+            loadWorkspace();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'hackathon_submissions',
+            filter: `hackathon_id=eq.${activeHackId}`,
+          },
+          () => {
+            loadWorkspace();
+          }
+        );
+    } else {
+      channelBuilder
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'hackathon_teams' },
+          () => {
+            loadWorkspace();
+          }
+        );
+    }
+
+    const channel = channelBuilder.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [hackathonId, loadWorkspace]);
+  }, [hackathonId, hackathon?.id, loadWorkspace]);
 
   // Handle Create Team
   const handleCreateTeam = async (e: React.FormEvent) => {
@@ -509,45 +568,53 @@ export default function HackathonWorkspacePage() {
 
     try {
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const targetHackId = hackathon.id || hackathonId;
+      const canonicalHackId = hackathon.id;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalHackId);
 
       let createdTeamData: any = null;
 
-      // 1. Try Supabase insert
-      try {
+      if (isUUID) {
+        const isChallengeUUID =
+          selectedChallengeId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedChallengeId);
+
         const { data: team, error: teamErr } = await supabase
           .from('hackathon_teams')
           .insert({
-            hackathon_id: targetHackId,
+            hackathon_id: canonicalHackId,
             team_name: newTeamName.trim(),
             description: newTeamDesc.trim() || null,
-            challenge_id: selectedChallengeId || null,
+            challenge_id: isChallengeUUID ? selectedChallengeId : null,
             leader_id: user.id,
             invite_code: inviteCode,
           })
           .select('*')
           .single();
 
-        if (teamErr) throw teamErr;
+        if (teamErr) {
+          console.error('Supabase team insertion error:', teamErr);
+          throw new Error(teamErr.message);
+        }
         createdTeamData = team;
 
-        // 2. Add current user as leader in team_members
+        // Add current user as leader in team_members
         const { error: memberErr } = await supabase
           .from('hackathon_team_members')
           .insert({
             team_id: team.id,
-            hackathon_id: targetHackId,
+            hackathon_id: canonicalHackId,
             user_id: user.id,
             role: 'Leader',
           });
 
-        if (memberErr) console.warn('Supabase member insertion warning:', memberErr.message);
-      } catch (dbErr: any) {
-        console.warn('Database team creation fallback:', dbErr?.message);
+        if (memberErr) {
+          console.error('Supabase member insertion error:', memberErr.message);
+        }
+      } else {
         // Fallback team creation object for mock/offline hackathons
         createdTeamData = {
           id: 'team-' + Date.now(),
-          hackathon_id: targetHackId,
+          hackathon_id: canonicalHackId,
           team_name: newTeamName.trim(),
           description: newTeamDesc.trim() || null,
           challenge_id: selectedChallengeId || null,
@@ -566,7 +633,7 @@ export default function HackathonWorkspacePage() {
           {
             id: 'mem-' + Date.now(),
             team_id: createdTeamData.id,
-            hackathon_id: targetHackId,
+            hackathon_id: canonicalHackId,
             user_id: user.id,
             role: 'Leader',
             joined_at: new Date().toISOString(),
@@ -582,7 +649,7 @@ export default function HackathonWorkspacePage() {
       // Persist to localStorage backup
       if (typeof window !== 'undefined') {
         try {
-          const storageKey = `teamforge_teams_${targetHackId}`;
+          const storageKey = `teamforge_teams_${canonicalHackId}`;
           const currentLocal = JSON.parse(localStorage.getItem(storageKey) || '[]');
           localStorage.setItem(
             storageKey,
@@ -636,26 +703,30 @@ export default function HackathonWorkspacePage() {
     setIsSubmittingTeam(true);
 
     try {
-      const targetHackId = hackathon.id || hackathonId;
+      const canonicalHackId = hackathon.id;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalHackId);
       let targetTeam: any = null;
 
-      // 1. Try Supabase lookup
-      try {
-        const hackFilter = hackathonId && hackathonId !== targetHackId
-          ? `hackathon_id.eq.${targetHackId},hackathon_id.eq.${hackathonId}`
-          : `hackathon_id.eq.${targetHackId}`;
-
+      if (isUUID) {
+        // 1. Try Supabase lookup
         const { data, error: findErr } = await supabase
           .from('hackathon_teams')
           .select('*, members:hackathon_team_members(id)')
-          .or(hackFilter)
+          .eq('hackathon_id', canonicalHackId)
           .eq('invite_code', codeToUse)
           .single();
 
-        if (findErr || !data) throw findErr || new Error('Team not found in database');
-        targetTeam = data;
-      } catch (findErr) {
-        // Fallback: search in loaded teams state or localStorage
+        if (!data || findErr) {
+          const localMatch = teams.find((t) => t.invite_code?.toUpperCase() === codeToUse);
+          if (localMatch) {
+            targetTeam = localMatch;
+          } else {
+            throw new Error('Invalid team invite code. Please check with your team leader.');
+          }
+        } else {
+          targetTeam = data;
+        }
+      } else {
         const localMatch = teams.find((t) => t.invite_code?.toUpperCase() === codeToUse);
         if (localMatch) {
           targetTeam = localMatch;
@@ -669,24 +740,27 @@ export default function HackathonWorkspacePage() {
       }
 
       // 2. Insert member in Supabase
-      try {
-        await supabase
+      if (isUUID) {
+        const { error: joinErr } = await supabase
           .from('hackathon_team_members')
           .insert({
             team_id: targetTeam.id,
-            hackathon_id: targetHackId,
+            hackathon_id: canonicalHackId,
             user_id: user.id,
             role: 'Member',
           });
-      } catch (memErr) {
-        console.warn('Member insertion fallback:', memErr);
+
+        if (joinErr) {
+          console.error('Supabase join error:', joinErr);
+          throw new Error(joinErr.message);
+        }
       }
 
       // 3. Update localStorage and optimistic state
       const newMember = {
         id: 'mem-' + Date.now(),
         team_id: targetTeam.id,
-        hackathon_id: targetHackId,
+        hackathon_id: canonicalHackId,
         user_id: user.id,
         role: 'Member' as const,
         joined_at: new Date().toISOString(),
@@ -704,7 +778,7 @@ export default function HackathonWorkspacePage() {
 
       if (typeof window !== 'undefined') {
         try {
-          const storageKey = `teamforge_teams_${targetHackId}`;
+          const storageKey = `teamforge_teams_${canonicalHackId}`;
           const currentLocal = JSON.parse(localStorage.getItem(storageKey) || '[]');
           localStorage.setItem(
             storageKey,
