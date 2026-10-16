@@ -91,6 +91,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         body: JSON.stringify({
           hackathonId: deleteTarget.id,
           joinCode: deleteTarget.join_code,
+          title: deleteTarget.title,
         }),
       });
 
@@ -104,10 +105,37 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       if (typeof window !== 'undefined') {
         try {
           const rawLocal = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
-          const surviving = rawLocal.filter(
-            (h: any) => h.id !== deleteTarget.id && h.join_code !== deleteTarget.join_code
-          );
+          const surviving = rawLocal.filter((h: any) => {
+            const idMatch = (h.id || '').toLowerCase() === (deleteTarget.id || '').toLowerCase();
+            const codeMatch =
+              h.join_code && deleteTarget.join_code
+                ? h.join_code.toLowerCase() === deleteTarget.join_code.toLowerCase()
+                : false;
+            const titleMatch =
+              h.title && deleteTarget.title
+                ? h.title.trim().toLowerCase() === deleteTarget.title.trim().toLowerCase()
+                : false;
+            return !idMatch && !codeMatch && !titleMatch;
+          });
           localStorage.setItem('teamforge_created_hackathons', JSON.stringify(surviving));
+
+          // Also record in client-side teamforge_deleted_hackathons registry
+          const existingDeleted: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
+          const toAdd = [
+            deleteTarget.id.toLowerCase(),
+            deleteTarget.title.trim().toLowerCase(),
+            ...(deleteTarget.join_code ? [deleteTarget.join_code.toLowerCase()] : []),
+            ...(data.deletedIds || []).map((d: string) => d.toLowerCase()),
+          ];
+          const newDeleted = Array.from(new Set([...existingDeleted, ...toAdd]));
+          localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(newDeleted));
+
+          // Broadcast deletion event to all open tabs and pages
+          window.dispatchEvent(
+            new CustomEvent('teamforge_hackathon_deleted', {
+              detail: { id: deleteTarget.id, title: deleteTarget.title },
+            })
+          );
         } catch {}
       }
 
@@ -136,13 +164,26 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       const res = await fetch('/api/admin/hackathons', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ action: 'restore', hackathonId }),
+        body: JSON.stringify({ action: 'restore', hackathonId, title }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to restore hackathon.' });
         return;
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          const existingDeleted: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
+          const cleanId = hackathonId.toLowerCase();
+          const cleanTitle = (title || '').trim().toLowerCase();
+          const updated = existingDeleted.filter(
+            (id) => id.toLowerCase() !== cleanId && (cleanTitle ? id.toLowerCase() !== cleanTitle : true)
+          );
+          localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent('teamforge_hackathon_restored', { detail: { id: hackathonId } }));
+        } catch {}
       }
 
       setStatusMessage({

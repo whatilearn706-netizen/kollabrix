@@ -161,16 +161,17 @@ export default function HackathonWorkspacePage() {
       setError(null);
 
       // Check if this hackathon was deleted by admin
+      let deletedSet = new Set<string>();
       try {
-        const hRes = await fetch('/api/hackathons');
+        const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
         const hData = await hRes.json();
-        if (hData?.deletedIds && Array.isArray(hData.deletedIds)) {
-          const deletedSet = new Set(hData.deletedIds.map((id: string) => id.toLowerCase()));
-          if (deletedSet.has(hackathonId.toLowerCase())) {
-            setError('This hackathon has been permanently removed by the administrator.');
-            setIsLoading(false);
-            return;
-          }
+        const dIds: string[] = hData?.deletedIds || [];
+        const dTitles: string[] = hData?.deletedTitles || [];
+        deletedSet = new Set([...dIds, ...dTitles].map((id: string) => id.trim().toLowerCase()));
+        if (deletedSet.has(hackathonId.toLowerCase())) {
+          setError('This hackathon has been permanently removed by the administrator.');
+          setIsLoading(false);
+          return;
         }
       } catch {}
 
@@ -218,6 +219,17 @@ export default function HackathonWorkspacePage() {
             description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
           };
         } catch {}
+      }
+
+      if (
+        currentHack &&
+        (deletedSet.has((currentHack.id || '').toLowerCase()) ||
+          deletedSet.has((currentHack.join_code || '').toLowerCase()) ||
+          deletedSet.has((currentHack.title || '').trim().toLowerCase()))
+      ) {
+        setError('This hackathon has been permanently removed by the administrator.');
+        setIsLoading(false);
+        return;
       }
 
       setHackathon(currentHack);

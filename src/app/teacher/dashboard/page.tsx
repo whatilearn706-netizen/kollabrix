@@ -273,11 +273,11 @@ export default function TeacherDashboardPage() {
       // Fetch deleted hackathons list to prevent suppressed items from reappearing
       let deletedSet = new Set<string>();
       try {
-        const hRes = await fetch('/api/hackathons');
+        const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
         const hData = await hRes.json();
-        if (hData?.deletedIds && Array.isArray(hData.deletedIds)) {
-          deletedSet = new Set(hData.deletedIds.map((id: string) => id.toLowerCase()));
-        }
+        const dIds: string[] = hData?.deletedIds || [];
+        const dTitles: string[] = hData?.deletedTitles || [];
+        deletedSet = new Set([...dIds, ...dTitles].map((id: string) => id.trim().toLowerCase()));
       } catch {}
 
       // Merge with locally authored hackathons
@@ -288,7 +288,8 @@ export default function TeacherDashboardPage() {
           const survivingStored = stored.filter((h: any) => {
             const isDel =
               (h.id && deletedSet.has(h.id.toLowerCase())) ||
-              (h.join_code && deletedSet.has(h.join_code.toLowerCase()));
+              (h.join_code && deletedSet.has(h.join_code.toLowerCase())) ||
+              (h.title && deletedSet.has(h.title.trim().toLowerCase()));
             return !isDel;
           });
           if (survivingStored.length !== stored.length) {
@@ -311,7 +312,8 @@ export default function TeacherDashboardPage() {
         if (item && item.id && !seenHackIds.has(item.id)) {
           const isDel =
             deletedSet.has(item.id.toLowerCase()) ||
-            (item.join_code && deletedSet.has(item.join_code.toLowerCase()));
+            (item.join_code && deletedSet.has(item.join_code.toLowerCase())) ||
+            (item.title && deletedSet.has(item.title.trim().toLowerCase()));
           if (!isDel) {
             seenHackIds.add(item.id);
           let cleanItem = { ...item };

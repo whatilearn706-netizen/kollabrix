@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { Hackathon, HackathonMode } from '@/types/database';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
+import { parseDeletedHackathons } from '@/lib/admin/hackathonSettings';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
 import { Button } from '@/components/ui/Button';
@@ -42,7 +43,7 @@ export default function HackathonsPage() {
     profile?.role === 'admin' ||
     profile?.faculty_verified;
 
-  const [hackathons, setHackathons] = useState<Hackathon[]>(CURATED_HACKATHONS);
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'private' | 'my-events' | 'saved'>('all');
@@ -65,34 +66,81 @@ export default function HackathonsPage() {
     try {
       let activeList: Hackathon[] = [];
       let deletedIdsList: string[] = [];
+      let deletedTitlesList: string[] = [];
 
-      // 1. Fetch authoritative active hackathons and deleted tombstone IDs from server API
+      // 1. Fetch authoritative active hackathons and deleted tombstone IDs from server API with cache busting
       try {
-        const res = await fetch('/api/hackathons');
+        const res = await fetch(`/api/hackathons?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
+        });
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.hackathons)) {
           activeList = data.hackathons;
           deletedIdsList = data.deletedIds || [];
+          if (Array.isArray(data.deletedTitles)) {
+            deletedTitlesList = data.deletedTitles;
+          }
         }
       } catch (err) {
         console.warn('Could not load /api/hackathons:', err);
       }
 
-      const deletedSet = new Set(deletedIdsList.map((id) => id.toLowerCase()));
+      // 2. Dual-Layer direct query from platform_settings for instant fallback
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: settingRow } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'deleted_hackathons')
+            .maybeSingle();
 
-      // 2. Load locally authored hackathons if any, and purge any that were deleted by admin
+          if (settingRow?.value) {
+            const parsed = parseDeletedHackathons(settingRow.value);
+            deletedIdsList.push(...parsed.deletedIds);
+            if (parsed.deletedTitles) deletedTitlesList.push(...parsed.deletedTitles);
+          }
+        } catch (dbErr) {
+          console.warn('Direct tombstone check notice:', dbErr);
+        }
+      }
+
+      // 3. Merge browser localStorage deleted registry if any
+      if (typeof window !== 'undefined') {
+        try {
+          const localDeleted: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
+          deletedIdsList.push(...localDeleted);
+        } catch {}
+      }
+
+      const deletedSet = new Set(deletedIdsList.map((id) => id.toLowerCase().trim()));
+      const deletedTitlesSet = new Set(deletedTitlesList.map((t) => t.toLowerCase().trim()));
+
+      const isHackathonDeleted = (h: any) => {
+        if (!h) return false;
+        const id = (h.id || '').toLowerCase().trim();
+        const joinCode = (h.join_code || '').toLowerCase().trim();
+        const title = (h.title || '').toLowerCase().trim();
+        const webCode = h.website_url ? h.website_url.split('/h/')[1]?.split(/[?#]/)[0]?.toLowerCase().trim() : '';
+
+        return (
+          (id && deletedSet.has(id)) ||
+          (joinCode && deletedSet.has(joinCode)) ||
+          (title && (deletedSet.has(title) || deletedTitlesSet.has(title))) ||
+          (webCode && deletedSet.has(webCode))
+        );
+      };
+
+      // 4. Load locally authored hackathons if any, and purge any that were deleted by admin
       let localHacks: Hackathon[] = [];
       if (typeof window !== 'undefined') {
         try {
           const rawLocal = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
-          const survivingLocal = rawLocal.filter((h: any) => {
-            const isDel =
-              (h.id && deletedSet.has(h.id.toLowerCase())) ||
-              (h.join_code && deletedSet.has(h.join_code.toLowerCase()));
-            return !isDel;
-          });
+          const survivingLocal = rawLocal.filter((h: any) => !isHackathonDeleted(h));
 
-          // If any locally authored hackathon was deleted by admin, update localStorage immediately
           if (survivingLocal.length !== rawLocal.length) {
             localStorage.setItem('teamforge_created_hackathons', JSON.stringify(survivingLocal));
           }
@@ -101,34 +149,24 @@ export default function HackathonsPage() {
         } catch {}
       }
 
-      // If server API returned results, merge any surviving local items
-      if (activeList.length > 0) {
-        const seenIds = new Set<string>();
-        const deduped: Hackathon[] = [];
+      // 5. Combine and deduplicate surviving hackathons
+      const seenIds = new Set<string>();
+      const deduped: Hackathon[] = [];
 
-        // Local creations first, then server
-        for (const item of [...localHacks, ...activeList]) {
-          if (item && item.id && !seenIds.has(item.id)) {
-            const isDel =
-              deletedSet.has(item.id.toLowerCase()) ||
-              (item.join_code && deletedSet.has(item.join_code.toLowerCase()));
-            if (!isDel) {
-              seenIds.add(item.id);
-              if (item.join_code) seenIds.add(item.join_code);
-              deduped.push(item as Hackathon);
-            }
+      const candidateList = activeList.length > 0 ? [...localHacks, ...activeList] : [...localHacks, ...CURATED_HACKATHONS];
+
+      for (const item of candidateList) {
+        if (item && item.id && !seenIds.has(item.id.toLowerCase())) {
+          if (!isHackathonDeleted(item)) {
+            seenIds.add(item.id.toLowerCase());
+            if (item.join_code) seenIds.add(item.join_code.toLowerCase());
+            deduped.push(item as Hackathon);
           }
         }
-        setHackathons(deduped);
-      } else {
-        // Fallback to non-deleted curated hackathons
-        const survivingCurated = CURATED_HACKATHONS.filter(
-          (c) => !deletedSet.has(c.id.toLowerCase()) && (!c.join_code || !deletedSet.has(c.join_code.toLowerCase()))
-        );
-        setHackathons([...localHacks, ...survivingCurated]);
       }
+      setHackathons(deduped);
 
-      // 3. Load saved bookmarks and enrolled hackathons if logged in
+      // 6. Load saved bookmarks and enrolled hackathons if logged in
       if (user && isSupabaseConfigured()) {
         const { data: saved } = await supabase
           .from('saved_hackathons')
@@ -162,6 +200,21 @@ export default function HackathonsPage() {
 
   useEffect(() => {
     loadHackathons();
+
+    const handleDeletedEvent = () => {
+      loadHackathons();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('teamforge_hackathon_deleted', handleDeletedEvent);
+      window.addEventListener('teamforge_hackathon_restored', handleDeletedEvent);
+      window.addEventListener('storage', handleDeletedEvent);
+      return () => {
+        window.removeEventListener('teamforge_hackathon_deleted', handleDeletedEvent);
+        window.removeEventListener('teamforge_hackathon_restored', handleDeletedEvent);
+        window.removeEventListener('storage', handleDeletedEvent);
+      };
+    }
   }, [user]);
 
   // Handle Quick Join Submit

@@ -98,7 +98,7 @@ export default function HomePage() {
 
           // 2. Fetch live published hackathons from authoritative API (respects admin deletions)
           try {
-            const hRes = await fetch('/api/hackathons');
+            const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
             const hData = await hRes.json();
             if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
               setActiveHackathons(hData.hackathons.slice(0, 3));
@@ -111,7 +111,7 @@ export default function HomePage() {
         } else {
           setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
           try {
-            const hRes = await fetch('/api/hackathons');
+            const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
             const hData = await hRes.json();
             if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
               setActiveHackathons(hData.hackathons.slice(0, 3));

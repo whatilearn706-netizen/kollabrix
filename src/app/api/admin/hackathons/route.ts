@@ -122,6 +122,7 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const hackathonId = body.hackathonId || searchParams.get('id');
     const joinCode = body.joinCode || searchParams.get('join_code');
+    const reqTitle = body.title || searchParams.get('title');
 
     if (!hackathonId) {
       return NextResponse.json({ error: 'Hackathon ID is required.' }, { status: 400 });
@@ -145,8 +146,9 @@ export async function DELETE(request: NextRequest) {
       .eq('id', hackathonId)
       .maybeSingle();
 
-    const hackathonTitle = existing?.title || 'Hackathon Event';
+    const hackathonTitle = reqTitle || existing?.title || 'Hackathon Event';
     const effectiveJoinCode = existing?.join_code || joinCode;
+    const effectiveUrlCode = existing?.website_url ? existing.website_url.split('/h/')[1]?.split(/[?#]/)[0] : null;
 
     // 2. Cascade delete participants, teams, and submissions if any in the database
     try {
@@ -157,15 +159,25 @@ export async function DELETE(request: NextRequest) {
       // Continue to parent deletion
     }
 
-    // 3. Delete the hackathon row from DB
+    // 3. Delete the hackathon row from DB (and archive if hard delete is restricted)
     try {
       await client.from('hackathons').delete().eq('id', hackathonId);
     } catch {
       // Continue to tombstone update
     }
 
-    // 4. Authoritative Platform Tombstone: Record ID in platform_settings['deleted_hackathons']
-    let currentDeleted: DeletedHackathonsData = { deletedIds: [], deletedAt: {} };
+    try {
+      if (effectiveJoinCode) {
+        await client.from('hackathons').delete().eq('join_code', effectiveJoinCode);
+      }
+    } catch {}
+
+    try {
+      await client.from('hackathons').update({ status: 'Archived', is_join_active: false }).eq('id', hackathonId);
+    } catch {}
+
+    // 4. Authoritative Platform Tombstone: Record ID, Join Code, and Title in platform_settings['deleted_hackathons']
+    let currentDeleted: DeletedHackathonsData = { deletedIds: [], deletedTitles: [], deletedAt: {} };
     try {
       const { data: settingRow } = await client
         .from('platform_settings')
@@ -177,10 +189,24 @@ export async function DELETE(request: NextRequest) {
         currentDeleted = parseDeletedHackathons(settingRow.value);
       }
 
-      const idsToBlock = [hackathonId];
-      if (effectiveJoinCode) idsToBlock.push(effectiveJoinCode);
+      const idsToBlock = [hackathonId, hackathonId.toLowerCase()];
+      if (effectiveJoinCode) {
+        idsToBlock.push(effectiveJoinCode);
+        idsToBlock.push(effectiveJoinCode.toLowerCase());
+      }
+      if (effectiveUrlCode) {
+        idsToBlock.push(effectiveUrlCode);
+        idsToBlock.push(effectiveUrlCode.toLowerCase());
+      }
+
+      const titlesToBlock = [...(currentDeleted.deletedTitles || [])];
+      if (hackathonTitle && hackathonTitle !== 'Hackathon Event') {
+        titlesToBlock.push(hackathonTitle.trim().toLowerCase());
+        idsToBlock.push(hackathonTitle.trim().toLowerCase());
+      }
 
       const newDeletedIds = Array.from(new Set([...currentDeleted.deletedIds, ...idsToBlock]));
+      const newDeletedTitles = Array.from(new Set(titlesToBlock));
       const newDeletedAt = { ...(currentDeleted.deletedAt || {}) };
       newDeletedAt[hackathonId] = new Date().toISOString();
 
@@ -188,6 +214,7 @@ export async function DELETE(request: NextRequest) {
         key: 'deleted_hackathons',
         value: {
           deletedIds: newDeletedIds,
+          deletedTitles: newDeletedTitles,
           deletedAt: newDeletedAt,
         },
         description: 'Authoritative registry of deleted hackathons suppressed site-wide',
@@ -195,6 +222,7 @@ export async function DELETE(request: NextRequest) {
       });
 
       currentDeleted.deletedIds = newDeletedIds;
+      currentDeleted.deletedTitles = newDeletedTitles;
     } catch (settingErr) {
       console.warn('Could not update deleted_hackathons platform setting:', settingErr);
     }
@@ -215,9 +243,10 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Hackathon "${hackathonTitle}" was permanently deleted and suppressed across the website.`,
+      message: `Hackathon "${hackathonTitle}" was permanently deleted and suppressed across the platform.`,
       hackathonId,
       deletedIds: currentDeleted.deletedIds,
+      deletedTitles: currentDeleted.deletedTitles,
     });
   } catch (err: unknown) {
     return NextResponse.json(
