@@ -90,17 +90,24 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     }
     try {
       setIsVerifyingFaculty(true);
-      const { data, error: rpcError } = await supabase.rpc('verify_faculty_code', {
-        access_code: facultyCode.trim(),
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/faculty/verify', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ code: facultyCode.trim() }),
       });
-      if (rpcError) {
-        setFacultyVerifyMsg({ text: rpcError.message, isError: true });
-      } else if (data && data.success) {
+      const data = await res.json();
+
+      if (res.ok && data.success) {
         setProfileRole('teacher');
-        setFacultyVerifyMsg({ text: 'Verified! You now have faculty mentor permissions.', isError: false });
+        setFacultyVerifyMsg({ text: data.message || 'Verified! You now have faculty mentor permissions.', isError: false });
         await refreshProfile();
       } else {
-        setFacultyVerifyMsg({ text: data?.error || 'Invalid verification code.', isError: true });
+        setFacultyVerifyMsg({ text: data.error || 'Invalid faculty verification code.', isError: true });
       }
     } catch (err: unknown) {
       setFacultyVerifyMsg({
@@ -480,7 +487,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               <div className="flex items-center gap-2">
                 <Input
                   type="text"
-                  placeholder="e.g. FACULTY2026"
+                  placeholder="e.g. FAC-2026-XXXX"
                   value={facultyCode}
                   onChange={(e) => setFacultyCode(e.target.value)}
                   className="bg-charcoal-900 border-charcoal-700 font-mono uppercase text-xs"
@@ -502,11 +509,11 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="w-full text-xs"
+                  className="w-full text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30"
                   onClick={() => setIsDocModalOpen(true)}
-                  leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
+                  leftIcon={<ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />}
                 >
-                  Or Verify with Aadhaar / Class 12th Marksheet
+                  🇮🇳 Verify with DigiLocker (Aadhaar / Class 12th Marksheet)
                 </Button>
               </div>
 
@@ -518,8 +525,8 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                   await refreshProfile();
                 }}
               />
-              <p className="text-[11px] text-slate-500">
-                Institutional demo key: <code className="text-brand-300 font-bold">FACULTY2026</code> (Requires birthdate &le; 2003)
+              <p className="text-[11px] text-slate-400">
+                Institutional Passcodes are issued by your campus administrator in the Admin Control Center (Format: <code className="text-brand-300 font-mono">FAC-XXXX-XXXX</code>).
               </p>
               {facultyVerifyMsg && (
                 <p className={`text-xs ${facultyVerifyMsg.isError ? 'text-red-400' : 'text-emerald-400'}`}>
