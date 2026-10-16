@@ -1634,7 +1634,7 @@ export default function HackathonWorkspacePage() {
                   </h3>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  Browse registered teams, find teammates, or copy an invite code to join directly.
+                  Browse participating teams in this hackathon. Team invite codes are private to each squad leader.
                 </p>
               </div>
 
@@ -1642,7 +1642,7 @@ export default function HackathonWorkspacePage() {
                 <div className="relative w-full sm:w-64">
                   <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
-                    placeholder="Search teams, codes, tracks..."
+                    placeholder="Search teams or problem tracks..."
                     value={teamSearchQuery}
                     onChange={(e) => setTeamSearchQuery(e.target.value)}
                     className="pl-9 py-1.5 text-xs bg-charcoal-900 border-charcoal-800"
@@ -1668,8 +1668,7 @@ export default function HackathonWorkspacePage() {
                     return (
                       t.team_name.toLowerCase().includes(q) ||
                       (t.description && t.description.toLowerCase().includes(q)) ||
-                      (t.challenge?.title && t.challenge.title.toLowerCase().includes(q)) ||
-                      (t.invite_code && t.invite_code.toLowerCase().includes(q))
+                      (t.challenge?.title && t.challenge.title.toLowerCase().includes(q))
                     );
                   })
                   .map((t) => {
@@ -1760,66 +1759,82 @@ export default function HackathonWorkspacePage() {
                           </div>
                         </div>
 
-                        {/* Invite Code Box & Join Button */}
+                        {/* Invite Code Box & Join Actions */}
                         <div className="mt-4 pt-3.5 border-t border-charcoal-800/80 space-y-2.5">
-                          {t.invite_code ? (
-                            <div className="flex items-center justify-between gap-2 bg-charcoal-950/90 border border-charcoal-800 px-3 py-2 rounded-xl">
-                              <div className="flex items-center gap-2 truncate">
-                                <span className="text-[11px] text-slate-400 font-medium">Join Code:</span>
-                                <span className="font-mono text-xs font-bold text-brand-400 tracking-wider">
-                                  {t.invite_code}
-                                </span>
+                          {isMyTeamCard ? (
+                            /* Only the creator / member of this team can see and copy their team's code */
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-2 bg-charcoal-950/90 border border-brand-500/40 px-3 py-2 rounded-xl">
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="text-[11px] text-brand-300 font-semibold">Your Team Code:</span>
+                                  <span className="font-mono text-xs font-bold text-white tracking-widest">
+                                    {t.invite_code}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (t.invite_code) {
+                                      navigator.clipboard.writeText(t.invite_code);
+                                      setCopiedTeamCodeId(t.id);
+                                      setTimeout(() => setCopiedTeamCodeId(null), 2000);
+                                    }
+                                  }}
+                                  className="text-slate-400 hover:text-white p-1 rounded transition-colors flex items-center gap-1 text-[11px]"
+                                  title="Copy Invite Code"
+                                >
+                                  {isCopied ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span className="text-emerald-400 font-semibold">Copied</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (t.invite_code) {
-                                    navigator.clipboard.writeText(t.invite_code);
-                                    setCopiedTeamCodeId(t.id);
-                                    setTimeout(() => setCopiedTeamCodeId(null), 2000);
-                                  }
-                                }}
-                                className="text-slate-400 hover:text-white p-1 rounded transition-colors flex items-center gap-1 text-[11px]"
-                                title="Copy Team Code"
-                              >
-                                {isCopied ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                    <span className="text-emerald-400 font-semibold">Copied</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3.5 h-3.5" />
-                                    <span>Copy</span>
-                                  </>
-                                )}
-                              </button>
+                              <p className="text-[10px] text-slate-400 text-center">
+                                Share this private code with your teammates to let them join.
+                              </p>
                             </div>
                           ) : (
-                            <div className="text-[11px] text-slate-500 italic">
-                              No invite code generated
+                            /* For everyone else: The code is hidden for privacy! */
+                            <div className="flex items-center justify-between text-xs text-slate-400 bg-charcoal-950/60 border border-charcoal-800 px-3 py-2 rounded-xl">
+                              <span className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                                <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                Private Squad
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                {isTeamFull ? 'Squad Full' : 'Requires Team Code'}
+                              </span>
                             </div>
                           )}
 
-                          {/* Action Button */}
+                          {/* Action Button for non-members */}
                           {!myTeam ? (
                             <Button
                               type="button"
-                              variant={isTeamFull ? 'outline' : 'primary'}
+                              variant="outline"
                               size="sm"
                               className="w-full text-xs font-semibold"
-                              disabled={isTeamFull || isSubmittingTeam}
+                              disabled={isTeamFull}
                               onClick={() => {
-                                if (t.invite_code) {
-                                  handleJoinTeam(undefined, t.invite_code);
+                                const input = document.querySelector('input[placeholder="e.g. 7X9K2P"]') as HTMLInputElement;
+                                if (input) {
+                                  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  input.focus();
                                 }
                               }}
                             >
-                              {isTeamFull ? 'Team Full' : 'Join this Team'}
+                              {isTeamFull ? 'Team Full' : 'Join with Code'}
                             </Button>
                           ) : isMyTeamCard ? (
-                            <div className="text-center py-1 text-xs text-brand-400 font-semibold">
-                              ✓ You are in this team
+                            <div className="text-center py-1 text-xs text-brand-400 font-semibold flex items-center justify-center gap-1.5">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>You are a member of this team</span>
                             </div>
                           ) : null}
                         </div>
