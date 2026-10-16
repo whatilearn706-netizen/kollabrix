@@ -59,98 +59,102 @@ export default function HackathonsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load hackathons from Supabase and saved bookmarks
+  // Load hackathons from server API and saved bookmarks
   const loadHackathons = async () => {
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured()) {
-        const { data: dbHacks } = await supabase
-          .from('hackathons')
-          .select('*')
-          .order('registration_deadline', { ascending: true });
+      let activeList: Hackathon[] = [];
+      let deletedIdsList: string[] = [];
 
-        // Load locally authored hackathons if any
-        let localHacks: Hackathon[] = [];
-        if (typeof window !== 'undefined') {
-          try {
-            localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
-          } catch {}
+      // 1. Fetch authoritative active hackathons and deleted tombstone IDs from server API
+      try {
+        const res = await fetch('/api/hackathons');
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.hackathons)) {
+          activeList = data.hackathons;
+          deletedIdsList = data.deletedIds || [];
         }
+      } catch (err) {
+        console.warn('Could not load /api/hackathons:', err);
+      }
 
-        const normalizedDbHacks = (dbHacks || []).map((h: any) => {
-          let joinCode = h.join_code;
-          let accessType = h.access_type;
-          let cleanDesc = h.description || '';
+      const deletedSet = new Set(deletedIdsList.map((id) => id.toLowerCase()));
 
-          if (cleanDesc.includes('<!-- HACKATHON_META:')) {
-            try {
-              const metaStr = cleanDesc.split('<!-- HACKATHON_META:')[1].split('-->')[0];
-              const meta = JSON.parse(metaStr);
-              accessType = meta.access_type || accessType || 'private';
-              joinCode = meta.join_code || joinCode;
-              cleanDesc = cleanDesc.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim();
-            } catch {}
+      // 2. Load locally authored hackathons if any, and purge any that were deleted by admin
+      let localHacks: Hackathon[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const rawLocal = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          const survivingLocal = rawLocal.filter((h: any) => {
+            const isDel =
+              (h.id && deletedSet.has(h.id.toLowerCase())) ||
+              (h.join_code && deletedSet.has(h.join_code.toLowerCase()));
+            return !isDel;
+          });
+
+          // If any locally authored hackathon was deleted by admin, update localStorage immediately
+          if (survivingLocal.length !== rawLocal.length) {
+            localStorage.setItem('teamforge_created_hackathons', JSON.stringify(survivingLocal));
           }
 
-          if (!joinCode && h.website_url && h.website_url.includes('/h/')) {
-            joinCode = h.website_url.split('/h/')[1]?.split(/[?#]/)[0];
-            accessType = accessType || 'private';
-          }
+          localHacks = survivingLocal;
+        } catch {}
+      }
 
-          return {
-            ...h,
-            description: cleanDesc,
-            join_code: joinCode || h.join_code,
-            access_type: accessType || (joinCode ? 'private' : h.access_type || 'public'),
-          };
-        });
-
-        // Combine: locally created first, then remote DB, then curated catalog
-        const combined = [...localHacks, ...normalizedDbHacks, ...CURATED_HACKATHONS];
+      // If server API returned results, merge any surviving local items
+      if (activeList.length > 0) {
         const seenIds = new Set<string>();
         const deduped: Hackathon[] = [];
-        for (const item of combined) {
+
+        // Local creations first, then server
+        for (const item of [...localHacks, ...activeList]) {
           if (item && item.id && !seenIds.has(item.id)) {
-            seenIds.add(item.id);
-            if (item.join_code) seenIds.add(item.join_code);
-            deduped.push(item as Hackathon);
+            const isDel =
+              deletedSet.has(item.id.toLowerCase()) ||
+              (item.join_code && deletedSet.has(item.join_code.toLowerCase()));
+            if (!isDel) {
+              seenIds.add(item.id);
+              if (item.join_code) seenIds.add(item.join_code);
+              deduped.push(item as Hackathon);
+            }
           }
         }
-
-        setHackathons(deduped.length > 0 ? deduped : CURATED_HACKATHONS);
-
-        // Load saved bookmarks and enrolled hackathons if logged in
-        if (user) {
-          const { data: saved } = await supabase
-            .from('saved_hackathons')
-            .select('hackathon_id')
-            .eq('user_id', user.id);
-
-          if (saved) {
-            setSavedIds(saved.map((s) => s.hackathon_id));
-          }
-
-          const { data: joined } = await supabase
-            .from('hackathon_participants')
-            .select('hackathon_id')
-            .eq('user_id', user.id);
-
-          if (joined) {
-            setEnrolledIds(joined.map((j) => j.hackathon_id));
-          }
-        }
+        setHackathons(deduped);
       } else {
-        // Local storage fallback for saved items
-        if (typeof window !== 'undefined') {
-          const stored = localStorage.getItem('teamforge_saved_hackathons');
-          if (stored) {
-            setSavedIds(JSON.parse(stored));
-          }
+        // Fallback to non-deleted curated hackathons
+        const survivingCurated = CURATED_HACKATHONS.filter(
+          (c) => !deletedSet.has(c.id.toLowerCase()) && (!c.join_code || !deletedSet.has(c.join_code.toLowerCase()))
+        );
+        setHackathons([...localHacks, ...survivingCurated]);
+      }
+
+      // 3. Load saved bookmarks and enrolled hackathons if logged in
+      if (user && isSupabaseConfigured()) {
+        const { data: saved } = await supabase
+          .from('saved_hackathons')
+          .select('hackathon_id')
+          .eq('user_id', user.id);
+
+        if (saved) {
+          setSavedIds(saved.map((s) => s.hackathon_id));
+        }
+
+        const { data: joined } = await supabase
+          .from('hackathon_participants')
+          .select('hackathon_id')
+          .eq('user_id', user.id);
+
+        if (joined) {
+          setEnrolledIds(joined.map((j) => j.hackathon_id));
+        }
+      } else if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('teamforge_saved_hackathons');
+        if (stored) {
+          setSavedIds(JSON.parse(stored));
         }
       }
     } catch (e) {
       console.warn('Error loading hackathons:', e);
-      setHackathons(CURATED_HACKATHONS);
     } finally {
       setIsLoading(false);
     }

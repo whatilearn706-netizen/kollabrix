@@ -96,27 +96,36 @@ export default function HomePage() {
             setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
           }
 
-          // 2. Fetch live published hackathons
-          const { data: hacks } = await supabase
-            .from('hackathons')
-            .select('*')
-            .in('status', ['published', 'ongoing', 'registration_open'])
-            .order('created_at', { ascending: false })
-            .limit(3);
-
-          if (hacks && hacks.length > 0) {
-            setActiveHackathons(hacks as Hackathon[]);
-          } else {
-            setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
+          // 2. Fetch live published hackathons from authoritative API (respects admin deletions)
+          try {
+            const hRes = await fetch('/api/hackathons');
+            const hData = await hRes.json();
+            if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
+              setActiveHackathons(hData.hackathons.slice(0, 3));
+            } else {
+              setActiveHackathons([]);
+            }
+          } catch {
+            setActiveHackathons([]);
           }
         } else {
           setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
-          setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
+          try {
+            const hRes = await fetch('/api/hackathons');
+            const hData = await hRes.json();
+            if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
+              setActiveHackathons(hData.hackathons.slice(0, 3));
+            } else {
+              setActiveHackathons([]);
+            }
+          } catch {
+            setActiveHackathons([]);
+          }
         }
       } catch (err) {
         console.warn('Error loading live homepage data:', err);
         setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
-        setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
+        setActiveHackathons([]);
       } finally {
         setIsLoadingData(false);
       }

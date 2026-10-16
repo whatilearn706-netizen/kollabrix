@@ -51,6 +51,20 @@ export default function JoinHackathonPage() {
       let foundHackathon: Hackathon | null = null;
 
       try {
+        // 0. Check if this hackathon was deleted by the administrator
+        try {
+          const hRes = await fetch('/api/hackathons');
+          const hData = await hRes.json();
+          if (hData?.deletedIds && Array.isArray(hData.deletedIds)) {
+            const deletedSet = new Set(hData.deletedIds.map((id: string) => id.toLowerCase()));
+            if (deletedSet.has(cleanCode)) {
+              setError('This hackathon has been permanently removed by the administrator.');
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch {}
+
         if (isSupabaseConfigured()) {
           // Attempt 1: Query by join_code column
           try {

@@ -16,6 +16,7 @@ import {
   Lock,
   Globe,
   PlusCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -27,10 +28,12 @@ interface AdminHackathonsTabProps {
 
 export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTabProps) {
   const [hackathons, setHackathons] = useState<any[]>([]);
+  const [deletedHackathons, setDeletedHackathons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRestoringId, setIsRestoringId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadHackathons = async () => {
@@ -44,6 +47,24 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       const data = await res.json();
       if (res.ok && data.success) {
         setHackathons(data.hackathons || []);
+        setDeletedHackathons(data.deletedHackathons || []);
+
+        // Also clean up any deleted hackathons from this admin browser's localStorage
+        if (typeof window !== 'undefined' && Array.isArray(data.deletedIds)) {
+          try {
+            const deletedSet = new Set(data.deletedIds.map((id: string) => id.toLowerCase()));
+            const rawLocal = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+            const surviving = rawLocal.filter((h: any) => {
+              const isDel =
+                (h.id && deletedSet.has(h.id.toLowerCase())) ||
+                (h.join_code && deletedSet.has(h.join_code.toLowerCase()));
+              return !isDel;
+            });
+            if (surviving.length !== rawLocal.length) {
+              localStorage.setItem('teamforge_created_hackathons', JSON.stringify(surviving));
+            }
+          } catch {}
+        }
       }
     } catch (err) {
       console.warn('Error loading hackathons for admin:', err);
@@ -67,7 +88,10 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       const res = await fetch('/api/admin/hackathons', {
         method: 'DELETE',
         headers,
-        body: JSON.stringify({ hackathonId: deleteTarget.id }),
+        body: JSON.stringify({
+          hackathonId: deleteTarget.id,
+          joinCode: deleteTarget.join_code,
+        }),
       });
 
       const data = await res.json();
@@ -76,7 +100,21 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         return;
       }
 
-      setStatusMessage({ type: 'success', text: `Hackathon "${deleteTarget.title}" was permanently deleted.` });
+      // Purge immediately from browser localStorage as well
+      if (typeof window !== 'undefined') {
+        try {
+          const rawLocal = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          const surviving = rawLocal.filter(
+            (h: any) => h.id !== deleteTarget.id && h.join_code !== deleteTarget.join_code
+          );
+          localStorage.setItem('teamforge_created_hackathons', JSON.stringify(surviving));
+        } catch {}
+      }
+
+      setStatusMessage({
+        type: 'success',
+        text: `Hackathon "${deleteTarget.title}" was permanently deleted and suppressed across the entire platform.`,
+      });
       setDeleteTarget(null);
       await loadHackathons();
     } catch (err: unknown) {
@@ -86,6 +124,39 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRestoreHackathon = async (hackathonId: string, title?: string) => {
+    try {
+      setIsRestoringId(hackathonId);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/admin/hackathons', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'restore', hackathonId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to restore hackathon.' });
+        return;
+      }
+
+      setStatusMessage({
+        type: 'success',
+        text: `Hackathon "${title || hackathonId}" was restored and is now visible across the website again.`,
+      });
+      await loadHackathons();
+    } catch (err: unknown) {
+      setStatusMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Error restoring hackathon.',
+      });
+    } finally {
+      setIsRestoringId(null);
     }
   };
 
@@ -106,7 +177,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
             <span>Hackathon Operations &amp; Moderation</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Manage all collegiate and institutional hackathons. Authoritatively delete unauthorized, duplicate, or expired events across the platform.
+            Manage all platform hackathons. Deleting an event authoritatively cascades across the database, purges local cache, and records an immutable tombstone so it vanishes everywhere on the website.
           </p>
         </div>
 
@@ -144,14 +215,14 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         </div>
       )}
 
-      {/* Main Hackathons Table Container */}
+      {/* Main Active Hackathons Table Container */}
       <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 shadow-card space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <span>All Platform Hackathons</span>
+              <span>Active Platform Hackathons</span>
               <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-charcoal-800 text-slate-400">
-                {hackathons.length} Total
+                {hackathons.length} Live
               </span>
             </h3>
           </div>
@@ -171,7 +242,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         {filtered.length === 0 ? (
           <div className="py-12 text-center text-xs text-slate-400 border border-dashed border-charcoal-750 rounded-xl space-y-2">
             <Trophy className="w-8 h-8 text-slate-600 mx-auto" />
-            <p>No hackathons matching &quot;{searchTerm}&quot; found.</p>
+            <p>No active hackathons matching &quot;{searchTerm}&quot; found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -250,7 +321,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     <td className="py-3.5 px-3 text-right space-x-2 whitespace-nowrap">
                       {/* View Link */}
                       <Link
-                        href={item.join_code ? `/h/${item.join_code}` : `/hackathons`}
+                        href={item.join_code ? `/h/${item.join_code}` : `/hackathons/${item.id}`}
                         target="_blank"
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 hover:text-white border border-charcoal-700 text-xs font-semibold transition-colors"
                       >
@@ -277,6 +348,62 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         )}
       </div>
 
+      {/* Deleted / Suppressed Hackathons (Trash & Restore Registry) */}
+      {deletedHackathons.length > 0 && (
+        <div className="rounded-2xl bg-charcoal-900 border border-red-500/20 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-red-300 flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-red-400" />
+              <span>Deleted Hackathons (Suppressed Site-Wide)</span>
+              <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">
+                {deletedHackathons.length} Suppressed
+              </span>
+            </h3>
+            <span className="text-[11px] text-slate-400">Guaranteed hidden from directory, homepage &amp; workspace</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-charcoal-750 text-slate-400 font-mono text-[11px] uppercase">
+                  <th className="py-2 px-3">Title &amp; Organizer</th>
+                  <th className="py-2 px-3">ID / Passcode</th>
+                  <th className="py-2 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-charcoal-800">
+                {deletedHackathons.map((item) => (
+                  <tr key={item.id} className="hover:bg-charcoal-850/40 text-slate-400">
+                    <td className="py-3 px-3">
+                      <div>
+                        <p className="font-bold text-slate-300 line-through">{item.title}</p>
+                        <p className="text-[11px] text-slate-500">{item.organizer}</p>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-[11px] text-slate-500">
+                      <span>{item.id}</span>
+                      {item.join_code && <span className="block text-amber-500/70">Code: {item.join_code}</span>}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreHackathon(item.id, item.title)}
+                        isLoading={isRestoringId === item.id}
+                        leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                        className="text-xs text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 font-bold"
+                      >
+                        Restore Hackathon
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Delete Hackathon Confirmation Modal */}
       {deleteTarget && (
         <Modal
@@ -292,7 +419,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   Are you sure you want to delete &quot;{deleteTarget.title}&quot;?
                 </p>
                 <p className="text-slate-300 text-[11px] leading-relaxed">
-                  This action is irreversible. All team rosters, participant registrations, project submissions, and security passcodes associated with this hackathon will be permanently removed.
+                  This action permanently suppresses this hackathon across the entire website (directory, homepage, teacher portal, direct URL links, and local browser cache).
                 </p>
               </div>
             </div>
@@ -303,8 +430,8 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                 <span className="font-bold text-white">{deleteTarget.organizer || 'Campus Organizer'}</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Participants Registered:</span>
-                <span className="font-bold text-amber-300 font-mono">{deleteTarget.participants_count || 0}</span>
+                <span>Passcode / ID:</span>
+                <span className="font-mono text-amber-300">{deleteTarget.join_code || deleteTarget.id}</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Admin Audit:</span>

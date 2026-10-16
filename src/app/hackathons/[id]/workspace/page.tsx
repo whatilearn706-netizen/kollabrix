@@ -160,6 +160,20 @@ export default function HackathonWorkspacePage() {
       setIsLoading(true);
       setError(null);
 
+      // Check if this hackathon was deleted by admin
+      try {
+        const hRes = await fetch('/api/hackathons');
+        const hData = await hRes.json();
+        if (hData?.deletedIds && Array.isArray(hData.deletedIds)) {
+          const deletedSet = new Set(hData.deletedIds.map((id: string) => id.toLowerCase()));
+          if (deletedSet.has(hackathonId.toLowerCase())) {
+            setError('This hackathon has been permanently removed by the administrator.');
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {}
+
       // 1. Fetch Hackathon
       let currentHack: Hackathon | null = null;
       try {

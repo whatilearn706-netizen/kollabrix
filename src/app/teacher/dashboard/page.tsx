@@ -270,12 +270,32 @@ export default function TeacherDashboardPage() {
         // ignore
       }
 
+      // Fetch deleted hackathons list to prevent suppressed items from reappearing
+      let deletedSet = new Set<string>();
+      try {
+        const hRes = await fetch('/api/hackathons');
+        const hData = await hRes.json();
+        if (hData?.deletedIds && Array.isArray(hData.deletedIds)) {
+          deletedSet = new Set(hData.deletedIds.map((id: string) => id.toLowerCase()));
+        }
+      } catch {}
+
       // Merge with locally authored hackathons
       let localHacks: any[] = [];
       if (typeof window !== 'undefined') {
         try {
           const stored = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
-          localHacks = stored.filter((h: any) => h.creator_id === user.id || !h.creator_id).map((h: any) => ({
+          const survivingStored = stored.filter((h: any) => {
+            const isDel =
+              (h.id && deletedSet.has(h.id.toLowerCase())) ||
+              (h.join_code && deletedSet.has(h.join_code.toLowerCase()));
+            return !isDel;
+          });
+          if (survivingStored.length !== stored.length) {
+            localStorage.setItem('teamforge_created_hackathons', JSON.stringify(survivingStored));
+          }
+
+          localHacks = survivingStored.filter((h: any) => h.creator_id === user.id || !h.creator_id).map((h: any) => ({
             ...h,
             participants_count: 0,
             teams_count: 0,
@@ -289,7 +309,11 @@ export default function TeacherDashboardPage() {
       const dedupedHacks: HackathonWithStats[] = [];
       for (const item of combinedHacks) {
         if (item && item.id && !seenHackIds.has(item.id)) {
-          seenHackIds.add(item.id);
+          const isDel =
+            deletedSet.has(item.id.toLowerCase()) ||
+            (item.join_code && deletedSet.has(item.join_code.toLowerCase()));
+          if (!isDel) {
+            seenHackIds.add(item.id);
           let cleanItem = { ...item };
           if (cleanItem.description?.includes('<!-- HACKATHON_META:')) {
             try {
@@ -307,6 +331,7 @@ export default function TeacherDashboardPage() {
           dedupedHacks.push(cleanItem);
         }
       }
+    }
 
       setMyHackathons(dedupedHacks);
     } catch {
