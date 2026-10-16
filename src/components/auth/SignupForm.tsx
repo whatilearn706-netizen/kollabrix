@@ -233,8 +233,10 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         displayName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') +
         Math.floor(100 + Math.random() * 900);
 
+      const cleanEmail = email.trim().toLowerCase();
+
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password,
         options: {
           data: {
@@ -253,18 +255,26 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         return;
       }
 
-      // If user session exists immediately
+      // Explicitly trigger 6-digit verification code to the email address
+      await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail,
+      }).catch((err) => {
+        console.warn('Signup verification dispatch notice:', err);
+      });
+
+      // Clear any auto-session so the user must verify the email code first
       if (data.session) {
-        handleAuthSuccess();
-      } else if (data.user && !data.session) {
-        // Confirmation code sent
-        setAuthStep('otp');
-        setOtpCode('');
-        startResendTimer();
-        setSuccessMessage(`Confirmation code sent to ${email}. Check your inbox and enter the 6-digit code below.`);
-      } else {
-        handleAuthSuccess();
+        await supabase.auth.signOut().catch(() => {});
       }
+
+      // Transition to verification code input step
+      setAuthStep('otp');
+      setOtpCode('');
+      startResendTimer();
+      setSuccessMessage(
+        `We sent a 6-digit verification code to ${cleanEmail}. Please check your inbox (and Spam folder) and enter it below to activate your account.`
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred during registration.');
     } finally {
@@ -275,6 +285,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
   // 4. Verify Signup OTP
   const handleVerifySignupOtp = async (codeOverride?: string) => {
     const token = (codeOverride || otpCode).trim();
+    const cleanEmail = email.trim().toLowerCase();
     setError(null);
     setSuccessMessage(null);
 
@@ -285,25 +296,53 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
     try {
       setIsOtpLoading(true);
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: email.trim().toLowerCase(),
+      let isVerified = false;
+
+      // 1. Try 'signup' verification type first (standard Supabase registration code)
+      const { data: signupData, error: signupErr } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
         token,
         type: 'signup',
       });
 
-      if (verifyError) {
-        // Also try 'email' type in case Supabase treated it as email OTP
-        const { error: fallbackErr } = await supabase.auth.verifyOtp({
-          email: email.trim().toLowerCase(),
+      if (!signupErr && (signupData.session || signupData.user)) {
+        isVerified = true;
+      } else {
+        // 2. Fallback to 'email' type
+        const { data: emailData, error: emailErr } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
           token,
           type: 'email',
         });
-        if (fallbackErr) {
-          setError(verifyError.message || fallbackErr.message || 'Invalid or expired confirmation code.');
-          return;
+        if (!emailErr && (emailData.session || emailData.user)) {
+          isVerified = true;
         }
       }
 
+      if (!isVerified) {
+        setError('Invalid or expired verification code. Please check your inbox (including Spam folder) or click Resend code.');
+        return;
+      }
+
+      // Email verified! Ensure user has active session
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session && password) {
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+      }
+
+      // Update display name if needed
+      if (displayName.trim()) {
+        await supabase.auth.updateUser({
+          data: {
+            display_name: displayName.trim(),
+          },
+        }).catch(() => {});
+      }
+
+      setSuccessMessage('Email verified successfully! Welcome to Linkora.');
       handleAuthSuccess();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error confirming registration code.');
@@ -506,12 +545,18 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
                 type="button"
                 onClick={async () => {
                   if (resendCountdown > 0) return;
+                  setError(null);
+                  setSuccessMessage(null);
                   startResendTimer();
-                  await supabase.auth.resend({
+                  const { error: resendErr } = await supabase.auth.resend({
                     type: 'signup',
                     email: email.trim().toLowerCase(),
                   });
-                  setSuccessMessage('A fresh confirmation code has been emailed to you.');
+                  if (resendErr) {
+                    setError(resendErr.message || 'Could not resend code. Please wait a moment and try again.');
+                  } else {
+                    setSuccessMessage(`A fresh 6-digit verification code has been emailed to ${email.trim().toLowerCase()}.`);
+                  }
                 }}
                 className="font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1"
               >
