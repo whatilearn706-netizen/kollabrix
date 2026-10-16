@@ -677,10 +677,10 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
           title="Revoke Faculty Access"
         >
           <div className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-slate-700 text-xs flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <span>
-                You are about to revoke faculty privileges from <strong>{revokeUser.display_name}</strong> (@{revokeUser.username || 'user'}). They will be immediately locked out of the Faculty Portal and returned to regular student status.
+                You are about to revoke faculty privileges from <strong className="text-slate-900">{revokeUser.display_name}</strong> (@{revokeUser.username || 'user'}). They will be immediately locked out of the Faculty Portal and returned to regular student status.
               </span>
             </div>
 

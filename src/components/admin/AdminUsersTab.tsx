@@ -637,13 +637,13 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
         maxWidth="md"
       >
         <div className="space-y-4 text-xs">
-          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 flex items-start gap-2.5">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-red-400" />
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-slate-700 flex items-start gap-2.5">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-red-500" />
             <div className="leading-relaxed">
-              <strong>Explicit Impact Assessment:</strong> This will remove{' '}
-              <strong>@{selectedUser?.username}</strong> from{' '}
-              <strong>{selectedUser?.memberships?.length || 0} collaborative projects</strong> and{' '}
-              <strong>{selectedUser?.hackathon_teams?.length || 0} hackathon teams</strong>.
+              <strong className="text-slate-900">Explicit Impact Assessment:</strong> This will remove{' '}
+              <strong className="text-slate-900">@{selectedUser?.username}</strong> from{' '}
+              <strong className="text-slate-900">{selectedUser?.memberships?.length || 0} collaborative projects</strong> and{' '}
+              <strong className="text-slate-900">{selectedUser?.hackathon_teams?.length || 0} hackathon teams</strong>.
             </div>
           </div>
 

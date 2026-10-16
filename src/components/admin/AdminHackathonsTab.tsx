@@ -412,13 +412,13 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           title="Delete Hackathon"
         >
           <div className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200 text-xs flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="font-bold text-white text-sm">
+                <p className="font-bold text-slate-800 text-sm">
                   Are you sure you want to delete &quot;{deleteTarget.title}&quot;?
                 </p>
-                <p className="text-slate-300 text-[11px] leading-relaxed">
+                <p className="text-slate-600 text-[11px] leading-relaxed">
                   This action permanently suppresses this hackathon across the entire website (directory, homepage, teacher portal, direct URL links, and local browser cache).
                 </p>
               </div>

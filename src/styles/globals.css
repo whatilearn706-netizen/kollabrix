@@ -81,3 +81,23 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+
+/* Modal Alert & Warning Box Text Colors (Grey readable text on light backgrounds) */
+div[role="dialog"] .bg-red-500\/10,
+div[role="dialog"] .bg-amber-500\/10 {
+  color: #475569 !important;
+}
+
+div[role="dialog"] .bg-red-500\/10 p,
+div[role="dialog"] .bg-red-500\/10 span,
+div[role="dialog"] .bg-amber-500\/10 p,
+div[role="dialog"] .bg-amber-500\/10 span {
+  color: #475569 !important;
+}
+
+div[role="dialog"] .bg-red-500\/10 p.font-bold,
+div[role="dialog"] .bg-red-500\/10 strong,
+div[role="dialog"] .bg-amber-500\/10 p.font-bold,
+div[role="dialog"] .bg-amber-500\/10 strong {
+  color: #1e293b !important;
+}
