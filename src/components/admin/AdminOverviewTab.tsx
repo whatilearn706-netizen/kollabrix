@@ -17,6 +17,7 @@ import {
   GraduationCap,
   KeyRound,
   Trash2,
+  Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AdminTab } from './AdminHeader';
@@ -207,6 +208,25 @@ export function AdminOverviewTab({
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
             Review all hackathons, inspect participant numbers and project submissions, and permanently delete invalid or test hackathons with clean cascade.
+          </p>
+        </div>
+
+        <div
+          onClick={() => onNavigateTab('theme')}
+          className="rounded-2xl border border-pink-500/30 bg-gradient-to-br from-pink-950/25 to-charcoal-900/70 p-5 hover:border-pink-500/60 hover:bg-charcoal-900 cursor-pointer transition-all space-y-2 group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-9 h-9 rounded-xl bg-pink-500/15 text-pink-400 flex items-center justify-center">
+              <Palette className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-pink-400 transition-colors" />
+          </div>
+          <h3 className="text-sm font-bold text-white group-hover:text-pink-300 flex items-center gap-2">
+            Design, Colors &amp; Fonts
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-pink-500/20 text-pink-300 border border-pink-500/30">Studio</span>
+          </h3>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Customize every tiny visual detail: brand palette, dark/light canvas, Google fonts, button shapes, and hero headline text in real time.
           </p>
         </div>
 

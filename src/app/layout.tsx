@@ -6,6 +6,8 @@ import { Footer } from '@/components/layout/Footer';
 import { SetupBanner } from '@/components/layout/SetupBanner';
 import { AuthModal } from '@/components/auth/AuthModal';
 
+import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
+
 export const metadata: Metadata = {
   title: 'Linkora — College-Wide Student Project Collaboration Platform',
   description:
@@ -28,11 +30,13 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white">
         <AuthProvider>
-          <SetupBanner />
-          <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
-          <Footer />
-          <AuthModal />
+          <SiteThemeProvider>
+            <SetupBanner />
+            <Navbar />
+            <main className="flex-1 flex flex-col">{children}</main>
+            <Footer />
+            <AuthModal />
+          </SiteThemeProvider>
         </AuthProvider>
       </body>
     </html>

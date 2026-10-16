@@ -31,10 +31,12 @@ import {
   Zap,
   AlertCircle,
 } from 'lucide-react';
+import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 
 export default function HomePage() {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
+  const { theme } = useSiteTheme();
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -136,7 +138,13 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col w-full overflow-hidden bg-[#fafbfc] text-slate-900">
+    <div
+      style={{
+        backgroundColor: theme.backgroundColor,
+        color: theme.bodyTextColor,
+      }}
+      className="flex flex-col w-full overflow-hidden transition-colors duration-200"
+    >
       {/* OAuth Notice Banner */}
       {oauthErrorNotice && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-xs font-medium text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
@@ -169,17 +177,34 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
             {/* Left Column: Brand, Editorial Headline & Primary Actions */}
             <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 border border-slate-200/90 text-slate-700 text-xs font-mono font-bold tracking-wider uppercase">
+              <div
+                style={{ borderRadius: theme.borderRadius }}
+                className="inline-flex items-center gap-2 px-3.5 py-1 bg-slate-100 border border-slate-200/90 text-slate-700 text-xs font-mono font-bold tracking-wider uppercase"
+              >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Linkora • Student Collaboration Network</span>
+                <span>{theme.heroBadgeText || 'Linkora • Student Collaboration Network'}</span>
               </div>
 
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 leading-[1.06]">
-                Build something bigger, together.
+              <h1
+                style={{
+                  color: theme.headingColor,
+                  fontFamily: `var(--site-font-heading, "${theme.headingFont}")`,
+                  letterSpacing: theme.letterSpacing,
+                  fontWeight: theme.headingWeight,
+                }}
+                className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
+              >
+                {theme.heroHeadline || 'Build something bigger, together.'}
               </h1>
 
-              <p className="text-base sm:text-xl text-slate-600 leading-relaxed font-normal max-w-xl">
-                Find your people, turn ideas into projects, and build a portfolio that proves what you can do.
+              <p
+                style={{
+                  color: theme.bodyTextColor,
+                  fontFamily: `var(--site-font-body, "${theme.bodyFont}")`,
+                }}
+                className="text-base sm:text-xl leading-relaxed font-normal max-w-xl"
+              >
+                {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
               </p>
 
               {/* Direct Primary & Secondary Action CTAs */}
@@ -188,10 +213,14 @@ export default function HomePage() {
                   <Button
                     variant="primary"
                     size="lg"
-                    className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3.5 rounded-2xl shadow-sm border-0"
+                    style={{
+                      backgroundColor: theme.brandColor,
+                      borderRadius: theme.borderRadius,
+                    }}
+                    className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-sm border-0 transition-all active:scale-[0.98]"
                     leftIcon={<Compass className="w-4 h-4" />}
                   >
-                    Explore Projects
+                    {theme.primaryCtaText || 'Explore Projects'}
                   </Button>
                 </Link>
 
@@ -199,10 +228,13 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold px-7 py-3.5 rounded-2xl bg-white shadow-2xs"
+                    style={{
+                      borderRadius: theme.borderRadius,
+                    }}
+                    className="border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold px-7 py-3.5 bg-white shadow-2xs transition-all active:scale-[0.98]"
                     leftIcon={<Users className="w-4 h-4 text-slate-700" />}
                   >
-                    Find Teammates
+                    {theme.secondaryCtaText || 'Find Teammates'}
                   </Button>
                 </Link>
               </div>

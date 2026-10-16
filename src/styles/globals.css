@@ -5,16 +5,32 @@
 :root {
   --background: #fafbfc;
   --foreground: #0f172a;
+  --site-bg: #fafbfc;
+  --site-surface: #ffffff;
+  --site-border: #e2e8f0;
+  --site-brand: #6366f1;
+  --site-brand-hover: #4f46e5;
+  --site-accent: #ec4899;
+  --site-heading: #0f172a;
+  --site-text: #334155;
+  --site-text-muted: #64748b;
+  --site-font-heading: 'Inter', sans-serif;
+  --site-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --site-radius: 16px;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--site-text);
+  background: var(--site-bg);
+  font-family: var(--site-font-body);
   overflow-x: hidden;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--site-font-heading);
 }
 
 /* Custom modern colorful scrollbar */

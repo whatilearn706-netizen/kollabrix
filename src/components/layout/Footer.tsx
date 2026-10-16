@@ -4,8 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Shield, Sparkles, Terminal, Code2, Users, Trophy } from 'lucide-react';
+import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 
 export function Footer() {
+  const { theme } = useSiteTheme();
+
   return (
     <footer className="w-full border-t border-slate-200 bg-slate-50 text-slate-600 py-12 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -16,7 +19,8 @@ export function Footer() {
               <BrandLogo size="sm" wordmarkColor="dark" />
             </Link>
             <p className="text-xs text-slate-600 leading-relaxed">
-              The collegiate innovation workspace connecting student makers, campus project teams, faculty mentors, and competitive hackathons.
+              {theme.footerTagline ||
+                'The collegiate innovation workspace connecting student makers, campus project teams, faculty mentors, and competitive hackathons.'}
             </p>
             <div className="flex items-center gap-2 text-[11px] text-emerald-700 pt-1 font-mono font-bold">
               <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
