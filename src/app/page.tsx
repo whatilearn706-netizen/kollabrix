@@ -738,11 +738,11 @@ export default function HomePage() {
               <span>05 • JOIN LINKORA</span>
             </div>
 
-            <h2 className="text-3xl sm:text-6xl font-black text-white tracking-tight leading-tight">
+            <h2 className="text-4xl sm:text-7xl font-black tracking-tight leading-tight begin-colorful">
               Begin
             </h2>
 
-            <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto leading-relaxed font-normal">
+            <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed font-normal">
               Stop coding in isolation. Find your squad, build production software, and prove your engineering caliber today.
             </p>
 
@@ -751,7 +751,7 @@ export default function HomePage() {
                 <Button
                   variant="secondary"
                   size="lg"
-                  className="font-bold px-8 py-3.5 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 shadow-sm border-none"
+                  className="font-bold px-8 py-3.5 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 shadow-sm border-none transition-all"
                   leftIcon={<Compass className="w-4 h-4 text-slate-900" />}
                 >
                   Explore Projects
@@ -761,9 +761,9 @@ export default function HomePage() {
               {user ? (
                 <Link href="/projects/new">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="lg"
-                    className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-transparent"
+                    className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
                     leftIcon={<PlusCircle className="w-4 h-4 text-white" />}
                   >
                     Start a Project
@@ -771,9 +771,9 @@ export default function HomePage() {
                 </Link>
               ) : (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="lg"
-                  className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-transparent"
+                  className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
                   onClick={() => openAuthModal('signup')}
                   leftIcon={<Users className="w-4 h-4 text-white" />}
                 >

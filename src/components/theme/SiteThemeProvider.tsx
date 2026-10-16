@@ -123,11 +123,27 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         font-family: var(--site-font-body) !important;
       }
 
-      h1, h2, h3, h4, h5, h6, .font-heading {
+      h1:not(.text-transparent):not(.begin-colorful),
+      h2:not(.text-transparent):not(.begin-colorful),
+      h3:not(.text-transparent):not(.begin-colorful),
+      h4:not(.text-transparent):not(.begin-colorful),
+      h5:not(.text-transparent):not(.begin-colorful),
+      h6:not(.text-transparent):not(.begin-colorful),
+      .font-heading:not(.text-transparent):not(.begin-colorful) {
         font-family: var(--site-font-heading) !important;
         font-weight: var(--site-heading-weight) !important;
         letter-spacing: var(--site-letter-spacing) !important;
         color: var(--site-heading) !important;
+      }
+
+      .begin-colorful {
+        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 16%, #f72585 34%, #b5179e 50%, #7209b7 66%, #4361ee 82%, #4cc9f0 100%) !important;
+        background-size: 250% 250% !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        color: transparent !important;
+        display: inline-block !important;
       }
 
       /* Site Card Class */
