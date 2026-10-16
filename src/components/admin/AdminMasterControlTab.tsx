@@ -1227,6 +1227,68 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
               />
             </div>
+
+            {/* Live Mode Status & Instant Apply Action */}
+            <div className="pt-4 border-t border-charcoal-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-charcoal-850/80 p-4 rounded-xl border border-charcoal-750">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-300">Selected Access State:</span>
+                  <span
+                    className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      config.maintenance.mode === 'public'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        : config.maintenance.mode === 'campus_only'
+                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 animate-pulse'
+                    }`}
+                  >
+                    {config.maintenance.mode === 'public'
+                      ? '🟢 100% Public Access'
+                      : config.maintenance.mode === 'campus_only'
+                      ? '🟡 Campus Passcode Gate'
+                      : '🔴 Scheduled Maintenance Lock'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {config.maintenance.mode === 'public'
+                    ? 'Anyone on the internet can browse and sign in normally.'
+                    : 'Visitors without passcode see the lock screen. You (platform owner) retain seamless bypass.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <a
+                  href="/?preview_maintenance=true"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 text-xs font-medium rounded-xl border border-charcoal-700 transition flex items-center gap-1.5 shadow-sm"
+                  title="Test what regular non-admin visitors see"
+                >
+                  <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Preview Visitor Gate</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => handleSave()}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Applying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>⚡ Apply Access Mode Now</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
