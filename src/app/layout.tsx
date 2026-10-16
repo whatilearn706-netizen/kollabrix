@@ -8,7 +8,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
 
-const siteUrl = 'https://linkora-edu.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora.in';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
