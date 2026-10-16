@@ -153,28 +153,47 @@ export function AIProjectPlanner({ project, onPlanApplied }: AIProjectPlannerPro
           const targetDate = new Date();
           targetDate.setDate(targetDate.getDate() + m.weeks_from_start * 7);
 
+          let milestoneId: string | null = null;
           const { data: createdMilestone, error: mError } = await supabase
             .from('project_milestones')
             .insert({
               project_id: project.id,
               title: m.title,
               description: m.description,
-              target_date: targetDate.toISOString(),
+              target_date: targetDate.toISOString().split('T')[0],
               status: i === 0 ? 'In Progress' : 'Upcoming',
               created_by: user.id,
             })
             .select('id')
             .single();
 
-          if (mError) {
+          if (!mError && createdMilestone) {
+            milestoneId = createdMilestone.id;
+          } else {
+            // Attempt RPC fallback
+            try {
+              const { data: rpcRes } = await supabase.rpc('create_project_milestone', {
+                p_project_id: project.id,
+                p_title: m.title,
+                p_target_date: targetDate.toISOString().split('T')[0],
+                p_description: m.description,
+                p_status: i === 0 ? 'In Progress' : 'Upcoming',
+              });
+              if (rpcRes && rpcRes.success && rpcRes.id) {
+                milestoneId = rpcRes.id;
+              }
+            } catch {}
+          }
+
+          if (!milestoneId) {
             console.warn('Milestone creation note:', mError);
             continue;
           }
 
-          if (createdMilestone && m.tasks && m.tasks.length > 0) {
+          if (milestoneId && m.tasks && m.tasks.length > 0) {
             const taskInserts = m.tasks.map((t) => ({
               project_id: project.id,
-              milestone_id: createdMilestone.id,
+              milestone_id: milestoneId,
               title: t.title,
               description: `${t.description}\n\nSuggested Role: ${t.suggested_role}\nAcceptance Criteria:\n- ${t.acceptance_criteria?.join('\n- ')}`,
               priority: t.priority || 'Medium',

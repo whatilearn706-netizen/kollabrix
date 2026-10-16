@@ -20,6 +20,8 @@ import {
   Trash2,
   CheckSquare,
   Sparkles,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 const MILESTONE_STATUSES: MilestoneStatus[] = ['Upcoming', 'In Progress', 'Completed'];
@@ -47,6 +49,52 @@ export default function WorkspaceMilestonesPage() {
   const [status, setStatus] = useState<MilestoneStatus>('Upcoming');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [copiedSql, setCopiedSql] = useState(false);
+
+  const FIX_MILESTONES_RLS_SQL = `-- Fix project_milestones Row Level Security (RLS) Policies
+ALTER TABLE public.project_milestones ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Workspace members can view milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Leads can create milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Workspace members can create milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Leads can update milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Workspace members can update milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Leads can delete milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Leads or creators can delete milestones" ON public.project_milestones;
+
+CREATE POLICY "Workspace members can view milestones"
+    ON public.project_milestones FOR SELECT
+    TO authenticated, anon
+    USING (EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_milestones.project_id));
+
+CREATE POLICY "Workspace members can create milestones"
+    ON public.project_milestones FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_milestones.project_id AND p.owner_id = auth.uid())
+        OR EXISTS (SELECT 1 FROM public.project_members pm WHERE pm.project_id = project_milestones.project_id AND pm.user_id = auth.uid())
+        OR auth.uid() = created_by
+    );
+
+CREATE POLICY "Workspace members can update milestones"
+    ON public.project_milestones FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_milestones.project_id AND p.owner_id = auth.uid())
+        OR EXISTS (SELECT 1 FROM public.project_members pm WHERE pm.project_id = project_milestones.project_id AND pm.user_id = auth.uid())
+        OR auth.uid() = created_by
+    );
+
+CREATE POLICY "Leads or creators can delete milestones"
+    ON public.project_milestones FOR DELETE
+    TO authenticated
+    USING (
+        auth.uid() = created_by
+        OR EXISTS (SELECT 1 FROM public.projects p WHERE p.id = project_milestones.project_id AND p.owner_id = auth.uid())
+        OR EXISTS (SELECT 1 FROM public.project_members pm WHERE pm.project_id = project_milestones.project_id AND pm.user_id = auth.uid() AND pm.role IN ('Project Lead', 'Lead', 'Admin', 'Owner'))
+    );
+
+NOTIFY pgrst, 'reload schema';`;
 
   const loadMilestonesData = useCallback(async () => {
     setIsLoading(true);
@@ -165,9 +213,26 @@ export default function WorkspaceMilestonesPage() {
           });
 
         if (error) {
-          setFormError(error.message || 'Could not create milestone.');
-          setIsSubmitting(false);
-          return;
+          // Attempt atomic RPC fallback if direct insert hits RLS restriction
+          let rpcSuccess = false;
+          try {
+            const { data: rpcRes, error: rpcErr } = await supabase.rpc('create_project_milestone', {
+              p_project_id: project.id,
+              p_title: title.trim(),
+              p_target_date: targetDate,
+              p_description: description.trim() || null,
+              p_status: status,
+            });
+            if (!rpcErr && rpcRes && rpcRes.success) {
+              rpcSuccess = true;
+            }
+          } catch {}
+
+          if (!rpcSuccess) {
+            setFormError(error.message || 'Could not create milestone.');
+            setIsSubmitting(false);
+            return;
+          }
         }
       }
 
@@ -384,8 +449,43 @@ export default function WorkspaceMilestonesPage() {
             </h2>
 
             {formError && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
-                {formError}
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{formError}</span>
+                </div>
+
+                {formError.toLowerCase().includes('row-level security') && (
+                  <div className="mt-2 pt-2 border-t border-red-500/20 text-[11px] text-slate-300 space-y-2">
+                    <p className="font-semibold text-amber-300">
+                      ⚡ Database Notice: Table &quot;project_milestones&quot; requires updated RLS policies in Supabase.
+                    </p>
+                    <p className="text-slate-400">
+                      Copy the SQL migration below and run it in your Supabase SQL Editor:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(FIX_MILESTONES_RLS_SQL);
+                        setCopiedSql(true);
+                        setTimeout(() => setCopiedSql(false), 3000);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-white font-mono text-[11px] font-bold border border-charcoal-700 transition-colors"
+                    >
+                      {copiedSql ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied SQL Migration!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-brand-400" />
+                          <span>Copy SQL Migration</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
