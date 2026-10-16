@@ -4,18 +4,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import {
-  Mail,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 
 export interface SignupFormProps {
@@ -70,33 +61,12 @@ function AppleIcon({ className = 'w-5 h-5' }: { className?: string }) {
 export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile/setup' }: SignupFormProps) {
   const router = useRouter();
 
-  // Registration Fields
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
-
   // General States
-  const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const handleAuthSuccess = () => {
-    setSuccessMessage('Account created! Opening your student workspace...');
-    setTimeout(() => {
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push(redirectUrl);
-        router.refresh();
-      }
-    }, 400);
-  };
 
   // 1. Google 1-Click Sign-up
   const handleGoogleSignUp = async () => {
@@ -230,92 +200,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
   };
 
-  // 4. Email Registration Submit (Instant creation, zero OTP delays)
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
-
-    if (!isSupabaseConfigured()) {
-      setError('Supabase is not configured yet in .env.local.');
-      return;
-    }
-
-    if (!displayName.trim()) {
-      setError('Please provide your full or display name.');
-      return;
-    }
-
-    if (!email || !email.includes('@')) {
-      setError('Please provide a valid email address.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must contain at least 6 characters.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match. Please re-enter your password confirmation.');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      const generatedUsername =
-        displayName.trim().toLowerCase().replace(/[^a-z0-9]/g, '') +
-        Math.floor(100 + Math.random() * 900);
-
-      const cleanEmail = email.trim().toLowerCase();
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          data: {
-            display_name: displayName.trim(),
-            username: generatedUsername,
-          },
-        },
-      });
-
-      if (signUpError) {
-        if (signUpError.message.includes('User already registered')) {
-          setError('An account with this email already exists. Please log in.');
-        } else if (signUpError.message.includes('Error sending confirmation email') || signUpError.message.includes('confirmation email')) {
-          // If Supabase free mailer throws error, prompt using 1-click Google / GitHub
-          setError(
-            'Email delivery is restricted on this project. Please use "Continue with Google" or "Continue with GitHub" for instant 1-click registration!'
-          );
-        } else {
-          setError(signUpError.message);
-        }
-        return;
-      }
-
-      // Automatically sign in if session exists or establish session
-      if (data.session) {
-        handleAuthSuccess();
-      } else {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-        if (!signInErr) {
-          handleAuthSuccess();
-        } else {
-          setSuccessMessage('Account created! Opening your student workspace...');
-          handleAuthSuccess();
-        }
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred during registration.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isAnyLoading = isGoogleLoading || isGitHubLoading || isAppleLoading;
 
   return (
     <div className="w-full space-y-5 text-slate-900">
@@ -340,7 +225,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         <button
           type="button"
           onClick={handleGoogleSignUp}
-          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          disabled={isAnyLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 text-slate-800 font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
         >
           <GoogleIcon className="w-5 h-5 shrink-0" />
@@ -351,7 +236,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         <button
           type="button"
           onClick={handleGitHubSignUp}
-          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          disabled={isAnyLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#24292F] hover:bg-[#1a1e22] text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
         >
           <GitHubIcon className="w-5 h-5 shrink-0" />
@@ -362,7 +247,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         <button
           type="button"
           onClick={handleAppleSignUp}
-          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          disabled={isAnyLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-black hover:bg-zinc-900 border border-black text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
         >
           <AppleIcon className="w-5 h-5 shrink-0" />
@@ -373,85 +258,6 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
       {/* Trust & Guarantee Banner */}
       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-medium">
         ⚡ 100% Free Forever • Zero email verification delays • Instant access
-      </div>
-
-      {/* Collapsible Accordion: Register with Email & Password */}
-      <div className="pt-2 border-t border-slate-100">
-        <button
-          type="button"
-          onClick={() => setShowEmailForm(!showEmailForm)}
-          className="w-full flex items-center justify-between py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-        >
-          <span>Or register with email & password</span>
-          {showEmailForm ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-
-        {showEmailForm && (
-          <form onSubmit={handleEmailSubmit} className="space-y-4 pt-3 animate-in fade-in duration-200">
-            <Input
-              label="Your Full Name"
-              type="text"
-              required
-              autoComplete="name"
-              placeholder="e.g. Alex Morgan"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              leftIcon={<User className="w-4 h-4" />}
-            />
-
-            <Input
-              label="Email Address"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="e.g. alex@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail className="w-4 h-4" />}
-            />
-
-            <Input
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              required
-              autoComplete="new-password"
-              placeholder="At least 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              rightIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-slate-700 transition-colors p-1"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              }
-            />
-
-            <Input
-              label="Confirm Password"
-              type={showPassword ? 'text' : 'password'}
-              required
-              autoComplete="new-password"
-              placeholder="Re-enter password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-            />
-
-            <Button
-              type="submit"
-              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl shadow-xs"
-              isLoading={isLoading}
-              size="lg"
-            >
-              Create Account with Email
-            </Button>
-          </form>
-        )}
       </div>
 
       {/* Switch to Login */}

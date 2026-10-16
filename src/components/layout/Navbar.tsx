@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -370,14 +369,6 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => openAuthModal('login')}
-                className="text-xs font-bold opacity-80 hover:opacity-100"
-              >
-                Sign In
-              </Button>
               <button
                 type="button"
                 onClick={() => openAuthModal('signup')}

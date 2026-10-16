@@ -4,17 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 
 export interface LoginFormProps {
@@ -69,20 +61,12 @@ function AppleIcon({ className = 'w-5 h-5' }: { className?: string }) {
 export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore' }: LoginFormProps) {
   const router = useRouter();
 
-  // Input States
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showEmailForm, setShowEmailForm] = useState(false);
-
   // General Loading & Feedback States
-  const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   // Check for incoming OAuth or URL error parameters
   useEffect(() => {
@@ -243,78 +227,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
     }
   };
 
-  // 4. Direct Email & Password Sign-in (Zero Email Delays)
-  const handleCredentialsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setInfoMessage(null);
-
-    if (!isSupabaseConfigured()) {
-      setError('Supabase is not configured yet. Please check your .env.local configuration.');
-      return;
-    }
-
-    if (!email || !email.includes('@')) {
-      setError('Please provide a valid email address.');
-      return;
-    }
-
-    if (!password) {
-      setError('Please enter your password.');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      if (signInError) {
-        if (signInError.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please verify your credentials.');
-        } else {
-          setError(signInError.message);
-        }
-        return;
-      }
-
-      // Successful login
-      handleAuthSuccess();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred during sign-in.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 5. Password Reset Link
-  const handleForgotPassword = async () => {
-    if (!email || !email.includes('@')) {
-      setError('Please enter your email address above first to receive a password reset link.');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/auth/callback?next=/settings/profile`,
-      });
-
-      if (resetError) {
-        setError(resetError.message);
-      } else {
-        setForgotPasswordSent(true);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not send reset password email.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isAnyLoading = isGoogleLoading || isGitHubLoading || isAppleLoading;
 
   return (
     <div className="w-full space-y-5 text-slate-900">
@@ -333,20 +246,13 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         </div>
       )}
 
-      {forgotPasswordSent && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs font-medium text-emerald-800 leading-relaxed">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-          <span>If an account exists for {email}, password reset instructions were sent to your inbox.</span>
-        </div>
-      )}
-
       {/* 1-Click Fast OAuth Actions (Google + GitHub + Apple) */}
       <div className="space-y-3">
         {/* Google 1-Click */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          disabled={isAnyLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 text-slate-800 font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
         >
           <GoogleIcon className="w-5 h-5 shrink-0" />
@@ -357,7 +263,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         <button
           type="button"
           onClick={handleGitHubSignIn}
-          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          disabled={isAnyLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#24292F] hover:bg-[#1a1e22] text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
         >
           <GitHubIcon className="w-5 h-5 shrink-0" />
@@ -368,7 +274,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
         <button
           type="button"
           onClick={handleAppleSignIn}
-          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          disabled={isAnyLoading}
           className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-black hover:bg-zinc-900 border border-black text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
         >
           <AppleIcon className="w-5 h-5 shrink-0" />
@@ -379,76 +285,6 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       {/* Trust & Guarantee Banner */}
       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-medium">
         ⚡ 100% Free Forever • Zero email verification delays • Instant access
-      </div>
-
-      {/* Collapsible Accordion: Existing Email & Password Login */}
-      <div className="pt-2 border-t border-slate-100">
-        <button
-          type="button"
-          onClick={() => setShowEmailForm(!showEmailForm)}
-          className="w-full flex items-center justify-between py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-        >
-          <span>Or sign in with existing email & password</span>
-          {showEmailForm ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-
-        {showEmailForm && (
-          <form onSubmit={handleCredentialsSubmit} className="space-y-4 pt-3 animate-in fade-in duration-200">
-            <Input
-              label="Email Address"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="e.g. alex@gmail.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail className="w-4 h-4" />}
-            />
-
-            <div className="space-y-1">
-              <Input
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                leftIcon={<Lock className="w-4 h-4" />}
-                rightIcon={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-slate-400 hover:text-slate-700 transition-colors p-1"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                }
-              />
-
-              <div className="flex justify-end pt-1 text-xs">
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={isLoading}
-                  className="font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl shadow-xs"
-              isLoading={isLoading}
-              size="lg"
-            >
-              Log In to Workspace
-            </Button>
-          </form>
-        )}
       </div>
 
       {/* Switch to Sign Up */}
