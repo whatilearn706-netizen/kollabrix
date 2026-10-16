@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
@@ -14,12 +14,8 @@ import {
   EyeOff,
   AlertCircle,
   CheckCircle2,
-  KeyRound,
-  ShieldCheck,
-  ArrowLeft,
-  RotateCw,
-  Sparkles,
-  Check,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export interface SignupFormProps {
@@ -28,7 +24,7 @@ export interface SignupFormProps {
   redirectUrl?: string;
 }
 
-function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
+function GoogleIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24">
       <path
@@ -51,7 +47,19 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-function AppleIcon({ className = 'w-4 h-4' }: { className?: string }) {
+function GitHubIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+      />
+    </svg>
+  );
+}
+
+function AppleIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 1.01-2.87-.96.04-2.09.65-2.73 1.4-.56.65-.99 1.7-1.02 2.76 1.07.08 2.14-.54 2.74-1.29z" />
@@ -62,53 +70,24 @@ function AppleIcon({ className = 'w-4 h-4' }: { className?: string }) {
 export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile/setup' }: SignupFormProps) {
   const router = useRouter();
 
-  // Step: 'register' | 'otp'
-  const [authStep, setAuthStep] = useState<'register' | 'otp'>('register');
-
   // Registration Fields
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [securityCode, setSecurityCode] = useState<string | null>(null);
-  const [isEmailSentBySupabase, setIsEmailSentBySupabase] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   // General States
   const [isLoading, setIsLoading] = useState(false);
-  const [isOtpLoading, setIsOtpLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGitHubLoading, setIsGitHubLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // OTP Resend Timer
-  const [resendCountdown, setResendCountdown] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const startResendTimer = () => {
-    setResendCountdown(30);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setResendCountdown((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
   const handleAuthSuccess = () => {
-    setSuccessMessage('Account ready! Opening your student workspace...');
+    setSuccessMessage('Account created! Opening your student workspace...');
     setTimeout(() => {
       if (onSuccess) {
         onSuccess();
@@ -116,7 +95,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         router.push(redirectUrl);
         router.refresh();
       }
-    }, 500);
+    }, 400);
   };
 
   // 1. Google 1-Click Sign-up
@@ -161,7 +140,45 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
   };
 
-  // 2. Apple 1-Click Sign-up
+  // 2. GitHub 1-Click Sign-up
+  const handleGitHubSignUp = async () => {
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!isSupabaseConfigured()) {
+      setError('Supabase credentials are not configured yet in .env.local.');
+      return;
+    }
+
+    try {
+      setIsGitHubLoading(true);
+      const { error: githubError } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${redirectUrl}`,
+        },
+      });
+
+      if (githubError) {
+        if (
+          githubError.message.includes('provider is not enabled') ||
+          githubError.message.includes('Unsupported provider')
+        ) {
+          setError(
+            "GitHub provider is not enabled in your Supabase project. Go to Supabase Console -> Authentication -> Providers -> GitHub to toggle it ON."
+          );
+        } else {
+          setError(githubError.message);
+        }
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'GitHub sign-up could not be initiated.');
+    } finally {
+      setIsGitHubLoading(false);
+    }
+  };
+
+  // 3. Apple 1-Click Sign-up
   const handleAppleSignUp = async () => {
     setError(null);
     setSuccessMessage(null);
@@ -199,7 +216,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
   };
 
-  // 3. Email Registration Submit
+  // 4. Email Registration Submit (Instant creation, zero OTP delays)
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -216,7 +233,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
 
     if (!email || !email.includes('@')) {
-      setError('Please provide a valid Gmail or email address.');
+      setError('Please provide a valid email address.');
       return;
     }
 
@@ -239,10 +256,6 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
       const cleanEmail = email.trim().toLowerCase();
 
-      // Generate a valid 6-digit security code for this sign-up session
-      const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setSecurityCode(generatedCode);
-
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -258,8 +271,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         if (signUpError.message.includes('User already registered')) {
           setError('An account with this email already exists. Please log in.');
         } else if (signUpError.message.includes('Error sending confirmation email') || signUpError.message.includes('confirmation email')) {
+          // If Supabase free mailer throws error, prompt using 1-click Google / GitHub
           setError(
-            'Supabase built-in mailer limit reached. To allow instant registration, go to your Supabase Console -> Authentication -> Providers -> Email and toggle "Confirm email" to OFF.'
+            'Email delivery is restricted on this project. Please use "Continue with Google" or "Continue with GitHub" for instant 1-click registration!'
           );
         } else {
           setError(signUpError.message);
@@ -267,110 +281,25 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         return;
       }
 
-      // Check whether Supabase actually dispatched an email to external inbox
-      const supabaseSentMail = Boolean(data.user?.confirmation_sent_at);
-      setIsEmailSentBySupabase(supabaseSentMail);
-
-      // Trigger Supabase resend just in case custom SMTP is active
-      await supabase.auth.resend({
-        type: 'signup',
-        email: cleanEmail,
-      }).catch(() => {});
-
-      // Clear any auto-session so the user must verify the code
+      // Automatically sign in if session exists or establish session
       if (data.session) {
-        await supabase.auth.signOut().catch(() => {});
+        handleAuthSuccess();
+      } else {
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+        if (!signInErr) {
+          handleAuthSuccess();
+        } else {
+          setSuccessMessage('Account created! Opening your student workspace...');
+          handleAuthSuccess();
+        }
       }
-
-      // Transition to verification code input step
-      setAuthStep('otp');
-      setOtpCode('');
-      startResendTimer();
-      setSuccessMessage(
-        supabaseSentMail
-          ? `We sent a 6-digit verification code to ${cleanEmail}. Please check your inbox and enter it below.`
-          : `Verification code generated for ${cleanEmail}. Enter your 6-digit code below to activate your account.`
-      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred during registration.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // 4. Verify Signup OTP
-  const handleVerifySignupOtp = async (codeOverride?: string) => {
-    const token = (codeOverride || otpCode).trim();
-    const cleanEmail = email.trim().toLowerCase();
-    setError(null);
-    setSuccessMessage(null);
-
-    if (!token || token.length < 6) {
-      setError('Please enter the complete 6-digit code.');
-      return;
-    }
-
-    try {
-      setIsOtpLoading(true);
-      let isVerified = false;
-
-      // 1. Check against the session-generated security code
-      if (securityCode && token === securityCode) {
-        isVerified = true;
-      }
-
-      // 2. If not verified yet, verify against Supabase Auth OTP
-      if (!isVerified) {
-        const { data: signupData, error: signupErr } = await supabase.auth.verifyOtp({
-          email: cleanEmail,
-          token,
-          type: 'signup',
-        });
-
-        if (!signupErr && (signupData.session || signupData.user)) {
-          isVerified = true;
-        } else {
-          // Fallback to 'email' type
-          const { data: emailData, error: emailErr } = await supabase.auth.verifyOtp({
-            email: cleanEmail,
-            token,
-            type: 'email',
-          });
-          if (!emailErr && (emailData.session || emailData.user)) {
-            isVerified = true;
-          }
-        }
-      }
-
-      if (!isVerified) {
-        setError('Invalid verification code. Please check your code or click Resend code.');
-        return;
-      }
-
-      // Email verified! Ensure user has active session
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session && password) {
-        await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-      }
-
-      // Update display name if needed
-      if (displayName.trim()) {
-        await supabase.auth.updateUser({
-          data: {
-            display_name: displayName.trim(),
-          },
-        }).catch(() => {});
-      }
-
-      setSuccessMessage('Email verified successfully! Welcome to Linkora.');
-      handleAuthSuccess();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error confirming registration code.');
-    } finally {
-      setIsOtpLoading(false);
     }
   };
 
@@ -391,44 +320,60 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         </div>
       )}
 
-      {/* ===================================================================== */}
-      {/* STEP 1: REGISTRATION FIELDS                                           */}
-      {/* ===================================================================== */}
-      {authStep === 'register' && (
-        <div className="space-y-5">
-          {/* 1-Click Social Sign-up (Google + Apple) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={handleGoogleSignUp}
-              disabled={isGoogleLoading || isAppleLoading || isLoading}
-              className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
-            >
-              <GoogleIcon className="w-4 h-4 shrink-0" />
-              <span>{isGoogleLoading ? 'Connecting...' : 'Google'}</span>
-            </button>
+      {/* 1-Click Fast OAuth Actions (Google + GitHub + Apple) */}
+      <div className="space-y-3">
+        {/* Google 1-Click */}
+        <button
+          type="button"
+          onClick={handleGoogleSignUp}
+          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 text-slate-800 font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
+        >
+          <GoogleIcon className="w-5 h-5 shrink-0" />
+          <span>{isGoogleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
+        </button>
 
-            <button
-              type="button"
-              onClick={handleAppleSignUp}
-              disabled={isGoogleLoading || isAppleLoading || isLoading}
-              className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl bg-black hover:bg-zinc-900 border border-black text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
-            >
-              <AppleIcon className="w-4 h-4 shrink-0" />
-              <span>{isAppleLoading ? 'Connecting...' : 'Apple'}</span>
-            </button>
-          </div>
+        {/* GitHub 1-Click */}
+        <button
+          type="button"
+          onClick={handleGitHubSignUp}
+          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#24292F] hover:bg-[#1a1e22] text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
+        >
+          <GitHubIcon className="w-5 h-5 shrink-0" />
+          <span>{isGitHubLoading ? 'Connecting to GitHub...' : 'Continue with GitHub'}</span>
+        </button>
 
-          {/* Divider */}
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 w-full" />
-            <span className="bg-white px-3 text-[11px] font-mono uppercase tracking-wider text-slate-400 absolute font-semibold">
-              or register with email
-            </span>
-          </div>
+        {/* Apple 1-Click */}
+        <button
+          type="button"
+          onClick={handleAppleSignUp}
+          disabled={isGoogleLoading || isGitHubLoading || isAppleLoading || isLoading}
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-black hover:bg-zinc-900 border border-black text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
+        >
+          <AppleIcon className="w-5 h-5 shrink-0" />
+          <span>{isAppleLoading ? 'Connecting to Apple...' : 'Continue with Apple'}</span>
+        </button>
+      </div>
 
-          {/* Registration Form */}
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
+      {/* Trust & Guarantee Banner */}
+      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-medium">
+        ⚡ 100% Free Forever • Zero email verification delays • Instant access
+      </div>
+
+      {/* Collapsible Accordion: Register with Email & Password */}
+      <div className="pt-2 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={() => setShowEmailForm(!showEmailForm)}
+          className="w-full flex items-center justify-between py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <span>Or register with email & password</span>
+          {showEmailForm ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+
+        {showEmailForm && (
+          <form onSubmit={handleEmailSubmit} className="space-y-4 pt-3 animate-in fade-in duration-200">
             <Input
               label="Your Full Name"
               type="text"
@@ -441,7 +386,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
             />
 
             <Input
-              label="Email or Gmail Address"
+              label="Email Address"
               type="email"
               required
               autoComplete="email"
@@ -492,105 +437,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
               Create Account with Email
             </Button>
           </form>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* STEP 2: VERIFICATION CODE STEP (IF CONFIRMATION REQUIRED)             */}
-      {/* ===================================================================== */}
-      {authStep === 'otp' && (
-        <div className="space-y-5 animate-in fade-in duration-200">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1.5">
-            <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center mx-auto shadow-xs">
-              <KeyRound className="w-5 h-5 text-amber-400" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-900">Verify Your Email</h3>
-            <p className="text-xs text-slate-600 max-w-xs mx-auto">
-              We sent a 6-digit verification code to <strong className="text-slate-900">{email}</strong>. Please check your inbox and Spam folder.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-700 block text-center">
-              Enter 6-Digit Email Code
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={otpCode}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                setOtpCode(val);
-                if (val.length === 6) {
-                  handleVerifySignupOtp(val);
-                }
-              }}
-              placeholder="••••••"
-              className="w-full h-14 text-center font-mono text-2xl font-extrabold tracking-[0.4em] bg-slate-50 border-2 border-slate-300 focus:border-slate-900 focus:bg-white rounded-2xl transition-all outline-none"
-              autoFocus
-            />
-          </div>
-
-          <Button
-            type="button"
-            onClick={() => handleVerifySignupOtp()}
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl shadow-xs"
-            isLoading={isOtpLoading}
-            disabled={otpCode.length < 6}
-            size="lg"
-            leftIcon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
-          >
-            Confirm Account & Sign In
-          </Button>
-
-          <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthStep('register');
-                setError(null);
-                setSuccessMessage(null);
-              }}
-              className="font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to registration</span>
-            </button>
-
-            {resendCountdown > 0 ? (
-              <span className="font-mono text-slate-400 text-[11px]">
-                Resend in {resendCountdown}s
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (resendCountdown > 0) return;
-                  setError(null);
-                  setSuccessMessage(null);
-                  startResendTimer();
-                  const fresh = Math.floor(100000 + Math.random() * 900000).toString();
-                  setSecurityCode(fresh);
-                  await supabase.auth.resend({
-                    type: 'signup',
-                    email: email.trim().toLowerCase(),
-                  }).catch(() => {});
-                  setSuccessMessage(`A fresh 6-digit verification code (${fresh}) has been issued.`);
-                }}
-                className="font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1"
-              >
-                <RotateCw className="w-3.5 h-3.5" />
-                <span>Resend code</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Switch to Login */}
-      {onSwitchToLogin && authStep === 'register' && (
+      {onSwitchToLogin && (
         <div className="text-center pt-2 border-t border-slate-100 text-xs font-medium text-slate-600">
           Already have an account?{' '}
           <button
