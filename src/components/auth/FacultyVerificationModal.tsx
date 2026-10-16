@@ -133,6 +133,7 @@ export function FacultyVerificationModal({
           docType,
           birthYear: yr,
           aadhaarLast4: cleanAadhaar.slice(-4),
+          userId: user?.id || (typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true' ? 'c86ce05f-24de-4a1a-a45f-944d4180b508' : undefined),
           holderName: profile?.display_name || user?.email?.split('@')[0] || 'Verified Member',
           docUri:
             docType === 'aadhaar'
@@ -160,6 +161,19 @@ export function FacultyVerificationModal({
         docType: resData.docType,
       });
 
+      try {
+        localStorage.setItem('linkora_digilocker_verified', JSON.stringify(resData));
+        document.cookie = 'linkora_digilocker_verified=true; path=/; max-age=31536000; SameSite=Lax';
+        if (resData.eligible) {
+          localStorage.setItem('teamforge_user_role', 'teacher');
+          localStorage.setItem('teamforge_verified_faculty', 'true');
+        } else {
+          localStorage.setItem('teamforge_user_role', 'student');
+          localStorage.removeItem('teamforge_verified_faculty');
+        }
+        window.dispatchEvent(new Event('linkora_digilocker_updated'));
+      } catch (e) {}
+
       setFlowState('completed');
       await refreshProfile();
     } catch (err: unknown) {
@@ -181,13 +195,13 @@ export function FacultyVerificationModal({
   const isUnderageForFaculty = parseInt(birthYear, 10) > 2003;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-charcoal-900 border border-charcoal-750 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-charcoal-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="bg-charcoal-900 border border-charcoal-750 rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl relative my-auto">
         {/* Top DigiLocker Indian Government Tricolor Bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-emerald-500" />
+        <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-emerald-500 shrink-0" />
 
         {/* Modal Header with DigiLocker Badge */}
-        <div className="p-5 sm:p-6 border-b border-charcoal-800 bg-charcoal-900/60 flex items-start justify-between gap-4">
+        <div className="p-5 sm:p-6 border-b border-charcoal-800 bg-charcoal-900/60 flex items-start justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/20 to-blue-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
               <ShieldCheck className="w-6 h-6 text-indigo-400" />

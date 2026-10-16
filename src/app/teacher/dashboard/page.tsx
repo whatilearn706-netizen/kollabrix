@@ -47,6 +47,7 @@ import {
   Globe,
   Copy,
   Settings,
+  Eye,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
@@ -145,8 +146,20 @@ export default function TeacherDashboardPage() {
     checkStatus();
   }, [user]);
 
+  const [isPreviewingGateAsVisitor, setIsPreviewingGateAsVisitor] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('preview_gate') === 'true') {
+        setIsPreviewingGateAsVisitor(true);
+      }
+    }
+  }, []);
+
   const isTeacher =
     !isRevoked &&
+    !isPreviewingGateAsVisitor &&
     (profile?.role === 'teacher' || (profile?.role === 'admin' && !isRevoked)) &&
     (!profile?.birth_year || profile?.birth_year <= 2003);
 
@@ -500,12 +513,24 @@ export default function TeacherDashboardPage() {
   if (!isTeacher) {
     return (
       <div className="min-h-screen py-16 px-4 sm:px-6 max-w-xl mx-auto">
+        {isPreviewingGateAsVisitor && (
+          <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between gap-3 shadow-lg">
+            <span className="font-semibold">👁️ Admin Faculty Gate Test View (Regular unverified visitors see this screen)</span>
+            <button
+              type="button"
+              onClick={() => setIsPreviewingGateAsVisitor(false)}
+              className="px-2.5 py-1 rounded-xl bg-amber-500 text-charcoal-950 font-bold hover:bg-amber-400 text-xs shrink-0"
+            >
+              ← Exit Test View
+            </button>
+          </div>
+        )}
         <div className="rounded-2xl border border-brand-500/30 bg-midnight-900/90 p-8 shadow-card">
           <div className="w-12 h-12 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 mx-auto mb-4">
             <GraduationCap className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold text-white text-center mb-2">
-            Faculty & Mentor Verification
+            Faculty &amp; Mentor Verification
           </h1>
           <p className="text-sm text-slate-300 text-center mb-6 leading-relaxed">
             The Mentor Dashboard gives professors and faculty access to monitor student project
@@ -574,6 +599,7 @@ export default function TeacherDashboardPage() {
             isOpen={isDocVerifyOpen}
             onClose={() => setIsDocVerifyOpen(false)}
             onSuccess={async () => {
+              setIsPreviewingGateAsVisitor(false);
               await refreshProfile();
               await loadDashboardData();
             }}
@@ -593,7 +619,7 @@ export default function TeacherDashboardPage() {
             <span>Academic Mentorship Portal</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-1">
-            Teacher & Mentor Dashboard
+            Teacher &amp; Mentor Dashboard
           </h1>
           <p className="text-sm text-slate-400">
             Supervise collegiate projects, inspect team deliverables, review milestones, and publish
@@ -601,7 +627,27 @@ export default function TeacherDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsDocVerifyOpen(true)}
+            className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30"
+            leftIcon={<ShieldCheck className="w-4 h-4 text-indigo-400" />}
+          >
+            🇮🇳 DigiLocker Identity
+          </Button>
+          {(profile?.role === 'admin' || user?.email === 'goyalmayank142@gmail.com') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPreviewingGateAsVisitor(true)}
+              className="text-amber-300 border-amber-500/30 hover:bg-amber-500/10 text-xs"
+              leftIcon={<Eye className="w-3.5 h-3.5" />}
+            >
+              Test Gate
+            </Button>
+          )}
           <Button
             variant="primary"
             size="sm"
@@ -622,6 +668,15 @@ export default function TeacherDashboardPage() {
           </Link>
         </div>
       </div>
+
+      <FacultyVerificationModal
+        isOpen={isDocVerifyOpen}
+        onClose={() => setIsDocVerifyOpen(false)}
+        onSuccess={async () => {
+          await refreshProfile();
+          await loadDashboardData();
+        }}
+      />
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

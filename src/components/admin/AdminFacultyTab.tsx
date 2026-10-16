@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { FacultyPasscode, generateFacultyCode } from '@/lib/admin/facultyPasscodes';
+import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 
 interface AdminFacultyTabProps {
   authToken?: string;
@@ -39,6 +40,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isDigiLockerModalOpen, setIsDigiLockerModalOpen] = useState(false);
 
   // New Passcode Form State
   const [newCode, setNewCode] = useState('');
@@ -267,6 +269,57 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
 
   return (
     <div className="space-y-8 animate-fadeIn">
+      {/* DigiLocker National Gateway Control Card */}
+      <div className="rounded-2xl bg-gradient-to-r from-charcoal-900 via-charcoal-900 to-indigo-950/40 border border-indigo-500/30 p-6 shadow-elevated relative overflow-hidden">
+        <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-emerald-500 absolute top-0 left-0" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                DigiLocker Gateway Active
+              </span>
+              <span className="text-xs text-slate-400 font-mono">Digital India | MeitY Integration</span>
+            </div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <span>🇮🇳 DigiLocker Credential Access &amp; UIDAI Verification</span>
+            </h2>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Faculty and students access official E-Aadhaar and Class 12th Marksheets directly through DigiLocker with zero manual file uploads. <span className="text-rose-300 font-semibold font-mono">FACULTY2026</span> is permanently blocked.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsDigiLockerModalOpen(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold"
+              leftIcon={<ShieldCheck className="w-4 h-4" />}
+            >
+              ⚡ Test DigiLocker Modal
+            </Button>
+            <a
+              href="/teacher/dashboard?preview_gate=true"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 text-xs font-medium rounded-xl border border-charcoal-700 transition flex items-center gap-1.5"
+            >
+              <span>👁️ Preview Gate as Visitor</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <FacultyVerificationModal
+        isOpen={isDigiLockerModalOpen}
+        onClose={() => setIsDigiLockerModalOpen(false)}
+        onSuccess={() => {
+          setIsDigiLockerModalOpen(false);
+          loadData();
+        }}
+      />
+
       {/* Top Description Card */}
       <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

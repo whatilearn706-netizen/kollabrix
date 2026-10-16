@@ -535,10 +535,30 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               )}
             </div>
           ) : (
-            <p className="text-xs text-emerald-400 flex items-center gap-1.5 pt-1">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Verified Educator Status: You have access to post problem statements and evaluate student projects in the Mentor Dashboard.</span>
-            </p>
+            <div className="pt-2 border-t border-charcoal-750 space-y-2.5">
+              <p className="text-xs text-emerald-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Verified Educator Status: You have access to post problem statements and evaluate student projects in the Mentor Dashboard.</span>
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                onClick={() => setIsDocModalOpen(true)}
+                leftIcon={<ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />}
+              >
+                🇮🇳 View / Re-verify DigiLocker Credential
+              </Button>
+              <FacultyVerificationModal
+                isOpen={isDocModalOpen}
+                onClose={() => setIsDocModalOpen(false)}
+                onSuccess={async () => {
+                  setProfileRole('teacher');
+                  await refreshProfile();
+                }}
+              />
+            </div>
           )}
         </div>
       </div>
