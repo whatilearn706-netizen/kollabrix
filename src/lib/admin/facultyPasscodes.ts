@@ -10,7 +10,28 @@ export interface FacultyPasscode {
   used_count: number;
 }
 
-export const DEFAULT_FACULTY_CODES = ['FACULTY2026', 'TF-FACULTY-2026', 'TEACHER2026'];
+export interface FacultySettingsData {
+  passcodes: FacultyPasscode[];
+  revokedUserIds: string[];
+}
+
+export const DEFAULT_FACULTY_CODES: string[] = [];
+
+export function parseFacultySettings(raw: any): FacultySettingsData {
+  if (!raw) {
+    return { passcodes: [], revokedUserIds: [] };
+  }
+  if (Array.isArray(raw)) {
+    return {
+      passcodes: raw,
+      revokedUserIds: [],
+    };
+  }
+  return {
+    passcodes: Array.isArray(raw.passcodes) ? raw.passcodes : [],
+    revokedUserIds: Array.isArray(raw.revokedUserIds) ? raw.revokedUserIds : [],
+  };
+}
 
 export function generateFacultyCode(prefix: string = 'FAC'): string {
   const randomDigits = Math.floor(100000 + Math.random() * 900000);

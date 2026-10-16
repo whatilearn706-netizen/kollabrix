@@ -112,9 +112,42 @@ export default function TeacherDashboardPage() {
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verifySuccess, setVerifySuccess] = useState<string | null>(null);
   const [isDocVerifyOpen, setIsDocVerifyOpen] = useState(false);
+  const [isRevoked, setIsRevoked] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  // Authoritative server-side status check for revocations
+  useEffect(() => {
+    async function checkStatus() {
+      if (!user) {
+        setIsCheckingStatus(false);
+        return;
+      }
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/faculty/status', { headers });
+        const data = await res.json();
+        if (data.isRevoked) {
+          setIsRevoked(true);
+          setVerifyError('Your faculty access has been revoked by an administrator. Please enter an active access passcode to regain access.');
+        } else {
+          setIsRevoked(false);
+        }
+      } catch (err) {
+        console.warn('Error checking faculty status:', err);
+      } finally {
+        setIsCheckingStatus(false);
+      }
+    }
+    checkStatus();
+  }, [user]);
 
   const isTeacher =
-    (profile?.role === 'teacher' || profile?.role === 'admin') &&
+    !isRevoked &&
+    (profile?.role === 'teacher' || (profile?.role === 'admin' && !isRevoked)) &&
     (!profile?.birth_year || profile?.birth_year <= 2003);
 
   const loadDashboardData = useCallback(async () => {
@@ -317,6 +350,8 @@ export default function TeacherDashboardPage() {
       const resData = await res.json();
 
       if (res.ok && resData.success) {
+        setIsRevoked(false);
+        setVerifyError(null);
         setVerifySuccess(resData.message || 'Faculty status verified! Loading mentor dashboard...');
         await refreshProfile();
         await loadDashboardData();

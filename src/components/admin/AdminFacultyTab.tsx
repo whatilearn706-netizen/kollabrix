@@ -17,7 +17,10 @@ import {
   ShieldAlert,
   Building,
   UserX,
+  UserCheck,
   FileText,
+  ShieldCheck,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -32,6 +35,7 @@ interface AdminFacultyTabProps {
 export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps) {
   const [passcodes, setPasscodes] = useState<FacultyPasscode[]>([]);
   const [facultyUsers, setFacultyUsers] = useState<any[]>([]);
+  const [revokedUsers, setRevokedUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -45,9 +49,13 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
+  // Action feedback toast
+  const [actionToast, setActionToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Revoke Modal State
   const [revokeUser, setRevokeUser] = useState<any | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [isRestoringId, setIsRestoringId] = useState<string | null>(null);
 
   // Load Data
   const loadData = async () => {
@@ -61,6 +69,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
       if (res.ok && data.success) {
         setPasscodes(data.passcodes || []);
         setFacultyUsers(data.facultyUsers || []);
+        setRevokedUsers(data.revokedUsers || []);
       }
     } catch (err) {
       console.warn('Error loading faculty administration data:', err);
@@ -102,7 +111,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
           action: 'create',
           passcodeData: {
             code: newCode.trim(),
-            department: newDepartment.trim() || 'General Academic Department',
+            department: newDepartment.trim(),
             notes: newNotes.trim(),
             max_uses: newMaxUses ? parseInt(newMaxUses, 10) : null,
           },
@@ -111,11 +120,11 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setFormError(data.error || 'Failed to create faculty passcode.');
+        setFormError(data.error || 'Failed to generate faculty passcode.');
         return;
       }
 
-      setFormSuccess(`Passcode "${newCode.toUpperCase()}" generated successfully! Share this code with faculty.`);
+      setFormSuccess(`Passcode ${data.passcode.code} generated successfully!`);
       setNewCode(generateFacultyCode('FAC'));
       setNewDepartment('');
       setNewNotes('');
@@ -143,14 +152,13 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
         await loadData();
       }
     } catch (err) {
-      console.warn('Error toggling passcode:', err);
+      console.warn('Error toggling passcode status:', err);
     }
   };
 
   // Delete Passcode
-  const handleDeletePasscode = async (passcodeId: string, code: string) => {
-    const confirm = window.confirm(`Permanently delete faculty passcode "${code}"? Anyone using it will no longer be able to join.`);
-    if (!confirm) return;
+  const handleDeletePasscode = async (passcodeId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this faculty passcode?')) return;
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -182,14 +190,64 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
         headers,
         body: JSON.stringify({ action: 'revoke', targetUserId: revokeUser.user_id }),
       });
-      if (res.ok) {
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionToast({
+          type: 'success',
+          text: `Faculty privileges for ${revokeUser.display_name} (@${revokeUser.username || 'user'}) have been revoked. They are now locked out of the Faculty Portal.`,
+        });
         setRevokeUser(null);
         await loadData();
+      } else {
+        setActionToast({
+          type: 'error',
+          text: data.error || 'Failed to revoke faculty role.',
+        });
       }
-    } catch (err) {
-      console.warn('Error revoking faculty role:', err);
+    } catch (err: unknown) {
+      setActionToast({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Error revoking faculty role.',
+      });
     } finally {
       setIsRevoking(false);
+    }
+  };
+
+  // Restore Faculty Role
+  const handleRestoreFaculty = async (user: any) => {
+    try {
+      setIsRestoringId(user.user_id);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/admin/faculty', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'restore', targetUserId: user.user_id }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionToast({
+          type: 'success',
+          text: `Faculty access restored for ${user.display_name} (@${user.username || 'user'}).`,
+        });
+        await loadData();
+      } else {
+        setActionToast({
+          type: 'error',
+          text: data.error || 'Failed to restore faculty access.',
+        });
+      }
+    } catch (err: unknown) {
+      setActionToast({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Error restoring faculty access.',
+      });
+    } finally {
+      setIsRestoringId(null);
     }
   };
 
@@ -217,7 +275,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
             <span>Faculty Access Passcodes &amp; Credentials</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Generate authoritative access passcodes for college professors, department heads, and mentors. Only faculty who possess an active passcode generated here can join and access the Faculty Portal.
+            Generate authoritative access passcodes for professors and mentors. Only faculty who possess an active passcode generated here can join and access the Faculty Portal. If access is revoked, they are immediately locked out.
           </p>
         </div>
         <Button
@@ -229,6 +287,32 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
           Refresh Registry
         </Button>
       </div>
+
+      {/* Action Notification Toast */}
+      {actionToast && (
+        <div
+          className={`p-4 rounded-xl border text-xs flex items-center justify-between gap-3 ${
+            actionToast.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {actionToast.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            )}
+            <span>{actionToast.text}</span>
+          </div>
+          <button
+            onClick={() => setActionToast(null)}
+            className="text-[11px] underline hover:no-underline opacity-80"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Grid: 1. Passcode Generator & 2. Active Passcodes */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -258,76 +342,76 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
             </div>
           )}
 
-          <form onSubmit={handleCreatePasscode} className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300">Access Passcode</label>
+          <form onSubmit={handleCreatePasscode} className="space-y-3.5">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-300">Access Passcode</label>
                 <button
                   type="button"
                   onClick={handleGenerateCodeClick}
-                  className="text-[11px] text-brand-400 hover:text-brand-300 underline font-mono"
+                  className="text-[11px] font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1"
                 >
-                  Generate Random
+                  <RefreshCw className="w-3 h-3" />
+                  Regenerate Random
                 </button>
               </div>
-              <div className="relative">
-                <Input
-                  type="text"
-                  required
-                  placeholder="e.g. FAC-829104"
-                  value={newCode}
-                  onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                  className="font-mono text-base font-bold tracking-wider text-purple-300 bg-charcoal-850"
-                />
-              </div>
-              <p className="text-[11px] text-slate-500">
-                You can generate a random code or type a custom institutional key (e.g. PROF-CS-2026).
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Academic Department</label>
               <Input
                 type="text"
-                placeholder="e.g. Department of Computer Science"
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                placeholder="e.g. FAC-782910"
+                className="font-mono uppercase bg-charcoal-800 border-charcoal-700 font-bold"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Target Department / School
+              </label>
+              <Input
+                type="text"
                 value={newDepartment}
                 onChange={(e) => setNewDepartment(e.target.value)}
-                className="bg-charcoal-850"
+                placeholder="e.g. Dept of Computer Science & Engineering"
+                className="bg-charcoal-800 border-charcoal-700 text-xs"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Faculty Member / Notes (Optional)</label>
-              <Input
-                type="text"
-                placeholder="e.g. For Dr. Sarah Jenkins (Head of AI)"
-                value={newNotes}
-                onChange={(e) => setNewNotes(e.target.value)}
-                className="bg-charcoal-850"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Max Uses</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={newMaxUses}
+                  onChange={(e) => setNewMaxUses(e.target.value)}
+                  placeholder="Unlimited"
+                  className="bg-charcoal-800 border-charcoal-700 text-xs"
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Max Allowed Usages (Optional)</label>
-              <Input
-                type="number"
-                min="1"
-                placeholder="Leave blank for unlimited faculty joins"
-                value={newMaxUses}
-                onChange={(e) => setNewMaxUses(e.target.value)}
-                className="bg-charcoal-850"
-              />
-              <p className="text-[11px] text-slate-500">Set to 1 for a single-use passcode.</p>
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Notes</label>
+                <Input
+                  type="text"
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  placeholder="e.g. For Dr. Sharma"
+                  className="bg-charcoal-800 border-charcoal-700 text-xs"
+                />
+              </div>
             </div>
 
             <Button
               type="submit"
               variant="primary"
-              className="w-full"
+              className="w-full mt-2"
               isLoading={isGenerating}
               leftIcon={<KeyRound className="w-4 h-4" />}
             >
-              Generate &amp; Activate Passcode
+              Issue Faculty Passcode
             </Button>
           </form>
         </div>
@@ -335,20 +419,22 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
         {/* Active Passcodes Table (7 cols) */}
         <div className="lg:col-span-7 rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Building className="w-4 h-4 text-purple-400" />
-              <span>Active Faculty Passcodes ({passcodes.length})</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-mono">
-              {passcodes.filter((p) => p.is_active).length} Active
-            </span>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-purple-400" />
+                <span>Active Faculty Passcodes</span>
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {passcodes.length} active or configured passcode{passcodes.length === 1 ? '' : 's'}
+              </p>
+            </div>
           </div>
 
           {passcodes.length === 0 ? (
-            <div className="py-12 text-center space-y-3 border border-dashed border-charcoal-750 rounded-xl">
+            <div className="py-12 text-center space-y-2 border border-dashed border-charcoal-750 rounded-xl">
               <KeyRound className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">No custom faculty passcodes generated yet.</p>
-              <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+              <p className="text-xs text-slate-400 font-medium">No active passcodes found.</p>
+              <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
                 Use the generator to create an access passcode so teachers can verify and join the Faculty Portal.
               </p>
             </div>
@@ -358,68 +444,69 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
                 <thead>
                   <tr className="border-b border-charcoal-750 text-slate-400 font-mono text-[11px] uppercase">
                     <th className="py-2.5 px-3">Passcode</th>
-                    <th className="py-2.5 px-3">Department &amp; Notes</th>
-                    <th className="py-2.5 px-3">Uses</th>
-                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3">Department</th>
+                    <th className="py-2.5 px-3 text-center">Uses</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
                     <th className="py-2.5 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-charcoal-800">
-                  {passcodes.map((item) => (
-                    <tr key={item.id} className="hover:bg-charcoal-850/60 transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-purple-300">
+                  {passcodes.map((p) => (
+                    <tr key={p.id} className="hover:bg-charcoal-850/60 transition-colors">
+                      <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <span>{item.code}</span>
+                          <code className="font-mono font-bold text-white bg-charcoal-800 px-2 py-0.5 rounded border border-charcoal-700">
+                            {p.code}
+                          </code>
                           <button
                             type="button"
-                            onClick={() => handleCopy(item.code, item.id)}
+                            onClick={() => handleCopy(p.code, p.id)}
                             className="p-1 rounded hover:bg-charcoal-750 text-slate-400 hover:text-white transition-colors"
                             title="Copy Passcode"
                           >
-                            {copiedId === item.id ? (
+                            {copiedId === p.id ? (
                               <Check className="w-3.5 h-3.5 text-emerald-400" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
                           </button>
                         </div>
+                        {p.notes && <p className="text-[10px] text-slate-500 mt-0.5">{p.notes}</p>}
                       </td>
-                      <td className="py-3 px-3">
-                        <p className="font-semibold text-slate-200">{item.department}</p>
-                        {item.notes && <p className="text-[11px] text-slate-400">{item.notes}</p>}
+                      <td className="py-3 px-3 text-slate-300">{p.department}</td>
+                      <td className="py-3 px-3 text-center font-mono text-[11px]">
+                        <span className="text-white font-bold">{p.used_count || 0}</span>
+                        <span className="text-slate-500">/{p.max_uses ?? '∞'}</span>
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-400">
-                        {item.used_count || 0}
-                        {item.max_uses ? ` / ${item.max_uses}` : ' (unlimited)'}
-                      </td>
-                      <td className="py-3 px-3">
-                        {item.is_active ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/15 text-slate-400 border border-slate-500/30">
-                            Deactivated
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right space-x-1 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePasscode(item.id)}
-                          className={`p-1.5 rounded-lg border text-xs transition-colors ${
-                            item.is_active
-                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+                      <td className="py-3 px-3 text-center">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            p.is_active
+                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                              : 'bg-red-500/15 border border-red-500/30 text-red-400'
                           }`}
-                          title={item.is_active ? 'Deactivate Passcode' : 'Activate Passcode'}
                         >
-                          {item.is_active ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
-                        </button>
+                          {p.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right space-x-1">
                         <button
                           type="button"
-                          onClick={() => handleDeletePasscode(item.id, item.code)}
-                          className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 transition-colors"
+                          onClick={() => handleTogglePasscode(p.id)}
+                          className={`p-1.5 rounded-lg border transition-colors ${
+                            p.is_active
+                              ? 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+                              : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                          }`}
+                          title={p.is_active ? 'Deactivate Passcode' : 'Activate Passcode'}
+                        >
+                          {p.is_active ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePasscode(p.id)}
+                          className="p-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
                           title="Delete Passcode"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -434,34 +521,37 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
         </div>
       </div>
 
-      {/* Verified Faculty Registry */}
+      {/* 2. Verified Faculty Registry Table */}
       <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 shadow-card space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-brand-400" />
-              <span>Verified Faculty Members ({facultyUsers.length})</span>
+              <GraduationCap className="w-4 h-4 text-purple-400" />
+              <span>Verified Faculty Registry</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/15 text-purple-300 font-mono font-bold">
+                {facultyUsers.length}
+              </span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-400 mt-0.5">
               Professors and instructors who currently have active teacher privileges on Linkora.
             </p>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+          <div className="w-full sm:w-64">
+            <Input
               type="text"
-              placeholder="Search faculty..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
+              placeholder="Search faculty..."
+              className="bg-charcoal-800 border-charcoal-700 text-xs"
+              leftIcon={<Search className="w-3.5 h-3.5 text-slate-400" />}
             />
           </div>
         </div>
 
         {filteredUsers.length === 0 ? (
           <div className="py-8 text-center text-xs text-slate-400 border border-dashed border-charcoal-750 rounded-xl">
-            No verified faculty members matching &quot;{searchTerm}&quot; found.
+            No active verified faculty members matching &quot;{searchTerm}&quot; found.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -515,6 +605,70 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
         )}
       </div>
 
+      {/* 3. Revoked Faculty Accounts Registry Table */}
+      {revokedUsers.length > 0 && (
+        <div className="rounded-2xl bg-charcoal-900 border border-red-500/30 p-6 shadow-card space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <UserX className="w-4 h-4 text-red-400" />
+                <span>Revoked Faculty Accounts</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-red-500/15 text-red-300 font-mono font-bold">
+                  {revokedUsers.length}
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                These users have had their faculty access revoked by an administrator and are barred from accessing the Faculty Portal.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-charcoal-750 text-slate-400 font-mono text-[11px] uppercase">
+                  <th className="py-2.5 px-3">User</th>
+                  <th className="py-2.5 px-3">Username</th>
+                  <th className="py-2.5 px-3">Access Status</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-charcoal-800">
+                {revokedUsers.map((user) => (
+                  <tr key={user.user_id} className="hover:bg-charcoal-850/60 transition-colors">
+                    <td className="py-3 px-3">
+                      <div>
+                        <p className="font-bold text-white">{user.display_name || 'Revoked User'}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">UID: {user.user_id}</p>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-slate-400">@{user.username || 'user'}</td>
+                    <td className="py-3 px-3">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 border border-red-500/30 text-red-400">
+                        <UserX className="w-3 h-3" />
+                        Access Revoked
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs text-emerald-400 hover:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/10"
+                        onClick={() => handleRestoreFaculty(user)}
+                        isLoading={isRestoringId === user.user_id}
+                        leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                      >
+                        Restore Access
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Revoke Faculty Role Confirmation Modal */}
       {revokeUser && (
         <Modal
@@ -526,7 +680,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2.5">
               <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <span>
-                You are about to revoke faculty privileges from <strong>{revokeUser.display_name}</strong>. Their account will be returned to regular student status.
+                You are about to revoke faculty privileges from <strong>{revokeUser.display_name}</strong> (@{revokeUser.username || 'user'}). They will be immediately locked out of the Faculty Portal and returned to regular student status.
               </span>
             </div>
 

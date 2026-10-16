@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { DEFAULT_FACULTY_CODES, FacultyPasscode } from '@/lib/admin/facultyPasscodes';
+import { parseFacultySettings } from '@/lib/admin/facultyPasscodes';
 
 export const runtime = 'nodejs';
 
@@ -49,19 +49,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You must be signed in to verify faculty status.' }, { status: 401 });
     }
 
-    // 2. Check if code matches default built-in codes
-    let isMatched = DEFAULT_FACULTY_CODES.includes(cleanCode);
-    let matchedPasscodeId: string | null = null;
-    let matchedDepartment = 'Academic Department';
-
-    // 3. Check admin-generated passcodes from platform_settings
+    // 2. Fetch passcodes from platform_settings
     const { data: settingData } = await client
       .from('platform_settings')
       .select('value')
       .eq('key', 'faculty_access_passcodes')
       .maybeSingle();
 
-    let passcodesList: FacultyPasscode[] = Array.isArray(settingData?.value) ? settingData.value : [];
+    const parsed = parseFacultySettings(settingData?.value);
+    const passcodesList = parsed.passcodes;
+    let revokedUserIds = parsed.revokedUserIds;
+
+    let isMatched = false;
+    let matchedPasscodeId: string | null = null;
+    let matchedDepartment = 'Academic Department';
 
     const found = passcodesList.find((p) => p.code.toUpperCase() === cleanCode);
     if (found) {
@@ -82,54 +83,58 @@ export async function POST(request: NextRequest) {
       matchedDepartment = found.department || matchedDepartment;
     }
 
+    // Fallback: If no custom codes are yet generated in a brand new database, allow initial master key FACULTY2026
+    if (!isMatched && passcodesList.length === 0 && cleanCode === 'FACULTY2026') {
+      isMatched = true;
+      matchedDepartment = 'Institutional Department';
+    }
+
     if (!isMatched) {
       return NextResponse.json(
         {
           error:
-            'Invalid faculty access passcode. Contact your campus administrator to generate an access passcode for you, or verify with institutional credentials.',
+            'Invalid faculty access passcode. Please contact your platform administrator to generate an access passcode for you.',
         },
         { status: 400 }
       );
     }
 
-    // 4. Update user's profile role to 'teacher'
-    const { error: updateErr } = await client
-      .from('profiles')
-      .update({
-        role: 'teacher',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', targetUserId);
+    // 3. Update user's profile role to 'teacher'
+    try {
+      await client
+        .from('profiles')
+        .update({
+          role: 'teacher',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', targetUserId);
+    } catch {}
 
-    if (updateErr) {
-      // Fallback via RPC
-      try {
-        await client.rpc('verify_faculty_code', { access_code: cleanCode });
-      } catch (rpcErr) {
-        throw new Error(updateErr.message);
+    // Fallback via RPC if installed
+    try {
+      await client.rpc('verify_faculty_code', { access_code: cleanCode });
+    } catch {}
+
+    // 4. Remove targetUserId from revokedUserIds and increment passcode usage count
+    revokedUserIds = revokedUserIds.filter((id) => id !== targetUserId);
+
+    const updatedPasscodes = passcodesList.map((p) => {
+      if (p.id === matchedPasscodeId) {
+        return { ...p, used_count: (p.used_count || 0) + 1 };
       }
-    }
+      return p;
+    });
 
-    // 5. If matched from admin-generated list, increment used_count
-    if (matchedPasscodeId) {
-      try {
-        const updatedList = passcodesList.map((p) => {
-          if (p.id === matchedPasscodeId) {
-            return { ...p, used_count: (p.used_count || 0) + 1 };
-          }
-          return p;
+    try {
+      await client
+        .from('platform_settings')
+        .upsert({
+          key: 'faculty_access_passcodes',
+          value: { passcodes: updatedPasscodes, revokedUserIds },
+          updated_at: new Date().toISOString(),
         });
-
-        await client
-          .from('platform_settings')
-          .update({
-            value: updatedList,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('key', 'faculty_access_passcodes');
-      } catch (err) {
-        console.warn('Could not increment passcode usage count:', err);
-      }
+    } catch (err) {
+      console.warn('Could not update platform_settings after verification:', err);
     }
 
     return NextResponse.json({
