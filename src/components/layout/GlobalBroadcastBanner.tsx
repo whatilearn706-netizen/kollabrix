@@ -65,10 +65,14 @@ export function GlobalBroadcastBanner() {
         .then((res) => res.json())
         .then((data) => {
           if (data?.config?.banner) {
-            setBanner(data.config.banner);
-            try {
-              localStorage.setItem('linkora_master_control_v1', JSON.stringify(data.config));
-            } catch (e) {}
+            const hasLocalCache = !!localStorage.getItem('linkora_master_control_v1');
+            const isCustom = data.fromDb || JSON.stringify(data.config.banner) !== JSON.stringify(DEFAULT_MASTER_CONTROL_CONFIG.banner);
+            if (data.fromDb || isCustom || !hasLocalCache) {
+              setBanner(data.config.banner);
+              try {
+                localStorage.setItem('linkora_master_control_v1', JSON.stringify(data.config));
+              } catch (e) {}
+            }
           }
         })
         .catch(() => {});

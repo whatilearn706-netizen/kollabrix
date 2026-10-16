@@ -30,6 +30,7 @@ import {
   KeyRound,
   Zap,
   AlertCircle,
+  Award,
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { ProjectSparkGeneratorModal } from '@/components/ai/ProjectSparkGeneratorModal';
@@ -41,6 +42,7 @@ import {
 } from '@/types/homepageConfig';
 import {
   HomepageSectionToggles,
+  MasterControlConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
@@ -58,6 +60,7 @@ export default function HomePage() {
   const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(DEFAULT_HOMEPAGE_INTENT_CONFIG);
   const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(DEFAULT_HOMEPAGE_SHOWCASE_CONFIG);
   const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionToggles>(DEFAULT_MASTER_CONTROL_CONFIG.sections);
+  const [masterConfig, setMasterConfig] = useState<MasterControlConfig>(DEFAULT_MASTER_CONTROL_CONFIG);
 
   // Catch incoming OAuth or URL authentication errors
   useEffect(() => {
@@ -113,18 +116,30 @@ export default function HomePage() {
 
         // Load Live Master Control Config (Sections toggles & titles)
         try {
+          let currentM = DEFAULT_MASTER_CONTROL_CONFIG;
           const cachedM = localStorage.getItem('linkora_master_control_v1');
           if (cachedM) {
-            const parsed = JSON.parse(cachedM);
-            if (parsed?.sections) setSectionsConfig(parsed.sections);
+            try {
+              currentM = JSON.parse(cachedM);
+              if (currentM?.sections) setSectionsConfig(currentM.sections);
+              setMasterConfig(currentM);
+            } catch (e) {}
           }
+
           const mRes = await fetch(`/api/master-control?_t=${Date.now()}`, { cache: 'no-store' });
           const mData = await mRes.json();
-          if (mRes.ok && mData?.config?.sections) {
-            setSectionsConfig(mData.config.sections);
-            try {
-              localStorage.setItem('linkora_master_control_v1', JSON.stringify(mData.config));
-            } catch (e) {}
+          if (mRes.ok && mData?.config) {
+            const isCustomized = JSON.stringify(mData.config) !== JSON.stringify(DEFAULT_MASTER_CONTROL_CONFIG);
+            if (mData.fromDb || isCustomized || !cachedM) {
+              if (mData.config.sections) setSectionsConfig(mData.config.sections);
+              setMasterConfig(mData.config);
+              try {
+                localStorage.setItem('linkora_master_control_v1', JSON.stringify(mData.config));
+              } catch (e) {}
+            } else if (cachedM && currentM) {
+              if (currentM.sections) setSectionsConfig(currentM.sections);
+              setMasterConfig(currentM);
+            }
           }
         } catch (e) {}
 
@@ -231,6 +246,7 @@ export default function HomePage() {
         if (cachedM) {
           const parsed = JSON.parse(cachedM);
           if (parsed?.sections) setSectionsConfig(parsed.sections);
+          setMasterConfig(parsed);
         }
       } catch (e) {}
     };
@@ -808,6 +824,66 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
+          SECTION: VERIFIED COLLEGIATE PARTNER NETWORK (MODULE 3)
+         ========================================================================= */}
+      {(sectionsConfig.colleges !== false) && masterConfig.colleges && masterConfig.colleges.length > 0 && (
+        <section className="py-16 md:py-20 bg-slate-50/60 border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-brand-600 font-bold mb-1">
+                  <GraduationCap className="w-4 h-4 text-brand-600" />
+                  <span>Campus Partner Network</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Partner Universities & Whitelisted Campuses
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                  Collegiate communities with authorized builder chapters, automated campus domain verification, and institutional hackathons.
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold text-slate-600 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs self-start md:self-auto">
+                {masterConfig.colleges.length} Verified Institutions
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {masterConfig.colleges.map((col) => (
+                <div
+                  key={col.id}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-brand-300 hover:shadow-md transition-all duration-200 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700 font-black text-sm shrink-0">
+                      {col.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Whitelisted
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{col.name}</h3>
+                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                      <span>{col.city || 'India'}</span>
+                      <span>•</span>
+                      <span className="font-mono text-brand-600">@{col.domain}</span>
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Partner since {col.partnerSince}</span>
+                    <span className="font-semibold text-emerald-600 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Active
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* =========================================================================
           SECTION 4: COMPETE (CAMPUS PASSCODE & PRIVATE CHALLENGES)
          ========================================================================= */}
       {sectionsConfig.hackathons && (
@@ -861,6 +937,69 @@ export default function HomePage() {
                   Unlock
                 </Button>
               </form>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* =========================================================================
+          SECTION: STUDENT HALL OF FAME & HONORS BADGES (MODULE 4)
+         ========================================================================= */}
+      {(sectionsConfig.badges !== false) && masterConfig.badges && masterConfig.badges.length > 0 && (
+        <section className="py-16 md:py-20 bg-white border-b border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-amber-600 font-bold mb-1">
+                  <Award className="w-4 h-4 text-amber-600" />
+                  <span>Collegiate Honors & Achievements</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Student Hall of Fame & Citations
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                  Celebrating outstanding collegiate engineers, open-source innovators, and hackathon champions recognized across campuses.
+                </p>
+              </div>
+              <span className="text-xs font-mono font-bold text-slate-600 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs self-start md:self-auto">
+                {masterConfig.badges.length} Honors Conferred
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {masterConfig.badges.map((b) => (
+                <div
+                  key={b.id}
+                  className="p-6 rounded-3xl bg-gradient-to-br from-white to-slate-50/70 border border-slate-200/90 hover:border-amber-400/80 hover:shadow-lg transition-all duration-200 space-y-4 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-900">
+                        {b.badgeTitle}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {new Date(b.awardedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                      &ldquo;{b.reason}&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
+                        {b.username.slice(0, 1).toUpperCase()}
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">@{b.username}</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-mono font-bold text-slate-400">
+                      by {b.awardedBy}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>

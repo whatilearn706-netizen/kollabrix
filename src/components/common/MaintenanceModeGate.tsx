@@ -45,7 +45,11 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
         .then((res) => res.json())
         .then((data) => {
           if (data?.config?.maintenance) {
-            setMaintenance(data.config.maintenance);
+            const hasLocalCache = !!localStorage.getItem('linkora_master_control_v1');
+            const isCustom = data.fromDb || JSON.stringify(data.config.maintenance) !== JSON.stringify(DEFAULT_MASTER_CONTROL_CONFIG.maintenance);
+            if (data.fromDb || isCustom || !hasLocalCache) {
+              setMaintenance(data.config.maintenance);
+            }
           }
         })
         .catch(() => {});

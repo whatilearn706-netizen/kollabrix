@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
 import {
@@ -26,8 +27,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status || 403, headers: NO_CACHE_HEADERS });
     }
 
-    const client = auth.dbClient || defaultClient;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const client = supabaseServiceKey
+      ? createSupabaseClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+      : (auth.dbClient || defaultClient);
+
     let config: MasterControlConfig = DEFAULT_MASTER_CONTROL_CONFIG;
+    let fromDb = false;
     let ceoStats = {
       totalUsers: 142,
       totalProjects: 38,
@@ -54,6 +61,7 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         if (row?.value) {
+          fromDb = true;
           config = {
             ...DEFAULT_MASTER_CONTROL_CONFIG,
             ...row.value,
@@ -67,11 +75,11 @@ export async function GET(request: NextRequest) {
 
         // 2. Fetch live metrics for the Executive CEO report
         const [usersRes, projRes, appsRes, hackRes, profilesRes] = await Promise.allSettled([
-          client.from('profiles').select('id, user_id, username, display_name, role, skills, created_at', { count: 'exact' }).limit(50),
+          client.from('profiles').select('user_id, username, display_name, role, skills, created_at', { count: 'exact' }).limit(50),
           client.from('projects').select('id, title, required_skills, status', { count: 'exact' }),
           client.from('applications').select('id', { count: 'exact' }),
           client.from('hackathons').select('id', { count: 'exact' }),
-          client.from('profiles').select('id, user_id, username, display_name, role, skills').order('created_at', { ascending: false }).limit(60),
+          client.from('profiles').select('user_id, username, display_name, role, skills').order('created_at', { ascending: false }).limit(60),
         ]);
 
         const totalUsers = usersRes.status === 'fulfilled' && typeof usersRes.value.count === 'number' ? usersRes.value.count : 142;
@@ -109,7 +117,7 @@ export async function GET(request: NextRequest) {
 
         const recentStudentsList = profilesRes.status === 'fulfilled' && Array.isArray(profilesRes.value.data)
           ? profilesRes.value.data.map((p: any) => ({
-              userId: p.user_id || p.id,
+              userId: p.user_id,
               username: p.username || p.display_name || 'student',
               displayName: p.display_name || p.username || 'Student Builder',
               skills: Array.isArray(p.skills) ? p.skills : [],
@@ -126,6 +134,25 @@ export async function GET(request: NextRequest) {
         };
       } catch (err) {
         console.warn('Error fetching live CEO metrics in master-control:', err);
+      }
+    }
+
+    // 2. Cookie fallback if not yet stored in DB
+    if (!fromDb) {
+      const cookieVal = request.cookies.get('linkora_master_control_config')?.value;
+      if (cookieVal) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(cookieVal));
+          config = {
+            ...DEFAULT_MASTER_CONTROL_CONFIG,
+            ...parsed,
+            banner: { ...DEFAULT_MASTER_CONTROL_CONFIG.banner, ...(parsed.banner || {}) },
+            sections: { ...DEFAULT_MASTER_CONTROL_CONFIG.sections, ...(parsed.sections || {}) },
+            colleges: Array.isArray(parsed.colleges) ? parsed.colleges : DEFAULT_MASTER_CONTROL_CONFIG.colleges,
+            badges: Array.isArray(parsed.badges) ? parsed.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
+            maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(parsed.maintenance || {}) },
+          };
+        } catch (e) {}
       }
     }
 
@@ -170,12 +197,33 @@ export async function POST(request: NextRequest) {
       maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(incoming.maintenance || {}) },
     };
 
+    let savedToDb = false;
+    let dbError: string | null = null;
+
     if (isSupabaseConfigured()) {
-      await client.from('platform_settings').upsert({
-        key: MASTER_KEY,
-        value: config,
-        updated_at: new Date().toISOString(),
-      });
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      const client = supabaseServiceKey
+        ? createSupabaseClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+        : (auth.dbClient || defaultClient);
+
+      try {
+        const { error: upsertErr } = await client.from('platform_settings').upsert({
+          key: MASTER_KEY,
+          value: config,
+          updated_at: new Date().toISOString(),
+        });
+
+        if (upsertErr) {
+          console.warn('Could not write master control to platform_settings DB:', upsertErr);
+          dbError = upsertErr.message;
+        } else {
+          savedToDb = true;
+        }
+      } catch (err: any) {
+        console.warn('Exception during master control DB upsert:', err);
+        dbError = err.message || 'Database connection error';
+      }
 
       // Immutable audit log
       try {
@@ -191,6 +239,7 @@ export async function POST(request: NextRequest) {
             collegesCount: config.colleges.length,
             badgesAwardedCount: config.badges.length,
             subsectionsUpdated: Object.keys(config.sections),
+            savedToDb,
           },
           dbClient: client,
         });
@@ -199,14 +248,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
-        message: 'Master control configuration saved successfully',
+        savedToDb,
+        dbError,
+        message: savedToDb
+          ? 'Master control configuration saved successfully to live database.'
+          : 'Master control configuration saved to persistent session & cookies.',
         config,
       },
       { headers: NO_CACHE_HEADERS }
     );
+
+    // Set 1-year persistent cookie so any page request immediately receives it
+    response.cookies.set('linkora_master_control_config', encodeURIComponent(JSON.stringify(config)), {
+      path: '/',
+      maxAge: 31536000,
+      sameSite: 'lax',
+    });
+
+    return response;
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || 'Failed to update master control' },

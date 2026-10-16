@@ -21,6 +21,7 @@ const NO_CACHE_HEADERS = {
 export async function GET(request: NextRequest) {
   try {
     let config: MasterControlConfig = DEFAULT_MASTER_CONTROL_CONFIG;
+    let fromDb = false;
 
     if (isSupabaseConfigured()) {
       try {
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         if (row?.value) {
+          fromDb = true;
           config = {
             ...DEFAULT_MASTER_CONTROL_CONFIG,
             ...row.value,
@@ -56,9 +58,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Fallback: If not in DB yet, read from persistent cookie
+    if (!fromDb) {
+      const cookieVal = request.cookies.get('linkora_master_control_config')?.value;
+      if (cookieVal) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(cookieVal));
+          config = {
+            ...DEFAULT_MASTER_CONTROL_CONFIG,
+            ...parsed,
+            banner: { ...DEFAULT_MASTER_CONTROL_CONFIG.banner, ...(parsed.banner || {}) },
+            sections: { ...DEFAULT_MASTER_CONTROL_CONFIG.sections, ...(parsed.sections || {}) },
+            colleges: Array.isArray(parsed.colleges) ? parsed.colleges : DEFAULT_MASTER_CONTROL_CONFIG.colleges,
+            badges: Array.isArray(parsed.badges) ? parsed.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
+            maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(parsed.maintenance || {}) },
+          };
+        } catch (e) {}
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
+        fromDb,
         config,
       },
       {
@@ -69,6 +91,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
+        fromDb: false,
         config: DEFAULT_MASTER_CONTROL_CONFIG,
       },
       {

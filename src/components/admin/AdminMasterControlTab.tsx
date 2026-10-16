@@ -56,6 +56,7 @@ export function AdminMasterControlTab({ authToken, initialSubTab }: AdminMasterC
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState('Configuration saved successfully!');
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedReport, setCopiedReport] = useState(false);
 
@@ -129,12 +130,18 @@ export function AdminMasterControlTab({ authToken, initialSubTab }: AdminMasterC
       if (res.ok && data.success) {
         setConfig(data.config);
         setSaveSuccess(true);
+        if (data.savedToDb) {
+          setSaveSuccessMsg('☁️ Saved to live Supabase DB & Published Site-Wide!');
+        } else {
+          setSaveSuccessMsg('⚡ Saved to Platform Session & Cookies (Active across all tabs)!');
+        }
         // Instant client cache update & trigger event
         try {
           localStorage.setItem('linkora_master_control_v1', JSON.stringify(data.config));
+          document.cookie = `linkora_master_control_config=${encodeURIComponent(JSON.stringify(data.config))}; path=/; max-age=31536000; SameSite=Lax`;
           window.dispatchEvent(new Event('linkora_master_control_updated'));
         } catch (e) {}
-        setTimeout(() => setSaveSuccess(false), 3500);
+        setTimeout(() => setSaveSuccess(false), 4500);
       } else {
         setErrorMsg(data.error || 'Failed to save configuration.');
       }
@@ -299,8 +306,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
         <div className="flex items-center gap-3">
           {saveSuccess && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-fade-in">
-              <CheckCircle2 className="w-4 h-4" />
-              Published Live!
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{saveSuccessMsg}</span>
             </div>
           )}
           {errorMsg && (
@@ -608,6 +615,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 { key: 'intent' as const, label: 'Intent Intelligence Console ("Find me a project...")' },
                 { key: 'workflow' as const, label: '3-Stage Collegiate Workflow' },
                 { key: 'showcase' as const, label: 'Featured Projects Showcase Grid' },
+                { key: 'colleges' as const, label: 'Verified Campus Partner Universities Grid' },
+                { key: 'badges' as const, label: 'Collegiate Honors & Student Hall of Fame' },
                 { key: 'hackathons' as const, label: 'Live Campus Hackathons Strip' },
                 { key: 'ctaBanner' as const, label: 'Bottom Join Linkora Banner' },
               ].map(({ key, label }) => (

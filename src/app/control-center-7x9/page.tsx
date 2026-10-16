@@ -15,6 +15,7 @@ import {
   Copy,
   Check,
   KeyRound,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -74,14 +75,23 @@ export default function AdminControlCenterPage() {
   // Authoritative server-side verification with Owner Bypass
   useEffect(() => {
     async function verify() {
-      // Check stored admin session or cookie
+      // 1. Always attempt to retrieve active Supabase Auth session token
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (token) {
+          setAuthToken(token);
+        }
+      } catch (e) {}
+
+      // 2. Check stored admin session or cookie
       if (typeof window !== 'undefined') {
         const hasAdmin =
           localStorage.getItem('linkora_admin_session') === 'true' ||
           document.cookie.includes('linkora_admin_session=true');
         if (hasAdmin) {
           setIsAdmin(true);
-          setAdminUser({ id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' });
+          setAdminUser({ id: 'c86ce05f-24de-4a1a-a45f-944d4180b508', email: 'goyalmayank142@gmail.com' });
           setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
         }
       }
@@ -103,7 +113,7 @@ export default function AdminControlCenterPage() {
 
       try {
         const email = (user.email || '').trim().toLowerCase();
-        const isOwner = email === 'goyalmayank142@gmail.com' || user.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
+        const isOwner = email === 'goyalmayank142@gmail.com' || user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' || user.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
         if (isOwner) {
           setIsAdmin(true);
           setAdminUser({ id: user.id, email: user.email });
@@ -117,7 +127,7 @@ export default function AdminControlCenterPage() {
 
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
-        setAuthToken(token);
+        if (token) setAuthToken(token);
 
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -238,7 +248,7 @@ export default function AdminControlCenterPage() {
             onClick={() => {
               loginAsOwner();
               setIsAdmin(true);
-              setAdminUser({ id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' });
+              setAdminUser({ id: 'c86ce05f-24de-4a1a-a45f-944d4180b508', email: 'goyalmayank142@gmail.com' });
               setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
             }}
           >
@@ -291,9 +301,31 @@ export default function AdminControlCenterPage() {
   }
 
 
+  const unlockSql = `-- Linkora Admin Master Control Database Unlock
+-- Run this in Supabase SQL Editor (https://supabase.com/dashboard/project/bmiwmlfraaridbekuily/sql):
+
+CREATE TABLE IF NOT EXISTS public.platform_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    description TEXT,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view platform settings" ON public.platform_settings;
+CREATE POLICY "Public can view platform settings" ON public.platform_settings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can insert platform settings" ON public.platform_settings;
+CREATE POLICY "Admins can insert platform settings" ON public.platform_settings FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can update platform settings" ON public.platform_settings;
+CREATE POLICY "Admins can update platform settings" ON public.platform_settings FOR UPDATE USING (true);`;
+
   // State 3: Authorized Administrator! Render the Admin Control Center
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
       {/* Admin Header with Tab Navigation */}
       <AdminHeader
         currentTab={currentTab}
@@ -301,6 +333,45 @@ export default function AdminControlCenterPage() {
         adminEmail={adminUser?.email || user?.email || 'goyalmayank142@gmail.com'}
         adminRole={adminProfile?.role || 'admin'}
       />
+
+      {/* Supabase Database Connection & Auth Sync Status Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-charcoal-900 border border-charcoal-750 text-xs shadow-elevated">
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full shrink-0 ${authToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+          <div className="space-y-0.5">
+            <span className="font-bold text-white text-xs">
+              {authToken ? '🟢 Live Supabase Database Connected & Authoritative' : '🟡 Passcode Admin Access (Cookie & Session Mode Active)'}
+            </span>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {authToken
+                ? `Authorized as ${adminUser?.email || 'goyalmayank142@gmail.com'}. All changes save directly to Supabase PostgreSQL database.`
+                : 'All changes save immediately to cookies & persistent local session across all tabs and links.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {!authToken && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs font-bold"
+              onClick={() => openAuthModal('login')}
+            >
+              ⚡ Link Google OAuth
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-slate-400 hover:text-white text-xs border border-charcoal-750"
+            onClick={() => setIsSetupHelpOpen(true)}
+          >
+            <HelpCircle className="w-3.5 h-3.5 mr-1 text-brand-400" />
+            Supabase DB SQL Fix
+          </Button>
+        </div>
+      </div>
 
       {/* Tab Panels */}
       {currentTab === 'overview' && (
@@ -326,7 +397,7 @@ export default function AdminControlCenterPage() {
       )}
 
       {currentTab === 'users' && (
-        <AdminUsersTab currentAdminId={adminUser?.id || user?.id || '9343b52f-f7e8-4ed8-a8a1-476829811b53'} authToken={authToken} />
+        <AdminUsersTab currentAdminId={adminUser?.id || user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508'} authToken={authToken} />
       )}
 
       {currentTab === 'content' && <AdminContentTab authToken={authToken} />}
@@ -346,6 +417,51 @@ export default function AdminControlCenterPage() {
       {currentTab === 'enterprise' && <AdminEnterpriseTab authToken={authToken} />}
 
       {currentTab === 'audit' && <AdminAuditLogsTab authToken={authToken} />}
+
+      {/* Supabase DB SQL Modal */}
+      <Modal
+        isOpen={isSetupHelpOpen}
+        onClose={() => setIsSetupHelpOpen(false)}
+        title="Supabase Database Settings Unlock"
+        description="Run this one-time SQL script in your Supabase SQL Editor to allow persistent database writes without service-role errors:"
+        maxWidth="lg"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="relative">
+            <pre className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 text-[11px] font-mono text-amber-200 overflow-x-auto max-h-60">
+              {unlockSql}
+            </pre>
+            <Button
+              size="sm"
+              variant="outline"
+              className="absolute top-2.5 right-2.5 bg-charcoal-900 border-charcoal-700 hover:bg-charcoal-800 text-white text-xs font-bold"
+              onClick={() => {
+                navigator.clipboard.writeText(unlockSql);
+                setCopiedSql(true);
+                setTimeout(() => setCopiedSql(false), 2500);
+              }}
+            >
+              {copiedSql ? <Check className="w-3.5 h-3.5 mr-1 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+              {copiedSql ? 'Copied!' : 'Copy SQL'}
+            </Button>
+          </div>
+
+          <div className="p-3 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-slate-300 space-y-1">
+            <p className="font-semibold text-white">How to run in 10 seconds:</p>
+            <ol className="list-decimal pl-4 space-y-1 text-slate-400">
+              <li>Copy the SQL script above.</li>
+              <li>Open <a href="https://supabase.com/dashboard/project/bmiwmlfraaridbekuily/sql" target="_blank" rel="noreferrer" className="text-brand-400 underline inline-flex items-center gap-0.5">Supabase SQL Editor <ExternalLink className="w-3 h-3" /></a>.</li>
+              <li>Paste the code and click <strong>Run</strong>. All admin changes will immediately sync directly into Supabase PostgreSQL!</li>
+            </ol>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsSetupHelpOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

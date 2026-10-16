@@ -14,6 +14,8 @@ export interface HomepageSectionToggles {
   showcase: boolean;
   hackathons: boolean;
   ctaBanner: boolean;
+  colleges?: boolean;
+  badges?: boolean;
   workflowTitle?: string;
   workflowSubtitle?: string;
   showcaseTitle?: string;
@@ -73,6 +75,8 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     showcase: true,
     hackathons: true,
     ctaBanner: true,
+    colleges: true,
+    badges: true,
     workflowTitle: 'Workflow',
     workflowSubtitle: 'From raw concept to verified career proof in three collegiate stages.',
     showcaseTitle: 'Showcase',
