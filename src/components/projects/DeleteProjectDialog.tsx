@@ -22,7 +22,7 @@ export function DeleteProjectDialog({
   projectTitle,
 }: DeleteProjectDialogProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,16 +36,37 @@ export function DeleteProjectDialog({
       setIsDeleting(true);
       setError(null);
 
-      // Row Level Security ensures only the owner can delete
-      const { error: deleteError } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId)
-        .eq('owner_id', user.id);
+      const isAdmin = profile?.role === 'admin' || user.email === 'goyalmayank142@gmail.com';
 
-      if (deleteError) {
-        setError(deleteError.message);
-        return;
+      if (isAdmin) {
+        // Authoritative admin deletion via server API route
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const res = await fetch('/api/admin/projects', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ projectId, title: projectTitle }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to delete project as administrator.');
+        }
+      } else {
+        // Standard owner delete
+        const { error: deleteError } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', projectId)
+          .eq('owner_id', user.id);
+
+        if (deleteError) {
+          setError(deleteError.message);
+          return;
+        }
       }
 
       onClose();
@@ -70,7 +91,7 @@ export function DeleteProjectDialog({
         <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300 leading-relaxed flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <span>
-            Are you sure you want to permanently delete <strong>&ldquo;{projectTitle}&rdquo;</strong>? All project details will be removed.
+            Are you sure you want to permanently delete <strong>&ldquo;{projectTitle}&rdquo;</strong>? All project details will be removed across the platform.
           </span>
         </div>
 

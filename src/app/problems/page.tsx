@@ -90,6 +90,32 @@ export default function ProblemStatementsPage() {
           list.push(demo);
         }
       }
+
+      // Check deleted problems tombstone
+      let deletedSet = new Set<string>();
+      try {
+        const { data: sRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_problems')
+          .maybeSingle();
+
+        if (sRow?.value) {
+          const raw = sRow.value;
+          const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
+          const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
+          deletedSet = new Set([...ids, ...titles].map((s: string) => s.trim().toLowerCase()));
+        }
+      } catch {}
+
+      if (deletedSet.size > 0) {
+        list = list.filter(
+          (p) =>
+            !deletedSet.has((p.id || '').toLowerCase()) &&
+            !deletedSet.has((p.title || '').trim().toLowerCase())
+        );
+      }
+
       setProblems(list);
     } catch {
       setProblems(DEMO_PROBLEMS);

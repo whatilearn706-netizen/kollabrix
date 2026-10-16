@@ -17,12 +17,14 @@ import {
   Trophy,
   Palette,
   Server,
+  FolderKanban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
   | 'users'
+  | 'content'
   | 'faculty'
   | 'hackathons'
   | 'theme'
@@ -47,6 +49,7 @@ export function AdminHeader({
   const tabs = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
     { id: 'users' as AdminTab, label: 'User & Team Moderation', icon: Users },
+    { id: 'content' as AdminTab, label: 'Projects & Faculty Problems', icon: FolderKanban },
     { id: 'faculty' as AdminTab, label: 'Faculty Passcodes', icon: KeyRound },
     { id: 'hackathons' as AdminTab, label: 'Hackathons', icon: Trophy },
     { id: 'theme' as AdminTab, label: 'Design & Colors', icon: Palette },

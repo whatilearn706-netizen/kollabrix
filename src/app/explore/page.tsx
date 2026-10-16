@@ -187,19 +187,48 @@ export default function ExploreProjectsPage() {
 
       const { data, count, error } = await query;
 
+      // Check deleted projects tombstone
+      let deletedSet = new Set<string>();
+      try {
+        const { data: sRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_projects')
+          .maybeSingle();
+
+        if (sRow?.value) {
+          const raw = sRow.value;
+          const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
+          const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
+          deletedSet = new Set([...ids, ...titles].map((s: string) => s.trim().toLowerCase()));
+        }
+      } catch {}
+
+      const filterDeleted = (arr: Project[]) => {
+        if (deletedSet.size === 0) return arr;
+        return arr.filter(
+          (p) =>
+            !deletedSet.has((p.id || '').toLowerCase()) &&
+            !deletedSet.has((p.title || '').trim().toLowerCase())
+        );
+      };
+
       if (error) {
         console.warn('Supabase projects query issue:', error.message);
         setFetchError('Could not retrieve database projects. Showing sample projects.');
-        setProjects(DEMO_PROJECTS.slice(0, pageSize));
-        setTotalCount(DEMO_PROJECTS.length);
+        const cleanDemo = filterDeleted(DEMO_PROJECTS);
+        setProjects(cleanDemo.slice(0, pageSize));
+        setTotalCount(cleanDemo.length);
       } else if (data) {
         if (data.length === 0 && (!count || count === 0) && !filters.search && filters.category === 'All') {
           // If remote DB is freshly initialized with 0 projects, fall back gracefully to curated demo projects
-          setProjects(DEMO_PROJECTS.slice(0, pageSize));
-          setTotalCount(DEMO_PROJECTS.length);
+          const cleanDemo = filterDeleted(DEMO_PROJECTS);
+          setProjects(cleanDemo.slice(0, pageSize));
+          setTotalCount(cleanDemo.length);
         } else {
-          setProjects(data as Project[]);
-          setTotalCount(count || 0);
+          const cleanData = filterDeleted(data as Project[]);
+          setProjects(cleanData);
+          setTotalCount(cleanData.length);
         }
       }
     } catch (err: unknown) {
