@@ -5,9 +5,12 @@ import * as THREE from 'three';
 
 /**
  * 3D Origami Bird Sculpture for Linkora
- * Re-creates the geometric folded origami hummingbird/dove logo in Three.js
- * Features crisp flat-shaded paper facets (emerald green & coral pink),
- * gentle flight gliding kinematics, and mouse-reactive banking.
+ * Re-creates the geometric folded origami bird in Three.js
+ * Colors:
+ * - One wing (left): Emerald green
+ * - Other wing (right): Light burgundy
+ * - Neck part: Deep burgundy
+ * Features crisp flat-shaded paper facets, gliding flight kinematics, and interactive rotation.
  */
 export function OrigamiBirdSculpture() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,12 +75,13 @@ export function OrigamiBirdSculpture() {
     fillLight.position.set(-4, -2, 2);
     scene.add(fillLight);
 
-    // Coral rim light (from back-top)
-    const rimLight = new THREE.DirectionalLight(0xfb7185, 0.9);
+    // Light burgundy rim light (from back-top)
+    const rimLight = new THREE.DirectionalLight(0xb84364, 0.9);
     rimLight.position.set(-2, 3, -4);
     scene.add(rimLight);
 
     // Materials - Flat shaded for crisp origami creases
+    // 1. One wing is green
     const greenOuterMat = new THREE.MeshStandardMaterial({
       color: 0x10b981, // #10b981 Emerald bright
       roughness: 0.32,
@@ -94,17 +98,19 @@ export function OrigamiBirdSculpture() {
       side: THREE.DoubleSide,
     });
 
-    const coralPrimaryMat = new THREE.MeshStandardMaterial({
-      color: 0xf43f5e, // #f43f5e Vibrant coral
-      roughness: 0.3,
-      metalness: 0.05,
+    // 2. Neck part is burgundy
+    const burgundyMat = new THREE.MeshStandardMaterial({
+      color: 0x761329, // #761329 Deep rich burgundy
+      roughness: 0.32,
+      metalness: 0.06,
       flatShading: true,
       side: THREE.DoubleSide,
     });
 
-    const coralSecondaryMat = new THREE.MeshStandardMaterial({
-      color: 0xfb7185, // #fb7185 Soft coral pink
-      roughness: 0.35,
+    // 3. Other wing is light burgundy
+    const lightBurgundyMat = new THREE.MeshStandardMaterial({
+      color: 0xb54568, // #b54568 Soft light burgundy
+      roughness: 0.32,
       metalness: 0.05,
       flatShading: true,
       side: THREE.DoubleSide,
@@ -125,12 +131,6 @@ export function OrigamiBirdSculpture() {
     leftWingGroup.position.set(0.1, 0.2, 0.15); // hinge at shoulder
 
     const leftWingGeo = new THREE.BufferGeometry();
-    // Triangular vertices for the folded green wing
-    // Vertices relative to wing hinge:
-    // P0: hinge (0, 0, 0)
-    // P1: upper crease (-0.5, 1.7, 0.25)
-    // P2: wing tip (-2.1, 2.1, 0.1)
-    // P3: lower crease (-0.2, -0.8, 0.1)
     const lwVertices = new Float32Array([
       // Outer Wing Triangle (P0 -> P1 -> P2) - Bright Emerald
       0, 0, 0,
@@ -157,13 +157,13 @@ export function OrigamiBirdSculpture() {
     leftWingGroup.add(leftWire);
     birdRoot.add(leftWingGroup);
 
-    // --- 2. RIGHT WING (Back, Coral Pink Folded Facet) ---
+    // --- 2. RIGHT WING (Other Wing - Light Burgundy Folded Facet) ---
     const rightWingGroup = new THREE.Group();
     rightWingGroup.position.set(0.1, 0.2, -0.15);
 
     const rightWingGeo = new THREE.BufferGeometry();
     const rwVertices = new Float32Array([
-      // Trailing Rear Wing Triangle - Coral Pink
+      // Trailing Rear Wing Triangle - Light Burgundy
       0, 0, 0,
       -1.9, 1.6, -0.2,
       -0.4, 1.3, -0.15,
@@ -176,22 +176,44 @@ export function OrigamiBirdSculpture() {
     rightWingGeo.setAttribute('position', new THREE.BufferAttribute(rwVertices, 3));
     rightWingGeo.computeVertexNormals();
 
-    const rightWingMesh = new THREE.Mesh(rightWingGeo, coralPrimaryMat);
+    const rightWingMesh = new THREE.Mesh(rightWingGeo, lightBurgundyMat);
     rightWingGroup.add(rightWingMesh);
 
     const rightWire = new THREE.LineSegments(new THREE.WireframeGeometry(rightWingGeo), wireMat);
     rightWingGroup.add(rightWire);
     birdRoot.add(rightWingGroup);
 
-    // --- 3. BODY, HEAD, BEAK & CHEST (Origami Folded Geometry) ---
-    const bodyGeo = new THREE.BufferGeometry();
-    const bodyVertices = new Float32Array([
-      // Chest / Neck Triangle (Coral Primary)
+    // --- 3. NECK & THROAT (Deep Burgundy Folded Facets) ---
+    const neckGeo = new THREE.BufferGeometry();
+    const neckVertices = new Float32Array([
+      // Main Neck / Chest Triangle (Deep Burgundy)
       0.1, 0.2, 0.0,
       0.8, 0.7, 0.0,
       0.2, -0.4, 0.0,
 
-      // Head Crown & Face (Coral Secondary)
+      // Lower Throat Facet (Deep Burgundy)
+      0.8, 0.7, 0.0,
+      1.2, 0.65, 0.0,
+      0.5, 0.2, 0.0,
+
+      // Breast Underbelly
+      0.1, 0.2, 0.05,
+      0.2, -0.4, 0.05,
+      -0.2, -0.7, 0.05,
+    ]);
+    neckGeo.setAttribute('position', new THREE.BufferAttribute(neckVertices, 3));
+    neckGeo.computeVertexNormals();
+
+    const neckMesh = new THREE.Mesh(neckGeo, burgundyMat);
+    birdRoot.add(neckMesh);
+
+    const neckWire = new THREE.LineSegments(new THREE.WireframeGeometry(neckGeo), wireMat);
+    birdRoot.add(neckWire);
+
+    // --- 4. HEAD & BEAK (Origami Crown) ---
+    const headGeo = new THREE.BufferGeometry();
+    const headVertices = new Float32Array([
+      // Head Crown & Face
       0.8, 0.7, 0.0,
       1.3, 0.95, 0.0,
       1.2, 0.65, 0.0,
@@ -200,45 +222,48 @@ export function OrigamiBirdSculpture() {
       1.3, 0.95, 0.0,
       1.7, 0.7, 0.0,
       1.2, 0.65, 0.0,
-
-      // Lower Throat Facet
-      0.8, 0.7, 0.0,
-      1.2, 0.65, 0.0,
-      0.5, 0.2, 0.0,
-
-      // Breast Underbelly (Front Green transition)
-      0.1, 0.2, 0.05,
-      0.2, -0.4, 0.05,
-      -0.2, -0.7, 0.05,
     ]);
-    bodyGeo.setAttribute('position', new THREE.BufferAttribute(bodyVertices, 3));
-    bodyGeo.computeVertexNormals();
+    headGeo.setAttribute('position', new THREE.BufferAttribute(headVertices, 3));
+    headGeo.computeVertexNormals();
 
-    const bodyMesh = new THREE.Mesh(bodyGeo, coralSecondaryMat);
-    birdRoot.add(bodyMesh);
+    const headMesh = new THREE.Mesh(headGeo, burgundyMat);
+    birdRoot.add(headMesh);
 
-    const bodyWire = new THREE.LineSegments(new THREE.WireframeGeometry(bodyGeo), wireMat);
-    birdRoot.add(bodyWire);
+    const headWire = new THREE.LineSegments(new THREE.WireframeGeometry(headGeo), wireMat);
+    birdRoot.add(headWire);
 
-    // --- 4. TAIL (Sharp Folded Trailing Origami Planes) ---
-    const tailGeo = new THREE.BufferGeometry();
-    const tailVertices = new Float32Array([
-      // Upper green tail facet
+    // --- 5. TAIL (Sharp Folded Trailing Origami Planes) ---
+    // Upper green tail facet
+    const tailGreenGeo = new THREE.BufferGeometry();
+    const tailGreenVertices = new Float32Array([
       0.2, -0.4, 0.05,
       -1.2, -1.8, 0.05,
       -0.4, -0.7, 0.05,
+    ]);
+    tailGreenGeo.setAttribute('position', new THREE.BufferAttribute(tailGreenVertices, 3));
+    tailGreenGeo.computeVertexNormals();
 
-      // Trailing coral pink tail feather
+    const tailGreenMesh = new THREE.Mesh(tailGreenGeo, greenInnerMat);
+    birdRoot.add(tailGreenMesh);
+
+    const tailGreenWire = new THREE.LineSegments(new THREE.WireframeGeometry(tailGreenGeo), wireMat);
+    birdRoot.add(tailGreenWire);
+
+    // Trailing light burgundy tail feather
+    const tailBurgundyGeo = new THREE.BufferGeometry();
+    const tailBurgundyVertices = new Float32Array([
       0.2, -0.4, -0.05,
       -0.4, -0.7, -0.05,
       -1.4, -2.1, -0.05,
     ]);
-    tailGeo.setAttribute('position', new THREE.BufferAttribute(tailVertices, 3));
-    tailGeo.computeVertexNormals();
+    tailBurgundyGeo.setAttribute('position', new THREE.BufferAttribute(tailBurgundyVertices, 3));
+    tailBurgundyGeo.computeVertexNormals();
 
-    // Create tail mesh using coral for the trailing edge and jade for the upper
-    const tailMesh = new THREE.Mesh(tailGeo, coralPrimaryMat);
-    birdRoot.add(tailMesh);
+    const tailBurgundyMesh = new THREE.Mesh(tailBurgundyGeo, lightBurgundyMat);
+    birdRoot.add(tailBurgundyMesh);
+
+    const tailBurgundyWire = new THREE.LineSegments(new THREE.WireframeGeometry(tailBurgundyGeo), wireMat);
+    birdRoot.add(tailBurgundyWire);
 
     // Initial orientation: angled upwards-right (flying posture matching the logo)
     birdRoot.rotation.z = 0.15;
@@ -373,12 +398,14 @@ export function OrigamiBirdSculpture() {
 
       leftWingGeo.dispose();
       rightWingGeo.dispose();
-      bodyGeo.dispose();
-      tailGeo.dispose();
+      neckGeo.dispose();
+      headGeo.dispose();
+      tailGreenGeo.dispose();
+      tailBurgundyGeo.dispose();
       greenOuterMat.dispose();
       greenInnerMat.dispose();
-      coralPrimaryMat.dispose();
-      coralSecondaryMat.dispose();
+      burgundyMat.dispose();
+      lightBurgundyMat.dispose();
       wireMat.dispose();
       renderer.dispose();
     };
@@ -398,9 +425,9 @@ export function OrigamiBirdSculpture() {
 
   return (
     <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-auto">
-      {/* Soft atmospheric ambient glow tailored to Emerald & Coral */}
+      {/* Soft atmospheric ambient glow tailored to Emerald & Burgundy */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-rose-500/15 to-transparent blur-3xl opacity-75" />
+        <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#761329]/20 to-transparent blur-3xl opacity-75" />
       </div>
 
       {/* Three.js canvas container */}
