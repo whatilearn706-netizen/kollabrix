@@ -474,7 +474,9 @@ export default function HackathonWorkspacePage() {
 
       if (memberErr) throw new Error(memberErr.message);
 
-      setTeamActionSuccess('Team formed successfully!');
+      setTeamActionSuccess(
+        `🎉 Team "${team.team_name}" registered! Your Teammate Invite Code is ${inviteCode}. Share this code with your classmates to join your team!`
+      );
       setNewTeamName('');
       setNewTeamDesc('');
       await loadWorkspace();
