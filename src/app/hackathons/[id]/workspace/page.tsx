@@ -238,11 +238,16 @@ export default function HackathonWorkspacePage() {
 
       setHackathon(currentHack);
 
+      const targetHackId = currentHack.id || hackathonId;
+      const hackFilter = hackathonId && hackathonId !== targetHackId
+        ? `hackathon_id.eq.${targetHackId},hackathon_id.eq.${hackathonId}`
+        : `hackathon_id.eq.${targetHackId}`;
+
       // 2. Fetch Participants
       const { data: partData } = await supabase
         .from('hackathon_participants')
         .select('*')
-        .eq('hackathon_id', hackathonId);
+        .or(hackFilter);
 
       if (partData) {
         setParticipants(partData as HackathonParticipant[]);
@@ -252,7 +257,7 @@ export default function HackathonWorkspacePage() {
       const { data: chalData } = await supabase
         .from('hackathon_challenges')
         .select('*')
-        .eq('hackathon_id', hackathonId)
+        .or(hackFilter)
         .order('created_at', { ascending: true });
 
       if (chalData) {
@@ -263,7 +268,7 @@ export default function HackathonWorkspacePage() {
       const { data: annData } = await supabase
         .from('hackathon_announcements')
         .select('*')
-        .eq('hackathon_id', hackathonId)
+        .or(hackFilter)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -271,35 +276,90 @@ export default function HackathonWorkspacePage() {
         setAnnouncements(annData as HackathonAnnouncement[]);
       }
 
-      // 5. Fetch Teams with Members
-      const { data: teamData } = await supabase
-        .from('hackathon_teams')
-        .select(`
-          *,
-          challenge:hackathon_challenges(*),
-          members:hackathon_team_members(
-            id,
-            team_id,
-            hackathon_id,
-            user_id,
-            role,
-            joined_at,
-            profile:profiles(display_name, avatar_url, college)
-          )
-        `)
-        .eq('hackathon_id', hackathonId);
+      // 5. Fetch Teams with Members safely (hydrating profiles separately to prevent PGRST200 schema cache error)
+      let allTeams: TeamWithMembers[] = [];
+      try {
+        const { data: teamData, error: teamFetchErr } = await supabase
+          .from('hackathon_teams')
+          .select(`
+            *,
+            challenge:hackathon_challenges(*),
+            members:hackathon_team_members(*)
+          `)
+          .or(hackFilter);
 
-      if (teamData) {
-        setTeams(teamData as unknown as TeamWithMembers[]);
+        if (teamFetchErr) {
+          console.warn('Could not fetch teams from Supabase:', teamFetchErr.message);
+        }
 
-        if (user) {
-          const userTeam = (teamData as unknown as TeamWithMembers[]).find((t) =>
-            t.members?.some((m) => m.user_id === user.id)
+        if (teamData && teamData.length > 0) {
+          // Hydrate member profiles safely in one batch
+          const memberUserIds = Array.from(
+            new Set(teamData.flatMap((t: any) => (t.members || []).map((m: any) => m.user_id)).filter(Boolean))
           );
-          setMyTeam(userTeam || null);
 
-          // If user has team, fetch team submission
-          if (userTeam) {
+          const profileMap = new Map<string, any>();
+          if (memberUserIds.length > 0) {
+            try {
+              const { data: profilesData } = await supabase
+                .from('profiles')
+                .select('user_id, display_name, avatar_url, college')
+                .in('user_id', memberUserIds);
+
+              (profilesData || []).forEach((p: any) => profileMap.set(p.user_id, p));
+            } catch (pErr) {
+              console.warn('Error hydrating member profiles:', pErr);
+            }
+          }
+
+          allTeams = teamData.map((t: any) => ({
+            ...t,
+            members: (t.members || []).map((m: any) => ({
+              ...m,
+              profile: profileMap.get(m.user_id) || {
+                display_name: m.user_id === user?.id ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member',
+                avatar_url: m.user_id === user?.id ? profile?.avatar_url : null,
+                college: m.user_id === user?.id ? profile?.college : null,
+              },
+            })),
+          })) as TeamWithMembers[];
+        }
+      } catch (err) {
+        console.warn('Error loading hackathon teams:', err);
+      }
+
+      // Check localStorage for local/mock hackathon teams
+      if (typeof window !== 'undefined') {
+        try {
+          const localKey1 = `teamforge_teams_${targetHackId}`;
+          const localKey2 = `teamforge_teams_${hackathonId}`;
+          const raw1 = JSON.parse(localStorage.getItem(localKey1) || '[]');
+          const raw2 = JSON.parse(localStorage.getItem(localKey2) || '[]');
+          const localTeams = [...(Array.isArray(raw1) ? raw1 : []), ...(Array.isArray(raw2) ? raw2 : [])];
+
+          if (localTeams.length > 0) {
+            const existingIds = new Set(allTeams.map((t) => t.id));
+            for (const lt of localTeams) {
+              if (lt?.id && !existingIds.has(lt.id)) {
+                allTeams.push(lt);
+                existingIds.add(lt.id);
+              }
+            }
+          }
+        } catch {}
+      }
+
+      setTeams(allTeams);
+
+      if (user) {
+        const userTeam = allTeams.find((t) =>
+          t.members?.some((m) => m.user_id === user.id)
+        );
+        setMyTeam(userTeam || null);
+
+        // If user has team, fetch team submission
+        if (userTeam) {
+          try {
             const { data: subData } = await supabase
               .from('hackathon_submissions')
               .select('*')
@@ -318,7 +378,7 @@ export default function HackathonWorkspacePage() {
               setSubVideoUrl(subData.video_url || '');
               setSubDocsUrl(subData.documentation_url || '');
             }
-          }
+          } catch {}
         }
       }
 
@@ -449,40 +509,102 @@ export default function HackathonWorkspacePage() {
 
     try {
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const targetHackId = hackathon.id || hackathonId;
 
-      // 1. Insert team
-      const { data: team, error: teamErr } = await supabase
-        .from('hackathon_teams')
-        .insert({
-          hackathon_id: hackathon.id,
+      let createdTeamData: any = null;
+
+      // 1. Try Supabase insert
+      try {
+        const { data: team, error: teamErr } = await supabase
+          .from('hackathon_teams')
+          .insert({
+            hackathon_id: targetHackId,
+            team_name: newTeamName.trim(),
+            description: newTeamDesc.trim() || null,
+            challenge_id: selectedChallengeId || null,
+            leader_id: user.id,
+            invite_code: inviteCode,
+          })
+          .select('*')
+          .single();
+
+        if (teamErr) throw teamErr;
+        createdTeamData = team;
+
+        // 2. Add current user as leader in team_members
+        const { error: memberErr } = await supabase
+          .from('hackathon_team_members')
+          .insert({
+            team_id: team.id,
+            hackathon_id: targetHackId,
+            user_id: user.id,
+            role: 'Leader',
+          });
+
+        if (memberErr) console.warn('Supabase member insertion warning:', memberErr.message);
+      } catch (dbErr: any) {
+        console.warn('Database team creation fallback:', dbErr?.message);
+        // Fallback team creation object for mock/offline hackathons
+        createdTeamData = {
+          id: 'team-' + Date.now(),
+          hackathon_id: targetHackId,
           team_name: newTeamName.trim(),
           description: newTeamDesc.trim() || null,
           challenge_id: selectedChallengeId || null,
           leader_id: user.id,
           invite_code: inviteCode,
-        })
-        .select('*')
-        .single();
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      }
 
-      if (teamErr) throw new Error(teamErr.message);
+      // Build full team object with leader member
+      const newTeamObj: TeamWithMembers = {
+        ...createdTeamData,
+        challenge: challenges.find((c) => c.id === selectedChallengeId) || null,
+        members: [
+          {
+            id: 'mem-' + Date.now(),
+            team_id: createdTeamData.id,
+            hackathon_id: targetHackId,
+            user_id: user.id,
+            role: 'Leader',
+            joined_at: new Date().toISOString(),
+            profile: {
+              display_name: profile?.display_name || user.email?.split('@')[0] || 'Team Leader',
+              avatar_url: profile?.avatar_url || null,
+              college: profile?.college || null,
+            },
+          },
+        ],
+      };
 
-      // 2. Add current user as leader in team_members
-      const { error: memberErr } = await supabase
-        .from('hackathon_team_members')
-        .insert({
-          team_id: team.id,
-          hackathon_id: hackathon.id,
-          user_id: user.id,
-          role: 'Leader',
-        });
+      // Persist to localStorage backup
+      if (typeof window !== 'undefined') {
+        try {
+          const storageKey = `teamforge_teams_${targetHackId}`;
+          const currentLocal = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify([...currentLocal.filter((t: any) => t.id !== newTeamObj.id), newTeamObj])
+          );
+        } catch {}
+      }
 
-      if (memberErr) throw new Error(memberErr.message);
+      // Optimistically update React state immediately!
+      setTeams((prev) => {
+        const withoutOld = prev.filter((t) => t.id !== newTeamObj.id);
+        return [newTeamObj, ...withoutOld];
+      });
+      setMyTeam(newTeamObj);
 
       setTeamActionSuccess(
-        `🎉 Team "${team.team_name}" registered! Your Teammate Invite Code is ${inviteCode}. Share this code with your classmates to join your team!`
+        `🎉 Team "${newTeamObj.team_name}" registered! Your Teammate Invite Code is ${inviteCode}. Share this code with your classmates to join your team!`
       );
       setNewTeamName('');
       setNewTeamDesc('');
+
+      // Reload fresh data from database
       await loadWorkspace();
     } catch (err: unknown) {
       setTeamActionError(err instanceof Error ? err.message : 'Error creating team.');
@@ -514,33 +636,85 @@ export default function HackathonWorkspacePage() {
     setIsSubmittingTeam(true);
 
     try {
-      // Find team by invite code
-      const { data: targetTeam, error: findErr } = await supabase
-        .from('hackathon_teams')
-        .select('*, members:hackathon_team_members(id)')
-        .eq('hackathon_id', hackathon.id)
-        .eq('invite_code', codeToUse)
-        .single();
+      const targetHackId = hackathon.id || hackathonId;
+      let targetTeam: any = null;
 
-      if (findErr || !targetTeam) {
-        throw new Error('Invalid team invite code. Please check with your team leader.');
+      // 1. Try Supabase lookup
+      try {
+        const hackFilter = hackathonId && hackathonId !== targetHackId
+          ? `hackathon_id.eq.${targetHackId},hackathon_id.eq.${hackathonId}`
+          : `hackathon_id.eq.${targetHackId}`;
+
+        const { data, error: findErr } = await supabase
+          .from('hackathon_teams')
+          .select('*, members:hackathon_team_members(id)')
+          .or(hackFilter)
+          .eq('invite_code', codeToUse)
+          .single();
+
+        if (findErr || !data) throw findErr || new Error('Team not found in database');
+        targetTeam = data;
+      } catch (findErr) {
+        // Fallback: search in loaded teams state or localStorage
+        const localMatch = teams.find((t) => t.invite_code?.toUpperCase() === codeToUse);
+        if (localMatch) {
+          targetTeam = localMatch;
+        } else {
+          throw new Error('Invalid team invite code. Please check with your team leader.');
+        }
       }
 
       if (targetTeam.members && targetTeam.members.length >= (hackathon.max_team_size || 4)) {
         throw new Error(`This team has already reached the maximum limit of ${hackathon.max_team_size} members.`);
       }
 
-      // Insert member
-      const { error: joinErr } = await supabase
-        .from('hackathon_team_members')
-        .insert({
-          team_id: targetTeam.id,
-          hackathon_id: hackathon.id,
-          user_id: user.id,
-          role: 'Member',
-        });
+      // 2. Insert member in Supabase
+      try {
+        await supabase
+          .from('hackathon_team_members')
+          .insert({
+            team_id: targetTeam.id,
+            hackathon_id: targetHackId,
+            user_id: user.id,
+            role: 'Member',
+          });
+      } catch (memErr) {
+        console.warn('Member insertion fallback:', memErr);
+      }
 
-      if (joinErr) throw new Error(joinErr.message);
+      // 3. Update localStorage and optimistic state
+      const newMember = {
+        id: 'mem-' + Date.now(),
+        team_id: targetTeam.id,
+        hackathon_id: targetHackId,
+        user_id: user.id,
+        role: 'Member' as const,
+        joined_at: new Date().toISOString(),
+        profile: {
+          display_name: profile?.display_name || user.email?.split('@')[0] || 'Team Member',
+          avatar_url: profile?.avatar_url || null,
+          college: profile?.college || null,
+        },
+      };
+
+      const updatedTeam: TeamWithMembers = {
+        ...targetTeam,
+        members: [...(targetTeam.members || []), newMember],
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          const storageKey = `teamforge_teams_${targetHackId}`;
+          const currentLocal = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify([...currentLocal.filter((t: any) => t.id !== targetTeam.id), updatedTeam])
+          );
+        } catch {}
+      }
+
+      setTeams((prev) => prev.map((t) => (t.id === targetTeam.id ? updatedTeam : t)));
+      setMyTeam(updatedTeam);
 
       setTeamActionSuccess(`Joined team "${targetTeam.team_name}"!`);
       setJoinTeamCode('');

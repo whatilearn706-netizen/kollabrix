@@ -95,7 +95,7 @@ DROP POLICY IF EXISTS "Participants can view teams in the hackathon" ON public.h
 DROP POLICY IF EXISTS "View hackathon teams" ON public.hackathon_teams;
 CREATE POLICY "View hackathon teams"
     ON public.hackathon_teams FOR SELECT
-    TO authenticated
+    TO authenticated, anon
     USING (true);
 
 DROP POLICY IF EXISTS "Verified participants can create teams" ON public.hackathon_teams;
@@ -143,6 +143,19 @@ CREATE TABLE IF NOT EXISTS public.hackathon_team_members (
     UNIQUE(hackathon_id, user_id)
 );
 
+-- Foreign key linking to public.profiles so PostgREST schema cache joins work
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'hackathon_team_members_user_id_fkey_profiles'
+    ) THEN
+        ALTER TABLE public.hackathon_team_members 
+        ADD CONSTRAINT hackathon_team_members_user_id_fkey_profiles 
+        FOREIGN KEY (user_id) REFERENCES public.profiles(user_id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_hackathon_team_members_team ON public.hackathon_team_members(team_id);
 CREATE INDEX IF NOT EXISTS idx_hackathon_team_members_user ON public.hackathon_team_members(user_id);
 
@@ -151,7 +164,7 @@ ALTER TABLE public.hackathon_team_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "View team members" ON public.hackathon_team_members;
 CREATE POLICY "View team members"
     ON public.hackathon_team_members FOR SELECT
-    TO authenticated
+    TO authenticated, anon
     USING (true);
 
 DROP POLICY IF EXISTS "Join team" ON public.hackathon_team_members;
