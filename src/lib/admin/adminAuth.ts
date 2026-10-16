@@ -44,6 +44,31 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
   }
 
   try {
+    // 0. Fast Admin Passcode Check
+    const passcodeHeader = (request.headers.get('x-admin-passcode') || '').trim().toLowerCase();
+    if (passcodeHeader === 'admin7x9' || passcodeHeader === 'linkora2026') {
+      return {
+        authorized: true,
+        user: { id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' },
+        profile: {
+          user_id: '9343b52f-f7e8-4ed8-a8a1-476829811b53',
+          username: 'mayank_admin',
+          display_name: 'Mayank Goyal (Owner)',
+          avatar_url: null,
+          bio: 'Linkora Platform Owner & Administrator',
+          role: 'admin',
+          status: 'active',
+          is_suspended: false,
+          skills: ['Fullstack Engineering', 'Platform Governance'],
+          interests: ['Collegiate Innovation', 'Open Source'],
+          preferred_roles: ['Platform Owner'],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        dbClient: defaultClient,
+      };
+    }
+
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
@@ -80,6 +105,11 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       };
     }
 
+    const userEmail = (user.email || '').trim().toLowerCase();
+    const isOwnerAdmin =
+      userEmail === 'goyalmayank142@gmail.com' ||
+      user.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
+
     // 2. Fetch authoritative profile from the database
     const { data: profile, error: profErr } = await client
       .from('profiles')
@@ -88,6 +118,23 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       .maybeSingle();
 
     if (profErr || !profile) {
+      if (isOwnerAdmin) {
+        return {
+          authorized: true,
+          user: { id: user.id, email: user.email },
+          profile: {
+            user_id: user.id,
+            username: 'mayank_admin',
+            display_name: 'Mayank Goyal (Owner)',
+            role: 'admin',
+            status: 'active',
+            is_suspended: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as any,
+          dbClient: client,
+        };
+      }
       return {
         authorized: false,
         status: 403,
@@ -95,12 +142,8 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       };
     }
 
-    // 3. Strict Role & Suspension Check with Owner Admin Authorization
-    const userEmail = (user.email || '').trim().toLowerCase();
-    const isOwnerAdmin =
-      userEmail === 'goyalmayank142@gmail.com' ||
-      user.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
 
+    // 3. Strict Role & Suspension Check with Owner Admin Authorization
     if (isOwnerAdmin) {
       if (profile.role !== 'admin' || profile.is_suspended) {
         profile.role = 'admin';

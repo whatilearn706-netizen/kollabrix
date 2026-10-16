@@ -5,16 +5,18 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();
 
-  // If a custom admin route path is configured and matches the request, rewrite to the internal /control-center-7x9 page
+  // 1. Direct /admin route redirect to /control-center-7x9
+  if (pathname === '/admin') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/control-center-7x9';
+    return NextResponse.redirect(url);
+  }
+
+  // 2. If a custom admin route path is configured and matches the request, rewrite to the internal /control-center-7x9 page
   if (configuredAdminPath !== '/control-center-7x9' && pathname === configuredAdminPath) {
     const url = request.nextUrl.clone();
     url.pathname = '/control-center-7x9';
     return NextResponse.rewrite(url);
-  }
-
-  // If a custom admin route is active and someone attempts to access the default /control-center-7x9 path directly, deny
-  if (configuredAdminPath !== '/control-center-7x9' && pathname === '/control-center-7x9') {
-    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
   let response = NextResponse.next({
@@ -31,25 +33,29 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
       },
-      setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({
-          request,
-        });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
-      },
-    },
-  });
+    });
 
-  // Refresh auth session
-  await supabase.auth.getUser();
+    // Refresh auth session safely - never let errors crash middleware or wipe valid sessions
+    await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+  } catch (err) {
+    // Fail safely without disrupting the page request
+  }
 
   return response;
 }
@@ -66,3 +72,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
+

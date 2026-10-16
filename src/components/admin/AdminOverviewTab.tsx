@@ -61,7 +61,7 @@ interface AdminOverviewTabProps {
   recentLogs: any[];
   isLoading: boolean;
   onNavigateTab: (tab: AdminTab) => void;
-  onNavigateMasterSubTab?: (subTab: 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance') => void;
+  onNavigateMasterSubTab?: (subTab: 'all' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance') => void;
 }
 
 export function AdminOverviewTab({
@@ -114,7 +114,10 @@ export function AdminOverviewTab({
           <Button
             variant="primary"
             size="md"
-            onClick={() => onNavigateTab('master')}
+            onClick={() => {
+              if (onNavigateMasterSubTab) onNavigateMasterSubTab('all');
+              onNavigateTab('master');
+            }}
             className="bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-black shadow-elevated border-none shrink-0"
             rightIcon={<ArrowRight className="w-4 h-4" />}
           >

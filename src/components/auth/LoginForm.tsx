@@ -7,7 +7,10 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import {
   AlertCircle,
   CheckCircle2,
+  KeyRound,
+  Lock,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export interface LoginFormProps {
   onSuccess?: () => void;
@@ -52,12 +55,15 @@ function GitHubIcon({ className = 'w-5 h-5' }: { className?: string }) {
 
 export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore' }: LoginFormProps) {
   const router = useRouter();
+  const { loginWithAdminPasscode } = useAuth();
 
   // General Loading & Feedback States
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [passcode, setPasscode] = useState('');
+  const [showPasscodeForm, setShowPasscodeForm] = useState(false);
 
   // Check for incoming OAuth or URL error parameters
   useEffect(() => {
@@ -84,6 +90,23 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       router.push(redirectUrl);
       router.refresh();
     }
+  };
+
+  const handlePasscodeLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const clean = passcode.trim().toLowerCase();
+    if (clean === 'admin7x9' || clean === 'linkora2026') {
+      const ok = loginWithAdminPasscode(clean);
+      if (ok) {
+        setInfoMessage('Authenticated as Platform Administrator!');
+        setTimeout(() => {
+          handleAuthSuccess();
+        }, 300);
+        return;
+      }
+    }
+    setError('Invalid administrator passcode. Please try again or use Google sign-in.');
   };
 
   // 1. Google OAuth Sign-in
@@ -216,6 +239,52 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
           <span>{isGitHubLoading ? 'Connecting to GitHub...' : 'Continue with GitHub'}</span>
         </button>
       </div>
+
+      {/* Fast Admin Passkey Form Toggle */}
+      <div className="pt-2 border-t border-slate-200">
+        {!showPasscodeForm ? (
+          <button
+            type="button"
+            onClick={() => setShowPasscodeForm(true)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-medium py-1.5 transition-colors"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+            <span>Have an Admin Passcode or Secret Key?</span>
+          </button>
+        ) : (
+          <form onSubmit={handlePasscodeLogin} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+              <span className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+                Admin Passcode Instant Sign-In
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPasscodeForm(false)}
+                className="text-[11px] text-slate-400 hover:text-slate-600 font-normal"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                placeholder="Enter passcode (e.g. admin7x9)..."
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+              />
+              <button
+                type="submit"
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shrink-0 shadow-xs"
+              >
+                Sign In
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
+

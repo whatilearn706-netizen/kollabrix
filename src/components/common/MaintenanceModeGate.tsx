@@ -61,13 +61,14 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
   }, []);
 
   // Always allow admin routes through so administrators are never locked out
-  if (pathname?.startsWith('/control-center-7x9') || pathname?.startsWith('/api/')) {
+  if (pathname?.startsWith('/control-center-7x9') || pathname?.startsWith('/admin') || pathname?.startsWith('/api/')) {
     return <>{children}</>;
   }
 
   // Bypass if user is logged in as an admin or platform owner
   const isOwner = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
-  const isAdminUser = profile?.role === 'admin' || isOwner;
+  const isLocalAdmin = typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true';
+  const isAdminUser = profile?.role === 'admin' || isOwner || isLocalAdmin;
   if (isAdminUser || isUnlocked) {
     return <>{children}</>;
   }

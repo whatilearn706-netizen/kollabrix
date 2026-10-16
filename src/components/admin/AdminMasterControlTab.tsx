@@ -79,6 +79,8 @@ export function AdminMasterControlTab({ authToken, initialSubTab }: AdminMasterC
       try {
         const headers: Record<string, string> = {};
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
+        if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
         const res = await fetch('/api/admin/master-control', { headers });
         const data = await res.json();
@@ -113,12 +115,15 @@ export function AdminMasterControlTab({ authToken, initialSubTab }: AdminMasterC
         'Content-Type': 'application/json',
       };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
+      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/admin/master-control', {
         method: 'POST',
         headers,
         body: JSON.stringify({ config: toSave }),
       });
+
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -338,16 +343,59 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
         })}
       </div>
 
+      {/* Quick Jump Bar for Full Studio Mode */}
+      {activeSubTab === 'all' && (
+        <div className="bg-charcoal-900 border border-charcoal-750 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-subtle">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+              Full Studio Active: All 6 Modules Stacked Below
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
+            {[
+              { id: 'module-1', label: '1. Banner', color: 'hover:border-violet-500' },
+              { id: 'module-2', label: '2. Sections', color: 'hover:border-amber-500' },
+              { id: 'module-3', label: '3. Colleges', color: 'hover:border-emerald-500' },
+              { id: 'module-4', label: '4. Badges', color: 'hover:border-pink-500' },
+              { id: 'module-5', label: '5. CEO Analytics', color: 'hover:border-cyan-500' },
+              { id: 'module-6', label: '6. Maintenance', color: 'hover:border-rose-500' },
+            ].map((m) => (
+              <button
+                key={m.id}
+                onClick={() => {
+                  const el = document.getElementById(m.id);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className={`px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 ${m.color} transition-all font-mono text-[11px] font-semibold`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ==================================================================== */}
       {/* 1. BROADCAST BANNER SUBTAB */}
       {/* ==================================================================== */}
       {(activeSubTab === 'all' || activeSubTab === 'banner') && (
-        <div className="space-y-6">
+        <div id="module-1" className="space-y-6 scroll-mt-24 pt-2">
+          {activeSubTab === 'all' && (
+            <div className="flex items-center gap-2.5 pb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-500/20 text-violet-300 border border-violet-500/40">
+                MODULE 1 OF 6
+              </span>
+              <h3 className="text-base font-extrabold text-white">Global Broadcast & Announcement Banner</h3>
+            </div>
+          )}
           {/* Live Preview Box */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span className="font-semibold text-slate-300 flex items-center gap-1.5">
                 <Eye className="w-4 h-4 text-brand-400" />
+
                 Live Banner Preview (How students see it on the website)
               </span>
               <span className="font-mono text-[11px] text-slate-500">
@@ -534,13 +582,19 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* 2. HOMEPAGE SECTIONS SUBTAB */}
       {/* ==================================================================== */}
       {(activeSubTab === 'all' || activeSubTab === 'sections') && (
-        <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
+        <div id="module-2" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24">
           <div className="border-b border-charcoal-800 pb-4">
-            <h3 className="text-sm font-bold text-white">Homepage Layout & Copy Switcher</h3>
+            {activeSubTab === 'all' && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-block mb-2">
+                MODULE 2 OF 6
+              </span>
+            )}
+            <h3 className="text-base font-extrabold text-white">Homepage Layout & Copy Switcher</h3>
             <p className="text-xs text-slate-400">
               Toggle visibility of main homepage components and edit section headlines directly without editing code.
             </p>
           </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Section Toggles */}
@@ -663,7 +717,15 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* 3. COLLEGE WHITELIST SUBTAB */}
       {/* ==================================================================== */}
       {(activeSubTab === 'all' || activeSubTab === 'colleges') && (
-        <div className="space-y-6">
+        <div id="module-3" className="space-y-6 scroll-mt-24">
+          {activeSubTab === 'all' && (
+            <div className="flex items-center gap-2.5 pb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                MODULE 3 OF 6
+              </span>
+              <h3 className="text-base font-extrabold text-white">Campus & College Whitelist Manager</h3>
+            </div>
+          )}
           {/* Add College Form */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
             <div className="border-b border-charcoal-800 pb-3">
@@ -675,6 +737,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 Students signing up with matching `@domain.edu` or `@college.ac.in` automatically receive collegiate verification.
               </p>
             </div>
+
 
             <form onSubmit={handleAddCollege} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
@@ -789,7 +852,15 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* 4. STUDENT HALL OF FAME & BADGES SUBTAB */}
       {/* ==================================================================== */}
       {(activeSubTab === 'all' || activeSubTab === 'badges') && (
-        <div className="space-y-6">
+        <div id="module-4" className="space-y-6 scroll-mt-24">
+          {activeSubTab === 'all' && (
+            <div className="flex items-center gap-2.5 pb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-pink-500/20 text-pink-300 border border-pink-500/40">
+                MODULE 4 OF 6
+              </span>
+              <h3 className="text-base font-extrabold text-white">Student "Hall of Fame" & Honors Badges</h3>
+            </div>
+          )}
           {/* Award Badge Form */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-4">
             <div className="border-b border-charcoal-800 pb-3">
@@ -801,6 +872,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 Bestow verified collegiate accolades that appear with custom glowing frames on student profiles & team cards.
               </p>
             </div>
+
 
             <form onSubmit={handleAwardBadge} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
@@ -915,7 +987,15 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* 5. EXECUTIVE CEO ANALYTICS & CSV EXPORTER */}
       {/* ==================================================================== */}
       {(activeSubTab === 'all' || activeSubTab === 'ceo') && (
-        <div className="space-y-6">
+        <div id="module-5" className="space-y-6 scroll-mt-24">
+          {activeSubTab === 'all' && (
+            <div className="flex items-center gap-2.5 pb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                MODULE 5 OF 6
+              </span>
+              <h3 className="text-base font-extrabold text-white">Executive CEO Analytics & CSV Report Exporter</h3>
+            </div>
+          )}
           {/* Executive Header & Export Action */}
           <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
@@ -998,9 +1078,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
       {/* 6. SITE MAINTENANCE / PRIVATE CAMPUS ACCESS SUBTAB */}
       {/* ==================================================================== */}
       {(activeSubTab === 'all' || activeSubTab === 'maintenance') && (
-        <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6">
+        <div id="module-6" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24">
           <div className="border-b border-charcoal-800 pb-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            {activeSubTab === 'all' && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-block mb-2">
+                MODULE 6 OF 6
+              </span>
+            )}
+            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-amber-400" />
               Site Access & Maintenance Mode Controls
             </h3>
@@ -1008,6 +1093,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               Control public access, restrict platform to passcode-verified campus students, or switch to scheduled maintenance.
             </p>
           </div>
+
 
           {/* Access Mode Selector */}
           <div className="space-y-3">

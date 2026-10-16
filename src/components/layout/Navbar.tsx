@@ -65,8 +65,13 @@ export function Navbar() {
     }
   };
 
+  const isOwner = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
+  const isLocalAdmin = typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true';
+  const isAdminUser = profile?.role === 'admin' || isOwner || isLocalAdmin;
+
   const displayName = profile?.display_name || user?.user_metadata?.display_name || 'Student';
   const username = profile?.username || user?.user_metadata?.username;
+
 
   const isNavbarDark =
     theme.navbarStyle === 'dark' || (theme.navbarStyle === 'auto' && isDark);
@@ -331,7 +336,7 @@ export function Navbar() {
                     </Link>
 
                     {/* Private Admin Control Center - ONLY visible to verified platform administrators */}
-                    {profile?.role === 'admin' && (
+                    {isAdminUser && (
                       <Link
                         href="/control-center-7x9"
                         onClick={() => setUserDropdownOpen(false)}
@@ -467,7 +472,7 @@ export function Navbar() {
                   <span>Faculty Problems</span>
                 </Link>
 
-                {profile?.role === 'admin' && (
+                {isAdminUser && (
                   <Link
                     href="/control-center-7x9"
                     onClick={() => setMobileMenuOpen(false)}
