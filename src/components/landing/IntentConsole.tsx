@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Project, Profile } from '@/types/database';
+import {
+  HomepageIntentConfig,
+  DEFAULT_HOMEPAGE_INTENT_CONFIG,
+  IntentCandidate,
+  IntentProjectSlot,
+} from '@/types/homepageConfig';
 import {
   Users,
   Briefcase,
@@ -25,14 +31,53 @@ import { Button } from '@/components/ui/Button';
 interface IntentConsoleProps {
   sampleProjects?: Project[];
   sampleProfiles?: Profile[];
+  config?: HomepageIntentConfig;
 }
 
-export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: IntentConsoleProps) {
+export function IntentConsole({
+  sampleProjects = [],
+  sampleProfiles = [],
+  config,
+}: IntentConsoleProps) {
   const router = useRouter();
   const [activeIntent, setActiveIntent] = useState<'recruit' | 'join' | 'hackathon'>('recruit');
   const [selectedRole, setSelectedRole] = useState<'all' | 'ai' | 'frontend' | 'design'>('all');
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
+
+  const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(
+    config || DEFAULT_HOMEPAGE_INTENT_CONFIG
+  );
+
+  useEffect(() => {
+    if (config) {
+      setIntentConfig(config);
+      return;
+    }
+
+    // Try reading from localStorage or live API
+    try {
+      const local = localStorage.getItem('linkora_intent_config_v1');
+      if (local) {
+        setIntentConfig(JSON.parse(local));
+      }
+    } catch {
+      // fallback
+    }
+
+    // Async fetch to sync with platform_settings
+    fetch('/api/homepage-config', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.intentConfig) {
+          setIntentConfig(data.intentConfig);
+          try {
+            localStorage.setItem('linkora_intent_config_v1', JSON.stringify(data.intentConfig));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, [config]);
 
   const handlePasscodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +89,9 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
     }
     router.push(`/h/${clean}`);
   };
+
+  const candidates = intentConfig.candidates || DEFAULT_HOMEPAGE_INTENT_CONFIG.candidates;
+  const projectSlots = intentConfig.projectSlots || DEFAULT_HOMEPAGE_INTENT_CONFIG.projectSlots;
 
   return (
     <div className="w-full max-w-5xl mx-auto rounded-3xl bg-white border border-slate-200/90 shadow-xl overflow-hidden text-slate-900 transition-all">
@@ -99,17 +147,18 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
       {/* Main Console Content Body */}
       <div className="p-6 sm:p-8">
         {/* ========================================================================= */}
-        {/* MODE 1: RECRUIT TEAMMATES */}
+        {/* MODE 1: RECRUIT TEAMMATES (I HAVE AN IDEA & NEED TEAMMATES) */}
         {/* ========================================================================= */}
         {activeIntent === 'recruit' && (
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Assemble your campus dream team in minutes.
+                  {intentConfig.mode1Headline || 'Assemble your campus dream team in minutes.'}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 mt-1 font-medium">
-                  Publish your project concept, set needed skill criteria, and invite students with verified GitHub and course profiles.
+                  {intentConfig.mode1Subheadline ||
+                    'Publish your project concept, set needed skill criteria, and invite students with verified GitHub and course profiles.'}
                 </p>
               </div>
 
@@ -149,41 +198,13 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
               ))}
             </div>
 
-            {/* Live Teammate Candidate Cards */}
+            {/* Live Teammate Candidate Cards (Admin Controlled) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {[
-                {
-                  name: 'Aarav Sharma',
-                  role: 'AI / PyTorch Engineer',
-                  type: 'ai',
-                  college: 'IIIT Hyderabad • B.Tech CSE',
-                  skills: ['PyTorch', 'FastAPI', 'LangChain', 'PostgreSQL'],
-                  matchScore: 96,
-                  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                },
-                {
-                  name: 'Priya Patel',
-                  role: 'Product & UI/UX Designer',
-                  type: 'design',
-                  college: 'BITS Pilani • Design Studio',
-                  skills: ['Figma', 'User Research', 'Design Systems', 'Tailwind'],
-                  matchScore: 94,
-                  avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-                },
-                {
-                  name: 'Rohan Verma',
-                  role: 'Full-Stack Developer',
-                  type: 'frontend',
-                  college: 'IIT Delhi • Electrical & CS',
-                  skills: ['Next.js', 'TypeScript', 'Node.js', 'Docker'],
-                  matchScore: 92,
-                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-                },
-              ]
+              {candidates
                 .filter((cand) => selectedRole === 'all' || cand.type === selectedRole)
-                .map((cand, idx) => (
+                .map((cand) => (
                   <div
-                    key={idx}
+                    key={cand.id || cand.name}
                     className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
                   >
                     <div className="space-y-3">
@@ -199,15 +220,15 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
                         <img
                           src={cand.avatar}
                           alt={cand.name}
-                          className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                          className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
                         />
-                        <div>
-                          <h4 className="text-sm font-black text-slate-900">{cand.name}</h4>
-                          <p className="text-xs font-semibold text-slate-600">{cand.role}</p>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-black text-slate-900 truncate">{cand.name}</h4>
+                          <p className="text-xs font-semibold text-slate-600 truncate">{cand.role}</p>
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-slate-500 font-medium">{cand.college}</p>
+                      <p className="text-[11px] text-slate-500 font-medium truncate">{cand.college}</p>
 
                       <div className="flex flex-wrap gap-1 pt-1">
                         {cand.skills.map((sk, sidx) => (
@@ -239,17 +260,18 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
         )}
 
         {/* ========================================================================= */}
-        {/* MODE 2: JOIN ACTIVE STUDENT TEAMS */}
+        {/* MODE 2: JOIN ACTIVE STUDENT TEAMS (I HAVE SKILLS & WANT TO JOIN) */}
         {/* ========================================================================= */}
         {activeIntent === 'join' && (
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Join ambitious projects that need your exact skills.
+                  {intentConfig.mode2Headline || 'Join ambitious projects that need your exact skills.'}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 mt-1 font-medium">
-                  Don&apos;t build side projects alone. Jump into real student teams with active roadmaps, Kanban boards, and faculty problem statements.
+                  {intentConfig.mode2Subheadline ||
+                    'Don\'t build side projects alone. Jump into real student teams with active roadmaps, Kanban boards, and faculty problem statements.'}
                 </p>
               </div>
 
@@ -265,36 +287,11 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
               </Link>
             </div>
 
-            {/* Live Recruiting Project Slots */}
+            {/* Live Recruiting Project Slots (Admin Controlled) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {[
-                {
-                  title: 'CampusPulse: Real-Time Transit & Shuttle Tracker',
-                  category: 'Web / Mobile',
-                  owner: 'Devon Vance • MIT College',
-                  neededRole: 'Lead React Native Dev',
-                  teamStatus: '2 of 4 Filled',
-                  tech: ['Next.js', 'React Native', 'WebSockets'],
-                },
-                {
-                  title: 'AuraHealth: Clinical Note Automation for ERs',
-                  category: 'AI / Healthcare',
-                  owner: 'Dr. Sarah Chen & Team',
-                  neededRole: 'PyTorch / NLP Specialist',
-                  teamStatus: '3 of 5 Filled',
-                  tech: ['Python', 'FastAPI', 'HuggingFace', 'Docker'],
-                },
-                {
-                  title: 'AgriVision: Autonomous Drone Crop Analytics',
-                  category: 'IoT / Robotics',
-                  owner: 'Vikram Joshi • IIT Bombay',
-                  neededRole: 'Computer Vision Engineer',
-                  teamStatus: '1 of 3 Filled',
-                  tech: ['YOLOv8', 'OpenCV', 'ROS2', 'C++'],
-                },
-              ].map((proj, idx) => (
+              {projectSlots.map((proj) => (
                 <div
-                  key={idx}
+                  key={proj.id || proj.title}
                   className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
@@ -353,76 +350,48 @@ export function IntentConsole({ sampleProjects = [], sampleProfiles = [] }: Inte
         )}
 
         {/* ========================================================================= */}
-        {/* MODE 3: COLLEGE HACKATHON PASSCODE */}
+        {/* MODE 3: CAMPUS HACKATHON PASSCODE ENTRY */}
         {/* ========================================================================= */}
         {activeIntent === 'hackathon' && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  Enter your private university hackathon challenge.
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1 font-medium">
-                  Got an access code from your faculty department or student chapter? Enter it to unlock guidelines, team registration, and mentor office hours.
-                </p>
-              </div>
-
-              <Link href="/hackathons" className="shrink-0">
-                <Button
-                  variant="outline"
-                  size="md"
-                  className="border-slate-300 hover:bg-slate-100 text-slate-800 font-bold"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                >
-                  Browse Public Hackathons
-                </Button>
-              </Link>
+          <div className="space-y-6 max-w-xl mx-auto py-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto shadow-2xs">
+              <KeyRound className="w-6 h-6" />
             </div>
 
-            <div className="max-w-xl mx-auto p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 space-y-4">
-              <form onSubmit={handlePasscodeSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Department or Event Join Code
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="e.g. col-apex26 or /h/..."
-                      value={passcode}
-                      onChange={(e) => setPasscode(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-slate-300 text-sm font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-xs"
-                    />
-                  </div>
-                </div>
-
-                {passcodeError && (
-                  <p className="text-xs font-bold text-red-600">{passcodeError}</p>
-                )}
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3"
-                  leftIcon={<Lock className="w-4 h-4" />}
-                >
-                  Unlock Hackathon Portal
-                </Button>
-              </form>
-
-              <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-500 font-medium">
-                <span>Active University Code:</span>
-                <button
-                  type="button"
-                  onClick={() => setPasscode('col-apex26')}
-                  className="font-mono font-bold text-slate-800 hover:text-black underline underline-offset-2"
-                >
-                  Try &quot;col-apex26&quot;
-                </button>
-              </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Enter Private Hackathon Passcode
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600">
+                Join your university&apos;s internal collegiate hackathon, view private problem statements, and claim your team slot.
+              </p>
             </div>
+
+            <form onSubmit={handlePasscodeSubmit} className="space-y-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  placeholder="e.g. col-apex26 or mit-spring26"
+                  className="w-full pl-4 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-mono uppercase text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-slate-900 transition-colors shadow-2xs text-center"
+                  required
+                />
+              </div>
+
+              {passcodeError && (
+                <p className="text-xs text-rose-600 font-medium">{passcodeError}</p>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                className="w-full py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-2xl shadow-sm"
+              >
+                Access Department Track
+              </Button>
+            </form>
           </div>
         )}
       </div>

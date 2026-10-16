@@ -33,6 +33,12 @@ import {
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { ProjectSparkGeneratorModal } from '@/components/ai/ProjectSparkGeneratorModal';
+import {
+  HomepageIntentConfig,
+  HomepageShowcaseConfig,
+  DEFAULT_HOMEPAGE_INTENT_CONFIG,
+  DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
+} from '@/types/homepageConfig';
 
 export default function HomePage() {
   const router = useRouter();
@@ -45,6 +51,8 @@ export default function HomePage() {
   const [quickPasscode, setQuickPasscode] = useState('');
   const [oauthErrorNotice, setOauthErrorNotice] = useState<string | null>(null);
   const [isSparkModalOpen, setIsSparkModalOpen] = useState(false);
+  const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(DEFAULT_HOMEPAGE_INTENT_CONFIG);
+  const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(DEFAULT_HOMEPAGE_SHOWCASE_CONFIG);
 
   // Catch incoming OAuth or URL authentication errors
   useEffect(() => {
@@ -73,8 +81,37 @@ export default function HomePage() {
     async function loadLiveData() {
       setIsLoadingData(true);
       try {
+        // Load Live Homepage Admin Config (Intent + Showcase)
+        let liveIntent = DEFAULT_HOMEPAGE_INTENT_CONFIG;
+        let liveShowcase = DEFAULT_HOMEPAGE_SHOWCASE_CONFIG;
+
+        try {
+          // Check local cache first for instant reactivity
+          const localI = localStorage.getItem('linkora_intent_config_v1');
+          if (localI) liveIntent = JSON.parse(localI);
+          const localS = localStorage.getItem('linkora_showcase_config_v1');
+          if (localS) liveShowcase = JSON.parse(localS);
+
+          const cfgRes = await fetch(`/api/homepage-config?_t=${Date.now()}`, { cache: 'no-store' });
+          const cfgData = await cfgRes.json();
+          if (cfgRes.ok && cfgData) {
+            if (cfgData.intentConfig) {
+              liveIntent = cfgData.intentConfig;
+              localStorage.setItem('linkora_intent_config_v1', JSON.stringify(liveIntent));
+            }
+            if (cfgData.showcaseConfig) {
+              liveShowcase = cfgData.showcaseConfig;
+              localStorage.setItem('linkora_showcase_config_v1', JSON.stringify(liveShowcase));
+            }
+          }
+        } catch {}
+
+        setIntentConfig(liveIntent);
+        setShowcaseConfig(liveShowcase);
+
+        // Fetch all active or featured projects
+        let poolProjects: Project[] = [];
         if (isSupabaseConfigured()) {
-          // 1. Fetch featured or recent active projects
           const { data: projs } = await supabase
             .from('projects')
             .select(`
@@ -90,39 +127,45 @@ export default function HomePage() {
             `)
             .order('is_featured', { ascending: false })
             .order('created_at', { ascending: false })
-            .limit(3);
+            .limit(30);
 
           if (projs && projs.length > 0) {
-            setFeaturedProjects(projs as Project[]);
-          } else {
-            setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
+            poolProjects = projs as Project[];
           }
+        }
 
-          // 2. Fetch live published hackathons from authoritative API (respects admin deletions)
-          try {
-            const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
-            const hData = await hRes.json();
-            if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
-              setActiveHackathons(hData.hackathons.slice(0, 3));
-            } else {
-              setActiveHackathons([]);
-            }
-          } catch {
-            setActiveHackathons([]);
+        // Combine pool with DEMO_PROJECTS
+        const poolMap = new Map<string, Project>();
+        for (const dp of DEMO_PROJECTS) poolMap.set(dp.id, dp);
+        for (const pp of poolProjects) poolMap.set(pp.id, pp);
+
+        // Select exact showcase projects configured by Admin
+        if (liveShowcase.selectedProjectIds && liveShowcase.selectedProjectIds.length > 0) {
+          const curated: Project[] = [];
+          for (const pid of liveShowcase.selectedProjectIds) {
+            const found = poolMap.get(pid);
+            if (found) curated.push(found);
+          }
+          if (curated.length > 0) {
+            setFeaturedProjects(curated);
+          } else {
+            setFeaturedProjects(poolProjects.slice(0, 3).length > 0 ? poolProjects.slice(0, 3) : DEMO_PROJECTS.slice(0, 3));
           }
         } else {
-          setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
-          try {
-            const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
-            const hData = await hRes.json();
-            if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
-              setActiveHackathons(hData.hackathons.slice(0, 3));
-            } else {
-              setActiveHackathons([]);
-            }
-          } catch {
+          setFeaturedProjects(poolProjects.slice(0, 3).length > 0 ? poolProjects.slice(0, 3) : DEMO_PROJECTS.slice(0, 3));
+        }
+
+        // Fetch live published hackathons
+        try {
+          const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
+          const hData = await hRes.json();
+          if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
+            setActiveHackathons(hData.hackathons.slice(0, 3));
+          } else {
             setActiveHackathons([]);
           }
+        } catch {
+          setActiveHackathons([]);
         }
       } catch (err) {
         console.warn('Error loading live homepage data:', err);
@@ -381,7 +424,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <IntentConsole sampleProjects={featuredProjects} />
+          <IntentConsole sampleProjects={featuredProjects} config={intentConfig} />
         </div>
       </section>
 

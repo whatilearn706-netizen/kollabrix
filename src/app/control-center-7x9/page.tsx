@@ -29,6 +29,7 @@ import { AdminThemeTab } from '@/components/admin/AdminThemeTab';
 import { AdminEnterpriseTab } from '@/components/admin/AdminEnterpriseTab';
 import { AdminContentTab } from '@/components/admin/AdminContentTab';
 import { AdminNotesTab } from '@/components/admin/AdminNotesTab';
+import { AdminIntentShowcaseTab } from '@/components/admin/AdminIntentShowcaseTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
@@ -229,6 +230,10 @@ WHERE user_id = '${user.id}';`;
           isLoading={isOverviewLoading}
           onNavigateTab={setCurrentTab}
         />
+      )}
+
+      {currentTab === 'intent' && (
+        <AdminIntentShowcaseTab authToken={authToken} />
       )}
 
       {currentTab === 'notes' && (
