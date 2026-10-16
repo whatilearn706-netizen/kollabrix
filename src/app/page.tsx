@@ -732,14 +732,16 @@ export default function HomePage() {
          ========================================================================= */}
       <section className="py-20 md:py-28 relative text-center bg-white overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white shadow-xl space-y-6">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>05 • JOIN LINKORA</span>
+          <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col items-center justify-center text-center space-y-6">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <span>05 • JOIN LINKORA</span>
+              </div>
             </div>
 
-            <h2 className="text-4xl sm:text-7xl font-black tracking-tight leading-tight begin-colorful">
-              Begin
+            <h2 className="text-4xl sm:text-7xl font-black tracking-tight leading-tight w-full text-center">
+              <span className="begin-colorful">Begin</span>
             </h2>
 
             <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed font-normal">

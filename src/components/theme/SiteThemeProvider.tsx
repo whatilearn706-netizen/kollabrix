@@ -137,8 +137,16 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
       }
 
       .begin-colorful {
-        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 16%, #f72585 34%, #b5179e 50%, #7209b7 66%, #4361ee 82%, #4cc9f0 100%) !important;
-        background-size: 250% 250% !important;
+        background: linear-gradient(
+          90deg,
+          #ff3366 0%,
+          #ff6b35 20%,
+          #f72585 40%,
+          #7209b7 60%,
+          #3a86ff 80%,
+          #00f5d4 100%
+        ) !important;
+        background-size: 100% 100% !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         background-clip: text !important;

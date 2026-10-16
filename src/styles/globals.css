@@ -105,35 +105,31 @@ div[role="dialog"] .bg-amber-500\/10 strong {
 /* ========================================================
    Colorful "Begin" CTA Heading Styles
    ======================================================== */
-@keyframes colorful-flow {
+@keyframes colorful-hue {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    filter: drop-shadow(0 4px 20px rgba(247, 37, 133, 0.45)) hue-rotate(0deg);
   }
   100% {
-    background-position: 0% 50%;
+    filter: drop-shadow(0 4px 20px rgba(6, 182, 212, 0.45)) hue-rotate(360deg);
   }
 }
 
 .begin-colorful {
+  /* Vibrant spectrum across all letters */
   background: linear-gradient(
-    135deg,
-    #ff416c 0%,
-    #ff4b2b 16%,
-    #f72585 34%,
-    #b5179e 50%,
-    #7209b7 66%,
-    #4361ee 82%,
-    #4cc9f0 100%
+    90deg,
+    #ff3366 0%,
+    #ff6b35 20%,
+    #f72585 40%,
+    #7209b7 60%,
+    #3a86ff 80%,
+    #00f5d4 100%
   ) !important;
-  background-size: 250% 250% !important;
+  background-size: 100% 100% !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   color: transparent !important;
   display: inline-block;
-  animation: colorful-flow 6s ease infinite alternate;
-  filter: drop-shadow(0 4px 24px rgba(247, 37, 133, 0.4));
+  animation: colorful-hue 8s linear infinite;
 }
