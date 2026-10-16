@@ -11,6 +11,7 @@ import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import {
   Compass,
   PlusCircle,
@@ -31,6 +32,7 @@ const DEFAULT_PAGE_SIZE = 12;
 
 export default function ExploreProjectsPage() {
   const { user, openAuthModal } = useAuth();
+  const { theme } = useSiteTheme();
 
   // Dynamic Explore configuration
   const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(null);
@@ -258,17 +260,29 @@ export default function ExploreProjectsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div
+        style={{ borderColor: theme.borderColor }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6"
+      >
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-violet-700 uppercase tracking-wider mb-1 font-bold">
-            <Compass className="w-4 h-4 text-violet-600" />
-            <span>Collegiate Project Directory</span>
+          <div
+            style={{ color: theme.brandColor }}
+            className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider mb-1 font-bold"
+          >
+            <Compass className="w-4 h-4" />
+            <span>{theme.exploreBadgeText || 'Collegiate Project Directory'}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Explore Active Projects
+          <h1
+            style={{ color: theme.headingColor }}
+            className="text-3xl sm:text-4xl font-black tracking-tight"
+          >
+            {theme.exploreTitle || 'Explore Active Projects'}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-600">
-            Discover student-led initiatives seeking collaborators, filtered by skill, tech stack, and category.
+          <p
+            style={{ color: theme.bodyTextColor }}
+            className="mt-1 text-xs sm:text-sm opacity-80"
+          >
+            {theme.exploreSubtitle || 'Discover student-led initiatives seeking collaborators, filtered by skill, tech stack, and category.'}
           </p>
         </div>
 
@@ -290,7 +304,8 @@ export default function ExploreProjectsPage() {
                 variant="primary"
                 size="sm"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
-                className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
+                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+                className="text-white font-bold shadow-xs transition-all"
               >
                 Start a Project
               </Button>
@@ -301,7 +316,8 @@ export default function ExploreProjectsPage() {
               size="sm"
               onClick={handleCreateProjectClick}
               leftIcon={<PlusCircle className="w-4 h-4" />}
-              className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
+              style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+              className="text-white font-bold shadow-xs transition-all"
             >
               Start a Project
             </Button>

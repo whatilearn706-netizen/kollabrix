@@ -5,6 +5,7 @@ interface BrandLogoProps {
   showWordmark?: boolean;
   className?: string;
   wordmarkColor?: 'dark' | 'light';
+  title?: string;
 }
 
 export function BrandLogo({
@@ -12,6 +13,7 @@ export function BrandLogo({
   showWordmark = true,
   className = '',
   wordmarkColor = 'dark',
+  title = 'Linkora',
 }: BrandLogoProps) {
   const iconSizes = {
     sm: 'w-7 h-7',
@@ -33,7 +35,7 @@ export function BrandLogo({
       >
         <img
           src="/brand/linkora-logo.png"
-          alt="Linkora"
+          alt={title}
           className="w-full h-full object-cover"
         />
       </div>
@@ -45,7 +47,7 @@ export function BrandLogo({
             wordmarkColor === 'dark' ? 'text-slate-900' : 'text-white'
           }`}
         >
-          <span>Linkora</span>
+          <span>{title}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block ml-0.5" />
         </span>
       )}

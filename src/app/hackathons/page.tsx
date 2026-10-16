@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { Hackathon, HackathonMode } from '@/types/database';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
@@ -35,6 +36,7 @@ import {
 export default function HackathonsPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { theme } = useSiteTheme();
   const isTeacherOrAdmin =
     profile?.role === 'teacher' ||
     profile?.role === 'admin' ||
@@ -267,17 +269,29 @@ export default function HackathonsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div
+        style={{ borderColor: theme.borderColor }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6"
+      >
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-xs font-bold text-amber-800 uppercase tracking-wider mb-2">
-            <Trophy className="w-3.5 h-3.5 text-amber-600" />
-            <span>Campus Innovation Hub</span>
+          <div
+            style={{ color: theme.brandColor }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 border"
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            <span>{theme.hackathonsBadgeText || 'Campus Innovation Hub'}</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Collegiate Hackathons
+          <h1
+            style={{ color: theme.headingColor }}
+            className="text-2xl sm:text-4xl font-black tracking-tight"
+          >
+            {theme.hackathonsTitle || 'Collegiate Hackathons'}
           </h1>
-          <p className="mt-1.5 text-xs sm:text-sm text-slate-600 max-w-2xl font-medium">
-            Explore college hackathons, form student teams with campus teammates, and compete in private university challenges or national tournaments.
+          <p
+            style={{ color: theme.bodyTextColor }}
+            className="mt-1.5 text-xs sm:text-sm max-w-2xl font-medium opacity-80"
+          >
+            {theme.hackathonsSubtitle || 'Explore college hackathons, form student teams with campus teammates, and compete in private university challenges or national tournaments.'}
           </p>
         </div>
 
@@ -297,7 +311,8 @@ export default function HackathonsPage() {
               <Button
                 variant="primary"
                 size="sm"
-                className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
+                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+                className="text-white font-bold shadow-xs transition-all"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
               >
                 Host College Hackathon

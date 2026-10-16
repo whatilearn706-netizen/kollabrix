@@ -15,8 +15,11 @@ import {
   CheckCircle2,
   Compass,
   Users,
+  Trophy,
   Layers,
-  Zap,
+  Code2,
+  Bell,
+  Menu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -37,7 +40,9 @@ interface AdminThemeTabProps {
 export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
   const { theme: currentGlobalTheme, refreshTheme } = useSiteTheme();
   const [theme, setThemeDraft] = useState<SiteThemeConfig>(currentGlobalTheme);
-  const [activeSubTab, setActiveSubTab] = useState<'presets' | 'colors' | 'typography' | 'shapes' | 'copy'>('presets');
+  const [activeSubTab, setActiveSubTab] = useState<
+    'presets' | 'colors' | 'typography' | 'shapes' | 'layout' | 'copy' | 'customCss'
+  >('presets');
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -62,7 +67,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
     }));
     setFeedback({
       type: 'success',
-      text: `Applied preset "${preset.name}". Click "Save Theme Changes" to publish across the website.`,
+      text: `Applied preset "${preset.name}". Click "Save Theme Changes" to propagate across the entire website.`,
     });
   };
 
@@ -85,7 +90,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
         return;
       }
 
-      setFeedback({ type: 'success', text: 'Theme, colors, fonts, and design updated successfully across Linkora!' });
+      setFeedback({ type: 'success', text: 'Theme, colors, typography, and design updated across the entire website!' });
       await refreshTheme();
     } catch (err: unknown) {
       setFeedback({
@@ -98,7 +103,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
   };
 
   const handleResetDefaults = async () => {
-    if (!confirm('Are you sure you want to reset all colors, fonts, and copy back to factory defaults?')) return;
+    if (!confirm('Are you sure you want to reset all website colors, fonts, shapes, and copy back to defaults?')) return;
 
     try {
       setIsResetting(true);
@@ -138,10 +143,10 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Palette className="w-5 h-5 text-pink-400" />
-            <span>Theme, Colors, Typography &amp; Design Studio</span>
+            <span>Full Website Design, Theme &amp; Typography Studio</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Customize every visual element on Linkora in real time: page background tones, brand primary colors, font families, corner roundness, and hero headline copy.
+            Full-site control: customize every tiny detail from canvas tone, navbar mode, card surfaces, borders, button shapes, fonts, and headlines across all routes (/explore, /teammates, /hackathons, homepage).
           </p>
         </div>
 
@@ -200,7 +205,9 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
           { id: 'colors', label: 'Colors & Canvas', icon: Palette },
           { id: 'typography', label: 'Typography & Fonts', icon: Type },
           { id: 'shapes', label: 'Shapes & Radii', icon: Layout },
-          { id: 'copy', label: 'Site Copy & Headlines', icon: Sliders },
+          { id: 'layout', label: 'Navbar & Footer', icon: Menu },
+          { id: 'copy', label: 'Page Hubs & Copy', icon: Sliders },
+          { id: 'customCss', label: 'Custom CSS Studio', icon: Code2 },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
@@ -233,7 +240,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                   <Sparkles className="w-4 h-4 text-amber-400" />
                   <span>Choose a Curated Aesthetic Preset</span>
                 </h3>
-                <span className="text-[11px] text-slate-400">Click any preset to preview</span>
+                <span className="text-[11px] text-slate-400">Instantly styles the entire site</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -259,7 +266,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                         />
                       </div>
                       <span className="text-[10px] font-mono uppercase text-slate-500 group-hover:text-brand-300">
-                        Select
+                        Apply
                       </span>
                     </div>
 
@@ -278,83 +285,14 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
             <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Palette className="w-4 h-4 text-brand-400" />
-                <span>Colors &amp; Canvas Atmosphere</span>
+                <span>Site-Wide Color Palette &amp; Canvas</span>
               </h3>
 
               <div className="space-y-4">
-                {/* Brand Primary Color */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-300">Brand Primary Color</label>
-                    <span className="text-[11px] font-mono text-slate-400">{theme.brandColor}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={theme.brandColor}
-                      onChange={(e) => updateField('brandColor', e.target.value)}
-                      className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
-                    />
-                    <Input
-                      type="text"
-                      value={theme.brandColor}
-                      onChange={(e) => updateField('brandColor', e.target.value)}
-                      className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
-                    />
-                    {/* Quick Swatches */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {['#6366F1', '#8B5CF6', '#10B981', '#EC4899', '#F59E0B', '#0F172A', '#06B6D4'].map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => updateField('brandColor', c)}
-                          style={{ backgroundColor: c }}
-                          className="w-6 h-6 rounded-lg border border-slate-700/60 hover:scale-110 transition-transform"
-                          title={c}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Accent Color */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-300">Accent Color</label>
-                    <span className="text-[11px] font-mono text-slate-400">{theme.accentColor}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={theme.accentColor}
-                      onChange={(e) => updateField('accentColor', e.target.value)}
-                      className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
-                    />
-                    <Input
-                      type="text"
-                      value={theme.accentColor}
-                      onChange={(e) => updateField('accentColor', e.target.value)}
-                      className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
-                    />
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {['#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#14B8A6'].map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => updateField('accentColor', c)}
-                          style={{ backgroundColor: c }}
-                          className="w-6 h-6 rounded-lg border border-slate-700/60 hover:scale-110 transition-transform"
-                          title={c}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
                 {/* Background Canvas Color */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-300">Page Background Color</label>
+                    <label className="text-xs font-semibold text-slate-300">Overall Site Background (Canvas)</label>
                     <span className="text-[11px] font-mono text-slate-400">{theme.backgroundColor}</span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -375,8 +313,8 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                         { label: 'Clean Light', color: '#fafbfc' },
                         { label: 'Pure White', color: '#ffffff' },
                         { label: 'Obsidian Dark', color: '#090B10' },
-                        { label: 'Midnight Deep', color: '#0B0E17' },
-                        { label: 'Slate Gray', color: '#0F172A' },
+                        { label: 'Midnight Deep', color: '#070A0E' },
+                        { label: 'Navy Slate', color: '#090D16' },
                       ].map((item) => (
                         <button
                           key={item.color}
@@ -392,10 +330,122 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                   </div>
                 </div>
 
-                {/* Heading Color & Body Text Color */}
-                <div className="grid grid-cols-2 gap-4 pt-2">
+                {/* Card Surface Color */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Card &amp; Container Surface</label>
+                    <span className="text-[11px] font-mono text-slate-400">{theme.surfaceColor}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={theme.surfaceColor.startsWith('#') ? theme.surfaceColor : '#ffffff'}
+                      onChange={(e) => updateField('surfaceColor', e.target.value)}
+                      className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
+                    />
+                    <Input
+                      type="text"
+                      value={theme.surfaceColor}
+                      onChange={(e) => updateField('surfaceColor', e.target.value)}
+                      className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
+                    />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['#ffffff', '#f8fafc', '#11141E', '#0E141B', '#141724', '#0F172A'].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => updateField('surfaceColor', c)}
+                          style={{ backgroundColor: c }}
+                          className="w-6 h-6 rounded-lg border border-slate-700/60 hover:scale-110 transition-transform"
+                          title={c}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Border Color */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Border &amp; Divider Color</label>
+                    <span className="text-[11px] font-mono text-slate-400">{theme.borderColor}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={theme.borderColor.startsWith('#') ? theme.borderColor : '#e2e8f0'}
+                      onChange={(e) => updateField('borderColor', e.target.value)}
+                      className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
+                    />
+                    <Input
+                      type="text"
+                      value={theme.borderColor}
+                      onChange={(e) => updateField('borderColor', e.target.value)}
+                      className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
+                    />
+                  </div>
+                </div>
+
+                {/* Brand Primary Color */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Brand Primary Action Color</label>
+                    <span className="text-[11px] font-mono text-slate-400">{theme.brandColor}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={theme.brandColor}
+                      onChange={(e) => updateField('brandColor', e.target.value)}
+                      className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
+                    />
+                    <Input
+                      type="text"
+                      value={theme.brandColor}
+                      onChange={(e) => updateField('brandColor', e.target.value)}
+                      className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
+                    />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['#6366F1', '#8B5CF6', '#10B981', '#EC4899', '#F43F5E', '#3B82F6', '#06B6D4', '#0F172A'].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => updateField('brandColor', c)}
+                          style={{ backgroundColor: c }}
+                          className="w-6 h-6 rounded-lg border border-slate-700/60 hover:scale-110 transition-transform"
+                          title={c}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accent Color */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Accent Highlight Color</label>
+                    <span className="text-[11px] font-mono text-slate-400">{theme.accentColor}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={theme.accentColor}
+                      onChange={(e) => updateField('accentColor', e.target.value)}
+                      className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
+                    />
+                    <Input
+                      type="text"
+                      value={theme.accentColor}
+                      onChange={(e) => updateField('accentColor', e.target.value)}
+                      className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
+                    />
+                  </div>
+                </div>
+
+                {/* Heading Color, Body Text Color & Muted Text Color */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Heading Text Color</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Heading Text</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -413,7 +463,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Body Text Color</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Body Text</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -425,6 +475,24 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                         type="text"
                         value={theme.bodyTextColor}
                         onChange={(e) => updateField('bodyTextColor', e.target.value)}
+                        className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Muted Subtext</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.mutedTextColor}
+                        onChange={(e) => updateField('mutedTextColor', e.target.value)}
+                        className="w-8 h-8 rounded-lg cursor-pointer border border-charcoal-700 bg-transparent"
+                      />
+                      <Input
+                        type="text"
+                        value={theme.mutedTextColor}
+                        onChange={(e) => updateField('mutedTextColor', e.target.value)}
                         className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs"
                       />
                     </div>
@@ -439,12 +507,12 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
             <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Type className="w-4 h-4 text-purple-400" />
-                <span>Typography &amp; Font Studio</span>
+                <span>Site-Wide Typography &amp; Font Studio</span>
               </h3>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Heading Font Family</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Heading Font Family (All H1-H6)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {AVAILABLE_FONTS.map((f) => (
                       <button
@@ -502,13 +570,13 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
             <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Layout className="w-4 h-4 text-emerald-400" />
-                <span>Shapes &amp; Corner Rounding</span>
+                <span>Shapes, Corners &amp; Shadows</span>
               </h3>
 
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Border Radius (Corners)</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Card &amp; Container Corner Rounding</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                     {[
                       { label: 'Sharp (0px)', value: '0px' },
                       { label: 'Subtle (8px)', value: '8px' },
@@ -533,19 +601,115 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                     ))}
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Card Shadow Depth</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { id: 'none', label: 'Flat (0)' },
+                      { id: 'subtle', label: 'Subtle' },
+                      { id: 'elevated', label: 'Elevated' },
+                      { id: 'glow', label: 'Brand Glow' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => updateField('cardShadow', item.id as any)}
+                        className={`p-2.5 rounded-xl border text-center text-xs transition-all ${
+                          theme.cardShadow === item.id
+                            ? 'bg-charcoal-800 border-emerald-500 text-white font-bold'
+                            : 'bg-charcoal-850/60 border-charcoal-750 text-slate-400'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* TAB 5: COPY & HEADLINES */}
-          {activeSubTab === 'copy' && (
+          {/* TAB 5: NAVBAR & FOOTER */}
+          {activeSubTab === 'layout' && (
             <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-amber-400" />
-                <span>Site Copy, Headlines &amp; CTA Buttons</span>
+                <Menu className="w-4 h-4 text-cyan-400" />
+                <span>Site Header (Navbar) &amp; Footer Customization</span>
               </h3>
 
               <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">Navbar Mode / Appearance</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { id: 'auto', label: 'Auto (Follow Theme)' },
+                      { id: 'dark', label: 'Obsidian Dark' },
+                      { id: 'light', label: 'Crisp White' },
+                      { id: 'glass', label: 'Translucent Glass' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => updateField('navbarStyle', item.id as any)}
+                        className={`p-2.5 rounded-xl border text-center text-xs transition-all ${
+                          theme.navbarStyle === item.id
+                            ? 'bg-charcoal-800 border-cyan-500 text-white font-bold'
+                            : 'bg-charcoal-850/60 border-charcoal-750 text-slate-400'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Site Wordmark / Name</label>
+                    <Input
+                      type="text"
+                      value={theme.siteTitle || 'Linkora'}
+                      onChange={(e) => updateField('siteTitle', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Navbar CTA Button Text</label>
+                    <Input
+                      type="text"
+                      value={theme.navbarCtaText || 'Start a Project'}
+                      onChange={(e) => updateField('navbarCtaText', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Footer Tagline</label>
+                  <Input
+                    type="text"
+                    value={theme.footerTagline}
+                    onChange={(e) => updateField('footerTagline', e.target.value)}
+                    className="bg-charcoal-800 border-charcoal-700 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: PAGE HUBS & COPY */}
+          {activeSubTab === 'copy' && (
+            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-6">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-amber-400" />
+                <span>Page Hubs &amp; Section Headlines</span>
+              </h3>
+
+              {/* Homepage Hero */}
+              <div className="space-y-3 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-brand-300">Homepage Hero</h4>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Hero Pill Badge</label>
                   <Input
@@ -555,9 +719,8 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                     className="bg-charcoal-800 border-charcoal-700 text-xs"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Main Hero Headline</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Main Headline</label>
                   <Input
                     type="text"
                     value={theme.heroHeadline}
@@ -565,9 +728,8 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                     className="bg-charcoal-800 border-charcoal-700 text-xs font-bold"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Hero Subheadline</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Subheadline</label>
                   <textarea
                     rows={2}
                     value={theme.heroSubheadline}
@@ -575,53 +737,191 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                     className="w-full bg-charcoal-800 border border-charcoal-700 text-white rounded-xl p-2.5 text-xs"
                   />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
+              {/* Explore Projects Hub */}
+              <div className="space-y-3 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-violet-400">/explore Page Hub</h4>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Primary CTA Button</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Badge Text</label>
                     <Input
                       type="text"
-                      value={theme.primaryCtaText}
-                      onChange={(e) => updateField('primaryCtaText', e.target.value)}
+                      value={theme.exploreBadgeText}
+                      onChange={(e) => updateField('exploreBadgeText', e.target.value)}
                       className="bg-charcoal-800 border-charcoal-700 text-xs"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Secondary CTA Button</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Page Title</label>
                     <Input
                       type="text"
-                      value={theme.secondaryCtaText}
-                      onChange={(e) => updateField('secondaryCtaText', e.target.value)}
-                      className="bg-charcoal-800 border-charcoal-700 text-xs"
+                      value={theme.exploreTitle}
+                      onChange={(e) => updateField('exploreTitle', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs font-bold"
                     />
                   </div>
                 </div>
-
-                {/* Announcement Banner */}
-                <div className="pt-2 border-t border-charcoal-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-300">Global Announcement Banner</label>
-                    <button
-                      type="button"
-                      onClick={() => updateField('announcementBannerActive', !theme.announcementBannerActive)}
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                        theme.announcementBannerActive
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-charcoal-800 text-slate-500 border border-charcoal-700'
-                      }`}
-                    >
-                      {theme.announcementBannerActive ? 'Enabled' : 'Disabled'}
-                    </button>
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Subtitle</label>
                   <Input
                     type="text"
-                    value={theme.announcementBannerText || ''}
-                    onChange={(e) => updateField('announcementBannerText', e.target.value)}
-                    placeholder="e.g. 🚀 Welcome to Fall 2026 Hackathon Season! Register your team today."
+                    value={theme.exploreSubtitle}
+                    onChange={(e) => updateField('exploreSubtitle', e.target.value)}
                     className="bg-charcoal-800 border-charcoal-700 text-xs"
                   />
                 </div>
+              </div>
+
+              {/* Find Teammates Hub */}
+              <div className="space-y-3 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-pink-400">/teammates Page Hub</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Badge Text</label>
+                    <Input
+                      type="text"
+                      value={theme.teammatesBadgeText}
+                      onChange={(e) => updateField('teammatesBadgeText', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Page Title</label>
+                    <Input
+                      type="text"
+                      value={theme.teammatesTitle}
+                      onChange={(e) => updateField('teammatesTitle', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs font-bold"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Subtitle</label>
+                  <Input
+                    type="text"
+                    value={theme.teammatesSubtitle}
+                    onChange={(e) => updateField('teammatesSubtitle', e.target.value)}
+                    className="bg-charcoal-800 border-charcoal-700 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Hackathons Arena */}
+              <div className="space-y-3 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">/hackathons Page Hub</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Badge Text</label>
+                    <Input
+                      type="text"
+                      value={theme.hackathonsBadgeText}
+                      onChange={(e) => updateField('hackathonsBadgeText', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Page Title</label>
+                    <Input
+                      type="text"
+                      value={theme.hackathonsTitle}
+                      onChange={(e) => updateField('hackathonsTitle', e.target.value)}
+                      className="bg-charcoal-800 border-charcoal-700 text-xs font-bold"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Subtitle</label>
+                  <Input
+                    type="text"
+                    value={theme.hackathonsSubtitle}
+                    onChange={(e) => updateField('hackathonsSubtitle', e.target.value)}
+                    className="bg-charcoal-800 border-charcoal-700 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Announcement Banner */}
+              <div className="space-y-3 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">Global Sticky Announcement Bar</h4>
+                  <button
+                    type="button"
+                    onClick={() => updateField('announcementBannerActive', !theme.announcementBannerActive)}
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                      theme.announcementBannerActive
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-charcoal-800 text-slate-500 border border-charcoal-700'
+                    }`}
+                  >
+                    {theme.announcementBannerActive ? 'Active' : 'Disabled'}
+                  </button>
+                </div>
+                <Input
+                  type="text"
+                  value={theme.announcementBannerText || ''}
+                  onChange={(e) => updateField('announcementBannerText', e.target.value)}
+                  placeholder="e.g. 🚀 Welcome to Fall 2026 Hackathon Season! Register your team today."
+                  className="bg-charcoal-800 border-charcoal-700 text-xs"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Banner Link (optional)</label>
+                    <Input
+                      type="text"
+                      value={theme.announcementBannerLink || ''}
+                      onChange={(e) => updateField('announcementBannerLink', e.target.value)}
+                      placeholder="/hackathons"
+                      className="bg-charcoal-800 border-charcoal-700 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Banner Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.announcementBannerBg || theme.brandColor}
+                        onChange={(e) => updateField('announcementBannerBg', e.target.value)}
+                        className="w-8 h-8 rounded-lg cursor-pointer border border-charcoal-700 bg-transparent"
+                      />
+                      <Input
+                        type="text"
+                        value={theme.announcementBannerBg || theme.brandColor}
+                        onChange={(e) => updateField('announcementBannerBg', e.target.value)}
+                        className="bg-charcoal-800 border-charcoal-700 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: CUSTOM CSS STUDIO */}
+          {activeSubTab === 'customCss' && (
+            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-emerald-400" />
+                  <span>Advanced Custom CSS Injection Studio</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Want to modify any tiny detail, margin, font-size, animation, or color not covered by standard switches? Add raw CSS rules below and they will immediately inject into every page on the website.
+                </p>
+              </div>
+
+              <div>
+                <textarea
+                  rows={10}
+                  value={theme.customCss || ''}
+                  onChange={(e) => updateField('customCss', e.target.value)}
+                  placeholder={`/* Example custom rules: */\n.site-card { transition: transform 0.2s ease; }\n.site-card:hover { transform: translateY(-4px); }\nh1 { text-transform: uppercase; }`}
+                  className="w-full bg-charcoal-950 border border-charcoal-700 text-emerald-400 font-mono rounded-xl p-3 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-charcoal-800/80 border border-charcoal-700 text-[11px] text-slate-400">
+                <span className="font-bold text-slate-200">Tip:</span> Use classes like <code className="text-pink-400">.site-card</code>, <code className="text-pink-400">.site-btn-primary</code>, or standard tags like <code className="text-pink-400">h1, h2, nav</code> to style any element across Linkora.
               </div>
             </div>
           )}
@@ -640,7 +940,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
             </span>
           </div>
 
-          {/* Interactive Card simulating HomePage */}
+          {/* Interactive Card simulating Full Website Look */}
           <div
             style={{
               backgroundColor: theme.backgroundColor,
@@ -649,95 +949,151 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
             }}
             className="p-6 border shadow-elevated space-y-5 transition-all duration-200 overflow-hidden relative"
           >
-            {/* Preview Banner if active */}
-            {theme.announcementBannerActive && theme.announcementBannerText && (
-              <div
-                style={{ backgroundColor: theme.brandColor }}
-                className="py-1 px-3 -mt-6 -mx-6 mb-4 text-[10px] font-bold text-white text-center"
-              >
-                {theme.announcementBannerText}
-              </div>
-            )}
-
-            {/* Simulated Pill Badge */}
+            {/* Mini Simulated Header */}
             <div
-              style={{ borderRadius: theme.borderRadius }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 border border-slate-200/90 text-slate-700 text-[10px] font-mono font-bold"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{theme.heroBadgeText || 'Linkora • Student Collaboration'}</span>
-            </div>
-
-            {/* Headline */}
-            <h2
               style={{
-                color: theme.headingColor,
-                fontFamily: theme.headingFont,
-                fontWeight: theme.headingWeight,
-                letterSpacing: theme.letterSpacing,
+                backgroundColor: theme.surfaceColor,
+                borderColor: theme.borderColor,
+                borderRadius: '12px',
               }}
-              className="text-2xl font-black leading-tight"
+              className="p-3 border flex items-center justify-between shadow-2xs"
             >
-              {theme.heroHeadline || 'Build something bigger, together.'}
-            </h2>
+              <div className="flex items-center gap-2">
+                <div
+                  style={{ backgroundColor: theme.brandColor }}
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-white font-bold text-[10px]"
+                >
+                  ▲
+                </div>
+                <span style={{ color: theme.headingColor }} className="text-xs font-black">
+                  {theme.siteTitle || 'Linkora'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span style={{ color: theme.bodyTextColor }} className="text-[10px] font-semibold opacity-75">
+                  Explore
+                </span>
+                <span style={{ color: theme.bodyTextColor }} className="text-[10px] font-semibold opacity-75">
+                  Teammates
+                </span>
+                <div
+                  style={{
+                    backgroundColor: theme.brandColor,
+                    borderRadius: theme.borderRadius,
+                  }}
+                  className="px-2.5 py-1 text-white text-[10px] font-bold"
+                >
+                  {theme.navbarCtaText || 'Start Project'}
+                </div>
+              </div>
+            </div>
 
-            {/* Subheadline */}
-            <p
+            {/* Hero Simulation */}
+            <div className="space-y-2.5 text-center pt-2">
+              <div
+                style={{
+                  backgroundColor: `${theme.brandColor}15`,
+                  borderColor: `${theme.brandColor}35`,
+                  color: theme.brandColor,
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>{theme.heroBadgeText}</span>
+              </div>
+
+              <h3
+                style={{
+                  color: theme.headingColor,
+                  fontFamily: theme.headingFont,
+                  fontWeight: theme.headingWeight,
+                  letterSpacing: theme.letterSpacing,
+                }}
+                className="text-xl sm:text-2xl leading-tight font-black"
+              >
+                {theme.heroHeadline}
+              </h3>
+
+              <p
+                style={{ color: theme.bodyTextColor }}
+                className="text-xs opacity-80 leading-relaxed max-w-sm mx-auto"
+              >
+                {theme.heroSubheadline}
+              </p>
+
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div
+                  style={{
+                    backgroundColor: theme.brandColor,
+                    borderRadius: theme.borderRadius,
+                  }}
+                  className="px-3.5 py-1.5 text-white text-xs font-bold shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  {theme.primaryCtaText}
+                </div>
+                <div
+                  style={{
+                    backgroundColor: theme.surfaceColor,
+                    borderColor: theme.borderColor,
+                    color: theme.headingColor,
+                    borderRadius: theme.borderRadius,
+                  }}
+                  className="px-3.5 py-1.5 text-xs font-bold border cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  {theme.secondaryCtaText}
+                </div>
+              </div>
+            </div>
+
+            {/* Card Simulation (Simulates ProjectCard & TeammateCard) */}
+            <div
               style={{
-                color: theme.bodyTextColor,
-                fontFamily: theme.bodyFont,
+                backgroundColor: theme.surfaceColor,
+                borderColor: theme.borderColor,
+                borderRadius: theme.borderRadius,
               }}
-              className="text-xs leading-relaxed"
+              className="p-4 border shadow-sm space-y-2.5"
             >
-              {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
-            </p>
-
-            {/* Simulated Action Buttons */}
-            <div className="flex items-center gap-2 pt-1 flex-wrap">
-              <button
-                type="button"
-                style={{
-                  backgroundColor: theme.brandColor,
-                  borderRadius: theme.borderRadius,
-                }}
-                className="px-4 py-2 text-xs font-bold text-white shadow-xs hover:opacity-90 transition-opacity"
-              >
-                {theme.primaryCtaText || 'Explore Projects'}
-              </button>
-
-              <button
-                type="button"
-                style={{
-                  borderRadius: theme.borderRadius,
-                }}
-                className="px-4 py-2 text-xs font-bold text-slate-800 border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
-              >
-                {theme.secondaryCtaText || 'Find Teammates'}
-              </button>
+              <div className="flex items-center justify-between">
+                <span
+                  style={{
+                    backgroundColor: `${theme.brandColor}15`,
+                    color: theme.brandColor,
+                    borderColor: `${theme.brandColor}30`,
+                  }}
+                  className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border"
+                >
+                  Active Project
+                </span>
+                <span className="text-[9px] font-mono text-emerald-500 font-bold">● Recruiting</span>
+              </div>
+              <h4 style={{ color: theme.headingColor }} className="text-xs font-black">
+                Autonomous Campus Rover &amp; Drone Swarm
+              </h4>
+              <p style={{ color: theme.bodyTextColor }} className="text-[11px] opacity-75">
+                Multi-agent robotic systems built for campus survey and hackathon competition.
+              </p>
+              <div className="pt-2 border-t flex items-center justify-between text-[10px]" style={{ borderColor: theme.borderColor }}>
+                <span style={{ color: theme.mutedTextColor }}>3/4 Teammates Joined</span>
+                <span style={{ color: theme.brandColor }} className="font-bold cursor-pointer">
+                  View Details →
+                </span>
+              </div>
             </div>
 
-            {/* Simulated Trust Chips */}
-            <div className="pt-2 flex items-center gap-3 text-[10px] text-slate-500 flex-wrap border-t border-slate-200/60">
-              <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                <CheckCircle2 className="w-3 h-3" />
-                Verified Proof
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1 text-rose-500 font-semibold">
-                <Zap className="w-3 h-3" />
-                Hackathons
+            {/* Quick Status Bar */}
+            <div
+              style={{
+                backgroundColor: `${theme.surfaceColor}90`,
+                borderColor: theme.borderColor,
+              }}
+              className="p-2.5 rounded-xl border text-[10px] font-mono flex items-center justify-between"
+            >
+              <span style={{ color: theme.mutedTextColor }}>Font: {theme.headingFont}</span>
+              <span style={{ color: theme.brandColor }} className="font-bold">
+                Radius: {theme.borderRadius}
               </span>
             </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-charcoal-900 border border-charcoal-750 text-[11px] text-slate-400 space-y-1.5">
-            <p className="font-semibold text-slate-200 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-              Instant Full-Site Synchronization
-            </p>
-            <p className="leading-relaxed">
-              When you click <strong>&quot;Save Theme Changes&quot;</strong>, the CSS variables and copy will be permanently persisted to the database and updated across all visitor screens.
-            </p>
           </div>
         </div>
       </div>

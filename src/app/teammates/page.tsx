@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { Profile, Project, TeammateMatch } from '@/types/database';
 import {
   calculateProjectTeammateMatch,
@@ -37,6 +38,7 @@ import Link from 'next/link';
 export default function TeammatesPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { theme } = useSiteTheme();
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
@@ -316,17 +318,29 @@ export default function TeammatesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div
+        style={{ borderColor: theme.borderColor }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6"
+      >
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-pink-600 uppercase tracking-wider mb-2 font-bold">
-            <Sparkles className="w-4 h-4 text-pink-500" />
-            <span>Collegiate Matchmaking Engine</span>
+          <div
+            style={{ color: theme.brandColor }}
+            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2 font-bold"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>{theme.teammatesBadgeText || 'Campus Builder Network'}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Find Teammates
+          <h1
+            style={{ color: theme.headingColor }}
+            className="text-3xl sm:text-4xl font-black tracking-tight"
+          >
+            {theme.teammatesTitle || 'Find Teammates & Collaborators'}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl">
-            Discover student collaborators with complementary skills and shared project goals. Our transparent algorithm scores matches based on project requirements, preferred roles, and technical skills.
+          <p
+            style={{ color: theme.bodyTextColor }}
+            className="mt-1 text-xs sm:text-sm max-w-2xl opacity-80"
+          >
+            {theme.teammatesSubtitle || 'Discover student collaborators with complementary skills and shared project goals.'}
           </p>
         </div>
 
@@ -345,7 +359,8 @@ export default function TeammatesPage() {
               variant="primary"
               size="sm"
               leftIcon={<FolderPlus className="w-4 h-4" />}
-              className="bg-slate-900 hover:bg-black text-white font-bold shadow-xs transition-all"
+              style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+              className="text-white font-bold shadow-xs transition-all"
             >
               Start New Project
             </Button>
@@ -354,7 +369,14 @@ export default function TeammatesPage() {
       </div>
 
       {/* Compact Campus Hackathon Quick-Join Callout */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs text-slate-900">
+      <div
+        style={{
+          backgroundColor: theme.surfaceColor,
+          borderColor: theme.borderColor,
+          borderRadius: theme.borderRadius,
+        }}
+        className="site-card p-5 sm:p-6 border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
+      >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0 text-slate-700 shadow-2xs">
             <Lock className="w-4 h-4 text-violet-600" />
