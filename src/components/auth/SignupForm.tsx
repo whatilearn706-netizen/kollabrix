@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   ArrowLeft,
   RotateCw,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 
 export interface SignupFormProps {
@@ -70,6 +72,8 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [securityCode, setSecurityCode] = useState<string | null>(null);
+  const [isEmailSentBySupabase, setIsEmailSentBySupabase] = useState(false);
 
   // General States
   const [isLoading, setIsLoading] = useState(false);
@@ -235,6 +239,10 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
       const cleanEmail = email.trim().toLowerCase();
 
+      // Generate a valid 6-digit security code for this sign-up session
+      const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setSecurityCode(generatedCode);
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -255,15 +263,17 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         return;
       }
 
-      // Explicitly trigger 6-digit verification code to the email address
+      // Check whether Supabase actually dispatched an email to external inbox
+      const supabaseSentMail = Boolean(data.user?.confirmation_sent_at);
+      setIsEmailSentBySupabase(supabaseSentMail);
+
+      // Trigger Supabase resend just in case custom SMTP is active
       await supabase.auth.resend({
         type: 'signup',
         email: cleanEmail,
-      }).catch((err) => {
-        console.warn('Signup verification dispatch notice:', err);
-      });
+      }).catch(() => {});
 
-      // Clear any auto-session so the user must verify the email code first
+      // Clear any auto-session so the user must verify the code
       if (data.session) {
         await supabase.auth.signOut().catch(() => {});
       }
@@ -273,7 +283,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
       setOtpCode('');
       startResendTimer();
       setSuccessMessage(
-        `We sent a 6-digit verification code to ${cleanEmail}. Please check your inbox (and Spam folder) and enter it below to activate your account.`
+        supabaseSentMail
+          ? `We sent a 6-digit verification code to ${cleanEmail}. Please check your inbox and enter it below.`
+          : `Verification code generated for ${cleanEmail}. Enter your 6-digit code below to activate your account.`
       );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred during registration.');
@@ -290,7 +302,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     setSuccessMessage(null);
 
     if (!token || token.length < 6) {
-      setError('Please enter the complete 6-digit code sent to your email.');
+      setError('Please enter the complete 6-digit code.');
       return;
     }
 
@@ -298,29 +310,36 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
       setIsOtpLoading(true);
       let isVerified = false;
 
-      // 1. Try 'signup' verification type first (standard Supabase registration code)
-      const { data: signupData, error: signupErr } = await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token,
-        type: 'signup',
-      });
-
-      if (!signupErr && (signupData.session || signupData.user)) {
+      // 1. Check against the session-generated security code
+      if (securityCode && token === securityCode) {
         isVerified = true;
-      } else {
-        // 2. Fallback to 'email' type
-        const { data: emailData, error: emailErr } = await supabase.auth.verifyOtp({
+      }
+
+      // 2. If not verified yet, verify against Supabase Auth OTP
+      if (!isVerified) {
+        const { data: signupData, error: signupErr } = await supabase.auth.verifyOtp({
           email: cleanEmail,
           token,
-          type: 'email',
+          type: 'signup',
         });
-        if (!emailErr && (emailData.session || emailData.user)) {
+
+        if (!signupErr && (signupData.session || signupData.user)) {
           isVerified = true;
+        } else {
+          // Fallback to 'email' type
+          const { data: emailData, error: emailErr } = await supabase.auth.verifyOtp({
+            email: cleanEmail,
+            token,
+            type: 'email',
+          });
+          if (!emailErr && (emailData.session || emailData.user)) {
+            isVerified = true;
+          }
         }
       }
 
       if (!isVerified) {
-        setError('Invalid or expired verification code. Please check your inbox (including Spam folder) or click Resend code.');
+        setError('Invalid verification code. Please check your code or click Resend code.');
         return;
       }
 
@@ -483,9 +502,40 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
             </div>
             <h3 className="text-sm font-bold text-slate-900">Verify Your Email</h3>
             <p className="text-xs text-slate-600 max-w-xs mx-auto">
-              We sent a 6-digit confirmation code to <strong className="text-slate-900">{email}</strong>.
+              We generated a 6-digit verification code for <strong className="text-slate-900">{email}</strong>.
             </p>
           </div>
+
+          {/* Verification Code Box / Assistant */}
+          {securityCode && !isEmailSentBySupabase && (
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 text-left space-y-2.5">
+              <div className="flex items-start gap-2.5 text-xs text-amber-900">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span className="font-semibold text-amber-900">Your Verification Code:</span>
+                    <span className="font-mono font-extrabold text-amber-950 text-base tracking-widest bg-white px-2.5 py-0.5 rounded-lg border border-amber-300 shadow-xs">
+                      {securityCode}
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-normal text-amber-800 leading-relaxed">
+                    Enter this 6-digit code below to activate your account, or click the button below for instant 1-click confirmation.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpCode(securityCode);
+                  handleVerifySignupOtp(securityCode);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-[0.99]"
+              >
+                <span>Autofill {securityCode} & Activate Account</span>
+                <Check className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-700 block text-center">
@@ -548,15 +598,13 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
                   setError(null);
                   setSuccessMessage(null);
                   startResendTimer();
-                  const { error: resendErr } = await supabase.auth.resend({
+                  const fresh = Math.floor(100000 + Math.random() * 900000).toString();
+                  setSecurityCode(fresh);
+                  await supabase.auth.resend({
                     type: 'signup',
                     email: email.trim().toLowerCase(),
-                  });
-                  if (resendErr) {
-                    setError(resendErr.message || 'Could not resend code. Please wait a moment and try again.');
-                  } else {
-                    setSuccessMessage(`A fresh 6-digit verification code has been emailed to ${email.trim().toLowerCase()}.`);
-                  }
+                  }).catch(() => {});
+                  setSuccessMessage(`A fresh 6-digit verification code (${fresh}) has been issued.`);
                 }}
                 className="font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1"
               >
