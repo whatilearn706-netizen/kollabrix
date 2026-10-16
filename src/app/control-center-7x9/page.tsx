@@ -23,6 +23,8 @@ import { AdminUsersTab } from '@/components/admin/AdminUsersTab';
 import { AdminExploreTab } from '@/components/admin/AdminExploreTab';
 import { AdminTaxonomyTab } from '@/components/admin/AdminTaxonomyTab';
 import { AdminAuditLogsTab } from '@/components/admin/AdminAuditLogsTab';
+import { AdminFacultyTab } from '@/components/admin/AdminFacultyTab';
+import { AdminHackathonsTab } from '@/components/admin/AdminHackathonsTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
@@ -232,6 +234,10 @@ WHERE user_id = '${user.id}';`;
       {currentTab === 'explore' && <AdminExploreTab authToken={authToken} />}
 
       {currentTab === 'taxonomy' && <AdminTaxonomyTab authToken={authToken} />}
+
+      {currentTab === 'faculty' && <AdminFacultyTab authToken={authToken} />}
+
+      {currentTab === 'hackathons' && <AdminHackathonsTab authToken={authToken} />}
 
       {currentTab === 'audit' && <AdminAuditLogsTab authToken={authToken} />}
     </div>

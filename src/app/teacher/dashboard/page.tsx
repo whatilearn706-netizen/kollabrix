@@ -293,29 +293,62 @@ export default function TeacherDashboardPage() {
     setVerifyError(null);
     setVerifySuccess(null);
 
-    if (!facultyCode.trim()) {
-      setVerifyError('Please enter an institutional faculty code.');
+    const code = facultyCode.trim().toUpperCase();
+    if (!code) {
+      setVerifyError('Please enter an institutional faculty code or admin-issued passcode.');
       return;
     }
 
     try {
       setIsVerifying(true);
-      const { data, error } = await supabase.rpc('verify_faculty_code', {
-        code: facultyCode.trim(),
+
+      // 1. Check admin-generated passcodes and platform settings via API endpoint
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/faculty/verify', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ code, userId: user?.id }),
       });
 
-      if (error) {
-        setVerifyError(error.message || 'Verification failed. Please check the code.');
+      const resData = await res.json();
+
+      if (res.ok && resData.success) {
+        setVerifySuccess(resData.message || 'Faculty status verified! Loading mentor dashboard...');
+        await refreshProfile();
+        await loadDashboardData();
         return;
       }
 
-      if (data && data.success) {
-        setVerifySuccess(data.message || 'Faculty status verified! Loading mentor dashboard...');
-        await refreshProfile();
-        await loadDashboardData();
-      } else {
-        setVerifyError(data?.message || 'Invalid faculty code. Please verify with your department head.');
+      // If explicit custom error from API (e.g. inactive passcode, max uses reached)
+      if (res.status === 403) {
+        setVerifyError(resData.error || 'This passcode is inactive or has reached its usage limit.');
+        return;
       }
+
+      // 2. Fallback: try RPC 'verify_faculty_code' if custom DB function exists
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('verify_faculty_code', {
+          code,
+        });
+
+        if (!rpcError && rpcData?.success) {
+          setVerifySuccess(rpcData.message || 'Faculty status verified! Loading mentor dashboard...');
+          await refreshProfile();
+          await loadDashboardData();
+          return;
+        }
+      } catch {
+        // RPC fallback failed, report API error
+      }
+
+      setVerifyError(
+        resData.error ||
+          'Invalid faculty code. Please request an access passcode from your platform administrator or verify via institutional documents.'
+      );
     } catch (err: unknown) {
       setVerifyError(err instanceof Error ? err.message : 'Error verifying faculty code.');
     } finally {
@@ -445,8 +478,9 @@ export default function TeacherDashboardPage() {
                 placeholder="e.g. FACULTY2026"
                 className="font-mono uppercase bg-midnight-850 border-midnight-700"
               />
-              <p className="text-xs text-slate-400 mt-1">
-                Demo institutional key: <code className="text-brand-300 font-bold">FACULTY2026</code>
+              <p className="text-xs text-slate-400 mt-1.5 flex items-center justify-between">
+                <span>Enter an admin-generated passcode or key:</span>
+                <code className="text-brand-300 font-bold bg-midnight-800 px-1.5 py-0.5 rounded border border-midnight-700">FACULTY2026</code>
               </p>
             </div>
 

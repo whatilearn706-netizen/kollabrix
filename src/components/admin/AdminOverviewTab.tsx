@@ -14,6 +14,9 @@ import {
   Sparkles,
   Sliders,
   Compass,
+  GraduationCap,
+  KeyRound,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AdminTab } from './AdminHeader';
@@ -77,9 +80,12 @@ export function AdminOverviewTab({
       {/* 4 Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Users Card */}
-        <div className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-charcoal-700 transition-colors">
+        <div
+          onClick={() => onNavigateTab('users')}
+          className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-brand-500/40 cursor-pointer transition-all"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Total Registered Users</span>
+            <span className="text-xs font-medium text-slate-400 group-hover:text-brand-300 transition-colors">Total Registered Users</span>
             <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
               <Users className="w-4 h-4" />
             </div>
@@ -99,9 +105,12 @@ export function AdminOverviewTab({
         </div>
 
         {/* Projects Card */}
-        <div className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-charcoal-700 transition-colors">
+        <div
+          onClick={() => onNavigateTab('explore')}
+          className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-emerald-500/40 cursor-pointer transition-all"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Collaborative Projects</span>
+            <span className="text-xs font-medium text-slate-400 group-hover:text-emerald-300 transition-colors">Collaborative Projects</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <FolderGit2 className="w-4 h-4" />
             </div>
@@ -120,9 +129,12 @@ export function AdminOverviewTab({
         </div>
 
         {/* Hackathons Card */}
-        <div className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-charcoal-700 transition-colors">
+        <div
+          onClick={() => onNavigateTab('hackathons')}
+          className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-amber-500/40 cursor-pointer transition-all"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Hackathon Events</span>
+            <span className="text-xs font-medium text-slate-400 group-hover:text-amber-300 transition-colors">Hackathon Events</span>
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
               <Trophy className="w-4 h-4" />
             </div>
@@ -138,9 +150,12 @@ export function AdminOverviewTab({
         </div>
 
         {/* Governance & Audit Card */}
-        <div className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-charcoal-700 transition-colors">
+        <div
+          onClick={() => onNavigateTab('audit')}
+          className="rounded-2xl border border-charcoal-750 bg-charcoal-900/90 p-5 space-y-3 relative overflow-hidden group hover:border-purple-500/40 cursor-pointer transition-all"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Audit Events Recorded</span>
+            <span className="text-xs font-medium text-slate-400 group-hover:text-purple-300 transition-colors">Audit Events Recorded</span>
             <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
               <Activity className="w-4 h-4" />
             </div>
@@ -156,7 +171,45 @@ export function AdminOverviewTab({
       </div>
 
       {/* Quick Action Navigation Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          onClick={() => onNavigateTab('faculty')}
+          className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/30 to-charcoal-900/70 p-5 hover:border-indigo-500/60 hover:bg-charcoal-900 cursor-pointer transition-all space-y-2 group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+          </div>
+          <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 flex items-center gap-2">
+            Faculty Passcodes & Verification
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">New</span>
+          </h3>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Generate faculty access passcodes with usage limits, manage active faculty codes, and verify educator credentials so teachers can access the Faculty Portal.
+          </p>
+        </div>
+
+        <div
+          onClick={() => onNavigateTab('hackathons')}
+          className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-950/20 to-charcoal-900/70 p-5 hover:border-red-500/60 hover:bg-charcoal-900 cursor-pointer transition-all space-y-2 group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors" />
+          </div>
+          <h3 className="text-sm font-bold text-white group-hover:text-red-300 flex items-center gap-2">
+            Delete & Moderate Hackathons
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-red-500/20 text-red-300 border border-red-500/30">Admin</span>
+          </h3>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Review all hackathons, inspect participant numbers and project submissions, and permanently delete invalid or test hackathons with clean cascade.
+          </p>
+        </div>
+
         <div
           onClick={() => onNavigateTab('users')}
           className="rounded-2xl border border-charcoal-750 bg-charcoal-900/70 p-5 hover:border-brand-500/50 hover:bg-charcoal-900 cursor-pointer transition-all space-y-2 group"

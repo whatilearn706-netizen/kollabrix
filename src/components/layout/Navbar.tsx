@@ -159,8 +159,8 @@ export function Navbar() {
             </Link>
           )}
 
-          {/* Contextual link: Mentor Portal (strictly for verified faculty/admins) */}
-          {isTeacher && (
+          {/* Contextual link: Faculty Portal (Always visible when logged in, hidden without login) */}
+          {user && (
             <Link
               href="/teacher/dashboard"
               className={clsx(
@@ -252,16 +252,14 @@ export function Navbar() {
                       <span>AI Project Planner</span>
                     </Link>
 
-                    {isTeacher && (
-                      <Link
-                        href="/teacher/dashboard"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-800 hover:bg-purple-50 transition-colors font-bold"
-                      >
-                        <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Faculty Mentor Dashboard</span>
-                      </Link>
-                    )}
+                    <Link
+                      href="/teacher/dashboard"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-800 hover:bg-purple-50 transition-colors font-bold"
+                    >
+                      <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Faculty Portal</span>
+                    </Link>
 
                     <div className="my-1 border-t border-slate-100" />
 
@@ -381,6 +379,15 @@ export function Navbar() {
               >
                 <Inbox className="w-4 h-4 text-pink-600" />
                 <span>Applications &amp; Invites</span>
+              </Link>
+
+              <Link
+                href="/teacher/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 transition-colors"
+              >
+                <GraduationCap className="w-4 h-4 text-purple-600" />
+                <span>Faculty Portal</span>
               </Link>
             </div>
           )}

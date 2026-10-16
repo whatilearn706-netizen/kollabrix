@@ -13,10 +13,19 @@ import {
   ExternalLink,
   ShieldCheck,
   Lock,
+  KeyRound,
+  Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export type AdminTab = 'overview' | 'users' | 'explore' | 'taxonomy' | 'audit';
+export type AdminTab =
+  | 'overview'
+  | 'users'
+  | 'faculty'
+  | 'hackathons'
+  | 'explore'
+  | 'taxonomy'
+  | 'audit';
 
 interface AdminHeaderProps {
   currentTab: AdminTab;
@@ -34,6 +43,8 @@ export function AdminHeader({
   const tabs = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
     { id: 'users' as AdminTab, label: 'User & Team Moderation', icon: Users },
+    { id: 'faculty' as AdminTab, label: 'Faculty Passcodes', icon: KeyRound },
+    { id: 'hackathons' as AdminTab, label: 'Hackathons', icon: Trophy },
     { id: 'explore' as AdminTab, label: 'Explore & Featured', icon: Compass },
     { id: 'taxonomy' as AdminTab, label: 'Taxonomy & Match Scoring', icon: Sliders },
     { id: 'audit' as AdminTab, label: 'Audit Logs', icon: FileText },
