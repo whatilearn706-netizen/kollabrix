@@ -152,24 +152,31 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
     try {
       setIsGitHubLoading(true);
-      const { error: githubError } = await supabase.auth.signInWithOAuth({
+      const { data, error: githubError } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${redirectUrl}`,
+          skipBrowserRedirect: true,
         },
       });
 
       if (githubError) {
-        if (
-          githubError.message.includes('provider is not enabled') ||
-          githubError.message.includes('Unsupported provider')
-        ) {
-          setError(
-            "GitHub provider is not enabled in your Supabase project. Go to Supabase Console -> Authentication -> Providers -> GitHub to toggle it ON."
-          );
-        } else {
-          setError(githubError.message);
+        setError(githubError.message);
+        return;
+      }
+
+      if (data?.url) {
+        const res = await fetch(data.url).catch(() => null);
+        if (res && !res.ok) {
+          const errJson = await res.json().catch(() => null);
+          if (errJson?.msg?.includes('provider is not enabled') || errJson?.error_code === 'validation_failed') {
+            setError(
+              'GitHub sign-in is not enabled in your Supabase project yet. Please use "Continue with Google" for instant 1-click access!'
+            );
+            return;
+          }
         }
+        window.location.href = data.url;
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'GitHub sign-up could not be initiated.');
@@ -190,24 +197,31 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
     try {
       setIsAppleLoading(true);
-      const { error: appleError } = await supabase.auth.signInWithOAuth({
+      const { data, error: appleError } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${redirectUrl}`,
+          skipBrowserRedirect: true,
         },
       });
 
       if (appleError) {
-        if (
-          appleError.message.includes('provider is not enabled') ||
-          appleError.message.includes('Unsupported provider')
-        ) {
-          setError(
-            "Apple sign-in is ready on Linkora! To enable it: Go to Supabase Console -> Authentication -> Providers -> Apple, toggle it ON, and provide your Apple Services ID."
-          );
-        } else {
-          setError(appleError.message);
+        setError(appleError.message);
+        return;
+      }
+
+      if (data?.url) {
+        const res = await fetch(data.url).catch(() => null);
+        if (res && !res.ok) {
+          const errJson = await res.json().catch(() => null);
+          if (errJson?.msg?.includes('provider is not enabled') || errJson?.error_code === 'validation_failed') {
+            setError(
+              'Apple sign-in is not enabled in your Supabase project yet. Please use "Continue with Google" for instant 1-click access!'
+            );
+            return;
+          }
         }
+        window.location.href = data.url;
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Apple sign-up could not be initiated.');
