@@ -257,6 +257,10 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
       if (signUpError) {
         if (signUpError.message.includes('User already registered')) {
           setError('An account with this email already exists. Please log in.');
+        } else if (signUpError.message.includes('Error sending confirmation email') || signUpError.message.includes('confirmation email')) {
+          setError(
+            'Supabase built-in mailer limit reached. To allow instant registration, go to your Supabase Console -> Authentication -> Providers -> Email and toggle "Confirm email" to OFF.'
+          );
         } else {
           setError(signUpError.message);
         }
