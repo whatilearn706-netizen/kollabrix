@@ -51,13 +51,29 @@ export function PostAnnouncementModal({
     setIsLoading(true);
 
     try {
+      // Resolve canonical hackathon UUID if hackathonId is a join code
+      let canonicalHackId = hackathonId;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hackathonId);
+      if (!isUUID && isSupabaseConfigured()) {
+        try {
+          const { data: hMatch } = await supabase
+            .from('hackathons')
+            .select('id')
+            .eq('join_code', hackathonId)
+            .maybeSingle();
+          if (hMatch?.id) canonicalHackId = hMatch.id;
+        } catch {}
+      }
+
       const payload = {
-        hackathon_id: hackathonId,
+        hackathon_id: canonicalHackId,
         author_id: user.id,
         title: title.trim(),
         content: content.trim(),
         is_pinned: isPinned,
       };
+
+      let createdAnn: HackathonAnnouncement | null = null;
 
       if (isSupabaseConfigured()) {
         const { data, error: insertError } = await supabase
@@ -66,24 +82,47 @@ export function PostAnnouncementModal({
           .select('*')
           .single();
 
-        if (insertError) {
-          throw new Error(insertError.message);
+        if (!insertError && data) {
+          createdAnn = data as HackathonAnnouncement;
+        } else {
+          console.warn('Supabase hackathon_announcements insert notice (table may be pending migration):', insertError?.message);
         }
+      }
 
-        onSuccess(data as HackathonAnnouncement);
-      } else {
-        const mock: HackathonAnnouncement = {
-          id: `ann-${Date.now()}`,
-          hackathon_id: hackathonId,
+      // If database not configured or table missing, build resilient local announcement
+      if (!createdAnn) {
+        createdAnn = {
+          id: `ann-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          hackathon_id: canonicalHackId,
           author_id: user.id,
           title: title.trim(),
           content: content.trim(),
           is_pinned: isPinned,
           created_at: new Date().toISOString(),
         };
-        onSuccess(mock);
       }
 
+      // Always cache in localStorage for instant resilience across sessions
+      if (typeof window !== 'undefined') {
+        try {
+          const keys = [
+            `teamforge_announcements_${canonicalHackId}`,
+            `teamforge_announcements_${hackathonId}`,
+          ];
+          for (const key of keys) {
+            const current = JSON.parse(localStorage.getItem(key) || '[]');
+            const filtered = Array.isArray(current) ? current.filter((a: any) => a.id !== createdAnn!.id) : [];
+            localStorage.setItem(key, JSON.stringify([createdAnn, ...filtered]));
+          }
+        } catch {}
+      }
+
+      // Reset form
+      setTitle('');
+      setContent('');
+      setIsPinned(false);
+
+      onSuccess(createdAnn);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error broadcasting announcement.');

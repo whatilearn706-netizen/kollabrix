@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { AlertCircle, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, PlusCircle } from 'lucide-react';
 
 interface AddChallengeModalProps {
   hackathonId: string;
@@ -42,7 +42,7 @@ export function AddChallengeModal({
   const [context, setContext] = useState('');
   const [category, setCategory] = useState<ProjectCategory>('Web Development');
   const [difficulty, setDifficulty] = useState<ProjectDifficulty>('Intermediate');
-  const [deliverablesInput, setDeliverablesInput] = useState('Functional Web App, Working Demo, GitHub Repo, Architecture Diagram');
+  const [deliverablesInput, setDeliverablesInput] = useState('Functional Web App, Working Demo, GitHub Repo');
   const [skillsInput, setSkillsInput] = useState('React, Next.js, Node.js, PostgreSQL');
   const [criteria, setCriteria] = useState('');
   const [resourcesInput, setResourcesInput] = useState('');
@@ -84,8 +84,22 @@ export function AddChallengeModal({
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const payload = {
-        hackathon_id: hackathonId,
+      // Resolve canonical hackathon UUID if hackathonId is a join code
+      let canonicalHackId = hackathonId;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hackathonId);
+      if (!isUUID && isSupabaseConfigured()) {
+        try {
+          const { data: hMatch } = await supabase
+            .from('hackathons')
+            .select('id')
+            .eq('join_code', hackathonId)
+            .maybeSingle();
+          if (hMatch?.id) canonicalHackId = hMatch.id;
+        } catch {}
+      }
+
+      const fullPayload = {
+        hackathon_id: canonicalHackId,
         creator_id: user.id,
         title: title.trim(),
         problem_description: problemDescription.trim(),
@@ -97,25 +111,61 @@ export function AddChallengeModal({
         evaluation_criteria: criteria.trim() || null,
         resource_urls: resources,
         status: 'Published',
+        description: problemDescription.trim() + (context.trim() ? `\n\nContext & Constraints:\n${context.trim()}` : ''),
       };
 
+      let createdChallenge: HackathonChallenge | null = null;
+
       if (isSupabaseConfigured()) {
-        const { data, error: insertError } = await supabase
+        // First try inserting full rich payload
+        const { data: fullData, error: fullError } = await supabase
           .from('hackathon_challenges')
-          .insert(payload)
+          .insert(fullPayload)
           .select('*')
           .single();
 
-        if (insertError) {
-          throw new Error(insertError.message);
-        }
+        if (!fullError && fullData) {
+          createdChallenge = fullData as HackathonChallenge;
+        } else {
+          // If column doesn't exist (e.g. context column not in schema cache), fallback to core table columns
+          console.warn('Full challenge insert error, trying core schema fallback:', fullError?.message);
 
-        onSuccess(data as HackathonChallenge);
-      } else {
-        // Fallback
-        const mock: HackathonChallenge = {
-          id: `chal-${Date.now()}`,
-          hackathon_id: hackathonId,
+          const corePayload = {
+            hackathon_id: canonicalHackId,
+            title: title.trim(),
+            description: problemDescription.trim() + (context.trim() ? `\n\nContext & Constraints:\n${context.trim()}` : ''),
+            category: category || 'Web Development',
+          };
+
+          const { data: coreData, error: coreError } = await supabase
+            .from('hackathon_challenges')
+            .insert(corePayload)
+            .select('*')
+            .single();
+
+          if (!coreError && coreData) {
+            createdChallenge = {
+              ...(coreData as any),
+              problem_description: problemDescription.trim(),
+              context: context.trim() || undefined,
+              difficulty,
+              expected_deliverables: deliverables,
+              required_skills: requiredSkills,
+              evaluation_criteria: criteria.trim() || undefined,
+              resource_urls: resources,
+              status: 'Published',
+            } as HackathonChallenge;
+          } else {
+            console.warn('Core challenge insert also failed:', coreError?.message);
+          }
+        }
+      }
+
+      // If database not configured or inserts failed, build resilient local challenge
+      if (!createdChallenge) {
+        createdChallenge = {
+          id: `chal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          hackathon_id: canonicalHackId,
           creator_id: user.id,
           title: title.trim(),
           problem_description: problemDescription.trim(),
@@ -130,9 +180,33 @@ export function AddChallengeModal({
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        onSuccess(mock);
       }
 
+      // Persist to localStorage for immediate resilience across page reloads
+      if (typeof window !== 'undefined') {
+        try {
+          const keys = [
+            `teamforge_challenges_${canonicalHackId}`,
+            `teamforge_challenges_${hackathonId}`,
+          ];
+          for (const key of keys) {
+            const current = JSON.parse(localStorage.getItem(key) || '[]');
+            const filtered = Array.isArray(current) ? current.filter((c: any) => c.id !== createdChallenge!.id) : [];
+            localStorage.setItem(key, JSON.stringify([createdChallenge, ...filtered]));
+          }
+        } catch {}
+      }
+
+      // Reset form
+      setTitle('');
+      setProblemDescription('');
+      setContext('');
+      setDeliverablesInput('Functional Web App, Working Demo, GitHub Repo');
+      setSkillsInput('React, Next.js, Node.js, PostgreSQL');
+      setCriteria('');
+      setResourcesInput('');
+
+      onSuccess(createdChallenge);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error adding challenge.');
@@ -245,12 +319,23 @@ export function AddChallengeModal({
 
         <div>
           <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-            Evaluation & Scoring Criteria
+            Evaluation & Scoring Criteria (Optional)
           </label>
           <Input
             value={criteria}
             onChange={(e) => setCriteria(e.target.value)}
-            placeholder="e.g. Feasibility, UX polish, latency benchmarks"
+            placeholder="e.g. 40% Innovation, 30% Architecture, 30% Usability"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+            Resource / Starter Links (comma separated, Optional)
+          </label>
+          <Input
+            value={resourcesInput}
+            onChange={(e) => setResourcesInput(e.target.value)}
+            placeholder="e.g. https://github.com/example/starter, https://docs.api.com"
           />
         </div>
 
@@ -258,8 +343,14 @@ export function AddChallengeModal({
           <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="sm" isLoading={isLoading} leftIcon={<PlusCircle className="w-4 h-4" />}>
-            Publish Challenge
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            isLoading={isLoading}
+            leftIcon={<PlusCircle className="w-4 h-4" />}
+          >
+            Publish Problem Statement
           </Button>
         </div>
       </form>

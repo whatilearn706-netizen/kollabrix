@@ -122,7 +122,13 @@ export default function HackathonWorkspacePage() {
 
   // Role checks
   const isOrganizer = Boolean(
-    user && hackathon && (hackathon.creator_id === user.id || participants.some((p) => p.user_id === user.id && p.role === 'organizer'))
+    user &&
+      hackathon &&
+      (hackathon.creator_id === user.id ||
+        participants.some((p) => p.user_id === user.id && p.role === 'organizer') ||
+        profile?.role === 'teacher' ||
+        (profile as any)?.role === 'faculty' ||
+        (profile as any)?.role === 'admin')
   );
   const isJudge = Boolean(
     user && (isOrganizer || participants.some((p) => p.user_id === user.id && p.role === 'judge'))
@@ -281,7 +287,8 @@ export default function HackathonWorkspacePage() {
           }
         } catch {}
 
-        // 3. Fetch Challenges
+        // 3. Fetch Challenges (Resilient to legacy vs modern schema & localStorage fallback)
+        let allChallenges: HackathonChallenge[] = [];
         try {
           const { data: chalData } = await supabase
             .from('hackathon_challenges')
@@ -289,12 +296,63 @@ export default function HackathonWorkspacePage() {
             .eq('hackathon_id', canonicalHackId)
             .order('created_at', { ascending: true });
 
-          if (chalData) {
-            setChallenges(chalData as HackathonChallenge[]);
+          if (chalData && chalData.length > 0) {
+            allChallenges = chalData.map((c: any) => ({
+              ...c,
+              problem_description: c.problem_description || c.description || '',
+              difficulty: c.difficulty || 'Intermediate',
+              category: c.category || 'Web Development',
+            }));
           }
-        } catch {}
+        } catch (err) {
+          console.warn('Error fetching hackathon challenges from Supabase:', err);
+        }
 
-        // 4. Fetch Announcements
+        // Merge localStorage challenges (to recover full rich fields like context & deliverables)
+        if (typeof window !== 'undefined') {
+          try {
+            const k1 = `teamforge_challenges_${canonicalHackId}`;
+            const k2 = `teamforge_challenges_${hackathonId}`;
+            const raw1 = JSON.parse(localStorage.getItem(k1) || '[]');
+            const raw2 = JSON.parse(localStorage.getItem(k2) || '[]');
+            const localList: HackathonChallenge[] = [
+              ...(Array.isArray(raw1) ? raw1 : []),
+              ...(Array.isArray(raw2) ? raw2 : []),
+            ];
+
+            const byId = new Map<string, HackathonChallenge>();
+            allChallenges.forEach((c) => byId.set(c.id, c));
+
+            for (const lc of localList) {
+              if (!lc || !lc.id) continue;
+              if (byId.has(lc.id)) {
+                const existing = byId.get(lc.id)!;
+                byId.set(lc.id, {
+                  ...existing,
+                  problem_description: existing.problem_description || lc.problem_description || (lc as any).description,
+                  context: existing.context || lc.context,
+                  expected_deliverables:
+                    existing.expected_deliverables && existing.expected_deliverables.length > 0
+                      ? existing.expected_deliverables
+                      : lc.expected_deliverables,
+                  required_skills:
+                    existing.required_skills && existing.required_skills.length > 0
+                      ? existing.required_skills
+                      : lc.required_skills,
+                  difficulty: existing.difficulty || lc.difficulty,
+                  evaluation_criteria: existing.evaluation_criteria || lc.evaluation_criteria,
+                });
+              } else {
+                byId.set(lc.id, lc);
+              }
+            }
+            allChallenges = Array.from(byId.values());
+          } catch {}
+        }
+        setChallenges(allChallenges);
+
+        // 4. Fetch Announcements (Resilient to table missing & localStorage fallback)
+        let allAnnouncements: HackathonAnnouncement[] = [];
         try {
           const { data: annData } = await supabase
             .from('hackathon_announcements')
@@ -303,10 +361,42 @@ export default function HackathonWorkspacePage() {
             .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: false });
 
-          if (annData) {
-            setAnnouncements(annData as HackathonAnnouncement[]);
+          if (annData && annData.length > 0) {
+            allAnnouncements = annData as HackathonAnnouncement[];
           }
-        } catch {}
+        } catch (err) {
+          console.warn('Error fetching hackathon announcements from Supabase:', err);
+        }
+
+        // Merge localStorage announcements
+        if (typeof window !== 'undefined') {
+          try {
+            const k1 = `teamforge_announcements_${canonicalHackId}`;
+            const k2 = `teamforge_announcements_${hackathonId}`;
+            const raw1 = JSON.parse(localStorage.getItem(k1) || '[]');
+            const raw2 = JSON.parse(localStorage.getItem(k2) || '[]');
+            const localList: HackathonAnnouncement[] = [
+              ...(Array.isArray(raw1) ? raw1 : []),
+              ...(Array.isArray(raw2) ? raw2 : []),
+            ];
+
+            const byId = new Map<string, HackathonAnnouncement>();
+            allAnnouncements.forEach((a) => byId.set(a.id, a));
+
+            for (const la of localList) {
+              if (la && la.id && !byId.has(la.id)) {
+                byId.set(la.id, la);
+              }
+            }
+            allAnnouncements = Array.from(byId.values());
+            allAnnouncements.sort((a, b) => {
+              if (a.is_pinned && !b.is_pinned) return -1;
+              if (!a.is_pinned && b.is_pinned) return 1;
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+          } catch {}
+        }
+        setAnnouncements(allAnnouncements);
       }
 
       // 5. Fetch Teams with Members safely
@@ -1309,8 +1399,17 @@ export default function HackathonWorkspacePage() {
 
                       <h4 className="text-base font-bold text-white">{chal.title}</h4>
                       <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-                        {chal.problem_description}
+                        {chal.problem_description || (chal as any).description}
                       </p>
+
+                      {chal.context && (
+                        <div className="p-3 rounded-xl bg-charcoal-950/70 border border-charcoal-800 text-xs text-slate-300 space-y-1">
+                          <span className="text-[11px] font-semibold text-brand-300 block">
+                            Context & Constraints:
+                          </span>
+                          <p className="whitespace-pre-wrap leading-relaxed">{chal.context}</p>
+                        </div>
+                      )}
 
                       {chal.expected_deliverables && chal.expected_deliverables.length > 0 && (
                         <div className="pt-2 border-t border-charcoal-800">
@@ -2282,8 +2381,11 @@ export default function HackathonWorkspacePage() {
         hackathonId={hackathon.id}
         isOpen={isAddChallengeOpen}
         onClose={() => setIsAddChallengeOpen(false)}
-        onSuccess={async () => {
+        onSuccess={async (newChal) => {
           setIsAddChallengeOpen(false);
+          if (newChal) {
+            setChallenges((prev) => [newChal, ...prev.filter((c) => c.id !== newChal.id)]);
+          }
           await loadWorkspace();
         }}
       />
@@ -2292,8 +2394,11 @@ export default function HackathonWorkspacePage() {
         hackathonId={hackathon.id}
         isOpen={isPostAnnouncementOpen}
         onClose={() => setIsPostAnnouncementOpen(false)}
-        onSuccess={async () => {
+        onSuccess={async (newAnn) => {
           setIsPostAnnouncementOpen(false);
+          if (newAnn) {
+            setAnnouncements((prev) => [newAnn, ...prev.filter((a) => a.id !== newAnn.id)]);
+          }
           await loadWorkspace();
         }}
       />
