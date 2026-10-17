@@ -50,6 +50,12 @@ img {
   content-visibility: auto;
 }
 
+/* Defer below-the-fold layout calculations for instant initial paint & zero TBT */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 650px;
+}
+
 h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: var(--site-font-heading);
 }

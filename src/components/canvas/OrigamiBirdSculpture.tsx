@@ -15,6 +15,7 @@ import * as THREE from 'three';
 export function OrigamiBirdSculpture() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [webglSupported, setWebglSupported] = useState(true);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -67,6 +68,7 @@ export function OrigamiBirdSculpture() {
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.15;
       activeContainer.appendChild(renderer.domElement);
+      setIsCanvasReady(true);
 
     // Lighting setup for crisp origami paper facets
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
@@ -417,11 +419,11 @@ export function OrigamiBirdSculpture() {
     };
   };
 
-  // Schedule WebGL after initial hydration/idle so Total Blocking Time is ~0ms
+  // Schedule WebGL strictly during browser idle so Total Blocking Time is 0ms
   const idleId =
     typeof window !== 'undefined' && 'requestIdleCallback' in window
-      ? (window as any).requestIdleCallback(initWebGL, { timeout: 350 })
-      : setTimeout(initWebGL, 120);
+      ? (window as any).requestIdleCallback(initWebGL, { timeout: 2500 })
+      : setTimeout(initWebGL, 1200);
 
   return () => {
     destroyed = true;
@@ -440,6 +442,8 @@ export function OrigamiBirdSculpture() {
         <img
           src="/brand/linkora-logo.png"
           alt="Linkora Bird"
+          width={192}
+          height={192}
           className="w-48 h-48 object-contain drop-shadow-2xl animate-pulse"
         />
       </div>
@@ -453,20 +457,38 @@ export function OrigamiBirdSculpture() {
         <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75" />
       </div>
 
+      {/* Instant visual silhouette before 3D WebGL finishes compiling */}
+      {!isCanvasReady && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500">
+          <img
+            src="/brand/linkora-logo.png"
+            alt="Linkora"
+            width={180}
+            height={180}
+            fetchPriority="high"
+            className="w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-2xl"
+          />
+        </div>
+      )}
+
       {/* Three.js canvas container */}
       <div
         ref={containerRef}
-        className="relative w-full h-full z-10 cursor-grab active:cursor-grabbing"
+        className={`relative w-full h-full z-10 cursor-grab active:cursor-grabbing transition-opacity duration-700 ${
+          isCanvasReady ? 'opacity-100' : 'opacity-0'
+        }`}
         title="Interactive 3D Origami Bird • Drag to rotate"
       />
 
       {/* Tactile hint pill */}
-      <div className="absolute bottom-1 right-4 z-20 pointer-events-none">
-        <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-slate-500 shadow-2xs flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>3D Origami • Drag to inspect</span>
-        </span>
-      </div>
+      {isCanvasReady && (
+        <div className="absolute bottom-1 right-4 z-20 pointer-events-none animate-fadeIn">
+          <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 shadow-2xs flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>3D Origami • Drag to inspect</span>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

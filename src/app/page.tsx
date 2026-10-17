@@ -40,7 +40,15 @@ const OrigamiBirdSculpture = dynamic(
     ssr: false,
     loading: () => (
       <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
-        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
+        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75" />
+        <img
+          src="/brand/linkora-logo.png"
+          alt="Linkora"
+          width={180}
+          height={180}
+          fetchPriority="high"
+          className="relative z-10 w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-2xl"
+        />
       </div>
     ),
   }
@@ -467,7 +475,7 @@ export default function HomePage() {
               </div>
 
               {/* Right Column: Signature 3D Linkora Origami Bird */}
-              <div className="lg:col-span-5 flex items-center justify-center relative">
+              <div className="lg:col-span-5 flex items-center justify-center relative min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
                 <OrigamiBirdSculpture />
               </div>
             </div>
@@ -557,7 +565,7 @@ export default function HomePage() {
           SECTION 1: INTENT (INTERACTIVE BUILDER CONSOLE)
          ========================================================================= */}
       {sectionsConfig.intent && (
-        <section className="py-16 md:py-20 relative bg-white border-b border-slate-200/80">
+        <section className="py-16 md:py-20 relative bg-white border-b border-slate-200/80 content-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-700 font-bold">
@@ -582,7 +590,7 @@ export default function HomePage() {
           SECTION 2: WORKFLOW (FROM CONCEPT TO PROOF)
          ========================================================================= */}
       {sectionsConfig.workflow && (
-        <section className="py-16 md:py-24 relative overflow-hidden">
+        <section className="py-16 md:py-24 relative overflow-hidden content-auto">
           {/* Subtle Ambient Glow Orb */}
           <div className="absolute top-1/2 left-10 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
@@ -738,7 +746,7 @@ export default function HomePage() {
           SECTION 3: SHOWCASE (LIVE ACTIVE PROJECTS & HACKATHONS)
          ========================================================================= */}
       {sectionsConfig.showcase && (
-        <section className="py-16 md:py-24 relative overflow-hidden">
+        <section className="py-16 md:py-24 relative overflow-hidden content-auto">
           {/* Subtle Ambient Glow Orb */}
           <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
@@ -905,7 +913,7 @@ export default function HomePage() {
           SECTION: VERIFIED COLLEGIATE PARTNER NETWORK (MODULE 3)
          ========================================================================= */}
       {(sectionsConfig.colleges !== false) && masterConfig.colleges && masterConfig.colleges.length > 0 && (
-        <section className="py-16 md:py-20 bg-slate-50/60 border-b border-slate-200/80">
+        <section className="py-16 md:py-20 bg-slate-50/60 border-b border-slate-200/80 content-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
@@ -965,7 +973,7 @@ export default function HomePage() {
           SECTION 4: COMPETE (CAMPUS PASSCODE & PRIVATE CHALLENGES)
          ========================================================================= */}
       {sectionsConfig.hackathons && (
-        <section className="py-16 md:py-24 bg-[#fafbfc] border-b border-slate-200/80">
+        <section className="py-16 md:py-24 bg-[#fafbfc] border-b border-slate-200/80 content-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-rose-600 font-bold">
@@ -1024,7 +1032,7 @@ export default function HomePage() {
           SECTION: STUDENT HALL OF FAME & HONORS BADGES (MODULE 4)
          ========================================================================= */}
       {(sectionsConfig.badges !== false) && masterConfig.badges && masterConfig.badges.length > 0 && (
-        <section className="py-16 md:py-20 bg-white border-b border-slate-200/80">
+        <section className="py-16 md:py-20 bg-white border-b border-slate-200/80 content-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>

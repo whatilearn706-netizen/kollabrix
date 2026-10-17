@@ -96,7 +96,7 @@ export function GlobalBroadcastBanner() {
     };
   }, []);
 
-  if (!mounted || !banner.enabled || isDismissed) {
+  if (!banner.enabled || isDismissed) {
     return null;
   }
 

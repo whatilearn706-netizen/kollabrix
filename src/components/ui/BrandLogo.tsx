@@ -36,6 +36,9 @@ export function BrandLogo({
         <img
           src="/brand/linkora-logo.png"
           alt={title}
+          width={40}
+          height={40}
+          fetchPriority="high"
           className="w-full h-full object-cover"
         />
       </div>

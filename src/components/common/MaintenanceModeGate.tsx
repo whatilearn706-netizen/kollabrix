@@ -56,7 +56,7 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
     };
 
     checkMode();
-    const interval = setInterval(checkMode, 3000);
+    const interval = setInterval(checkMode, 60000);
 
     const handleUpdate = () => checkMode();
     window.addEventListener('focus', checkMode);
