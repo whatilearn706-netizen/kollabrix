@@ -456,32 +456,10 @@ export function OrigamiBirdSculpture() {
       };
     };
 
-    const startWebGL = () => {
-      if (destroyed || !containerRef.current) return;
-      cleanupListeners();
-      initWebGL();
-    };
-
-    startWebGLRef.current = startWebGL;
-
-    const cleanupListeners = () => {
-      window.removeEventListener('pointermove', startWebGL);
-      window.removeEventListener('scroll', startWebGL);
-      window.removeEventListener('touchstart', startWebGL);
-      clearTimeout(fallbackId);
-    };
-
-    // Instant trigger on interaction or immediate fallback for visible hero
-    window.addEventListener('pointermove', startWebGL, { once: true, passive: true });
-    window.addEventListener('scroll', startWebGL, { once: true, passive: true });
-    window.addEventListener('touchstart', startWebGL, { once: true, passive: true });
-
-    // Fallback timer: 200ms ensures it appears crisp immediately without delay
-    const fallbackId = setTimeout(startWebGL, 200);
+    initWebGL();
 
     return () => {
       destroyed = true;
-      cleanupListeners();
       if (cleanupFn) cleanupFn();
     };
   }, []);
