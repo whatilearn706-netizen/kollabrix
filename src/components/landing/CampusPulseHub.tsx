@@ -27,6 +27,7 @@ import {
 import { HomepageSectionToggles } from '@/types/masterControl';
 import { Project } from '@/types/database';
 import type { User } from '@supabase/supabase-js';
+import { DailyStreakBanner, DailyStreakModal } from '@/components/gamification/DailyStreakHub';
 
 interface CampusPulseHubProps {
   sections: HomepageSectionToggles;
@@ -272,6 +273,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
 
   // Active subtab
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'matchmaker' | 'presence'>('leaderboard');
+  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
 
   // Sync activeTab if current tab gets disabled by admin
   useEffect(() => {
@@ -443,6 +445,11 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
               );
             })}
           </div>
+        </div>
+
+        {/* Daily Builder Streak Habit Loop Banner */}
+        <div className="mt-8">
+          <DailyStreakBanner onOpenCheckIn={() => setIsStreakModalOpen(true)} />
         </div>
 
         {/* ========================================================================= */}
@@ -989,6 +996,12 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
           </div>
         )}
       </div>
+
+      {/* Daily Streak Modal */}
+      <DailyStreakModal
+        isOpen={isStreakModalOpen}
+        onClose={() => setIsStreakModalOpen(false)}
+      />
     </section>
   );
 }

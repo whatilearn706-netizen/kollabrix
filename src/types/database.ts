@@ -77,6 +77,10 @@ export interface Profile {
   linkedin_url?: string | null;
   college_verified?: boolean;
   college_verified_at?: string | null;
+  current_streak?: number;
+  longest_streak?: number;
+  last_check_in_date?: string | null;
+  total_check_ins?: number;
   created_at: string;
   updated_at: string;
 }

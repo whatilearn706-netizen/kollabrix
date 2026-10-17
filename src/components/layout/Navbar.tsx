@@ -36,6 +36,7 @@ import {
   prefetchTeammatesData,
   prefetchHackathonsData,
 } from '@/lib/cache/pageDataCache';
+import { StreakNavbarButton, DailyStreakModal } from '@/components/gamification/DailyStreakHub';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -47,6 +48,7 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -283,6 +285,9 @@ export function Navbar() {
               <Moon className="w-4 h-4 text-slate-700" />
             )}
           </button>
+
+          {/* Daily Streak Flame Button */}
+          <StreakNavbarButton onClick={() => setIsStreakModalOpen(true)} />
 
           {/* Configurable Brand CTA Button */}
           <button
@@ -535,6 +540,20 @@ export function Navbar() {
 
           <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
+          {/* Mobile Daily Streak Indicator */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+            <span className="text-xs font-bold text-white flex items-center gap-2">
+              <span className="text-sm">🔥</span>
+              <span>Daily Build Streak</span>
+            </span>
+            <StreakNavbarButton
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setIsStreakModalOpen(true);
+              }}
+            />
+          </div>
+
           {/* Mobile Theme Toggle Button */}
           <button
             type="button"
@@ -575,6 +594,12 @@ export function Navbar() {
           </button>
         </div>
       )}
+
+      {/* Daily Streak Interactive Check-in Modal */}
+      <DailyStreakModal
+        isOpen={isStreakModalOpen}
+        onClose={() => setIsStreakModalOpen(false)}
+      />
     </header>
   );
 }
