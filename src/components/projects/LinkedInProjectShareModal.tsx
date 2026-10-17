@@ -39,7 +39,7 @@ export function LinkedInProjectShareModal({
   // Generate valuable post content tailored to LinkedIn
   const generatePost = (selectedTone: ToneOption = tone) => {
     setIsGenerating(true);
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-edu.online';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
     const projectUrl = `${origin}/projects/${project.id}`;
     const techStack = project.technologies && project.technologies.length > 0
       ? project.technologies.slice(0, 5).join(', ')

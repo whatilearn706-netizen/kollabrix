@@ -247,7 +247,7 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
   const handleCopyMarkdownReport = () => {
     const md = `# Linkora Executive Platform Briefing
 **Date:** ${new Date().toLocaleDateString()}
-**Platform:** https://linkora-edu.online
+**Platform:** https://linkora-link.online
 
 ## Core Collaboration KPIs
 - **Verified Students:** ${ceoStats?.totalUsers || 142}

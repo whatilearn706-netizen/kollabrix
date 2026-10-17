@@ -103,7 +103,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE hackathon_teams;`;
 
           <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
             <p>
-              Your official platform domain is <code className="bg-charcoal-950 px-1.5 py-0.5 rounded text-emerald-300 border border-charcoal-800">linkora-edu.online</code>. To connect your university domain (e.g. <span className="text-white font-semibold">linkora.edu</span> or <span className="text-white font-semibold">linkora.in</span>), add these two DNS records in your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.):
+              Your official platform domain is <code className="bg-charcoal-950 px-1.5 py-0.5 rounded text-emerald-300 border border-charcoal-800">linkora-link.online</code>. To connect your university domain (e.g. <span className="text-white font-semibold">linkora.edu</span> or <span className="text-white font-semibold">linkora.in</span>), add these two DNS records in your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.):
             </p>
 
             <div className="space-y-2">

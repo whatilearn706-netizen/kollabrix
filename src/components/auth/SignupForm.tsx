@@ -70,8 +70,8 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
 
     const canonicalOrigin = typeof window !== 'undefined'
-      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-edu.online')
-      : 'https://linkora-edu.online';
+      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-link.online')
+      : 'https://linkora-link.online';
 
     try {
       setIsGoogleLoading(true);
@@ -116,8 +116,8 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
 
     const canonicalOrigin = typeof window !== 'undefined'
-      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-edu.online')
-      : 'https://linkora-edu.online';
+      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-link.online')
+      : 'https://linkora-link.online';
 
     try {
       setIsGitHubLoading(true);

@@ -11,7 +11,7 @@ import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-edu.online';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -92,28 +92,28 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://linkora-edu.online/#website',
-      url: 'https://linkora-edu.online/',
+      '@id': 'https://linkora-link.online/#website',
+      url: 'https://linkora-link.online/',
       name: 'Linkora',
-      alternateName: ['Linkora Edu', 'Linkora Platform', 'LinkOra'],
+      alternateName: ['Linkora Link', 'Linkora Platform', 'LinkOra'],
       description: 'College-Wide Student Project Collaboration Platform',
       inLanguage: 'en-US',
       publisher: {
-        '@id': 'https://linkora-edu.online/#organization',
+        '@id': 'https://linkora-link.online/#organization',
       },
     },
     {
       '@type': 'Organization',
-      '@id': 'https://linkora-edu.online/#organization',
+      '@id': 'https://linkora-link.online/#organization',
       name: 'Linkora',
-      url: 'https://linkora-edu.online',
+      url: 'https://linkora-link.online',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://linkora-edu.online/brand/linkora-logo.png',
+        url: 'https://linkora-link.online/brand/linkora-logo.png',
         width: 1024,
         height: 1024,
       },
-      image: 'https://linkora-edu.online/icon-192.png',
+      image: 'https://linkora-link.online/icon-192.png',
       sameAs: ['https://linkora.in'],
     },
   ],

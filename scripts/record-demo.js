@@ -55,7 +55,7 @@ async function smoothScroll(page, targetY, step = 30, delay = 25) {
   try {
     // SCENE 1: HOMEPAGE HERO (5s)
     console.log('[1/5] Loading Homepage Hero...');
-    await page.goto('https://linkora-edu.online', { waitUntil: 'networkidle', timeout: 35000 });
+    await page.goto('https://linkora-link.online', { waitUntil: 'networkidle', timeout: 35000 });
     await sleep(2500);
 
     // SCENE 2: SCROLLING HOMEPAGE (7s)
@@ -69,28 +69,28 @@ async function smoothScroll(page, targetY, step = 30, delay = 25) {
 
     // SCENE 3: EXPLORE PROJECTS (6s)
     console.log('[3/5] Navigating to Explore Projects...');
-    await page.goto('https://linkora-edu.online/explore', { waitUntil: 'networkidle', timeout: 35000 });
+    await page.goto('https://linkora-link.online/explore', { waitUntil: 'networkidle', timeout: 35000 });
     await sleep(2000);
     await smoothScroll(page, 600, 25, 20);
     await sleep(1500);
 
     // SCENE 4: HACKATHONS (6s)
     console.log('[4/5] Navigating to Hackathons Hub...');
-    await page.goto('https://linkora-edu.online/hackathons', { waitUntil: 'networkidle', timeout: 35000 });
+    await page.goto('https://linkora-link.online/hackathons', { waitUntil: 'networkidle', timeout: 35000 });
     await sleep(2000);
     await smoothScroll(page, 600, 25, 20);
     await sleep(1500);
 
     // SCENE 5: TEAMMATES DISCOVERY (6s)
     console.log('[5/5] Navigating to Teammates Directory...');
-    await page.goto('https://linkora-edu.online/teammates', { waitUntil: 'networkidle', timeout: 35000 });
+    await page.goto('https://linkora-link.online/teammates', { waitUntil: 'networkidle', timeout: 35000 });
     await sleep(2000);
     await smoothScroll(page, 550, 25, 20);
     await sleep(1500);
 
     // OUTRO: RETURN TO HOMEPAGE (4s)
     console.log('[Outro] Returning to Homepage...');
-    await page.goto('https://linkora-edu.online', { waitUntil: 'networkidle', timeout: 35000 });
+    await page.goto('https://linkora-link.online', { waitUntil: 'networkidle', timeout: 35000 });
     await sleep(2500);
 
     console.log('Live session recording finished!');

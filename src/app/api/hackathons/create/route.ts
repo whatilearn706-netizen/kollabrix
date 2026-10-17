@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       eligibility: eligibility.trim(),
       themes,
       prize_pool: prizePool?.trim() || null,
-      website_url: `https://linkora-edu.online/h/${joinCode}`,
+      website_url: `https://linkora-link.online/h/${joinCode}`,
       banner_url: resolvedBannerUrl,
       rules: rules?.trim() || null,
       contact_info: contactInfo?.trim() || null,
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
           eligibility: eligibility.trim(),
           themes,
           prize_pool: prizePool?.trim() || null,
-          website_url: `https://linkora-edu.online/h/${joinCode}`,
+          website_url: `https://linkora-link.online/h/${joinCode}`,
           banner_url: resolvedBannerUrl,
           is_verified: true,
         };

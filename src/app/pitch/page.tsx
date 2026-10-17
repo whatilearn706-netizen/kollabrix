@@ -140,18 +140,18 @@ export default function PitchPage() {
 
   const executiveMessageText = `Respected Leadership,
 
-I am writing to share Linkora (linkora-edu.online), a student-developed platform built to enhance campus project portfolios and placement outcomes at our university.
+I am writing to share Linkora (linkora-link.online), a student-developed platform built to enhance campus project portfolios and placement outcomes at our university.
 
 Linkora helps students form cross-disciplinary squads, build production-grade software with GitHub verification, and earn verifiable collegiate project credentials that impress placement recruiters.
 
 I have prepared an interactive 60-second executive walkthrough and university impact summary here:
-👉 https://linkora-edu.online/pitch
+👉 https://linkora-link.online/pitch
 
 The platform is live and ready for a zero-cost departmental pilot. I would welcome 10 minutes of your time this week for a brief demonstration.
 
 Warm regards,
 Linkora Student Innovation Lead
-linkora-edu.online`;
+linkora-link.online`;
 
   const copyExecutiveMessage = () => {
     navigator.clipboard.writeText(executiveMessageText);
@@ -345,7 +345,7 @@ linkora-edu.online`;
               </div>
 
               <div className="text-xs text-zinc-500 font-medium">
-                Live deployment at: <strong className="text-zinc-900">linkora-edu.online</strong>
+                Live deployment at: <strong className="text-zinc-900">linkora-link.online</strong>
               </div>
             </div>
           </div>

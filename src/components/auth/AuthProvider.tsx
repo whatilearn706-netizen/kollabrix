@@ -686,7 +686,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             <p className="text-[11px] text-slate-400">
               If you believe this suspension is in error or wish to appeal, please contact{' '}
-              <span className="text-slate-200 font-medium">support@linkora-edu.online</span>.
+              <span className="text-slate-200 font-medium">support@linkora-link.online</span>.
             </p>
 
             <button

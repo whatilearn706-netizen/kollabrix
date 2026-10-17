@@ -101,7 +101,7 @@ export function AdminOverviewTab({
                 <Crown className="w-3.5 h-3.5 text-amber-400" />
                 ALL 6 MASTER PLATFORM CONTROLS
               </span>
-              <span className="text-xs text-slate-400 font-mono">Live on linkora-edu.online</span>
+              <span className="text-xs text-slate-400 font-mono">Live on linkora-link.online</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               Site Master Control Command Suite
