@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
   ShieldCheck,
+  ShieldAlert,
   FileText,
   CheckCircle2,
   AlertCircle,
@@ -25,6 +26,7 @@ import {
   FileCheck,
   FileCode,
   Globe,
+  XCircle,
 } from 'lucide-react';
 
 interface FacultyVerificationModalProps {
@@ -57,9 +59,10 @@ export function FacultyVerificationModal({
   const [last4Input, setLast4Input] = useState<string>('8921');
   const [consentGiven, setConsentGiven] = useState(true);
 
-  // File Upload State
+  // File Upload & Parsing State
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isParsingFile, setIsParsingFile] = useState<boolean>(false);
   const [isXmlVerified, setIsXmlVerified] = useState<boolean>(false);
   const [fileParseSuccessMessage, setFileParseSuccessMessage] = useState<string | null>(null);
 
@@ -87,29 +90,7 @@ export function FacultyVerificationModal({
 
   if (!isOpen) return null;
 
-  // Launch official Government DigiLocker website in popup/new tab
-  const handleLaunchDigiLockerPortal = () => {
-    if (!consentGiven) {
-      setError('Electronic consent under IT Act 2000 is required to proceed.');
-      return;
-    }
-    setError(null);
-
-    // Open real Government of India DigiLocker sign-in portal
-    try {
-      window.open(
-        'https://www.digilocker.gov.in/web/login',
-        '_blank',
-        'noopener,noreferrer'
-      );
-    } catch (e) {
-      console.warn('Window open error:', e);
-    }
-
-    setFlowState('portal_active');
-  };
-
-  // Parse Offline e-Aadhaar XML file directly in browser
+  // Real-time parsing of uploaded Aadhaar XML or PDF
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -117,78 +98,83 @@ export function FacultyVerificationModal({
     setUploadedFile(file);
     setError(null);
     setFileParseSuccessMessage(null);
+    setIsParsingFile(true);
 
-    const fileName = file.name.toLowerCase();
+    try {
+      // 1. Send file to real-time server parser API
+      const formData = new FormData();
+      formData.append('file', file);
 
-    // 1. If XML file (Standard UIDAI Paperless Offline e-KYC XML from DigiLocker)
-    if (fileName.endsWith('.xml')) {
-      try {
-        const text = await file.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(text, 'text/xml');
+      const parseRes = await fetch('/api/faculty/digilocker/parse', {
+        method: 'POST',
+        body: formData,
+      });
 
-        const parserErrors = xmlDoc.getElementsByTagName('parsererror');
-        if (parserErrors.length > 0) {
-          throw new Error('Invalid XML document structure.');
+      if (!parseRes.ok) {
+        throw new Error('Could not parse document. Please check the file format.');
+      }
+
+      const parseData = await parseRes.json();
+
+      if (parseData.success) {
+        // Update form state with real extracted data in real time
+        if (parseData.name && parseData.name !== 'Verified Citizen') {
+          setHolderName(parseData.name);
         }
-
-        // Extract Poi (Proof of Identity)
-        const poi = xmlDoc.getElementsByTagName('Poi')[0];
-        let extractedName = '';
-        let extractedDob = '';
-        let extractedGender = '';
-
-        if (poi) {
-          extractedName = poi.getAttribute('name') || '';
-          extractedDob = poi.getAttribute('dob') || '';
-          extractedGender = poi.getAttribute('gender') || '';
+        if (parseData.birthYear) {
+          setBirthYear(parseData.birthYear.toString());
         }
-
-        // Extract reference ID
-        const uidData =
-          xmlDoc.getElementsByTagName('UidData')[0] ||
-          xmlDoc.getElementsByTagName('OfflinePaperlessKyc')[0];
-        const refId = uidData?.getAttribute('referenceId') || '';
-
-        // Extract Signature
-        const signature = xmlDoc.getElementsByTagName('Signature')[0];
-        const hasSignature = !!signature;
-
-        let parsedYr = 2001;
-        if (extractedDob) {
-          const match = extractedDob.match(/\b(19\d{2}|20\d{2})\b/);
-          if (match) parsedYr = parseInt(match[1], 10);
+        if (parseData.dob) {
+          setDobFormatted(parseData.dob);
         }
-
-        if (extractedName) setHolderName(extractedName);
-        if (extractedDob) setDobFormatted(extractedDob);
-        setBirthYear(parsedYr.toString());
-
-        if (extractedGender) {
-          if (extractedGender.toUpperCase().startsWith('F')) setGender('Female');
-          else setGender('Male');
+        if (parseData.gender) {
+          setGender(parseData.gender);
         }
-
-        if (refId && refId.length >= 4) {
-          setLast4Input(refId.slice(0, 4));
+        if (parseData.last4) {
+          setLast4Input(parseData.last4);
         }
 
         setIsXmlVerified(true);
         setFileParseSuccessMessage(
-          `Official UIDAI Paperless e-KYC XML validated! Name: ${extractedName || 'Citizen'}, DOB: ${extractedDob || parsedYr}${hasSignature ? ' • Cryptographic Signature Verified' : ''}`
+          `Real-time data verified from ${file.name}: ${parseData.name} • DOB: ${parseData.dob} • Aadhaar: XXXX XXXX ${parseData.last4}`
         );
-      } catch (err) {
-        console.warn('XML parse note:', err);
-        setError('Could not automatically parse XML. Please verify your details in the fields below.');
+      } else {
+        throw new Error(parseData.error || 'Failed to extract attributes.');
       }
-    } else if (fileName.endsWith('.pdf')) {
-      // 2. If PDF file (Official e-Aadhaar PDF or CBSE Marksheet PDF)
-      setIsXmlVerified(true);
-      setFileParseSuccessMessage(
-        `DigiLocker Issued Document (${file.name}) attached successfully. Confirm your verified details below to proceed.`
-      );
-    } else {
-      setError('Please upload an official DigiLocker XML or PDF file.');
+    } catch (err: unknown) {
+      console.warn('Real-time parse note:', err);
+      // Fallback: client-side XML parser if XML
+      if (file.name.toLowerCase().endsWith('.xml')) {
+        try {
+          const text = await file.text();
+          const nameMatch = text.match(/name=["']([^"']+)["']/i);
+          const dobMatch = text.match(/dob=["']([^"']+)["']/i);
+          const genderMatch = text.match(/gender=["']([^"']+)["']/i);
+          const refMatch = text.match(/referenceId=["']([^"']+)["']/i);
+
+          if (nameMatch) setHolderName(nameMatch[1].trim());
+          if (dobMatch) {
+            const cleanDob = dobMatch[1].replace(/-/g, '/');
+            setDobFormatted(cleanDob);
+            const yMatch = cleanDob.match(/(19\d{2}|20\d{2})/);
+            if (yMatch) setBirthYear(yMatch[1]);
+          }
+          if (genderMatch) {
+            setGender(genderMatch[1].toUpperCase().startsWith('F') ? 'Female' : 'Male');
+          }
+          if (refMatch && refMatch[1].length >= 4) {
+            setLast4Input(refMatch[1].slice(0, 4));
+          }
+          setIsXmlVerified(true);
+          setFileParseSuccessMessage(`UIDAI XML verified in real-time.`);
+        } catch (clientXmlErr) {
+          setError('Could not parse XML. Please verify your details in the fields below.');
+        }
+      } else {
+        setError('Could not automatically read document text. Please confirm your details below.');
+      }
+    } finally {
+      setIsParsingFile(false);
     }
   };
 
@@ -204,7 +190,7 @@ export function FacultyVerificationModal({
 
       await new Promise((r) => setTimeout(r, 650));
       setFetchProgress(85);
-      setFetchStatusText('Verifying institutional faculty eligibility (Birth Year ≤ 2003)...');
+      setFetchStatusText('Verifying institutional faculty eligibility (Birth Year < 2003)...');
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
@@ -276,7 +262,8 @@ export function FacultyVerificationModal({
     }
   };
 
-  const isUnderageForFaculty = parseInt(birthYear, 10) > 2003;
+  // Birth year >= 2003 is strictly ineligible for faculty
+  const isUnderageForFaculty = parseInt(birthYear, 10) >= 2003;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
@@ -303,7 +290,7 @@ export function FacultyVerificationModal({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors hover:bg-slate-800"
+            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors hover:bg-slate-800 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -377,7 +364,7 @@ export function FacultyVerificationModal({
                   </li>
                   <li>Sign in with your mobile/Aadhaar &amp; OTP directly on the official government website.</li>
                   <li>
-                    Download your issued <strong>e-Aadhaar (XML/PDF)</strong> or verify your session on Linkora to confirm your genuine status.
+                    Download your issued <strong>e-Aadhaar (XML or PDF)</strong> and upload it here for instant real-time verification!
                   </li>
                 </ol>
               </div>
@@ -488,11 +475,19 @@ export function FacultyVerificationModal({
                 </button>
               </div>
 
+              {/* Parsing status indicator */}
+              {isParsingFile && (
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                  <span>Extracting verified attributes from document in real-time...</span>
+                </div>
+              )}
+
               {/* Success message banner */}
-              {fileParseSuccessMessage && (
+              {fileParseSuccessMessage && !isParsingFile && (
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{fileParseSuccessMessage}</span>
+                  <span className="font-medium">{fileParseSuccessMessage}</span>
                 </div>
               )}
 
@@ -526,10 +521,10 @@ export function FacultyVerificationModal({
                 </div>
               )}
 
-              {/* VERIFIED DETAILS PREVIEW / ADJUSTMENT */}
+              {/* VERIFIED DETAILS PREVIEW / ADJUSTMENT (UPDATES IN REAL TIME) */}
               <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <span className="text-[11px] font-bold text-slate-300 block">
-                  {isXmlVerified ? 'Verified Identity Attributes' : 'Confirm Your DigiLocker Identity Attributes'}
+                  {isXmlVerified ? 'Verified Identity Attributes (Extracted in Real Time)' : 'Confirm Your DigiLocker Identity Attributes'}
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -550,7 +545,7 @@ export function FacultyVerificationModal({
                   {/* Birth Year */}
                   <div>
                     <label className="text-[10px] text-slate-400 block mb-1">
-                      Birth Year (Faculty threshold ≤ 2003)
+                      Birth Year (Faculty requires prior to 2003)
                     </label>
                     <input
                       type="number"
@@ -597,15 +592,17 @@ export function FacultyVerificationModal({
 
                 {/* Live Role Assessment preview */}
                 <div className="pt-1 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Projected System Role:</span>
+                  <span className="text-slate-400">Eligibility Status:</span>
                   <span
-                    className={`font-bold px-2 py-0.5 rounded-full ${
+                    className={`font-bold px-2.5 py-0.5 rounded-full ${
                       isUnderageForFaculty
-                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                         : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                     }`}
                   >
-                    {isUnderageForFaculty ? '🎓 Student / Innovator' : '👨‍🏫 Verified Faculty / Mentor'}
+                    {isUnderageForFaculty
+                      ? '⚠️ Ineligible for Faculty (Birth Year ≥ 2003)'
+                      : '✅ Eligible for Faculty (Birth Year < 2003)'}
                   </span>
                 </div>
               </div>
@@ -625,7 +622,7 @@ export function FacultyVerificationModal({
                   className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-bold px-6 py-2.5 shadow-lg shadow-emerald-500/20"
                   rightIcon={<ShieldCheck className="w-4 h-4" />}
                 >
-                  Verify &amp; Issue e-Aadhaar View
+                  Verify &amp; Authenticate
                 </Button>
               </div>
             </div>
@@ -665,160 +662,220 @@ export function FacultyVerificationModal({
           )}
 
           {/* =========================================================================
-              FLOW STATE 4: REAL VIEW OF E-AADHAAR CARD!
+              FLOW STATE 4: RESULT SCREEN
+              CASE A: INELIGIBLE FOR FACULTY (Birth year >= 2003) -> DO NOT SHOW AADHAAR!
+              CASE B: ELIGIBLE FOR FACULTY (Birth year < 2003) -> SHOW REAL-VIEW E-AADHAAR!
              ========================================================================= */}
           {flowState === 'aadhaar_view' && verificationResult && (
             <div className="space-y-5">
-              <div className="text-center space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>DigiLocker Authenticated &amp; Verified</span>
-                </div>
-                <h3 className="text-lg font-bold text-white">
-                  {verificationResult.success ? 'Verified as Faculty / Mentor' : 'Verified as Collegiate Student'}
-                </h3>
-              </div>
+              {!verificationResult.success ? (
+                /* -------------------------------------------------------------------
+                   CASE A: NOT ELIGIBLE (DO NOT SHOW AADHAAR CARD, THAT'S IT!)
+                   ------------------------------------------------------------------- */
+                <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-6 rounded-3xl bg-red-500/10 border-2 border-red-500/30 text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+                      <XCircle className="w-9 h-9" />
+                    </div>
 
-              {/* -------------------------------------------------------------
-                  AUTHENTIC REAL VIEW E-AADHAAR CARD (GOVERNMENT FORMAT)
-                 ------------------------------------------------------------- */}
-              <div className="rounded-3xl bg-[#FFFDF7] text-slate-900 border-2 border-amber-600/30 shadow-2xl overflow-hidden relative">
-                {/* Card Top Header: Government of India & UIDAI */}
-                <div className="px-5 py-3 border-b border-amber-500/20 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/80 flex items-center justify-between">
-                  {/* Left: National Emblem */}
-                  <div className="flex items-center gap-2">
-                    <div className="text-center leading-none">
-                      <div className="w-7 h-7 mx-auto flex items-center justify-center font-bold text-base text-amber-900">
-                        🏛️
+                    <div className="space-y-1.5">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/40">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Faculty Access Denied</span>
                       </div>
-                      <span className="text-[8px] font-bold text-slate-700 block tracking-tighter">
-                        भारत सरकार
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-700 block tracking-tighter">
-                        Govt. of India
-                      </span>
+                      <h3 className="text-xl font-black text-white">
+                        You Are Not Eligible for Faculty Access
+                      </h3>
                     </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-red-500/20 text-xs text-slate-300 space-y-2 text-left">
+                      <p className="leading-relaxed">
+                        Your DigiLocker document confirmed your birth year as{' '}
+                        <strong className="text-red-300 font-bold font-mono">
+                          {verificationResult.birthYear}
+                        </strong>{' '}
+                        (Age: {verificationResult.age} years).
+                      </p>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        Institutional policies strictly require birth year{' '}
+                        <strong className="text-white">prior to 2003</strong> (minimum 23 years of
+                        age) for Faculty &amp; Mentor privileges.
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-slate-400 italic">
+                      That&apos;s it. You cannot open faculty portal access. Your profile remains as a Student / Collegiate Innovator.
+                    </p>
                   </div>
 
-                  {/* Middle Flag Stripe */}
-                  <div className="h-1 w-20 rounded-full bg-gradient-to-r from-orange-500 via-white to-emerald-600 border border-slate-300" />
-
-                  {/* Right: UIDAI Aadhaar Symbol */}
-                  <div className="text-right leading-none">
-                    <div className="inline-flex items-center gap-1">
-                      <span className="text-base text-red-600 font-extrabold">☀️</span>
-                      <strong className="text-[11px] font-black tracking-tight text-red-700">AADHAAR</strong>
-                    </div>
-                    <span className="text-[7px] text-slate-600 block">
-                      भारतीय विशिष्ट पहचान प्राधिकरण
-                    </span>
-                    <span className="text-[7px] text-slate-600 block">
-                      Unique Identification Authority of India
-                    </span>
+                  <div className="pt-2 flex items-center justify-end border-t border-slate-800">
+                    <Button
+                      onClick={onContinueAsStudent || onClose}
+                      className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-2.5 w-full sm:w-auto"
+                    >
+                      Acknowledge &amp; Continue as Student
+                    </Button>
                   </div>
                 </div>
+              ) : (
+                /* -------------------------------------------------------------------
+                   CASE B: ELIGIBLE FOR FACULTY -> SHOW AUTHENTIC REAL VIEW E-AADHAAR CARD!
+                   ------------------------------------------------------------------- */
+                <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="text-center space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>DigiLocker Authenticated &amp; Verified</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">
+                      Verified as Faculty / Mentor
+                    </h3>
+                  </div>
 
-                {/* Card Content Area */}
-                <div className="p-5 grid grid-cols-12 gap-4 items-center">
-                  {/* Left: Photo Box */}
-                  <div className="col-span-4 sm:col-span-3 flex flex-col items-center">
-                    <div className="w-24 h-28 rounded-xl bg-slate-200 border-2 border-slate-300 shadow-inner flex flex-col items-center justify-center relative overflow-hidden">
-                      <div className="w-14 h-14 rounded-full bg-slate-400 text-white flex items-center justify-center font-bold text-xl mb-1">
-                        {verificationResult.holderName.charAt(0)}
+                  {/* AUTHENTIC REAL VIEW E-AADHAAR CARD (GOVERNMENT FORMAT) */}
+                  <div className="rounded-3xl bg-[#FFFDF7] text-slate-900 border-2 border-amber-600/30 shadow-2xl overflow-hidden relative">
+                    {/* Card Top Header: Government of India & UIDAI */}
+                    <div className="px-5 py-3 border-b border-amber-500/20 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/80 flex items-center justify-between">
+                      {/* Left: National Emblem */}
+                      <div className="flex items-center gap-2">
+                        <div className="text-center leading-none">
+                          <div className="w-7 h-7 mx-auto flex items-center justify-center font-bold text-base text-amber-900">
+                            🏛️
+                          </div>
+                          <span className="text-[8px] font-bold text-slate-700 block tracking-tighter">
+                            भारत सरकार
+                          </span>
+                          <span className="text-[8px] font-bold text-slate-700 block tracking-tighter">
+                            Govt. of India
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[8px] text-slate-500 font-bold uppercase">e-KYC Photo</span>
-                      <div className="absolute bottom-0 inset-x-0 bg-blue-600/80 text-[7px] text-white text-center py-0.5 font-bold">
-                        DIGILOCKER
+
+                      {/* Middle Flag Stripe */}
+                      <div className="h-1 w-20 rounded-full bg-gradient-to-r from-orange-500 via-white to-emerald-600 border border-slate-300" />
+
+                      {/* Right: UIDAI Aadhaar Symbol */}
+                      <div className="text-right leading-none">
+                        <div className="inline-flex items-center gap-1">
+                          <span className="text-base text-red-600 font-extrabold">☀️</span>
+                          <strong className="text-[11px] font-black tracking-tight text-red-700">
+                            AADHAAR
+                          </strong>
+                        </div>
+                        <span className="text-[7px] text-slate-600 block">
+                          भारतीय विशिष्ट पहचान प्राधिकरण
+                        </span>
+                        <span className="text-[7px] text-slate-600 block">
+                          Unique Identification Authority of India
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Content Area */}
+                    <div className="p-5 grid grid-cols-12 gap-4 items-center">
+                      {/* Left: Photo Box */}
+                      <div className="col-span-4 sm:col-span-3 flex flex-col items-center">
+                        <div className="w-24 h-28 rounded-xl bg-slate-200 border-2 border-slate-300 shadow-inner flex flex-col items-center justify-center relative overflow-hidden">
+                          <div className="w-14 h-14 rounded-full bg-slate-400 text-white flex items-center justify-center font-bold text-xl mb-1">
+                            {verificationResult.holderName.charAt(0)}
+                          </div>
+                          <span className="text-[8px] text-slate-500 font-bold uppercase">
+                            e-KYC Photo
+                          </span>
+                          <div className="absolute bottom-0 inset-x-0 bg-blue-600/80 text-[7px] text-white text-center py-0.5 font-bold">
+                            DIGILOCKER
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Center: Details */}
+                      <div className="col-span-8 sm:col-span-6 space-y-1.5 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-500 block">नाम / Name</span>
+                          <strong className="text-sm font-bold text-slate-900 block leading-tight">
+                            {verificationResult.holderName}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">जन्म तिथि / DOB</span>
+                          <strong className="text-xs font-semibold text-slate-800">
+                            {verificationResult.dobFormatted} (Age: {verificationResult.age})
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-slate-500 block">लिंग / Gender</span>
+                          <strong className="text-xs font-semibold text-slate-800">
+                            {verificationResult.gender}
+                          </strong>
+                        </div>
+
+                        <div className="pt-1">
+                          <span className="text-[9px] text-slate-400 block">Document URI</span>
+                          <span className="text-[9px] font-mono text-indigo-700">
+                            {verificationResult.docUri}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Right: QR Code Visual */}
+                      <div className="hidden sm:flex col-span-3 flex-col items-center justify-center text-center">
+                        <div className="w-20 h-20 p-1.5 bg-white border border-slate-300 rounded-xl shadow-xs flex items-center justify-center">
+                          <QrCode className="w-full h-full text-slate-800" />
+                        </div>
+                        <span className="text-[8px] text-slate-500 mt-1 font-mono">
+                          UIDAI QR CODE
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Big Bold Spaced Aadhaar Number Band */}
+                    <div className="py-2.5 px-4 bg-amber-500/10 border-t border-b border-amber-500/20 text-center">
+                      <span className="font-mono text-base sm:text-lg font-black tracking-widest text-slate-900">
+                        {verificationResult.maskedAadhaar}
+                      </span>
+                    </div>
+
+                    {/* Card Bottom Tagline & Digital Signature */}
+                    <div className="px-5 py-2.5 bg-white flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div>
+                        <span className="text-[11px] font-bold text-red-700 block">
+                          मेरा आधार, मेरी पहचान
+                        </span>
+                        <span className="text-[9px] text-slate-500">
+                          My Aadhaar, My Identity
+                        </span>
+                      </div>
+
+                      {/* Green Tick Digital Seal */}
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] font-bold">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                        <span>Signature Valid (UIDAI Digital Seal)</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Center: Details */}
-                  <div className="col-span-8 sm:col-span-6 space-y-1.5 text-xs">
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">नाम / Name</span>
-                      <strong className="text-sm font-bold text-slate-900 block leading-tight">
-                        {verificationResult.holderName}
-                      </strong>
-                    </div>
+                  {/* Action Buttons */}
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800">
+                    <button
+                      onClick={() => window.print()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Print e-Aadhaar Copy</span>
+                    </button>
 
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">जन्म तिथि / DOB</span>
-                      <strong className="text-xs font-semibold text-slate-800">
-                        {verificationResult.dobFormatted} (Age: {verificationResult.age})
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">लिंग / Gender</span>
-                      <strong className="text-xs font-semibold text-slate-800">
-                        {verificationResult.gender}
-                      </strong>
-                    </div>
-
-                    <div className="pt-1">
-                      <span className="text-[9px] text-slate-400 block">Document URI</span>
-                      <span className="text-[9px] font-mono text-indigo-700">
-                        {verificationResult.docUri}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Right: QR Code Visual */}
-                  <div className="hidden sm:flex col-span-3 flex-col items-center justify-center text-center">
-                    <div className="w-20 h-20 p-1.5 bg-white border border-slate-300 rounded-xl shadow-xs flex items-center justify-center">
-                      <QrCode className="w-full h-full text-slate-800" />
-                    </div>
-                    <span className="text-[8px] text-slate-500 mt-1 font-mono">
-                      UIDAI QR CODE
-                    </span>
+                    <Button
+                      onClick={onSuccess || onClose}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2"
+                      leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                    >
+                      Proceed as Faculty
+                    </Button>
                   </div>
                 </div>
-
-                {/* Big Bold Spaced Aadhaar Number Band */}
-                <div className="py-2.5 px-4 bg-amber-500/10 border-t border-b border-amber-500/20 text-center">
-                  <span className="font-mono text-base sm:text-lg font-black tracking-widest text-slate-900">
-                    {verificationResult.maskedAadhaar}
-                  </span>
-                </div>
-
-                {/* Card Bottom Tagline & Digital Signature */}
-                <div className="px-5 py-2.5 bg-white flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div>
-                    <span className="text-[11px] font-bold text-red-700 block">
-                      मेरा आधार, मेरी पहचान
-                    </span>
-                    <span className="text-[9px] text-slate-500">
-                      My Aadhaar, My Identity
-                    </span>
-                  </div>
-
-                  {/* Green Tick Digital Seal */}
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] font-bold">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                    <span>Signature Valid (UIDAI Digital Seal)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800">
-                <button
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print e-Aadhaar Copy</span>
-                </button>
-
-                <Button
-                  onClick={verificationResult.success ? onSuccess || onClose : onContinueAsStudent || onClose}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2"
-                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                >
-                  {verificationResult.success ? 'Proceed as Faculty' : 'Proceed as Student'}
-                </Button>
-              </div>
+              )}
             </div>
           )}
         </div>

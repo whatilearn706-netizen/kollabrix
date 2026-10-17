@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         ? 'c86ce05f-24de-4a1a-a45f-944d4180b508'
         : `guest_${Date.now()}`);
 
-    const isFacultyEligible = parsedYear <= 2003;
+    const isFacultyEligible = parsedYear < 2003;
     const resolvedRole = isFacultyEligible ? 'teacher' : 'student';
     const docTypeLabel = docType === 'marksheet_12th' ? 'digilocker_12th' : 'digilocker_aadhaar';
     const currentYear = 2026;
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         gender: resolvedGender,
         verifiedDocName,
         signatureTime,
-        message: `Digitally signed and cryptographically verified by DigiLocker Authority! Your birth year (${parsedYear} ≤ 2003, Age: ${age}) qualifies you for Institutional Faculty / Mentor status. Welcome!`,
+        message: `Digitally signed and cryptographically verified by DigiLocker Authority! Your birth year (${parsedYear} < 2003, Age: ${age}) qualifies you for Institutional Faculty / Mentor status. Welcome!`,
       });
     } else {
       return NextResponse.json({
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
         gender: resolvedGender,
         verifiedDocName,
         signatureTime,
-        message: `DigiLocker document confirmed. Verified birth year is ${parsedYear} (Age: ${age} years). In accordance with institutional policies, Faculty and Mentor privileges require birth year 2003 or earlier (age ≥ 23). Your profile is confirmed as a Student / Maker.`,
+        message: `You are not eligible for Faculty access. Verified birth year is ${parsedYear} (Age: ${age} years). Institutional policy strictly requires birth year prior to 2003 (minimum 23 years of age) for Faculty / Mentor privileges.`,
       });
     }
   } catch (err: unknown) {
