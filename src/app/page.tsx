@@ -61,6 +61,11 @@ export default function HomePage() {
   const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(DEFAULT_HOMEPAGE_SHOWCASE_CONFIG);
   const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionToggles>(DEFAULT_MASTER_CONTROL_CONFIG.sections);
   const [masterConfig, setMasterConfig] = useState<MasterControlConfig>(DEFAULT_MASTER_CONTROL_CONFIG);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Catch incoming OAuth or URL authentication errors
   useEffect(() => {
@@ -411,7 +416,7 @@ export default function HomePage() {
       {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
          ========================================================================= */}
-      {user && (
+      {mounted && user && (
         <section className="border-b border-slate-200/80 bg-white py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
@@ -1039,7 +1044,9 @@ export default function HomePage() {
                   </Button>
                 </Link>
 
-                {user ? (
+                {!mounted ? (
+                  <div className="w-40 h-12 rounded-2xl bg-slate-800 animate-pulse border border-slate-700" />
+                ) : user ? (
                   <Link href="/projects/new">
                     <Button
                       variant="ghost"

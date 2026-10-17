@@ -36,9 +36,14 @@ export function Navbar() {
   const { user, profile, signOut, openAuthModal } = useAuth();
   const { theme, isDark } = useSiteTheme();
 
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -65,12 +70,24 @@ export function Navbar() {
     }
   };
 
-  const isOwner = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
+  const isOwner =
+    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+    user?.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
+    user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
   const isLocalAdmin = typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true';
   const isAdminUser = profile?.role === 'admin' || isOwner || isLocalAdmin;
 
-  const displayName = profile?.display_name || user?.user_metadata?.display_name || 'Student';
-  const username = profile?.username || user?.user_metadata?.username;
+  const displayName =
+    profile?.display_name ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.user_metadata?.display_name ||
+    (user?.email ? user.email.split('@')[0] : 'Student');
+  const username =
+    profile?.username ||
+    user?.user_metadata?.username ||
+    user?.user_metadata?.preferred_username ||
+    (user?.email ? user.email.split('@')[0] : 'student');
 
 
   const isNavbarDark =
@@ -162,7 +179,7 @@ export function Navbar() {
           })}
 
           {/* Contextual link: Workspace */}
-          {user && (
+          {mounted && user && (
             <Link
               href="/my-projects"
               className={clsx(
@@ -182,7 +199,7 @@ export function Navbar() {
           )}
 
           {/* Contextual link: Faculty Portal (Always visible when logged in) */}
-          {user && (
+          {mounted && user && (
             <Link
               href="/teacher/dashboard"
               className={clsx(
@@ -202,7 +219,7 @@ export function Navbar() {
           )}
 
           {/* Contextual link: Faculty Problems (Visible for all logged-in students & faculty) */}
-          {user && (
+          {mounted && user && (
             <Link
               href="/problems"
               className={clsx(
@@ -238,7 +255,9 @@ export function Navbar() {
             <span>{theme.navbarCtaText || 'Start Project'}</span>
           </button>
 
-          {user ? (
+          {!mounted ? (
+            <div className="w-20 h-8 rounded-xl bg-slate-100/40 dark:bg-white/5 animate-pulse" />
+          ) : user ? (
             <div className="flex items-center gap-2">
               <NotificationBell />
 
@@ -391,7 +410,7 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          {user && <NotificationBell />}
+          {mounted && user && <NotificationBell />}
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -443,7 +462,7 @@ export function Navbar() {
               <span>Hackathons</span>
             </Link>
 
-            {user && (
+            {mounted && user && (
               <>
                 <Link
                   href="/my-projects"

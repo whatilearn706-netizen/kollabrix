@@ -68,14 +68,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.removeItem('linkora_explicit_signout');
-        sessionStorage.removeItem('linkora_explicit_signout');
+        if (localStorage.getItem('linkora_explicit_signout') === 'true') {
+          return null;
+        }
         const cached = localStorage.getItem('linkora_auth_user');
         if (cached) return JSON.parse(cached);
+
         const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
         const hasAdminStorage = localStorage.getItem('linkora_admin_session') === 'true';
         if (hasAdminCookie || hasAdminStorage) {
           return DEFAULT_OWNER_USER;
+        }
+
+        const hasUserCookie = document.cookie.includes('linkora_user_session=true');
+        if (hasUserCookie) {
+          const userIdMatch = document.cookie.match(/linkora_user_id=([^;]+)/);
+          const userEmailMatch = document.cookie.match(/linkora_user_email=([^;]+)/);
+          if (userIdMatch && userIdMatch[1]) {
+            return {
+              id: userIdMatch[1],
+              email: userEmailMatch ? decodeURIComponent(userEmailMatch[1]) : '',
+              user_metadata: {},
+              app_metadata: {},
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+            } as User;
+          }
         }
       } catch (e) {}
     }
@@ -85,6 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(() => {
     if (typeof window !== 'undefined') {
       try {
+        if (localStorage.getItem('linkora_explicit_signout') === 'true') {
+          return null;
+        }
         const cached = localStorage.getItem('linkora_auth_session');
         if (cached) return JSON.parse(cached);
       } catch (e) {}
@@ -95,6 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(() => {
     if (typeof window !== 'undefined') {
       try {
+        if (localStorage.getItem('linkora_explicit_signout') === 'true') {
+          return null;
+        }
         const cached = localStorage.getItem('linkora_auth_profile');
         if (cached) return JSON.parse(cached);
         const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
@@ -113,7 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (
           localStorage.getItem('linkora_auth_user') ||
           localStorage.getItem('linkora_admin_session') === 'true' ||
-          document.cookie.includes('linkora_admin_session=true')
+          document.cookie.includes('linkora_admin_session=true') ||
+          document.cookie.includes('linkora_user_session=true')
         ) {
           return false;
         }
@@ -155,13 +180,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (s) {
         localStorage.setItem('linkora_auth_session', JSON.stringify(s));
-      } else {
+      } else if (!u) {
         localStorage.removeItem('linkora_auth_session');
       }
 
       if (p) {
         localStorage.setItem('linkora_auth_profile', JSON.stringify(p));
-      } else {
+      } else if (!u) {
         localStorage.removeItem('linkora_auth_profile');
       }
     } catch (e) {}
@@ -321,11 +346,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // ONLY wipe if user explicitly invoked signOut() in this browser tab!
+      // ONLY wipe if user explicitly invoked signOut() in this browser!
       if (event === 'SIGNED_OUT') {
         const isExplicit =
           typeof window !== 'undefined' &&
-          sessionStorage.getItem('linkora_signing_out') === 'true';
+          (sessionStorage.getItem('linkora_signing_out') === 'true' ||
+           localStorage.getItem('linkora_explicit_signout') === 'true');
 
         if (isExplicit) {
           try {
@@ -359,6 +385,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const syncAcrossTabs = () => {
       if (typeof window === 'undefined') return;
       try {
+        // Only wipe state if an explicit sign-out occurred in another tab
+        if (localStorage.getItem('linkora_explicit_signout') === 'true') {
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+          return;
+        }
+
         const rawUser = localStorage.getItem('linkora_auth_user');
         const rawProfile = localStorage.getItem('linkora_auth_profile');
         const rawSession = localStorage.getItem('linkora_auth_session');
@@ -373,11 +407,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (hasAdmin) {
           setUser(DEFAULT_OWNER_USER);
           setProfile(DEFAULT_OWNER_PROFILE);
-        } else {
-          // Explicit logout on other tab
-          setUser(null);
-          setProfile(null);
-          setSession(null);
+        } else if (document.cookie.includes('linkora_user_session=true')) {
+          // If persistent cookie exists, preserve the logged-in session!
+          const userIdMatch = document.cookie.match(/linkora_user_id=([^;]+)/);
+          const userEmailMatch = document.cookie.match(/linkora_user_email=([^;]+)/);
+          if (userIdMatch && userIdMatch[1]) {
+            setUser((prev) => prev || ({
+              id: userIdMatch[1],
+              email: userEmailMatch ? decodeURIComponent(userEmailMatch[1]) : '',
+              user_metadata: {},
+              app_metadata: {},
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+            } as User));
+          }
         }
       } catch (e) {}
     };
@@ -403,6 +446,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
 
     try {
+      localStorage.removeItem('linkora_explicit_signout');
       localStorage.setItem('linkora_auth_user', JSON.stringify(DEFAULT_OWNER_USER));
       localStorage.setItem('linkora_auth_profile', JSON.stringify(DEFAULT_OWNER_PROFILE));
       localStorage.setItem('linkora_admin_session', 'true');
@@ -429,6 +473,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       if (typeof window !== 'undefined') {
+        localStorage.setItem('linkora_explicit_signout', 'true');
         sessionStorage.setItem('linkora_signing_out', 'true');
       }
       setUser(null);
