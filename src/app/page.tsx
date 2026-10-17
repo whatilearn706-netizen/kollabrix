@@ -535,18 +535,19 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Stage 1: Connect */}
-            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 hover:border-slate-400 hover:shadow-lg transition-all duration-200 flex flex-col justify-between space-y-6">
+            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-6 group relative overflow-hidden shadow-sm">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-slate-300">
+                  <span className="text-3xl font-black font-mono text-slate-300 group-hover:text-emerald-300 transition-colors duration-200">
                     01
                   </span>
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shadow-2xs">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-emerald-100 transition-all duration-200">
                     <Users className="w-5 h-5 text-emerald-700" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900">
+                <h3 className="text-2xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-200">
                   Connect
                 </h3>
 
@@ -555,13 +556,13 @@ export default function HomePage() {
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     React.js
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     FastAPI
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     UI/UX
                   </span>
                 </div>
@@ -569,26 +570,27 @@ export default function HomePage() {
 
               <Link
                 href="/teammates"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group"
+                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
               >
                 <span>Find Teammates</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
               </Link>
             </div>
 
             {/* Stage 2: Build */}
-            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 hover:border-slate-400 hover:shadow-lg transition-all duration-200 flex flex-col justify-between space-y-6">
+            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-6 group relative overflow-hidden shadow-sm">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-slate-300">
+                  <span className="text-3xl font-black font-mono text-slate-300 group-hover:text-blue-300 transition-colors duration-200">
                     02
                   </span>
-                  <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-center shadow-2xs">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-blue-100 transition-all duration-200">
                     <Kanban className="w-5 h-5 text-blue-700" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900">
+                <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-200">
                   Build
                 </h3>
 
@@ -597,13 +599,13 @@ export default function HomePage() {
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     Sprint Kanban
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     Team Chat
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     Milestones
                   </span>
                 </div>
@@ -611,26 +613,27 @@ export default function HomePage() {
 
               <Link
                 href="/hackathons"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group"
+                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
               >
                 <span>Browse Competitions</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
               </Link>
             </div>
 
             {/* Stage 3: Verify */}
-            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 hover:border-slate-400 hover:shadow-lg transition-all duration-200 flex flex-col justify-between space-y-6">
+            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-6 group relative overflow-hidden shadow-sm">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-slate-300">
+                  <span className="text-3xl font-black font-mono text-slate-300 group-hover:text-rose-300 transition-colors duration-200">
                     03
                   </span>
-                  <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-center shadow-2xs">
+                  <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-rose-100 transition-all duration-200">
                     <ShieldCheck className="w-5 h-5 text-rose-700" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900">
+                <h3 className="text-2xl font-black text-slate-900 group-hover:text-rose-700 transition-colors duration-200">
                   Verify
                 </h3>
 
@@ -639,13 +642,13 @@ export default function HomePage() {
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     GitHub PRs
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     Unit Tests
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
                     Faculty Review
                   </span>
                 </div>
@@ -653,10 +656,10 @@ export default function HomePage() {
 
               <Link
                 href="/explore"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group"
+                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
               >
                 <span>Explore Live Projects</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
               </Link>
             </div>
           </div>

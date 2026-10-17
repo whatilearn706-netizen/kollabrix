@@ -41,8 +41,11 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
         borderColor: theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className="site-card border hover:border-slate-400 p-6 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-xl group relative overflow-hidden"
+      className="site-card card-hover-lift border p-6 flex flex-col justify-between group relative overflow-hidden shadow-sm"
     >
+      {/* Top glowing accent gradient bar on hover */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+
       <div className="space-y-4">
         {/* Header: Avatar, Info, Match Score */}
         <div className="flex items-start justify-between gap-3">
@@ -52,14 +55,14 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                 name={profile.display_name}
                 src={profile.avatar_url}
                 size="lg"
-                className="ring-2 ring-slate-100 group-hover:ring-slate-300 transition-all"
+                className="ring-2 ring-slate-100 dark:ring-white/10 group-hover:ring-violet-400 group-hover:scale-105 transition-all duration-200"
               />
             </Link>
             <div className="min-w-0">
               <Link
                 href={`/profile/${profile.username}`}
                 style={{ color: teammateNameColor }}
-                className={`font-black text-sm sm:text-base truncate block hover:opacity-80 transition-opacity ${
+                className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${
                   isCardDark ? 'text-white site-heading-white' : ''
                 }`}
               >
@@ -81,7 +84,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
 
           <div className="shrink-0 flex flex-col items-end">
             <span
-              className={`text-xs font-black px-3 py-1 rounded-full border flex items-center gap-1.5 font-mono shadow-xs ${scoreBadgeColor}`}
+              className={`text-xs font-black px-3 py-1 rounded-full border flex items-center gap-1.5 font-mono shadow-xs transition-transform duration-200 group-hover:scale-105 ${scoreBadgeColor}`}
             >
               <Sparkles className="w-3 h-3 text-current" />
               <span>{match_score}% Match</span>
@@ -153,7 +156,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                       borderColor: isMatching ? `${theme.accentColor}50` : theme.borderColor,
                       color: isMatching ? theme.accentColor : theme.bodyTextColor,
                     }}
-                    className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold border transition-colors"
+                    className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold border transition-all duration-150 hover:scale-105 hover:border-violet-400/60 cursor-default"
                   >
                     {skill}
                   </span>
@@ -233,7 +236,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
               backgroundColor: theme.brandColor,
               borderRadius: theme.borderRadius,
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:opacity-90 active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all duration-150 hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>Invite to Project</span>

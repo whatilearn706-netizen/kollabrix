@@ -42,8 +42,11 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         borderColor: project.is_featured ? theme.brandColor : theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className={`site-card group flex flex-col justify-between border hover:border-slate-400 p-6 sm:p-7 transition-all duration-200 relative overflow-hidden`}
+      className={`site-card card-hover-lift group flex flex-col justify-between border p-6 sm:p-7 relative overflow-hidden`}
     >
+      {/* Top glowing accent gradient bar on hover */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
       <div className="space-y-3.5">
         {/* Top Badges Row */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -111,7 +114,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         <Link href={`/projects/${project.id}`} className="block focus:outline-none">
           <h3
             style={{ color: cardHeadingColor }}
-            className={`text-base sm:text-lg font-black transition-colors line-clamp-2 leading-snug hover:opacity-80 ${isCardDark ? 'text-white site-heading-white' : ''}`}
+            className={`text-base sm:text-lg font-black transition-colors duration-200 line-clamp-2 leading-snug group-hover:text-violet-600 dark:group-hover:text-violet-400 ${isCardDark ? 'text-white site-heading-white' : ''}`}
           >
             {project.title}
           </h3>
@@ -136,7 +139,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
                   borderColor: theme.borderColor,
                   color: theme.bodyTextColor,
                 }}
-                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border"
+                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition-all duration-200 group-hover:border-violet-500/30 group-hover:scale-[1.02]"
               >
                 {tech}
               </span>
@@ -235,11 +238,11 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           <Link
             href={`/projects/${project.id}`}
             style={{ color: theme.brandColor }}
-            className="inline-flex items-center gap-1 font-bold text-xs transition-colors group-hover:translate-x-0.5 duration-150 hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-xs transition-colors group/link hover:underline"
             aria-label={`View details for ${project.title}`}
           >
             <span>View</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1 group-hover/link:translate-x-1.5" />
           </Link>
         </div>
       </div>

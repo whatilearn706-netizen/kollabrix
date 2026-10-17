@@ -52,14 +52,17 @@ export function HackathonCard({
         borderColor: theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className="site-card border hover:border-slate-400 p-6 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-xl group relative overflow-hidden space-y-4"
+      className="site-card card-hover-lift border p-6 flex flex-col justify-between group relative overflow-hidden space-y-4 shadow-sm"
     >
+      {/* Top glowing accent gradient bar on hover */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+
       {hackathon.banner_url && (
         <div className="-mx-6 -mt-6 mb-1 h-32 overflow-hidden relative border-b border-white/10">
           <img
             src={hackathon.banner_url}
             alt={hackathon.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         </div>
@@ -122,10 +125,10 @@ export function HackathonCard({
               style={{
                 borderColor: theme.borderColor,
               }}
-              className={`p-1.5 rounded-xl border transition-colors ${
+              className={`p-1.5 rounded-xl border transition-all duration-200 hover:scale-110 active:scale-90 ${
                 isSaved
                   ? 'bg-pink-500/20 text-pink-400 border-pink-500/40'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-400 hover:text-white hover:border-slate-300'
               }`}
               title={isSaved ? 'Remove from Saved' : 'Save Event'}
             >
@@ -142,7 +145,7 @@ export function HackathonCard({
           >
             <h3
               style={{ color: theme.headingColor }}
-              className="text-lg font-black transition-colors line-clamp-1 hover:opacity-80"
+              className="text-lg font-black transition-colors duration-200 line-clamp-1 group-hover:text-violet-600 dark:group-hover:text-violet-400"
             >
               {hackathon.title}
             </h3>
@@ -271,8 +274,8 @@ export function HackathonCard({
                 variant="primary"
                 size="sm"
                 style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="w-full justify-center text-white font-bold shadow-md"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                className="w-full justify-center text-white font-bold shadow-md group/btn"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />}
               >
                 Register Team
               </Button>
@@ -284,7 +287,7 @@ export function HackathonCard({
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             style={{ borderColor: theme.borderColor, color: theme.mutedTextColor }}
-            className="p-2 rounded-xl border hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl border hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all duration-150"
             title={isExpanded ? 'Show Less' : 'View Rules & Rubric'}
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
