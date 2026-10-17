@@ -7,14 +7,13 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  ExternalLink,
   RefreshCw,
   Sparkles,
   Linkedin,
   GraduationCap,
-  AlertTriangle,
   XCircle,
   ArrowRight,
+  UserX,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
@@ -37,13 +36,15 @@ export function LinkedInCollegeVerificationModal({
 }: LinkedInCollegeVerificationModalProps) {
   const [enteredCollege, setEnteredCollege] = useState(collegeName || '');
   const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [claimedLinkedinCollege, setClaimedLinkedinCollege] = useState(collegeName || '');
+  const [claimedLinkedinCollege, setClaimedLinkedinCollege] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // States: 'input' | 'verifying' | 'success' | 'mismatch_popup'
   const [modalState, setModalState] = useState<'input' | 'verifying' | 'success' | 'mismatch_popup'>('input');
   const [mismatchData, setMismatchData] = useState<{
+    type: 'invalid_college' | 'identity_mismatch';
+    title: string;
     entered: string;
     linkedin: string;
     message: string;
@@ -55,7 +56,7 @@ export function LinkedInCollegeVerificationModal({
     setErrorMsg(null);
     const cleanCollege = enteredCollege.trim();
     const cleanLinkedin = linkedinUrl.trim();
-    const cleanClaimed = claimedLinkedinCollege.trim() || cleanCollege;
+    const cleanClaimed = claimedLinkedinCollege.trim();
 
     if (!cleanCollege) {
       setErrorMsg('Please enter your college name.');
@@ -63,12 +64,12 @@ export function LinkedInCollegeVerificationModal({
     }
 
     if (!cleanLinkedin) {
-      setErrorMsg('Please enter your LinkedIn profile link (e.g. https://www.linkedin.com/in/username).');
+      setErrorMsg('Please enter your personal LinkedIn profile link (e.g. https://www.linkedin.com/in/your-handle).');
       return;
     }
 
     if (!cleanLinkedin.toLowerCase().includes('linkedin.com/in/') && !/^[a-zA-Z0-9_-]{3,}$/.test(cleanLinkedin)) {
-      setErrorMsg('Please enter a valid LinkedIn URL (e.g. https://www.linkedin.com/in/your-profile).');
+      setErrorMsg('Please enter a valid LinkedIn URL (e.g. https://www.linkedin.com/in/your-username).');
       return;
     }
 
@@ -95,16 +96,32 @@ export function LinkedInCollegeVerificationModal({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (data.error === 'identity_mismatch') {
+          // USER IMPERSONATION / SOMEONE ELSE'S LINKEDIN DETECTED
+          setMismatchData({
+            type: 'identity_mismatch',
+            title: 'Identity Mismatch: Not Your Profile',
+            entered: data.userDisplayName || 'Your Account',
+            linkedin: data.linkedInName || 'Other Person Profile',
+            message: data.message || 'This LinkedIn profile belongs to someone else. You must link your own authentic profile.',
+          });
+          setModalState('mismatch_popup');
+          return;
+        }
+
         if (data.error === 'invalid_college' || data.isMatch === false) {
           // USER REQUIREMENT: Show popup for invalid college name!
           setMismatchData({
+            type: 'invalid_college',
+            title: 'Invalid College Name',
             entered: cleanCollege,
-            linkedin: cleanClaimed,
+            linkedin: data.linkedinEducation || cleanClaimed || 'Unknown',
             message: data.message || 'College name does not match your LinkedIn education profile.',
           });
           setModalState('mismatch_popup');
           return;
         }
+
         throw new Error(data.error || 'Verification failed. Please try again.');
       }
 
@@ -148,12 +165,12 @@ export function LinkedInCollegeVerificationModal({
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#0A66C2]/15 text-[#70B5F9] border border-[#0A66C2]/30 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-[#70B5F9]" />
-                  LinkedIn Verified
+                  LinkedIn Verification
                 </span>
-                <span className="text-[10px] text-slate-400">Trust &amp; Credibility</span>
+                <span className="text-[10px] text-slate-400">Trust &amp; Anti-Fraud</span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-white">
-                Verify College Name via LinkedIn
+                Verify College Affiliation
               </h2>
             </div>
           </div>
@@ -180,7 +197,7 @@ export function LinkedInCollegeVerificationModal({
           {modalState === 'input' && (
             <div className="space-y-4">
               <p className="text-xs text-slate-300 leading-relaxed">
-                To build project trust across campus, connect your LinkedIn profile to cross-check and verify your college name. Once verified, a blue checkmark badge will appear right after your college name across all your projects and profile.
+                To build project trust across colleges, connect your personal LinkedIn profile. Linkora cross-checks your account identity and real LinkedIn education history. Once verified, a verified checkmark appears next to your college name for everyone across Linkora.
               </p>
 
               {/* College Name Input */}
@@ -202,22 +219,25 @@ export function LinkedInCollegeVerificationModal({
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1.5 flex items-center gap-1.5">
                   <Linkedin className="w-4 h-4 text-[#70B5F9]" />
-                  <span>Your LinkedIn Profile URL</span>
+                  <span>Your Personal LinkedIn Profile URL</span>
                 </label>
                 <input
                   type="url"
                   value={linkedinUrl}
                   onChange={(e) => setLinkedinUrl(e.target.value)}
-                  placeholder="https://www.linkedin.com/in/your-username"
+                  placeholder="https://www.linkedin.com/in/your-personal-handle"
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-[#0A66C2] font-mono text-[11px]"
                 />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Must be your own authentic LinkedIn profile. Impersonation of other accounts is automatically rejected.
+                </p>
               </div>
 
-              {/* Institution on LinkedIn (for alias matching) */}
+              {/* Optional: Institution name as listed on LinkedIn */}
               <div>
                 <label className="text-xs font-semibold text-slate-400 block mb-1.5 flex items-center justify-between">
-                  <span>Institution Name as listed in LinkedIn Education</span>
-                  <span className="text-[10px] text-slate-500">Optional for alias match</span>
+                  <span>Exact Institution Name on LinkedIn</span>
+                  <span className="text-[10px] text-slate-500">Optional alias check</span>
                 </label>
                 <input
                   type="text"
@@ -232,7 +252,7 @@ export function LinkedInCollegeVerificationModal({
               <div className="p-3.5 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-[11px] text-slate-300 space-y-1">
                 <span className="font-bold text-blue-300 block">🔒 Trust &amp; Anti-Fraud Policy:</span>
                 <p className="text-slate-400 leading-relaxed">
-                  Linkora automatically cross-checks abbreviations (e.g. &ldquo;DTU&rdquo; ↔ &ldquo;Delhi Technological University&rdquo;). If the entered college name does not match your LinkedIn education profile, verification will be rejected.
+                  Linkora cross-checks your identity and educational history. If the entered college name does not match your authentic LinkedIn profile, verification will be rejected.
                 </p>
               </div>
 
@@ -251,7 +271,7 @@ export function LinkedInCollegeVerificationModal({
                   className="bg-[#0A66C2] hover:bg-[#004182] text-white font-bold px-6 py-2.5 text-xs shadow-lg shadow-[#0A66C2]/20"
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
-                  Cross-Check &amp; Verify College
+                  Verify College
                 </Button>
               </div>
             </div>
@@ -272,28 +292,32 @@ export function LinkedInCollegeVerificationModal({
               <div className="space-y-1.5">
                 <h3 className="text-sm font-bold text-white">Cross-Checking LinkedIn Credentials...</h3>
                 <p className="text-xs text-slate-400">
-                  Verifying educational affiliation between &ldquo;{enteredCollege}&rdquo; and LinkedIn profile.
+                  Verifying account identity and educational affiliation between &ldquo;{enteredCollege}&rdquo; and LinkedIn profile.
                 </p>
               </div>
             </div>
           )}
 
           {/* =========================================================================
-              STATE 3: USER REQUESTED POPUP -> INVALID COLLEGE NAME!
+              STATE 3: USER REQUESTED POPUP -> MISMATCH POPUP!
              ========================================================================= */}
           {modalState === 'mismatch_popup' && mismatchData && (
             <div className="space-y-5 animate-in zoom-in-95 duration-200">
               <div className="p-5 rounded-2xl bg-red-500/10 border-2 border-red-500/30 text-center space-y-3">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
-                  <XCircle className="w-8 h-8" />
+                  {mismatchData.type === 'identity_mismatch' ? (
+                    <UserX className="w-8 h-8" />
+                  ) : (
+                    <XCircle className="w-8 h-8" />
+                  )}
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/40">
-                    Verification Mismatch
+                    {mismatchData.type === 'identity_mismatch' ? 'Impersonation Blocked' : 'Verification Mismatch'}
                   </span>
                   <h3 className="text-lg font-black text-white">
-                    Invalid College Name
+                    {mismatchData.title}
                   </h3>
                 </div>
 
@@ -304,11 +328,15 @@ export function LinkedInCollegeVerificationModal({
                 {/* Comparison Card */}
                 <div className="p-3.5 rounded-xl bg-slate-950/80 border border-red-500/20 text-left text-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400 text-[11px]">Entered on Linkora:</span>
+                    <span className="text-slate-400 text-[11px]">
+                      {mismatchData.type === 'identity_mismatch' ? 'Linkora Account:' : 'Entered on Linkora:'}
+                    </span>
                     <strong className="text-white font-mono">{mismatchData.entered}</strong>
                   </div>
                   <div className="flex items-center justify-between border-t border-slate-800 pt-1.5">
-                    <span className="text-slate-400 text-[11px]">LinkedIn Education:</span>
+                    <span className="text-slate-400 text-[11px]">
+                      {mismatchData.type === 'identity_mismatch' ? 'LinkedIn Profile Owner:' : 'LinkedIn Education:'}
+                    </span>
                     <strong className="text-amber-400 font-mono">{mismatchData.linkedin || 'Unknown'}</strong>
                   </div>
                 </div>
@@ -332,7 +360,9 @@ export function LinkedInCollegeVerificationModal({
                   onClick={() => setModalState('input')}
                   className="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2.5 text-xs"
                 >
-                  Correct College Name &amp; Try Again
+                  {mismatchData.type === 'identity_mismatch'
+                    ? 'Use Your Own LinkedIn URL'
+                    : 'Correct College Name & Try Again'}
                 </Button>
               </div>
             </div>
@@ -350,40 +380,40 @@ export function LinkedInCollegeVerificationModal({
 
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    Authentication Confirmed
+                    Officially Verified
                   </span>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-lg font-black text-white">
                     College Name Verified!
                   </h3>
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
-                  Your affiliation with <strong className="text-white font-bold">{enteredCollege}</strong> has been successfully verified through your LinkedIn credentials.
+                <p className="text-xs text-emerald-300/90 leading-relaxed max-w-sm mx-auto">
+                  Your affiliation with &ldquo;{enteredCollege}&rdquo; has been authenticated via your LinkedIn profile.
                 </p>
 
                 {/* Badge Preview */}
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
-                  <span className="text-[10px] text-slate-400 block">
-                    Verified Badge that now appears across Linkora:
-                  </span>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0A66C2]/15 text-[#70B5F9] border border-[#0A66C2]/30 text-xs font-bold">
-                    <GraduationCap className="w-3.5 h-3.5 text-[#70B5F9]" />
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/20 flex items-center justify-center gap-2">
+                  <span className="text-xs text-slate-400">Live Preview:</span>
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
                     <span>{enteredCollege}</span>
-                    <span className="inline-flex items-center gap-0.5 text-[10px] bg-[#0A66C2] text-white px-1.5 py-0.2 rounded-full font-bold ml-1">
-                      ✓ Verified
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0A66C2]/20 text-[#70B5F9] border border-[#0A66C2]/40 shadow-xs">
+                      <CheckCircle2 className="w-3 h-3 text-[#70B5F9]" />
+                      Verified
                     </span>
-                  </div>
+                  </span>
                 </div>
+
+                <p className="text-[11px] text-slate-400">
+                  This blue verified badge is now visible to everyone across all your projects, teammate cards, and profile.
+                </p>
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 flex items-center justify-end border-t border-slate-800">
+              <div className="pt-2 flex justify-end border-t border-slate-800">
                 <Button
                   onClick={onClose}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 text-xs"
-                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 text-xs shadow-lg shadow-emerald-600/20"
                 >
-                  Done
+                  Done &amp; Save Profile
                 </Button>
               </div>
             </div>

@@ -17,6 +17,7 @@ import { GithubActivitySection } from '@/components/github/GithubActivitySection
 import { SquadShareModal } from '@/components/projects/SquadShareModal';
 import { ProjectCertificateModal } from '@/components/workspace/ProjectCertificateModal';
 import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
+import { LinkedInProjectShareModal } from '@/components/projects/LinkedInProjectShareModal';
 import {
   Users,
   Calendar,
@@ -40,6 +41,7 @@ import {
   MessageSquare,
   Share2,
   Award,
+  Linkedin,
 } from 'lucide-react';
 
 export default function ProjectDetailsPage() {
@@ -64,6 +66,7 @@ export default function ProjectDetailsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isLinkedInShareOpen, setIsLinkedInShareOpen] = useState(false);
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
 
   // Phase 2 Collaboration State
@@ -388,6 +391,17 @@ export default function ProjectDetailsPage() {
             leftIcon={<Award className="w-3.5 h-3.5 text-amber-600" />}
           >
             Certificate
+          </Button>
+
+          {/* Post to LinkedIn with AI */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsLinkedInShareOpen(true)}
+            className="border-[#0A66C2]/40 text-[#0A66C2] hover:bg-[#0A66C2]/10 font-bold"
+            leftIcon={<Linkedin className="w-3.5 h-3.5 fill-[#0A66C2] text-[#0A66C2]" />}
+          >
+            Post to LinkedIn
           </Button>
 
           {isOwner && (
@@ -870,19 +884,30 @@ export default function ProjectDetailsPage() {
                 <VerifiedCollegeBadge
                   college={project.owner.college}
                   isVerified={project.owner.college_verified}
+                  userId={project.owner?.user_id || project.owner_id}
+                  username={creatorUsername}
                 />
               </div>
             )}
 
-            {creatorUsername && (
-              <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              {creatorUsername && (
                 <Link href={`/profile/${creatorUsername}`} className="block">
                   <Button variant="outline" size="sm" className="w-full justify-center">
                     View Student Profile
                   </Button>
                 </Link>
-              </div>
-            )}
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLinkedInShareOpen(true)}
+                className="w-full justify-center border-[#0A66C2]/35 text-[#0A66C2] hover:bg-[#0A66C2]/10 text-xs font-bold"
+                leftIcon={<Linkedin className="w-3.5 h-3.5 fill-[#0A66C2] text-[#0A66C2]" />}
+              >
+                Post on LinkedIn with AI
+              </Button>
+            </div>
           </div>
 
           {/* Roles Sought */}
@@ -968,6 +993,14 @@ export default function ProjectDetailsPage() {
       <SquadShareModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+        project={project}
+        onOpenLinkedIn={() => setIsLinkedInShareOpen(true)}
+      />
+
+      {/* LinkedIn AI Project Poster Modal */}
+      <LinkedInProjectShareModal
+        isOpen={isLinkedInShareOpen}
+        onClose={() => setIsLinkedInShareOpen(false)}
         project={project}
       />
 

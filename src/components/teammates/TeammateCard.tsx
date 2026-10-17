@@ -81,6 +81,8 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                     <VerifiedCollegeBadge
                       college={profile.college}
                       isVerified={profile.college_verified}
+                      userId={profile.user_id}
+                      username={profile.username}
                       size="xs"
                     />
                   )}

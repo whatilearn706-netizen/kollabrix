@@ -255,6 +255,8 @@ export function InviteTeammateModal({
                   <VerifiedCollegeBadge
                     college={candidate.college}
                     isVerified={candidate.college_verified}
+                    userId={candidate.user_id}
+                    username={candidate.username}
                     size="xs"
                   />
                 ) : (

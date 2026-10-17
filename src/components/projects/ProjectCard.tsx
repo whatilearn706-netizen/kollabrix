@@ -209,6 +209,8 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
                     <VerifiedCollegeBadge
                       college={project.owner.college}
                       isVerified={project.owner.college_verified}
+                      userId={project.owner?.user_id || project.owner_id}
+                      username={creatorUsername}
                       size="xs"
                     />
                   </span>

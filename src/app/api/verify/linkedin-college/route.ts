@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { crossCheckCollegeName } from '@/lib/verification/collegeVerification';
+import {
+  crossCheckCollegeName,
+  fetchLinkedInProfileMetadata,
+  verifyLinkedInIdentity,
+} from '@/lib/verification/collegeVerification';
 
 export const runtime = 'nodejs';
 
@@ -13,6 +17,32 @@ function parseLinkedinHandle(urlOrHandle: string): string {
   clean = clean.replace(/\/.*$/, '');
   clean = clean.replace(/[^a-zA-Z0-9_-]/g, '');
   return clean;
+}
+
+/**
+ * GET: Returns all verified college records so ANY visitor or user across the platform
+ * can see the verified checkmark badge universally.
+ */
+export async function GET() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const client = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+
+    const { data } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'linkedin_college_verifications')
+      .maybeSingle();
+
+    const verifications = Array.isArray(data?.value) ? data.value : [];
+    return NextResponse.json(
+      { success: true, verifications },
+      { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
+    );
+  } catch (err: unknown) {
+    return NextResponse.json({ success: true, verifications: [] });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -46,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     if (!cleanLinkedin) {
       return NextResponse.json(
-        { success: false, error: 'Please provide your LinkedIn profile URL.' },
+        { success: false, error: 'Please provide your authentic LinkedIn profile URL.' },
         { status: 400 }
       );
     }
@@ -62,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Identify user
+    // 1. Identify user
     let user = null;
     if (token) {
       const { data: userData } = await client.auth.getUser(token);
@@ -77,13 +107,82 @@ export async function POST(request: NextRequest) {
       userId ||
       (request.cookies.get('linkora_admin_session')?.value === 'true'
         ? 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-        : `user_${Date.now()}`);
+        : null);
 
-    // Determine the comparison target:
-    // If the student claimed an education name on LinkedIn, or if we extract it:
-    const targetLinkedinInstitute = cleanClaimed || cleanCollege;
+    // Fetch user profile from database to get official display_name & username
+    let userProfile: any = null;
+    if (targetUserId) {
+      const { data: pData } = await client
+        .from('profiles')
+        .select('user_id, display_name, username')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+      userProfile = pData;
+    }
 
-    // Cross-check the entered college name with the claimed/verified LinkedIn education
+    const effectiveDisplayName = userProfile?.display_name || user?.user_metadata?.full_name || '';
+    const effectiveUsername = userProfile?.username || user?.user_metadata?.user_name || '';
+    const effectiveEmail = user?.email || '';
+
+    // 2. Fetch real LinkedIn profile OpenGraph metadata (Name, Education, Headline)
+    const linkedInMeta = await fetchLinkedInProfileMetadata(handle);
+
+    // 3. ANTI-IMPERSONATION / OWNERSHIP CHECK:
+    // Verify that the user isn't pasting someone else's LinkedIn profile (e.g. Sundar Pichai, Satya Nadella)
+    if (linkedInMeta.name) {
+      const identityCheck = verifyLinkedInIdentity(
+        linkedInMeta.name,
+        handle,
+        effectiveDisplayName,
+        effectiveUsername,
+        effectiveEmail
+      );
+
+      if (!identityCheck.isMatch) {
+        return NextResponse.json({
+          success: false,
+          isMatch: false,
+          error: 'identity_mismatch',
+          linkedInName: linkedInMeta.name,
+          userDisplayName: effectiveDisplayName || effectiveUsername || 'Your account',
+          message:
+            identityCheck.reason ||
+            `Identity Mismatch! The LinkedIn profile belongs to "${linkedInMeta.name}", which does not match your Linkora account name ("${
+              effectiveDisplayName || effectiveUsername
+            }"). You cannot use someone else's LinkedIn profile.`,
+        });
+      }
+    }
+
+    // 4. COLLEGE VERIFICATION:
+    // If LinkedIn metadata exposes their verified institution:
+    let targetLinkedinInstitute = '';
+    if (linkedInMeta.education) {
+      targetLinkedinInstitute = linkedInMeta.education;
+    } else if (cleanClaimed) {
+      targetLinkedinInstitute = cleanClaimed;
+    } else if (linkedInMeta.rawDesc) {
+      // Check if the entered college appears in their description / headline
+      const enteredTokens = cleanCollege.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2);
+      const descLower = linkedInMeta.rawDesc.toLowerCase();
+      const hasMatch = enteredTokens.some((t: string) => descLower.includes(t));
+      if (hasMatch) {
+        targetLinkedinInstitute = cleanCollege;
+      }
+    }
+
+    if (!targetLinkedinInstitute) {
+      return NextResponse.json({
+        success: false,
+        isMatch: false,
+        error: 'invalid_college',
+        enteredCollege: cleanCollege,
+        linkedinEducation: 'No education listed on this LinkedIn profile',
+        message: `Invalid College Name! No education history could be found on LinkedIn profile "${handle}" matching "${cleanCollege}". Please make sure your college is listed under Education on LinkedIn.`,
+      });
+    }
+
+    // Cross-check entered college with LinkedIn education
     const checkResult = crossCheckCollegeName(cleanCollege, targetLinkedinInstitute);
 
     if (!checkResult.isMatch) {
@@ -97,11 +196,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Persist verified status in Supabase profiles table
+    // 5. SUCCESS! Persist in Supabase and platform_settings registry
     const fullLinkedinUrl = `https://www.linkedin.com/in/${handle}`;
     const verifiedAt = new Date().toISOString();
 
-    if (isSupabaseConfigured() && targetUserId && !targetUserId.startsWith('user_')) {
+    if (isSupabaseConfigured() && targetUserId) {
       try {
         const fullProfileUpdate: Record<string, any> = {
           college: cleanCollege,
@@ -117,7 +216,6 @@ export async function POST(request: NextRequest) {
           .eq('user_id', targetUserId);
 
         if (updateErr && (updateErr.message.includes('column') || updateErr.code === '42703')) {
-          // Fallback if college_verified column does not exist yet in schema
           await client
             .from('profiles')
             .update({
@@ -131,7 +229,7 @@ export async function POST(request: NextRequest) {
         console.warn('Profile college update note:', err);
       }
 
-      // Record in platform_settings registry
+      // Record in platform_settings registry so EVERYONE sees the verified status globally
       try {
         const { data: pData } = await client
           .from('platform_settings')
@@ -142,6 +240,8 @@ export async function POST(request: NextRequest) {
         const existingList = Array.isArray(pData?.value) ? pData.value : [];
         const record = {
           userId: targetUserId,
+          username: effectiveUsername || '',
+          displayName: effectiveDisplayName || '',
           college: cleanCollege,
           linkedinHandle: handle,
           linkedinUrl: fullLinkedinUrl,
@@ -151,7 +251,7 @@ export async function POST(request: NextRequest) {
         const updatedList = [
           record,
           ...existingList.filter((item: any) => item.userId !== targetUserId),
-        ].slice(0, 100);
+        ].slice(0, 500);
 
         await client.from('platform_settings').upsert({
           key: 'linkedin_college_verifications',
@@ -172,11 +272,11 @@ export async function POST(request: NextRequest) {
       linkedinUrl: fullLinkedinUrl,
       linkedinHandle: handle,
       verifiedAt,
-      message: `College verified successfully via LinkedIn! "${cleanCollege}" is now authenticated.`,
+      message: `College verified successfully via LinkedIn! "${cleanCollege}" is authenticated and will display a verified badge to everyone.`,
     });
   } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'LinkedIn college verification failed.' },
+      { error: err instanceof Error ? err.message : 'LinkedIn verification failed.' },
       { status: 500 }
     );
   }

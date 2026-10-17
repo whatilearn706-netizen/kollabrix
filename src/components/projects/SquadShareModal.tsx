@@ -12,15 +12,17 @@ import {
   Sparkles,
   Users,
   X,
+  Linkedin,
 } from 'lucide-react';
 
 interface SquadShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   project: Project;
+  onOpenLinkedIn?: () => void;
 }
 
-export function SquadShareModal({ isOpen, onClose, project }: SquadShareModalProps) {
+export function SquadShareModal({ isOpen, onClose, project, onOpenLinkedIn }: SquadShareModalProps) {
   const [copiedType, setCopiedType] = useState<'link' | 'discord' | 'pitch' | null>(null);
 
   if (!isOpen) return null;
@@ -169,6 +171,25 @@ ${projectUrl}`;
               <Copy className="w-3.5 h-3.5 opacity-60" />
             )}
           </button>
+
+          {/* Post to LinkedIn with AI */}
+          {onOpenLinkedIn && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenLinkedIn();
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-[#0A66C2]/10 hover:bg-[#0A66C2]/15 border border-[#0A66C2]/30 text-[#0A66C2] font-bold text-xs transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <Linkedin className="w-4 h-4 fill-[#0A66C2] text-[#0A66C2]" />
+                <span>Post Project on LinkedIn with AI Summary</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0A66C2]/15 text-[#0A66C2] border border-[#0A66C2]/30">
+                1-Click
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Direct Project Link Copy */}

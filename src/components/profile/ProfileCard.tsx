@@ -103,6 +103,8 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
               <VerifiedCollegeBadge
                 college={profile.college}
                 isVerified={profile.college_verified}
+                userId={profile.user_id}
+                username={profile.username}
               />
             </div>
           )}

@@ -376,6 +376,8 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
                     <VerifiedCollegeBadge
                       college={selectedUser.college}
                       isVerified={selectedUser.college_verified}
+                      userId={selectedUser.user_id}
+                      username={selectedUser.username}
                       size="xs"
                     />
                   ) : (

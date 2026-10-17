@@ -356,7 +356,7 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
                         </span>
                         {proj.owner?.college && (
                           <span className="text-slate-500 flex items-center gap-1">
-                            • <VerifiedCollegeBadge college={proj.owner.college} isVerified={proj.owner.college_verified} size="xs" />
+                            • <VerifiedCollegeBadge college={proj.owner.college} isVerified={proj.owner.college_verified} userId={proj.owner?.user_id || proj.owner_id} size="xs" />
                           </span>
                         )}
                       </div>
@@ -484,7 +484,7 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
                         </span>
                         {prob.author?.college && (
                           <span className="text-slate-500 flex items-center gap-1">
-                            • <VerifiedCollegeBadge college={prob.author.college} isVerified={prob.author.college_verified} size="xs" />
+                            • <VerifiedCollegeBadge college={prob.author.college} isVerified={prob.author.college_verified} userId={prob.author?.user_id || prob.author_id} size="xs" />
                           </span>
                         )}
                       </div>
