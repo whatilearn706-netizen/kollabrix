@@ -156,3 +156,39 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   border-color: #cbd5e1 !important;
 }
 
+/* ========================================================
+   Ambient Glow & Floating Animation Utilities
+   ======================================================== */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.glow-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.35) 50%, transparent 100%);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-panel,
+.site-theme-dark .glass-panel {
+  background: rgba(17, 20, 30, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+

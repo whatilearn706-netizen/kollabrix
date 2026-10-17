@@ -309,16 +309,25 @@ export default function HomePage() {
           HERO: BALANCED SPLIT STAGE (HEADLINE + 3D LINKORA ORIGAMI BIRD)
          ========================================================================= */}
       {sectionsConfig.hero && (
-        <section className="relative pt-8 pb-14 md:pt-14 md:pb-20 overflow-hidden border-b border-slate-200/80">
+        <section className="relative pt-8 pb-14 md:pt-16 md:pb-24 overflow-hidden">
+          {/* Ambient Cinematic Mesh Lighting Orbs */}
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-violet-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+          <div className="absolute top-1/3 right-4 w-[500px] h-[500px] bg-gradient-to-bl from-pink-500/15 via-rose-500/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
               {/* Left Column: Brand, Editorial Headline & Primary Actions */}
               <div className="lg:col-span-7 space-y-6 text-left">
+                {/* Glassmorphic Badge with Neon Radar Pulse */}
                 <div
                   style={{ borderRadius: theme.borderRadius }}
-                  className="inline-flex items-center gap-2 px-3.5 py-1 bg-slate-100 border border-slate-200/90 text-slate-700 text-xs font-mono font-bold tracking-wider uppercase"
+                  className="inline-flex items-center gap-2.5 px-4 py-1.5 backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold tracking-wider uppercase shadow-2xs"
                 >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
                   <span>{theme.heroBadgeText || 'Linkora • Student Collaboration Network'}</span>
                 </div>
 
@@ -339,7 +348,7 @@ export default function HomePage() {
                     color: theme.bodyTextColor,
                     fontFamily: `var(--site-font-body, "${theme.bodyFont}")`,
                   }}
-                  className="text-base sm:text-xl leading-relaxed font-normal max-w-xl"
+                  className="text-base sm:text-xl leading-relaxed font-normal max-w-xl opacity-90"
                 >
                   {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
                 </p>
@@ -354,7 +363,7 @@ export default function HomePage() {
                         backgroundColor: theme.brandColor,
                         borderRadius: theme.borderRadius,
                       }}
-                      className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-sm border-0 transition-all active:scale-[0.98]"
+                      className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-md border-0 transition-all active:scale-[0.98]"
                       leftIcon={<Compass className="w-4 h-4" />}
                     >
                       {theme.primaryCtaText || 'Explore Projects'}
@@ -368,8 +377,8 @@ export default function HomePage() {
                       style={{
                         borderRadius: theme.borderRadius,
                       }}
-                      className="border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold px-7 py-3.5 bg-white shadow-2xs transition-all active:scale-[0.98]"
-                      leftIcon={<Users className="w-4 h-4 text-slate-700" />}
+                      className="border border-slate-300 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white font-bold px-7 py-3.5 bg-white dark:bg-white/5 shadow-2xs transition-all active:scale-[0.98]"
+                      leftIcon={<Users className="w-4 h-4 text-slate-700 dark:text-slate-300" />}
                     >
                       {theme.secondaryCtaText || 'Find Teammates'}
                     </Button>
@@ -378,27 +387,43 @@ export default function HomePage() {
                   <button
                     onClick={() => setIsSparkModalOpen(true)}
                     style={{ borderRadius: theme.borderRadius }}
-                    className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 text-amber-900 font-bold text-sm hover:border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-2xs active:scale-[0.98]"
+                    className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 font-bold text-sm hover:border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <Sparkles className="w-4 h-4 text-amber-500" />
                     <span>AI Spark Generator</span>
                   </button>
                 </div>
 
+                {/* Floating Live Telemetry Chips */}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200">
+                    <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                    <span><strong className="font-bold text-slate-900 dark:text-white">250+</strong> Active Squads</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200">
+                    <Sparkles className="w-3.5 h-3.5 text-violet-500 fill-violet-500/20" />
+                    <span><strong className="font-bold text-slate-900 dark:text-white">94%</strong> Match Accuracy</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200">
+                    <Trophy className="w-3.5 h-3.5 text-pink-500 fill-pink-500/20" />
+                    <span><strong className="font-bold text-slate-900 dark:text-white">18+</strong> Collegiate Hackathons</span>
+                  </div>
+                </div>
+
                 {/* High-signal Trust Chips */}
-                <div className="pt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
+                <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span>Verified GitHub Proof</span>
                   </div>
-                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-300 dark:text-slate-700">•</span>
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
                     <span>College Hackathons</span>
                   </div>
-                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-300 dark:text-slate-700">•</span>
                   <div className="flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4 text-blue-600 shrink-0" />
+                    <GraduationCap className="w-4 h-4 text-blue-500 shrink-0" />
                     <span>Faculty Mentorship</span>
                   </div>
                 </div>
@@ -410,6 +435,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+          <div className="glow-divider mt-12" />
         </section>
       )}
 
@@ -511,6 +537,7 @@ export default function HomePage() {
 
             <IntentConsole sampleProjects={featuredProjects} config={intentConfig} />
           </div>
+          <div className="glow-divider mt-16" />
         </section>
       )}
 
@@ -518,8 +545,10 @@ export default function HomePage() {
           SECTION 2: WORKFLOW (FROM CONCEPT TO PROOF)
          ========================================================================= */}
       {sectionsConfig.workflow && (
-        <section className="py-16 md:py-24 relative bg-[#fafbfc] border-b border-slate-200/80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <section className="py-16 md:py-24 relative overflow-hidden">
+          {/* Subtle Ambient Glow Orb */}
+          <div className="absolute top-1/2 left-10 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-600 font-bold">
                 <Layers className="w-3.5 h-3.5 text-slate-500" />
@@ -663,6 +692,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+          <div className="glow-divider mt-16" />
         </div>
       </section>
       )}
@@ -671,8 +701,10 @@ export default function HomePage() {
           SECTION 3: SHOWCASE (LIVE ACTIVE PROJECTS & HACKATHONS)
          ========================================================================= */}
       {sectionsConfig.showcase && (
-        <section className="py-16 md:py-24 bg-white border-b border-slate-200/80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <section className="py-16 md:py-24 relative overflow-hidden">
+          {/* Subtle Ambient Glow Orb */}
+          <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
             {/* Header with Segmented Switcher */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
@@ -827,6 +859,7 @@ export default function HomePage() {
               </div>
             </div>
           )}
+          <div className="glow-divider mt-16" />
         </div>
       </section>
       )}

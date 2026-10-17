@@ -119,13 +119,16 @@ export function Navbar() {
         backgroundColor:
           theme.navbarBgColor ||
           (isNavbarDark
-            ? theme.surfaceColor || '#11141E'
-            : 'rgba(255, 255, 255, 0.95)'),
-        borderColor: theme.navbarBorderColor || theme.borderColor,
+            ? 'rgba(9, 11, 16, 0.82)'
+            : 'rgba(255, 255, 255, 0.85)'),
+        borderColor: theme.navbarBorderColor || (isNavbarDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)'),
       }}
-      className="sticky top-0 z-40 w-full border-b backdrop-blur-xl transition-all shadow-sm"
+      className="sticky top-0 z-40 w-full border-b backdrop-blur-2xl transition-all shadow-sm"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      {/* Subtle bottom accent ray */}
+      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/25 to-transparent pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4 relative">
         {/* Brand Logo & Wordmark */}
         <Link
           href="/"
