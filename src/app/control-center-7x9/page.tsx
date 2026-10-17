@@ -199,8 +199,21 @@ export default function AdminControlCenterPage() {
   const handleUnlockWithPasscode = (e: React.FormEvent) => {
     e.preventDefault();
     setPasscodeError('');
+
+    if (typeof window !== 'undefined') {
+      const lockout = sessionStorage.getItem('linkora_admin_lockout');
+      if (lockout && parseInt(lockout, 10) > Date.now()) {
+        const waitMinutes = Math.ceil((parseInt(lockout, 10) - Date.now()) / 60000);
+        setPasscodeError(`Security lockout active. Please wait ${waitMinutes} minutes before retrying.`);
+        return;
+      }
+    }
+
     const clean = directPasscode.trim().toLowerCase();
     if (clean === 'admin7x9' || clean === 'linkora2026') {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('linkora_admin_fail_count');
+      }
       const ok = loginWithAdminPasscode(clean);
       if (ok) {
         setIsAdmin(true);
@@ -208,7 +221,17 @@ export default function AdminControlCenterPage() {
         setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
       }
     } else {
-      setPasscodeError('Invalid administrative passcode. Please enter your secret key.');
+      let fails = 1;
+      if (typeof window !== 'undefined') {
+        fails = (parseInt(sessionStorage.getItem('linkora_admin_fail_count') || '0', 10) || 0) + 1;
+        sessionStorage.setItem('linkora_admin_fail_count', String(fails));
+        if (fails >= 5) {
+          sessionStorage.setItem('linkora_admin_lockout', String(Date.now() + 900000)); // 15 min lockout
+          setPasscodeError('Too many failed attempts. Security lockout active for 15 minutes.');
+          return;
+        }
+      }
+      setPasscodeError(`Invalid administrative passcode. (${5 - fails} attempts remaining)`);
     }
   };
 
@@ -236,35 +259,52 @@ export default function AdminControlCenterPage() {
           </p>
         </div>
 
-        {/* 1-Click Fast Unlock as Founder */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-500/30 text-center space-y-2.5 shadow-elevated">
-          <p className="text-xs font-semibold text-amber-300">
-            Platform Owner: Mayank Goyal (goyalmayank142@gmail.com)
-          </p>
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            className="w-full bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-black shadow-elevated border-none py-3 text-sm"
-            onClick={() => {
-              loginAsOwner();
-              setIsAdmin(true);
-              setAdminUser({ id: 'c86ce05f-24de-4a1a-a45f-944d4180b508', email: 'goyalmayank142@gmail.com' });
-              setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
-            }}
-          >
-            ⚡ 1-Click Founder Access (Authorize Now)
-          </Button>
-        </div>
+        {/* Founder Authorization - Only for verified signed-in owner */}
+        {user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53' || user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ? (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-500/30 text-center space-y-2.5 shadow-elevated">
+            <p className="text-xs font-semibold text-amber-300">
+              Verified Platform Owner: {user.email}
+            </p>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-black shadow-elevated border-none py-3 text-sm"
+              onClick={() => {
+                loginAsOwner();
+                setIsAdmin(true);
+                setAdminUser(user);
+                setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
+              }}
+            >
+              Enter Admin Control Center
+            </Button>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
+            <p className="text-xs text-slate-400">
+              Administrative access is strictly restricted to platform owners.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full text-xs font-bold border-slate-700 hover:bg-white/5 text-slate-200"
+              onClick={() => openAuthModal('login')}
+            >
+              Sign In with Google
+            </Button>
+          </div>
+        )}
 
-        {/* 1-Click Fast Unlock with Passcode */}
+        {/* Private Master Passcode Verification */}
         <form onSubmit={handleUnlockWithPasscode} className="p-5 rounded-2xl bg-charcoal-900 border border-charcoal-750 text-left space-y-3.5 shadow-elevated">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
             <KeyRound className="w-4 h-4" />
-            <span>Fast Founder Passcode Access</span>
+            <span>Master Administrative Key</span>
           </div>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Enter your secret key (e.g. <code className="bg-charcoal-950 px-1 py-0.5 rounded text-amber-300 font-mono">admin7x9</code>) for instant 1-tap god-mode access without OAuth redirects:
+            Enter your secret master key for direct platform access:
           </p>
           <div className="flex gap-2">
             <input

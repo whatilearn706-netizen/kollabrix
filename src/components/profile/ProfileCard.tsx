@@ -17,6 +17,7 @@ import {
   Linkedin,
 } from 'lucide-react';
 import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
+import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 
 export interface ProfileCardProps {
   profile: Profile;
@@ -57,7 +58,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
         <div className="flex items-center gap-2">
           {profile.github_url && (
             <a
-              href={profile.github_url}
+              href={safeExternalUrl(profile.github_url)}
               target="_blank"
               rel="noreferrer"
               className="p-2 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 hover:text-white border border-charcoal-700 transition-colors"
@@ -69,7 +70,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
           )}
           {profile.linkedin_url && (
             <a
-              href={profile.linkedin_url.startsWith('http') ? profile.linkedin_url : `https://${profile.linkedin_url}`}
+              href={safeExternalUrl(profile.linkedin_url)}
               target="_blank"
               rel="noreferrer"
               className="p-2 rounded-lg bg-[#0A66C2]/15 hover:bg-[#0A66C2]/25 text-[#70B5F9] border border-[#0A66C2]/35 transition-colors"
@@ -81,7 +82,7 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
           )}
           {profile.portfolio_url && (
             <a
-              href={profile.portfolio_url}
+              href={safeExternalUrl(profile.portfolio_url)}
               target="_blank"
               rel="noreferrer"
               className="p-2 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 hover:text-white border border-charcoal-700 transition-colors"

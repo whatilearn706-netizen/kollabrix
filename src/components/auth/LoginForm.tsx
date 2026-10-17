@@ -55,15 +55,12 @@ function GitHubIcon({ className = 'w-5 h-5' }: { className?: string }) {
 
 export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore' }: LoginFormProps) {
   const router = useRouter();
-  const { loginWithAdminPasscode } = useAuth();
 
   // General Loading & Feedback States
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [passcode, setPasscode] = useState('');
-  const [showPasscodeForm, setShowPasscodeForm] = useState(false);
 
   // Check for incoming OAuth or URL error parameters
   useEffect(() => {
@@ -90,23 +87,6 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       router.push(redirectUrl);
       router.refresh();
     }
-  };
-
-  const handlePasscodeLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const clean = passcode.trim().toLowerCase();
-    if (clean === 'admin7x9' || clean === 'linkora2026') {
-      const ok = loginWithAdminPasscode(clean);
-      if (ok) {
-        setInfoMessage('Authenticated as Platform Administrator!');
-        setTimeout(() => {
-          handleAuthSuccess();
-        }, 300);
-        return;
-      }
-    }
-    setError('Invalid administrator passcode. Please try again or use Google sign-in.');
   };
 
   // 1. Google OAuth Sign-in
