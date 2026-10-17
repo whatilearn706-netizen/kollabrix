@@ -7,20 +7,10 @@ export async function middleware(request: NextRequest) {
   const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
 
   const PRIMARY_DOMAIN = 'linkora-link.online';
-  const VALID_DOMAINS = ['linkora-link.online', 'linkora-edu.online', 'linkora.in', 'linkora-edu.in'];
 
-  // 1. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback on linkora-link.online
-  if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
-    const url = request.nextUrl.clone();
-    url.host = isLocal ? host : (VALID_DOMAINS.includes(host) ? host : PRIMARY_DOMAIN);
-    url.protocol = isLocal ? url.protocol : 'https';
-    url.port = isLocal ? url.port : '';
-    url.pathname = '/auth/callback';
-    return NextResponse.redirect(url, { status: 307 });
-  }
-
-  // 2. Prevent search engines (Google, Bing) from ever indexing *.vercel.app or non-canonical hosts
-  if (!isLocal && !VALID_DOMAINS.includes(host)) {
+  // 1. Permanently 301 redirect all linkora-edu and vercel.app traffic to linkora-link.online
+  // This removes linkora-edu from Google Search and forces all users and crawlers to linkora-link.online
+  if (!isLocal && (host.includes('linkora-edu') || host.includes('vercel.app'))) {
     if (pathname === '/robots.txt' && host.includes('vercel.app')) {
       return new NextResponse('User-agent: *\nDisallow: /\n', {
         status: 200,
@@ -40,6 +30,25 @@ export async function middleware(request: NextRequest) {
       redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
     return redirectResponse;
+  }
+
+  // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback on linkora-link.online
+  if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
+    const url = request.nextUrl.clone();
+    url.host = isLocal ? host : PRIMARY_DOMAIN;
+    url.protocol = isLocal ? url.protocol : 'https';
+    url.port = isLocal ? url.port : '';
+    url.pathname = '/auth/callback';
+    return NextResponse.redirect(url, { status: 307 });
+  }
+
+  // 3. Ensure any other non-canonical host redirects to PRIMARY_DOMAIN
+  if (!isLocal && host !== PRIMARY_DOMAIN && host !== `www.${PRIMARY_DOMAIN}` && host !== 'linkora.in' && host !== 'www.linkora.in') {
+    const url = request.nextUrl.clone();
+    url.host = PRIMARY_DOMAIN;
+    url.protocol = 'https';
+    url.port = '';
+    return NextResponse.redirect(url, { status: 301 });
   }
 
   const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();
@@ -100,6 +109,12 @@ export async function middleware(request: NextRequest) {
     // Fail safely without disrupting the page request
   }
 
+
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
 
   return response;
 }
