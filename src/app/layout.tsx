@@ -74,6 +74,14 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Linkora',
+  alternateName: ['Linkora Edu', 'Linkora Platform', 'LinkOra'],
+  url: 'https://linkora-edu.online',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -81,6 +89,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white">
         <AuthProvider>
           <SiteThemeProvider>
