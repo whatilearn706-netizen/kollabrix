@@ -56,6 +56,7 @@ import {
   DEFAULT_HOMEPAGE_INTENT_CONFIG,
   DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
 } from '@/types/homepageConfig';
+import { CampusPulseHub } from '@/components/landing/CampusPulseHub';
 import {
   HomepageSectionToggles,
   MasterControlConfig,
@@ -732,6 +733,18 @@ export default function HomePage() {
           <div className="glow-divider mt-16" />
         </div>
       </section>
+      )}
+
+      {/* =========================================================================
+          SECTION: LINKORA CAMPUS INNOVATION HUB (1 UNIFIED SECTION)
+          Modules 1, 2, 3: College Leaderboard, AI Dream Team, Live Campus Pulse
+         ========================================================================= */}
+      {sectionsConfig.campusPulse !== false && (
+        <CampusPulseHub
+          sections={sectionsConfig}
+          projects={featuredProjects}
+          user={user}
+        />
       )}
 
       {/* =========================================================================

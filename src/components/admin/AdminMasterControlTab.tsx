@@ -23,6 +23,10 @@ import {
   Sparkles,
   KeyRound,
   Lock,
+  Trophy,
+  Radio,
+  Activity,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -719,6 +723,184 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   }
                   className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
                   placeholder="Subtitle describing recruiting projects..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* =============================================================== */}
+          {/* LINKORA CAMPUS INNOVATION HUB (UNIFIED SECTION - FEATURES 1, 2, 3) */}
+          {/* =============================================================== */}
+          <div className="bg-charcoal-850 border border-emerald-500/40 rounded-xl p-5 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-charcoal-750 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Campus Innovation Hub (Unified Next-Gen Section)</span>
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  Combines Features 1, 2, and 3 into one consolidated section on the homepage without crowding or cluttering.
+                </p>
+              </div>
+
+              {/* Master Hub Switch */}
+              <label className="flex items-center gap-2.5 cursor-pointer bg-charcoal-900 border border-charcoal-700 px-3 py-2 rounded-xl">
+                <span className="text-xs font-semibold text-slate-200">Show Hub on Homepage</span>
+                <input
+                  type="checkbox"
+                  checked={config.sections.campusPulse !== false}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, campusPulse: e.target.checked },
+                    })
+                  }
+                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-charcoal-800 border-charcoal-700"
+                />
+              </label>
+            </div>
+
+            {/* Sub-Feature Controls: 1, 2, and 3 Individual Toggles */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+                <span>Individual Feature Live Controls:</span>
+                <span className="text-slate-400 font-mono text-[11px]">
+                  Controls what is live for normal users
+                </span>
+              </div>
+
+              {/* Feature 1 */}
+              <label className="flex items-start justify-between p-3.5 rounded-xl bg-charcoal-800 border border-charcoal-700 hover:border-charcoal-600 cursor-pointer transition">
+                <div className="space-y-1 pr-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-white">Feature 1: Inter-College Leaderboard & Viral Showcase</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${config.sections.pulseLeaderboard !== false ? 'bg-emerald-500/20 text-emerald-300' : 'bg-charcoal-700 text-slate-400'}`}>
+                      {config.sections.pulseLeaderboard !== false ? '🟢 Live for users' : '⚪ Hidden'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Live rankings of universities, project count, hackathon medals, and viral student proof-of-work cards.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={config.sections.pulseLeaderboard !== false}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, pulseLeaderboard: e.target.checked },
+                    })
+                  }
+                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-charcoal-900 border-charcoal-700 mt-1"
+                />
+              </label>
+
+              {/* Feature 2 */}
+              <label className="flex items-start justify-between p-3.5 rounded-xl bg-charcoal-800 border border-charcoal-700 hover:border-charcoal-600 cursor-pointer transition">
+                <div className="space-y-1 pr-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-white">Feature 2: AI Dream Team Smart Matchmaker</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${config.sections.pulseAiMatchmaker !== false ? 'bg-emerald-500/20 text-emerald-300' : 'bg-charcoal-700 text-slate-400'}`}>
+                      {config.sections.pulseAiMatchmaker !== false ? '🟢 Live for users' : '⚪ Hidden'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Intelligent squad assembler: students describe project scope and get top 3 verified teammate matches.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={config.sections.pulseAiMatchmaker !== false}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, pulseAiMatchmaker: e.target.checked },
+                    })
+                  }
+                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-charcoal-900 border-charcoal-700 mt-1"
+                />
+              </label>
+
+              {/* Feature 3 */}
+              <label className="flex items-start justify-between p-3.5 rounded-xl bg-charcoal-800 border border-charcoal-700 hover:border-charcoal-600 cursor-pointer transition">
+                <div className="space-y-1 pr-3">
+                  <div className="flex items-center gap-2">
+                    <Radio className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white">Feature 3: Live Campus Activity & Real-Time Presence</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${config.sections.pulseLivePresence !== false ? 'bg-emerald-500/20 text-emerald-300' : 'bg-charcoal-700 text-slate-400'}`}>
+                      {config.sections.pulseLivePresence !== false ? '🟢 Live for users' : '⚪ Hidden'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Real-time activity ticker, active online builder count (140+), broadcast availability, and sprint rooms.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={config.sections.pulseLivePresence !== false}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, pulseLivePresence: e.target.checked },
+                    })
+                  }
+                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-charcoal-900 border-charcoal-700 mt-1"
+                />
+              </label>
+            </div>
+
+            {/* Live Status Summary Pill */}
+            <div className="p-3 rounded-xl bg-charcoal-900/90 border border-charcoal-750 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <span className="text-slate-300 font-medium">
+                Live Status for Normal Users:
+              </span>
+              <div className="flex items-center gap-2 flex-wrap font-mono text-[11px]">
+                <span className={`px-2 py-0.5 rounded-md ${config.sections.pulseLeaderboard !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-charcoal-800 text-slate-500 line-through'}`}>
+                  1. Leaderboard {config.sections.pulseLeaderboard !== false ? '✓' : '✕'}
+                </span>
+                <span className={`px-2 py-0.5 rounded-md ${config.sections.pulseAiMatchmaker !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-charcoal-800 text-slate-500 line-through'}`}>
+                  2. AI Matchmaker {config.sections.pulseAiMatchmaker !== false ? '✓' : '✕'}
+                </span>
+                <span className={`px-2 py-0.5 rounded-md ${config.sections.pulseLivePresence !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                  3. Live Presence {config.sections.pulseLivePresence !== false ? '✓' : '✕ Hidden'}
+                </span>
+              </div>
+            </div>
+
+            {/* Dynamic Titles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Hub Section Title</label>
+                <input
+                  type="text"
+                  value={config.sections.pulseTitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, pulseTitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white"
+                  placeholder="e.g. Campus Innovation Hub"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Hub Subtitle</label>
+                <input
+                  type="text"
+                  value={config.sections.pulseSubtitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, pulseSubtitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white"
+                  placeholder="e.g. Live collegiate rankings, AI dream team matchmaking..."
                 />
               </div>
             </div>

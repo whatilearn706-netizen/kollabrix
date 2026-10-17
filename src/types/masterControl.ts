@@ -16,6 +16,12 @@ export interface HomepageSectionToggles {
   ctaBanner: boolean;
   colleges?: boolean;
   badges?: boolean;
+  campusPulse?: boolean;
+  pulseLeaderboard?: boolean;
+  pulseAiMatchmaker?: boolean;
+  pulseLivePresence?: boolean;
+  pulseTitle?: string;
+  pulseSubtitle?: string;
   workflowTitle?: string;
   workflowSubtitle?: string;
   showcaseTitle?: string;
@@ -77,6 +83,12 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     ctaBanner: true,
     colleges: true,
     badges: true,
+    campusPulse: true,
+    pulseLeaderboard: true,
+    pulseAiMatchmaker: true,
+    pulseLivePresence: true,
+    pulseTitle: 'Campus Innovation Hub',
+    pulseSubtitle: 'Live university rankings, AI dream team matchmaking, and real-time collegiate sprint presence.',
     workflowTitle: 'Workflow',
     workflowSubtitle: 'From raw concept to verified career proof in three collegiate stages.',
     showcaseTitle: 'Showcase',
