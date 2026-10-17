@@ -475,19 +475,6 @@ export function OrigamiBirdSculpture() {
         <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75" />
       </div>
 
-      {/* Instant visual silhouette before 3D WebGL finishes compiling */}
-      {!isCanvasReady && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500">
-          <img
-            src="/brand/linkora-logo.png"
-            alt="Linkora"
-            width={180}
-            height={180}
-            fetchPriority="high"
-            className="w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-2xl"
-          />
-        </div>
-      )}
 
       {/* Three.js canvas container */}
       <div

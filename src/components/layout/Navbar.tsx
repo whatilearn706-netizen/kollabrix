@@ -262,29 +262,27 @@ export function Navbar() {
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
           {/* Quick Theme Toggle Button */}
-          {mounted && (
-            <button
-              type="button"
-              onClick={toggleTheme}
-              style={{
-                borderRadius: theme.borderRadius,
-              }}
-              className={clsx(
-                'p-2 text-xs font-bold transition-all border flex items-center justify-center shrink-0 shadow-2xs',
-                isNavbarDark
-                  ? 'border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20'
-                  : 'border-slate-200 bg-slate-100/90 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
-              )}
-              title={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
-              aria-label="Toggle Site Theme"
-            >
-              {isDark ? (
-                <Sun className="w-4 h-4 text-amber-400" />
-              ) : (
-                <Moon className="w-4 h-4 text-slate-700" />
-              )}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              borderRadius: theme.borderRadius,
+            }}
+            className={clsx(
+              'p-2 text-xs font-bold transition-all border flex items-center justify-center shrink-0 shadow-2xs',
+              isNavbarDark
+                ? 'border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20'
+                : 'border-slate-200 bg-slate-100/90 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+            )}
+            title={mounted && isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
+            aria-label="Toggle Site Theme"
+          >
+            {mounted && isDark ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700" />
+            )}
+          </button>
 
           {/* Configurable Brand CTA Button */}
           <button
@@ -300,9 +298,7 @@ export function Navbar() {
             <span>{theme.navbarCtaText || 'Start Project'}</span>
           </button>
 
-          {!mounted ? (
-            <div className="w-20 h-8 rounded-xl bg-slate-100/40 dark:bg-white/5 animate-pulse" />
-          ) : user ? (
+          {user ? (
             <div className="flex items-center gap-2">
               <NotificationBell />
 

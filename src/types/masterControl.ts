@@ -82,24 +82,8 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     showcaseTitle: 'Showcase',
     showcaseSubtitle: 'Explore active projects recruiting collaborators, or enter upcoming university competitions.',
   },
-  colleges: [
-    { id: 'col-1', name: 'IIT Bombay', domain: 'iitb.ac.in', city: 'Mumbai', partnerSince: '2026' },
-    { id: 'col-2', name: 'BITS Pilani', domain: 'pilani.bits-pilani.ac.in', city: 'Pilani', partnerSince: '2026' },
-    { id: 'col-3', name: 'IIIT Hyderabad', domain: 'iiit.ac.in', city: 'Hyderabad', partnerSince: '2026' },
-    { id: 'col-4', name: 'Delhi Technological University', domain: 'dtu.ac.in', city: 'Delhi', partnerSince: '2026' },
-  ],
-  badges: [
-    {
-      id: 'bdg-1',
-      userId: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
-      username: 'mayank142',
-      badgeType: 'innovator',
-      badgeTitle: '🌟 Lead Campus Founder',
-      reason: 'Platform creator & student lead',
-      awardedAt: '2026-10-17T00:00:00Z',
-      awardedBy: 'system',
-    },
-  ],
+  colleges: [],
+  badges: [],
   maintenance: {
     mode: 'public',
     campusPasscode: 'CAMPUS2026',

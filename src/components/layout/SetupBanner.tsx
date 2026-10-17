@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { AlertTriangle, ChevronRight, X, ExternalLink, Key, Database } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +12,7 @@ export function SetupBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  if (isConfigured || isDismissed) return null;
+  if (isSupabaseConfigured() || isConfigured || isDismissed) return null;
 
   return (
     <>

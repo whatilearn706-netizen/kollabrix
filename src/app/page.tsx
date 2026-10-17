@@ -40,15 +40,7 @@ const OrigamiBirdSculpture = dynamic(
     ssr: false,
     loading: () => (
       <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
-        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75" />
-        <img
-          src="/brand/linkora-logo.png"
-          alt="Linkora"
-          width={180}
-          height={180}
-          fetchPriority="high"
-          className="relative z-10 w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-2xl"
-        />
+        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
       </div>
     ),
   }

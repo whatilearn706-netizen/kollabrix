@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   });
 
-  const [configured, setConfigured] = useState(false);
+  const [configured, setConfigured] = useState(() => isSupabaseConfigured());
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'signup'>('login');
 
