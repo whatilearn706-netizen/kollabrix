@@ -91,12 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const cached = localStorage.getItem('linkora_auth_user');
         if (cached) return JSON.parse(cached);
 
-        const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
-        const hasAdminStorage = localStorage.getItem('linkora_admin_session') === 'true';
-        if (hasAdminCookie || hasAdminStorage) {
-          return DEFAULT_OWNER_USER;
-        }
-
         const hasUserCookie = document.cookie.includes('linkora_user_session=true');
         if (hasUserCookie) {
           const userIdMatch = document.cookie.match(/linkora_user_id=([^;]+)/);
@@ -150,11 +144,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return null;
           }
           return parsedProf;
-        }
-        const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
-        const hasAdminStorage = localStorage.getItem('linkora_admin_session') === 'true';
-        if (hasAdminCookie || hasAdminStorage) {
-          return DEFAULT_OWNER_PROFILE;
         }
       } catch (e) {}
     }
@@ -237,10 +226,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('linkora_auth_profile');
         localStorage.removeItem('linkora_admin_session');
         localStorage.removeItem('linkora_admin_passcode');
-        document.cookie = 'linkora_admin_session=; path=/; max-age=0';
-        document.cookie = 'linkora_user_session=; path=/; max-age=0';
-        document.cookie = 'linkora_user_email=; path=/; max-age=0';
-        document.cookie = 'linkora_user_id=; path=/; max-age=0';
+        const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+        document.cookie = 'linkora_admin_session=' + expCookie;
+        document.cookie = 'linkora_user_session=' + expCookie;
+        document.cookie = 'linkora_user_email=' + expCookie;
+        document.cookie = 'linkora_user_id=' + expCookie;
         window.dispatchEvent(new Event('linkora_auth_updated'));
       } catch (e) {}
     }
@@ -393,14 +383,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(JSON.parse(cachedUser));
             if (cachedProfile) setProfile(JSON.parse(cachedProfile));
             if (cachedSession) setSession(JSON.parse(cachedSession));
-          } else {
-            const hasAdmin =
-              localStorage.getItem('linkora_admin_session') === 'true' ||
-              document.cookie.includes('linkora_admin_session=true');
-            if (hasAdmin) {
-              setUser(DEFAULT_OWNER_USER);
-              setProfile(DEFAULT_OWNER_PROFILE);
-            }
           }
         } catch (e) {}
         setIsLoading(false);
@@ -477,17 +459,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const rawUser = localStorage.getItem('linkora_auth_user');
         const rawProfile = localStorage.getItem('linkora_auth_profile');
         const rawSession = localStorage.getItem('linkora_auth_session');
-        const hasAdmin =
-          localStorage.getItem('linkora_admin_session') === 'true' ||
-          document.cookie.includes('linkora_admin_session=true');
 
         if (rawUser) {
           setUser(JSON.parse(rawUser));
           if (rawProfile) setProfile(JSON.parse(rawProfile));
           if (rawSession) setSession(JSON.parse(rawSession));
-        } else if (hasAdmin) {
-          setUser(DEFAULT_OWNER_USER);
-          setProfile(DEFAULT_OWNER_PROFILE);
         } else if (document.cookie.includes('linkora_user_session=true')) {
           // If persistent cookie exists, preserve the logged-in session!
           const userIdMatch = document.cookie.match(/linkora_user_id=([^;]+)/);
@@ -506,7 +482,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
-    // 4. Real-Time Account Suspension Watcher (instant polling + realtime channel)
+    // 4. Real-Time Account Suspension Watcher (instant polling + server API + realtime channel)
     const checkSuspensionRealtime = async () => {
       try {
         let activeUserId = user?.id;
@@ -523,6 +499,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           activeUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
         if (isOwner) return;
 
+        // 1. Authoritative server-side suspension check (bypasses RLS & verifies DB + settings)
+        try {
+          const res = await fetch('/api/auth/check-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: activeUserId }),
+            cache: 'no-store',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.isSuspended) {
+              await performForcedSignOut(data.reason || 'This account has been suspended by administration.');
+              return;
+            }
+          }
+        } catch (apiErr) {}
+
+        // 2. Direct Supabase client query fallback
         const { data: prof } = await supabase
           .from('profiles')
           .select('is_suspended, status, suspension_reason')
@@ -535,7 +529,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
-    const suspensionInterval = setInterval(checkSuspensionRealtime, 4000);
+    const suspensionInterval = setInterval(checkSuspensionRealtime, 3000);
     window.addEventListener('focus', checkSuspensionRealtime);
     window.addEventListener('visibilitychange', checkSuspensionRealtime);
 
@@ -625,11 +619,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistSessionData(null, null, null);
       try {
         localStorage.removeItem('linkora_admin_session');
-        localStorage.removeItem('linkora_admin_passcode');
-        document.cookie = 'linkora_admin_session=; path=/; max-age=0';
-        document.cookie = 'linkora_user_session=; path=/; max-age=0';
-        document.cookie = 'linkora_user_email=; path=/; max-age=0';
-        document.cookie = 'linkora_user_id=; path=/; max-age=0';
+        const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+        document.cookie = 'linkora_admin_session=' + expCookie;
+        document.cookie = 'linkora_user_session=' + expCookie;
+        document.cookie = 'linkora_user_email=' + expCookie;
+        document.cookie = 'linkora_user_id=' + expCookie;
         sessionStorage.removeItem('linkora_maintenance_unlocked');
         window.dispatchEvent(new Event('linkora_auth_updated'));
       } catch (e) {}

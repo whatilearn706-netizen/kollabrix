@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 
@@ -30,7 +31,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = auth.dbClient;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const client = supabaseServiceKey
+      ? createSupabaseClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+      : (auth.dbClient || createSupabaseClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '', { auth: { persistSession: false } }));
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({
@@ -54,35 +59,29 @@ export async function POST(request: NextRequest) {
       const trimmedReason = reason.trim() || 'Violating collegiate collaboration guidelines.';
 
       // 1. Try atomic PostgreSQL RPC first
-      let rpcHandled = false;
       try {
-        const { data: rpcData, error: rpcErr } = await client.rpc('admin_moderate_user', {
+        await client.rpc('admin_moderate_user', {
           p_action: 'suspend',
           p_target_user_id: targetUserId,
           p_reason: trimmedReason,
         });
-        if (!rpcErr && rpcData?.success) {
-          rpcHandled = true;
-        }
-      } catch {
+      } catch (rpcErr) {
         // Fallback to direct mutations
       }
 
-      // 2. Direct database updates fallback
-      if (!rpcHandled) {
-        // Update profile
-        try {
-          await client
-            .from('profiles')
-            .update({
-              is_suspended: true,
-              status: 'suspended',
-              suspension_reason: trimmedReason,
-              is_portfolio_public: false,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', targetUserId);
-        } catch {}
+      // 2. Guaranteed direct database updates (triggers Supabase Realtime update event)
+      try {
+        await client
+          .from('profiles')
+          .update({
+            is_suspended: true,
+            status: 'suspended',
+            suspension_reason: trimmedReason,
+            is_portfolio_public: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', targetUserId);
+      } catch {}
 
         // Remove from all active project teams
         try {
@@ -118,7 +117,6 @@ export async function POST(request: NextRequest) {
             .delete()
             .eq('invitee_id', targetUserId);
         } catch {}
-      }
 
       // 3. Persist suspended user ID to platform_settings so all teammate views exclude them instantly
       try {
@@ -183,34 +181,28 @@ export async function POST(request: NextRequest) {
     // -------------------------------------------------------------
     if (action === 'restore') {
       // 1. Try atomic PostgreSQL RPC first
-      let rpcHandled = false;
       try {
-        const { data: rpcData, error: rpcErr } = await client.rpc('admin_moderate_user', {
+        await client.rpc('admin_moderate_user', {
           p_action: 'restore',
           p_target_user_id: targetUserId,
         });
-        if (!rpcErr && rpcData?.success) {
-          rpcHandled = true;
-        }
-      } catch {
+      } catch (rpcErr) {
         // Fallback to direct mutations
       }
 
-      // 2. Direct database updates fallback
-      if (!rpcHandled) {
-        try {
-          await client
-            .from('profiles')
-            .update({
-              is_suspended: false,
-              status: 'active',
-              suspension_reason: null,
-              is_portfolio_public: true,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', targetUserId);
-        } catch {}
-      }
+      // 2. Guaranteed direct database updates (triggers Supabase Realtime update event)
+      try {
+        await client
+          .from('profiles')
+          .update({
+            is_suspended: false,
+            status: 'active',
+            suspension_reason: null,
+            is_portfolio_public: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', targetUserId);
+      } catch {}
 
       // 3. Remove user ID from platform_settings suspended list
       try {

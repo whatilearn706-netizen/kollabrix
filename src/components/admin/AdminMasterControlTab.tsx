@@ -1130,12 +1130,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() =>
-                    setConfig({
+                  onClick={() => {
+                    const updated = {
                       ...config,
                       maintenance: { ...config.maintenance, mode: m.id },
-                    })
-                  }
+                    };
+                    setConfig(updated);
+                    handleSave(updated);
+                  }}
                   className={`p-4 rounded-xl text-left border transition-all ${
                     config.maintenance.mode === m.id
                       ? 'border-brand-500 bg-brand-500/10 ring-2 ring-brand-500/30'

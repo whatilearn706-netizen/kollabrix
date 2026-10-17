@@ -32,46 +32,40 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
       }
     }
 
-    // Check multi-storage unlock state (sessionStorage, localStorage, cookie)
+    // Check session unlock state
     try {
       const storedS = sessionStorage.getItem('linkora_maintenance_unlocked');
-      const storedL = localStorage.getItem('linkora_maintenance_unlocked');
-      const storedC = typeof document !== 'undefined' && document.cookie.includes('linkora_maintenance_unlocked=true');
-      if (storedS === 'true' || storedL === 'true' || storedC) {
+      if (storedS === 'true') {
         setIsUnlocked(true);
       }
     } catch (e) {}
 
-    function checkMode() {
+    const checkMode = async () => {
       try {
-        const cached = localStorage.getItem('linkora_master_control_v1');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed?.maintenance) {
-            setMaintenance(parsed.maintenance);
+        const res = await fetch('/api/master-control', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.config?.maintenance) {
+            setMaintenance(data.config.maintenance);
           }
         }
       } catch (e) {}
-
-      fetch('/api/master-control')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.config?.maintenance) {
-            const hasLocalCache = !!localStorage.getItem('linkora_master_control_v1');
-            const isCustom = data.fromDb || JSON.stringify(data.config.maintenance) !== JSON.stringify(DEFAULT_MASTER_CONTROL_CONFIG.maintenance);
-            if (data.fromDb || isCustom || !hasLocalCache) {
-              setMaintenance(data.config.maintenance);
-            }
-          }
-        })
-        .catch(() => {});
-    }
+    };
 
     checkMode();
+    const interval = setInterval(checkMode, 3000);
 
     const handleUpdate = () => checkMode();
+    window.addEventListener('focus', checkMode);
+    window.addEventListener('visibilitychange', checkMode);
     window.addEventListener('linkora_master_control_updated', handleUpdate);
     return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkMode);
+      window.removeEventListener('visibilitychange', checkMode);
       window.removeEventListener('linkora_master_control_updated', handleUpdate);
     };
   }, []);
@@ -116,8 +110,13 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
 
   // Bypass if user is logged in as an admin or platform owner
   const isOwner = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-  const isLocalAdmin = typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true';
-  const isAdminUser = profile?.role === 'admin' || isOwner || isLocalAdmin;
+  const hasAdminPasscode = typeof window !== 'undefined' && (
+    localStorage.getItem('linkora_admin_passcode') === 'admin7x9' ||
+    sessionStorage.getItem('linkora_admin_passcode') === 'admin7x9' ||
+    localStorage.getItem('linkora_admin_passcode') === 'linkora2026' ||
+    sessionStorage.getItem('linkora_admin_passcode') === 'linkora2026'
+  );
+  const isAdminUser = profile?.role === 'admin' || isOwner || hasAdminPasscode;
 
   // If public mode, pass through
   if (!mounted || maintenance.mode === 'public') {
@@ -141,14 +140,14 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
               type="button"
               disabled={isDeactivating}
               onClick={handleTurnOffMaintenance}
-              className="px-3 py-1 bg-white text-charcoal-950 font-black rounded-xl hover:bg-slate-100 transition-colors shadow-2xs text-xs"
+              className="px-3 py-1 bg-white text-charcoal-950 font-black rounded-xl hover:bg-slate-100 transition-colors shadow-2xs text-xs cursor-pointer"
             >
               {isDeactivating ? 'Restoring...' : '🟢 Deactivate & Set Public'}
             </button>
             <button
               type="button"
               onClick={() => setIsPreviewingAsVisitor(true)}
-              className="px-3 py-1 bg-charcoal-900/70 text-white font-bold rounded-xl hover:bg-charcoal-900 transition-colors text-xs border border-white/20"
+              className="px-3 py-1 bg-charcoal-900/70 text-white font-bold rounded-xl hover:bg-charcoal-900 transition-colors text-xs border border-white/20 cursor-pointer"
             >
               👁️ Test Lock Screen as Visitor
             </button>

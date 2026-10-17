@@ -94,7 +94,7 @@ export function VerifiedCollegeBadge({
   username,
   className = '',
   showIcon = false,
-  showUnverified = false,
+  showUnverified = true,
   size = 'sm',
 }: VerifiedCollegeBadgeProps) {
   const [localVerified, setLocalVerified] = useState<boolean>(() => {
