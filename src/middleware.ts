@@ -16,13 +16,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, { status: 307 });
   }
 
-  // 2. Canonical domain redirect: ensure every tab and visitor is always on https://linkora-edu.online
+  // 2. Prevent search engines (Google, Bing) from ever indexing *.vercel.app or non-canonical hosts
   if (!isLocal && host !== 'linkora-edu.online') {
+    if (pathname === '/robots.txt' && host.includes('vercel.app')) {
+      return new NextResponse('User-agent: *\nDisallow: /\n', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain',
+          'X-Robots-Tag': 'noindex, nofollow, noarchive',
+        },
+      });
+    }
+
     const url = request.nextUrl.clone();
     url.host = 'linkora-edu.online';
     url.protocol = 'https';
     url.port = '';
-    return NextResponse.redirect(url, { status: 301 });
+    const redirectResponse = NextResponse.redirect(url, { status: 301 });
+    if (host.includes('vercel.app')) {
+      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+    return redirectResponse;
   }
 
   const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();

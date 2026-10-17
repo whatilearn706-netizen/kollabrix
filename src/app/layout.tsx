@@ -32,6 +32,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'Linkora Team' }],
   creator: 'Linkora',
   publisher: 'Linkora',
+  icons: {
+    icon: '/brand/linkora-logo.png',
+    shortcut: '/brand/linkora-logo.png',
+    apple: '/brand/linkora-logo.png',
+  },
   alternates: {
     canonical: '/',
   },
