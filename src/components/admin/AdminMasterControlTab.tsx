@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { AdminRestrictedWordsTab } from './AdminRestrictedWordsTab';
 import {
   BroadcastBannerConfig,
   HomepageSectionToggles,
@@ -36,14 +37,15 @@ import {
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'restricted' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
   initialSubTab?: SubTab;
+  onNavigateTab?: (tab: any) => void;
 }
 
-export function AdminMasterControlTab({ authToken, initialSubTab }: AdminMasterControlTabProps) {
+export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab }: AdminMasterControlTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab || 'all');
 
   useEffect(() => {
@@ -275,13 +277,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
   }
 
   const subTabs = [
-    { id: 'all' as SubTab, label: '⚡ All 6 Modules (Full Studio)', icon: Sparkles },
+    { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
+    { id: 'restricted' as SubTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'banner' as SubTab, label: '1. Broadcast Banner', icon: Megaphone },
     { id: 'sections' as SubTab, label: '2. Homepage Sections', icon: LayoutGrid },
     { id: 'colleges' as SubTab, label: '3. College Whitelist', icon: GraduationCap },
     { id: 'badges' as SubTab, label: '4. Student Hall of Fame', icon: Award },
     { id: 'ceo' as SubTab, label: '5. Executive CEO Analytics', icon: BarChart3 },
-    { id: 'maintenance' as SubTab, label: '6. Maintenance & Access', icon: ShieldAlert },
+    { id: 'maintenance' as SubTab, label: '6. Maintenance & Access', icon: Lock },
   ];
 
   return (
@@ -362,6 +365,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
             {[
+              { id: 'module-restricted', label: '🚫 Restricted Mode', color: 'hover:border-red-500 text-red-300' },
               { id: 'module-1', label: '1. Banner', color: 'hover:border-violet-500' },
               { id: 'module-2', label: '2. Sections', color: 'hover:border-amber-500' },
               { id: 'module-3', label: '3. Colleges', color: 'hover:border-emerald-500' },
@@ -1292,6 +1296,45 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 7. RESTRICTED MODE & CONTENT SAFETY SUBTAB */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'restricted') && (
+        <div id="module-restricted" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24">
+          <div className="border-b border-charcoal-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              {activeSubTab === 'all' && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/40 inline-block mb-2">
+                  MODULE 7 OF 7
+                </span>
+              )}
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-red-400" />
+                <span>Restricted Mode & Prohibited Words Engine</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Universal content safety blocker. Automatically intercepts profanities, scams, academic leaks, and illicit terms across all inputs, forms, and pages.
+              </p>
+            </div>
+
+            {onNavigateTab && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onNavigateTab('restricted')}
+                className="text-xs shrink-0"
+                rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+              >
+                Open Full Dedicated Tab
+              </Button>
+            )}
+          </div>
+
+          {/* Embedded Full Restricted Words Manager */}
+          <AdminRestrictedWordsTab authToken={authToken} />
         </div>
       )}
     </div>

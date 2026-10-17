@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 export type AdminTab =
   | 'overview'
   | 'master'
+  | 'restricted'
   | 'intent'
   | 'notes'
   | 'users'
@@ -54,6 +55,7 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const tabs = [
     { id: 'master' as AdminTab, label: '👑 ALL 6 MASTER CONTROLS', icon: Crown },
+    { id: 'restricted' as AdminTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
     { id: 'intent' as AdminTab, label: 'Intent & Showcase', icon: Sparkles },
     { id: 'notes' as AdminTab, label: 'Admin Notes & Ideas', icon: StickyNote },

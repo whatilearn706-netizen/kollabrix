@@ -33,6 +33,7 @@ import { AdminContentTab } from '@/components/admin/AdminContentTab';
 import { AdminNotesTab } from '@/components/admin/AdminNotesTab';
 import { AdminIntentShowcaseTab } from '@/components/admin/AdminIntentShowcaseTab';
 import { AdminMasterControlTab } from '@/components/admin/AdminMasterControlTab';
+import { AdminRestrictedWordsTab } from '@/components/admin/AdminRestrictedWordsTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
@@ -385,7 +386,11 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       )}
 
       {currentTab === 'master' && (
-        <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} />
+        <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+      )}
+
+      {currentTab === 'restricted' && (
+        <AdminRestrictedWordsTab authToken={authToken} />
       )}
 
       {currentTab === 'intent' && (

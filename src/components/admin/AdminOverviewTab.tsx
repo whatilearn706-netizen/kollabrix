@@ -300,6 +300,37 @@ export function AdminOverviewTab({
               <span>Launch Access Controls →</span>
             </div>
           </div>
+
+          {/* 7. Restricted Mode & Content Safety */}
+          <div
+            onClick={() => onNavigateTab('restricted')}
+            className="rounded-2xl border-2 border-red-500/40 bg-red-950/20 p-4 space-y-2.5 hover:border-red-500 hover:bg-red-950/40 cursor-pointer transition-all group shadow-subtle sm:col-span-2 lg:col-span-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center font-bold">
+                  <ShieldAlert className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white group-hover:text-red-300 transition-colors flex items-center gap-2">
+                    <span>7. 🚫 Restricted Mode & Prohibited Words Blocker</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      LIVE & ENFORCED
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Universal content blocker active across every input, form, search bar, and chat. Intercepts 74+ prohibited terms, profanities, scams, and academic leaks in real time.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-red-400 group-hover:translate-x-1 transition-transform flex items-center gap-1 shrink-0">
+                  <span>Manage Restricted Words</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
