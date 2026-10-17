@@ -178,8 +178,8 @@ export function Navbar() {
             );
           })}
 
-          {/* Contextual link: Workspace */}
-          {mounted && user && (
+          {/* Workspace */}
+          {user ? (
             <Link
               href="/my-projects"
               className={clsx(
@@ -196,47 +196,57 @@ export function Navbar() {
               <Briefcase className="w-3.5 h-3.5" />
               <span>Workspace</span>
             </Link>
-          )}
-
-          {/* Contextual link: Faculty Portal (Always visible when logged in) */}
-          {mounted && user && (
-            <Link
-              href="/teacher/dashboard"
-              className={clsx(
-                'px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ml-1 border',
-                pathname.startsWith('/teacher')
-                  ? isNavbarDark
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 shadow-sm'
-                    : 'bg-purple-100 text-purple-900 border-purple-300 shadow-sm'
-                  : isNavbarDark
-                  ? 'text-purple-400 hover:bg-purple-900/30 border-purple-800/40'
-                  : 'text-purple-700 hover:bg-purple-50 border-purple-200'
-              )}
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
-              <span>Faculty Portal</span>
-            </Link>
-          )}
-
-          {/* Contextual link: Faculty Problems (Visible for all logged-in students & faculty) */}
-          {mounted && user && (
-            <Link
-              href="/problems"
+          ) : (
+            <button
+              type="button"
+              onClick={() => openAuthModal('login')}
               className={clsx(
                 'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all inline-flex items-center gap-2 border',
-                pathname.startsWith('/problems')
-                  ? isNavbarDark
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-sm'
-                    : 'bg-amber-100 text-amber-800 border-amber-200 shadow-sm'
-                  : isNavbarDark
-                  ? 'text-slate-300 border-transparent hover:text-amber-400 hover:bg-white/5'
-                  : 'text-slate-600 border-transparent hover:text-amber-700 hover:bg-amber-50'
+                isNavbarDark
+                  ? 'text-slate-300 border-transparent hover:text-indigo-400 hover:bg-white/5'
+                  : 'text-slate-600 border-transparent hover:text-indigo-700 hover:bg-indigo-50'
               )}
             >
-              <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-              <span>Faculty Problems</span>
-            </Link>
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>Workspace</span>
+            </button>
           )}
+
+          {/* Universal link: Faculty Portal (Always visible across all accounts and browsers) */}
+          <Link
+            href="/teacher/dashboard"
+            className={clsx(
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ml-1 border',
+              pathname.startsWith('/teacher')
+                ? isNavbarDark
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 shadow-sm'
+                  : 'bg-purple-100 text-purple-900 border-purple-300 shadow-sm'
+                : isNavbarDark
+                ? 'text-purple-400 hover:bg-purple-900/30 border-purple-800/40'
+                : 'text-purple-700 hover:bg-purple-50 border-purple-200'
+            )}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
+            <span>Faculty Portal</span>
+          </Link>
+
+          {/* Universal link: Faculty Problems (Always visible across all accounts and browsers) */}
+          <Link
+            href="/problems"
+            className={clsx(
+              'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all inline-flex items-center gap-2 border',
+              pathname.startsWith('/problems')
+                ? isNavbarDark
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-sm'
+                  : 'bg-amber-100 text-amber-800 border-amber-200 shadow-sm'
+                : isNavbarDark
+                ? 'text-slate-300 border-transparent hover:text-amber-400 hover:bg-white/5'
+                : 'text-slate-600 border-transparent hover:text-amber-700 hover:bg-amber-50'
+            )}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+            <span>Faculty Problems</span>
+          </Link>
         </nav>
 
         {/* Desktop Right Actions */}
@@ -462,46 +472,56 @@ export function Navbar() {
               <span>Hackathons</span>
             </Link>
 
-            {mounted && user && (
-              <>
-                <Link
-                  href="/my-projects"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                >
-                  <Briefcase className="w-4 h-4 text-indigo-500" />
-                  <span>Project Workspace</span>
-                </Link>
+            <Link
+              href="/teacher/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/10 transition-colors"
+            >
+              <GraduationCap className="w-4 h-4 text-purple-500" />
+              <span>Faculty Portal</span>
+            </Link>
 
-                <Link
-                  href="/teacher/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/10 transition-colors"
-                >
-                  <GraduationCap className="w-4 h-4 text-purple-500" />
-                  <span>Faculty Portal</span>
-                </Link>
+            <Link
+              href="/problems"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/10 transition-colors"
+            >
+              <BookOpen className="w-4 h-4 text-amber-500" />
+              <span>Faculty Problems</span>
+            </Link>
 
-                <Link
-                  href="/problems"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:bg-amber-500/10 transition-colors"
-                >
-                  <BookOpen className="w-4 h-4 text-amber-500" />
-                  <span>Faculty Problems</span>
-                </Link>
+            {user ? (
+              <Link
+                href="/my-projects"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              >
+                <Briefcase className="w-4 h-4 text-indigo-500" />
+                <span>Project Workspace</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal('login');
+                }}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left"
+              >
+                <Briefcase className="w-4 h-4 text-indigo-500" />
+                <span>Project Workspace</span>
+              </button>
+            )}
 
-                {isAdminUser && (
-                  <Link
-                    href="/control-center-7x9"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-500 hover:bg-amber-500/10 transition-colors"
-                  >
-                    <Shield className="w-4 h-4 text-amber-500" />
-                    <span>Admin Control Center</span>
-                  </Link>
-                )}
-              </>
+            {mounted && isAdminUser && (
+              <Link
+                href="/control-center-7x9"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-500 hover:bg-amber-500/10 transition-colors"
+              >
+                <Shield className="w-4 h-4 text-amber-500" />
+                <span>Admin Control Center</span>
+              </Link>
             )}
           </div>
 

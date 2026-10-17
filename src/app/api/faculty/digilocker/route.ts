@@ -38,11 +38,12 @@ export async function POST(request: NextRequest) {
       user = sessionData?.user;
     }
 
-    const targetUserId = user?.id || userId || (request.cookies.get('linkora_admin_session')?.value === 'true' ? 'c86ce05f-24de-4a1a-a45f-944d4180b508' : null);
-
-    if (!targetUserId) {
-      return NextResponse.json({ error: 'You must be signed in to verify with DigiLocker.' }, { status: 401 });
-    }
+    const targetUserId =
+      user?.id ||
+      userId ||
+      (request.cookies.get('linkora_admin_session')?.value === 'true'
+        ? 'c86ce05f-24de-4a1a-a45f-944d4180b508'
+        : `guest_${Date.now()}`);
 
     const isFacultyEligible = parsedYear <= 2003;
     const resolvedRole = isFacultyEligible ? 'teacher' : 'student';
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     const resolvedDocUri = docUri || `in.gov.digilocker-${docType}-${Date.now().toString().slice(-8)}`;
 
     // 2. Update profile in Supabase (only standard columns to prevent schema errors)
-    if (isSupabaseConfigured() && targetUserId) {
+    if (isSupabaseConfigured() && targetUserId && !targetUserId.startsWith('guest_')) {
       try {
         await client
           .from('profiles')
