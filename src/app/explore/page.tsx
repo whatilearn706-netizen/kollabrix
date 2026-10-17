@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Project, ProjectFilterOptions, ExploreConfig } from '@/types/database';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectFilters } from '@/components/projects/ProjectFilters';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton, ProjectCardSkeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { supabase } from '@/lib/supabase/client';
@@ -389,25 +389,7 @@ export default function ExploreProjectsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-3xl bg-white border-2 border-slate-100 p-6 space-y-4 animate-pulse shadow-sm"
-            >
-              <div className="flex justify-between items-center">
-                <Skeleton className="h-5 w-24 rounded-full" />
-                <Skeleton className="h-5 w-16 rounded-full" />
-              </div>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-14 w-full" />
-              <div className="flex gap-2">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-5 w-16" />
-              </div>
-              <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                <Skeleton className="h-7 w-28 rounded-full" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            </div>
+            <ProjectCardSkeleton key={i} />
           ))}
         </div>
       ) : projects.length === 0 ? (

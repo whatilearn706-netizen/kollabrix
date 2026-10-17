@@ -12,6 +12,7 @@ import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons } from '@/lib/admin/hackathonSettings';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
+import { HackathonCardSkeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -589,11 +590,8 @@ export default function HackathonsPage() {
       {/* Hackathons Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div
-              key={n}
-              className="h-72 rounded-3xl bg-slate-100 border border-slate-200 animate-pulse p-6"
-            />
+          {Array.from({ length: 6 }).map((_, n) => (
+            <HackathonCardSkeleton key={n} />
           ))}
         </div>
       ) : filteredHackathons.length > 0 ? (

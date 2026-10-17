@@ -8,6 +8,7 @@ interface SiteThemeContextValue {
   theme: SiteThemeConfig;
   setTheme: React.Dispatch<React.SetStateAction<SiteThemeConfig>>;
   refreshTheme: () => Promise<void>;
+  toggleTheme: () => void;
   isLoading: boolean;
   isDark: boolean;
 }
@@ -16,6 +17,7 @@ const SiteThemeContext = createContext<SiteThemeContextValue>({
   theme: DEFAULT_SITE_THEME,
   setTheme: () => {},
   refreshTheme: async () => {},
+  toggleTheme: () => {},
   isLoading: true,
   isDark: false,
 });
@@ -248,15 +250,87 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/theme');
       const data = await res.json();
-      if (data.theme) {
-        setTheme(data.theme);
-        applyThemeToDocument(data.theme);
+      let activeTheme = data.theme || DEFAULT_SITE_THEME;
+
+      if (typeof window !== 'undefined') {
+        const userPref = localStorage.getItem('linkora_user_theme_mode');
+        if (userPref === 'dark') {
+          activeTheme = {
+            ...activeTheme,
+            backgroundColor: '#090B10',
+            surfaceColor: '#11141E',
+            borderColor: '#1F2436',
+            headingColor: '#F8FAFC',
+            bodyTextColor: '#CBD5E1',
+            mutedTextColor: '#64748B',
+            navbarStyle: 'dark',
+            cardShadow: 'glow',
+          };
+        } else if (userPref === 'light') {
+          activeTheme = {
+            ...activeTheme,
+            backgroundColor: '#fafbfc',
+            surfaceColor: '#ffffff',
+            borderColor: '#e2e8f0',
+            headingColor: '#0f172a',
+            bodyTextColor: '#334155',
+            mutedTextColor: '#64748b',
+            navbarStyle: 'auto',
+            cardShadow: 'subtle',
+          };
+        }
       }
+
+      setTheme(activeTheme);
+      applyThemeToDocument(activeTheme);
     } catch (err) {
       console.warn('Could not load site theme:', err);
     } finally {
       setIsLoading(false);
     }
+  }, [applyThemeToDocument]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const currentlyDark = isColorDark(prev.backgroundColor);
+      const nextIsDark = !currentlyDark;
+      let nextTheme: SiteThemeConfig;
+
+      if (nextIsDark) {
+        nextTheme = {
+          ...prev,
+          backgroundColor: '#090B10',
+          surfaceColor: '#11141E',
+          borderColor: '#1F2436',
+          headingColor: '#F8FAFC',
+          bodyTextColor: '#CBD5E1',
+          mutedTextColor: '#64748B',
+          navbarStyle: 'dark',
+          cardShadow: 'glow',
+        };
+        try {
+          localStorage.setItem('linkora_user_theme_mode', 'dark');
+        } catch (e) {}
+      } else {
+        nextTheme = {
+          ...prev,
+          backgroundColor: '#fafbfc',
+          surfaceColor: '#ffffff',
+          borderColor: '#e2e8f0',
+          headingColor: '#0f172a',
+          bodyTextColor: '#334155',
+          mutedTextColor: '#64748b',
+          navbarStyle: 'auto',
+          cardShadow: 'subtle',
+        };
+        try {
+          localStorage.setItem('linkora_user_theme_mode', 'light');
+        } catch (e) {}
+      }
+
+      applyThemeToDocument(nextTheme);
+      return nextTheme;
+    });
   }, [applyThemeToDocument]);
 
   useEffect(() => {
@@ -268,7 +342,7 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme, applyThemeToDocument]);
 
   return (
-    <SiteThemeContext.Provider value={{ theme, setTheme, refreshTheme, isLoading, isDark }}>
+    <SiteThemeContext.Provider value={{ theme, setTheme, refreshTheme, toggleTheme, isLoading, isDark }}>
       {/* Global Announcement Banner */}
       {theme.announcementBannerActive && theme.announcementBannerText && (
         <div

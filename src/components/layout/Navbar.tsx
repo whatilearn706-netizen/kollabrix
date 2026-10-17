@@ -26,6 +26,8 @@ import {
   Sparkles,
   BookOpen,
   Shield,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -34,7 +36,7 @@ export function Navbar() {
   const pathname = rawPathname || '';
   const router = useRouter();
   const { user, profile, signOut, openAuthModal } = useAuth();
-  const { theme, isDark } = useSiteTheme();
+  const { theme, isDark, toggleTheme } = useSiteTheme();
 
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -250,7 +252,32 @@ export function Navbar() {
         </nav>
 
         {/* Desktop Right Actions */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2.5">
+          {/* Quick Theme Toggle Button */}
+          {mounted && (
+            <button
+              type="button"
+              onClick={toggleTheme}
+              style={{
+                borderRadius: theme.borderRadius,
+              }}
+              className={clsx(
+                'p-2 text-xs font-bold transition-all border flex items-center justify-center shrink-0 shadow-2xs',
+                isNavbarDark
+                  ? 'border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20'
+                  : 'border-slate-200 bg-slate-100/90 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              )}
+              title={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
+              aria-label="Toggle Site Theme"
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-700" />
+              )}
+            </button>
+          )}
+
           {/* Configurable Brand CTA Button */}
           <button
             type="button"
@@ -526,6 +553,29 @@ export function Navbar() {
           </div>
 
           <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
+
+          {/* Mobile Theme Toggle Button */}
+          <button
+            type="button"
+            onClick={() => {
+              toggleTheme();
+            }}
+            style={{
+              borderColor: theme.borderColor,
+            }}
+            className={clsx(
+              'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold border transition-colors',
+              isDark
+                ? 'bg-white/5 text-amber-300 border-white/10'
+                : 'bg-slate-100 text-slate-700 border-slate-200'
+            )}
+          >
+            <span className="flex items-center gap-2.5">
+              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+              <span>{isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}</span>
+            </span>
+            <span className="text-[10px] font-mono opacity-60 uppercase">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+          </button>
 
           <button
             type="button"

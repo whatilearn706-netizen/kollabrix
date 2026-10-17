@@ -12,6 +12,7 @@ import {
 } from '@/lib/teammateMatching';
 import { TeammateCard } from '@/components/teammates/TeammateCard';
 import { InviteTeammateModal } from '@/components/teammates/InviteTeammateModal';
+import { TeammateCardSkeleton } from '@/components/ui/Skeleton';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
@@ -597,11 +598,8 @@ export default function TeammatesPage() {
       {/* Teammates Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div
-              key={n}
-              className="h-64 rounded-3xl bg-white border-2 border-slate-100 animate-pulse p-6 shadow-sm"
-            />
+          {Array.from({ length: 6 }).map((_, n) => (
+            <TeammateCardSkeleton key={n} />
           ))}
         </div>
       ) : filteredMatches.length > 0 ? (
