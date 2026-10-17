@@ -467,7 +467,7 @@ export default function HomePage() {
               </div>
 
               {/* Right Column: Signature 3D Linkora Origami Bird */}
-              <div className="lg:col-span-5 flex items-center justify-center relative min-h-[380px] sm:min-h-[440px] lg:min-h-[480px]">
+              <div className="lg:col-span-5 flex items-center justify-center relative min-h-[360px] sm:min-h-[400px] lg:min-h-[440px] overflow-hidden">
                 <OrigamiBirdSculpture />
               </div>
             </div>
