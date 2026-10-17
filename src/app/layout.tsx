@@ -10,6 +10,8 @@ import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
 import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner';
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online';
 
@@ -160,6 +162,8 @@ export default function RootLayout({
             </RestrictedWordsGuard>
           </SiteThemeProvider>
         </AuthProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
