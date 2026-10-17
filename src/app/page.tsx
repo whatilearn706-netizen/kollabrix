@@ -49,7 +49,7 @@ import {
 export default function HomePage() {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
-  const { theme } = useSiteTheme();
+  const { theme, isDark } = useSiteTheme();
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -376,11 +376,14 @@ export default function HomePage() {
                       size="lg"
                       style={{
                         borderRadius: theme.borderRadius,
+                        color: isDark ? '#ffffff' : '#0f172a',
                       }}
-                      className="border border-slate-300 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-white font-bold px-7 py-3.5 bg-white dark:bg-white/5 shadow-2xs transition-all active:scale-[0.98]"
-                      leftIcon={<Users className="w-4 h-4 text-slate-700 dark:text-slate-300" />}
+                      className="border border-slate-300 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white font-bold px-7 py-3.5 bg-white dark:bg-white/5 shadow-2xs transition-all active:scale-[0.98]"
+                      leftIcon={<Users className="w-4 h-4" style={{ color: isDark ? '#ffffff' : '#0f172a' }} />}
                     >
-                      {theme.secondaryCtaText || 'Find Teammates'}
+                      <span className="text-slate-900 dark:text-white font-bold" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>
+                        {theme.secondaryCtaText || 'Find Teammates'}
+                      </span>
                     </Button>
                   </Link>
 

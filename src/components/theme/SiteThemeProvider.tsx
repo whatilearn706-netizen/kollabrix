@@ -125,13 +125,13 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         font-family: var(--site-font-body) !important;
       }
 
-      h1:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
-      h2:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
-      h3:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
-      h4:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
-      h5:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
-      h6:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white),
-      .font-heading:not(.text-transparent):not(.begin-colorful):not(.text-white):not([class*="text-white"]):not(.site-heading-white) {
+      h1:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
+      h2:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
+      h3:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
+      h4:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
+      h5:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
+      h6:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
+      .font-heading:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white) {
         font-family: var(--site-font-heading) !important;
         font-weight: var(--site-heading-weight) !important;
         letter-spacing: var(--site-letter-spacing) !important;
@@ -140,8 +140,8 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
 
       /* Explicit White Headings inside Dark Cards & Hero Sections */
       .text-white,
-      [class*="text-white"],
       .site-heading-white,
+      .site-theme-dark .dark\:text-white,
       .bg-charcoal-900 h1,
       .bg-charcoal-900 h2,
       .bg-charcoal-900 h3,
