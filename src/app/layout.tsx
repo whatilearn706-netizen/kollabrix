@@ -9,6 +9,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
 import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner';
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
+import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-edu.online';
 
@@ -143,14 +144,16 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white">
         <AuthProvider>
           <SiteThemeProvider>
-            <GlobalBroadcastBanner />
-            <MaintenanceModeGate>
-              <SetupBanner />
-              <Navbar />
-              <main className="flex-1 flex flex-col">{children}</main>
-              <Footer />
-              <AuthModal />
-            </MaintenanceModeGate>
+            <RestrictedWordsGuard>
+              <GlobalBroadcastBanner />
+              <MaintenanceModeGate>
+                <SetupBanner />
+                <Navbar />
+                <main className="flex-1 flex flex-col">{children}</main>
+                <Footer />
+                <AuthModal />
+              </MaintenanceModeGate>
+            </RestrictedWordsGuard>
           </SiteThemeProvider>
         </AuthProvider>
       </body>

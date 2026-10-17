@@ -17,6 +17,12 @@ import {
   CheckCircle2,
   Lock,
   Layers,
+  ShieldAlert,
+  Plus,
+  Ban,
+  Check,
+  Shield,
+  Tag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -25,6 +31,10 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { ProjectCategory, ProjectDifficulty } from '@/types/database';
 import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
+import {
+  checkRestrictedWords,
+  DEFAULT_RESTRICTED_WORDS,
+} from '@/lib/moderation/restrictedWords';
 
 interface AdminContentTabProps {
   authToken?: string;
@@ -42,7 +52,17 @@ const CATEGORIES: (ProjectCategory | 'All')[] = [
 ];
 
 export function AdminContentTab({ authToken }: AdminContentTabProps) {
-  const [subTab, setSubTab] = useState<'projects' | 'problems'>('projects');
+  const [subTab, setSubTab] = useState<'projects' | 'problems' | 'moderation'>('projects');
+
+  // Restricted Words & Moderation State
+  const [restrictedWords, setRestrictedWords] = useState<string[]>(DEFAULT_RESTRICTED_WORDS);
+  const [customWords, setCustomWords] = useState<string[]>([]);
+  const [isModerationEnabled, setIsModerationEnabled] = useState(true);
+  const [isModerationLoading, setIsModerationLoading] = useState(false);
+  const [newWordInput, setNewWordInput] = useState('');
+  const [wordSearch, setWordSearch] = useState('');
+  const [testInput, setTestInput] = useState('This project is a scam and an exam leak');
+  const [isSavingWord, setIsSavingWord] = useState(false);
 
   // Projects State
   const [projects, setProjects] = useState<any[]>([]);
@@ -103,10 +123,126 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
     }
   };
 
+  // Load Restricted Words
+  const loadRestrictedWords = async () => {
+    setIsModerationLoading(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/admin/restricted-words', { headers });
+      const data = await res.json();
+      if (res.ok && data) {
+        if (Array.isArray(data.words)) setRestrictedWords(data.words);
+        if (Array.isArray(data.customWords)) setCustomWords(data.customWords);
+        if (typeof data.enabled === 'boolean') setIsModerationEnabled(data.enabled);
+      }
+    } catch (err) {
+      console.warn('Error loading restricted words:', err);
+    } finally {
+      setIsModerationLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadProjects();
     loadProblems();
+    loadRestrictedWords();
   }, [authToken]);
+
+  // Add Word Handler
+  const handleAddWord = async () => {
+    if (!newWordInput.trim()) return;
+    setIsSavingWord(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/admin/restricted-words', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'add', word: newWordInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRestrictedWords(data.words);
+        setCustomWords(data.customWords || []);
+        setNewWordInput('');
+        setActionNotice({ type: 'success', message: data.message });
+      } else {
+        throw new Error(data.error || 'Failed to add word');
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', message: err.message || 'Error adding word' });
+    } finally {
+      setIsSavingWord(false);
+    }
+  };
+
+  // Remove Word Handler
+  const handleRemoveWord = async (wordToRemove: string) => {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/admin/restricted-words', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'remove', word: wordToRemove }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRestrictedWords(data.words);
+        setCustomWords(data.customWords || []);
+        setActionNotice({ type: 'success', message: data.message });
+      } else {
+        throw new Error(data.error || 'Failed to remove word');
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', message: err.message || 'Error removing word' });
+    }
+  };
+
+  // Toggle Moderation Handler
+  const handleToggleModeration = async () => {
+    const nextState = !isModerationEnabled;
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/admin/restricted-words', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'toggle', enabled: nextState }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsModerationEnabled(data.enabled);
+        setActionNotice({ type: 'success', message: data.message });
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', message: err.message || 'Error toggling moderation' });
+    }
+  };
+
+  // Reset to Defaults Handler
+  const handleResetDefaults = async () => {
+    if (!confirm('Are you sure you want to reset all restricted words to default?')) return;
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/admin/restricted-words', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ action: 'reset' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRestrictedWords(data.words);
+        setCustomWords([]);
+        setIsModerationEnabled(true);
+        setActionNotice({ type: 'success', message: data.message });
+      }
+    } catch (err: any) {
+      setActionNotice({ type: 'error', message: err.message || 'Error resetting words' });
+    }
+  };
 
   // Handle Delete Confirmation
   const confirmDelete = async () => {
@@ -256,6 +392,21 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
               {problems.length}
             </span>
           </button>
+
+          <button
+            onClick={() => setSubTab('moderation')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              subTab === 'moderation'
+                ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-500/30'
+                : 'text-slate-400 hover:text-white hover:bg-charcoal-800'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4 text-red-400" />
+            <span>Restricted Words & Moderation</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-charcoal-950/60 border border-charcoal-700 font-mono">
+              {restrictedWords.length}
+            </span>
+          </button>
         </div>
 
         <Button
@@ -263,9 +414,16 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
           size="sm"
           onClick={() => {
             if (subTab === 'projects') loadProjects();
-            else loadProblems();
+            else if (subTab === 'problems') loadProblems();
+            else loadRestrictedWords();
           }}
-          isLoading={subTab === 'projects' ? isProjectsLoading : isProblemsLoading}
+          isLoading={
+            subTab === 'projects'
+              ? isProjectsLoading
+              : subTab === 'problems'
+              ? isProblemsLoading
+              : isModerationLoading
+          }
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
           Refresh Feed
@@ -523,6 +681,242 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VIEW 3: RESTRICTED WORDS & MODERATION */}
+      {/* ========================================================================= */}
+      {subTab === 'moderation' && (
+        <div className="space-y-6">
+          {/* Status & Control Overview */}
+          <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 backdrop-blur-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                    isModerationEnabled
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white">Universal Restricted Words Blocker</h3>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        isModerationEnabled
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      }`}
+                    >
+                      {isModerationEnabled ? 'Enforcement Active' : 'Enforcement Paused'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Prevents abusive language, profanity, exam leaks, and fraudulent terms anywhere in the website in real-time.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleModeration}
+                  leftIcon={
+                    isModerationEnabled ? (
+                      <Ban className="w-3.5 h-3.5 text-amber-400" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    )
+                  }
+                >
+                  {isModerationEnabled ? 'Pause Enforcement' : 'Activate Enforcement'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetDefaults}
+                  className="text-xs text-slate-400 hover:text-white"
+                >
+                  Reset Defaults
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800">
+                <span className="text-[11px] text-slate-400 block font-medium">Total Active Terms</span>
+                <span className="text-lg font-black text-white font-mono">{restrictedWords.length}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800">
+                <span className="text-[11px] text-slate-400 block font-medium">Custom Added Terms</span>
+                <span className="text-lg font-black text-purple-400 font-mono">{customWords.length}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800">
+                <span className="text-[11px] text-slate-400 block font-medium">Interception Coverage</span>
+                <span className="text-lg font-black text-emerald-400 font-mono">100% Inputs</span>
+              </div>
+              <div className="p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800">
+                <span className="text-[11px] text-slate-400 block font-medium">Client Feedback</span>
+                <span className="text-lg font-black text-blue-400 font-mono">Live Alert</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Add New Prohibited Words Form */}
+          <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 backdrop-blur-sm space-y-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              <span>Add Prohibited Term or Phrase</span>
+            </h4>
+            <p className="text-xs text-slate-400">
+              Enter a single word or multiple comma-separated words (e.g.{' '}
+              <code className="text-slate-300">fake certificate, exam proxy, hackathon bot</code>). Terms are automatically
+              matched with safe word-boundaries and leetspeak normalization.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <Input
+                placeholder="e.g. scammer, fake college, buy project"
+                value={newWordInput}
+                onChange={(e) => setNewWordInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddWord();
+                  }
+                }}
+                className="flex-1 text-xs"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleAddWord}
+                isLoading={isSavingWord}
+                leftIcon={<Plus className="w-3.5 h-3.5" />}
+              >
+                Add Term
+              </Button>
+            </div>
+          </div>
+
+          {/* Interactive Live Moderation Playground */}
+          <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 backdrop-blur-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-400" />
+                <h4 className="text-sm font-bold text-white">Live Engine Playground</h4>
+              </div>
+              <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider">
+                Instant Real-Time Test
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Type or paste any text below to test how Linkora intercepts and cleans prohibited words in real time.
+            </p>
+            <Input
+              value={testInput}
+              onChange={(e) => setTestInput(e.target.value)}
+              placeholder="Type anything here to test the live filter..."
+              className="text-xs"
+            />
+            {(() => {
+              const testRes = checkRestrictedWords(testInput, restrictedWords);
+              return (
+                <div className="p-4 rounded-xl bg-charcoal-950/80 border border-charcoal-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">Moderation Result:</span>
+                    {testRes.hasRestricted ? (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-500/20 border border-red-500/40 text-red-300 flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                        <span>Restricted Term Detected ({testRes.matchedWords.length})</span>
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Clean Content Allowed</span>
+                      </span>
+                    )}
+                  </div>
+                  {testRes.hasRestricted && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="text-[11px] text-slate-400">Blocked words:</span>
+                      {testRes.matchedWords.map((w) => (
+                        <span
+                          key={w}
+                          className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-red-900/60 border border-red-600/50 text-red-200"
+                        >
+                          {w}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="pt-1 text-xs">
+                    <span className="text-slate-400">Sanitized Output: </span>
+                    <span className="text-emerald-300 font-mono font-medium bg-charcoal-900 px-2 py-1 rounded border border-charcoal-800 inline-block mt-1">
+                      &quot;{testRes.cleanText}&quot;
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Active Words Directory & Chips */}
+          <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 backdrop-blur-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-slate-400" />
+                <h4 className="text-sm font-bold text-white">Active Restricted Terms Directory</h4>
+                <span className="text-xs text-slate-500 font-mono">({restrictedWords.length})</span>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Input
+                  placeholder="Filter terms..."
+                  value={wordSearch}
+                  onChange={(e) => setWordSearch(e.target.value)}
+                  className="pl-8 text-xs py-1.5"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 max-h-[360px] overflow-y-auto p-2 rounded-xl bg-charcoal-950/40 border border-charcoal-800/80">
+              {restrictedWords
+                .filter((w) => !wordSearch.trim() || w.toLowerCase().includes(wordSearch.toLowerCase().trim()))
+                .map((w) => {
+                  const isCustom = customWords.includes(w);
+                  return (
+                    <span
+                      key={w}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-colors ${
+                        isCustom
+                          ? 'bg-purple-900/40 border border-purple-500/50 text-purple-200'
+                          : 'bg-charcoal-800/70 border border-charcoal-700 text-slate-300'
+                      }`}
+                    >
+                      <span>{w}</span>
+                      {isCustom && (
+                        <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 px-1 rounded uppercase">
+                          custom
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleRemoveWord(w)}
+                        title={`Remove "${w}" from restricted words`}
+                        className="text-slate-400 hover:text-red-400 p-0.5 rounded transition-colors ml-0.5"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+            </div>
+          </div>
         </div>
       )}
 
