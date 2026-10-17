@@ -50,7 +50,7 @@ const DEFAULT_NOTES: AdminNote[] = [
     id: 'note-ceo-pitch',
     title: 'Pitch Linkora to College CEO / Director',
     content:
-      'Send the executive briefing and interactive 60-second walkthrough at linkora-link.online/pitch to college leadership for a zero-cost departmental pilot.',
+      'Send the executive briefing and interactive 60-second walkthrough at linkora-edu.online/pitch to college leadership for a zero-cost departmental pilot.',
     category: 'Campus / Meeting',
     priority: 'high',
     status: 'todo',

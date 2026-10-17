@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const forwardedHost = reqHeaders.get('x-forwarded-host');
   const forwardedProto = reqHeaders.get('x-forwarded-proto') || 'https';
   const isLocalEnv = process.env.NODE_ENV === 'development' || origin.includes('localhost') || origin.includes('127.0.0.1');
-  const redirectBase = isLocalEnv ? origin : (origin.includes('linkora') ? origin : 'https://linkora-link.online');
+  const redirectBase = isLocalEnv ? origin : 'https://linkora-edu.online';
 
   // 1. Check for incoming OAuth or Provider errors from Supabase/Google
   const error = searchParams.get('error');

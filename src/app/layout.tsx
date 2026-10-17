@@ -11,7 +11,7 @@ import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-edu.online';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -81,6 +81,7 @@ export const metadata: Metadata = {
   },
   verification: {
     google: [
+      '_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4',
       '9xu7ptCM7RZND-4JzerULVadJwY6Byl2-IJYvnmtJRQ',
       'h7QRxMIPeARrCxq-9QyCR-EFofiKAIAyjxwE_xWnF7c',
     ],
@@ -92,28 +93,28 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://linkora-link.online/#website',
-      url: 'https://linkora-link.online/',
+      '@id': 'https://linkora-edu.online/#website',
+      url: 'https://linkora-edu.online/',
       name: 'Linkora',
-      alternateName: ['Linkora Link', 'Linkora Platform', 'LinkOra'],
+      alternateName: ['Linkora Edu', 'Linkora Platform', 'LinkOra'],
       description: 'College-Wide Student Project Collaboration Platform',
       inLanguage: 'en-US',
       publisher: {
-        '@id': 'https://linkora-link.online/#organization',
+        '@id': 'https://linkora-edu.online/#organization',
       },
     },
     {
       '@type': 'Organization',
-      '@id': 'https://linkora-link.online/#organization',
+      '@id': 'https://linkora-edu.online/#organization',
       name: 'Linkora',
-      url: 'https://linkora-link.online',
+      url: 'https://linkora-edu.online',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://linkora-link.online/brand/linkora-logo.png',
+        url: 'https://linkora-edu.online/brand/linkora-logo.png',
         width: 1024,
         height: 1024,
       },
-      image: 'https://linkora-link.online/icon-192.png',
+      image: 'https://linkora-edu.online/icon-192.png',
       sameAs: ['https://linkora.in'],
     },
   ],
@@ -127,6 +128,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
         <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />

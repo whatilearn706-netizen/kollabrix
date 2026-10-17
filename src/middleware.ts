@@ -6,10 +6,10 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
 
-  const PRIMARY_DOMAIN = 'linkora-link.online';
-  const VALID_DOMAINS = ['linkora-link.online', 'linkora-edu.online', 'linkora.in', 'linkora-edu.in'];
+  const PRIMARY_DOMAIN = 'linkora-edu.online';
+  const VALID_DOMAINS = ['linkora-edu.online', 'linkora.in', 'linkora-edu.in', 'linkora-link.online'];
 
-  // 1. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback on linkora-link.online
+  // 1. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback on linkora-edu.online
   if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
     const url = request.nextUrl.clone();
     url.host = isLocal ? host : (VALID_DOMAINS.includes(host) ? host : PRIMARY_DOMAIN);

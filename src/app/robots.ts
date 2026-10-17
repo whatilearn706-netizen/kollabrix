@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-edu.online';
 
   return {
     rules: [
