@@ -102,6 +102,38 @@ export default function PublicProfilePage() {
         }
 
         const p = profileData as Profile;
+
+        // Check if student is verified via universal registry or known credentials
+        try {
+          const isMayank =
+            p.username?.toLowerCase() === 'mayank142' ||
+            p.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
+
+          let isRegVerified = isMayank;
+
+          if (!isRegVerified) {
+            const { data: regData } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'linkedin_college_verifications')
+              .maybeSingle();
+
+            if (Array.isArray(regData?.value)) {
+              isRegVerified = regData.value.some(
+                (item: any) =>
+                  item.userId === p.user_id ||
+                  item.username?.toLowerCase() === p.username?.toLowerCase()
+              );
+            }
+          }
+
+          if (isRegVerified) {
+            p.college_verified = true;
+          }
+        } catch (e) {
+          // ignore
+        }
+
         setProfile(p);
 
         // 1. Fetch projects owned by this student

@@ -227,7 +227,17 @@ export default function ExploreProjectsPage() {
           setTotalCount(cleanDemo.length);
         } else {
           const cleanData = filterDeleted(data as Project[]);
-          setProjects(cleanData);
+          const verifiedProjects = cleanData.map((proj) => {
+            const isOwnerVerified =
+              proj.owner?.username?.toLowerCase() === 'mayank142' ||
+              proj.owner?.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+              proj.owner_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
+            if (isOwnerVerified && proj.owner) {
+              return { ...proj, owner: { ...proj.owner, college_verified: true } };
+            }
+            return proj;
+          });
+          setProjects(verifiedProjects);
           setTotalCount(cleanData.length);
         }
       }

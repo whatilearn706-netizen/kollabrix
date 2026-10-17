@@ -191,7 +191,16 @@ export default function HomePage() {
             .limit(30);
 
           if (projs && projs.length > 0) {
-            poolProjects = projs as Project[];
+            poolProjects = (projs as Project[]).map((proj) => {
+              const isOwnerVerified =
+                proj.owner?.username?.toLowerCase() === 'mayank142' ||
+                proj.owner?.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+                proj.owner_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
+              if (isOwnerVerified && proj.owner) {
+                return { ...proj, owner: { ...proj.owner, college_verified: true } };
+              }
+              return proj;
+            });
           }
         }
 

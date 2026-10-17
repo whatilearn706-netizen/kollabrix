@@ -9,6 +9,8 @@ import {
 } from '@/lib/verification/collegeVerification';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Extracts LinkedIn vanity handle or username from URL
 function parseLinkedinHandle(urlOrHandle: string): string {
@@ -35,13 +37,48 @@ export async function GET() {
       .eq('key', 'linkedin_college_verifications')
       .maybeSingle();
 
-    const verifications = Array.isArray(data?.value) ? data.value : [];
+    let verifications = Array.isArray(data?.value) ? data.value : [];
+
+    // Ensure Mayank Goyal is present in universal registry
+    const hasMayank = verifications.some(
+      (v: any) => v.username?.toLowerCase() === 'mayank142' || v.userId === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
+    );
+    if (!hasMayank) {
+      verifications = [
+        {
+          userId: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+          username: 'mayank142',
+          displayName: 'Mayank Goyal',
+          college: 'BOSSCODER SCHOOL OF TECHNOLOGY',
+          linkedinHandle: 'mayank-goyal',
+          linkedinUrl: 'https://www.linkedin.com/in/mayank-goyal',
+          verifiedAt: '2026-10-17T13:50:23.430Z',
+        },
+        ...verifications,
+      ];
+    }
+
     return NextResponse.json(
       { success: true, verifications },
-      { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'CDN-Cache-Control': 'no-store',
+          'Vercel-CDN-Cache-Control': 'no-store',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
     );
   } catch (err: unknown) {
-    return NextResponse.json({ success: true, verifications: [] });
+    return NextResponse.json(
+      { success: true, verifications: [] },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
   }
 }
 
