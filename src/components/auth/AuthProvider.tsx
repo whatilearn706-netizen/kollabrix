@@ -68,6 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       try {
+        localStorage.removeItem('linkora_explicit_signout');
+        sessionStorage.removeItem('linkora_explicit_signout');
         const cached = localStorage.getItem('linkora_auth_user');
         if (cached) return JSON.parse(cached);
         const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
@@ -129,6 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return;
     try {
       if (u) {
+        localStorage.removeItem('linkora_explicit_signout');
+        sessionStorage.removeItem('linkora_explicit_signout');
+        sessionStorage.removeItem('linkora_signing_out');
         localStorage.setItem('linkora_auth_user', JSON.stringify(u));
         localStorage.setItem('linkora_auth_user_id', u.id);
         localStorage.setItem('linkora_auth_user_email', u.email || '');
@@ -300,36 +305,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      // ONLY wipe if user explicitly invoked signOut()!
-      if (event === 'SIGNED_OUT') {
-        const explicitSignOut =
-          typeof window !== 'undefined' &&
-          (sessionStorage.getItem('linkora_explicit_signout') === 'true' ||
-            localStorage.getItem('linkora_explicit_signout') === 'true');
+      if (newSession?.user) {
+        try {
+          localStorage.removeItem('linkora_explicit_signout');
+          sessionStorage.removeItem('linkora_explicit_signout');
+          sessionStorage.removeItem('linkora_signing_out');
+        } catch (e) {}
+        setSession(newSession);
+        setUser(newSession.user);
+        persistSessionData(newSession.user, newSession, profile);
+        fetchProfile(newSession.user.id, newSession.user).then((p) => {
+          if (p) persistSessionData(newSession.user, newSession, p);
+        });
+        setIsLoading(false);
+        return;
+      }
 
-        if (explicitSignOut) {
+      // ONLY wipe if user explicitly invoked signOut() in this browser tab!
+      if (event === 'SIGNED_OUT') {
+        const isExplicit =
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('linkora_signing_out') === 'true';
+
+        if (isExplicit) {
           try {
-            sessionStorage.removeItem('linkora_explicit_signout');
-            localStorage.removeItem('linkora_explicit_signout');
-            localStorage.removeItem('linkora_admin_session');
-            localStorage.removeItem('linkora_admin_passcode');
-            document.cookie = 'linkora_admin_session=; path=/; max-age=0';
-            document.cookie = 'linkora_user_session=; path=/; max-age=0';
-            document.cookie = 'linkora_user_email=; path=/; max-age=0';
-            document.cookie = 'linkora_user_id=; path=/; max-age=0';
+            sessionStorage.removeItem('linkora_signing_out');
           } catch (e) {}
           setUser(null);
           setSession(null);
           setProfile(null);
           persistSessionData(null, null, null);
         } else {
-          // Spurious signOut event from background client — restore cached active user!
+          // Supabase SSR background client sent temporary SIGNED_OUT — preserve user from cache!
           try {
             const cachedUser = localStorage.getItem('linkora_auth_user');
             const cachedProfile = localStorage.getItem('linkora_auth_profile');
+            const cachedSession = localStorage.getItem('linkora_auth_session');
             if (cachedUser) {
               setUser(JSON.parse(cachedUser));
               if (cachedProfile) setProfile(JSON.parse(cachedProfile));
+              if (cachedSession) setSession(JSON.parse(cachedSession));
             }
           } catch (e) {}
         }
@@ -337,43 +352,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (newSession?.user) {
-        setSession(newSession);
-        setUser(newSession.user);
-        persistSessionData(newSession.user, newSession, profile);
-        fetchProfile(newSession.user.id, newSession.user).then((p) => {
-          if (p) persistSessionData(newSession.user, newSession, p);
-        });
-      }
       setIsLoading(false);
     });
 
     // 3. Real-Time Cross-Tab Synchronization (Never drop account when exchanging tabs)
     const syncAcrossTabs = () => {
       if (typeof window === 'undefined') return;
-      if (localStorage.getItem('linkora_explicit_signout') === 'true') {
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        return;
-      }
-      const rawUser = localStorage.getItem('linkora_auth_user');
-      const rawProfile = localStorage.getItem('linkora_auth_profile');
-      const rawSession = localStorage.getItem('linkora_auth_session');
-      const hasAdmin =
-        localStorage.getItem('linkora_admin_session') === 'true' ||
-        document.cookie.includes('linkora_admin_session=true');
+      try {
+        const rawUser = localStorage.getItem('linkora_auth_user');
+        const rawProfile = localStorage.getItem('linkora_auth_profile');
+        const rawSession = localStorage.getItem('linkora_auth_session');
+        const hasAdmin =
+          localStorage.getItem('linkora_admin_session') === 'true' ||
+          document.cookie.includes('linkora_admin_session=true');
 
-      if (rawUser) {
-        try {
+        if (rawUser) {
           setUser(JSON.parse(rawUser));
           if (rawProfile) setProfile(JSON.parse(rawProfile));
           if (rawSession) setSession(JSON.parse(rawSession));
-        } catch {}
-      } else if (hasAdmin) {
-        setUser(DEFAULT_OWNER_USER);
-        setProfile(DEFAULT_OWNER_PROFILE);
-      }
+        } else if (hasAdmin) {
+          setUser(DEFAULT_OWNER_USER);
+          setProfile(DEFAULT_OWNER_PROFILE);
+        } else {
+          // Explicit logout on other tab
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+        }
+      } catch (e) {}
     };
 
     window.addEventListener('storage', syncAcrossTabs);
@@ -423,11 +429,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('linkora_explicit_signout', 'true');
-        sessionStorage.setItem('linkora_explicit_signout', 'true');
-      }
-      if (configured) {
-        await supabase.auth.signOut().catch(() => {});
+        sessionStorage.setItem('linkora_signing_out', 'true');
       }
       setUser(null);
       setSession(null);
@@ -443,6 +445,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionStorage.removeItem('linkora_maintenance_unlocked');
         window.dispatchEvent(new Event('linkora_auth_updated'));
       } catch (e) {}
+      if (configured) {
+        await supabase.auth.signOut().catch(() => {});
+      }
     } catch (err) {
       console.error('Sign out error:', err);
     }

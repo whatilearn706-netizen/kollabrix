@@ -2,17 +2,34 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // 1. Canonical domain redirect: ensure every tab is always on https://linkora-edu.online
+  const host = (request.headers.get('host') || request.nextUrl.host || '').toLowerCase();
+  if (
+    host.startsWith('www.linkora-edu.online') ||
+    host === 'linkora.in' ||
+    host === 'www.linkora.in' ||
+    host === 'linkora-edu.in' ||
+    host === 'www.linkora-edu.in' ||
+    host === 'linkora-in.vercel.app'
+  ) {
+    const url = request.nextUrl.clone();
+    url.host = 'linkora-edu.online';
+    url.protocol = 'https';
+    url.port = '';
+    return NextResponse.redirect(url, { status: 301 });
+  }
+
   const pathname = request.nextUrl.pathname;
   const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();
 
-  // 1. Direct /admin route redirect to /control-center-7x9
+  // 2. Direct /admin route redirect to /control-center-7x9
   if (pathname === '/admin') {
     const url = request.nextUrl.clone();
     url.pathname = '/control-center-7x9';
     return NextResponse.redirect(url);
   }
 
-  // 2. If a custom admin route path is configured and matches the request, rewrite to the internal /control-center-7x9 page
+  // 3. If a custom admin route path is configured and matches the request, rewrite to the internal /control-center-7x9 page
   if (configuredAdminPath !== '/control-center-7x9' && pathname === configuredAdminPath) {
     const url = request.nextUrl.clone();
     url.pathname = '/control-center-7x9';
@@ -42,21 +59,20 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          // NEVER wipe valid cookies on GET requests due to unverified background calls
           cookiesToSet.forEach(({ name, value }) => {
-            if (value) request.cookies.set(name, value);
+            request.cookies.set(name, value);
           });
           response = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) => {
-            if (value) response.cookies.set(name, value, options);
+            response.cookies.set(name, value, options);
           });
         },
       },
     });
 
-    // Refresh auth session safely - never let errors crash middleware or wipe valid sessions
+    // Refresh auth session safely
     await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
   } catch (err) {
     // Fail safely without disrupting the page request
