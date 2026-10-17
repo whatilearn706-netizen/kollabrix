@@ -394,18 +394,6 @@ export function Navbar() {
                       <span>Faculty Portal</span>
                     </Link>
 
-                    {/* Private Admin Control Center - ONLY visible to verified platform administrators */}
-                    {isAdminUser && (
-                      <Link
-                        href="/control-center-7x9"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold"
-                      >
-                        <Shield className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Admin Control Center</span>
-                      </Link>
-                    )}
-
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
                     <Link
@@ -541,17 +529,6 @@ export function Navbar() {
                 <Briefcase className="w-4 h-4 text-indigo-500" />
                 <span>Project Workspace</span>
               </button>
-            )}
-
-            {mounted && isAdminUser && (
-              <Link
-                href="/control-center-7x9"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-500 hover:bg-amber-500/10 transition-colors"
-              >
-                <Shield className="w-4 h-4 text-amber-500" />
-                <span>Admin Control Center</span>
-              </Link>
             )}
           </div>
 

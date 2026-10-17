@@ -105,11 +105,6 @@ export function Footer() {
                   Faculty Problems
                 </Link>
               </li>
-              <li>
-                <Link href="/control-center-7x9" className="hover:opacity-100 transition-opacity font-medium text-amber-500/90 hover:text-amber-400">
-                  👑 Admin Control Center
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -178,10 +173,6 @@ export function Footer() {
             <span className="opacity-40">•</span>
             <Link href="/hackathons" className="hover:underline hover:opacity-100 transition-opacity">
               Events
-            </Link>
-            <span className="opacity-40">•</span>
-            <Link href="/control-center-7x9" className="hover:underline hover:opacity-100 transition-opacity font-semibold text-amber-500">
-              Admin
             </Link>
           </div>
         </div>

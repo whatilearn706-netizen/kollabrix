@@ -264,18 +264,6 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
           </div>
           {errorMsg && <p className="text-xs text-rose-400 font-medium">{errorMsg}</p>}
         </form>
-
-        {/* Footer info */}
-        <div className="pt-4 border-t border-charcoal-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Are you an administrator?</span>
-          <Link
-            href="/control-center-7x9"
-            className="text-brand-400 hover:text-brand-300 font-medium inline-flex items-center gap-1"
-          >
-            Admin Sign-in
-            <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
       </div>
     </div>
   );
