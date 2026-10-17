@@ -34,6 +34,7 @@ interface BlueprintResult {
     duration: string;
     deliverables: string;
   }[];
+  engine?: string;
 }
 
 const CURATED_BLUEPRINTS: Record<string, BlueprintResult> = {
@@ -224,29 +225,41 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [blueprint, setBlueprint] = useState<BlueprintResult | null>(() => CURATED_BLUEPRINTS.health);
 
   if (!isOpen) return null;
 
-  const handleGenerate = (customPrompt?: string) => {
-    const q = (customPrompt || prompt).toLowerCase().trim();
+  const handleGenerate = async (customPrompt?: string) => {
+    const q = (customPrompt || prompt).trim();
+    if (!q) {
+      setGenerateError('Please enter a project concept, technology, or problem to spark.');
+      return;
+    }
+
     setIsGenerating(true);
+    setGenerateError(null);
 
-    setTimeout(() => {
-      let chosen: BlueprintResult;
-      if (q.includes('bus') || q.includes('transit') || q.includes('campus') || q.includes('map')) {
-        chosen = CURATED_BLUEPRINTS.campus;
-      } else if (q.includes('money') || q.includes('fintech') || q.includes('pay') || q.includes('split')) {
-        chosen = CURATED_BLUEPRINTS.fintech;
-      } else if (q.includes('code') || q.includes('tutor') || q.includes('learn') || q.includes('edu')) {
-        chosen = CURATED_BLUEPRINTS.edtech;
+    try {
+      const res = await fetch('/api/ai/spark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: q }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data?.blueprint) {
+        setBlueprint(data.blueprint);
       } else {
-        chosen = CURATED_BLUEPRINTS.health;
+        throw new Error(data?.error || 'Failed to generate project blueprint.');
       }
-
-      setBlueprint(chosen);
+    } catch (err: any) {
+      console.warn('Spark generation notice:', err);
+      setGenerateError(err?.message || 'Could not generate blueprint. Please try again.');
+    } finally {
       setIsGenerating(false);
-    }, 600);
+    }
   };
 
   const handleLaunchProject = () => {
@@ -278,11 +291,11 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
                   Linkora Spark: AI Project Blueprint Generator
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold uppercase">
-                  AI Beta
+                  AI Powered
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Turn your raw ideas or skills into an instant project roadmap, tech stack, and ideal squad breakdown.
+                Type any project idea or problem. Linkora AI constructs a tailored roadmap, tech stack, and squad composition.
               </p>
             </div>
           </div>
@@ -300,9 +313,12 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
             <input
               type="text"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                setPrompt(e.target.value);
+                if (generateError) setGenerateError(null);
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-              placeholder="e.g. AI app for hospitals, campus shuttle tracker, split bill app..."
+              placeholder="e.g. AI drone for crop disease, decentralized college voting, roommate expense app..."
               className="w-full pl-4 pr-28 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-amber-500 transition-colors shadow-2xs"
             />
             <button
@@ -324,20 +340,25 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
             </button>
           </div>
 
+          {generateError && (
+            <p className="text-xs text-red-500 font-medium px-1">{generateError}</p>
+          )}
+
           {/* Quick Prompts Chips */}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span className="text-slate-400 font-mono">Try ideas:</span>
             {[
-              { label: '🩺 Clinical AI Notes', key: 'health' },
-              { label: '🚌 Campus Shuttle Map', key: 'campus' },
-              { label: '💳 Student Club Budgeting', key: 'fintech' },
-              { label: '💻 Interactive Code Tutor', key: 'edtech' },
-            ].map((chip) => (
+              { label: '🌾 Drone Crop Disease AI', q: 'AI drone computer vision for agricultural crop disease and soil moisture detection' },
+              { label: '🩺 Clinical Voice Notes', q: 'Multilingual speech-to-text AI pipeline for hospital emergency room clinical notes' },
+              { label: '🚌 Campus Shuttle GPS', q: 'Real-time university shuttle bus tracker with crowdsourced GPS and arrival prediction' },
+              { label: '💳 Student Club Budgeting', q: 'Smart expense splitting app for college students with UPI payments and ledger reconciliation' },
+              { label: '🔐 Blockchain Voting', q: 'Zero-knowledge decentralized student council voting protocol with verifiable ballots' },
+            ].map((chip, ci) => (
               <button
-                key={chip.key}
+                key={ci}
                 onClick={() => {
-                  setPrompt(chip.label);
-                  handleGenerate(chip.key);
+                  setPrompt(chip.q);
+                  handleGenerate(chip.q);
                 }}
                 className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
               >
@@ -352,17 +373,35 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
           <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-5 animate-in fade-in duration-200">
             {/* Header info */}
             <div>
-              <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 border border-amber-500/30 font-bold uppercase">
                   {blueprint.category} • {blueprint.difficulty}
                 </span>
-                <span className="text-xs font-mono text-slate-400">3-Week Sprint Plan</span>
+                <span className="text-[11px] font-mono text-emerald-600 font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-emerald-500" />
+                  {blueprint.engine || 'AI Generated'}
+                </span>
               </div>
               <h4 className="text-lg font-black text-slate-900">{blueprint.title}</h4>
-              <p className="text-xs font-medium text-amber-600 mt-0.5">{blueprint.tagline}</p>
+              <p className="text-xs font-semibold text-amber-600 mt-0.5">{blueprint.tagline}</p>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
                 {blueprint.summary}
               </p>
+
+              {/* Technologies */}
+              {Array.isArray(blueprint.technologies) && blueprint.technologies.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-3">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase font-bold mr-0.5">Stack:</span>
+                  {blueprint.technologies.map((t, ti) => (
+                    <span
+                      key={ti}
+                      className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-200/90 text-slate-800 font-bold"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Recommended Squad Breakdown */}

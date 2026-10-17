@@ -114,6 +114,53 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Auto-prefill form if launched from Linkora Spark AI Generator
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && !initialData) {
+      try {
+        const stored = sessionStorage.getItem('prefill_project_blueprint');
+        if (stored) {
+          const bp = JSON.parse(stored);
+          if (bp.title) setTitle(bp.title);
+          if (bp.summary || bp.tagline) setSummary(bp.summary || bp.tagline);
+          if (bp.category) {
+            setCategory(bp.category as ProjectCategory);
+          }
+          if (bp.difficulty) setDifficulty(bp.difficulty as ProjectDifficulty);
+          if (Array.isArray(bp.technologies) && bp.technologies.length > 0) {
+            setTechnologies(bp.technologies);
+          }
+          if (Array.isArray(bp.desired_roles) && bp.desired_roles.length > 0) {
+            setDesiredRoles(bp.desired_roles);
+          }
+          if (Array.isArray(bp.rolesBreakdown) && bp.rolesBreakdown.length > 0) {
+            const allSkills = Array.from(new Set(bp.rolesBreakdown.flatMap((r: any) => r.skills || []))) as string[];
+            if (allSkills.length > 0) setRequiredSkills(allSkills);
+          }
+          // Build structured initial markdown description
+          const sections = [
+            `### Project Overview\n${bp.summary || bp.tagline || ''}\n`,
+            Array.isArray(bp.technologies) && bp.technologies.length > 0
+              ? `### Tech Stack & Architecture\n${bp.technologies.map((t: string) => `- **${t}**`).join('\n')}\n`
+              : '',
+            Array.isArray(bp.rolesBreakdown) && bp.rolesBreakdown.length > 0
+              ? `### Desired Squad Roles\n${bp.rolesBreakdown.map((r: any) => `- **${r.role}**: ${r.focus}`).join('\n')}\n`
+              : '',
+            Array.isArray(bp.milestones) && bp.milestones.length > 0
+              ? `### Sprint Roadmap & Milestones\n${bp.milestones.map((m: any) => `- **${m.duration} (${m.title})**: ${m.deliverables}`).join('\n')}`
+              : '',
+          ].filter(Boolean);
+          if (sections.length > 0) {
+            setDescription(sections.join('\n'));
+          }
+          sessionStorage.removeItem('prefill_project_blueprint');
+        }
+      } catch (e) {
+        console.warn('Failed to parse prefill project blueprint:', e);
+      }
+    }
+  }, [initialData]);
+
   // Read URL query params on mount for pre-selected problem statement and fetch active statements
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
