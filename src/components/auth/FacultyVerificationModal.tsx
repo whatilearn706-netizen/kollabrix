@@ -98,7 +98,7 @@ export function FacultyVerificationModal({
     // Open real Government of India DigiLocker sign-in portal
     try {
       window.open(
-        'https://accounts.digitallocker.gov.in/signin/smart_login',
+        'https://www.digilocker.gov.in/web/login',
         '_blank',
         'noopener,noreferrer'
       );
@@ -373,7 +373,7 @@ export function FacultyVerificationModal({
                 </span>
                 <ol className="space-y-1.5 text-slate-300 list-decimal pl-4 text-[11px] leading-relaxed">
                   <li>
-                    Clicking below launches the <strong>real government DigiLocker portal</strong> (<code>accounts.digitallocker.gov.in</code>).
+                    Clicking below launches the <strong>real government DigiLocker portal</strong> (<code>digilocker.gov.in/web/login</code>).
                   </li>
                   <li>Sign in with your mobile/Aadhaar &amp; OTP directly on the official government website.</li>
                   <li>
@@ -405,13 +405,24 @@ export function FacultyVerificationModal({
                   Already have document? Skip to verify →
                 </button>
 
-                <Button
-                  onClick={handleLaunchDigiLockerPortal}
-                  className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 shadow-lg shadow-indigo-500/20"
-                  rightIcon={<ExternalLink className="w-4 h-4" />}
+                <a
+                  href="https://www.digilocker.gov.in/web/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (!consentGiven) {
+                      e.preventDefault();
+                      setError('Electronic consent under IT Act 2000 is required to proceed.');
+                      return;
+                    }
+                    setError(null);
+                    setFlowState('portal_active');
+                  }}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-xs transition-all cursor-pointer"
                 >
-                  🚀 Launch Official DigiLocker Portal
-                </Button>
+                  <span>🚀 Launch Official DigiLocker Portal</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
               </div>
             </div>
           )}
@@ -432,24 +443,20 @@ export function FacultyVerificationModal({
                       Government Portal Active
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">
-                      accounts.digitallocker.gov.in
+                      digilocker.gov.in/web/login
                     </span>
                   </div>
                 </div>
 
-                <button
-                  onClick={() =>
-                    window.open(
-                      'https://accounts.digitallocker.gov.in/signin/smart_login',
-                      '_blank',
-                      'noopener,noreferrer'
-                    )
-                  }
+                <a
+                  href="https://www.digilocker.gov.in/web/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-400/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
                 >
-                  <span>Re-open Tab</span>
+                  <span>Re-open DigiLocker</span>
                   <ExternalLink className="w-3 h-3" />
-                </button>
+                </a>
               </div>
 
               {/* Tabs for Verification Methods */}
