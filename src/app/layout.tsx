@@ -18,13 +18,20 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Linkora — College-Wide Student Project Collaboration Platform',
+    default: 'Linkora (Linkora Link) — Student Project Collaboration & Hackathon Platform',
     template: '%s | Linkora',
   },
   description:
-    'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
+    'Linkora (Linkora Link) is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
   keywords: [
     'Linkora',
+    'Linkora Link',
+    'linkora link',
+    'linkora-link',
+    'linkora-link.online',
+    'linkora online',
+    'linkora platform',
+    'linkora project collaboration',
     'student projects',
     'college collaboration',
     'hackathon teams',
@@ -59,16 +66,31 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
-    title: 'Linkora — College-Wide Student Project Collaboration Platform',
+    title: 'Linkora (Linkora Link) — Student Project Collaboration & Hackathon Platform',
     description:
-      'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
+      'Linkora (Linkora Link) is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
     siteName: 'Linkora',
+    images: [
+      {
+        url: `${siteUrl}/brand/linkora-logo.png`,
+        width: 1024,
+        height: 1024,
+        alt: 'Linkora (Linkora Link) Brand Logo',
+      },
+      {
+        url: `${siteUrl}/icon-512.png`,
+        width: 512,
+        height: 512,
+        alt: 'Linkora Icon',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Linkora — College-Wide Student Project Collaboration Platform',
+    title: 'Linkora (Linkora Link) — Student Project Collaboration & Hackathon Platform',
     description:
-      'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
+      'Linkora (Linkora Link) is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    images: [`${siteUrl}/brand/linkora-logo.png`],
   },
   robots: {
     index: true,
@@ -98,9 +120,17 @@ const jsonLd = {
       '@id': 'https://linkora-link.online/#website',
       url: 'https://linkora-link.online/',
       name: 'Linkora',
-      alternateName: ['Linkora Link', 'Linkora Platform', 'LinkOra'],
-      description: 'College-Wide Student Project Collaboration Platform',
+      alternateName: ['Linkora Link', 'linkora link', 'linkora-link.online', 'Linkora Platform', 'LinkOra'],
+      description: 'College-Wide Student Project Collaboration & Hackathon Platform',
       inLanguage: 'en-US',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://linkora-link.online/explore?q={search_term_string}',
+        },
+        'query-input': 'required name=search_term_string',
+      },
       publisher: {
         '@id': 'https://linkora-link.online/#organization',
       },
@@ -109,15 +139,22 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': 'https://linkora-link.online/#organization',
       name: 'Linkora',
-      url: 'https://linkora-link.online',
+      alternateName: ['Linkora Link', 'Linkora Platform'],
+      url: 'https://linkora-link.online/',
       logo: {
         '@type': 'ImageObject',
+        '@id': 'https://linkora-link.online/#logo',
         url: 'https://linkora-link.online/brand/linkora-logo.png',
+        caption: 'Linkora Logo',
+        inLanguage: 'en-US',
         width: 1024,
         height: 1024,
       },
-      image: 'https://linkora-link.online/icon-192.png',
-      sameAs: ['https://linkora.in'],
+      image: 'https://linkora-link.online/brand/linkora-logo.png',
+      sameAs: [
+        'https://linkora-link.online',
+        'https://linkora.in',
+      ],
     },
   ],
 };

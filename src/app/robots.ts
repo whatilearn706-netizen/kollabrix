@@ -26,6 +26,7 @@ export default function robots(): MetadataRoute.Robots {
           '/icon-*.png',
           '/apple-touch-icon.png',
           '/brand/*',
+          '/google*.html',
           '/manifest.json',
           '/manifest.webmanifest',
         ],
