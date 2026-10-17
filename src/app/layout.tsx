@@ -32,10 +32,18 @@ export const metadata: Metadata = {
   authors: [{ name: 'Linkora Team' }],
   creator: 'Linkora',
   publisher: 'Linkora',
+  applicationName: 'Linkora',
   icons: {
-    icon: '/brand/linkora-logo.png',
-    shortcut: '/brand/linkora-logo.png',
-    apple: '/brand/linkora-logo.png',
+    icon: [
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/brand/linkora-logo.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon-48x48.png',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   alternates: {
     canonical: '/',
@@ -79,7 +87,16 @@ const jsonLd = {
   '@type': 'WebSite',
   name: 'Linkora',
   alternateName: ['Linkora Edu', 'Linkora Platform', 'LinkOra'],
-  url: 'https://linkora-edu.online',
+  url: 'https://linkora-edu.online/',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Linkora',
+    url: 'https://linkora-edu.online',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://linkora-edu.online/brand/linkora-logo.png',
+    },
+  },
 };
 
 export default function RootLayout({
@@ -90,6 +107,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta name="application-name" content="Linkora" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
