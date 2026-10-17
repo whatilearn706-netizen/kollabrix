@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   GraduationCap,
 } from 'lucide-react';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
 interface TeammateCardProps {
   match: TeammateMatch;
@@ -72,11 +73,17 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                 @{profile.username}
               </p>
               {(profile.college || profile.course) && (
-                <div style={{ color: theme.mutedTextColor }} className="flex items-center gap-1.5 text-[11px] mt-1 truncate">
+                <div style={{ color: theme.mutedTextColor }} className="flex items-center gap-1.5 text-[11px] mt-1 flex-wrap">
                   <GraduationCap className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                  <span className="truncate">
-                    {[profile.course, profile.college].filter(Boolean).join(' • ')}
-                  </span>
+                  {profile.course && <span>{profile.course}</span>}
+                  {profile.course && profile.college && <span>•</span>}
+                  {profile.college && (
+                    <VerifiedCollegeBadge
+                      college={profile.college}
+                      isVerified={profile.college_verified}
+                      size="xs"
+                    />
+                  )}
                 </div>
               )}
             </div>

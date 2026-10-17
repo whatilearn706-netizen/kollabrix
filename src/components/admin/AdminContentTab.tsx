@@ -24,6 +24,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { ProjectCategory, ProjectDifficulty } from '@/types/database';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
 interface AdminContentTabProps {
   authToken?: string;
@@ -354,7 +355,9 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
                           {proj.owner?.display_name || 'Student Lead'}
                         </span>
                         {proj.owner?.college && (
-                          <span className="text-slate-500">• {proj.owner.college}</span>
+                          <span className="text-slate-500 flex items-center gap-1">
+                            • <VerifiedCollegeBadge college={proj.owner.college} isVerified={proj.owner.college_verified} size="xs" />
+                          </span>
                         )}
                       </div>
 
@@ -480,7 +483,9 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
                           {prob.author?.display_name || 'Faculty Mentor'}
                         </span>
                         {prob.author?.college && (
-                          <span className="text-slate-500">• {prob.author.college}</span>
+                          <span className="text-slate-500 flex items-center gap-1">
+                            • <VerifiedCollegeBadge college={prob.author.college} isVerified={prob.author.college_verified} size="xs" />
+                          </span>
                         )}
                       </div>
 

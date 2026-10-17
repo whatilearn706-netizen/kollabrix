@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Star,
 } from 'lucide-react';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
 export interface ProjectCardProps {
   project: Project;
@@ -205,7 +206,11 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
                 </span>
                 {project.owner?.college && (
                   <span style={{ color: isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#64748b') }} className="text-[10px] truncate block">
-                    {project.owner.college}
+                    <VerifiedCollegeBadge
+                      college={project.owner.college}
+                      isVerified={project.owner.college_verified}
+                      size="xs"
+                    />
                   </span>
                 )}
               </div>

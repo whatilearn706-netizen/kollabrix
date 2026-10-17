@@ -23,8 +23,10 @@ import {
   GraduationCap,
   KeyRound,
   ShieldCheck,
+  Linkedin,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
+import { LinkedInCollegeVerificationModal } from '@/components/profile/LinkedInCollegeVerificationModal';
 
 export interface ProfileFormProps {
   initialProfile?: Profile | null;
@@ -66,11 +68,17 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     initialProfile?.preferred_roles || []
   );
   const [githubUrl, setGithubUrl] = useState(initialProfile?.github_url || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(initialProfile?.linkedin_url || '');
   const [portfolioUrl, setPortfolioUrl] = useState(initialProfile?.portfolio_url || '');
   const [isPortfolioPublic, setIsPortfolioPublic] = useState<boolean>(
     initialProfile?.is_portfolio_public ?? true
   );
   const [profileRole, setProfileRole] = useState(initialProfile?.role || 'student');
+  const [isCollegeVerified, setIsCollegeVerified] = useState<boolean>(
+    Boolean(initialProfile?.college_verified)
+  );
+  const [isLinkedInModalOpen, setIsLinkedInModalOpen] = useState(false);
+
   const [facultyCode, setFacultyCode] = useState('');
   const [isVerifyingFaculty, setIsVerifyingFaculty] = useState(false);
   const [facultyVerifyMsg, setFacultyVerifyMsg] = useState<{ text: string; isError: boolean } | null>(
@@ -81,6 +89,36 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
+      const verifiedCollege = localStorage.getItem('linkora_verified_college_name');
+      if (isVerifiedLocally && college && verifiedCollege && college.toLowerCase() === verifiedCollege.toLowerCase()) {
+        setIsCollegeVerified(true);
+      }
+      const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
+      if (savedLinkedin && !linkedinUrl) {
+        setLinkedinUrl(savedLinkedin);
+      }
+    } catch (e) {}
+
+    const handleUpdate = () => {
+      try {
+        const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
+        if (isVerifiedLocally) {
+          setIsCollegeVerified(true);
+          const savedCollege = localStorage.getItem('linkora_verified_college_name');
+          if (savedCollege) setCollege(savedCollege);
+          const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
+          if (savedLinkedin) setLinkedinUrl(savedLinkedin);
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('linkora_college_updated', handleUpdate);
+    return () => window.removeEventListener('linkora_college_updated', handleUpdate);
+  }, [college, linkedinUrl]);
 
   const handleVerifyFacultyCode = async () => {
     setFacultyVerifyMsg(null);
@@ -130,7 +168,9 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     interests,
     preferred_roles: preferredRoles,
     github_url: githubUrl,
+    linkedin_url: linkedinUrl,
     portfolio_url: portfolioUrl,
+    college_verified: isCollegeVerified,
   };
 
   const validateUsername = (val: string) => {
@@ -182,6 +222,11 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       return;
     }
 
+    if (linkedinUrl && !validateUrl(linkedinUrl)) {
+      setError('Please provide a valid LinkedIn URL (e.g. https://www.linkedin.com/in/username).');
+      return;
+    }
+
     if (portfolioUrl && !validateUrl(portfolioUrl)) {
       setError('Please provide a valid Portfolio URL (e.g. https://portfolio.me).');
       return;
@@ -190,26 +235,37 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     try {
       setIsLoading(true);
 
-      const payload = {
+      const payload: Record<string, any> = {
         user_id: user.id, // Strictly derived from the authenticated session
         username: username.trim().toLowerCase(),
         display_name: displayName.trim(),
         avatar_url: avatarUrl.trim() || null,
         bio: bio.trim() || null,
         college: college.trim() || null,
+        college_verified: isCollegeVerified,
         course: course.trim() || null,
         academic_year: academicYear || null,
         skills,
         interests,
         preferred_roles: preferredRoles,
         github_url: githubUrl.trim() || null,
+        linkedin_url: linkedinUrl.trim() || null,
         portfolio_url: portfolioUrl.trim() || null,
         is_portfolio_public: isPortfolioPublic,
       };
 
-      const { error: upsertError } = await supabase
+      let { error: upsertError } = await supabase
         .from('profiles')
         .upsert(payload, { onConflict: 'user_id' });
+
+      if (upsertError && (upsertError.message.includes('column') || upsertError.code === '42703')) {
+        // Fallback gracefully without newly added columns
+        const safePayload = { ...payload };
+        delete safePayload.college_verified;
+        delete safePayload.linkedin_url;
+        const res = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
+        upsertError = res.error;
+      }
 
       if (upsertError) {
         if (upsertError.message.includes('profiles_username_key') || upsertError.code === '23505') {
@@ -308,19 +364,74 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
 
       {/* College & Academics */}
       <div className="rounded-xl bg-charcoal-900 border border-charcoal-750/80 p-6 space-y-4">
-        <div className="border-b border-charcoal-800 pb-3">
-          <h2 className="text-base font-semibold text-white">College & Academic Details</h2>
-          <p className="text-xs text-slate-400">
-            Helps match you with campus peers or multi-institution cohorts.
-          </p>
+        <div className="border-b border-charcoal-800 pb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-white">College & Academic Details</h2>
+            <p className="text-xs text-slate-400">
+              Helps match you with campus peers or multi-institution cohorts.
+            </p>
+          </div>
+          {isCollegeVerified && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0A66C2]/15 text-[#70B5F9] border border-[#0A66C2]/30 shadow-xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#70B5F9]" />
+              LinkedIn Verified
+            </span>
+          )}
         </div>
 
-        <Input
-          label="College / University Name"
-          value={college}
-          onChange={(e) => setCollege(e.target.value)}
-          placeholder="e.g. University of Engineering & Applied Sciences"
-        />
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-sm font-medium text-slate-300">
+              College / University Name
+            </label>
+            {isCollegeVerified ? (
+              <span className="text-xs text-[#70B5F9] font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#70B5F9]" />
+                Verified Affiliation
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsLinkedInModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#70B5F9] hover:text-[#0A66C2] transition-colors"
+              >
+                <Linkedin className="w-3.5 h-3.5" />
+                <span>Verify with LinkedIn</span>
+              </button>
+            )}
+          </div>
+          <Input
+            value={college}
+            onChange={(e) => {
+              setCollege(e.target.value);
+              const savedVerified = typeof window !== 'undefined' ? localStorage.getItem('linkora_verified_college_name') : null;
+              if (savedVerified && e.target.value.trim().toLowerCase() !== savedVerified.toLowerCase()) {
+                setIsCollegeVerified(false);
+              }
+            }}
+            placeholder="e.g. University of Engineering & Applied Sciences"
+          />
+          {!isCollegeVerified && (
+            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-[#0A66C2]/10 border border-[#0A66C2]/25">
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <Linkedin className="w-4 h-4 text-[#70B5F9] shrink-0" />
+                <span>
+                  Verify your college name with LinkedIn to display a verified checkmark badge across projects.
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLinkedInModalOpen(true)}
+                className="shrink-0 text-xs border-[#0A66C2]/40 text-[#70B5F9] hover:bg-[#0A66C2]/20"
+                leftIcon={<Linkedin className="w-3.5 h-3.5 text-[#70B5F9]" />}
+              >
+                Verify College
+              </Button>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
@@ -423,14 +534,23 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           />
 
           <Input
-            label="Portfolio or Personal Website"
+            label="LinkedIn Profile URL"
             type="url"
-            value={portfolioUrl}
-            onChange={(e) => setPortfolioUrl(e.target.value)}
-            placeholder="https://yourportfolio.me"
-            leftIcon={<Globe className="w-4 h-4" />}
+            value={linkedinUrl}
+            onChange={(e) => setLinkedinUrl(e.target.value)}
+            placeholder="https://www.linkedin.com/in/username"
+            leftIcon={<Linkedin className="w-4 h-4 text-[#70B5F9]" />}
           />
         </div>
+
+        <Input
+          label="Portfolio or Personal Website"
+          type="url"
+          value={portfolioUrl}
+          onChange={(e) => setPortfolioUrl(e.target.value)}
+          placeholder="https://yourportfolio.me"
+          leftIcon={<Globe className="w-4 h-4" />}
+        />
       </div>
 
       {/* Portfolio Privacy & College Role */}
@@ -574,6 +694,20 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           {isOnboarding ? 'Complete Setup & Explore Projects' : 'Save Profile'}
         </Button>
       </div>
+
+      {/* LinkedIn College Verification Modal */}
+      <LinkedInCollegeVerificationModal
+        isOpen={isLinkedInModalOpen}
+        onClose={() => setIsLinkedInModalOpen(false)}
+        collegeName={college}
+        userId={user?.id}
+        onCollegeNameChange={(name) => setCollege(name)}
+        onVerified={(verifiedCollege, verifiedLinkedin) => {
+          setCollege(verifiedCollege);
+          if (verifiedLinkedin) setLinkedinUrl(verifiedLinkedin);
+          setIsCollegeVerified(true);
+        }}
+      />
     </form>
   );
 }

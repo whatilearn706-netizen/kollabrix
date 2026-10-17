@@ -25,6 +25,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { AdminUserListItem } from '@/types/database';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
 interface AdminUsersTabProps {
   currentAdminId?: string;
@@ -370,7 +371,17 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
                 <div className="font-bold text-white text-sm">
                   {selectedUser.display_name} (@{selectedUser.username})
                 </div>
-                <div className="text-slate-400">{selectedUser.college || 'Collegiate Student'}</div>
+                <div className="text-slate-400">
+                  {selectedUser.college ? (
+                    <VerifiedCollegeBadge
+                      college={selectedUser.college}
+                      isVerified={selectedUser.college_verified}
+                      size="xs"
+                    />
+                  ) : (
+                    'Collegiate Student'
+                  )}
+                </div>
                 {selectedUser.suspension_reason && (
                   <div className="text-amber-400 font-mono text-[11px] pt-1">
                     Suspension Notice: {selectedUser.suspension_reason}

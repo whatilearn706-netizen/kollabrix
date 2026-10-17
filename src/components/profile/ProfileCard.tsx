@@ -14,7 +14,9 @@ import {
   Heart,
   Briefcase,
   Layers,
+  Linkedin,
 } from 'lucide-react';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
 export interface ProfileCardProps {
   profile: Profile;
@@ -65,6 +67,18 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
               <Github className="w-4 h-4" />
             </a>
           )}
+          {profile.linkedin_url && (
+            <a
+              href={profile.linkedin_url.startsWith('http') ? profile.linkedin_url : `https://${profile.linkedin_url}`}
+              target="_blank"
+              rel="noreferrer"
+              className="p-2 rounded-lg bg-[#0A66C2]/15 hover:bg-[#0A66C2]/25 text-[#70B5F9] border border-[#0A66C2]/35 transition-colors"
+              title="LinkedIn Profile"
+              aria-label="LinkedIn Profile"
+            >
+              <Linkedin className="w-4 h-4" />
+            </a>
+          )}
           {profile.portfolio_url && (
             <a
               href={profile.portfolio_url}
@@ -86,7 +100,10 @@ export function ProfileCard({ profile, isOwner = false }: ProfileCardProps) {
           {profile.college && (
             <div className="flex items-center gap-1.5 bg-charcoal-850 px-2.5 py-1 rounded-md border border-charcoal-750">
               <GraduationCap className="w-3.5 h-3.5 text-brand-400" />
-              <span>{profile.college}</span>
+              <VerifiedCollegeBadge
+                college={profile.college}
+                isVerified={profile.college_verified}
+              />
             </div>
           )}
           {profile.course && (

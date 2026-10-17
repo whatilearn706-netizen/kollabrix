@@ -74,6 +74,9 @@ export interface Profile {
   preferred_roles: string[];
   github_url?: string | null;
   portfolio_url?: string | null;
+  linkedin_url?: string | null;
+  college_verified?: boolean;
+  college_verified_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -647,6 +650,9 @@ export interface AdminUserListItem {
   is_suspended: boolean;
   suspension_reason?: string | null;
   college?: string | null;
+  college_verified?: boolean;
+  college_verified_at?: string | null;
+  linkedin_url?: string | null;
   course?: string | null;
   academic_year?: string | null;
   skills: string[];

@@ -16,6 +16,7 @@ import { ApplyModal } from '@/components/applications/ApplyModal';
 import { GithubActivitySection } from '@/components/github/GithubActivitySection';
 import { SquadShareModal } from '@/components/projects/SquadShareModal';
 import { ProjectCertificateModal } from '@/components/workspace/ProjectCertificateModal';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 import {
   Users,
   Calendar,
@@ -866,7 +867,10 @@ export default function ProjectDetailsPage() {
             {project.owner?.college && (
               <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                 <GraduationCap className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-                <span className="truncate">{project.owner.college}</span>
+                <VerifiedCollegeBadge
+                  college={project.owner.college}
+                  isVerified={project.owner.college_verified}
+                />
               </div>
             )}
 

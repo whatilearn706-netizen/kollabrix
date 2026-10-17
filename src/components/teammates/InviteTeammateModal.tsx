@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Avatar } from '@/components/ui/Avatar';
 import { UserPlus, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
 interface InviteTeammateModalProps {
   isOpen: boolean;
@@ -249,9 +250,17 @@ export function InviteTeammateModal({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 truncate">
-                {candidate.college || candidate.course || `@${candidate.username}`}
-              </p>
+              <div className="text-xs text-slate-400 truncate mt-0.5">
+                {candidate.college ? (
+                  <VerifiedCollegeBadge
+                    college={candidate.college}
+                    isVerified={candidate.college_verified}
+                    size="xs"
+                  />
+                ) : (
+                  candidate.course || `@${candidate.username}`
+                )}
+              </div>
             </div>
           </div>
 
