@@ -119,12 +119,16 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       return;
     }
 
+    const canonicalOrigin = typeof window !== 'undefined'
+      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-edu.online')
+      : 'https://linkora-edu.online';
+
     try {
       setIsGoogleLoading(true);
       const { error: googleError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${redirectUrl}`,
+          redirectTo: `${canonicalOrigin}/auth/callback?next=${redirectUrl}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -161,12 +165,16 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
       return;
     }
 
+    const canonicalOrigin = typeof window !== 'undefined'
+      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-edu.online')
+      : 'https://linkora-edu.online';
+
     try {
       setIsGitHubLoading(true);
       const { data, error: githubError } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${redirectUrl}`,
+          redirectTo: `${canonicalOrigin}/auth/callback?next=${redirectUrl}`,
           skipBrowserRedirect: true,
         },
       });

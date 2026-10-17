@@ -29,7 +29,7 @@ export function SquadShareModal({ isOpen, onClose, project }: SquadShareModalPro
   const projectUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/projects/${project.id}`
-      : `https://linkora-edu.vercel.app/projects/${project.id}`;
+      : `https://linkora-edu.online/projects/${project.id}`;
 
   const rolesText =
     project.desired_roles && project.desired_roles.length > 0

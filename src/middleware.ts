@@ -2,16 +2,22 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // 1. Canonical domain redirect: ensure every tab is always on https://linkora-edu.online
   const host = (request.headers.get('host') || request.nextUrl.host || '').toLowerCase();
-  if (
-    host.startsWith('www.linkora-edu.online') ||
-    host === 'linkora.in' ||
-    host === 'www.linkora.in' ||
-    host === 'linkora-edu.in' ||
-    host === 'www.linkora-edu.in' ||
-    host === 'linkora-in.vercel.app'
-  ) {
+  const pathname = request.nextUrl.pathname;
+  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+
+  // 1. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback on linkora-edu.online
+  if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
+    const url = request.nextUrl.clone();
+    url.host = isLocal ? host : 'linkora-edu.online';
+    url.protocol = isLocal ? url.protocol : 'https';
+    url.port = isLocal ? url.port : '';
+    url.pathname = '/auth/callback';
+    return NextResponse.redirect(url, { status: 307 });
+  }
+
+  // 2. Canonical domain redirect: ensure every tab and visitor is always on https://linkora-edu.online
+  if (!isLocal && host !== 'linkora-edu.online') {
     const url = request.nextUrl.clone();
     url.host = 'linkora-edu.online';
     url.protocol = 'https';
@@ -19,7 +25,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, { status: 301 });
   }
 
-  const pathname = request.nextUrl.pathname;
   const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();
 
   // 2. Direct /admin route redirect to /control-center-7x9

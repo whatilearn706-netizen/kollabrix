@@ -283,6 +283,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchProfile]);
 
   useEffect(() => {
+    // If incoming OAuth authorization code lands outside /auth/callback, forward directly to exchange it
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('code') && !window.location.pathname.startsWith('/auth/callback')) {
+        window.location.replace('/auth/callback' + window.location.search);
+        return;
+      }
+    }
+
     const isConfig = isSupabaseConfigured();
     setConfigured(isConfig);
 
