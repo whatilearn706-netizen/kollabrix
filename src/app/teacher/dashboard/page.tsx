@@ -157,11 +157,13 @@ export default function TeacherDashboardPage() {
     }
   }, []);
 
+  const [adminBypassGranted, setAdminBypassGranted] = useState(false);
+
   const isTeacher =
     !isRevoked &&
     !isPreviewingGateAsVisitor &&
-    (profile?.role === 'teacher' || (profile?.role === 'admin' && !isRevoked)) &&
-    (!profile?.birth_year || profile?.birth_year <= 2003);
+    ((profile?.role === 'teacher' && (!profile?.birth_year || profile?.birth_year <= 2003)) ||
+     (profile?.role === 'admin' && adminBypassGranted && !isRevoked));
 
   const loadDashboardData = useCallback(async () => {
     if (!isSupabaseConfigured() || !user) {
@@ -372,6 +374,17 @@ export default function TeacherDashboardPage() {
       return;
     }
 
+    const cleanNoSpaces = code.replace(/[\s-_]/g, '');
+    if (
+      cleanNoSpaces === 'FACULTY2026' ||
+      code.includes('FACULTY2026') ||
+      code.includes('FACULTY 2026') ||
+      code.includes('FACULTY-2026')
+    ) {
+      setVerifyError('⛔ Access Denied: "FACULTY2026" has been permanently blocked and revoked. It was only an example format. Please enter an active administrator-issued passcode (e.g. FAC-849201) or authenticate via DigiLocker.');
+      return;
+    }
+
     try {
       setIsVerifying(true);
 
@@ -513,6 +526,30 @@ export default function TeacherDashboardPage() {
   if (!isTeacher) {
     return (
       <div className="min-h-screen py-16 px-4 sm:px-6 max-w-xl mx-auto">
+        {/* Platform Administrator Control Bar */}
+        {(profile?.role === 'admin' || user?.email === 'goyalmayank142@gmail.com') && (
+          <div className="mb-4 p-4 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 text-xs text-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl">
+            <div>
+              <div className="font-bold flex items-center gap-1.5 text-indigo-300 text-sm">
+                <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                <span>Platform Owner / Admin Active ({user?.email || 'Owner'})</span>
+              </div>
+              <p className="text-slate-300 text-[11px] mt-1 leading-relaxed">
+                The Faculty Gate is shown so you can test DigiLocker or passcode verification. You can also bypass anytime.
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="primary"
+              onClick={() => setAdminBypassGranted(true)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 text-xs font-bold py-2 px-3.5 shadow-md"
+            >
+              Enter Dashboard →
+            </Button>
+          </div>
+        )}
+
         {isPreviewingGateAsVisitor && (
           <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between gap-3 shadow-lg">
             <span className="font-semibold">👁️ Admin Faculty Gate Test View (Regular unverified visitors see this screen)</span>
@@ -525,8 +562,12 @@ export default function TeacherDashboardPage() {
             </button>
           </div>
         )}
-        <div className="rounded-2xl border border-brand-500/30 bg-midnight-900/90 p-8 shadow-card">
-          <div className="w-12 h-12 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 mx-auto mb-4">
+
+        <div className="rounded-2xl border border-brand-500/30 bg-midnight-900/90 p-8 shadow-card relative overflow-hidden">
+          {/* Top Indian Tricolor Strip */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-emerald-500 absolute top-0 left-0 right-0" />
+
+          <div className="w-12 h-12 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 mx-auto mb-4 mt-2">
             <GraduationCap className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold text-white text-center mb-2">
@@ -537,6 +578,35 @@ export default function TeacherDashboardPage() {
             milestones, provide formal evaluation notes, and author institution problem statements.
           </p>
 
+          {/* PRIMARY: Government DigiLocker Verification */}
+          <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/60 to-blue-950/40 border border-indigo-500/30 mb-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                Recommended: Instant Gov.in Verification
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">UIDAI / CBSE</span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Verify your official credentials directly through DigiLocker with E-Aadhaar or Class 12th Marksheet. Zero manual file uploads required.
+            </p>
+            <Button
+              type="button"
+              variant="primary"
+              className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-2.5 text-sm shadow-md"
+              onClick={() => setIsDocVerifyOpen(true)}
+              leftIcon={<ShieldCheck className="w-4 h-4 text-white" />}
+            >
+              🇮🇳 Connect DigiLocker (Aadhaar / Class 12th Marksheet)
+            </Button>
+          </div>
+
+          <div className="relative flex py-2 items-center mb-4">
+            <div className="flex-grow border-t border-midnight-750"></div>
+            <span className="flex-shrink mx-3 text-xs text-slate-500 uppercase font-semibold">Or Enter Institutional Passcode</span>
+            <div className="flex-grow border-t border-midnight-750"></div>
+          </div>
+
           <form onSubmit={handleVerifyFaculty} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
@@ -546,23 +616,23 @@ export default function TeacherDashboardPage() {
                 type="text"
                 value={facultyCode}
                 onChange={(e) => setFacultyCode(e.target.value)}
-                placeholder="e.g. FAC-2026-XXXX"
-                className="font-mono uppercase bg-midnight-850 border-midnight-700"
+                placeholder="e.g. FAC-849201"
+                className="font-mono uppercase bg-midnight-850 border-midnight-700 text-white"
               />
-              <p className="text-xs text-slate-400 mt-1.5">
-                Enter the official institutional passcode generated by your platform administrator (Format: <code className="text-brand-300 font-mono font-bold">FAC-XXXX-XXXX</code>).
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                Enter your campus administrator passcode (<code className="text-brand-300 font-mono font-bold">FAC-XXXXXX</code>). <span className="text-rose-400 font-semibold font-mono">FACULTY2026</span> is permanently disabled.
               </p>
             </div>
 
             {verifyError && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-                <span>{verifyError}</span>
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
+                <span className="leading-relaxed">{verifyError}</span>
               </div>
             )}
 
             {verifySuccess && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>{verifySuccess}</span>
               </div>
@@ -570,30 +640,14 @@ export default function TeacherDashboardPage() {
 
             <Button
               type="submit"
-              variant="primary"
-              className="w-full"
+              variant="secondary"
+              className="w-full bg-midnight-800 hover:bg-midnight-750 text-white border border-midnight-700 font-semibold"
               isLoading={isVerifying}
               leftIcon={<KeyRound className="w-4 h-4" />}
             >
               Verify Faculty Passcode
             </Button>
           </form>
-
-          <div className="relative flex py-4 items-center">
-            <div className="flex-grow border-t border-midnight-750"></div>
-            <span className="flex-shrink mx-3 text-xs text-slate-500 uppercase">Or verify by DigiLocker</span>
-            <div className="flex-grow border-t border-midnight-750"></div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
-            onClick={() => setIsDocVerifyOpen(true)}
-            leftIcon={<ShieldCheck className="w-4 h-4 text-indigo-400" />}
-          >
-            🇮🇳 Verify with DigiLocker (Aadhaar / Class 12th Marksheet)
-          </Button>
 
           <FacultyVerificationModal
             isOpen={isDocVerifyOpen}

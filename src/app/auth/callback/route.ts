@@ -57,6 +57,11 @@ export async function GET(request: Request) {
 
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       if (!exchangeError) {
+        response.cookies.set('linkora_user_session', 'true', {
+          path: '/',
+          maxAge: 31536000,
+          sameSite: 'lax',
+        });
         return response;
       }
       console.error('Auth code exchange error:', exchangeError.message);
