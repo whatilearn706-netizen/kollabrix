@@ -28,18 +28,25 @@ import {
   ChevronsRight,
 } from 'lucide-react';
 
+import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
+
 const DEFAULT_PAGE_SIZE = 12;
 
 export default function ExploreProjectsPage() {
   const { user, openAuthModal } = useAuth();
   const { theme } = useSiteTheme();
 
-  // Dynamic Explore configuration
-  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(null);
+  // Instant In-Memory / Stale-While-Revalidate Cache
+  const cachedProjects = getPageCache<Project[]>('linkora_explore_projects_p1');
+  const cachedCount = getPageCache<number>('linkora_explore_count_p1');
+  const cachedConfig = getPageCache<ExploreConfig>('linkora_explore_config');
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  // Dynamic Explore configuration
+  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(() => cachedConfig);
+
+  const [projects, setProjects] = useState<Project[]>(() => cachedProjects || []);
+  const [totalCount, setTotalCount] = useState<number>(() => cachedCount || (cachedProjects ? cachedProjects.length : 0));
+  const [isLoading, setIsLoading] = useState<boolean>(() => !cachedProjects);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<ProjectFilterOptions>({
@@ -63,6 +70,7 @@ export default function ExploreProjectsPage() {
         const data = await res.json();
         if (data?.config) {
           setExploreConfig(data.config);
+          setPageCache('linkora_explore_config', data.config);
         }
       } catch (err) {
         console.warn('Failed to load explore config:', err);
@@ -71,9 +79,21 @@ export default function ExploreProjectsPage() {
     loadConfig();
   }, []);
 
+  const isDefaultView =
+    (!filters.search || !filters.search.trim()) &&
+    (!filters.category || filters.category === 'All') &&
+    (!filters.difficulty || filters.difficulty === 'All') &&
+    (!filters.status || filters.status === 'All') &&
+    !filters.skill &&
+    !filters.technology &&
+    (!filters.page || filters.page === 1);
+
   // 2. Scalable database-backed pagination query
   const fetchProjects = useCallback(async () => {
-    setIsLoading(true);
+    // Only flash skeleton if no cached projects or user is actively filtering
+    if (projects.length === 0 || !isDefaultView) {
+      setIsLoading(true);
+    }
     setFetchError(null);
 
     const currentPage = filters.page || 1;
@@ -125,6 +145,10 @@ export default function ExploreProjectsPage() {
 
       setTotalCount(total);
       setProjects(paginated);
+      if (isDefaultView) {
+        setPageCache('linkora_explore_projects_p1', paginated);
+        setPageCache('linkora_explore_count_p1', total);
+      }
       setIsLoading(false);
       return;
     }
@@ -248,13 +272,22 @@ export default function ExploreProjectsPage() {
           });
           setProjects(verifiedProjects);
           setTotalCount(cleanData.length);
+          if (isDefaultView) {
+            setPageCache('linkora_explore_projects_p1', verifiedProjects);
+            setPageCache('linkora_explore_count_p1', cleanData.length);
+          }
         }
       }
     } catch (err: unknown) {
       console.warn('Fetch error:', err);
       setFetchError('Could not load database projects.');
-      setProjects(DEMO_PROJECTS.slice(0, pageSize));
+      const fallback = DEMO_PROJECTS.slice(0, pageSize);
+      setProjects(fallback);
       setTotalCount(DEMO_PROJECTS.length);
+      if (isDefaultView) {
+        setPageCache('linkora_explore_projects_p1', fallback);
+        setPageCache('linkora_explore_count_p1', DEMO_PROJECTS.length);
+      }
     } finally {
       setIsLoading(false);
     }

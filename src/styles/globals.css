@@ -34,10 +34,15 @@ body {
   min-height: 100vh;
 }
 
-/* GPU Hardware acceleration for buttery-smooth animations and modal popups */
-.smooth-gpu, [role="dialog"], .modal-content, [data-state="open"] {
+/* GPU Hardware acceleration and instant touch feedback for buttery-smooth 60fps transitions */
+.smooth-gpu, [role="dialog"], .modal-content, [data-state="open"], .card-hover, article {
   transform: translateZ(0);
   backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Optimize image rendering and layout shift */

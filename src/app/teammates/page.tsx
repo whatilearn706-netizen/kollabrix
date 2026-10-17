@@ -35,13 +35,17 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 
 export default function TeammatesPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { theme } = useSiteTheme();
 
-  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+  // Instant In-Memory / Stale-While-Revalidate Cache
+  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles');
+
+  const [allProfiles, setAllProfiles] = useState<Profile[]>(() => cachedProfiles || []);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('peer');
   const [existingMemberIds, setExistingMemberIds] = useState<string[]>([]);
@@ -52,7 +56,7 @@ export default function TeammatesPage() {
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [minScore, setMinScore] = useState<number>(0);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !cachedProfiles);
   const [inviteModalCandidate, setInviteModalCandidate] = useState<Profile | null>(null);
   const [inviteModalScore, setInviteModalScore] = useState<number | undefined>();
 
@@ -64,7 +68,10 @@ export default function TeammatesPage() {
 
   // Load profiles, user projects, and invitations
   const loadData = async () => {
-    setIsLoading(true);
+    // Only show skeleton if no cached profiles are displayed yet
+    if (allProfiles.length === 0) {
+      setIsLoading(true);
+    }
     try {
       if (isSupabaseConfigured()) {
         // 0. Fetch match scoring config to retrieve suspended user IDs registry
@@ -128,6 +135,7 @@ export default function TeammatesPage() {
               return { ...p, college_verified: isVerified };
             });
           setAllProfiles(activeProfs);
+          setPageCache('linkora_teammates_profiles', activeProfs);
         }
 
         // 2. If logged in, fetch owned projects

@@ -23,15 +23,18 @@ import {
   KeyRound,
   ExternalLink,
 } from 'lucide-react';
+import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 
 function MyProjectsContent() {
   const { user } = useAuth();
-  const [leadingProjects, setLeadingProjects] = useState<Project[]>([]);
-  const [joinedProjects, setJoinedProjects] = useState<(Project & { userRole?: string })[]>([]);
-  const [enrolledHackathons, setEnrolledHackathons] = useState<any[]>([]);
+  const cachedWorkspace = user?.id ? getPageCache<any>(`linkora_user_workspace_${user.id}`) : null;
+
+  const [leadingProjects, setLeadingProjects] = useState<Project[]>(() => cachedWorkspace?.leading || []);
+  const [joinedProjects, setJoinedProjects] = useState<(Project & { userRole?: string })[]>(() => cachedWorkspace?.joined || []);
+  const [enrolledHackathons, setEnrolledHackathons] = useState<any[]>(() => cachedWorkspace?.hackData || []);
   const [hackathonCodeInput, setHackathonCodeInput] = useState('');
   const [activeTab, setActiveTab] = useState<'leading' | 'joined' | 'hackathons'>('leading');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !cachedWorkspace);
 
   const userRef = React.useRef(user);
   userRef.current = user;
@@ -39,7 +42,7 @@ function MyProjectsContent() {
   const loadProjects = useCallback(async (isInitial = false) => {
     const currentUserId = userRef.current?.id;
     if (!currentUserId) return;
-    if (isInitial) {
+    if (isInitial && !cachedWorkspace) {
       setIsLoading(true);
     }
 
@@ -86,6 +89,7 @@ function MyProjectsContent() {
       }
 
       // 3. Fetch hackathon enrollments
+      let userHacks: any[] = [];
       try {
         const { data: hackData } = await supabase
           .from('hackathon_participants')
@@ -103,11 +107,25 @@ function MyProjectsContent() {
           .eq('user_id', currentUserId);
 
         if (hackData && hackData.length > 0) {
+          userHacks = hackData;
           setEnrolledHackathons(hackData);
         }
       } catch {
         // ignore
       }
+
+      setPageCache(`linkora_user_workspace_${currentUserId}`, {
+        leading: ownedData || [],
+        joined: memberData
+          ? memberData
+              .filter((m) => m.project && (m.project as unknown as Project).owner_id !== currentUserId)
+              .map((m) => ({
+                ...(m.project as unknown as Project),
+                userRole: m.role,
+              }))
+          : [],
+        hackData: userHacks,
+      });
     } catch {
       // ignore
     } finally {

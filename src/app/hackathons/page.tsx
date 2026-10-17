@@ -34,6 +34,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
+import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 
 export default function HackathonsPage() {
   const router = useRouter();
@@ -44,7 +45,10 @@ export default function HackathonsPage() {
     profile?.role === 'admin' ||
     profile?.faculty_verified;
 
-  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  // Instant In-Memory / Stale-While-Revalidate Cache
+  const cachedHackathons = getPageCache<Hackathon[]>('linkora_hackathons_list');
+
+  const [hackathons, setHackathons] = useState<Hackathon[]>(() => cachedHackathons || []);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'private' | 'my-events' | 'saved'>('all');
@@ -59,11 +63,14 @@ export default function HackathonsPage() {
   const [quickJoinError, setQuickJoinError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !cachedHackathons);
 
   // Load hackathons from server API and saved bookmarks
   const loadHackathons = async () => {
-    setIsLoading(true);
+    // Only flash skeleton if no hackathons are currently displayed
+    if (hackathons.length === 0) {
+      setIsLoading(true);
+    }
     try {
       let activeList: Hackathon[] = [];
       let deletedIdsList: string[] = [];
@@ -166,6 +173,7 @@ export default function HackathonsPage() {
         }
       }
       setHackathons(deduped);
+      setPageCache('linkora_hackathons_list', deduped);
 
       // 6. Load saved bookmarks and enrolled hackathons if logged in
       if (user && isSupabaseConfigured()) {

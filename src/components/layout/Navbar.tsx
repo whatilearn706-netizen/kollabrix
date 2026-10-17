@@ -30,6 +30,12 @@ import {
   Moon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import {
+  warmAppCache,
+  prefetchExploreData,
+  prefetchTeammatesData,
+  prefetchHackathonsData,
+} from '@/lib/cache/pageDataCache';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -45,6 +51,7 @@ export function Navbar() {
 
   useEffect(() => {
     setMounted(true);
+    warmAppCache();
   }, []);
 
   // Close dropdown on outside click
@@ -151,10 +158,19 @@ export function Navbar() {
                 ? pathname.startsWith('/hackathons') || pathname.startsWith('/h/')
                 : pathname.startsWith(link.href);
 
+            const handleWarmup = () => {
+              if (link.href === '/explore') prefetchExploreData();
+              else if (link.href === '/teammates') prefetchTeammatesData();
+              else if (link.href === '/hackathons') prefetchHackathonsData();
+            };
+
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
+                onMouseEnter={handleWarmup}
+                onTouchStart={handleWarmup}
                 className={clsx(
                   'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all inline-flex items-center gap-2 border',
                   isActive
@@ -454,6 +470,9 @@ export function Navbar() {
             </p>
             <Link
               href="/explore"
+              prefetch={true}
+              onTouchStart={() => prefetchExploreData()}
+              onMouseEnter={() => prefetchExploreData()}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
@@ -463,6 +482,9 @@ export function Navbar() {
 
             <Link
               href="/teammates"
+              prefetch={true}
+              onTouchStart={() => prefetchTeammatesData()}
+              onMouseEnter={() => prefetchTeammatesData()}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
@@ -472,6 +494,9 @@ export function Navbar() {
 
             <Link
               href="/hackathons"
+              prefetch={true}
+              onTouchStart={() => prefetchHackathonsData()}
+              onMouseEnter={() => prefetchHackathonsData()}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
