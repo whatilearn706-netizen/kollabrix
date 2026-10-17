@@ -45,7 +45,6 @@ import {
   MasterControlConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
-import { StudentToolkit } from '@/components/home/StudentToolkit';
 
 export default function HomePage() {
   const router = useRouter();
@@ -442,11 +441,6 @@ export default function HomePage() {
           <div className="glow-divider mt-12" />
         </section>
       )}
-
-      {/* =========================================================================
-          STUDENT TOOLKIT (PROJECT SYNOPSIS, PORTFOLIO & AI VIVA DEFENSE)
-         ========================================================================= */}
-      <StudentToolkit />
 
       {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
