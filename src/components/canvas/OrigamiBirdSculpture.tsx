@@ -20,46 +20,53 @@ export function OrigamiBirdSculpture() {
     const container = containerRef.current;
     if (!container) return;
 
-    // Check WebGL availability
-    try {
-      const testCanvas = document.createElement('canvas');
-      const hasWebGL = Boolean(
-        window.WebGLRenderingContext &&
-          (testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl'))
-      );
-      if (!hasWebGL) {
+    let destroyed = false;
+    let cleanupFn: (() => void) | null = null;
+
+    const initWebGL = () => {
+      if (destroyed || !containerRef.current) return;
+      const activeContainer = containerRef.current;
+
+      // Check WebGL availability
+      try {
+        const testCanvas = document.createElement('canvas');
+        const hasWebGL = Boolean(
+          window.WebGLRenderingContext &&
+            (testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl'))
+        );
+        if (!hasWebGL) {
+          setWebglSupported(false);
+          return;
+        }
+      } catch {
         setWebglSupported(false);
         return;
       }
-    } catch {
-      setWebglSupported(false);
-      return;
-    }
 
-    let animationFrameId: number;
+      let animationFrameId: number;
 
-    // Dimensions
-    const width = container.clientWidth || 460;
-    const height = container.clientHeight || 460;
+      // Dimensions
+      const width = activeContainer.clientWidth || 460;
+      const height = activeContainer.clientHeight || 460;
 
-    // Scene
-    const scene = new THREE.Scene();
+      // Scene
+      const scene = new THREE.Scene();
 
-    // Camera
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0.2, 0.1, 7.5);
+      // Camera
+      const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+      camera.position.set(0.2, 0.1, 7.5);
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    container.appendChild(renderer.domElement);
+      // Renderer
+      const renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      activeContainer.appendChild(renderer.domElement);
 
     // Lighting setup for crisp origami paper facets
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
@@ -331,18 +338,18 @@ export function OrigamiBirdSculpture() {
       isDragging = false;
     };
 
-    container.addEventListener('mousedown', handleMouseDown);
+    activeContainer.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    activeContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('touchend', handleTouchEnd);
 
     // Resize handler
     const handleResize = () => {
-      if (!container || !renderer || !camera) return;
-      const newWidth = container.clientWidth;
-      const newHeight = container.clientHeight;
+      if (!activeContainer || !renderer || !camera) return;
+      const newWidth = activeContainer.clientWidth;
+      const newHeight = activeContainer.clientHeight;
       camera.aspect = newWidth / newHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(newWidth, newHeight);
@@ -381,19 +388,18 @@ export function OrigamiBirdSculpture() {
 
     animate();
 
-    // Cleanup on unmount
-    return () => {
+    cleanupFn = () => {
       cancelAnimationFrame(animationFrameId);
-      container.removeEventListener('mousedown', handleMouseDown);
+      activeContainer.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('touchstart', handleTouchStart);
+      activeContainer.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('resize', handleResize);
 
-      if (container && renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
+      if (activeContainer && renderer.domElement && activeContainer.contains(renderer.domElement)) {
+        activeContainer.removeChild(renderer.domElement);
       }
 
       leftWingGeo.dispose();
@@ -409,7 +415,24 @@ export function OrigamiBirdSculpture() {
       wireMat.dispose();
       renderer.dispose();
     };
-  }, []);
+  };
+
+  // Schedule WebGL after initial hydration/idle so Total Blocking Time is ~0ms
+  const idleId =
+    typeof window !== 'undefined' && 'requestIdleCallback' in window
+      ? (window as any).requestIdleCallback(initWebGL, { timeout: 350 })
+      : setTimeout(initWebGL, 120);
+
+  return () => {
+    destroyed = true;
+    if (typeof window !== 'undefined' && 'cancelIdleCallback' in window && typeof idleId === 'number') {
+      (window as any).cancelIdleCallback(idleId);
+    } else {
+      clearTimeout(idleId as any);
+    }
+    if (cleanupFn) cleanupFn();
+  };
+}, []);
 
   if (!webglSupported) {
     return (

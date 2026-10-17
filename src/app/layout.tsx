@@ -35,16 +35,20 @@ export const metadata: Metadata = {
   applicationName: 'Linkora',
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
       { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-144x144.png', sizes: '144x144', type: 'image/png' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/brand/linkora-logo.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/brand/linkora-logo.png', sizes: '1024x1024', type: 'image/png' },
     ],
-    shortcut: '/favicon-48x48.png',
+    shortcut: '/favicon.ico',
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
+  manifest: '/manifest.webmanifest',
   alternates: {
     canonical: '/',
   },
@@ -84,19 +88,34 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Linkora',
-  alternateName: ['Linkora Edu', 'Linkora Platform', 'LinkOra'],
-  url: 'https://linkora-edu.online/',
-  publisher: {
-    '@type': 'Organization',
-    name: 'Linkora',
-    url: 'https://linkora-edu.online',
-    logo: {
-      '@type': 'ImageObject',
-      url: 'https://linkora-edu.online/brand/linkora-logo.png',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://linkora-edu.online/#website',
+      url: 'https://linkora-edu.online/',
+      name: 'Linkora',
+      alternateName: ['Linkora Edu', 'Linkora Platform', 'LinkOra'],
+      description: 'College-Wide Student Project Collaboration Platform',
+      inLanguage: 'en-US',
+      publisher: {
+        '@id': 'https://linkora-edu.online/#organization',
+      },
     },
-  },
+    {
+      '@type': 'Organization',
+      '@id': 'https://linkora-edu.online/#organization',
+      name: 'Linkora',
+      url: 'https://linkora-edu.online',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://linkora-edu.online/brand/linkora-logo.png',
+        width: 1024,
+        height: 1024,
+      },
+      image: 'https://linkora-edu.online/icon-192.png',
+      sameAs: ['https://linkora.in'],
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -107,10 +126,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
         <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="application-name" content="Linkora" />
+        <meta name="apple-mobile-web-app-title" content="Linkora" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

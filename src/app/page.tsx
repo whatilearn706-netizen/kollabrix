@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
-import { OrigamiBirdSculpture } from '@/components/canvas/OrigamiBirdSculpture';
 import { IntentConsole } from '@/components/landing/IntentConsole';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
@@ -33,7 +33,23 @@ import {
   Award,
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
-import { ProjectSparkGeneratorModal } from '@/components/ai/ProjectSparkGeneratorModal';
+
+const OrigamiBirdSculpture = dynamic(
+  () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
+        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
+      </div>
+    ),
+  }
+);
+
+const ProjectSparkGeneratorModal = dynamic(
+  () => import('@/components/ai/ProjectSparkGeneratorModal').then((m) => m.ProjectSparkGeneratorModal),
+  { ssr: false }
+);
 import {
   HomepageIntentConfig,
   HomepageShowcaseConfig,
