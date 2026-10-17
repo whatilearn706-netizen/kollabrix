@@ -84,6 +84,10 @@ export function AdminRestrictedWordsTab({ authToken }: AdminRestrictedWordsTabPr
         setCustomWords(data.customWords || []);
         setNewWordInput('');
         setActionNotice({ type: 'success', message: data.message });
+        try {
+          localStorage.setItem('linkora_restricted_words_v1', JSON.stringify(data.words));
+          window.dispatchEvent(new CustomEvent('linkora-restricted-words-updated', { detail: data.words }));
+        } catch (e) {}
       } else {
         throw new Error(data.error || 'Failed to add word');
       }
@@ -109,6 +113,10 @@ export function AdminRestrictedWordsTab({ authToken }: AdminRestrictedWordsTabPr
         setRestrictedWords(data.words);
         setCustomWords(data.customWords || []);
         setActionNotice({ type: 'success', message: data.message });
+        try {
+          localStorage.setItem('linkora_restricted_words_v1', JSON.stringify(data.words));
+          window.dispatchEvent(new CustomEvent('linkora-restricted-words-updated', { detail: data.words }));
+        } catch (e) {}
       } else {
         throw new Error(data.error || 'Failed to remove word');
       }
@@ -155,6 +163,10 @@ export function AdminRestrictedWordsTab({ authToken }: AdminRestrictedWordsTabPr
         setCustomWords([]);
         setIsModerationEnabled(true);
         setActionNotice({ type: 'success', message: data.message });
+        try {
+          localStorage.setItem('linkora_restricted_words_v1', JSON.stringify(data.words));
+          window.dispatchEvent(new CustomEvent('linkora-restricted-words-updated', { detail: data.words }));
+        } catch (e) {}
       }
     } catch (err: any) {
       setActionNotice({ type: 'error', message: err.message || 'Error resetting words' });

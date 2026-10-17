@@ -63,12 +63,16 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
     enabledRef.current = enabled;
   }, [enabled]);
 
-  // Sync latest restricted words from API
+  // Sync latest restricted words from API with real-time reactivity
   useEffect(() => {
     let cancelled = false;
+
     async function fetchWords() {
       try {
-        const res = await fetch('/api/restricted-words', { cache: 'no-store' });
+        const res = await fetch(`/api/restricted-words?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { Pragma: 'no-cache' },
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
@@ -83,9 +87,43 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
         // Fallback to local defaults
       }
     }
+
     fetchWords();
+
+    // Re-check on window focus (e.g. user switches tabs from admin to app)
+    const handleFocus = () => fetchWords();
+    window.addEventListener('focus', handleFocus);
+
+    // Cross-tab and same-tab instant sync event
+    const handleCustomUpdate = (e: any) => {
+      if (Array.isArray(e.detail)) {
+        setWords(e.detail);
+      } else {
+        fetchWords();
+      }
+    };
+    window.addEventListener('linkora-restricted-words-updated', handleCustomUpdate);
+
+    // Storage event for other tabs
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'linkora_restricted_words_v1' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setWords(parsed);
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // Periodic background sync every 15 seconds
+    const intervalId = setInterval(fetchWords, 15000);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('linkora-restricted-words-updated', handleCustomUpdate);
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(intervalId);
     };
   }, []);
 

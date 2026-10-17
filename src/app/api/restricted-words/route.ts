@@ -7,8 +7,10 @@ import {
 } from '@/lib/moderation/restrictedWords';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   let words = DEFAULT_RESTRICTED_WORDS;
   let enabled = true;
   let customWords: string[] = [];
@@ -49,7 +51,9 @@ export async function GET() {
     },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     }
   );
