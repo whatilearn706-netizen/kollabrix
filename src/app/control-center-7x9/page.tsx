@@ -145,23 +145,17 @@ export default function AdminControlCenterPage() {
           setAdminProfile(data.profile);
         } else if (isOwner) {
           setIsAdmin(true);
-        } else if (
-          localStorage.getItem('linkora_admin_session') === 'true' ||
-          document.cookie.includes('linkora_admin_session=true')
-        ) {
-          setIsAdmin(true);
+          setAdminUser({ id: user.id, email: user.email });
         } else {
           setIsAdmin(false);
         }
       } catch (err) {
         console.warn('Admin verification check note:', err);
         const email = (user?.email || '').trim().toLowerCase();
-        if (
-          email === 'goyalmayank142@gmail.com' ||
-          localStorage.getItem('linkora_admin_session') === 'true' ||
-          document.cookie.includes('linkora_admin_session=true')
-        ) {
+        if (email === 'goyalmayank142@gmail.com') {
           setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
         }
       }
     }
@@ -196,42 +190,35 @@ export default function AdminControlCenterPage() {
     loadOverview();
   }, [isAdmin, authToken]);
 
-  const handleUnlockWithPasscode = (e: React.FormEvent) => {
+  const handleUnlockWithPasscode = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasscodeError('');
 
-    if (typeof window !== 'undefined') {
-      const lockout = sessionStorage.getItem('linkora_admin_lockout');
-      if (lockout && parseInt(lockout, 10) > Date.now()) {
-        const waitMinutes = Math.ceil((parseInt(lockout, 10) - Date.now()) / 60000);
-        setPasscodeError(`Security lockout active. Please wait ${waitMinutes} minutes before retrying.`);
-        return;
-      }
+    if (!directPasscode.trim()) {
+      setPasscodeError('Please enter the administrative passcode.');
+      return;
     }
 
-    const clean = directPasscode.trim().toLowerCase();
-    if (clean === 'admin7x9' || clean === 'linkora2026') {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('linkora_admin_fail_count');
-      }
-      const ok = loginWithAdminPasscode(clean);
-      if (ok) {
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode: directPasscode.trim() }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.authorized) {
         setIsAdmin(true);
-        setAdminUser({ id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' });
-        setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
-      }
-    } else {
-      let fails = 1;
-      if (typeof window !== 'undefined') {
-        fails = (parseInt(sessionStorage.getItem('linkora_admin_fail_count') || '0', 10) || 0) + 1;
-        sessionStorage.setItem('linkora_admin_fail_count', String(fails));
-        if (fails >= 5) {
-          sessionStorage.setItem('linkora_admin_lockout', String(Date.now() + 900000)); // 15 min lockout
-          setPasscodeError('Too many failed attempts. Security lockout active for 15 minutes.');
-          return;
+        setAdminUser(data.user);
+        setAdminProfile(data.profile);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('linkora_admin_passcode', directPasscode.trim());
         }
+      } else {
+        setPasscodeError(data.error || 'Invalid administrative passcode.');
       }
-      setPasscodeError(`Invalid administrative passcode. (${5 - fails} attempts remaining)`);
+    } catch (err) {
+      setPasscodeError('Verification request failed. Please check your connection.');
     }
   };
 

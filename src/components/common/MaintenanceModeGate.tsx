@@ -74,7 +74,7 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
   const handleTurnOffMaintenance = async () => {
     setIsDeactivating(true);
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || 'admin7x9' : 'admin7x9';
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const updatedM: MaintenanceModeConfig = { ...maintenance, mode: 'public' };
       setMaintenance(updatedM);
       setIsPreviewingAsVisitor(false);
@@ -110,13 +110,7 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
 
   // Bypass if user is logged in as an admin or platform owner
   const isOwner = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-  const hasAdminPasscode = typeof window !== 'undefined' && (
-    localStorage.getItem('linkora_admin_passcode') === 'admin7x9' ||
-    sessionStorage.getItem('linkora_admin_passcode') === 'admin7x9' ||
-    localStorage.getItem('linkora_admin_passcode') === 'linkora2026' ||
-    sessionStorage.getItem('linkora_admin_passcode') === 'linkora2026'
-  );
-  const isAdminUser = profile?.role === 'admin' || isOwner || hasAdminPasscode;
+  const isAdminUser = profile?.role === 'admin' || isOwner;
 
   // If public mode, pass through
   if (!mounted || maintenance.mode === 'public') {
@@ -170,7 +164,7 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
     const target = (maintenance.campusPasscode || 'CAMPUS2026').trim().toLowerCase();
     const entered = passcodeAttempt.trim().toLowerCase();
 
-    const isMatch = entered && (entered === target || entered === 'linkora2026' || entered === 'admin7x9');
+    const isMatch = entered && entered === target;
 
     if (isMatch) {
       setIsUnlocked(true);
@@ -179,13 +173,9 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
         sessionStorage.setItem('linkora_maintenance_unlocked', 'true');
         localStorage.setItem('linkora_maintenance_unlocked', 'true');
         document.cookie = 'linkora_maintenance_unlocked=true; path=/; max-age=86400; SameSite=Lax';
-        if (entered === 'admin7x9' || entered === 'linkora2026') {
-          localStorage.setItem('linkora_admin_session', 'true');
-          document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
-        }
       } catch (e) {}
     } else {
-      setErrorMsg('Incorrect passcode. Please check with your campus administrator or enter admin secret key.');
+      setErrorMsg('Incorrect campus passcode. Please check with your campus event coordinator.');
     }
   };
 

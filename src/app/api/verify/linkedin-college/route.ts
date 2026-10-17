@@ -72,6 +72,14 @@ export async function DELETE(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     const client = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    let authUser = null;
+    if (token) {
+      const { data: userData } = await client.auth.getUser(token);
+      authUser = userData?.user;
+    }
+
     const body = await request.json().catch(() => ({}));
     const { targetUserId, targetUsername } = body;
 
@@ -79,6 +87,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'targetUserId or targetUsername is required.' },
         { status: 400 }
+      );
+    }
+
+    const isSelf = authUser && targetUserId && authUser.id === targetUserId;
+    const isOwner = authUser && authUser.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+
+    if (!isSelf && !isOwner) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Only the account owner or platform administrator can revoke verification.' },
+        { status: 403 }
       );
     }
 
@@ -205,12 +223,13 @@ export async function POST(request: NextRequest) {
       user = sessionData?.user;
     }
 
-    const targetUserId =
-      user?.id ||
-      userId ||
-      (request.cookies.get('linkora_admin_session')?.value === 'true'
-        ? 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-        : null);
+    const targetUserId = user?.id || (isSupabaseConfigured() ? null : userId);
+    if (!targetUserId) {
+      return NextResponse.json(
+        { success: false, error: 'You must be signed in to verify your college affiliation.' },
+        { status: 401 }
+      );
+    }
 
     // Fetch user profile from database to get official display_name & username
     let userProfile: any = null;

@@ -44,9 +44,10 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
   }
 
   try {
-    // 0. Fast Admin Passcode Check
-    const passcodeHeader = (request.headers.get('x-admin-passcode') || '').trim().toLowerCase();
-    if (passcodeHeader === 'admin7x9' || passcodeHeader === 'linkora2026') {
+    // 0. Strict Server-side Admin Secret Check (Only active if explicitly set in server environment)
+    const adminSecret = (process.env.ADMIN_PASSCODE || process.env.ADMIN_SECRET_KEY || '').trim();
+    const passcodeHeader = (request.headers.get('x-admin-passcode') || '').trim();
+    if (adminSecret && passcodeHeader && passcodeHeader === adminSecret) {
       return {
         authorized: true,
         user: { id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' },

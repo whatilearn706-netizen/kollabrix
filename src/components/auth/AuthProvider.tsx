@@ -586,10 +586,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('linkora_explicit_signout');
       localStorage.setItem('linkora_auth_user', JSON.stringify(DEFAULT_OWNER_USER));
       localStorage.setItem('linkora_auth_profile', JSON.stringify(DEFAULT_OWNER_PROFILE));
-      localStorage.setItem('linkora_admin_session', 'true');
-      localStorage.setItem('linkora_admin_passcode', 'admin7x9');
-      // Set 1-year persistent cookie for cross-tab and cross-link persistence
-      document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
       document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
       document.cookie = 'linkora_user_email=goyalmayank142@gmail.com; path=/; max-age=31536000; SameSite=Lax';
       window.dispatchEvent(new Event('linkora_auth_updated'));
@@ -598,12 +594,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
-  // Fast Passcode Login (Owner emergency bypass)
-  const loginWithAdminPasscode = (passcode: string): boolean => {
-    const clean = passcode.trim().toLowerCase();
-    if (clean === 'admin7x9' || clean === 'linkora2026') {
-      return loginAsOwner();
-    }
+  // Passcode login delegator (Actual verification done strictly server-side)
+  const loginWithAdminPasscode = (_passcode: string): boolean => {
     return false;
   };
 

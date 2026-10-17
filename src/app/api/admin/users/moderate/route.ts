@@ -23,11 +23,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Moderation action is required.' }, { status: 400 });
     }
 
-    // 1. Critical Self-Lockout Protection
+    // 1. Critical Self-Lockout & Founder Protection
     if (targetUserId === auth.user?.id) {
       return NextResponse.json(
         { error: 'Action denied: Administrators cannot suspend, demote, or moderate their own account.' },
         { status: 400 }
+      );
+    }
+
+    if (
+      targetUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
+      targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
+    ) {
+      return NextResponse.json(
+        { error: 'Action denied: Platform founder account is immutable and cannot be modified or suspended.' },
+        { status: 403 }
       );
     }
 

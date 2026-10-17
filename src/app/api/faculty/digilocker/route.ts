@@ -38,12 +38,13 @@ export async function POST(request: NextRequest) {
       user = sessionData?.user;
     }
 
-    const targetUserId =
-      user?.id ||
-      userId ||
-      (request.cookies.get('linkora_admin_session')?.value === 'true'
-        ? 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-        : `guest_${Date.now()}`);
+    const targetUserId = user?.id || (isSupabaseConfigured() ? null : userId);
+    if (!targetUserId) {
+      return NextResponse.json(
+        { error: 'You must be signed in to your account before verifying with DigiLocker.' },
+        { status: 401 }
+      );
+    }
 
     const isFacultyEligible = parsedYear < 2003;
     const resolvedRole = isFacultyEligible ? 'teacher' : 'student';

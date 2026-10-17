@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       const { data: userData } = await client.auth.getUser(token);
       user = userData?.user;
     }
-    const targetUserId = user?.id || userId;
+    const targetUserId = user?.id || (isSupabaseConfigured() ? null : userId);
 
     if (!targetUserId) {
       return NextResponse.json({ error: 'You must be signed in to verify faculty status.' }, { status: 401 });
