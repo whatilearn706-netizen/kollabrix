@@ -129,13 +129,24 @@ export default function ProjectDetailsPage() {
           if (isInitial) setError('Project not found or could not be loaded from database.');
         } else if (data) {
           const proj = data as unknown as Project;
-          const isOwnerVerified =
-            proj.owner?.username?.toLowerCase() === 'mayank142' ||
-            proj.owner?.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-            proj.owner_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-          if (isOwnerVerified && proj.owner) {
-            proj.owner.college_verified = true;
-          }
+          try {
+            const { data: vData } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'linkedin_college_verifications')
+              .maybeSingle();
+
+            if (Array.isArray(vData?.value) && proj.owner) {
+              const isOwnerVerified = vData.value.some(
+                (item: any) =>
+                  item.userId === proj.owner?.user_id ||
+                  item.userId === proj.owner_id ||
+                  (item.username && proj.owner?.username && item.username.toLowerCase() === proj.owner.username.toLowerCase())
+              );
+              proj.owner.college_verified = isOwnerVerified;
+            }
+          } catch (e) {}
+
           setProject(proj);
         }
 

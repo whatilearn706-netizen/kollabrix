@@ -37,26 +37,7 @@ export async function GET() {
       .eq('key', 'linkedin_college_verifications')
       .maybeSingle();
 
-    let verifications = Array.isArray(data?.value) ? data.value : [];
-
-    // Ensure Mayank Goyal is present in universal registry
-    const hasMayank = verifications.some(
-      (v: any) => v.username?.toLowerCase() === 'mayank142' || v.userId === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-    );
-    if (!hasMayank) {
-      verifications = [
-        {
-          userId: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
-          username: 'mayank142',
-          displayName: 'Mayank Goyal',
-          college: 'BOSSCODER SCHOOL OF TECHNOLOGY',
-          linkedinHandle: 'mayank-goyal',
-          linkedinUrl: 'https://www.linkedin.com/in/mayank-goyal',
-          verifiedAt: '2026-10-17T13:50:23.430Z',
-        },
-        ...verifications,
-      ];
-    }
+    const verifications = Array.isArray(data?.value) ? data.value : [];
 
     return NextResponse.json(
       { success: true, verifications },
@@ -78,6 +59,91 @@ export async function GET() {
           'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         },
       }
+    );
+  }
+}
+
+/**
+ * DELETE: Remove/revoke college verification for a user (Admin control or user opt-out)
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const client = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+
+    const body = await request.json().catch(() => ({}));
+    const { targetUserId, targetUsername } = body;
+
+    if (!targetUserId && !targetUsername) {
+      return NextResponse.json(
+        { success: false, error: 'targetUserId or targetUsername is required.' },
+        { status: 400 }
+      );
+    }
+
+    // 1. Fetch current verified registry
+    const { data: pData } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'linkedin_college_verifications')
+      .maybeSingle();
+
+    const currentList: any[] = Array.isArray(pData?.value) ? pData.value : [];
+
+    // Filter out target user
+    const updatedList = currentList.filter((item: any) => {
+      if (targetUserId && item.userId === targetUserId) return false;
+      if (targetUsername && item.username?.toLowerCase() === targetUsername.toLowerCase().trim()) return false;
+      return true;
+    });
+
+    // 2. Save updated list back to platform_settings
+    await client.from('platform_settings').upsert({
+      key: 'linkedin_college_verifications',
+      value: updatedList,
+      description: 'Registry of LinkedIn verified college affiliations and credentials.',
+      updated_at: new Date().toISOString(),
+    });
+
+    // 3. Update profiles table to clear college_verified flag
+    if (targetUserId) {
+      try {
+        await client
+          .from('profiles')
+          .update({
+            college_verified: false,
+            college_verified_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', targetUserId);
+      } catch (e) {
+        // Safe column fallback
+      }
+    } else if (targetUsername) {
+      try {
+        await client
+          .from('profiles')
+          .update({
+            college_verified: false,
+            college_verified_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('username', targetUsername.toLowerCase().trim());
+      } catch (e) {
+        // Safe column fallback
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'College verification removed successfully. The user is now unverified.',
+      remainingCount: updatedList.length,
+    });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : 'Failed to revoke verification.' },
+      { status: 500 }
     );
   }
 }

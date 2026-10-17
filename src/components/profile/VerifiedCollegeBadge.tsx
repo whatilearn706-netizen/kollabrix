@@ -11,6 +11,7 @@ interface VerifiedCollegeBadgeProps {
   username?: string | null;
   className?: string;
   showIcon?: boolean;
+  showUnverified?: boolean;
   size?: 'xs' | 'sm' | 'md';
 }
 
@@ -21,26 +22,19 @@ let fetchPromise: Promise<Set<string>> | null = null;
 function checkSetMatch(
   set: Set<string>,
   userId?: string | null,
-  username?: string | null,
-  college?: string | null
+  username?: string | null
 ): boolean {
   if (userId && set.has(`uid:${userId}`)) return true;
   if (username && set.has(`user:${username.toLowerCase().trim()}`)) return true;
-  if (college && set.has(`col:${college.toLowerCase().trim()}`)) return true;
   return false;
 }
 
 export async function fetchVerifiedRegistry(force = false): Promise<Set<string>> {
-  if (!force && globalVerifiedSet && globalVerifiedSet.size > 0) return globalVerifiedSet;
+  if (!force && globalVerifiedSet) return globalVerifiedSet;
   if (!force && fetchPromise) return fetchPromise;
 
   fetchPromise = (async () => {
     const set = new Set<string>();
-
-    // Always include Mayank Goyal in registry
-    set.add('uid:c86ce05f-24de-4a1a-a45f-944d4180b508');
-    set.add('user:mayank142');
-    set.add('col:bosscoder school of technology');
 
     // 1. Direct query to Supabase platform_settings (real-time database)
     try {
@@ -54,7 +48,6 @@ export async function fetchVerifiedRegistry(force = false): Promise<Set<string>>
         for (const item of data.value) {
           if (item.userId) set.add(`uid:${item.userId}`);
           if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
-          if (item.college) set.add(`col:${item.college.toLowerCase().trim()}`);
         }
       }
     } catch (e) {
@@ -73,7 +66,6 @@ export async function fetchVerifiedRegistry(force = false): Promise<Set<string>>
           for (const item of data.verifications) {
             if (item.userId) set.add(`uid:${item.userId}`);
             if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
-            if (item.college) set.add(`col:${item.college.toLowerCase().trim()}`);
           }
         }
       }
@@ -102,33 +94,20 @@ export function VerifiedCollegeBadge({
   username,
   className = '',
   showIcon = false,
+  showUnverified = false,
   size = 'sm',
 }: VerifiedCollegeBadgeProps) {
-  const isKnownVerified =
-    isVerified === true ||
-    username?.toLowerCase().trim() === 'mayank142' ||
-    userId === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-
   const [localVerified, setLocalVerified] = useState<boolean>(() => {
-    if (isKnownVerified) return true;
+    if (isVerified === true) return true;
+    if (isVerified === false) return false;
     if (typeof window !== 'undefined') {
       try {
-        const isLocallyVerified = localStorage.getItem('linkora_college_verified') === 'true';
-        const verifiedCollegeName = localStorage.getItem('linkora_verified_college_name');
-        if (
-          isLocallyVerified &&
-          college &&
-          verifiedCollegeName &&
-          college.toLowerCase().trim() === verifiedCollegeName.toLowerCase().trim()
-        ) {
-          return true;
-        }
         const cachedRegistry = localStorage.getItem('linkora_verified_registry_cache');
         if (cachedRegistry) {
           const list = JSON.parse(cachedRegistry);
           if (Array.isArray(list)) {
             const tempSet = new Set<string>(list);
-            if (checkSetMatch(tempSet, userId, username, college)) return true;
+            if (checkSetMatch(tempSet, userId, username)) return true;
           }
         }
       } catch (e) {}
@@ -137,8 +116,12 @@ export function VerifiedCollegeBadge({
   });
 
   useEffect(() => {
-    if (isKnownVerified) {
+    if (isVerified === true) {
       setLocalVerified(true);
+      return;
+    }
+    if (isVerified === false) {
+      setLocalVerified(false);
       return;
     }
 
@@ -147,17 +130,15 @@ export function VerifiedCollegeBadge({
     // Check universal database registry so ALL other users & visitors see it
     fetchVerifiedRegistry().then((set) => {
       if (!isMounted) return;
-      if (checkSetMatch(set, userId, username, college)) {
-        setLocalVerified(true);
-      }
+      setLocalVerified(checkSetMatch(set, userId, username));
     });
 
     // Listen for real-time verification events
     const handleUpdate = () => {
+      globalVerifiedSet = null;
       fetchVerifiedRegistry(true).then((set) => {
         if (!isMounted) return;
-        const matched = checkSetMatch(set, userId, username, college);
-        setLocalVerified(matched || isKnownVerified);
+        setLocalVerified(checkSetMatch(set, userId, username));
       });
     };
 
@@ -166,7 +147,7 @@ export function VerifiedCollegeBadge({
       isMounted = false;
       window.removeEventListener('linkora_college_updated', handleUpdate);
     };
-  }, [college, isVerified, userId, username, isKnownVerified]);
+  }, [college, isVerified, userId, username]);
 
   if (!college) return null;
 
@@ -174,7 +155,7 @@ export function VerifiedCollegeBadge({
     <span className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
       {showIcon && <GraduationCap className="w-3.5 h-3.5 opacity-70 shrink-0" />}
       <span className="truncate">{college}</span>
-      {localVerified && (
+      {localVerified ? (
         <span
           className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#0A66C2]/15 text-[#0A66C2] dark:text-[#70B5F9] border border-[#0A66C2]/30 shadow-2xs shrink-0 select-none cursor-default"
           title="Verified College Affiliation via LinkedIn Education"
@@ -182,7 +163,14 @@ export function VerifiedCollegeBadge({
           <CheckCircle2 className="w-2.5 h-2.5 text-[#0A66C2] dark:text-[#70B5F9] stroke-[2.5]" />
           <span>Verified</span>
         </span>
-      )}
+      ) : showUnverified ? (
+        <span
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default"
+          title="Not Verified via LinkedIn Education"
+        >
+          <span>Not Verified</span>
+        </span>
+      ) : null}
     </span>
   );
 }

@@ -187,20 +187,29 @@ export default function ExploreProjectsPage() {
 
       const { data, count, error } = await query;
 
-      // Check deleted projects tombstone
+      // Check deleted projects tombstone and verified users registry
       let deletedSet = new Set<string>();
+      const verifiedUserSet = new Set<string>();
       try {
-        const { data: sRow } = await supabase
+        const { data: sRows } = await supabase
           .from('platform_settings')
-          .select('value')
-          .eq('key', 'deleted_projects')
-          .maybeSingle();
+          .select('key, value')
+          .in('key', ['deleted_projects', 'linkedin_college_verifications']);
 
-        if (sRow?.value) {
-          const raw = sRow.value;
-          const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
-          const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
-          deletedSet = new Set([...ids, ...titles].map((s: string) => s.trim().toLowerCase()));
+        if (Array.isArray(sRows)) {
+          for (const row of sRows) {
+            if (row.key === 'deleted_projects' && row.value) {
+              const raw = row.value;
+              const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
+              const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
+              deletedSet = new Set([...ids, ...titles].map((s: string) => s.trim().toLowerCase()));
+            } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
+              row.value.forEach((v: any) => {
+                if (v.userId) verifiedUserSet.add(v.userId);
+                if (v.username) verifiedUserSet.add(v.username.toLowerCase().trim());
+              });
+            }
+          }
         }
       } catch {}
 
@@ -229,11 +238,11 @@ export default function ExploreProjectsPage() {
           const cleanData = filterDeleted(data as Project[]);
           const verifiedProjects = cleanData.map((proj) => {
             const isOwnerVerified =
-              proj.owner?.username?.toLowerCase() === 'mayank142' ||
-              proj.owner?.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-              proj.owner_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-            if (isOwnerVerified && proj.owner) {
-              return { ...proj, owner: { ...proj.owner, college_verified: true } };
+              (proj.owner?.user_id && verifiedUserSet.has(proj.owner.user_id)) ||
+              (proj.owner?.username && verifiedUserSet.has(proj.owner.username.toLowerCase().trim())) ||
+              (proj.owner_id && verifiedUserSet.has(proj.owner_id));
+            if (proj.owner) {
+              return { ...proj, owner: { ...proj.owner, college_verified: Boolean(isOwnerVerified) } };
             }
             return proj;
           });

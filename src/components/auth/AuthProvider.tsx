@@ -5,6 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { Profile } from '@/types/database';
+import { AlertTriangle } from 'lucide-react';
 
 interface AuthContextType {
   user: User | null;
@@ -64,12 +65,28 @@ const DEFAULT_OWNER_PROFILE: Profile = {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [suspendedNotice, setSuspendedNotice] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return sessionStorage.getItem('linkora_suspended_notice');
+      } catch (e) {}
+    }
+    return null;
+  });
+
   // Synchronous hydration from localStorage and 1-year cookies prevents session dropping across links
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       try {
         if (localStorage.getItem('linkora_explicit_signout') === 'true') {
           return null;
+        }
+        const cachedProf = localStorage.getItem('linkora_auth_profile');
+        if (cachedProf) {
+          const parsedProf = JSON.parse(cachedProf);
+          if (parsedProf?.is_suspended === true || parsedProf?.status === 'suspended') {
+            return null;
+          }
         }
         const cached = localStorage.getItem('linkora_auth_user');
         if (cached) return JSON.parse(cached);
@@ -106,6 +123,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (localStorage.getItem('linkora_explicit_signout') === 'true') {
           return null;
         }
+        const cachedProf = localStorage.getItem('linkora_auth_profile');
+        if (cachedProf) {
+          const parsedProf = JSON.parse(cachedProf);
+          if (parsedProf?.is_suspended === true || parsedProf?.status === 'suspended') {
+            return null;
+          }
+        }
         const cached = localStorage.getItem('linkora_auth_session');
         if (cached) return JSON.parse(cached);
       } catch (e) {}
@@ -120,7 +144,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return null;
         }
         const cached = localStorage.getItem('linkora_auth_profile');
-        if (cached) return JSON.parse(cached);
+        if (cached) {
+          const parsedProf = JSON.parse(cached);
+          if (parsedProf?.is_suspended === true || parsedProf?.status === 'suspended') {
+            return null;
+          }
+          return parsedProf;
+        }
         const hasAdminCookie = document.cookie.includes('linkora_admin_session=true');
         const hasAdminStorage = localStorage.getItem('linkora_admin_session') === 'true';
         if (hasAdminCookie || hasAdminStorage) {
@@ -192,6 +222,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
   };
 
+  const performForcedSignOut = useCallback(async (reason?: string) => {
+    const notice = reason || 'Your account has been suspended by administration. Access has been revoked.';
+    setSuspendedNotice(notice);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('linkora_suspended_notice', notice);
+        localStorage.setItem('linkora_explicit_signout', 'true');
+        sessionStorage.setItem('linkora_signing_out', 'true');
+        localStorage.removeItem('linkora_auth_user');
+        localStorage.removeItem('linkora_auth_user_id');
+        localStorage.removeItem('linkora_auth_user_email');
+        localStorage.removeItem('linkora_auth_session');
+        localStorage.removeItem('linkora_auth_profile');
+        localStorage.removeItem('linkora_admin_session');
+        localStorage.removeItem('linkora_admin_passcode');
+        document.cookie = 'linkora_admin_session=; path=/; max-age=0';
+        document.cookie = 'linkora_user_session=; path=/; max-age=0';
+        document.cookie = 'linkora_user_email=; path=/; max-age=0';
+        document.cookie = 'linkora_user_id=; path=/; max-age=0';
+        window.dispatchEvent(new Event('linkora_auth_updated'));
+      } catch (e) {}
+    }
+
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut().catch(() => {});
+    }
+  }, []);
+
   const fetchProfile = useCallback(async (userId: string, currentUser?: User | null) => {
     if (!isSupabaseConfigured()) return null;
     try {
@@ -207,11 +269,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         const email = (currentUser?.email || '').trim().toLowerCase();
-        if (email === 'goyalmayank142@gmail.com' || userId === '9343b52f-f7e8-4ed8-a8a1-476829811b53') {
+        const isOwner =
+          email === 'goyalmayank142@gmail.com' ||
+          userId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+          userId === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
+
+        if (isOwner) {
           data.role = 'admin';
           data.is_suspended = false;
           data.status = 'active';
+        } else if (data.is_suspended === true || data.status === 'suspended') {
+          console.warn('Suspended user detected during profile fetch:', userId);
+          await performForcedSignOut(data.suspension_reason || 'This account has been suspended by administration.');
+          return null;
         }
+
         setProfile(data as Profile);
         try {
           localStorage.setItem('linkora_auth_profile', JSON.stringify(data));
@@ -274,7 +346,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('Failed to load or initialize profile:', err);
     }
     return null;
-  }, []);
+  }, [performForcedSignOut]);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
@@ -434,6 +506,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
+    // 4. Real-Time Account Suspension Watcher (instant polling + realtime channel)
+    const checkSuspensionRealtime = async () => {
+      try {
+        let activeUserId = user?.id;
+        let activeEmail = user?.email;
+        if (!activeUserId && typeof window !== 'undefined') {
+          activeUserId = localStorage.getItem('linkora_auth_user_id') || undefined;
+          activeEmail = localStorage.getItem('linkora_auth_user_email') || undefined;
+        }
+        if (!activeUserId) return;
+
+        const isOwner =
+          activeEmail?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+          activeUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+          activeUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
+        if (isOwner) return;
+
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('is_suspended, status, suspension_reason')
+          .eq('user_id', activeUserId)
+          .maybeSingle();
+
+        if (prof && (prof.is_suspended === true || prof.status === 'suspended')) {
+          await performForcedSignOut(prof.suspension_reason || 'This account has been suspended by administration.');
+        }
+      } catch (e) {}
+    };
+
+    const suspensionInterval = setInterval(checkSuspensionRealtime, 4000);
+    window.addEventListener('focus', checkSuspensionRealtime);
+    window.addEventListener('visibilitychange', checkSuspensionRealtime);
+
+    let realtimeChannel: any = null;
+    const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('linkora_auth_user_id') : null);
+    if (currentUserId && isConfig) {
+      realtimeChannel = supabase
+        .channel(`user-suspension-live-${currentUserId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `user_id=eq.${currentUserId}`,
+          },
+          (payload: any) => {
+            const updated = payload?.new;
+            if (updated && (updated.is_suspended === true || updated.status === 'suspended')) {
+              performForcedSignOut(updated.suspension_reason || 'This account has been suspended by administration.');
+            }
+          }
+        )
+        .subscribe();
+    }
+
     window.addEventListener('storage', syncAcrossTabs);
     window.addEventListener('focus', syncAcrossTabs);
     window.addEventListener('visibilitychange', syncAcrossTabs);
@@ -441,12 +569,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
+      clearInterval(suspensionInterval);
+      window.removeEventListener('focus', checkSuspensionRealtime);
+      window.removeEventListener('visibilitychange', checkSuspensionRealtime);
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
       window.removeEventListener('storage', syncAcrossTabs);
       window.removeEventListener('focus', syncAcrossTabs);
       window.removeEventListener('visibilitychange', syncAcrossTabs);
       window.removeEventListener('linkora_auth_updated', syncAcrossTabs);
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, performForcedSignOut, user?.id, user?.email]);
 
   // Instant 1-Click Founder Login (Permanent)
   const loginAsOwner = useCallback((): boolean => {
@@ -535,6 +669,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+
+      {/* Immediate Account Suspension Banner Modal */}
+      {suspendedNotice && (
+        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[#0f131f] border border-rose-500/40 rounded-2xl p-6 sm:p-8 text-center space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white tracking-tight">Account Suspended</h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Your account has been suspended by platform administration. All active sessions have been securely terminated.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-black/60 border border-rose-500/25 text-rose-300 text-xs text-left font-mono break-words">
+              <span className="font-semibold text-rose-400 block mb-1">Notice / Reason:</span>
+              {suspendedNotice}
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              If you believe this suspension is in error or wish to appeal, please contact{' '}
+              <span className="text-slate-200 font-medium">support@linkora-edu.online</span>.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSuspendedNotice(null);
+                try {
+                  sessionStorage.removeItem('linkora_suspended_notice');
+                } catch (e) {}
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm transition-colors border border-slate-700 cursor-pointer"
+            >
+              Acknowledge &amp; Close
+            </button>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

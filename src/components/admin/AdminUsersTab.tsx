@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Trash2,
   ExternalLink,
+  GraduationCap,
 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { AdminUserListItem } from '@/types/database';
 import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
+import { supabase } from '@/lib/supabase/client';
 
 interface AdminUsersTabProps {
   currentAdminId?: string;
@@ -129,6 +131,109 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
       setActionMessage({
         type: 'error',
         text: err instanceof Error ? err.message : 'Error executing moderation.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveCollegeVerification = async (targetUser: AdminUserListItem) => {
+    setIsSubmitting(true);
+    setActionMessage(null);
+    try {
+      const res = await fetch('/api/verify/linkedin-college', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUserId: targetUser.user_id,
+          targetUsername: targetUser.username,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionMessage({
+          type: 'success',
+          text: `College verification removed for ${targetUser.display_name}.`,
+        });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('linkora_college_updated'));
+        }
+        if (selectedUser?.user_id === targetUser.user_id) {
+          setSelectedUser({ ...selectedUser, college_verified: false });
+        }
+        await fetchUsers();
+      } else {
+        throw new Error(data.error || 'Failed to remove verification.');
+      }
+    } catch (err: unknown) {
+      setActionMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Error removing verification.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGrantCollegeVerification = async (targetUser: AdminUserListItem) => {
+    if (!targetUser.college) {
+      setActionMessage({ type: 'error', text: 'User does not have a college name set on profile.' });
+      return;
+    }
+    setIsSubmitting(true);
+    setActionMessage(null);
+    try {
+      const { data: pData } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'linkedin_college_verifications')
+        .maybeSingle();
+
+      const existingList = Array.isArray(pData?.value) ? pData.value : [];
+      const record = {
+        userId: targetUser.user_id,
+        username: targetUser.username,
+        displayName: targetUser.display_name,
+        college: targetUser.college,
+        verifiedAt: new Date().toISOString(),
+      };
+      const updatedList = [
+        record,
+        ...existingList.filter((item: any) => item.userId !== targetUser.user_id),
+      ].slice(0, 500);
+
+      await supabase.from('platform_settings').upsert({
+        key: 'linkedin_college_verifications',
+        value: updatedList,
+        description: 'Registry of LinkedIn verified college affiliations and credentials.',
+        updated_at: new Date().toISOString(),
+      });
+
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            college_verified: true,
+            college_verified_at: new Date().toISOString(),
+          })
+          .eq('user_id', targetUser.user_id);
+      } catch (e) {}
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('linkora_college_updated'));
+      }
+      if (selectedUser?.user_id === targetUser.user_id) {
+        setSelectedUser({ ...selectedUser, college_verified: true });
+      }
+      setActionMessage({
+        type: 'success',
+        text: `College verification granted for ${targetUser.display_name}.`,
+      });
+      await fetchUsers();
+    } catch (err: unknown) {
+      setActionMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Error granting verification.',
       });
     } finally {
       setIsSubmitting(false);
@@ -288,8 +393,19 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="text-slate-300 truncate max-w-[180px]">
-                          {u.college || '—'}
+                        <div className="text-slate-300 truncate max-w-[200px]">
+                          {u.college ? (
+                            <VerifiedCollegeBadge
+                              college={u.college}
+                              isVerified={u.college_verified}
+                              userId={u.user_id}
+                              username={u.username}
+                              showUnverified={true}
+                              size="xs"
+                            />
+                          ) : (
+                            '—'
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-500 truncate max-w-[180px]">
                           {u.course || '—'}
@@ -417,6 +533,55 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
                   )}
                 </div>
               )}
+            </div>
+
+            {/* College Verification Control Card */}
+            <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="font-semibold text-white flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-brand-400" />
+                  <span>College Affiliation & Verification</span>
+                </div>
+                <div className="text-slate-400 flex items-center gap-2 flex-wrap">
+                  <span>{selectedUser.college || 'No college specified'}</span>
+                  {selectedUser.college && (
+                    <VerifiedCollegeBadge
+                      college={selectedUser.college}
+                      isVerified={selectedUser.college_verified}
+                      userId={selectedUser.user_id}
+                      username={selectedUser.username}
+                      showUnverified={true}
+                      size="xs"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-2">
+                {selectedUser.college_verified ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isSubmitting}
+                    onClick={() => handleRemoveCollegeVerification(selectedUser)}
+                    className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs"
+                    leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                  >
+                    Remove Verification
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isSubmitting || !selectedUser.college}
+                    onClick={() => handleGrantCollegeVerification(selectedUser)}
+                    className="border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10 text-xs"
+                    leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />}
+                  >
+                    Grant Verification
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Owned Projects (Safe preservation notice) */}

@@ -181,21 +181,31 @@ export async function GET(request: NextRequest) {
       throw new Error(listErr.message);
     }
 
-    // Fetch platform_settings suspended users registry for dual-layer consistency
+    // Fetch platform_settings suspended users registry and college verifications
     let suspendedUserIds: string[] = [];
     let suspendedUsersMap: Record<string, any> = {};
+    const verifiedUserIds = new Set<string>();
     try {
-      const { data: settingData } = await client
+      const { data: settingsRows } = await client
         .from('platform_settings')
-        .select('value')
-        .eq('key', 'match_scoring_config')
-        .maybeSingle();
-      if (settingData?.value) {
-        if (Array.isArray(settingData.value.suspended_user_ids)) {
-          suspendedUserIds = settingData.value.suspended_user_ids;
-        }
-        if (settingData.value.suspended_users) {
-          suspendedUsersMap = settingData.value.suspended_users;
+        .select('key, value')
+        .in('key', ['match_scoring_config', 'linkedin_college_verifications']);
+
+      if (Array.isArray(settingsRows)) {
+        for (const row of settingsRows) {
+          if (row.key === 'match_scoring_config' && row.value) {
+            if (Array.isArray(row.value.suspended_user_ids)) {
+              suspendedUserIds = row.value.suspended_user_ids;
+            }
+            if (row.value.suspended_users) {
+              suspendedUsersMap = row.value.suspended_users;
+            }
+          } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
+            row.value.forEach((v: any) => {
+              if (v.userId) verifiedUserIds.add(v.userId);
+              if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+            });
+          }
         }
       }
     } catch {}
@@ -267,6 +277,9 @@ export async function GET(request: NextRequest) {
       const isSuspended = Boolean(p.is_suspended || isSuspendedInSetting);
       const userStatus = isSuspended ? 'suspended' : (p.status || 'active');
       const userReason = p.suspension_reason || suspendedUsersMap[p.user_id]?.reason || null;
+      const isCollegeVerified =
+        verifiedUserIds.has(p.user_id) ||
+        Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
 
       userList.push({
         user_id: p.user_id,
@@ -278,6 +291,7 @@ export async function GET(request: NextRequest) {
         is_suspended: isSuspended,
         suspension_reason: userReason,
         college: p.college,
+        college_verified: isCollegeVerified,
         course: p.course,
         academic_year: p.academic_year,
         skills: p.skills || [],

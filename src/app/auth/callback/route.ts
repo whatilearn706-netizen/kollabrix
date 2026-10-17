@@ -72,6 +72,17 @@ export async function GET(request: Request) {
           user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
           profile?.role === 'admin';
 
+        // Check if user is suspended
+        if (profile && (profile.is_suspended || profile.status === 'suspended') && !isOwner) {
+          await supabase.auth.signOut().catch(() => {});
+          response.cookies.set('linkora_user_session', '', { path: '/', maxAge: 0 });
+          response.cookies.set('linkora_user_id', '', { path: '/', maxAge: 0 });
+          response.cookies.set('linkora_user_email', '', { path: '/', maxAge: 0 });
+          response.cookies.set('linkora_admin_session', '', { path: '/', maxAge: 0 });
+          const reason = profile.suspension_reason || 'This account has been suspended by administration. Access denied.';
+          return NextResponse.redirect(`${redirectBase}/explore?error=${encodeURIComponent(reason)}`);
+        }
+
         // 1-Year persistent session cookies
         response.cookies.set('linkora_user_session', 'true', {
           path: '/',

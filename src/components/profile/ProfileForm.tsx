@@ -74,12 +74,9 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     initialProfile?.is_portfolio_public ?? true
   );
   const [profileRole, setProfileRole] = useState(initialProfile?.role || 'student');
-  const isMayankUser =
-    initialProfile?.username?.toLowerCase() === 'mayank142' ||
-    initialProfile?.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
 
   const [isCollegeVerified, setIsCollegeVerified] = useState<boolean>(
-    Boolean(initialProfile?.college_verified) || isMayankUser
+    Boolean(initialProfile?.college_verified)
   );
   const [isLinkedInModalOpen, setIsLinkedInModalOpen] = useState(false);
 
@@ -303,7 +300,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       }
 
       // Sync verification to platform_settings registry so universally visible across accounts
-      if (isCollegeVerified && user?.id) {
+      if (user?.id) {
         try {
           const { data: pData } = await supabase
             .from('platform_settings')
@@ -312,19 +309,25 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
             .maybeSingle();
 
           const existingList = Array.isArray(pData?.value) ? pData.value : [];
-          const record = {
-            userId: user.id,
-            username: username.trim().toLowerCase(),
-            displayName: displayName.trim(),
-            college: college.trim(),
-            linkedinUrl: linkedinUrl.trim() || undefined,
-            verifiedAt: new Date().toISOString(),
-          };
+          let updatedList: any[];
 
-          const updatedList = [
-            record,
-            ...existingList.filter((item: any) => item.userId !== user.id),
-          ].slice(0, 500);
+          if (isCollegeVerified) {
+            const record = {
+              userId: user.id,
+              username: username.trim().toLowerCase(),
+              displayName: displayName.trim(),
+              college: college.trim(),
+              linkedinUrl: linkedinUrl.trim() || undefined,
+              verifiedAt: new Date().toISOString(),
+            };
+
+            updatedList = [
+              record,
+              ...existingList.filter((item: any) => item.userId !== user.id),
+            ].slice(0, 500);
+          } else {
+            updatedList = existingList.filter((item: any) => item.userId !== user.id);
+          }
 
           await supabase.from('platform_settings').upsert({
             key: 'linkedin_college_verifications',

@@ -97,6 +97,22 @@ export default function TeammatesPage() {
           .order('updated_at', { ascending: false })
           .limit(60);
 
+        // Fetch verified college affiliations registry from platform_settings
+        const verifiedUserIds = new Set<string>();
+        try {
+          const { data: vData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'linkedin_college_verifications')
+            .maybeSingle();
+          if (Array.isArray(vData?.value)) {
+            vData.value.forEach((v: any) => {
+              if (v.userId) verifiedUserIds.add(v.userId);
+              if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+            });
+          }
+        } catch {}
+
         if (profs) {
           const activeProfs = (profs as Profile[])
             .filter(
@@ -107,12 +123,9 @@ export default function TeammatesPage() {
             )
             .map((p) => {
               const isVerified =
-                p.username?.toLowerCase() === 'mayank142' ||
-                p.user_id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-              if (isVerified) {
-                return { ...p, college_verified: true };
-              }
-              return p;
+                verifiedUserIds.has(p.user_id) ||
+                Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
+              return { ...p, college_verified: isVerified };
             });
           setAllProfiles(activeProfs);
         }
