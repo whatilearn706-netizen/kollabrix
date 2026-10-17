@@ -2,11 +2,11 @@
 
 ### The Central Platform for College-Wide Student Project Collaboration, Hackathon Team Building, and Faculty Problem Solving
 
-[![Live Platform](https://img.shields.io/badge/Live%20Platform-linkora--edu.online-10b981?style=for-the-badge&logo=vercel)](https://linkora-edu.online)
-[![Explore Projects](https://img.shields.io/badge/Explore-Projects%20%26%20Teams-6366f1?style=for-the-badge)](https://linkora-edu.online/explore)
-[![Hackathon Arena](https://img.shields.io/badge/Compete-Hackathon%20Arena-f59e0b?style=for-the-badge)](https://linkora-edu.online/hackathons)
+[![Live Platform](https://img.shields.io/badge/Live%20Platform-linkora--link.online-10b981?style=for-the-badge&logo=vercel)](https://linkora-link.online)
+[![Explore Projects](https://img.shields.io/badge/Explore-Projects%20%26%20Teams-6366f1?style=for-the-badge)](https://linkora-link.online/explore)
+[![Hackathon Arena](https://img.shields.io/badge/Compete-Hackathon%20Arena-f59e0b?style=for-the-badge)](https://linkora-link.online/hackathons)
 
-🌐 **Explore the Live Platform**: [https://linkora-edu.online](https://linkora-edu.online)
+🌐 **Explore the Live Platform**: [https://linkora-link.online](https://linkora-link.online)
 
 ---
 
@@ -94,7 +94,7 @@ The sculpture's harmonious palette — **rich burgundy** representing academic t
 
 Visit the live platform to explore active student projects, browse collegiate hackathons, or assemble your next team:
 
-👉 **[https://linkora-edu.online](https://linkora-edu.online)**
+👉 **[https://linkora-link.online](https://linkora-link.online)**
 
 ---
 
