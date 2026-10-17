@@ -19,14 +19,30 @@
   --site-radius: 16px;
 }
 
+html {
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   color: var(--site-text);
   background: var(--site-bg);
   font-family: var(--site-font-body);
   overflow-x: hidden;
   min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU Hardware acceleration for buttery-smooth animations and modal popups */
+.smooth-gpu, [role="dialog"], .modal-content, [data-state="open"] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize image rendering and layout shift */
+img {
+  content-visibility: auto;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading {

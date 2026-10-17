@@ -128,6 +128,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="preconnect" href="https://bmiwmlfraaridbekuily.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
