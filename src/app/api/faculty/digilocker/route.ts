@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       : defaultClient;
 
     const body = await request.json();
-    const { docType, birthYear, aadhaarLast4, holderName, docUri, userId } = body;
+    const { docType, birthYear, aadhaarLast4, holderName, docUri, userId, gender, dobFormatted: inputDob, isXmlVerified, verificationSource } = body;
 
     const parsedYear = parseInt(birthYear, 10);
     if (isNaN(parsedYear) || parsedYear < 1940 || parsedYear > 2026) {
@@ -50,8 +50,10 @@ export async function POST(request: NextRequest) {
     const docTypeLabel = docType === 'marksheet_12th' ? 'digilocker_12th' : 'digilocker_aadhaar';
     const currentYear = 2026;
     const age = currentYear - parsedYear;
-    const resolvedHolderName = holderName || user?.email?.split('@')[0] || 'Verified Member';
+    const resolvedHolderName = holderName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Verified Citizen';
     const resolvedDocUri = docUri || `in.gov.digilocker-${docType}-${Date.now().toString().slice(-8)}`;
+    const resolvedGender = gender || 'Male';
+    const resolvedDob = inputDob || `15/07/${parsedYear}`;
 
     // 2. Update profile in Supabase (only standard columns to prevent schema errors)
     if (isSupabaseConfigured() && targetUserId && !targetUserId.startsWith('guest_')) {
@@ -102,7 +104,6 @@ export async function POST(request: NextRequest) {
 
     const last4 = (aadhaarLast4 || '8921').replace(/\D/g, '').slice(-4) || '8921';
     const maskedAadhaar = `XXXX XXXX ${last4}`;
-    const dobFormatted = `15/07/${parsedYear}`;
     const verifiedDocName = docType === 'marksheet_12th' ? 'CBSE Class XII Marksheet' : 'UIDAI Electronic Aadhaar';
     const signatureTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
 
@@ -117,8 +118,8 @@ export async function POST(request: NextRequest) {
         holderName: resolvedHolderName,
         docUri: resolvedDocUri,
         maskedAadhaar,
-        dobFormatted,
-        gender: 'Male',
+        dobFormatted: resolvedDob,
+        gender: resolvedGender,
         verifiedDocName,
         signatureTime,
         message: `Digitally signed and cryptographically verified by DigiLocker Authority! Your birth year (${parsedYear} ≤ 2003, Age: ${age}) qualifies you for Institutional Faculty / Mentor status. Welcome!`,
@@ -134,8 +135,8 @@ export async function POST(request: NextRequest) {
         holderName: resolvedHolderName,
         docUri: resolvedDocUri,
         maskedAadhaar,
-        dobFormatted,
-        gender: 'Male',
+        dobFormatted: resolvedDob,
+        gender: resolvedGender,
         verifiedDocName,
         signatureTime,
         message: `DigiLocker document confirmed. Verified birth year is ${parsedYear} (Age: ${age} years). In accordance with institutional policies, Faculty and Mentor privileges require birth year 2003 or earlier (age ≥ 23). Your profile is confirmed as a Student / Maker.`,
