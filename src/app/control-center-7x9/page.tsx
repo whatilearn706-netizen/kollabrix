@@ -34,6 +34,7 @@ import { AdminNotesTab } from '@/components/admin/AdminNotesTab';
 import { AdminIntentShowcaseTab } from '@/components/admin/AdminIntentShowcaseTab';
 import { AdminMasterControlTab } from '@/components/admin/AdminMasterControlTab';
 import { AdminRestrictedWordsTab } from '@/components/admin/AdminRestrictedWordsTab';
+import { AdminIcpcTab } from '@/components/admin/AdminIcpcTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
@@ -441,6 +442,8 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       {currentTab === 'faculty' && <AdminFacultyTab authToken={authToken} />}
 
       {currentTab === 'hackathons' && <AdminHackathonsTab authToken={authToken} />}
+
+      {currentTab === 'icpc' && <AdminIcpcTab authToken={authToken} />}
 
       {currentTab === 'theme' && (
         <AdminThemeTab authToken={authToken} adminEmail={adminUser?.email || user?.email || 'goyalmayank142@gmail.com'} />

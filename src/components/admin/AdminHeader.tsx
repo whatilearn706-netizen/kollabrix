@@ -21,6 +21,7 @@ import {
   StickyNote,
   Sparkles,
   Crown,
+  Terminal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -34,6 +35,7 @@ export type AdminTab =
   | 'content'
   | 'faculty'
   | 'hackathons'
+  | 'icpc'
   | 'theme'
   | 'enterprise'
   | 'explore'
@@ -57,6 +59,7 @@ export function AdminHeader({
     { id: 'master' as AdminTab, label: '👑 ALL 6 MASTER CONTROLS', icon: Crown },
     { id: 'restricted' as AdminTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
+    { id: 'icpc' as AdminTab, label: '⚡ ICPC Arena', icon: Terminal },
     { id: 'intent' as AdminTab, label: 'Intent & Showcase', icon: Sparkles },
     { id: 'notes' as AdminTab, label: 'Admin Notes & Ideas', icon: StickyNote },
     { id: 'users' as AdminTab, label: 'User & Team Moderation', icon: Users },

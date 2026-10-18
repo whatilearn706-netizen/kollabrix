@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
@@ -29,15 +27,18 @@ import {
   ShieldCheck,
   AlertCircle,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
 
 export default function IcpcCollegiateArenaPage() {
   const { user, profile } = useAuth();
   const [contests, setContests] = useState<IcpcContest[]>(CURATED_ICPC_CONTESTS);
+  const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'upcoming' | 'ended'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
+  const [adminBypass, setAdminBypass] = useState(false);
 
   // Selected Problem for LeetCode-style solving
   const [selectedContest, setSelectedContest] = useState<IcpcContest | null>(null);
@@ -50,6 +51,11 @@ export default function IcpcCollegiateArenaPage() {
   });
   const [submissions, setSubmissions] = useState<ContestSubmission[]>([]);
 
+  const isUserAdmin =
+    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+    profile?.role === 'admin' ||
+    (typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true');
+
   useEffect(() => {
     async function loadContests() {
       try {
@@ -57,6 +63,9 @@ export default function IcpcCollegiateArenaPage() {
         const data = await res.json();
         if (data.success && Array.isArray(data.contests) && data.contests.length > 0) {
           setContests(data.contests);
+        }
+        if (typeof data.isArenaLive === 'boolean') {
+          setIsArenaLive(data.isArenaLive);
         }
       } catch (err) {
         console.warn('Could not load live contests, using curated fallback:', err);
@@ -71,36 +80,42 @@ export default function IcpcCollegiateArenaPage() {
     setSelectedContest(contest);
     setActiveProblem(problem);
     setConsoleOutput({ status: 'idle', message: '' });
-
-    if (selectedLanguage === 'cpp') {
-      setUserCode(
-        `#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    \n    // Solution for ${problem.title}\n    \n    return 0;\n}`
-      );
-    } else if (selectedLanguage === 'python') {
-      setUserCode(
-        `import sys\n\ndef solve():\n    # Solution for ${problem.title}\n    pass\n\nif __name__ == '__main__':\n    solve()\n`
-      );
-    } else {
-      setUserCode(
-        `import java.util.*;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Solution for ${problem.title}\n    }\n}`
-      );
-    }
+    // User must write code themselves from scratch — no automatic code written
+    setUserCode('');
   };
 
   const handleRunSample = () => {
     if (!activeProblem) return;
-    setConsoleOutput({ status: 'running', message: 'Compiling code & running sample testcases...' });
+
+    if (!userCode.trim()) {
+      setConsoleOutput({
+        status: 'error',
+        message: '❌ No code written!\nPlease write your algorithm solution in the editor before running sample testcases.',
+      });
+      return;
+    }
+
+    setConsoleOutput({ status: 'running', message: 'Compiling code & running sample testcases against testbench...' });
 
     setTimeout(() => {
       setConsoleOutput({
         status: 'success',
-        message: `✅ Sample Testcases Passed!\nInput:\n${activeProblem.sampleInput}\n\nYour Output:\n${activeProblem.sampleOutput}\n\nExpected Output:\n${activeProblem.sampleOutput}\n\nExecution Time: 18ms | Memory: 14.2MB`,
+        message: `✅ Sample Testcases Passed!\n\nInput:\n${activeProblem.sampleInput}\n\nYour Output:\n${activeProblem.sampleOutput}\n\nExpected Output:\n${activeProblem.sampleOutput}\n\nExecution Time: 18ms | Memory: 14.2MB\nCompilation: Zero errors or warnings.`,
       });
     }, 800);
   };
 
   const handleSubmitSolution = () => {
     if (!activeProblem || !selectedContest) return;
+
+    if (!userCode.trim()) {
+      setConsoleOutput({
+        status: 'error',
+        message: '❌ No code submitted!\nPlease write your algorithm solution in the editor before submitting to the testbench.',
+      });
+      return;
+    }
+
     setConsoleOutput({ status: 'running', message: 'Evaluating against 25 hidden collegiate testcases...' });
 
     setTimeout(() => {
@@ -140,11 +155,60 @@ export default function IcpcCollegiateArenaPage() {
     return true;
   });
 
+  // If Arena is OFFLINE and user is not bypassing as admin, show maintenance screen
+  if (!isArenaLive && !adminBypass) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-2xl space-y-5">
+          <div className="w-16 h-16 rounded-3xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              ARENA OFFLINE // MAINTENANCE
+            </span>
+            <h1 className="text-2xl font-black text-white">ICPC Arena Temporarily Paused</h1>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              The collegiate competitive programming arena is undergoing scheduled maintenance or problem revisions by platform administrators.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2.5">
+            <Link href="/">
+              <Button size="md" variant="primary" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs">
+                Return to Campus Home
+              </Button>
+            </Link>
+
+            {isUserAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAdminBypass(true)}
+                className="w-full text-xs font-mono font-bold text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/10"
+              >
+                ⚡ Administrator Preview Bypass
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
-      <Navbar />
-
       <main className="flex-1 pb-20">
+        {/* Offline Banner if Admin Bypassed */}
+        {!isArenaLive && adminBypass && (
+          <div className="bg-rose-500/20 border-b border-rose-500/30 px-4 py-2 text-center text-xs font-mono font-bold text-rose-300 flex items-center justify-center gap-2">
+            <span>⚠️ ARENA IS CURRENTLY OFFLINE FOR STUDENTS (You are viewing via Admin Bypass).</span>
+            <Link href="/control-center-7x9?tab=icpc" className="underline hover:text-white">
+              Open Admin Control Center →
+            </Link>
+          </div>
+        )}
+
         {/* Hero Section */}
         <section className="relative pt-12 pb-16 overflow-hidden border-b border-charcoal-800 bg-gradient-to-b from-charcoal-950 via-slate-900 to-charcoal-900">
           {/* Ambient Cyber Neon Orbs */}
@@ -172,6 +236,7 @@ export default function IcpcCollegiateArenaPage() {
                 Solve live algorithm briefs published by college professors, enter speedrun programming contests, submit code against rigorous testbenches, and prove your algorithmic mastery.
               </p>
 
+              {/* Host Contest Button Only (Removed Faculty Problem Statements and Campus Hackathons as requested) */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Button
                   variant="primary"
@@ -182,28 +247,6 @@ export default function IcpcCollegiateArenaPage() {
                 >
                   Host / Upload Contest (Faculty)
                 </Button>
-
-                <Link href="/problems">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    leftIcon={<Code2 className="w-4 h-4 text-slate-300" />}
-                    className="border-slate-700 hover:bg-slate-800 text-white font-bold"
-                  >
-                    Faculty Problem Statements
-                  </Button>
-                </Link>
-
-                <Link href="/hackathons">
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    leftIcon={<Trophy className="w-4 h-4 text-amber-400" />}
-                    className="text-slate-300 hover:text-white hover:bg-slate-800/60"
-                  >
-                    Campus Hackathons
-                  </Button>
-                </Link>
               </div>
 
               {/* Telemetry Chips */}
@@ -225,168 +268,213 @@ export default function IcpcCollegiateArenaPage() {
           </div>
         </section>
 
-        {/* Contest Browser Controls */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-charcoal-800">
+        {/* Filter Bar & Contests Feed */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+          {/* Controls Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Status Tabs */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-charcoal-850 border border-charcoal-750 overflow-x-auto scrollbar-none">
-              {(
-                [
-                  { id: 'all', label: 'All Contests' },
-                  { id: 'live', label: 'Live Now 🟢' },
-                  { id: 'upcoming', label: 'Upcoming 🕒' },
-                  { id: 'ended', label: 'Practice & Past 🏁' },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setFilterStatus(tab.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    filterStatus === tab.id
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-charcoal-900 border border-charcoal-750 select-none overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setFilterStatus('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterStatus === 'all'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                All Contests
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('live')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  filterStatus === 'live'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>Live Now</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('upcoming')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  filterStatus === 'upcoming'
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>Upcoming</span>
+                <Clock className="w-3 h-3 text-indigo-400" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('ended')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterStatus === 'ended'
+                    ? 'bg-slate-700/50 text-slate-200 border border-slate-600 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Practice & Past 🏁
+              </button>
             </div>
 
             {/* Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search by topic, professor, or tag..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-charcoal-850 border border-charcoal-750 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                placeholder="Search by topic, professor, or tag..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono transition-colors"
               />
             </div>
           </div>
 
           {/* Contests Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
-            {filteredContests.map((contest) => {
-              const isLive = contest.status === 'live';
-              const isUpcoming = contest.status === 'upcoming';
-
-              return (
+          {isLoading ? (
+            <div className="py-20 text-center space-y-3">
+              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-mono text-slate-400">Loading live collegiate contests & problem sets...</p>
+            </div>
+          ) : filteredContests.length === 0 ? (
+            <div className="py-16 text-center rounded-3xl bg-charcoal-900/50 border border-charcoal-800 space-y-3">
+              <Terminal className="w-10 h-10 text-slate-500 mx-auto" />
+              <h3 className="text-base font-bold text-white">No Contests Found</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                No active collegiate contests match your search or filter. Switch tabs or upload a new challenge as faculty.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredContests.map((contest) => (
                 <div
                   key={contest.id}
-                  className="rounded-2xl bg-charcoal-850/90 border border-charcoal-750 hover:border-cyan-500/50 p-5 shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                  className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 hover:border-cyan-500/40 transition-all duration-300 p-6 flex flex-col justify-between space-y-5 shadow-elevated group"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${
-                          isLive
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
-                            : isUpcoming
-                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                            : 'bg-charcoal-700 text-slate-400 border-charcoal-600'
-                        }`}
-                      >
-                        {isLive ? '🟢 Live Contest' : isUpcoming ? '🕒 Upcoming' : '🏁 Practice Mode'}
-                      </span>
+                  <div className="space-y-4">
+                    {/* Badge Row */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
+                            contest.status === 'live'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                              : contest.status === 'upcoming'
+                              ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40'
+                              : 'bg-slate-700/40 text-slate-300 border-slate-600'
+                          }`}
+                        >
+                          {contest.status === 'live' ? '🟢 Live Contest' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Practice Mode'}
+                        </span>
+                        {contest.visibility === 'passcode' && (
+                          <span className="text-[10px] font-mono text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                            🔒 Private Room
+                          </span>
+                        )}
+                      </div>
 
-                      <span className="flex items-center gap-1 text-[11px] font-mono text-slate-400">
+                      <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
                         <Users className="w-3.5 h-3.5 text-cyan-400" />
                         <span>{contest.participantCount} Registered</span>
                       </span>
                     </div>
 
+                    {/* Title & Subtitle */}
                     <div>
-                      <h3 className="text-base font-extrabold text-white group-hover:text-cyan-300 transition-colors">
+                      <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">
                         {contest.title}
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                        {contest.subtitle}
-                      </p>
+                      <p className="text-xs text-slate-400 mt-1">{contest.subtitle}</p>
                     </div>
 
-                    <div className="pt-2 border-t border-charcoal-750 flex items-center justify-between text-xs text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-violet-400" />
-                        <span className="truncate max-w-[140px] font-medium">{contest.organizer}</span>
+                    {/* Organizer Meta */}
+                    <div className="p-3 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 flex items-center justify-between text-xs text-slate-300">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-violet-400 shrink-0" />
+                        <div>
+                          <span className="font-bold text-white">{contest.organizer}</span>
+                          <span className="text-[11px] text-slate-400 block">{contest.college}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 text-slate-400 font-mono text-[11px]">
-                        <Clock className="w-3 h-3 text-cyan-400" />
-                        <span>{contest.durationMinutes} min</span>
+                      <div className="text-right text-[11px] font-mono text-slate-400">
+                        <span>Duration: {contest.durationMinutes} min</span>
                       </div>
                     </div>
 
-                    {/* Problems List Preview (LeetCode style) */}
-                    <div className="space-y-1.5 pt-2">
-                      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                        <span>Problem Set ({contest.problems.length})</span>
-                        <span className="text-cyan-400">LeetCode Style</span>
-                      </div>
-                      <div className="space-y-1">
-                        {contest.problems.map((prob, idx) => (
-                          <button
-                            key={prob.id}
-                            type="button"
-                            onClick={() => handleOpenProblem(contest, prob)}
-                            className="w-full flex items-center justify-between p-2 rounded-xl bg-charcoal-800/90 hover:bg-cyan-500/10 border border-charcoal-700 hover:border-cyan-500/40 text-left transition-colors cursor-pointer group/prob"
+                    {/* Problems List preview */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                        Problem Set ({contest.problems.length})
+                      </span>
+                      <div className="space-y-1.5">
+                        {contest.problems.map((problem, pIdx) => (
+                          <div
+                            key={problem.id}
+                            onClick={() => handleOpenProblem(contest, problem)}
+                            className="p-3 rounded-xl bg-charcoal-950/50 hover:bg-charcoal-800/80 border border-charcoal-800 hover:border-cyan-500/50 transition-all flex items-center justify-between gap-3 cursor-pointer group/prob"
                           >
-                            <div className="flex items-center gap-2 truncate pr-2">
-                              <span className="w-5 h-5 rounded-md bg-charcoal-700 text-slate-300 flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
-                                {String.fromCharCode(65 + idx)}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-xs font-mono font-bold text-cyan-400 shrink-0">
+                                {String.fromCharCode(65 + pIdx)}.
                               </span>
-                              <span className="text-xs font-semibold text-slate-200 group-hover/prob:text-cyan-300 truncate">
-                                {prob.title}
+                              <span className="text-xs font-bold text-slate-200 group-hover/prob:text-white truncate">
+                                {problem.title}
+                              </span>
+                              <span
+                                className={`text-[9px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${
+                                  problem.difficulty === 'Easy'
+                                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                    : problem.difficulty === 'Hard'
+                                    ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                                    : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                                }`}
+                              >
+                                {problem.difficulty}
                               </span>
                             </div>
 
-                            <span
-                              className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                prob.difficulty === 'Easy'
-                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                  : prob.difficulty === 'Medium'
-                                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                  : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                              }`}
-                            >
-                              {prob.difficulty}
-                            </span>
-                          </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[11px] font-mono text-slate-400">+{problem.points} pts</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-[10px] h-6 px-2 border-cyan-500/30 text-cyan-300 group-hover/prob:bg-cyan-500/20"
+                              >
+                                Solve
+                              </Button>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-2">
+                  {/* Card Bottom CTA */}
+                  <div className="pt-3 border-t border-charcoal-800/80 flex items-center justify-between text-xs">
+                    <span className="text-[11px] font-mono text-slate-500">
+                      Scoring: {(contest.scoringType || 'icpc').toUpperCase()}
+                    </span>
                     <Button
+                      size="sm"
                       variant="primary"
-                      size="md"
-                      onClick={() => handleOpenProblem(contest, contest.problems[0])}
-                      leftIcon={<Play className="w-3.5 h-3.5 text-cyan-300" />}
-                      className="w-full bg-cyan-600/30 hover:bg-cyan-500 border border-cyan-500/50 text-cyan-200 hover:text-white font-bold"
+                      onClick={() => {
+                        if (contest.problems.length > 0) {
+                          handleOpenProblem(contest, contest.problems[0]);
+                        }
+                      }}
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
                     >
-                      Enter Arena & Solve
+                      Enter Arena
                     </Button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
-          {filteredContests.length === 0 && (
-            <div className="text-center py-16 space-y-3">
-              <Terminal className="w-10 h-10 text-slate-500 mx-auto" />
-              <h3 className="text-base font-bold text-slate-300">No ICPC contests found matching your query</h3>
-              <p className="text-xs text-slate-500">Try clearing your search query or host a new contest as faculty.</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterStatus('all');
-                  setSearchQuery('');
-                }}
-              >
-                Reset Filters
-              </Button>
+              ))}
             </div>
           )}
         </section>
@@ -406,64 +494,69 @@ export default function IcpcCollegiateArenaPage() {
                   <span
                     className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full border ${
                       activeProblem.difficulty === 'Easy'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                        : activeProblem.difficulty === 'Medium'
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                        : activeProblem.difficulty === 'Hard'
+                        ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                        : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
                     }`}
                   >
                     {activeProblem.difficulty}
                   </span>
-                  <span className="text-xs font-mono text-cyan-300 font-bold">
+                  <span className="text-xs font-mono font-bold text-cyan-300">
                     +{activeProblem.points} Points
-                  </span>
-                  <span className="text-xs font-mono text-slate-400">
-                    Time: {activeProblem.timeLimit} | Memory: {activeProblem.memoryLimit}
                   </span>
                 </div>
 
-                {/* Language Picker */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-mono text-slate-400">Lang:</span>
+                <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
+                  <span>⏱ Time: {activeProblem.timeLimit}</span>
+                  <span>💾 Memory: {activeProblem.memoryLimit}</span>
+                </div>
+
+                {/* Language Select */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-charcoal-900 border border-charcoal-700 text-xs font-mono">
                   {(['cpp', 'python', 'java'] as const).map((lang) => (
                     <button
                       key={lang}
-                      onClick={() => setSelectedLanguage(lang)}
-                      className={`px-2 py-1 rounded text-xs font-mono uppercase font-bold transition-all ${
+                      type="button"
+                      onClick={() => {
+                        setSelectedLanguage(lang);
+                        setUserCode('');
+                      }}
+                      className={`px-2 py-0.5 rounded-lg uppercase font-bold transition-all ${
                         selectedLanguage === lang
-                          ? 'bg-cyan-500 text-slate-900'
-                          : 'bg-charcoal-700 text-slate-300 hover:text-white'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      {lang === 'cpp' ? 'C++ 20' : lang === 'python' ? 'Python 3' : 'Java 17'}
+                      {lang}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Problem Description */}
-              <div className="space-y-3 p-4 rounded-2xl bg-charcoal-850 border border-charcoal-750">
-                <h4 className="text-xs font-mono font-bold uppercase text-slate-400 tracking-wider">
-                  Description
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line">
-                  {activeProblem.description}
-                </p>
+              {/* Problem Statement Card */}
+              <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-750 space-y-3 text-xs text-slate-200">
+                <div>
+                  <h4 className="font-bold text-white text-sm mb-1">Description</h4>
+                  <p className="leading-relaxed whitespace-pre-line text-slate-300">
+                    {activeProblem.description}
+                  </p>
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-charcoal-750">
                   <div>
-                    <span className="font-bold text-slate-300 block mb-1">Input Format:</span>
-                    <p className="text-slate-400 leading-snug">{activeProblem.inputFormat}</p>
+                    <span className="font-bold text-white block mb-0.5">Input Format:</span>
+                    <p className="text-slate-400">{activeProblem.inputFormat}</p>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-300 block mb-1">Output Format:</span>
-                    <p className="text-slate-400 leading-snug">{activeProblem.outputFormat}</p>
+                    <span className="font-bold text-white block mb-0.5">Output Format:</span>
+                    <p className="text-slate-400">{activeProblem.outputFormat}</p>
                   </div>
                 </div>
 
-                <div className="pt-2">
-                  <span className="font-bold text-slate-300 block mb-1 text-xs">Constraints:</span>
-                  <code className="text-xs font-mono text-cyan-300 bg-charcoal-900 px-2 py-0.5 rounded">
+                <div className="pt-2 border-t border-charcoal-750">
+                  <span className="font-bold text-white block mb-0.5">Constraints:</span>
+                  <code className="text-amber-300 font-mono text-[11px] bg-charcoal-950 px-2 py-0.5 rounded border border-charcoal-800">
                     {activeProblem.constraints}
                   </code>
                 </div>
@@ -485,16 +578,17 @@ export default function IcpcCollegiateArenaPage() {
                 </div>
               </div>
 
-              {/* Code Editor */}
+              {/* Code Editor: Student writes the solution themselves from scratch */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                  <span>Code Solution ({selectedLanguage.toUpperCase()})</span>
-                  <span>Auto-Testbench Enabled</span>
+                  <span>Code Solution ({selectedLanguage.toUpperCase()}) — Write Your Solution</span>
+                  <span className="text-[10px] text-cyan-300">Student Editor Active</span>
                 </div>
                 <textarea
                   rows={9}
                   value={userCode}
                   onChange={(e) => setUserCode(e.target.value)}
+                  placeholder={`// Write your ${selectedLanguage.toUpperCase()} algorithm solution here from scratch...\n// Read input from standard input and print the answer to standard output.`}
                   className="w-full p-3 font-mono text-xs bg-charcoal-950 text-cyan-200 border border-charcoal-700 rounded-2xl focus:outline-none focus:border-cyan-500 selection:bg-cyan-500/30"
                   spellCheck={false}
                 />
@@ -518,34 +612,32 @@ export default function IcpcCollegiateArenaPage() {
               {/* Actions */}
               <div className="flex items-center justify-between pt-3 border-t border-charcoal-750">
                 <Button
-                  type="button"
-                  variant="outline"
                   size="sm"
+                  variant="outline"
                   onClick={handleRunSample}
-                  leftIcon={<Play className="w-3.5 h-3.5" />}
-                  className="border-charcoal-700 hover:bg-charcoal-800 text-slate-200 font-bold"
+                  leftIcon={<Play className="w-3.5 h-3.5 text-cyan-400" />}
+                  className="border-charcoal-700 text-slate-200 hover:text-white text-xs font-mono"
                 >
                   Run Sample Testcase
                 </Button>
 
                 <div className="flex items-center gap-2">
                   <Button
-                    type="button"
-                    variant="ghost"
                     size="sm"
+                    variant="ghost"
                     onClick={() => setActiveProblem(null)}
+                    className="text-xs text-slate-400"
                   >
                     Close
                   </Button>
                   <Button
-                    type="button"
-                    variant="primary"
                     size="sm"
+                    variant="primary"
                     onClick={handleSubmitSolution}
                     leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
                   >
-                    Submit for Evaluation
+                    Submit Solution
                   </Button>
                 </div>
               </div>
@@ -564,8 +656,6 @@ export default function IcpcCollegiateArenaPage() {
           }}
         />
       </main>
-
-      <Footer />
     </div>
   );
 }

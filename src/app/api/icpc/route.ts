@@ -8,57 +8,93 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-// In-memory fallback cache for teacher-created contests
+// In-memory fallback caches
 let memoryContests: IcpcContest[] = [];
+let memoryDeletedProblemIds: Set<string> = new Set();
+let memoryDeletedContestIds: Set<string> = new Set();
+let memoryIsArenaLive: boolean = true;
+
+function getSupabaseClient() {
+  if (!isSupabaseConfigured()) return null;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false },
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
     let dbContests: IcpcContest[] = [];
+    let isArenaLive = memoryIsArenaLive;
+    let deletedProblemIds = new Set<string>(memoryDeletedProblemIds);
+    let deletedContestIds = new Set<string>(memoryDeletedContestIds);
 
-    if (isSupabaseConfigured()) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-      const client = createSupabaseClient(supabaseUrl, supabaseServiceKey, {
-        auth: { persistSession: false },
-      });
-
+    const client = getSupabaseClient();
+    if (client) {
       try {
+        // 1. Read platform settings for ICPC
         const { data: settingRow } = await client
           .from('platform_settings')
-          .select('value')
-          .eq('key', 'icpc_contests_v1')
-          .maybeSingle();
+          .select('key, value')
+          .in('key', ['icpc_contests_v1', 'icpc_settings_v1']);
 
-        if (settingRow?.value && Array.isArray(settingRow.value)) {
-          dbContests = settingRow.value;
+        if (settingRow && Array.isArray(settingRow)) {
+          for (const row of settingRow) {
+            if (row.key === 'icpc_contests_v1' && Array.isArray(row.value)) {
+              dbContests = row.value;
+            } else if (row.key === 'icpc_settings_v1' && row.value) {
+              if (typeof row.value.isArenaLive === 'boolean') {
+                isArenaLive = row.value.isArenaLive;
+                memoryIsArenaLive = isArenaLive;
+              }
+              if (Array.isArray(row.value.deletedProblemIds)) {
+                row.value.deletedProblemIds.forEach((id: string) => deletedProblemIds.add(id));
+              }
+              if (Array.isArray(row.value.deletedContestIds)) {
+                row.value.deletedContestIds.forEach((id: string) => deletedContestIds.add(id));
+              }
+            }
+          }
         }
       } catch (err) {
-        console.warn('Could not read icpc_contests_v1 from platform_settings:', err);
+        console.warn('Could not read icpc data from platform_settings:', err);
       }
     }
 
     // Merge: custom teacher contests first, followed by curated contests
-    const allContests = [...dbContests, ...memoryContests, ...CURATED_ICPC_CONTESTS];
+    const rawContests = [...dbContests, ...memoryContests, ...CURATED_ICPC_CONTESTS];
     
-    // Deduplicate by ID
+    // Deduplicate and filter out deleted contests and problems
     const seen = new Set<string>();
     const uniqueContests: IcpcContest[] = [];
-    for (const c of allContests) {
-      if (!seen.has(c.id)) {
-        seen.add(c.id);
-        uniqueContests.push(c);
-      }
+
+    for (const c of rawContests) {
+      if (!c || !c.id || seen.has(c.id) || deletedContestIds.has(c.id)) continue;
+      seen.add(c.id);
+
+      // Filter out deleted problems
+      const activeProblems = Array.isArray(c.problems)
+        ? c.problems.filter((p) => p && p.id && !deletedProblemIds.has(p.id))
+        : [];
+
+      uniqueContests.push({
+        ...c,
+        problems: activeProblems,
+      });
     }
 
     return NextResponse.json({
       success: true,
+      isArenaLive,
       contests: uniqueContests,
       count: uniqueContests.length,
     });
   } catch (error: any) {
     console.error('Error fetching ICPC contests:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to load contests', contests: CURATED_ICPC_CONTESTS },
+      { success: false, error: error.message || 'Failed to load contests', contests: CURATED_ICPC_CONTESTS, isArenaLive: true },
       { status: 500 }
     );
   }
@@ -120,14 +156,9 @@ export async function POST(request: NextRequest) {
     memoryContests.unshift(newContest);
 
     // Save to Supabase if configured
-    if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-        const client = createSupabaseClient(supabaseUrl, supabaseServiceKey, {
-          auth: { persistSession: false },
-        });
-
         const { data: settingRow } = await client
           .from('platform_settings')
           .select('value')
@@ -158,5 +189,134 @@ export async function POST(request: NextRequest) {
       { success: false, error: error.message || 'Failed to upload contest' },
       { status: 500 }
     );
+  }
+}
+
+// DELETE: Remove a problem from a contest or remove an entire contest
+export async function DELETE(request: NextRequest) {
+  try {
+    let contestId: string | null = null;
+    let problemId: string | null = null;
+
+    const url = new URL(request.url);
+    contestId = url.searchParams.get('contestId');
+    problemId = url.searchParams.get('problemId');
+
+    if (!contestId && !problemId) {
+      try {
+        const body = await request.json();
+        contestId = body.contestId;
+        problemId = body.problemId;
+      } catch (e) {}
+    }
+
+    if (!contestId && !problemId) {
+      return NextResponse.json({ success: false, error: 'Must provide contestId or problemId' }, { status: 400 });
+    }
+
+    if (problemId) {
+      memoryDeletedProblemIds.add(problemId);
+    }
+    if (contestId && !problemId) {
+      memoryDeletedContestIds.add(contestId);
+    }
+
+    // Persist to Supabase
+    const client = getSupabaseClient();
+    if (client) {
+      try {
+        const { data: settingRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'icpc_settings_v1')
+          .maybeSingle();
+
+        const currentSettings = settingRow?.value || {};
+        const deletedProblems: string[] = Array.isArray(currentSettings.deletedProblemIds)
+          ? [...currentSettings.deletedProblemIds]
+          : [];
+        const deletedContests: string[] = Array.isArray(currentSettings.deletedContestIds)
+          ? [...currentSettings.deletedContestIds]
+          : [];
+
+        if (problemId && !deletedProblems.includes(problemId)) {
+          deletedProblems.push(problemId);
+        }
+        if (contestId && !problemId && !deletedContests.includes(contestId)) {
+          deletedContests.push(contestId);
+        }
+
+        await client.from('platform_settings').upsert({
+          key: 'icpc_settings_v1',
+          value: {
+            ...currentSettings,
+            isArenaLive: typeof currentSettings.isArenaLive === 'boolean' ? currentSettings.isArenaLive : true,
+            deletedProblemIds: deletedProblems,
+            deletedContestIds: deletedContests,
+          },
+          updated_at: new Date().toISOString(),
+        });
+      } catch (dbErr) {
+        console.warn('Could not persist deleted problem/contest to Supabase:', dbErr);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: problemId ? `Problem ${problemId} removed from arena successfully!` : `Contest ${contestId} removed!`,
+      problemId,
+      contestId,
+    });
+  } catch (error: any) {
+    console.error('Error removing problem/contest:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to remove' }, { status: 500 });
+  }
+}
+
+// PATCH: Toggle ICPC Arena Live / Offline or update settings
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { isArenaLive } = body;
+
+    if (typeof isArenaLive !== 'boolean') {
+      return NextResponse.json({ success: false, error: 'isArenaLive boolean required' }, { status: 400 });
+    }
+
+    memoryIsArenaLive = isArenaLive;
+
+    const client = getSupabaseClient();
+    if (client) {
+      try {
+        const { data: settingRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'icpc_settings_v1')
+          .maybeSingle();
+
+        const currentSettings = settingRow?.value || {};
+        await client.from('platform_settings').upsert({
+          key: 'icpc_settings_v1',
+          value: {
+            ...currentSettings,
+            isArenaLive,
+            deletedProblemIds: currentSettings.deletedProblemIds || Array.from(memoryDeletedProblemIds),
+            deletedContestIds: currentSettings.deletedContestIds || Array.from(memoryDeletedContestIds),
+          },
+          updated_at: new Date().toISOString(),
+        });
+      } catch (dbErr) {
+        console.warn('Could not persist arena live toggle to Supabase:', dbErr);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      isArenaLive,
+      message: isArenaLive ? 'ICPC Collegiate Arena is now LIVE!' : 'ICPC Collegiate Arena is now OFFLINE (Maintenance Mode).',
+    });
+  } catch (error: any) {
+    console.error('Error toggling arena live status:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to update' }, { status: 500 });
   }
 }
