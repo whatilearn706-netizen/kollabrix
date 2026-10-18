@@ -32,6 +32,9 @@ export async function POST(request: NextRequest) {
       difficulty = 'Intermediate',
       deadline,
       status = 'Published',
+      min_team_size,
+      max_team_size,
+      team_size,
     } = body;
 
     const authorId = author_id || bodyAuthorId;
@@ -56,6 +59,8 @@ export async function POST(request: NextRequest) {
       ? bodySkills
       : ['Problem Solving'];
 
+    const resolvedTeamSize = team_size || (min_team_size && max_team_size ? `${min_team_size} - ${max_team_size} Students` : '2 - 4 Students');
+
     if (!isSupabaseConfigured()) {
       const mockId = `prob-mock-${Date.now()}`;
       return NextResponse.json({
@@ -70,6 +75,9 @@ export async function POST(request: NextRequest) {
           difficulty,
           deadline: deadline || null,
           status,
+          min_team_size: min_team_size || 2,
+          max_team_size: max_team_size || 4,
+          team_size: resolvedTeamSize,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -107,7 +115,7 @@ export async function POST(request: NextRequest) {
       console.warn('Profile role check error:', e);
     }
 
-    const dbPayload = {
+    const dbPayload: any = {
       author_id: authorId,
       title: title.trim(),
       description: description.trim(),
@@ -118,23 +126,72 @@ export async function POST(request: NextRequest) {
       status,
     };
 
-    // 2. Attempt direct insert into problem_statements
-    const { data: created, error: insertError } = await client
-      .from('problem_statements')
-      .insert(dbPayload)
-      .select(`
-        *,
-        author:profiles!problem_statements_author_id_fkey(
-          user_id,
-          display_name,
-          username,
-          avatar_url,
-          college,
-          course,
-          role
-        )
-      `)
-      .maybeSingle();
+    // Try insert into problem_statements
+    let created = null;
+    let insertError = null;
+
+    try {
+      const res = await client
+        .from('problem_statements')
+        .insert({
+          ...dbPayload,
+          min_team_size: min_team_size || null,
+          max_team_size: max_team_size || null,
+          team_size: resolvedTeamSize,
+        })
+        .select(`
+          *,
+          author:profiles!problem_statements_author_id_fkey(
+            user_id,
+            display_name,
+            username,
+            avatar_url,
+            college,
+            course,
+            role
+          )
+        `)
+        .maybeSingle();
+
+      created = res.data;
+      insertError = res.error;
+    } catch (e: any) {
+      insertError = e;
+    }
+
+    // If failed due to extra columns not yet in DB schema, insert without them
+    if (insertError) {
+      try {
+        const fallbackRes = await client
+          .from('problem_statements')
+          .insert(dbPayload)
+          .select(`
+            *,
+            author:profiles!problem_statements_author_id_fkey(
+              user_id,
+              display_name,
+              username,
+              avatar_url,
+              college,
+              course,
+              role
+            )
+          `)
+          .maybeSingle();
+
+        if (fallbackRes.data) {
+          created = {
+            ...fallbackRes.data,
+            team_size: resolvedTeamSize,
+            min_team_size: min_team_size || 2,
+            max_team_size: max_team_size || 4,
+          };
+          insertError = null;
+        }
+      } catch (fbErr) {
+        // Fall through to community storage
+      }
+    }
 
     if (!insertError && created) {
       return NextResponse.json({
@@ -153,6 +210,9 @@ export async function POST(request: NextRequest) {
     const fallbackProblem = {
       id: fallbackId,
       ...dbPayload,
+      min_team_size: min_team_size || 2,
+      max_team_size: max_team_size || 4,
+      team_size: resolvedTeamSize,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       author: authorProfile || {

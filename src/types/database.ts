@@ -92,6 +92,8 @@ export interface ProblemApplication {
   proposed_role: string;
   message: string;
   status: ApplicationStatus;
+  team_size?: string | null;
+  team_status?: 'solo' | 'has_team' | string | null;
   created_at: string;
   updated_at: string;
   applicant?: Partial<Profile> | null;
@@ -108,11 +110,35 @@ export interface ProblemStatement {
   difficulty: ProjectDifficulty;
   deadline?: string | null;
   status: ProblemStatementStatus;
+  min_team_size?: number | null;
+  max_team_size?: number | null;
+  team_size?: string | null;
   created_at: string;
   updated_at: string;
   author?: Partial<Profile> | null;
   projects_count?: number;
   applications_count?: number;
+}
+
+export interface ProblemSolution {
+  id: string;
+  problem_id: string;
+  problem_title?: string;
+  project_id?: string | null;
+  author_id: string;
+  author?: Partial<Profile> | null;
+  team_name: string;
+  team_members?: string[];
+  title: string;
+  solution_writeup: string;
+  repo_url?: string | null;
+  demo_url?: string | null;
+  video_url?: string | null;
+  status: 'submitted' | 'under_review' | 'accepted' | 'revision_requested';
+  mentor_feedback?: string | null;
+  grade?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProjectMentoringNote {

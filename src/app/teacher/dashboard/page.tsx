@@ -9,6 +9,7 @@ import {
   Project,
   ProjectMilestone,
   ProblemStatement,
+  ProblemSolution,
   ProjectMentoringNote,
   MentoringFeedbackType,
   ProjectStatus,
@@ -109,6 +110,7 @@ export default function TeacherDashboardPage() {
 
   // Problem applications review state
   const [problemApplications, setProblemApplications] = useState<any[]>([]);
+  const [problemSolutions, setProblemSolutions] = useState<ProblemSolution[]>([]);
   const [selectedProblemForReview, setSelectedProblemForReview] = useState<ProblemStatement | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
@@ -404,6 +406,17 @@ export default function TeacherDashboardPage() {
         }
       } catch (err) {
         console.warn('Problem applications load notice:', err);
+      }
+
+      // 6. Fetch submitted problem answers / solutions
+      try {
+        const solRes = await fetch('/api/problems/solutions');
+        const solData = await solRes.json();
+        if (solRes.ok && solData.success && Array.isArray(solData.solutions)) {
+          setProblemSolutions(solData.solutions);
+        }
+      } catch (err) {
+        console.warn('Problem solutions load notice:', err);
       }
     } catch {
       // Graceful fallback
@@ -1149,7 +1162,7 @@ export default function TeacherDashboardPage() {
                         {prob.description}
                       </p>
 
-                      <div className="flex items-center gap-3 mt-3">
+                      <div className="flex items-center gap-2.5 mt-3 flex-wrap">
                         <span className="inline-flex items-center gap-1.5 text-xs text-indigo-300 font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                           <Users className="w-3.5 h-3.5 text-indigo-400" />
                           <span>{appsForProb.length} {appsForProb.length === 1 ? 'Applicant' : 'Applicants'}</span>
@@ -1159,6 +1172,26 @@ export default function TeacherDashboardPage() {
                             </span>
                           )}
                         </span>
+
+                        {(prob.team_size || prob.min_team_size) && (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-amber-300 font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                            <Users className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Team Size: {prob.team_size || `${prob.min_team_size || 1}–${prob.max_team_size || 4} Students`}</span>
+                          </span>
+                        )}
+
+                        {(() => {
+                          const sols = problemSolutions.filter((s) => s.problem_id === prob.id);
+                          return (
+                            <Link
+                              href={`/problems/${prob.id}#solutions`}
+                              className="inline-flex items-center gap-1.5 text-xs text-emerald-300 font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{sols.length} {sols.length === 1 ? 'Problem Answer' : 'Problem Answers'}</span>
+                            </Link>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -1614,8 +1647,16 @@ export default function TeacherDashboardPage() {
                     </div>
 
                     <div className="p-3 rounded-lg bg-charcoal-900 border border-charcoal-800 text-xs text-slate-200 leading-relaxed">
-                      <div className="text-[10px] uppercase font-bold text-indigo-400 mb-1">
-                        Proposed Role: {app.proposed_role}
+                      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                        <div className="text-[10px] uppercase font-bold text-indigo-400">
+                          Proposed Role: {app.proposed_role}
+                        </div>
+                        {app.team_size && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
+                            <Users className="w-3 h-3 text-indigo-400" />
+                            <span>Applicant Team: {app.team_size}</span>
+                          </span>
+                        )}
                       </div>
                       <p className="italic">&ldquo;{app.message}&rdquo;</p>
                     </div>

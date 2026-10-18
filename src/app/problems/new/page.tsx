@@ -23,6 +23,7 @@ import {
   KeyRound,
   ShieldCheck,
   Send,
+  Users,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { isFacultyUser } from '@/lib/auth/faculty';
@@ -56,6 +57,9 @@ export default function NewProblemStatementPage() {
   const [status, setStatus] = useState<ProblemStatementStatus>('Published');
   const [requiredSkills, setRequiredSkills] = useState<string[]>(['TypeScript', 'React']);
   const [deadline, setDeadline] = useState('');
+  const [teamSize, setTeamSize] = useState('2 - 4 Students (Squad)');
+  const [minTeamSize, setMinTeamSize] = useState(2);
+  const [maxTeamSize, setMaxTeamSize] = useState(4);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +184,9 @@ export default function NewProblemStatementPage() {
         difficulty,
         deadline: deadline || null,
         status,
+        team_size: teamSize,
+        min_team_size: minTeamSize,
+        max_team_size: maxTeamSize,
       };
 
       // 2. Publish via resilient API endpoint (handles RLS policies & fallback smoothly)
@@ -433,6 +440,70 @@ export default function NewProblemStatementPage() {
                   onChange={(e) => setStatus(e.target.value as ProblemStatementStatus)}
                   options={STATUSES}
                 />
+              </div>
+            </div>
+
+            {/* Expected Team Size */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5 flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-brand-400" />
+                  <span>Expected Team Size</span>
+                  <span className="text-red-400">*</span>
+                </label>
+                <Select
+                  value={teamSize}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTeamSize(val);
+                    if (val.includes('1 - 2')) { setMinTeamSize(1); setMaxTeamSize(2); }
+                    else if (val.includes('2 - 4')) { setMinTeamSize(2); setMaxTeamSize(4); }
+                    else if (val.includes('3 - 5')) { setMinTeamSize(3); setMaxTeamSize(5); }
+                    else if (val.includes('Solo')) { setMinTeamSize(1); setMaxTeamSize(1); }
+                    else if (val.includes('5+')) { setMinTeamSize(5); setMaxTeamSize(8); }
+                  }}
+                  options={[
+                    { value: '2 - 4 Students (Squad)', label: '👥 2 – 4 Students (Recommended Squad)' },
+                    { value: '1 - 2 Students (Duo)', label: '👥 1 – 2 Students (Duo / Small Pair)' },
+                    { value: '3 - 5 Students (Large Team)', label: '👥 3 – 5 Students (Multi-disciplinary Team)' },
+                    { value: 'Solo or Pair (1 - 2)', label: '👤 Solo or Pair (1 – 2 Students)' },
+                    { value: '5+ Students (Cross-functional Cohort)', label: '🚀 5+ Students (Major Capstone)' },
+                  ]}
+                />
+                <span className="text-xs text-slate-500 mt-1 block">
+                  Students will see this when applying so they can form the right sized squad.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                  Custom Min / Max Students
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={minTeamSize}
+                    onChange={(e) => setMinTeamSize(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="text-center font-mono"
+                    placeholder="Min"
+                  />
+                  <span className="text-slate-400 text-xs">to</span>
+                  <Input
+                    type="number"
+                    min={minTeamSize}
+                    max={30}
+                    value={maxTeamSize}
+                    onChange={(e) => setMaxTeamSize(Math.max(minTeamSize, parseInt(e.target.value) || minTeamSize))}
+                    className="text-center font-mono"
+                    placeholder="Max"
+                  />
+                  <span className="text-slate-400 text-xs shrink-0">builders</span>
+                </div>
+                <span className="text-xs text-slate-500 mt-1 block">
+                  e.g., minimum {minTeamSize} and maximum {maxTeamSize} students.
+                </span>
               </div>
             </div>
 

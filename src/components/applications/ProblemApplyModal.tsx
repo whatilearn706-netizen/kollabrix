@@ -18,6 +18,7 @@ interface ProblemApplyModalProps {
   problemTitle: string;
   facultyAuthorId?: string;
   requiredSkills?: string[];
+  expectedTeamSize?: string | null;
   onSuccess?: () => void;
 }
 
@@ -38,11 +39,14 @@ export function ProblemApplyModal({
   problemTitle,
   facultyAuthorId,
   requiredSkills = [],
+  expectedTeamSize,
   onSuccess,
 }: ProblemApplyModalProps) {
   const { user, profile } = useAuth();
   const [message, setMessage] = useState('');
   const [proposedRole, setProposedRole] = useState<string>('Contributor');
+  const [applicantTeamSize, setApplicantTeamSize] = useState<string>('Solo Applicant (Seeking Teammates)');
+  const [teamStatus, setTeamStatus] = useState<string>('solo');
   const [githubUrl, setGithubUrl] = useState(profile?.github_url || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +89,8 @@ export function ProblemApplyModal({
           problem_statement_id: problemId,
           applicant_id: user.id,
           proposed_role: proposedRole,
+          team_size: applicantTeamSize,
+          team_status: teamStatus,
           message: message.trim(),
         }),
       });
@@ -179,6 +185,17 @@ export function ProblemApplyModal({
                 </div>
               )}
 
+              {/* Faculty Requirement info */}
+              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <GraduationCap className="w-4 h-4 text-indigo-400" />
+                  <span>Faculty Team Requirement:</span>
+                </span>
+                <span className="font-bold text-white bg-indigo-500/20 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
+                  {expectedTeamSize || '2 – 4 Students (Squad)'}
+                </span>
+              </div>
+
               {/* Role */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 block">
@@ -189,6 +206,30 @@ export function ProblemApplyModal({
                   onChange={(e) => setProposedRole(e.target.value)}
                   options={ROLES.map((r) => ({ value: r, label: r }))}
                 />
+              </div>
+
+              {/* Applicant Team Status */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Your Current Team Setup / Size
+                </label>
+                <Select
+                  value={applicantTeamSize}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setApplicantTeamSize(val);
+                    setTeamStatus(val.includes('Solo') ? 'solo' : 'has_team');
+                  }}
+                  options={[
+                    { value: 'Solo Applicant (Seeking Teammates)', label: '👤 Solo Applicant (Looking to join / form a team)' },
+                    { value: 'Pair (2 Students)', label: '👥 Pair (2 Students Ready)' },
+                    { value: 'Squad (3 - 4 Students)', label: '🚀 Squad (3 – 4 Students Ready)' },
+                    { value: 'Large Cohort (5+ Students)', label: '🏛️ Large Cohort (5+ Students Ready)' },
+                  ]}
+                />
+                <p className="text-[11px] text-slate-500">
+                  Faculty will see your team size and can group solo applicants into full project squads.
+                </p>
               </div>
 
               {/* Message */}

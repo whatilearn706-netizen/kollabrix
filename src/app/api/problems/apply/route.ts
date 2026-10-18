@@ -21,7 +21,14 @@ export async function POST(request: NextRequest) {
       : defaultClient;
 
     const body = await request.json();
-    const { problem_statement_id, proposed_role = 'Contributor', message, applicant_id } = body;
+    const {
+      problem_statement_id,
+      proposed_role = 'Contributor',
+      message,
+      applicant_id,
+      team_size,
+      team_status,
+    } = body;
 
     if (!problem_statement_id) {
       return NextResponse.json({ error: 'Problem statement ID is required.' }, { status: 400 });
@@ -155,6 +162,8 @@ export async function POST(request: NextRequest) {
       author_id: authorId,
       applicant_id: resolvedApplicantId,
       proposed_role,
+      team_size: team_size || 'Solo Applicant',
+      team_status: team_status || 'solo',
       message: message.trim(),
       status: 'Pending',
       created_at: new Date().toISOString(),

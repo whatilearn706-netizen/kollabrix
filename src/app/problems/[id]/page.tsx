@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { ProblemStatement, Project, ProblemApplication } from '@/types/database';
+import { ProblemStatement, Project, ProblemApplication, ProblemSolution } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProblemApplyModal } from '@/components/applications/ProblemApplyModal';
+import { ProblemSolutionModal } from '@/components/applications/ProblemSolutionModal';
 import {
   FileCode2,
   GraduationCap,
@@ -30,6 +31,12 @@ import {
   UserCheck,
   UserX,
   ShieldCheck,
+  Github,
+  Globe,
+  Video,
+  Award,
+  MessageSquare,
+  PlusCircle,
 } from 'lucide-react';
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
@@ -56,6 +63,16 @@ export default function ProblemStatementDetailPage() {
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  // Problem answers & solutions state
+  const [solutions, setSolutions] = useState<ProblemSolution[]>([]);
+  const [isLoadingSolutions, setIsLoadingSolutions] = useState(false);
+  const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
+  const [evaluatingSolution, setEvaluatingSolution] = useState<ProblemSolution | null>(null);
+  const [evalStatus, setEvalStatus] = useState<'accepted' | 'revision_requested'>('accepted');
+  const [evalFeedback, setEvalFeedback] = useState('');
+  const [isSubmittingEval, setIsSubmittingEval] = useState(false);
+  const [myProjects, setMyProjects] = useState<Project[]>([]);
 
   // Load problem details & tackling projects
   const loadData = useCallback(async () => {
@@ -186,10 +203,79 @@ export default function ProblemStatementDetailPage() {
     }
   }, [id, user]);
 
+  const loadSolutions = useCallback(async () => {
+    if (!id) return;
+    try {
+      setIsLoadingSolutions(true);
+      const res = await fetch(`/api/problems/solutions?problem_id=${id}`);
+      const data = await res.json();
+      if (res.ok && data.solutions) {
+        setSolutions(data.solutions);
+      }
+    } catch (e) {
+      console.warn('Notice loading solutions:', e);
+    } finally {
+      setIsLoadingSolutions(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    async function loadUserProjects() {
+      if (!user) return;
+      try {
+        const { data } = await supabase
+          .from('projects')
+          .select('id, title, current_team_size, desired_team_size')
+          .eq('owner_id', user.id);
+        if (data) setMyProjects(data as any);
+      } catch (e) {}
+    }
+    loadUserProjects();
+  }, [user]);
+
   useEffect(() => {
     loadData();
     loadApplications();
-  }, [loadData, loadApplications]);
+    loadSolutions();
+  }, [loadData, loadApplications, loadSolutions]);
+
+  const handleEvaluateSolution = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!evaluatingSolution) return;
+    setIsSubmittingEval(true);
+    setActionSuccess(null);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/problems/solutions', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          solution_id: evaluatingSolution.id,
+          status: evalStatus,
+          mentor_feedback: evalFeedback.trim(),
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        throw new Error(resData?.error || 'Failed to update solution.');
+      }
+
+      setActionSuccess(`Solution deliverable marked as ${evalStatus}. Feedback saved!`);
+      setEvaluatingSolution(null);
+      setEvalFeedback('');
+      loadSolutions();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error evaluating solution.');
+    } finally {
+      setIsSubmittingEval(false);
+    }
+  };
 
   const handleWithdrawApplication = async () => {
     if (!userApplication) return;
@@ -353,23 +439,73 @@ export default function ProblemStatementDetailPage() {
                     Applicants ({applications.length})
                   </Button>
                 </a>
+                <a href="#solutions-section">
+                  <Button variant="secondary" size="sm" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20" leftIcon={<FileCode2 className="w-4 h-4 text-emerald-400" />}>
+                    Answers ({solutions.length})
+                  </Button>
+                </a>
               </>
-            ) : userApplication ? (
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant="status"
-                  status={
-                    userApplication.status === 'Accepted'
-                      ? 'Completed'
-                      : userApplication.status === 'Pending'
-                      ? 'In Progress'
-                      : 'Recruiting'
-                  }
-                  className="px-3 py-1.5 text-xs font-semibold"
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                {userApplication ? (
+                  <Badge
+                    variant="status"
+                    status={
+                      userApplication.status === 'Accepted'
+                        ? 'Completed'
+                        : userApplication.status === 'Pending'
+                        ? 'In Progress'
+                        : 'Recruiting'
+                    }
+                    className="px-3 py-1.5 text-xs font-semibold"
+                  >
+                    Application {userApplication.status}
+                  </Badge>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Sparkles className="w-4 h-4" />}
+                    onClick={() => {
+                      if (!user) {
+                        openAuthModal();
+                      } else {
+                        setIsApplyModalOpen(true);
+                      }
+                    }}
+                  >
+                    Apply to Join
+                  </Button>
+                )}
+
+                {/* Make Team for this Problem */}
+                <Link
+                  href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
                 >
-                  Application {userApplication.status}
-                </Badge>
-                {userApplication.status === 'Pending' && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Users className="w-3.5 h-3.5 text-pink-400" />}
+                  >
+                    Create Team
+                  </Button>
+                </Link>
+
+                {/* Post Problem Answer */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+                  leftIcon={<Send className="w-3.5 h-3.5 text-emerald-400" />}
+                  onClick={() => {
+                    if (!user) openAuthModal();
+                    else setIsSolutionModalOpen(true);
+                  }}
+                >
+                  Post Answer
+                </Button>
+
+                {userApplication && userApplication.status === 'Pending' && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -381,21 +517,6 @@ export default function ProblemStatementDetailPage() {
                   </Button>
                 )}
               </div>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<Sparkles className="w-4 h-4" />}
-                onClick={() => {
-                  if (!user) {
-                    openAuthModal();
-                  } else {
-                    setIsApplyModalOpen(true);
-                  }
-                }}
-              >
-                Apply to Join
-              </Button>
             )}
           </div>
         </div>
@@ -425,6 +546,14 @@ export default function ProblemStatementDetailPage() {
                 {problem.author?.course ? ` • ${problem.author.course}` : ''}
               </p>
             </div>
+          </div>
+
+          {/* Expected Team Size */}
+          <div className="flex items-center gap-1.5 text-xs text-brand-300 bg-brand-500/10 px-3 py-1.5 rounded-xl border border-brand-500/25">
+            <Users className="w-3.5 h-3.5 text-brand-400" />
+            <span>
+              Expected Team Size: <strong>{problem.team_size || '2 – 4 Students (Squad)'}</strong>
+            </span>
           </div>
 
           {problem.deadline && (
@@ -607,13 +736,19 @@ export default function ProblemStatementDetailPage() {
                         size="md"
                       />
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-white text-sm">
                             {app.applicant?.display_name || 'Student Candidate'}
                           </span>
                           <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/20">
                             {app.proposed_role}
                           </span>
+                          {app.team_size && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/25 flex items-center gap-1 font-mono">
+                              <Users className="w-2.5 h-2.5 text-purple-400" />
+                              <span>{app.team_size}</span>
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-400">
                           {app.applicant?.college || 'Engineering Student'}
@@ -671,6 +806,172 @@ export default function ProblemStatementDetailPage() {
           )}
         </div>
       )}
+
+      {/* Problem Answers & Solutions Section (Same as Hackathon Submissions) */}
+      <div id="solutions-section" className="pt-8 border-t border-charcoal-800 mb-12">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-emerald-400 mb-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Project Deliverables &amp; Submissions</span>
+            </div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <FileCode2 className="w-5 h-5 text-emerald-400" />
+              <span>Submitted Problem Answers ({solutions.length})</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Final project answers, prototypes, and code repositories submitted by student teams for this challenge.
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-500 font-bold"
+            leftIcon={<Send className="w-3.5 h-3.5" />}
+            onClick={() => {
+              if (!user) openAuthModal();
+              else setIsSolutionModalOpen(true);
+            }}
+          >
+            Post Problem Answer
+          </Button>
+        </div>
+
+        {isLoadingSolutions ? (
+          <div className="py-12 text-center text-xs text-slate-400">Loading submitted solutions...</div>
+        ) : solutions.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-charcoal-800 p-8 text-center bg-charcoal-900/20">
+            <FileCode2 className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+            <p className="text-sm font-medium text-slate-300 mb-1">
+              No problem answers submitted yet.
+            </p>
+            <p className="text-xs text-slate-500 mb-4 max-w-md mx-auto">
+              Are you building a prototype for this challenge? Post your team&apos;s answer, code repository, and live demo link for faculty evaluation.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Send className="w-3.5 h-3.5 text-emerald-400" />}
+              onClick={() => {
+                if (!user) openAuthModal();
+                else setIsSolutionModalOpen(true);
+              }}
+            >
+              Be the First to Submit an Answer
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {solutions.map((sol) => (
+              <div
+                key={sol.id}
+                className="p-6 rounded-2xl border border-charcoal-750 bg-charcoal-900/60 hover:border-charcoal-600 transition-all space-y-4 shadow-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="text-base font-bold text-white">{sol.title}</h3>
+                      <span
+                        className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                          sol.status === 'accepted'
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            : sol.status === 'revision_requested'
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                        }`}
+                      >
+                        {sol.status === 'accepted'
+                          ? '✓ Accepted / Solved'
+                          : sol.status === 'revision_requested'
+                          ? '⚠ Revision Requested'
+                          : 'Queued for Review'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 flex items-center gap-2 flex-wrap">
+                      <span>
+                        By <strong className="text-slate-200">{sol.team_name}</strong>
+                      </span>
+                      <span>•</span>
+                      <span>Lead: {sol.author?.display_name || 'Student Builder'}</span>
+                      <span>•</span>
+                      <span>Submitted {new Date(sol.created_at).toLocaleDateString()}</span>
+                    </p>
+                  </div>
+
+                  {/* External links */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {sol.repo_url && (
+                      <a
+                        href={sol.repo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 hover:bg-charcoal-750 text-slate-200 border border-charcoal-700 transition-colors"
+                      >
+                        <Github className="w-3.5 h-3.5" />
+                        <span>Source Code</span>
+                      </a>
+                    )}
+                    {sol.demo_url && (
+                      <a
+                        href={sol.demo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-colors"
+                      >
+                        <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Live Demo</span>
+                      </a>
+                    )}
+                    {sol.video_url && (
+                      <a
+                        href={sol.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 border border-pink-500/30 transition-colors"
+                      >
+                        <Video className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Video Pitch</span>
+                      </a>
+                    )}
+                    {isAuthor && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs"
+                        leftIcon={<Award className="w-3.5 h-3.5 text-amber-400" />}
+                        onClick={() => {
+                          setEvaluatingSolution(sol);
+                          setEvalStatus(sol.status === 'accepted' ? 'accepted' : 'accepted');
+                          setEvalFeedback(sol.mentor_feedback || '');
+                        }}
+                      >
+                        Evaluate Solution
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Solution Writeup */}
+                <div className="p-4 rounded-xl bg-charcoal-850/70 border border-charcoal-800 text-xs text-slate-300 prose prose-invert max-w-none leading-relaxed whitespace-pre-wrap">
+                  {sol.solution_writeup}
+                </div>
+
+                {/* Mentor Feedback (if present) */}
+                {sol.mentor_feedback && (
+                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/25 text-xs text-purple-200">
+                    <div className="flex items-center gap-1.5 font-bold text-purple-300 mb-1">
+                      <GraduationCap className="w-4 h-4" />
+                      <span>Faculty Mentor Review &amp; Feedback:</span>
+                    </div>
+                    <p className="whitespace-pre-wrap">{sol.mentor_feedback}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Linked Student Projects Section */}
       <div className="pt-8 border-t border-charcoal-800">
@@ -754,6 +1055,81 @@ export default function ProblemStatementDetailPage() {
         )}
       </div>
 
+      {/* Faculty Solution Evaluation Modal */}
+      {evaluatingSolution && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-lg bg-charcoal-900 border border-charcoal-750 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-5 text-left">
+            <div className="flex items-center justify-between border-b border-charcoal-800 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-400" />
+                  <span>Evaluate Problem Solution</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Solution: <strong className="text-slate-200">{evaluatingSolution.title}</strong>
+                </p>
+              </div>
+              <button
+                onClick={() => setEvaluatingSolution(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEvaluateSolution} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Evaluation Verdict
+                </label>
+                <select
+                  value={evalStatus}
+                  onChange={(e) => setEvalStatus(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-charcoal-850 border border-charcoal-750 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500 font-semibold"
+                >
+                  <option value="accepted">✓ Accept &amp; Certify Solution (Problem Solved)</option>
+                  <option value="revision_requested">⚠ Request Revisions / Further Work</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Faculty Mentor Feedback &amp; Recommendations
+                </label>
+                <textarea
+                  value={evalFeedback}
+                  onChange={(e) => setEvalFeedback(e.target.value)}
+                  rows={4}
+                  placeholder="Leave detailed technical feedback on the code quality, prototype demo, and recommendations for the team..."
+                  className="w-full px-3.5 py-2.5 bg-charcoal-850 border border-charcoal-750 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                  required
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-charcoal-800">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => setEvaluatingSolution(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  isLoading={isSubmittingEval}
+                  className="bg-emerald-600 hover:bg-emerald-500 font-bold"
+                >
+                  Save Evaluation
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Apply to Join Modal */}
       <ProblemApplyModal
         isOpen={isApplyModalOpen}
@@ -762,8 +1138,21 @@ export default function ProblemStatementDetailPage() {
         problemTitle={problem.title}
         facultyAuthorId={problem.author_id}
         requiredSkills={problem.required_skills}
+        expectedTeamSize={problem.team_size}
         onSuccess={() => {
           loadApplications();
+        }}
+      />
+
+      {/* Post Problem Answer / Solution Modal */}
+      <ProblemSolutionModal
+        isOpen={isSolutionModalOpen}
+        onClose={() => setIsSolutionModalOpen(false)}
+        problemId={problem.id}
+        problemTitle={problem.title}
+        myProjects={myProjects}
+        onSuccess={() => {
+          loadSolutions();
         }}
       />
     </div>
