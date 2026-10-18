@@ -226,7 +226,7 @@ export default function EditProblemStatementPage() {
       <div className="mb-6">
         <Link
           href={`/problems/${id}`}
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-semibold"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Problem Detail</span>
@@ -235,36 +235,36 @@ export default function EditProblemStatementPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-2.5 text-xs font-semibold tracking-wider uppercase text-brand-400 mb-2">
+        <div className="flex items-center gap-2.5 text-xs font-semibold tracking-wider uppercase text-brand-600 dark:text-brand-400 mb-2 font-mono">
           <GraduationCap className="w-4 h-4" />
           <span>Faculty Portal</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-2">
           Edit Problem Statement
         </h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-600 dark:text-slate-300 text-sm font-medium">
           Update the problem description, requirements, status, or proposal deadline.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {error && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-sm text-red-300">
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-sm text-red-600 dark:text-red-300">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="rounded-2xl border border-charcoal-800 bg-charcoal-900/40 p-6 sm:p-8 space-y-6">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2 border-b border-charcoal-800 pb-3">
-            <FileCode2 className="w-4 h-4 text-brand-400" />
+        <div className="rounded-2xl border border-slate-200 dark:border-charcoal-800 bg-white dark:bg-charcoal-900/60 p-6 sm:p-8 space-y-6 shadow-sm">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-charcoal-800 pb-3">
+            <FileCode2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
             <span>Problem Statement Information</span>
           </h2>
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-1.5">
-              Problem Title <span className="text-red-400">*</span>
+            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+              Problem Title <span className="text-red-500">*</span>
             </label>
             <Input
               value={title}
@@ -278,8 +278,8 @@ export default function EditProblemStatementPage() {
           {/* Category & Difficulty */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                Category <span className="text-red-400">*</span>
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                Category <span className="text-red-500">*</span>
               </label>
               <Select
                 value={category}
@@ -289,8 +289,8 @@ export default function EditProblemStatementPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                Difficulty Level <span className="text-red-400">*</span>
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                Difficulty Level <span className="text-red-500">*</span>
               </label>
               <Select
                 value={difficulty}
@@ -303,7 +303,7 @@ export default function EditProblemStatementPage() {
           {/* Deadline & Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
                 Proposal Deadline (Optional)
               </label>
               <Input
@@ -314,8 +314,8 @@ export default function EditProblemStatementPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                Status <span className="text-red-400">*</span>
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                Status <span className="text-red-500">*</span>
               </label>
               <Select
                 value={status}
@@ -327,8 +327,8 @@ export default function EditProblemStatementPage() {
 
           {/* Required Skills */}
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-1.5">
-              Required Technical Skills & Tools <span className="text-red-400">*</span>
+            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+              Required Technical Skills & Tools <span className="text-red-500">*</span>
             </label>
             <TagInput
               tags={requiredSkills}
@@ -339,8 +339,8 @@ export default function EditProblemStatementPage() {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-1.5">
-              Detailed Problem Specification <span className="text-red-400">*</span>
+            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+              Detailed Problem Specification <span className="text-red-500">*</span>
             </label>
             <Textarea
               rows={12}
@@ -352,7 +352,7 @@ export default function EditProblemStatementPage() {
         </div>
 
         {/* Actions & Delete */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-charcoal-800">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-charcoal-800">
           <div>
             {!confirmDelete ? (
               <Button

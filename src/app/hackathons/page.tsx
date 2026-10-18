@@ -595,46 +595,81 @@ export default function HackathonsPage() {
         </div>
       </div>
 
-      {/* Hackathons Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, n) => (
-            <HackathonCardSkeleton key={n} />
-          ))}
-        </div>
-      ) : filteredHackathons.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredHackathons.map((hackathon) => (
-            <HackathonCard
-              key={hackathon.id}
-              hackathon={hackathon}
-              isSaved={savedIds.includes(hackathon.id)}
-              isEnrolled={enrolledIds.includes(hackathon.id) || hackathon.creator_id === user?.id}
-              onToggleSave={handleToggleSave}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-500">
-            {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
+      {/* Scrollable Cyber Tech Container */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs overflow-hidden">
+        {/* Futuristic Cyber Scanline Animation */}
+        <div className="cyber-scanline" />
+
+        {/* Cyber HUD Status Header */}
+        <div className="flex items-center justify-between px-3 py-2 mb-3 border-b border-slate-200/70 dark:border-charcoal-800/80 text-[11px] font-mono">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span className="text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+              COMPETITION RADAR // COLLEGIATE ARENA
+            </span>
           </div>
-          <h3 className="text-base font-black text-slate-900">
-            {activeTab === 'private'
-              ? 'No Private College Hackathons Found'
-              : activeTab === 'my-events'
-              ? 'You Haven\'t Enrolled in Any Hackathons Yet'
-              : 'No Hackathons Matched'}
-          </h3>
-          <p className="text-xs text-slate-600 max-w-sm mx-auto font-medium">
-            {activeTab === 'private'
-              ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
-              : activeTab === 'my-events'
-              ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
-              : 'Try adjusting your search query or reset the theme filters to view all upcoming collegiate events.'}
-          </p>
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <Trophy className="w-3 h-3 text-amber-500" />
+            <span className="hidden sm:inline">SMOOTH CYBER SCROLL</span>
+            <span className="text-amber-600 dark:text-amber-400 font-bold">[{filteredHackathons.length} EVENTS]</span>
+          </div>
         </div>
-      )}
+
+        {/* Ambient Top & Bottom HUD Fade Overlays */}
+        <div className="pointer-events-none absolute inset-x-0 top-12 h-6 bg-gradient-to-b from-slate-50/80 dark:from-charcoal-900/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-slate-50/90 dark:from-charcoal-900/90 to-transparent z-10" />
+
+        {/* Hackathons Viewport */}
+        <div className="tech-scroll-viewport pr-1 sm:pr-2 py-1">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, n) => (
+                <HackathonCardSkeleton key={n} />
+              ))}
+            </div>
+          ) : filteredHackathons.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredHackathons.map((hackathon, idx) => (
+                <div
+                  key={hackathon.id}
+                  className="tech-card-entrance"
+                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                >
+                  <HackathonCard
+                    hackathon={hackathon}
+                    isSaved={savedIds.includes(hackathon.id)}
+                    isEnrolled={enrolledIds.includes(hackathon.id) || hackathon.creator_id === user?.id}
+                    onToggleSave={handleToggleSave}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm my-6 max-w-lg mx-auto">
+              <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-500">
+                {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
+              </div>
+              <h3 className="text-base font-black text-slate-900">
+                {activeTab === 'private'
+                  ? 'No Private College Hackathons Found'
+                  : activeTab === 'my-events'
+                  ? 'You Haven\'t Enrolled in Any Hackathons Yet'
+                  : 'No Hackathons Matched'}
+              </h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto font-medium">
+                {activeTab === 'private'
+                  ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
+                  : activeTab === 'my-events'
+                  ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
+                  : 'Try adjusting your search query or reset the theme filters to view all upcoming collegiate events.'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Create / Host Hackathon Modal */}
       <CreateHackathonModal

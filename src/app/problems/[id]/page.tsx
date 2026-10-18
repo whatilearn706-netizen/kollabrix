@@ -464,13 +464,19 @@ export default function ProblemStatementDetailPage() {
     );
   }
 
+  const userExistingTeam = user
+    ? tacklingProjects.find(
+        (p) => p.owner_id === user.id || (p.owner as any)?.user_id === user.id
+      )
+    : null;
+
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-slate-100">
       {/* Top Navigation & Share Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <Link
           href="/problems"
-          className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors font-medium"
+          className="inline-flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-semibold"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Problem Statements</span>
@@ -479,26 +485,40 @@ export default function ProblemStatementDetailPage() {
         {/* Prominent Direct Link Sharing & Form Team Button */}
         <div className="flex items-center gap-2 flex-wrap">
           {!isAuthor && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                if (!user) openAuthModal();
-                else setIsTeamModalOpen(true);
-              }}
-              className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs"
-              leftIcon={<Users className="w-3.5 h-3.5" />}
-            >
-              Form a Student Team
-            </Button>
+            userExistingTeam ? (
+              <Link href={`/projects/${userExistingTeam.id}`}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="bg-brand-500/15 border-brand-500/30 text-brand-700 dark:text-brand-300 hover:bg-brand-500/25 font-bold text-xs"
+                  leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-brand-500" />}
+                  title="You already have 1 team formed for this problem (1 team limit per student)"
+                >
+                  Your Squad ({userExistingTeam.title})
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  if (!user) openAuthModal();
+                  else setIsTeamModalOpen(true);
+                }}
+                className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs"
+                leftIcon={<Users className="w-3.5 h-3.5" />}
+              >
+                Form a Student Team
+              </Button>
+            )
           )}
 
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleCopyLink}
-            className="border-charcoal-700 text-slate-200 hover:text-white hover:bg-charcoal-800 text-xs font-semibold"
-            leftIcon={isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-brand-400" />}
+            className="bg-white dark:bg-charcoal-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-charcoal-700 hover:bg-slate-50 dark:hover:bg-charcoal-700 text-xs font-semibold shadow-xs"
+            leftIcon={isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-brand-500" />}
           >
             {isCopied ? 'Link Copied!' : 'Copy Student Invite Link'}
           </Button>
@@ -507,8 +527,8 @@ export default function ProblemStatementDetailPage() {
             variant="secondary"
             size="sm"
             onClick={handleShareWhatsApp}
-            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold"
-            leftIcon={<MessageCircle className="w-3.5 h-3.5 text-emerald-400" />}
+            className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-xs font-semibold shadow-xs"
+            leftIcon={<MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
           >
             WhatsApp Share
           </Button>
@@ -554,7 +574,12 @@ export default function ProblemStatementDetailPage() {
             {isAuthor ? (
               <>
                 <Link href={`/problems/${problem.id}/edit`}>
-                  <Button variant="outline" size="sm" leftIcon={<Edit3 className="w-4 h-4" />} className="text-white border-charcoal-700">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Edit3 className="w-4 h-4 text-slate-700 dark:text-slate-300" />}
+                    className="bg-white dark:bg-charcoal-800 text-slate-800 dark:text-white border border-slate-300 dark:border-charcoal-700 shadow-xs hover:bg-slate-50 dark:hover:bg-charcoal-700 font-semibold"
+                  >
                     Edit Problem
                   </Button>
                 </Link>
@@ -1081,15 +1106,15 @@ export default function ProblemStatementDetailPage() {
       {(!isResultsLive || isAuthor) && (
         <>
           {/* SEGMENT 1: Submitted Problem Answers */}
-          <div id="solutions-section" className="pt-8 border-t border-charcoal-800 mb-12">
+          <div id="solutions-section" className="pt-8 border-t border-slate-200 dark:border-charcoal-800 mb-12">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-400 mb-1 font-bold">
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1 font-bold">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Student Deliverables &amp; Answers</span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-                  <FileCode2 className="w-5 h-5 text-emerald-400" />
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <FileCode2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   {isAuthor ? (
                     <span>Submitted Problem Answers ({solutions.length})</span>
                   ) : visibleSolutions.length > 0 ? (
@@ -1098,7 +1123,7 @@ export default function ProblemStatementDetailPage() {
                     <span>Student Deliverable Submission</span>
                   )}
                 </h2>
-                <p className="text-xs text-slate-200 mt-1 max-w-xl leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-xl leading-relaxed font-medium">
                   {isAuthor
                     ? 'Faculty Review Mode: Inspect all student prototypes, code repositories, and solution write-ups.'
                     : visibleSolutions.length > 0
@@ -1343,34 +1368,48 @@ export default function ProblemStatementDetailPage() {
           </div>
 
           {/* SEGMENT 2: Student Teams Tackling This Challenge */}
-          <div id="student-teams-section" className="pt-8 border-t border-charcoal-800 mb-12">
+          <div id="student-teams-section" className="pt-8 border-t border-slate-200 dark:border-charcoal-800 mb-12">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-brand-400" />
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                   <span>Student Teams Tackling This Challenge</span>
                 </h2>
-                <p className="text-xs text-slate-200 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed font-medium">
                   Active collegiate squads and student engineering teams building solutions for this challenge.
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-charcoal-800 text-slate-200 border border-charcoal-700">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-charcoal-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-charcoal-700">
                   {tacklingProjects.length} {tacklingProjects.length === 1 ? 'Team Squad' : 'Team Squads'}
                 </span>
                 {!isAuthor && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs"
-                    leftIcon={<Users className="w-3.5 h-3.5" />}
-                    onClick={() => {
-                      if (!user) openAuthModal();
-                      else setIsTeamModalOpen(true);
-                    }}
-                  >
-                    Form a Student Team
-                  </Button>
+                  userExistingTeam ? (
+                    <Link href={`/projects/${userExistingTeam.id}`}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="bg-brand-500/15 border-brand-500/30 text-brand-700 dark:text-brand-300 hover:bg-brand-500/25 font-bold text-xs"
+                        leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-brand-500" />}
+                        title="You have already formed 1 team for this challenge (1 team limit per student)"
+                      >
+                        Your Squad ({userExistingTeam.title})
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs"
+                      leftIcon={<Users className="w-3.5 h-3.5" />}
+                      onClick={() => {
+                        if (!user) openAuthModal();
+                        else setIsTeamModalOpen(true);
+                      }}
+                    >
+                      Form a Student Team
+                    </Button>
+                  )
                 )}
               </div>
             </div>

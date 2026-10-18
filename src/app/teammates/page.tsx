@@ -626,35 +626,70 @@ export default function TeammatesPage() {
         </div>
       </div>
 
-      {/* Teammates Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, n) => (
-            <TeammateCardSkeleton key={n} />
-          ))}
-        </div>
-      ) : filteredMatches.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMatches.map((match) => (
-            <TeammateCard
-              key={match.profile.user_id}
-              match={match}
-              onInvite={handleOpenInvite}
-              isInvited={invitedUserIds.includes(match.profile.user_id)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-pink-50 border border-pink-200 flex items-center justify-center mx-auto text-pink-500">
-            <Users className="w-6 h-6" />
+      {/* Scrollable Cyber Tech Container */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs overflow-hidden">
+        {/* Futuristic Cyber Scanline Animation */}
+        <div className="cyber-scanline" />
+
+        {/* Cyber HUD Status Header */}
+        <div className="flex items-center justify-between px-3 py-2 mb-3 border-b border-slate-200/70 dark:border-charcoal-800/80 text-[11px] font-mono">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+            </span>
+            <span className="text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+              MATCH ENGINE // CAMPUS TALENT POOL
+            </span>
           </div>
-          <h3 className="text-lg font-black text-slate-900">No Matching Students Found</h3>
-          <p className="text-xs text-slate-600 max-w-sm mx-auto">
-            Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
-          </p>
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <Sparkles className="w-3 h-3 text-pink-500" />
+            <span className="hidden sm:inline">SMOOTH CYBER SCROLL</span>
+            <span className="text-pink-600 dark:text-pink-400 font-bold">[{filteredMatches.length} TALENT NODES]</span>
+          </div>
         </div>
-      )}
+
+        {/* Ambient Top & Bottom HUD Fade Overlays */}
+        <div className="pointer-events-none absolute inset-x-0 top-12 h-6 bg-gradient-to-b from-slate-50/80 dark:from-charcoal-900/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-slate-50/90 dark:from-charcoal-900/90 to-transparent z-10" />
+
+        {/* Teammates Viewport */}
+        <div className="tech-scroll-viewport pr-1 sm:pr-2 py-1">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, n) => (
+                <TeammateCardSkeleton key={n} />
+              ))}
+            </div>
+          ) : filteredMatches.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMatches.map((match, idx) => (
+                <div
+                  key={match.profile.user_id}
+                  className="tech-card-entrance"
+                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                >
+                  <TeammateCard
+                    match={match}
+                    onInvite={handleOpenInvite}
+                    isInvited={invitedUserIds.includes(match.profile.user_id)}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm my-6 max-w-lg mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-pink-50 border border-pink-200 flex items-center justify-center mx-auto text-pink-500">
+                <Users className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900">No Matching Students Found</h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Invite Modal */}
       <InviteTeammateModal

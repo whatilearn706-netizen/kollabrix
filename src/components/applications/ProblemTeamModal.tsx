@@ -107,6 +107,37 @@ export function ProblemTeamModal({
     setIsSubmitting(true);
     setError(null);
 
+    // Enforce 1 team per student limit for faculty problem statements
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: existingUserTeams } = await supabase
+          .from('projects')
+          .select('id, title')
+          .eq('problem_statement_id', problemId)
+          .eq('owner_id', user.id);
+
+        if (existingUserTeams && existingUserTeams.length > 0) {
+          setError(`You have already formed a squad ("${existingUserTeams[0].title}") for this problem statement. Each student is limited to 1 team per challenge.`);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (checkErr) {
+        console.warn('Notice checking existing teams:', checkErr);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const localTeams = JSON.parse(localStorage.getItem(`tf_problem_teams_${problemId}`) || '[]');
+        const owned = localTeams.find((t: any) => t && (t.owner_id === user.id || t.owner?.user_id === user.id));
+        if (owned) {
+          setError(`You have already formed a squad ("${owned.title}") for this problem statement. Each student is limited to 1 team per challenge.`);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch {}
+    }
+
     try {
       const summaryText =
         concept.trim() ||

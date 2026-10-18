@@ -236,7 +236,7 @@ export default function NewProblemStatementPage() {
       <div className="mb-6">
         <Link
           href="/problems"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors font-semibold"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Problem Statements</span>
@@ -245,14 +245,14 @@ export default function NewProblemStatementPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-2.5 text-xs font-semibold tracking-wider uppercase text-brand-400 mb-2">
+        <div className="flex items-center gap-2.5 text-xs font-semibold tracking-wider uppercase text-brand-600 dark:text-brand-400 mb-2 font-mono">
           <GraduationCap className="w-4 h-4" />
           <span>Faculty & Mentor Portal</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-2">
           Post a Problem Statement
         </h1>
-        <p className="text-slate-400 text-sm max-w-2xl">
+        <p className="text-slate-600 dark:text-slate-300 text-sm max-w-2xl font-medium">
           Define a real-world technical, algorithmic, or societal challenge for college student
           engineering teams to propose and execute as semester projects.
         </p>
@@ -366,16 +366,16 @@ export default function NewProblemStatementPage() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-charcoal-800 bg-charcoal-900/40 p-6 sm:p-8 space-y-6">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2 border-b border-charcoal-800 pb-3">
-              <FileCode2 className="w-4 h-4 text-brand-400" />
+          <div className="rounded-2xl border border-slate-200 dark:border-charcoal-800 bg-white dark:bg-charcoal-900/60 p-6 sm:p-8 space-y-6 shadow-sm">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-charcoal-800 pb-3">
+              <FileCode2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
               <span>Problem Statement Details</span>
             </h2>
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                Problem Title <span className="text-red-400">*</span>
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                Problem Title <span className="text-red-500">*</span>
               </label>
               <Input
                 value={title}
@@ -392,8 +392,8 @@ export default function NewProblemStatementPage() {
             {/* Category & Difficulty */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                  Category <span className="text-red-400">*</span>
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                  Category <span className="text-red-500">*</span>
                 </label>
                 <Select
                   value={category}
@@ -403,8 +403,8 @@ export default function NewProblemStatementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                  Difficulty Level <span className="text-red-400">*</span>
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                  Difficulty Level <span className="text-red-500">*</span>
                 </label>
                 <Select
                   value={difficulty}
@@ -417,14 +417,14 @@ export default function NewProblemStatementPage() {
             {/* Deadline & Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
                   Proposal Deadline (Optional)
                 </label>
                 <Input
                   type="date"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
-                  className="text-slate-300"
+                  className="text-slate-900 dark:text-slate-100"
                 />
                 <span className="text-xs text-slate-500 mt-1 block">
                   Last date for student teams to submit proposals or select this challenge.
@@ -432,8 +432,8 @@ export default function NewProblemStatementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                  Publication Status <span className="text-red-400">*</span>
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                  Publication Status <span className="text-red-500">*</span>
                 </label>
                 <Select
                   value={status}
@@ -444,12 +444,12 @@ export default function NewProblemStatementPage() {
             </div>
 
             {/* Expected Team Size */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-charcoal-850/60 border border-charcoal-750">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-charcoal-850/60 border border-slate-200 dark:border-charcoal-750">
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5 flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-brand-400" />
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                   <span>Expected Team Size</span>
-                  <span className="text-red-400">*</span>
+                  <span className="text-red-500">*</span>
                 </label>
                 <Select
                   value={teamSize}
@@ -476,7 +476,7 @@ export default function NewProblemStatementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
                   Custom Min / Max Students
                 </label>
                 <div className="flex items-center gap-2">
@@ -489,7 +489,7 @@ export default function NewProblemStatementPage() {
                     className="text-center font-mono"
                     placeholder="Min"
                   />
-                  <span className="text-slate-400 text-xs">to</span>
+                  <span className="text-slate-500 text-xs">to</span>
                   <Input
                     type="number"
                     min={minTeamSize}
@@ -499,7 +499,7 @@ export default function NewProblemStatementPage() {
                     className="text-center font-mono"
                     placeholder="Max"
                   />
-                  <span className="text-slate-400 text-xs shrink-0">builders</span>
+                  <span className="text-slate-500 text-xs shrink-0">builders</span>
                 </div>
                 <span className="text-xs text-slate-500 mt-1 block">
                   e.g., minimum {minTeamSize} and maximum {maxTeamSize} students.
@@ -509,8 +509,8 @@ export default function NewProblemStatementPage() {
 
             {/* Required Skills */}
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                Required Technical Skills & Tools <span className="text-red-400">*</span>
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                Required Technical Skills & Tools <span className="text-red-500">*</span>
               </label>
               <TagInput
                 tags={requiredSkills}
@@ -524,8 +524,8 @@ export default function NewProblemStatementPage() {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-1.5">
-                Detailed Problem Specification <span className="text-red-400">*</span>
+              <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                Detailed Problem Specification <span className="text-red-500">*</span>
               </label>
               <Textarea
                 rows={12}
@@ -541,7 +541,7 @@ export default function NewProblemStatementPage() {
           </div>
 
           {/* Submission Bar */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-charcoal-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-charcoal-800">
             <Link href="/problems">
               <Button variant="ghost" type="button">
                 Cancel

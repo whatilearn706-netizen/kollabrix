@@ -352,174 +352,205 @@ export default function ProblemStatementsPage() {
         </div>
       </div>
 
-      {/* List of Problem Statements */}
-      {isLoading ? (
-        <div className="py-20 text-center space-y-4">
-          <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
-          <p className="text-xs text-slate-300 font-mono">Loading problem statements...</p>
-        </div>
-      ) : filteredProblems.length === 0 ? (
-        <div className="rounded-2xl bg-charcoal-900 border border-charcoal-800 p-12 text-center space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-charcoal-800 flex items-center justify-center mx-auto text-slate-300">
-            <FileCode2 className="w-6 h-6" />
+      {/* Scrollable Cyber Tech Container */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs overflow-hidden">
+        {/* Futuristic Cyber Scanline Animation */}
+        <div className="cyber-scanline" />
+
+        {/* Cyber HUD Status Header */}
+        <div className="flex items-center justify-between px-3 py-2 mb-3 border-b border-slate-200/70 dark:border-charcoal-800/80 text-[11px] font-mono">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span className="text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+              FACULTY CHALLENGE FEED // COLLEGIATE NETWORK
+            </span>
           </div>
-          <h3 className="text-base font-bold text-white">No Problem Statements Found</h3>
-          <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-            {searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedCollege !== 'All Colleges'
-              ? 'No challenges match your active filters. Try resetting the college or category filters.'
-              : 'Faculty mentors have not posted any problem statements yet. Check back soon for collegiate challenges.'}
-          </p>
-          {isTeacher && (
-            <Link href="/problems/new">
-              <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
-                Post the First Problem Statement
-              </Button>
-            </Link>
-          )}
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <Sparkles className="w-3 h-3 text-indigo-500" />
+            <span className="hidden sm:inline">SMOOTH CYBER SCROLL</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-bold">[{filteredProblems.length} CHALLENGES]</span>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredProblems.map((problem) => {
-            const isAuthor = Boolean(user && user.id === problem.author_id);
-            const authorName = problem.author?.display_name || 'Faculty Mentor';
-            const collegeName = problem.author?.college || (problem as any).college || 'Collegiate Faculty';
-            
-            // Check if user has applied either via application or solution
-            const hasApplied = Boolean(
-              user && (
-                userApplications.some(
-                  (a) => (a.problem_statement_id || '').toLowerCase() === (problem.id || '').toLowerCase()
-                ) ||
-                userSolutions.some(
-                  (s) => (s.problem_id || '').toLowerCase() === (problem.id || '').toLowerCase()
-                ) ||
-                (typeof window !== 'undefined' && (
-                  localStorage.getItem(`tf_user_applied_${problem.id}_${user.id}`) === 'true' ||
-                  localStorage.getItem(`linkora_problem_app_${problem.id}_${user.id}`) !== null ||
-                  localStorage.getItem(`linkora_applied_solution_${problem.id}_${user.id}`) !== null
-                ))
-              )
-            );
 
-            return (
-              <div
-                key={problem.id}
-                className="rounded-2xl bg-charcoal-900 border border-charcoal-750 hover:border-charcoal-600 p-6 flex flex-col justify-between gap-6 transition-all shadow-md group"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="category">{problem.category}</Badge>
-                      <Badge variant="difficulty" difficulty={problem.difficulty} />
-                    </div>
-                    {problem.status !== 'Published' && (
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        {problem.status}
-                      </span>
-                    )}
-                  </div>
+        {/* Ambient Top & Bottom HUD Fade Overlays */}
+        <div className="pointer-events-none absolute inset-x-0 top-12 h-6 bg-gradient-to-b from-slate-50/80 dark:from-charcoal-900/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-slate-50/90 dark:from-charcoal-900/90 to-transparent z-10" />
 
-                  <div>
-                    <Link
-                      href={`/problems/${problem.id}`}
-                      className="text-lg font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-2 leading-snug"
-                    >
-                      {problem.title}
-                    </Link>
-                    <p className="mt-2 text-xs text-slate-200 line-clamp-3 leading-relaxed font-normal">
-                      {problem.description}
-                    </p>
-                  </div>
+        {/* Problems Viewport */}
+        <div className="tech-scroll-viewport pr-1 sm:pr-2 py-1">
+          {isLoading ? (
+            <div className="py-20 text-center space-y-4">
+              <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-slate-300 font-mono">Loading problem statements...</p>
+            </div>
+          ) : filteredProblems.length === 0 ? (
+            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-800 p-12 text-center space-y-4 my-6 max-w-lg mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-charcoal-800 flex items-center justify-center mx-auto text-slate-300">
+                <FileCode2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-white">No Problem Statements Found</h3>
+              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                {searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedCollege !== 'All Colleges'
+                  ? 'No challenges match your active filters. Try resetting the college or category filters.'
+                  : 'Faculty mentors have not posted any problem statements yet. Check back soon for collegiate challenges.'}
+              </p>
+              {isTeacher && (
+                <Link href="/problems/new">
+                  <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                    Post the First Problem Statement
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredProblems.map((problem, idx) => {
+                const isAuthor = Boolean(user && user.id === problem.author_id);
+                const authorName = problem.author?.display_name || 'Faculty Mentor';
+                const collegeName = problem.author?.college || (problem as any).college || 'Collegiate Faculty';
+                
+                // Check if user has applied either via application or solution
+                const hasApplied = Boolean(
+                  user && (
+                    userApplications.some(
+                      (a) => (a.problem_statement_id || '').toLowerCase() === (problem.id || '').toLowerCase()
+                    ) ||
+                    userSolutions.some(
+                      (s) => (s.problem_id || '').toLowerCase() === (problem.id || '').toLowerCase()
+                    ) ||
+                    (typeof window !== 'undefined' && (
+                      localStorage.getItem(`tf_user_applied_${problem.id}_${user.id}`) === 'true' ||
+                      localStorage.getItem(`linkora_problem_app_${problem.id}_${user.id}`) !== null ||
+                      localStorage.getItem(`linkora_applied_solution_${problem.id}_${user.id}`) !== null
+                    ))
+                  )
+                );
 
-                  {/* Required Skills Tags */}
-                  {problem.required_skills && problem.required_skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {problem.required_skills.slice(0, 4).map((skill, i) => (
-                        <span
-                          key={i}
-                          className="text-[11px] px-2 py-0.5 rounded bg-charcoal-800 text-slate-100 border border-charcoal-700 font-medium"
+                return (
+                  <div
+                    key={problem.id}
+                    className="tech-card-entrance rounded-2xl bg-charcoal-900 border border-charcoal-750 hover:border-charcoal-600 p-6 flex flex-col justify-between gap-6 transition-all shadow-md group"
+                    style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="category">{problem.category}</Badge>
+                          <Badge variant="difficulty" difficulty={problem.difficulty} />
+                        </div>
+                        {problem.status !== 'Published' && (
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            {problem.status}
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <Link
+                          href={`/problems/${problem.id}`}
+                          className="text-lg font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-2 leading-snug"
                         >
-                          {skill}
-                        </span>
-                      ))}
-                      {problem.required_skills.length > 4 && (
-                        <span className="text-[10px] text-slate-400 self-center">
-                          +{problem.required_skills.length - 4} more
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-4 border-t border-charcoal-800 space-y-4">
-                  {/* Faculty Author & College Info */}
-                  <div className="flex items-center justify-between text-xs text-slate-300 gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Avatar
-                        name={authorName}
-                        src={problem.author?.avatar_url}
-                        size="sm"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-bold text-white truncate">{authorName}</p>
-                        <p className="text-[11px] text-brand-300 font-medium truncate flex items-center gap-1">
-                          <Building className="w-3 h-3 text-brand-400 shrink-0" />
-                          <span>{collegeName}</span>
+                          {problem.title}
+                        </Link>
+                        <p className="mt-2 text-xs text-slate-200 line-clamp-3 leading-relaxed font-normal">
+                          {problem.description}
                         </p>
                       </div>
+
+                      {/* Required Skills Tags */}
+                      {problem.required_skills && problem.required_skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {problem.required_skills.slice(0, 4).map((skill, i) => (
+                            <span
+                              key={i}
+                              className="text-[11px] px-2 py-0.5 rounded bg-charcoal-800 text-slate-100 border border-charcoal-700 font-medium"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {problem.required_skills.length > 4 && (
+                            <span className="text-[10px] text-slate-400 self-center">
+                              +{problem.required_skills.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    {problem.deadline && (
-                      <div className="flex items-center gap-1 text-[11px] text-amber-300 font-medium shrink-0">
-                        <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Due {problem.deadline}</span>
+                    <div className="pt-4 border-t border-charcoal-800 space-y-4">
+                      {/* Faculty Author & College Info */}
+                      <div className="flex items-center justify-between text-xs text-slate-300 gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar
+                            name={authorName}
+                            src={problem.author?.avatar_url}
+                            size="sm"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-bold text-white truncate">{authorName}</p>
+                            <p className="text-[11px] text-brand-300 font-medium truncate flex items-center gap-1">
+                              <Building className="w-3 h-3 text-brand-400 shrink-0" />
+                              <span>{collegeName}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {problem.deadline && (
+                          <div className="flex items-center gap-1 text-[11px] text-amber-300 font-medium shrink-0">
+                            <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Due {problem.deadline}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <Link href={`/problems/${problem.id}`}>
-                      <Button variant="ghost" size="sm" className="text-slate-200 hover:text-white" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                        View Details
-                      </Button>
-                    </Link>
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <Link href={`/problems/${problem.id}`}>
+                          <Button variant="ghost" size="sm" className="text-slate-200 hover:text-white" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                            View Details
+                          </Button>
+                        </Link>
 
-                    {isAuthor ? (
-                      <Link href={`/problems/${problem.id}/edit`}>
-                        <Button variant="secondary" size="sm" className="text-white border-charcoal-700 font-semibold">
-                          Edit Problem
-                        </Button>
-                      </Link>
-                    ) : hasApplied ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled
-                        className="bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold opacity-90 cursor-default"
-                        leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                      >
-                        Applied
-                      </Button>
-                    ) : (
-                      <Link href={`/problems/${problem.id}`}>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="bg-brand-600 hover:bg-brand-500 text-white font-bold"
-                          leftIcon={<Sparkles className="w-3.5 h-3.5" />}
-                        >
-                          Apply the Answer
-                        </Button>
-                      </Link>
-                    )}
+                        {isAuthor ? (
+                          <Link href={`/problems/${problem.id}/edit`}>
+                            <Button variant="secondary" size="sm" className="bg-charcoal-800 hover:bg-charcoal-700 text-white border-charcoal-700 font-semibold">
+                              Edit Problem
+                            </Button>
+                          </Link>
+                        ) : hasApplied ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled
+                            className="bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold opacity-90 cursor-default"
+                            leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                          >
+                            Applied
+                          </Button>
+                        ) : (
+                          <Link href={`/problems/${problem.id}`}>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="bg-brand-600 hover:bg-brand-500 text-white font-bold"
+                              leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+                            >
+                              Apply the Answer
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
