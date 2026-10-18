@@ -71,6 +71,29 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       console.warn('Error loading problem statements from Supabase in admin:', err);
     }
+
+    // Merge community problem statements from platform_settings
+    try {
+      const { data: commRow } = await client
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'community_problem_statements')
+        .maybeSingle();
+
+      if (commRow?.value && Array.isArray(commRow.value)) {
+        const commList = commRow.value;
+        const existingIds = new Set(dbProblems.map((p) => p.id));
+        for (const cp of commList) {
+          if (cp && cp.id && !existingIds.has(cp.id)) {
+            dbProblems.unshift({
+              ...cp,
+              applications_count: 0,
+              projects_count: 0,
+            });
+          }
+        }
+      }
+    } catch {}
   }
 
   const deletedSet = new Set([
@@ -163,6 +186,22 @@ export async function DELETE(request: NextRequest) {
       } catch {}
       try {
         await client.from('problem_statements').delete().eq('id', problemId);
+      } catch {}
+      try {
+        const { data: commRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'community_problem_statements')
+          .maybeSingle();
+
+        if (commRow?.value && Array.isArray(commRow.value)) {
+          const updatedComm = commRow.value.filter((p: any) => p.id !== problemId);
+          await client.from('platform_settings').upsert({
+            key: 'community_problem_statements',
+            value: updatedComm,
+            updated_at: new Date().toISOString(),
+          });
+        }
       } catch {}
     }
 

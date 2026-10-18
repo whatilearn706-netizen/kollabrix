@@ -13,23 +13,26 @@ export interface FacultyPasscode {
 export interface FacultySettingsData {
   passcodes: FacultyPasscode[];
   revokedUserIds: string[];
+  verifiedUserIds?: string[];
 }
 
 export const DEFAULT_FACULTY_CODES: string[] = [];
 
 export function parseFacultySettings(raw: any): FacultySettingsData {
   if (!raw) {
-    return { passcodes: [], revokedUserIds: [] };
+    return { passcodes: [], revokedUserIds: [], verifiedUserIds: [] };
   }
   if (Array.isArray(raw)) {
     return {
       passcodes: raw,
       revokedUserIds: [],
+      verifiedUserIds: [],
     };
   }
   return {
     passcodes: Array.isArray(raw.passcodes) ? raw.passcodes : [],
     revokedUserIds: Array.isArray(raw.revokedUserIds) ? raw.revokedUserIds : [],
+    verifiedUserIds: Array.isArray(raw.verifiedUserIds) ? raw.verifiedUserIds : [],
   };
 }
 

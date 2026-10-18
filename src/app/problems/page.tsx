@@ -86,6 +86,25 @@ export default function ProblemStatementsPage() {
         list = data as unknown as ProblemStatement[];
       }
 
+      // Also merge community and faculty problem statements stored in platform_settings
+      try {
+        const { data: commRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'community_problem_statements')
+          .maybeSingle();
+
+        if (commRow?.value && Array.isArray(commRow.value)) {
+          const commList = commRow.value as ProblemStatement[];
+          const existingDbIds = new Set(list.map((p) => p.id));
+          for (const commProb of commList) {
+            if (commProb && commProb.id && !existingDbIds.has(commProb.id)) {
+              list.unshift(commProb);
+            }
+          }
+        }
+      } catch {}
+
       const existingIds = new Set(list.map((p) => p.id));
       for (const demo of DEMO_PROBLEMS) {
         if (!existingIds.has(demo.id)) {

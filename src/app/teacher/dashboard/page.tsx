@@ -232,9 +232,31 @@ export default function TeacherDashboardPage() {
         .eq('author_id', user.id)
         .order('created_at', { ascending: false });
 
+      let authoredProblems: ProblemStatement[] = [];
       if (!probError && probData) {
-        setMyProblems(probData as unknown as ProblemStatement[]);
+        authoredProblems = probData as unknown as ProblemStatement[];
       }
+
+      // Also merge community problem statements authored by this user
+      try {
+        const { data: commRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'community_problem_statements')
+          .maybeSingle();
+
+        if (commRow?.value && Array.isArray(commRow.value)) {
+          const matchingComm = commRow.value.filter((p: any) => p.author_id === user.id);
+          const existingIds = new Set(authoredProblems.map((p) => p.id));
+          for (const cp of matchingComm) {
+            if (cp && cp.id && !existingIds.has(cp.id)) {
+              authoredProblems.unshift(cp);
+            }
+          }
+        }
+      } catch {}
+
+      setMyProblems(authoredProblems);
 
       // 3. Fetch mentoring notes given by this teacher
       const { data: noteData, error: noteError } = await supabase

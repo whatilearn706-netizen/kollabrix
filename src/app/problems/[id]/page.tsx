@@ -91,7 +91,23 @@ export default function ProblemStatementDetailPage() {
         .single();
 
       if (probError) {
-        if (matched) {
+        // Check platform_settings for community problem statements
+        let foundComm: any = null;
+        try {
+          const { data: commRow } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'community_problem_statements')
+            .maybeSingle();
+
+          if (commRow?.value && Array.isArray(commRow.value)) {
+            foundComm = commRow.value.find((p: any) => p.id === id);
+          }
+        } catch {}
+
+        if (foundComm) {
+          setProblem(foundComm as ProblemStatement);
+        } else if (matched) {
           setProblem(matched);
           setTacklingProjects(DEMO_PROJECTS.filter((p) => p.problem_statement_id === id));
         } else {

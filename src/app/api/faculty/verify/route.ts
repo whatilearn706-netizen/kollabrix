@@ -122,23 +122,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Update user's profile role to 'teacher' and mark faculty_verified
-    try {
-      await defaultClient
-        .from('profiles')
-        .update({
-          role: 'teacher',
-          faculty_verified: true,
-          verification_doc_type: 'passcode',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', targetUserId);
-    } catch (profErr) {
-      console.warn('Could not update profile role to teacher:', profErr);
+    // 3. Update user's profile role to 'teacher' in public.profiles
+    if (targetUserId) {
+      try {
+        const updateClient = client || defaultClient;
+        await updateClient
+          .from('profiles')
+          .update({
+            role: 'teacher',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', targetUserId);
+      } catch (profErr) {
+        console.warn('Could not update profile role to teacher:', profErr);
+      }
     }
 
-    // 4. Remove targetUserId from revokedUserIds and increment passcode usage count
+    // 4. Remove targetUserId from revokedUserIds, add to verifiedUserIds, and increment passcode usage count
     revokedUserIds = revokedUserIds.filter((id) => id !== targetUserId);
+    const verifiedUserIds = Array.from(
+      new Set([...(parsed.verifiedUserIds || []), ...(targetUserId ? [targetUserId] : [])])
+    );
 
     const updatedPasscodes = passcodesList.map((p) => {
       if (p.id === matchedPasscodeId) {
@@ -152,7 +156,7 @@ export async function POST(request: NextRequest) {
         .from('platform_settings')
         .upsert({
           key: 'faculty_access_passcodes',
-          value: { passcodes: updatedPasscodes, revokedUserIds },
+          value: { passcodes: updatedPasscodes, revokedUserIds, verifiedUserIds },
           updated_at: new Date().toISOString(),
           updated_by: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
         });
