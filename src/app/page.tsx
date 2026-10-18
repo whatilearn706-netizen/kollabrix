@@ -38,6 +38,8 @@ import {
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { OpportunityCategoryBar } from '@/components/landing/OpportunityCategoryBar';
 import { CampusOpportunityTicker } from '@/components/landing/CampusOpportunityTicker';
+import { UnstopHeroSearchBar } from '@/components/landing/UnstopHeroSearchBar';
+import { UnstopDomainGrid } from '@/components/landing/UnstopDomainGrid';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { ProblemShowcaseCard } from '@/components/problems/ProblemShowcaseCard';
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
@@ -440,6 +442,9 @@ export default function HomePage() {
                   {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
                 </p>
 
+                {/* Unstop-Style Interactive Global Search Console */}
+                <UnstopHeroSearchBar />
+
                 {/* Direct Primary & Secondary Action CTAs */}
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <Link href="/explore">
@@ -528,6 +533,9 @@ export default function HomePage() {
           <div className="glow-divider mt-12" />
         </section>
       )}
+
+      {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
+      <UnstopDomainGrid />
 
       {/* Opportunity Category Navigation Rail (Unstop-Inspired) */}
       <OpportunityCategoryBar />

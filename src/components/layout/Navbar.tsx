@@ -28,6 +28,7 @@ import {
   Shield,
   Sun,
   Moon,
+  Lightbulb,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
@@ -116,14 +117,19 @@ export function Navbar() {
       icon: Compass,
     },
     {
+      href: '/hackathons',
+      label: 'Hackathons',
+      icon: Trophy,
+    },
+    {
       href: '/teammates',
       label: 'Teammates',
       icon: Users,
     },
     {
-      href: '/hackathons',
-      label: 'Hackathons',
-      icon: Trophy,
+      href: '/problems',
+      label: 'Problems',
+      icon: Lightbulb,
     },
   ];
 
