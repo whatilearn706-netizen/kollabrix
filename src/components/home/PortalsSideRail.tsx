@@ -232,26 +232,26 @@ export function PortalsSideRail() {
         >
           {/* Animated Atmospheric Blur Backside */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-            <div className="absolute w-[440px] h-[440px] sm:w-[580px] sm:h-[580px] rounded-full bg-gradient-to-tr from-violet-600/35 via-indigo-600/30 to-pink-500/25 blur-[120px] ambient-blur-animation" />
-            <div className="absolute w-[380px] h-[380px] sm:w-[480px] sm:h-[480px] rounded-full bg-gradient-to-bl from-amber-500/30 via-rose-500/25 to-transparent blur-[110px] ambient-blur-animation-reverse" />
-            <div className="absolute w-[360px] h-[360px] sm:w-[450px] sm:h-[450px] rounded-full bg-gradient-to-r from-emerald-500/30 via-teal-500/20 to-transparent blur-[100px] ambient-blur-animation" />
+            <div className="absolute w-[440px] h-[440px] sm:w-[600px] sm:h-[600px] rounded-full bg-gradient-to-tr from-violet-600/30 via-indigo-600/25 to-pink-500/20 blur-[120px] ambient-blur-animation" />
+            <div className="absolute w-[380px] h-[380px] sm:w-[500px] sm:h-[500px] rounded-full bg-gradient-to-bl from-amber-500/25 via-rose-500/20 to-transparent blur-[110px] ambient-blur-animation-reverse" />
+            <div className="absolute w-[360px] h-[360px] sm:w-[480px] sm:h-[480px] rounded-full bg-gradient-to-r from-emerald-500/25 via-cyan-500/20 to-transparent blur-[100px] ambient-blur-animation" />
           </div>
 
-          {/* Main Big Ring Container */}
+          {/* Main Command Center Container */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[700px] sm:max-w-[740px] aspect-square flex items-center justify-center select-none cursor-default blur-to-focus-card my-auto z-10"
+            className="relative w-full max-w-[760px] flex flex-col items-center justify-center select-none cursor-default blur-to-focus-card my-auto z-10 px-3 py-4 sm:p-6"
           >
-            {/* Concentric Rotating Orbital Rings */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {/* Concentric Rotating Orbital Rings Background */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 dark:opacity-50 overflow-hidden">
               <svg
-                className="w-full h-full animate-[spin_40s_linear_infinite] opacity-75 dark:opacity-90"
+                className="w-[620px] h-[620px] animate-[spin_45s_linear_infinite]"
                 viewBox="0 0 500 500"
               >
                 <circle
                   cx="250"
                   cy="250"
-                  r="230"
+                  r="235"
                   fill="none"
                   stroke="url(#railRingGradOuter)"
                   strokeWidth="1.5"
@@ -260,7 +260,7 @@ export function PortalsSideRail() {
                 <circle
                   cx="250"
                   cy="250"
-                  r="175"
+                  r="180"
                   fill="none"
                   stroke="url(#railRingGradInner)"
                   strokeWidth="1.2"
@@ -269,35 +269,38 @@ export function PortalsSideRail() {
                 <circle
                   cx="250"
                   cy="250"
-                  r="120"
+                  r="125"
                   fill="none"
-                  stroke="rgba(255,255,255,0.22)"
+                  stroke="rgba(255,255,255,0.2)"
                   strokeWidth="1"
                   strokeDasharray="3 6"
                 />
                 <defs>
                   <linearGradient id="railRingGradOuter" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.95" />
-                    <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.95" />
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.9" />
+                    <stop offset="35%" stopColor="#ec4899" stopOpacity="0.7" />
+                    <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" />
                   </linearGradient>
                   <linearGradient id="railRingGradInner" x1="100%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.85" />
+                    <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.75" />
                     <stop offset="100%" stopColor="#6366f1" stopOpacity="0.85" />
                   </linearGradient>
                 </defs>
               </svg>
             </div>
 
-            {/* Center Transparent Command Core */}
-            <div className="relative z-30 flex flex-col items-center justify-center text-center p-3 sm:p-4">
-              <div className="w-20 h-20 sm:w-26 sm:h-26 rounded-full bg-white/10 dark:bg-white/[0.08] border border-white/25 dark:border-white/20 shadow-[0_8px_32px_0_rgba(139,92,246,0.35)] flex flex-col items-center justify-center p-2.5 backdrop-blur-3xl">
+            {/* Top Center Command Header & Close Button */}
+            <div className="w-full flex items-center justify-between mb-4 relative z-30">
+              <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/10 dark:bg-white/[0.08] border border-white/20 shadow-[0_4px_24px_0_rgba(139,92,246,0.25)] backdrop-blur-2xl">
                 <BrandLogo size="sm" wordmarkColor="light" showWordmark={false} />
-                <span className="text-[9.5px] font-mono font-black uppercase tracking-widest text-white mt-1 drop-shadow-md">
-                  LINKORA
+                <span className="text-[10px] sm:text-[11px] font-mono font-black uppercase tracking-widest text-white">
+                  LINKORA // PORTALS RING
                 </span>
-                <span className="text-[7.5px] font-mono font-bold text-violet-300 uppercase tracking-wider">
-                  PORTALS RING
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-violet-500/30 text-violet-200 border border-violet-400/30 flex items-center gap-0.5">
+                  <Command className="w-2.5 h-2.5" />
+                  <span>K</span>
                 </span>
               </div>
 
@@ -305,107 +308,28 @@ export function PortalsSideRail() {
               <button
                 type="button"
                 onClick={() => setIsSpotlightOpen(false)}
-                className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 dark:bg-white/10 hover:bg-white/25 border border-white/25 text-[9.5px] font-mono font-bold text-white transition-all shadow-lg backdrop-blur-xl hover:scale-105 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 dark:bg-white/[0.08] dark:hover:bg-white/15 border border-white/20 text-[10px] font-mono font-bold text-white transition-all shadow-md backdrop-blur-xl hover:scale-105 cursor-pointer"
+                title="Close modal (ESC)"
               >
-                <X className="w-3 h-3 text-rose-300" />
-                <span>ESC / Tap Outside</span>
+                <X className="w-3.5 h-3.5 text-rose-300" />
+                <span className="hidden sm:inline">ESC / Tap Outside</span>
               </button>
             </div>
 
-            {/* Four Radial Nodes (Transparent Frosted Cyber-Glass) */}
-            <div className="absolute inset-0 pointer-events-none">
-              {/* 1. TOP NODE: College Hackathons (12 o'clock) */}
-              <div className="absolute top-1 sm:top-2 left-1/2 -translate-x-1/2 pointer-events-auto z-30 w-[220px] sm:w-[250px]">
-                <Link
-                  href="/hackathons"
-                  onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-amber-400/40 hover:border-amber-400 shadow-[0_8px_32px_0_rgba(245,158,11,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-amber-500/25 text-amber-200 border-amber-400/50 backdrop-blur-md">
-                      ARENA // BOUNTIES
-                    </span>
-                    <div className="p-1 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-400/40">
-                      <Trophy className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                  <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-amber-300 transition-colors drop-shadow-md">
-                    College Hackathons
-                  </h4>
-                  <p className="text-[10px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
-                    Assemble squads, enter live collegiate hackathons, and win verified bounties.
-                  </p>
-                  <div className="mt-2 pt-1 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-amber-300">
-                    <span>Explore Arenas</span>
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              </div>
-
-              {/* 2. RIGHT NODE: Faculty Problems (3 o'clock) */}
-              <div className="absolute top-1/2 -translate-y-1/2 right-1 sm:right-2 pointer-events-auto z-30 w-[210px] sm:w-[245px]">
-                <Link
-                  href="/problems"
-                  onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-violet-500/25 text-violet-200 border-violet-400/50 backdrop-blur-md">
-                      FACULTY BRIEFS
-                    </span>
-                    <div className="p-1 rounded-lg bg-violet-500/25 text-violet-300 border border-violet-400/40">
-                      <Lightbulb className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                  <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-violet-300 transition-colors drop-shadow-md">
-                    Faculty Problems
-                  </h4>
-                  <p className="text-[10px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
-                    Tackle engineering briefs published by college professors with verified answers.
-                  </p>
-                  <div className="mt-2 pt-1 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-violet-300">
-                    <span>Solve Briefs</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              </div>
-
-              {/* 3. BOTTOM NODE: ICPC Collegiate Arena (6 o'clock) */}
-              <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 pointer-events-auto z-30 w-[220px] sm:w-[250px]">
-                <Link
-                  href="/hackathons?category=icpc"
-                  onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-cyan-500/25 text-cyan-200 border-cyan-400/50 backdrop-blur-md">
-                      ICPC // ALGORITHMIC ARENA
-                    </span>
-                    <div className="p-1 rounded-lg bg-cyan-500/25 text-cyan-300 border border-cyan-400/40">
-                      <Terminal className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                  <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-cyan-300 transition-colors drop-shadow-md">
-                    ICPC Collegiate Arena
-                  </h4>
-                  <p className="text-[10px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
-                    Competitive programming sprints, ACM-ICPC style mock rounds & algorithmic ranks.
-                  </p>
-                  <div className="mt-2 pt-1 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-cyan-300">
-                    <span>ICPC Arena</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              </div>
-
-              {/* 4. LEFT NODE: Faculty Portal (9 o'clock) */}
-              <div className="absolute top-1/2 -translate-y-1/2 left-1 sm:left-2 pointer-events-auto z-30 w-[210px] sm:w-[245px]">
+            {/* 4 Portals Grid: 2 Columns on md/sm screens */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 relative z-30">
+              {/* =========================================================
+                  COLUMN 1: Faculty Portal + ICPC Collegiate Arena
+                  (ICPC is placed directly UNDER Faculty Portal)
+                 ========================================================= */}
+              <div className="space-y-3.5 sm:space-y-4">
+                {/* 1. Faculty Portal */}
                 <Link
                   href="/teacher/dashboard"
                   onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-emerald-400/40 hover:border-emerald-400 shadow-[0_8px_32px_0_rgba(16,185,129,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-emerald-400/40 hover:border-emerald-400 shadow-[0_8px_32px_0_rgba(16,185,129,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02]"
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-emerald-500/25 text-emerald-200 border-emerald-400/50 backdrop-blur-md">
                       EDUCATOR DESK
                     </span>
@@ -413,14 +337,97 @@ export function PortalsSideRail() {
                       <GraduationCap className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-emerald-300 transition-colors drop-shadow-md">
+                  <h4 className="text-sm font-black text-white group-hover:text-emerald-300 transition-colors drop-shadow-md">
                     Faculty Portal
                   </h4>
-                  <p className="text-[10px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-1 line-clamp-2 font-medium leading-relaxed">
                     Teacher mentor desk, challenge creation, DigiLocker verification & reviews.
                   </p>
-                  <div className="mt-2.5 pt-1 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-emerald-300">
+                  <div className="mt-2.5 pt-1.5 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-emerald-300">
                     <span>Faculty Access</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+
+                {/* 2. ICPC Collegiate Arena - DIRECTLY UNDER Faculty Portal */}
+                <Link
+                  href="/icpc"
+                  onClick={() => setIsSpotlightOpen(false)}
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-cyan-500/25 text-cyan-200 border-cyan-400/50 backdrop-blur-md">
+                      ICPC // ALGORITHMIC ARENA
+                    </span>
+                    <div className="p-1 rounded-lg bg-cyan-500/25 text-cyan-300 border border-cyan-400/40">
+                      <Terminal className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors drop-shadow-md">
+                    ICPC Collegiate Arena
+                  </h4>
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-1 line-clamp-2 font-medium leading-relaxed">
+                    Competitive programming sprints, ACM-ICPC style mock rounds & algorithmic ranks.
+                  </p>
+                  <div className="mt-2.5 pt-1.5 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-cyan-300">
+                    <span>Enter ICPC Arena</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </div>
+
+              {/* =========================================================
+                  COLUMN 2: College Hackathons + Faculty Problems
+                 ========================================================= */}
+              <div className="space-y-3.5 sm:space-y-4">
+                {/* 3. College Hackathons */}
+                <Link
+                  href="/hackathons"
+                  onClick={() => setIsSpotlightOpen(false)}
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-amber-400/40 hover:border-amber-400 shadow-[0_8px_32px_0_rgba(245,158,11,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-amber-500/25 text-amber-200 border-amber-400/50 backdrop-blur-md">
+                      ARENA // BOUNTIES
+                    </span>
+                    <div className="p-1 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-400/40">
+                      <Trophy className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors drop-shadow-md">
+                    College Hackathons
+                  </h4>
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-1 line-clamp-2 font-medium leading-relaxed">
+                    Assemble squads, enter live collegiate hackathons, and win verified bounties.
+                  </p>
+                  <div className="mt-2.5 pt-1.5 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-amber-300">
+                    <span>Explore Arenas</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+
+                {/* 4. Faculty Problems */}
+                <Link
+                  href="/problems"
+                  onClick={() => setIsSpotlightOpen(false)}
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[8.5px] font-mono font-black px-2 py-0.5 rounded-full border bg-violet-500/25 text-violet-200 border-violet-400/50 backdrop-blur-md">
+                      FACULTY BRIEFS
+                    </span>
+                    <div className="p-1 rounded-lg bg-violet-500/25 text-violet-300 border border-violet-400/40">
+                      <Lightbulb className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-black text-white group-hover:text-violet-300 transition-colors drop-shadow-md">
+                    Faculty Problems
+                  </h4>
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-1 line-clamp-2 font-medium leading-relaxed">
+                    Tackle engineering briefs published by college professors with verified answers.
+                  </p>
+                  <div className="mt-2.5 pt-1.5 border-t border-white/15 flex items-center justify-between text-[11px] font-bold text-violet-300">
+                    <span>Solve Briefs</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>

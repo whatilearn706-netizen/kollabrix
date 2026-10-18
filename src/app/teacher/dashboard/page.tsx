@@ -49,10 +49,13 @@ import {
   Copy,
   Settings,
   Eye,
+  Terminal,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
+import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
+import { IcpcContest } from '@/types/icpc';
 import { Hackathon } from '@/types/database';
 
 interface HackathonWithStats extends Hackathon {
@@ -84,12 +87,14 @@ const FEEDBACK_TYPES: MentoringFeedbackType[] = [
 export default function TeacherDashboardPage() {
   const { user, profile, refreshProfile, openAuthModal } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'projects' | 'problems' | 'feedback' | 'hackathons'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'problems' | 'feedback' | 'hackathons' | 'icpc'>('projects');
   const [projects, setProjects] = useState<ProjectWithDetails[]>([]);
   const [myProblems, setMyProblems] = useState<ProblemStatement[]>([]);
   const [myNotes, setMyNotes] = useState<ProjectMentoringNote[]>([]);
   const [myHackathons, setMyHackathons] = useState<HackathonWithStats[]>([]);
+  const [myIcpcContests, setMyIcpcContests] = useState<IcpcContest[]>([]);
   const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false);
+  const [isCreateIcpcOpen, setIsCreateIcpcOpen] = useState(false);
   const [securityModalHackathon, setSecurityModalHackathon] = useState<Hackathon | null>(null);
   const [copiedJoinCode, setCopiedJoinCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -431,6 +436,17 @@ export default function TeacherDashboardPage() {
       } catch (err) {
         console.warn('Problem solutions load notice:', err);
       }
+
+      // 7. Fetch ICPC Contests authored by this teacher
+      try {
+        const icpcRes = await fetch(`/api/icpc?_t=${Date.now()}`);
+        const icpcData = await icpcRes.json();
+        if (icpcRes.ok && icpcData.success && Array.isArray(icpcData.contests)) {
+          setMyIcpcContests(icpcData.contests);
+        }
+      } catch (err) {
+        console.warn('ICPC contests load notice:', err);
+      }
     } catch {
       // Graceful fallback
     } finally {
@@ -757,6 +773,18 @@ export default function TeacherDashboardPage() {
           }`}
         >
           College Hackathons ({myHackathons.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('icpc')}
+          className={`pb-3 px-3 text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 ${
+            activeTab === 'icpc'
+              ? 'text-cyan-400 border-b-2 border-cyan-400'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Terminal className="w-4 h-4 text-cyan-400" />
+          <span>ICPC Contests ({myIcpcContests.length})</span>
         </button>
 
         <button
@@ -1352,6 +1380,122 @@ export default function TeacherDashboardPage() {
         </div>
       )}
 
+      {/* ICPC Algorithmic Contests (LeetCode-Style) Tab */}
+      {activeTab === 'icpc' && (
+        <div className="space-y-6">
+          {/* Header Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-charcoal-850 border border-charcoal-750">
+            <div>
+              <div className="flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-base font-bold text-white">ICPC Algorithmic Contests (LeetCode-Style)</h3>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Upload and schedule competitive programming challenges with custom problem statements, constraints, and testcases.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <Link href="/icpc">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                  className="border-charcoal-700 text-slate-300 hover:text-white"
+                >
+                  Open ICPC Arena
+                </Button>
+              </Link>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsCreateIcpcOpen(true)}
+                leftIcon={<PlusCircle className="w-3.5 h-3.5 text-cyan-300" />}
+                className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold"
+              >
+                Upload ICPC Contest
+              </Button>
+            </div>
+          </div>
+
+          {/* Contests List */}
+          {myIcpcContests.length === 0 ? (
+            <div className="text-center py-16 p-8 rounded-2xl bg-charcoal-850/60 border border-charcoal-750 space-y-3">
+              <Terminal className="w-12 h-12 text-slate-500 mx-auto" />
+              <h4 className="text-base font-bold text-slate-200">No ICPC contests published yet</h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Host your first collegiate speedrun contest for students. Define problem statements, set difficulty levels, and provide sample testcases.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsCreateIcpcOpen(true)}
+                leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold"
+              >
+                Upload First Contest (LeetCode-style)
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {myIcpcContests.map((contest) => (
+                <div
+                  key={contest.id}
+                  className="p-5 rounded-2xl bg-charcoal-850 border border-charcoal-750 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border ${
+                        contest.status === 'live'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : contest.status === 'upcoming'
+                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                          : 'bg-charcoal-700 text-slate-400 border-charcoal-600'
+                      }`}>
+                        {contest.status === 'live' ? '🟢 Live' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Past'}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{contest.participantCount} students</span>
+                      </span>
+                    </div>
+
+                    <h4 className="text-sm font-bold text-white line-clamp-1">{contest.title}</h4>
+                    <p className="text-xs text-slate-400 line-clamp-2">{contest.subtitle}</p>
+
+                    <div className="pt-2 border-t border-charcoal-750 flex items-center justify-between text-xs text-slate-400 font-mono">
+                      <span>Problems: {contest.problems.length}</span>
+                      <span>Duration: {contest.durationMinutes}m</span>
+                    </div>
+
+                    {/* Problems badges */}
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {contest.problems.map((p, pIdx) => (
+                        <span
+                          key={p.id || pIdx}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-charcoal-800 border border-charcoal-700 text-slate-300"
+                        >
+                          {String.fromCharCode(65 + pIdx)}: {p.difficulty} ({p.points}pts)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Link href="/icpc">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-bold"
+                    >
+                      View in ICPC Arena →
+                    </Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Mentoring Feedback Modal */}
       <Modal
         isOpen={feedbackModalOpen}
@@ -1601,6 +1745,17 @@ export default function TeacherDashboardPage() {
         onClose={() => setIsCreateHackathonOpen(false)}
         onSuccess={async () => {
           setIsCreateHackathonOpen(false);
+          await loadDashboardData();
+        }}
+      />
+
+      <CreateIcpcContestModal
+        isOpen={isCreateIcpcOpen}
+        onClose={() => setIsCreateIcpcOpen(false)}
+        organizerName={profile?.display_name || 'Prof. Faculty'}
+        collegeName={profile?.college || 'Linkora Collegiate Arena'}
+        onCreated={async () => {
+          setIsCreateIcpcOpen(false);
           await loadDashboardData();
         }}
       />
