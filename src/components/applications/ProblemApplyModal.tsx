@@ -121,6 +121,8 @@ export function ProblemApplyModal({
         };
         existingStored.unshift(appObj);
         localStorage.setItem(storedKey, JSON.stringify(existingStored));
+        localStorage.setItem(`tf_user_applied_${problemId}_${user.id}`, 'true');
+        localStorage.setItem(`linkora_problem_app_${problemId}_${user.id}`, JSON.stringify(appObj));
       }
 
       setIsSuccess(true);

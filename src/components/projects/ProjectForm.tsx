@@ -241,6 +241,11 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       return;
     }
 
+    if (!problemStatementId && problemStatements.length > 0) {
+      setError('Please select the college problem statement or challenge that your team is tackling.');
+      return;
+    }
+
     if (desiredTeamSize < currentTeamSize) {
       setError('Desired team size cannot be smaller than current team size.');
       return;
@@ -728,13 +733,13 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         {/* Problem Statement Selection */}
         <div className="pt-2 border-t border-slate-100">
           <label className="block text-sm font-bold text-slate-700 mb-1.5">
-            Faculty Problem Statement Reference (Optional)
+            College Problem Statement / Challenge Tackled
           </label>
           <Select
             value={problemStatementId}
             onChange={(e) => setProblemStatementId(e.target.value)}
             options={[
-              { value: '', label: 'None (Independent student-initiated project)' },
+              { value: '', label: '-- Select a Problem Statement Challenge --' },
               ...problemStatements.map((ps) => ({
                 value: ps.id,
                 label: `[${ps.category}] ${ps.title}`,
@@ -742,7 +747,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
             ]}
           />
           <p className="text-xs text-slate-500 mt-1">
-            Linking your project to a faculty problem statement allows the authoring professor to monitor milestones and provide academic mentoring.
+            Linking your team project to a faculty challenge statement allows the supervising mentor to evaluate deliverables, review progress, and commend your team.
           </p>
         </div>
       </div>

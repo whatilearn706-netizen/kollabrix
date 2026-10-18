@@ -25,6 +25,7 @@ import {
   Clock,
   BookOpen,
   Lock,
+  Lightbulb,
 } from 'lucide-react';
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
@@ -50,6 +51,7 @@ export default function ProblemStatementsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | 'All'>('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState<ProjectDifficulty | 'All'>('All');
+  const [userApplications, setUserApplications] = useState<any[]>([]);
 
   const isTeacher = isFacultyUser(user, profile);
 
@@ -146,6 +148,25 @@ export default function ProblemStatementsPage() {
     loadProblems();
   }, [loadProblems]);
 
+  useEffect(() => {
+    async function loadUserApps() {
+      if (!user?.id) {
+        setUserApplications([]);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/problems/applications?applicant_id=${user.id}`);
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.applications)) {
+          setUserApplications(data.applications);
+        }
+      } catch (e) {
+        console.warn('Could not fetch user applications:', e);
+      }
+    }
+    loadUserApps();
+  }, [user?.id]);
+
   const filteredProblems = useMemo(() => {
     return problems.filter((p) => {
       // Filter out drafts if not author
@@ -222,15 +243,26 @@ export default function ProblemStatementsPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-charcoal-800 pb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-brand-400 uppercase tracking-wider mb-2">
-            <GraduationCap className="w-4 h-4" />
-            <span>Faculty Problem Statements</span>
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2">
+            {isTeacher ? (
+              <>
+                <GraduationCap className="w-4 h-4 text-purple-400" />
+                <span className="text-purple-300 font-bold">Faculty Problem Statements</span>
+              </>
+            ) : (
+              <>
+                <Lightbulb className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-300 font-bold">Collegiate Challenges</span>
+              </>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Curated Collegiate Challenges
+            {isTeacher ? 'Faculty Problem Statements' : 'Collegiate Problems & Challenges'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
-            Real-world challenges and academic problem statements proposed by college faculty and mentors. Form a team, claim a challenge, and build impactful solutions.
+            {isTeacher
+              ? 'Author, supervise, and evaluate collegiate problem statements and institutional research challenges.'
+              : 'Real-world challenges and academic problem statements proposed by college faculty and mentors. Form a team, claim a challenge, and build impactful solutions.'}
           </p>
         </div>
 
@@ -292,7 +324,7 @@ export default function ProblemStatementsPage() {
           <p className="text-xs text-slate-400 max-w-md mx-auto">
             {searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All'
               ? 'No challenges match your active filters. Try resetting search filters.'
-              : 'Faculty mentors have not posted any problem statements yet. Check back soon or propose an independent project.'}
+              : 'Faculty mentors have not posted any problem statements yet. Check back soon for collegiate challenges.'}
           </p>
           {isTeacher && (
             <Link href="/problems/new">
@@ -308,6 +340,17 @@ export default function ProblemStatementsPage() {
             const isAuthor = Boolean(user && user.id === problem.author_id);
             const authorName = problem.author?.display_name || 'Faculty Mentor';
             const collegeName = problem.author?.college || 'Department of Computer Science';
+            const hasApplied = Boolean(
+              user && (
+                userApplications.some(
+                  (a) => (a.problem_statement_id || '').toLowerCase() === (problem.id || '').toLowerCase()
+                ) ||
+                (typeof window !== 'undefined' && (
+                  localStorage.getItem(`tf_user_applied_${problem.id}_${user.id}`) === 'true' ||
+                  localStorage.getItem(`linkora_problem_app_${problem.id}_${user.id}`) !== null
+                ))
+              )
+            );
 
             return (
               <div
@@ -394,6 +437,17 @@ export default function ProblemStatementsPage() {
                       <Link href={`/problems/${problem.id}/edit`}>
                         <Button variant="secondary" size="sm">
                           Edit Problem
+                        </Button>
+                      </Link>
+                    ) : hasApplied ? (
+                      <Link href={`/problems/${problem.id}`}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                          leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                        >
+                          Open
                         </Button>
                       </Link>
                     ) : (

@@ -389,14 +389,16 @@ export function Navbar() {
                       <span>AI Project Planner</span>
                     </Link>
 
-                    <Link
-                      href="/teacher/dashboard"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 transition-colors font-bold"
-                    >
-                      <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
-                      <span>Faculty Portal</span>
-                    </Link>
+                    {isFaculty && (
+                      <Link
+                        href="/teacher/dashboard"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 transition-colors font-bold"
+                      >
+                        <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
+                        <span>Faculty Portal</span>
+                      </Link>
+                    )}
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 

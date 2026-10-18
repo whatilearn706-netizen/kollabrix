@@ -184,8 +184,8 @@ export default function TeacherDashboardPage() {
       (isAdmin && adminBypassGranted && !isRevoked) ||
       (profile?.role !== 'student' &&
         typeof window !== 'undefined' &&
-        (localStorage.getItem(`linkora_faculty_verified_${user?.id}`) === 'true' ||
-         localStorage.getItem('teamforge_verified_faculty') === 'true'))
+        user?.id &&
+        localStorage.getItem(`linkora_faculty_verified_${user.id}`) === 'true')
     );
 
   const loadDashboardData = useCallback(async () => {

@@ -225,7 +225,7 @@ export default function ProblemStatementDetailPage() {
       try {
         const { data } = await supabase
           .from('projects')
-          .select('id, title, current_team_size, desired_team_size')
+          .select('id, title, current_team_size, desired_team_size, problem_statement_id')
           .eq('owner_id', user.id);
         if (data) setMyProjects(data as any);
       } catch (e) {}
@@ -238,6 +238,10 @@ export default function ProblemStatementDetailPage() {
     loadApplications();
     loadSolutions();
   }, [loadData, loadApplications, loadSolutions]);
+
+  const userTeamProject = myProjects.find(
+    (p: any) => (p.problem_statement_id || '').toLowerCase() === (id || '').toLowerCase()
+  ) || tacklingProjects.find((p) => p.owner_id === user?.id);
 
   const handleEvaluateSolution = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -461,35 +465,64 @@ export default function ProblemStatementDetailPage() {
                   >
                     Application {userApplication.status}
                   </Badge>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<Sparkles className="w-4 h-4" />}
-                    onClick={() => {
-                      if (!user) {
-                        openAuthModal();
-                      } else {
-                        setIsApplyModalOpen(true);
-                      }
-                    }}
-                  >
-                    Apply to Join
-                  </Button>
-                )}
+                ) : null}
 
-                {/* Make Team for this Problem */}
-                <Link
-                  href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
-                >
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    leftIcon={<Users className="w-3.5 h-3.5 text-pink-400" />}
-                  >
-                    Create Team
-                  </Button>
-                </Link>
+                {userApplication ? (
+                  userTeamProject ? (
+                    <Link href={`/projects/${userTeamProject.id}/workspace`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                        leftIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                      >
+                        Open Team Workspace
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
+                    >
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                        leftIcon={<Users className="w-3.5 h-3.5" />}
+                      >
+                        Open / Form Team
+                      </Button>
+                    </Link>
+                  )
+                ) : (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Sparkles className="w-4 h-4" />}
+                      onClick={() => {
+                        if (!user) {
+                          openAuthModal();
+                        } else {
+                          setIsApplyModalOpen(true);
+                        }
+                      }}
+                    >
+                      Apply to Join
+                    </Button>
+
+                    <Link
+                      href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
+                    >
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Users className="w-3.5 h-3.5 text-pink-400" />}
+                      >
+                        Create Team
+                      </Button>
+                    </Link>
+                  </>
+                )}
 
                 {/* Post Problem Answer */}
                 <Button
@@ -640,7 +673,7 @@ export default function ProblemStatementDetailPage() {
                 <span>You are the author of this problem statement.</span>
               </div>
             ) : userApplication ? (
-              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs space-y-2.5">
+              <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Application Status:</span>
                   <Badge
@@ -660,17 +693,62 @@ export default function ProblemStatementDetailPage() {
                   <span className="text-slate-400">Proposed Role:</span>
                   <span className="font-semibold text-white">{userApplication.proposed_role}</span>
                 </div>
-                {userApplication.status === 'Pending' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-red-400 hover:text-red-300 text-xs mt-1"
-                    isLoading={isWithdrawing}
-                    onClick={handleWithdrawApplication}
-                  >
-                    Withdraw Application
-                  </Button>
+                {userApplication.team_size && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Team Status:</span>
+                    <span className="font-semibold text-brand-300">{userApplication.team_size}</span>
+                  </div>
                 )}
+
+                <div className="pt-2 border-t border-charcoal-750/80 space-y-2">
+                  {userTeamProject ? (
+                    <Link href={`/projects/${userTeamProject.id}/workspace`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                        leftIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                      >
+                        Open Team Workspace
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
+                    >
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                        leftIcon={<Users className="w-3.5 h-3.5" />}
+                      >
+                        Open / Form Team
+                      </Button>
+                    </Link>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 text-xs"
+                    leftIcon={<Send className="w-3.5 h-3.5 text-emerald-400" />}
+                    onClick={() => setIsSolutionModalOpen(true)}
+                  >
+                    Post Problem Answer
+                  </Button>
+
+                  {userApplication.status === 'Pending' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-red-400 hover:text-red-300 text-xs mt-1"
+                      isLoading={isWithdrawing}
+                      onClick={handleWithdrawApplication}
+                    >
+                      Withdraw Application
+                    </Button>
+                  )}
+                </div>
               </div>
             ) : (
               <Button
@@ -997,23 +1075,40 @@ export default function ProblemStatementDetailPage() {
               No student teams tackling this challenge yet.
             </p>
             <p className="text-xs text-slate-500 mb-4">
-              Apply to join this faculty challenge and collaborate with the supervising professor.
+              {userApplication
+                ? "You've joined this challenge! Launch your team project workspace so teammates can join and the mentor can track your progress."
+                : "Apply to join this faculty challenge and collaborate with the supervising professor."}
             </p>
-            {!isAuthor && !userApplication && (
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<Sparkles className="w-4 h-4" />}
-                onClick={() => {
-                  if (!user) {
-                    openAuthModal();
-                  } else {
-                    setIsApplyModalOpen(true);
-                  }
-                }}
-              >
-                Apply to Join
-              </Button>
+            {!isAuthor && (
+              userApplication ? (
+                <Link
+                  href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
+                >
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                    leftIcon={<Users className="w-4 h-4" />}
+                  >
+                    Open / Form Team
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Sparkles className="w-4 h-4" />}
+                  onClick={() => {
+                    if (!user) {
+                      openAuthModal();
+                    } else {
+                      setIsApplyModalOpen(true);
+                    }
+                  }}
+                >
+                  Apply to Join
+                </Button>
+              )
             )}
           </div>
         ) : (
