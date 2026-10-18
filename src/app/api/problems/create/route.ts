@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. Fetch author profile and ensure role is 'teacher'
+    // 1. Fetch author profile and verify faculty permissions
     let authorProfile: any = null;
     try {
       const { data: prof } = await client
@@ -87,20 +87,24 @@ export async function POST(request: NextRequest) {
 
       authorProfile = prof;
 
-      if (prof && prof.role !== 'teacher' && prof.role !== 'admin') {
-        // Self-heal / elevate role to teacher since faculty passcode verified
-        await client
-          .from('profiles')
-          .update({
-            role: 'teacher',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', authorId);
+      const isOwner =
+        authorId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        authorProfile?.username === 'mayank_admin';
 
-        authorProfile = { ...prof, role: 'teacher' };
+      const isAuthorizedFaculty =
+        isOwner ||
+        authorProfile?.role === 'teacher' ||
+        authorProfile?.role === 'admin' ||
+        Boolean(authorProfile?.faculty_verified);
+
+      if (!isAuthorizedFaculty) {
+        return NextResponse.json(
+          { error: 'Forbidden: Only verified faculty members and academic mentors are authorized to post problem statements.' },
+          { status: 403 }
+        );
       }
     } catch (e) {
-      console.warn('Profile role check/elevation notice:', e);
+      console.warn('Profile role check error:', e);
     }
 
     const dbPayload = {

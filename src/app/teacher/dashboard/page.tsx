@@ -175,11 +175,16 @@ export default function TeacherDashboardPage() {
   const isTeacher =
     !isRevoked &&
     !isPreviewingGateAsVisitor &&
-    (profile?.role === 'teacher' ||
-     profile?.role === 'admin' ||
-     Boolean(profile?.faculty_verified) ||
-     (isAdmin && adminBypassGranted && !isRevoked) ||
-     (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true' && !isRevoked));
+    Boolean(
+      profile?.role === 'teacher' ||
+      profile?.role === 'admin' ||
+      Boolean(profile?.faculty_verified) ||
+      (isAdmin && adminBypassGranted && !isRevoked) ||
+      (profile?.role !== 'student' &&
+        typeof window !== 'undefined' &&
+        (localStorage.getItem(`linkora_faculty_verified_${user?.id}`) === 'true' ||
+         localStorage.getItem('teamforge_verified_faculty') === 'true'))
+    );
 
   const loadDashboardData = useCallback(async () => {
     if (!isSupabaseConfigured() || !user) {
@@ -468,6 +473,7 @@ export default function TeacherDashboardPage() {
         setIsRevoked(false);
         setVerifyError(null);
         if (typeof window !== 'undefined') {
+          if (user?.id) localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
           localStorage.setItem('teamforge_verified_faculty', 'true');
         }
         setVerifySuccess(resData.message || 'Faculty status verified! Loading mentor dashboard...');

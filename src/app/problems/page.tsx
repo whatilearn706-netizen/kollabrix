@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 const CATEGORIES: (ProjectCategory | 'All')[] = [
   'All',
@@ -50,11 +51,7 @@ export default function ProblemStatementsPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | 'All'>('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState<ProjectDifficulty | 'All'>('All');
 
-  const isTeacher =
-    profile?.role === 'teacher' ||
-    profile?.role === 'admin' ||
-    Boolean(profile?.faculty_verified) ||
-    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
+  const isTeacher = isFacultyUser(user, profile);
 
   const loadProblems = useCallback(async () => {
     setIsLoading(true);
@@ -238,7 +235,7 @@ export default function ProblemStatementsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {isTeacher ? (
+          {isTeacher && (
             <Link href="/problems/new">
               <Button
                 variant="primary"
@@ -246,16 +243,6 @@ export default function ProblemStatementsPage() {
                 leftIcon={<PlusCircle className="w-4 h-4" />}
               >
                 Post Problem Statement
-              </Button>
-            </Link>
-          ) : (
-            <Link href="/projects/new">
-              <Button
-                variant="outline"
-                size="md"
-                leftIcon={<Sparkles className="w-4 h-4 text-brand-400" />}
-              >
-                Start Independent Project
               </Button>
             </Link>
           )}

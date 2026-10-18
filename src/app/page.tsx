@@ -44,6 +44,7 @@ import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { ProblemShowcaseCard } from '@/components/problems/ProblemShowcaseCard';
 import { CustomAdminSpotlightSection } from '@/components/landing/CustomAdminSpotlightSection';
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 const OrigamiBirdSculpture = dynamic(
   () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
@@ -114,11 +115,7 @@ export default function HomePage() {
     }
   }, []);
 
-  const isTeacher =
-    profile?.role === 'teacher' ||
-    profile?.role === 'admin' ||
-    Boolean(profile?.faculty_verified) ||
-    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
+  const isTeacher = isFacultyUser(user, profile);
 
   // Load real projects and hackathons from Supabase (with demo fallback)
   useEffect(() => {

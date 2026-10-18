@@ -165,6 +165,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
 
       if (res.ok && data.success) {
         if (typeof window !== 'undefined') {
+          if (user?.id) localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
           localStorage.setItem('teamforge_verified_faculty', 'true');
         }
         setProfileRole('teacher');

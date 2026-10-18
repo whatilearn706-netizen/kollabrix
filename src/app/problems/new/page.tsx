@@ -25,6 +25,7 @@ import {
   Send,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 const CATEGORIES: ProjectCategory[] = [
   'Web Development',
@@ -66,11 +67,7 @@ export default function NewProblemStatementPage() {
   const [verifySuccess, setVerifySuccess] = useState<string | null>(null);
   const [isDocVerifyOpen, setIsDocVerifyOpen] = useState(false);
 
-  const isTeacher =
-    profile?.role === 'teacher' ||
-    profile?.role === 'admin' ||
-    Boolean(profile?.faculty_verified) ||
-    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
+  const isTeacher = isFacultyUser(user, profile);
 
   const handleVerifyFaculty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +94,8 @@ export default function NewProblemStatementPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && user?.id) {
+          localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
           localStorage.setItem('teamforge_verified_faculty', 'true');
         }
         if (user?.id) {
