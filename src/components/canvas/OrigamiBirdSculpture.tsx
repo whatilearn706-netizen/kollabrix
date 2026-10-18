@@ -54,8 +54,10 @@ export function OrigamiBirdSculpture({ isBlurred = false }: { isBlurred?: boolea
       // Scene
       const scene = new THREE.Scene();
 
-      // Camera: perfectly aligned so the original origami bird fits cleanly inside the canvas with generous breathing room
-      const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+      // Camera: perfectly aligned with dynamic horizontal FOV compensation so wings are never clipped
+      const aspect = width / height;
+      const initialFov = aspect < 1.15 ? 40 * (1.15 / aspect) : 40;
+      const camera = new THREE.PerspectiveCamera(initialFov, aspect, 0.1, 100);
       camera.position.set(0, 0, 7.2);
 
       // Renderer
@@ -351,13 +353,15 @@ export function OrigamiBirdSculpture({ isBlurred = false }: { isBlurred?: boolea
       window.addEventListener('touchmove', handleTouchMove, { passive: true });
       window.addEventListener('touchend', handleTouchEnd);
 
-      // Resize handler keeping the aspect ratio tight and centered
+      // Resize handler keeping aspect ratio and full wingspan fully framed
       const handleResize = () => {
         if (!activeContainer || !renderer || !camera) return;
         const newWidth = activeContainer.clientWidth;
         const newHeight = activeContainer.clientHeight;
         if (newWidth === 0 || newHeight === 0) return;
-        camera.aspect = newWidth / newHeight;
+        const newAspect = newWidth / newHeight;
+        camera.aspect = newAspect;
+        camera.fov = newAspect < 1.15 ? 40 * (1.15 / newAspect) : 40;
         camera.updateProjectionMatrix();
         renderer.setSize(newWidth, newHeight);
       };

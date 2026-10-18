@@ -117,14 +117,14 @@ export function OrigamiHeroConsole() {
   }, [isSpotlightOpen]);
 
   return (
-    <div className="relative w-full flex flex-col xl:flex-row items-center justify-start gap-4 sm:gap-6 xl:gap-8 pr-6 sm:pr-12 xl:pr-20 2xl:pr-28 select-none">
-      {/* 1. Center / Left Area: Clean, Unobstructed 3D Origami Animal Sculpture */}
-      <div className="relative flex-1 min-w-0 max-w-[360px] sm:max-w-[400px] xl:max-w-[440px] w-full h-[360px] sm:h-[420px] lg:h-[460px] flex items-center justify-center">
+    <div className="relative w-full flex flex-col sm:flex-row items-center justify-between gap-4 lg:gap-6 select-none">
+      {/* 1. Center / Left Area: Clean, Unobstructed 3D Origami Animal Sculpture with Full Wingspan */}
+      <div className="relative flex-1 min-w-[320px] sm:min-w-[380px] w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center">
         <OrigamiBirdSculpture isBlurred={false} />
       </div>
 
-      {/* 2. Side Scrolling Strip Shifted More Left, leaving generous breathing space at the screen end */}
-      <div className="relative flex items-center gap-2.5 sm:gap-3.5 shrink-0 self-center xl:self-auto my-2 xl:my-0">
+      {/* 2. Side Scrolling Strip + Lil Point of Linkora (Positioned on the right, exactly where user pointed) */}
+      <div className="relative flex items-center gap-2.5 sm:gap-3.5 shrink-0 self-center sm:self-auto">
         {/* Scrollable Container with Blur Curtains at Top and Bottom */}
         <div className="relative w-[200px] sm:w-[220px] h-[330px] sm:h-[370px] rounded-2xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/70 dark:bg-charcoal-900/60 p-2 shadow-sm backdrop-blur-md overflow-hidden">
           {/* Blur Curtains for Upper & Lower Margins */}
