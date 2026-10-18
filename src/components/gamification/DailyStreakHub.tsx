@@ -298,16 +298,16 @@ export function StreakNavbarButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-2xs select-none ${
+      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all border shadow-2xs select-none shrink-0 ${
         isDayZero
           ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-orange-500/50 hover:text-white'
           : isCheckedInToday
           ? 'bg-amber-500/15 border-amber-500/30 text-amber-500 hover:bg-amber-500/25'
-          : 'bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30 animate-pulse'
+          : 'bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30'
       }`}
       title={
         isDayZero
-          ? '🔥 Streak: 0 Days. Click to start a project and unlock Day 1!'
+          ? '🔥 Streak: 0 Days. Click to check in or start building!'
           : isCheckedInToday
           ? `🔥 Day ${streakState.currentStreak} Streak Preserved Today!`
           : `🔥 Day ${streakState.currentStreak} Streak pending! Click to log today's build.`
@@ -315,22 +315,15 @@ export function StreakNavbarButton({ onClick }: { onClick: () => void }) {
       aria-label="Daily Build Streak"
     >
       <Flame
-        className={`w-4 h-4 ${
+        className={`w-3.5 h-3.5 ${
           isDayZero
             ? 'text-slate-400'
             : isCheckedInToday
             ? 'text-amber-500 fill-amber-500'
-            : 'text-orange-500 fill-orange-500 animate-bounce'
+            : 'text-orange-500 fill-orange-500'
         }`}
       />
-      <span className="font-mono text-xs font-black">{streakState.currentStreak}</span>
-      {isDayZero ? (
-        <span className="text-[10px] px-1 py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 font-semibold">
-          Start
-        </span>
-      ) : !isCheckedInToday ? (
-        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-ping" />
-      ) : null}
+      <span className="font-mono text-xs font-black leading-none">{streakState.currentStreak}</span>
     </button>
   );
 }

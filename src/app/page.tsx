@@ -46,12 +46,14 @@ import { CustomAdminSpotlightSection } from '@/components/landing/CustomAdminSpo
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
 import { isFacultyUser } from '@/lib/auth/faculty';
 
-const OrigamiBirdSculpture = dynamic(
-  () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
+import { CollegiatePortalsRadar } from '@/components/home/CollegiatePortalsRadar';
+
+const OrigamiPortalRing = dynamic(
+  () => import('@/components/home/OrigamiPortalRing').then((m) => m.OrigamiPortalRing),
   {
     ssr: false,
     loading: () => (
-      <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
+      <div className="relative w-full h-[440px] sm:h-[480px] lg:h-[520px] flex items-center justify-center select-none pointer-events-none">
         <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
       </div>
     ),
@@ -524,10 +526,10 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Linkora Origami Bird */}
+              {/* Right Column: Signature 3D Linkora Origami Bird Sculpture & Futuristic Holographic Ring */}
               {sectionsConfig.origamiBird !== false && (
-                <div className="lg:col-span-5 flex items-center justify-center relative min-h-[360px] sm:min-h-[400px] lg:min-h-[440px] overflow-hidden">
-                  <OrigamiBirdSculpture />
+                <div className="lg:col-span-5 flex items-center justify-center relative min-h-[440px] sm:min-h-[480px] lg:min-h-[520px] overflow-visible">
+                  <OrigamiPortalRing />
                 </div>
               )}
             </div>
@@ -535,6 +537,9 @@ export default function HomePage() {
           <div className="glow-divider mt-12" />
         </section>
       )}
+
+      {/* Collegiate Innovation Portals Radar (Hackathons, Problems & Faculty Portal) */}
+      <CollegiatePortalsRadar />
 
       {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
       {sectionsConfig.domainGrid !== false && (

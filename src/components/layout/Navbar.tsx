@@ -119,24 +119,14 @@ export function Navbar() {
       icon: Compass,
     },
     {
-      href: '/hackathons',
-      label: 'Hackathons',
-      icon: Trophy,
-    },
-    {
       href: '/teammates',
       label: 'Teammates',
       icon: Users,
     },
     {
-      href: '/problems',
-      label: 'Problems',
-      icon: Lightbulb,
-    },
-    {
-      href: '/teacher/dashboard',
-      label: 'Faculty Portal',
-      icon: GraduationCap,
+      href: '/my-projects',
+      label: 'Workspace',
+      icon: Briefcase,
     },
   ];
 
@@ -174,15 +164,18 @@ export function Navbar() {
         <nav className="hidden md:flex items-center gap-1.5">
           {navLinks.map((link) => {
             const Icon = link.icon;
-            const isActive =
-              link.href === '/hackathons'
-                ? pathname.startsWith('/hackathons') || pathname.startsWith('/h/')
-                : pathname.startsWith(link.href);
+            const isActive = pathname.startsWith(link.href);
 
             const handleWarmup = () => {
               if (link.href === '/explore') prefetchExploreData();
               else if (link.href === '/teammates') prefetchTeammatesData();
-              else if (link.href === '/hackathons') prefetchHackathonsData();
+            };
+
+            const handleClick = (e: React.MouseEvent) => {
+              if (link.href === '/my-projects' && !user) {
+                e.preventDefault();
+                openAuthModal('login');
+              }
             };
 
             return (
@@ -190,6 +183,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 prefetch={true}
+                onClick={handleClick}
                 onMouseEnter={handleWarmup}
                 onTouchStart={handleWarmup}
                 className={clsx(
@@ -219,30 +213,6 @@ export function Navbar() {
               </Link>
             );
           })}
-
-          {/* Additional Authenticated Links */}
-          {user && (
-            <>
-              {/* Workspace */}
-              <Link
-                href="/my-projects"
-                className={clsx(
-                  'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all inline-flex items-center gap-2 border',
-                  pathname.startsWith('/my-projects')
-                    ? isNavbarDark
-                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 shadow-sm'
-                      : 'bg-indigo-100 text-indigo-800 border-indigo-200 shadow-sm'
-                    : isNavbarDark
-                    ? 'text-slate-300 border-transparent hover:text-indigo-400 hover:bg-white/5'
-                    : 'text-slate-600 border-transparent hover:text-indigo-700 hover:bg-indigo-50'
-                )}
-              >
-                <Briefcase className="w-3.5 h-3.5" />
-                <span>Workspace</span>
-              </Link>
-
-            </>
-          )}
         </nav>
 
         {/* Desktop Right Actions */}
