@@ -71,7 +71,10 @@ const RTC_CONFIG: RTCConfiguration = {
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export function WorkspaceTeamHuddle({
@@ -114,8 +117,9 @@ export function WorkspaceTeamHuddle({
   const loopbackGainRef = useRef<GainNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // WebRTC Peer Connections map: remoteUserId -> RTCPeerConnection
+  // WebRTC Peer Connections & ICE Candidates Queue
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingIceCandidatesRef = useRef<Map<string, any[]>>(new Map());
   const lastSpeakingBroadcastRef = useRef<number>(0);
   const isSpeakingRef = useRef<boolean>(false);
   const isMutedRef = useRef<boolean>(false);
@@ -129,8 +133,19 @@ export function WorkspaceTeamHuddle({
     currentUserProfile?.username ||
     'You (Lead)';
 
-  // Helper to attach incoming remote WebRTC audio stream to DOM
+  // Helper to attach incoming remote WebRTC audio stream to DOM & Web Audio Destination
   const attachRemoteAudio = (peerId: string, stream: MediaStream) => {
+    // 1. Direct Web Audio Destination: bypasses DOM autoplay policies completely
+    try {
+      if (audioContextRef.current && audioContextRef.current.state === 'running') {
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(audioContextRef.current.destination);
+      }
+    } catch (e) {
+      console.warn('Web Audio direct stream error:', e);
+    }
+
+    // 2. Fallback DOM Audio Element with autoplay failure recovery
     let audioEl = document.getElementById(`remote-audio-${peerId}`) as HTMLAudioElement;
     if (!audioEl) {
       audioEl = document.createElement('audio');
@@ -145,7 +160,17 @@ export function WorkspaceTeamHuddle({
     const playPromise = audioEl.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn('Remote audio autoplay waiting for user gesture or error:', err);
+        console.warn('Remote audio autoplay waiting for user interaction:', err);
+        const unlock = () => {
+          audioEl.play().catch(() => {});
+          if (audioContextRef.current?.state === 'suspended') {
+            audioContextRef.current.resume().catch(() => {});
+          }
+          window.removeEventListener('click', unlock);
+          window.removeEventListener('keydown', unlock);
+        };
+        window.addEventListener('click', unlock, { once: true });
+        window.addEventListener('keydown', unlock, { once: true });
       });
     }
   };
@@ -356,6 +381,19 @@ export function WorkspaceTeamHuddle({
       }
     });
 
+    // Helper to flush queued ICE candidates once remote description is set
+    const flushQueuedIceCandidates = async (peerId: string, pc: RTCPeerConnection) => {
+      const queued = pendingIceCandidatesRef.current.get(peerId);
+      if (queued && queued.length > 0) {
+        for (const candidate of queued) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {}
+        }
+        pendingIceCandidatesRef.current.delete(peerId);
+      }
+    };
+
     // 2. Incoming Offer -> create Answer and reply
     channel.on('broadcast', { event: 'webrtc-signal-offer' }, async (payload: any) => {
       const { sdp, to, from } = payload?.payload || {};
@@ -364,6 +402,8 @@ export function WorkspaceTeamHuddle({
       try {
         const pc = createPeerConnection(from, channel);
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        await flushQueuedIceCandidates(from, pc);
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
 
@@ -386,24 +426,28 @@ export function WorkspaceTeamHuddle({
         const pc = peerConnectionsRef.current.get(from);
         if (pc && pc.signalingState !== 'stable') {
           await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          await flushQueuedIceCandidates(from, pc);
         }
       } catch (err) {
         console.warn('WebRTC setRemoteDescription answer error:', err);
       }
     });
 
-    // 4. Incoming ICE Candidate
+    // 4. Incoming ICE Candidate (with buffer queue)
     channel.on('broadcast', { event: 'webrtc-signal-ice' }, async (payload: any) => {
       const { candidate, to, from } = payload?.payload || {};
       if (to !== currentUserId || !from || !candidate) return;
 
-      try {
-        const pc = peerConnectionsRef.current.get(from);
-        if (pc) {
+      const pc = peerConnectionsRef.current.get(from);
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+        try {
           await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {}
+      } else {
+        if (!pendingIceCandidatesRef.current.has(from)) {
+          pendingIceCandidatesRef.current.set(from, []);
         }
-      } catch (err) {
-        // ICE candidate arrival can race with remote description
+        pendingIceCandidatesRef.current.get(from)!.push(candidate);
       }
     });
 

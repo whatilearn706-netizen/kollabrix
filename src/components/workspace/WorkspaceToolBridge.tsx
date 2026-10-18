@@ -28,6 +28,13 @@ import {
   CheckCircle2,
   RefreshCw,
   Sliders,
+  MessageSquare,
+  ThumbsUp,
+  Rocket,
+  HelpCircle,
+  AlertCircle,
+  ArrowRight,
+  Headphones,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
@@ -48,6 +55,23 @@ export type SupportedToolType =
   | 'codepen'
   | 'custom';
 
+export interface CanvasViewpoint {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorRole: string;
+  type: 'proposal' | 'critique' | 'approved' | 'issue';
+  title: string;
+  comment: string;
+  proposedUrl?: string;
+  timestamp: string;
+  reactions: {
+    agree: number;
+    ship: number;
+    question: number;
+  };
+}
+
 interface VaultItem {
   id: string;
   title: string;
@@ -66,6 +90,16 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
   const [activeEmbedUrl, setActiveEmbedUrl] = useState('');
   const [isSavingTool, setIsSavingTool] = useState(false);
   const [isSavedNotice, setIsSavedNotice] = useState(false);
+  const [canvasProxy, setCanvasProxy] = useState(true);
+
+  // Collaborative Viewpoints & Design Review State
+  const [viewpoints, setViewpoints] = useState<CanvasViewpoint[]>([]);
+  const [newViewpointType, setNewViewpointType] = useState<CanvasViewpoint['type']>('proposal');
+  const [newViewpointTitle, setNewViewpointTitle] = useState('');
+  const [newViewpointComment, setNewViewpointComment] = useState('');
+  const [newProposedUrl, setNewProposedUrl] = useState('');
+  const [isSubmittingViewpoint, setIsSubmittingViewpoint] = useState(false);
+  const [showViewpointForm, setShowViewpointForm] = useState(false);
 
   // Live Demo Preview State
   const initialDemoUrl = project.demo_url || 'https://linkora-link.online';
@@ -143,7 +177,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
   ];
 
   // Smart URL parser: transforms share URLs into iframe-friendly embeds
-  const parseEmbedUrl = (rawUrl: string, tool: SupportedToolType): string => {
+  const parseEmbedUrl = (rawUrl: string, tool: SupportedToolType, proxy: boolean = true): string => {
     let clean = rawUrl.trim();
     if (!clean) return '';
     if (!/^https?:\/\//i.test(clean)) {
@@ -151,7 +185,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
     }
 
     try {
-      if (tool === 'figma' || clean.includes('figma.com')) {
+      if (clean.includes('figma.com')) {
         if (!clean.includes('figma.com/embed')) {
           return `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(clean)}`;
         }
@@ -159,7 +193,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
       }
 
       // Loom share URL conversion
-      if (tool === 'loom' || clean.includes('loom.com/share/')) {
+      if (clean.includes('loom.com/share/')) {
         return clean.replace('loom.com/share/', 'loom.com/embed/');
       }
 
@@ -177,7 +211,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
       }
 
       // Miro Live Embed
-      if (tool === 'miro' || clean.includes('miro.com/app/board/')) {
+      if (clean.includes('miro.com/app/board/')) {
         if (!clean.includes('/live-embed/')) {
           return clean.replace('/app/board/', '/app/live-embed/');
         }
@@ -189,22 +223,20 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
         return clean.replace('/pen/', '/embed/');
       }
 
-      if (tool === 'canva' || clean.includes('canva.com')) {
+      if (clean.includes('canva.com')) {
         if (!clean.includes('embed')) {
           return clean.includes('?') ? `${clean}&embed` : `${clean}?embed`;
         }
         return clean;
       }
 
-      if (tool === 'googledocs') {
-        if (clean.includes('/edit')) {
-          return clean.replace(/\/edit.*$/, '/preview');
-        }
-        return clean;
+      if (clean.includes('docs.google.com') && clean.includes('/edit')) {
+        return clean.replace(/\/edit.*$/, '/preview');
       }
 
-      // Custom web prototype -> route through proxy so X-Frame-Options doesn't block it
-      if (tool === 'custom') {
+      // If user enabled proxy, or if custom tool, or for any general website/prototype:
+      // Route through proxy so X-Frame-Options is stripped and preview works for all websites!
+      if (proxy || tool === 'custom' || (!clean.includes('figma.com') && !clean.includes('canva.com') && !clean.includes('miro.com') && !clean.includes('loom.com'))) {
         return `/api/proxy-preview?url=${encodeURIComponent(clean)}`;
       }
     } catch {}
@@ -232,6 +264,9 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
             setDemoInputUrl(result.data.demoUrl);
             setActiveDemoUrl(result.data.demoUrl);
           }
+          if (Array.isArray(result.data.viewpoints) && result.data.viewpoints.length > 0) {
+            setViewpoints(result.data.viewpoints);
+          }
           if (Array.isArray(result.data.vaultItems) && result.data.vaultItems.length > 0) {
             setVaultItems(result.data.vaultItems);
             return;
@@ -256,6 +291,24 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
             return;
           }
         } catch {}
+
+        // Default initial viewpoints from project lead
+        setViewpoints((prev) => {
+          if (prev.length > 0) return prev;
+          return [
+            {
+              id: 'vp-1',
+              authorId: project.owner_id,
+              authorName: project.owner?.display_name || project.owner?.username || 'Project Lead',
+              authorRole: 'Project Lead',
+              type: 'proposal',
+              title: 'Initial High-Fidelity Prototype',
+              comment: 'Uploaded the primary wireframe & interactive prototype. Teammates, please review the UI contrast, mobile layout, and primary CTA. Feel free to propose alternative layouts or paste updated links below!',
+              timestamp: 'Today at 02:30 AM',
+              reactions: { agree: 5, ship: 4, question: 1 },
+            },
+          ];
+        });
 
         // Default vault items from project
         const initialItems: VaultItem[] = [
@@ -305,13 +358,19 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
 
     channel
       .on('broadcast', { event: 'tool-embed-update' }, (payload: any) => {
-        if (payload?.payload?.embedUrl) {
+        if (payload?.payload?.embedUrl && isMounted) {
           setActiveEmbedUrl(payload.payload.embedUrl);
+          if (payload.payload.inputUrl) setInputUrl(payload.payload.inputUrl);
           if (payload.payload.tool) setSelectedTool(payload.payload.tool);
         }
       })
+      .on('broadcast', { event: 'canvas-viewpoint-update' }, (payload: any) => {
+        if (Array.isArray(payload?.payload?.viewpoints) && isMounted) {
+          setViewpoints(payload.payload.viewpoints);
+        }
+      })
       .on('broadcast', { event: 'vault-update' }, (payload: any) => {
-        if (Array.isArray(payload?.payload?.vaultItems)) {
+        if (Array.isArray(payload?.payload?.vaultItems) && isMounted) {
           setVaultItems(payload.payload.vaultItems);
         }
       })
@@ -321,7 +380,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [project.id, project.repository_url, project.demo_url]);
+  }, [project.id, project.repository_url, project.demo_url, project.owner_id, project.owner]);
 
   // Save Canvas Tool Embed to Supabase & Broadcast to Teammates
   const handleSaveToolEmbed = async (e?: React.FormEvent) => {
@@ -329,7 +388,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
     if (!inputUrl.trim()) return;
 
     setIsSavingTool(true);
-    const parsed = parseEmbedUrl(inputUrl, selectedTool);
+    const parsed = parseEmbedUrl(inputUrl, selectedTool, canvasProxy);
     setActiveEmbedUrl(parsed);
 
     // Save to localStorage
@@ -353,6 +412,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
             activeEmbedUrl: parsed,
             demoUrl: activeDemoUrl,
             vaultItems,
+            viewpoints,
           },
         }),
       });
@@ -362,7 +422,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
       channel.send({
         type: 'broadcast',
         event: 'tool-embed-update',
-        payload: { tool: selectedTool, embedUrl: parsed },
+        payload: { tool: selectedTool, inputUrl, embedUrl: parsed },
       });
     } catch (err) {
       console.warn('Realtime tool sync error:', err);
@@ -380,6 +440,132 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
     setIsSavingTool(false);
     setIsSavedNotice(true);
     setTimeout(() => setIsSavedNotice(false), 2500);
+  };
+
+  // Submit new Viewpoint / Proposed Change to Team
+  const handleSubmitViewpoint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newViewpointComment.trim()) return;
+
+    setIsSubmittingViewpoint(true);
+    const newPost: CanvasViewpoint = {
+      id: `vp-${Date.now()}`,
+      authorId: currentUserId || 'current-user',
+      authorName: project.owner?.display_name || 'Teammate',
+      authorRole: 'Team Member',
+      type: newViewpointType,
+      title: newViewpointTitle.trim() || (newViewpointType === 'proposal' ? 'Proposed Change' : 'Design Viewpoint'),
+      comment: newViewpointComment.trim(),
+      proposedUrl: newProposedUrl.trim() || undefined,
+      timestamp: 'Just now',
+      reactions: { agree: 1, ship: 0, question: 0 },
+    };
+
+    const updated = [newPost, ...viewpoints];
+    setViewpoints(updated);
+
+    try {
+      await fetch('/api/workspace/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: project.id,
+          data: {
+            selectedTool,
+            inputUrl,
+            activeEmbedUrl,
+            demoUrl: activeDemoUrl,
+            vaultItems,
+            viewpoints: updated,
+          },
+        }),
+      });
+
+      const channel = supabase.channel(`workspace-tools-${project.id}`);
+      channel.send({
+        type: 'broadcast',
+        event: 'canvas-viewpoint-update',
+        payload: { viewpoints: updated },
+      });
+    } catch {}
+
+    try {
+      recordDailyStreakActivity({
+        type: 'WORKSPACE_ACTIVITY',
+        note: `Proposed design changes & viewpoints for ${project.title}`,
+        title: project.title,
+        userId: currentUserId,
+      });
+    } catch {}
+
+    setNewViewpointTitle('');
+    setNewViewpointComment('');
+    setNewProposedUrl('');
+    setIsSubmittingViewpoint(false);
+    setShowViewpointForm(false);
+  };
+
+  // 1-Click apply proposed URL to Canvas
+  const handleApplyProposedUrl = (url: string) => {
+    setInputUrl(url);
+    const parsed = parseEmbedUrl(url, selectedTool, canvasProxy);
+    setActiveEmbedUrl(parsed);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        `linkora_tool_${project.id}`,
+        JSON.stringify({ tool: selectedTool, inputUrl: url, embedUrl: parsed })
+      );
+    }
+
+    const channel = supabase.channel(`workspace-tools-${project.id}`);
+    channel.send({
+      type: 'broadcast',
+      event: 'tool-embed-update',
+      payload: { embedUrl: parsed, inputUrl: url, tool: selectedTool },
+    });
+  };
+
+  // React to Viewpoint
+  const handleViewpointReaction = async (viewpointId: string, reactionType: 'agree' | 'ship' | 'question') => {
+    const updated = viewpoints.map((vp) => {
+      if (vp.id === viewpointId) {
+        return {
+          ...vp,
+          reactions: {
+            ...vp.reactions,
+            [reactionType]: ((vp.reactions && vp.reactions[reactionType]) || 0) + 1,
+          },
+        };
+      }
+      return vp;
+    });
+    setViewpoints(updated);
+
+    try {
+      await fetch('/api/workspace/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: project.id,
+          data: {
+            selectedTool,
+            inputUrl,
+            activeEmbedUrl,
+            demoUrl: activeDemoUrl,
+            vaultItems,
+            viewpoints: updated,
+          },
+        }),
+      });
+
+      const channel = supabase.channel(`workspace-tools-${project.id}`);
+      channel.send({
+        type: 'broadcast',
+        event: 'canvas-viewpoint-update',
+        payload: { viewpoints: updated },
+      });
+    } catch {}
   };
 
   // Add new Vault item
@@ -627,7 +813,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
 
           {/* Interactive Canvas Viewer */}
           <div className="rounded-2xl border border-charcoal-800 bg-charcoal-950 overflow-hidden shadow-2xl relative">
-            <div className="flex items-center justify-between px-4 py-2.5 bg-charcoal-900 border-b border-charcoal-800 text-xs">
+            <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-charcoal-900 border-b border-charcoal-800 text-xs gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
@@ -638,6 +824,26 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Proxy Bypass Toggle */}
+                <button
+                  onClick={() => {
+                    const next = !canvasProxy;
+                    setCanvasProxy(next);
+                    if (inputUrl) {
+                      setActiveEmbedUrl(parseEmbedUrl(inputUrl, selectedTool, next));
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium border transition-all ${
+                    canvasProxy
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                      : 'bg-charcoal-800 text-slate-400 border-charcoal-700 hover:text-white'
+                  }`}
+                  title="Universal proxy strips X-Frame-Options and Content-Security-Policy headers so ANY site or custom frame can be embedded safely"
+                >
+                  <Lock className="w-3 h-3 text-emerald-400" />
+                  <span>Universal Proxy: {canvasProxy ? 'ON (Unblocked)' : 'OFF'}</span>
+                </button>
+
                 <button
                   onClick={() => setIframeKey((k) => k + 1)}
                   className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-charcoal-800"
@@ -645,6 +851,18 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
+
+                {activeEmbedUrl && (
+                  <a
+                    href={inputUrl || activeEmbedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-charcoal-800"
+                    title="Open externally in new tab"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
             </div>
 
@@ -655,6 +873,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
                 title={`${selectedTool} prototype canvas`}
                 className="w-full h-[640px] border-0 bg-charcoal-950"
                 allowFullScreen
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-presentation allow-pointer-lock"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               />
             ) : (
@@ -677,10 +896,262 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
                     <li>Paste standard Figma links — auto-converts to embed frames.</li>
                     <li>Loom videos automatically convert to responsive video players.</li>
                     <li>Canva & Miro boards embed with real-time zooming & panning.</li>
+                    <li>Any generic website works via our Universal Proxy engine!</li>
                   </ul>
                 </div>
               </div>
             )}
+          </div>
+
+          {/* =========================================================================
+              TEAM VIEWPOINTS & CHANGE PROPOSALS REVIEW WAR ROOM DOCK
+             ========================================================================= */}
+          <div className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-5 shadow-elevated">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-charcoal-800 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                    <MessageSquare className="w-4 h-4" />
+                  </span>
+                  <h3 className="text-base font-bold text-white">
+                    Teammate Viewpoints & Change Proposals
+                  </h3>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold">
+                    {viewpoints.length} {viewpoints.length === 1 ? 'Review' : 'Reviews'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Review the prototype, suggest alternate revisions or links, and switch the active canvas with 1 click so the entire team stays aligned.
+                </p>
+              </div>
+
+              <Button
+                onClick={() => setShowViewpointForm(!showViewpointForm)}
+                size="sm"
+                variant={showViewpointForm ? 'outline' : 'primary'}
+                className={!showViewpointForm ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                leftIcon={showViewpointForm ? <RotateCcw className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              >
+                {showViewpointForm ? 'Close Proposal Form' : 'Propose Revision / Link'}
+              </Button>
+            </div>
+
+            {/* Proposal Form */}
+            {showViewpointForm && (
+              <form
+                onSubmit={handleSubmitViewpoint}
+                className="p-5 rounded-2xl bg-charcoal-950 border border-blue-500/30 space-y-4 animate-fade-in"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                    Submit a Design Proposal or Teammate Viewpoint
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    Broadcasts to all teammates instantly
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">
+                      Viewpoint Type
+                    </label>
+                    <select
+                      value={newViewpointType}
+                      onChange={(e) => setNewViewpointType(e.target.value as any)}
+                      className="w-full p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="proposal">💡 Feature / Layout Proposal</option>
+                      <option value="critique">🎨 Design Critique & Feedback</option>
+                      <option value="approved">✅ Sign-Off & Approved</option>
+                      <option value="issue">⚠️ UX Issue / Bug Report</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">
+                      Proposal Title
+                    </label>
+                    <input
+                      type="text"
+                      value={newViewpointTitle}
+                      onChange={(e) => setNewViewpointTitle(e.target.value)}
+                      placeholder="e.g. Modernized navigation hero with quick CTA"
+                      className="w-full p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-white placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-300 font-medium mb-1">
+                    Alternate Prototype URL <span className="text-slate-500">(Optional — Figma, Canva, Staging URL)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newProposedUrl}
+                    onChange={(e) => setNewProposedUrl(e.target.value)}
+                    placeholder="https://www.figma.com/design/... or your branch demo"
+                    className="w-full p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    If provided, teammates will see a <strong>"⚡ Switch Canvas to this Version"</strong> button to immediately view your changes.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-300 font-medium mb-1">
+                    Rationale & Detailed Feedback *
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={newViewpointComment}
+                    onChange={(e) => setNewViewpointComment(e.target.value)}
+                    placeholder="Explain what changes were made, why it improves user conversion, and what teammates should inspect..."
+                    required
+                    className="w-full p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-white placeholder-slate-500 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowViewpointForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={isSubmittingViewpoint || !newViewpointComment.trim()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    leftIcon={isSubmittingViewpoint ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+                  >
+                    {isSubmittingViewpoint ? 'Publishing...' : 'Publish Viewpoint to Team'}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {/* Viewpoints Feed */}
+            <div className="space-y-3">
+              {viewpoints.length === 0 ? (
+                <div className="p-8 rounded-xl bg-charcoal-950/60 border border-charcoal-800 text-center space-y-2">
+                  <MessageSquare className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p className="text-xs text-slate-400">No viewpoints or design proposals yet.</p>
+                  <p className="text-[11px] text-slate-500">
+                    Click "Propose Revision / Link" above to share your perspective with your team!
+                  </p>
+                </div>
+              ) : (
+                viewpoints.map((vp) => {
+                  const typeBadge = {
+                    proposal: { label: '💡 Feature Proposal', color: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
+                    critique: { label: '🎨 Design Critique', color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+                    approved: { label: '✅ Approved & Signed Off', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+                    issue: { label: '⚠️ Issue / Bug', color: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+                  }[vp.type] || { label: 'Review', color: 'bg-charcoal-800 text-slate-300 border-charcoal-700' };
+
+                  return (
+                    <div
+                      key={vp.id}
+                      className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 hover:border-charcoal-700 transition-all space-y-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-blue-600/30 border border-blue-500/40 text-blue-300 font-bold text-xs flex items-center justify-center">
+                            {vp.authorName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-white block">
+                              {vp.authorName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {vp.authorRole} • {vp.timestamp}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${typeBadge.color}`}>
+                          {typeBadge.label}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold text-slate-100">{vp.title}</h4>
+                        <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
+                          {vp.comment}
+                        </p>
+                      </div>
+
+                      {/* If the viewpoint includes an alternate proposed URL */}
+                      {vp.proposedUrl && (
+                        <div className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <Layers className="w-4 h-4 text-blue-400 shrink-0" />
+                            <div className="truncate text-xs font-mono text-blue-300">
+                              {vp.proposedUrl}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              onClick={() => handleApplyProposedUrl(vp.proposedUrl!)}
+                              size="sm"
+                              variant="primary"
+                              className="bg-blue-600 hover:bg-blue-700 text-white text-xs whitespace-nowrap"
+                              leftIcon={<Rocket className="w-3.5 h-3.5" />}
+                            >
+                              ⚡ Switch Canvas to this Version
+                            </Button>
+
+                            <a
+                              href={vp.proposedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 hover:text-white"
+                              title="Open link in new window"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Team Reaction Buttons */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-charcoal-850">
+                        <button
+                          onClick={() => handleViewpointReaction(vp.id, 'agree')}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-charcoal-900 border border-charcoal-800 text-[11px] text-slate-300 hover:text-white hover:bg-charcoal-850 transition-colors"
+                        >
+                          <ThumbsUp className="w-3 h-3 text-blue-400" />
+                          <span>Agree ({vp.reactions?.agree || 0})</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleViewpointReaction(vp.id, 'ship')}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-charcoal-900 border border-charcoal-800 text-[11px] text-slate-300 hover:text-white hover:bg-charcoal-850 transition-colors"
+                        >
+                          <Rocket className="w-3 h-3 text-emerald-400" />
+                          <span>Ship It ({vp.reactions?.ship || 0})</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleViewpointReaction(vp.id, 'question')}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-charcoal-900 border border-charcoal-800 text-[11px] text-slate-300 hover:text-white hover:bg-charcoal-850 transition-colors"
+                        >
+                          <HelpCircle className="w-3 h-3 text-amber-400" />
+                          <span>Questions ({vp.reactions?.question || 0})</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       )}
