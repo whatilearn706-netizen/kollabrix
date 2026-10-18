@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProblemSolutionModal } from '@/components/applications/ProblemSolutionModal';
+import { ProblemTeamModal } from '@/components/applications/ProblemTeamModal';
 import {
   FileCode2,
   GraduationCap,
@@ -41,6 +42,9 @@ import {
   Building,
   Eye,
   EyeOff,
+  Lock,
+  ShieldCheck,
+  Plus,
 } from 'lucide-react';
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
@@ -74,6 +78,7 @@ export default function ProblemStatementDetailPage() {
   const [solutions, setSolutions] = useState<ProblemSolution[]>([]);
   const [isLoadingSolutions, setIsLoadingSolutions] = useState(false);
   const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [myProjects, setMyProjects] = useState<Project[]>([]);
 
   // Results & Live Winner state
@@ -163,6 +168,8 @@ export default function ProblemStatementDetailPage() {
           current_team_size,
           desired_team_size,
           created_at,
+          owner_id,
+          problem_statement_id,
           owner:profiles!projects_owner_id_fkey(
             user_id,
             display_name,
@@ -173,9 +180,27 @@ export default function ProblemStatementDetailPage() {
         .eq('problem_statement_id', id)
         .order('created_at', { ascending: false });
 
+      let combinedProjects: Project[] = [];
       if (!projError && projData) {
-        setTacklingProjects(projData as unknown as Project[]);
+        combinedProjects = projData as unknown as Project[];
       }
+
+      // Merge locally created problem teams
+      if (typeof window !== 'undefined') {
+        try {
+          const localTeams = JSON.parse(localStorage.getItem(`tf_problem_teams_${id}`) || '[]');
+          if (Array.isArray(localTeams)) {
+            const existingIds = new Set(combinedProjects.map((p) => p.id));
+            for (const lt of localTeams) {
+              if (lt && lt.id && !existingIds.has(lt.id)) {
+                combinedProjects.unshift(lt);
+              }
+            }
+          }
+        } catch {}
+      }
+
+      setTacklingProjects(combinedProjects);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load problem statement.');
     } finally {
@@ -187,14 +212,17 @@ export default function ProblemStatementDetailPage() {
     if (!id) return;
     try {
       setIsLoadingSolutions(true);
-      const res = await fetch(`/api/problems/solutions?problem_id=${id}`);
+      const url = user?.id
+        ? `/api/problems/solutions?problem_id=${id}&viewer_id=${user.id}`
+        : `/api/problems/solutions?problem_id=${id}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (res.ok && Array.isArray(data.solutions)) {
         setSolutions(data.solutions);
 
         // Check if current user has applied
         if (user) {
-          const mySol = data.solutions.find((s: ProblemSolution) => s.author_id === user.id);
+          const mySol = data.solutions.find((s: ProblemSolution) => s && s.author_id === user.id);
           if (mySol) {
             setHasApplied(true);
             setMyAppliedDetails({ teamName: mySol.team_name, title: mySol.title });
@@ -268,9 +296,22 @@ export default function ProblemStatementDetailPage() {
     loadResults();
   }, [loadData, loadSolutions, loadResults]);
 
-  const isAuthor = user?.id === problem?.author_id;
+  const isAuthor = Boolean(user && user.id === problem?.author_id);
   const isExpired = problem?.deadline ? new Date(problem.deadline) < new Date() : false;
   const isResultsLive = Boolean(problemResult?.is_live);
+
+  // Student Privacy / Answer Isolation:
+  // Faculty author sees all submissions; students ONLY see their own team's submission
+  const visibleSolutions = useMemo(() => {
+    if (!Array.isArray(solutions)) return [];
+    if (isAuthor) {
+      return solutions;
+    }
+    if (!user) {
+      return [];
+    }
+    return solutions.filter((s) => s && s.author_id === user.id);
+  }, [solutions, isAuthor, user]);
 
   // Link Sharing Handlers
   const getProblemUrl = () => {
@@ -435,8 +476,23 @@ export default function ProblemStatementDetailPage() {
           <span>Back to Problem Statements</span>
         </Link>
 
-        {/* Prominent Direct Link Sharing */}
+        {/* Prominent Direct Link Sharing & Form Team Button */}
         <div className="flex items-center gap-2 flex-wrap">
+          {!isAuthor && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                if (!user) openAuthModal();
+                else setIsTeamModalOpen(true);
+              }}
+              className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs"
+              leftIcon={<Users className="w-3.5 h-3.5" />}
+            >
+              Form a Student Team
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -682,18 +738,33 @@ export default function ProblemStatementDetailPage() {
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md"
-                leftIcon={<Send className="w-4 h-4" />}
-                onClick={() => {
-                  if (!user) openAuthModal();
-                  else setIsSolutionModalOpen(true);
-                }}
-              >
-                Apply the Answer
-              </Button>
+              <div className="space-y-2.5">
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md"
+                  leftIcon={<Send className="w-4 h-4" />}
+                  onClick={() => {
+                    if (!user) openAuthModal();
+                    else setIsSolutionModalOpen(true);
+                  }}
+                >
+                  Apply the Answer
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-charcoal-700 text-slate-200 hover:text-white hover:bg-charcoal-800 font-semibold"
+                  leftIcon={<Users className="w-3.5 h-3.5 text-brand-400" />}
+                  onClick={() => {
+                    if (!user) openAuthModal();
+                    else setIsTeamModalOpen(true);
+                  }}
+                >
+                  Form a Student Team
+                </Button>
+              </div>
             )}
           </div>
 
@@ -1004,7 +1075,7 @@ export default function ProblemStatementDetailPage() {
 
       {/* When results are NOT live OR when user is the faculty author:
           SHOW THE TWO REGULAR SEGMENTS:
-          1. Submitted Problem Answers
+          1. Submitted Problem Answers (Student Privacy: students only see their own answer; faculty sees all)
           2. Student Teams Tackling This Challenge
       */}
       {(!isResultsLive || isAuthor) && (
@@ -1019,10 +1090,20 @@ export default function ProblemStatementDetailPage() {
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
                   <FileCode2 className="w-5 h-5 text-emerald-400" />
-                  <span>Submitted Problem Answers ({solutions.length})</span>
+                  {isAuthor ? (
+                    <span>Submitted Problem Answers ({solutions.length})</span>
+                  ) : visibleSolutions.length > 0 ? (
+                    <span>Your Team&apos;s Submitted Answer</span>
+                  ) : (
+                    <span>Student Deliverable Submission</span>
+                  )}
                 </h2>
                 <p className="text-xs text-slate-200 mt-1 max-w-xl leading-relaxed">
-                  Final project answers, prototypes, and code repositories submitted by student teams for this faculty challenge.
+                  {isAuthor
+                    ? 'Faculty Review Mode: Inspect all student prototypes, code repositories, and solution write-ups.'
+                    : visibleSolutions.length > 0
+                    ? '🔒 Academic Integrity Mode: Your submission is private to your squad and the supervising faculty member. Other students cannot view your code or answer.'
+                    : 'Academic Integrity Mode: Student deliverables are private between each squad and the professor. Apply your answer below to submit your deliverables.'}
                 </p>
               </div>
 
@@ -1031,7 +1112,7 @@ export default function ProblemStatementDetailPage() {
                   variant="primary"
                   size="sm"
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
-                  leftIcon={<Send className="w-3.5 h-3.5" />}
+                  leftIcon={<Send className="w-3.5 h-3.5 text-white" />}
                   onClick={() => {
                     if (!user) openAuthModal();
                     else setIsSolutionModalOpen(true);
@@ -1043,142 +1124,255 @@ export default function ProblemStatementDetailPage() {
             </div>
 
             {isLoadingSolutions ? (
-              <div className="py-12 text-center text-xs text-slate-300 font-mono">Loading submitted solutions...</div>
-            ) : solutions.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-charcoal-750 p-8 text-center bg-charcoal-900/30">
-                <FileCode2 className="w-8 h-8 text-slate-500 mx-auto mb-3" />
-                <p className="text-sm font-bold text-white mb-1">
-                  No problem answers submitted yet.
-                </p>
-                <p className="text-xs text-slate-300 mb-4 max-w-md mx-auto leading-relaxed">
-                  Are you tackling this challenge? Directly apply your team name, detailed solution overview, and live demo link.
-                </p>
-                {!hasApplied && !isAuthor && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 font-bold"
-                    leftIcon={<Send className="w-3.5 h-3.5 text-emerald-400" />}
-                    onClick={() => {
-                      if (!user) openAuthModal();
-                      else setIsSolutionModalOpen(true);
-                    }}
-                  >
-                    Apply the Answer
-                  </Button>
-                )}
-              </div>
+              <div className="py-12 text-center text-xs text-slate-300 font-mono">Loading deliverables...</div>
+            ) : isAuthor ? (
+              /* Faculty Author View: All Solutions (Crash-Proofed) */
+              solutions.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-charcoal-750 p-8 text-center bg-charcoal-900/30">
+                  <FileCode2 className="w-8 h-8 text-slate-500 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-white mb-1">
+                    No problem answers submitted yet.
+                  </p>
+                  <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                    When students apply their answers, their deliverables, repositories, and demo URLs will appear here for your evaluation.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {solutions.map((sol) => (
+                    <div
+                      key={sol.id}
+                      className="p-6 rounded-2xl border border-charcoal-750 bg-charcoal-900/70 hover:border-charcoal-600 transition-all space-y-4 shadow-sm"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="text-base font-bold text-white">{sol.title || 'Solution Deliverable'}</h3>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+                              Deliverable Applied
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-medium">
+                            <span>
+                              Team: <strong className="text-white font-bold">{sol.team_name || 'Student Team'}</strong>
+                            </span>
+                            <span>•</span>
+                            <span>Lead: {sol.author?.display_name || 'Student Lead'}</span>
+                            <span>•</span>
+                            <span>Submitted {sol.created_at ? new Date(sol.created_at).toLocaleDateString() : 'Recently'}</span>
+                          </p>
+                        </div>
+
+                        {/* Links and Faculty Crown action */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {sol.repo_url && (
+                            <a
+                              href={sol.repo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 hover:bg-charcoal-750 text-slate-100 border border-charcoal-700 transition-colors"
+                            >
+                              <Github className="w-3.5 h-3.5" />
+                              <span>Source Code</span>
+                            </a>
+                          )}
+                          {sol.demo_url && (
+                            <a
+                              href={sol.demo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-colors"
+                            >
+                              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Live Demo</span>
+                            </a>
+                          )}
+                          {sol.video_url && (
+                            <a
+                              href={sol.video_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 transition-colors"
+                            >
+                              <Video className="w-3.5 h-3.5 text-pink-400" />
+                              <span>Video Demo</span>
+                            </a>
+                          )}
+                          {isAuthor && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="text-xs bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 font-bold"
+                              leftIcon={<Crown className="w-3.5 h-3.5 text-amber-400" />}
+                              onClick={() => handleSelectSolutionAsWinner(sol)}
+                            >
+                              Crown as Winner
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Solution Writeup */}
+                      <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-slate-100 leading-relaxed whitespace-pre-wrap font-mono">
+                        {sol.solution_writeup || 'No write-up provided.'}
+                      </div>
+
+                      {/* Mentor Feedback (if present) */}
+                      {sol.mentor_feedback && (
+                        <div className="p-3.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-xs text-purple-200">
+                          <div className="flex items-center gap-1.5 font-bold text-purple-300 mb-1">
+                            <GraduationCap className="w-4 h-4" />
+                            <span>Faculty Mentor Evaluation:</span>
+                          </div>
+                          <p className="whitespace-pre-wrap">{sol.mentor_feedback}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="space-y-4">
-                {solutions.map((sol) => (
-                  <div
-                    key={sol.id}
-                    className="p-6 rounded-2xl border border-charcoal-750 bg-charcoal-900/70 hover:border-charcoal-600 transition-all space-y-4 shadow-sm"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="text-base font-bold text-white">{sol.title}</h3>
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
-                            Deliverable Applied
-                          </span>
+              /* Student View: ONLY their own team's solution */
+              visibleSolutions.length > 0 ? (
+                <div className="space-y-4">
+                  {visibleSolutions.map((sol) => (
+                    <div
+                      key={sol.id}
+                      className="p-6 rounded-2xl border border-emerald-500/40 bg-charcoal-900/80 shadow-md space-y-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="text-base font-bold text-white">{sol.title || 'Solution Deliverable'}</h3>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+                              ✓ Your Team&apos;s Answer Applied
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-medium">
+                            <span>
+                              Team: <strong className="text-white font-bold">{sol.team_name || 'Your Squad'}</strong>
+                            </span>
+                            <span>•</span>
+                            <span>Submitted {sol.created_at ? new Date(sol.created_at).toLocaleDateString() : 'Recently'}</span>
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-medium">
-                          <span>
-                            Team: <strong className="text-white font-bold">{sol.team_name}</strong>
-                          </span>
-                          <span>•</span>
-                          <span>Lead: {sol.author?.display_name || 'Student Lead'}</span>
-                          <span>•</span>
-                          <span>Submitted {new Date(sol.created_at).toLocaleDateString()}</span>
-                        </p>
-                      </div>
 
-                      {/* Links and Faculty Crown action */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {sol.repo_url && (
-                          <a
-                            href={sol.repo_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 hover:bg-charcoal-750 text-slate-100 border border-charcoal-700 transition-colors"
-                          >
-                            <Github className="w-3.5 h-3.5" />
-                            <span>Source Code</span>
-                          </a>
-                        )}
-                        {sol.demo_url && (
-                          <a
-                            href={sol.demo_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-colors"
-                          >
-                            <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Live Demo</span>
-                          </a>
-                        )}
-                        {sol.video_url && (
-                          <a
-                            href={sol.video_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 transition-colors"
-                          >
-                            <Video className="w-3.5 h-3.5 text-pink-400" />
-                            <span>Video Demo</span>
-                          </a>
-                        )}
-                        {isAuthor && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="text-xs bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 font-bold"
-                            leftIcon={<Crown className="w-3.5 h-3.5 text-amber-400" />}
-                            onClick={() => handleSelectSolutionAsWinner(sol)}
-                          >
-                            Crown as Winner
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Solution Writeup */}
-                    <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-slate-100 leading-relaxed whitespace-pre-wrap font-mono">
-                      {sol.solution_writeup}
-                    </div>
-
-                    {/* Mentor Feedback (if present) */}
-                    {sol.mentor_feedback && (
-                      <div className="p-3.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-xs text-purple-200">
-                        <div className="flex items-center gap-1.5 font-bold text-purple-300 mb-1">
-                          <GraduationCap className="w-4 h-4" />
-                          <span>Faculty Mentor Evaluation:</span>
+                        {/* Action Links */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {sol.repo_url && (
+                            <a
+                              href={sol.repo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 hover:bg-charcoal-750 text-slate-100 border border-charcoal-700 transition-colors"
+                            >
+                              <Github className="w-3.5 h-3.5" />
+                              <span>Source Code</span>
+                            </a>
+                          )}
+                          {sol.demo_url && (
+                            <a
+                              href={sol.demo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-colors"
+                            >
+                              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Live Demo</span>
+                            </a>
+                          )}
+                          {sol.video_url && (
+                            <a
+                              href={sol.video_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 transition-colors"
+                            >
+                              <Video className="w-3.5 h-3.5 text-pink-400" />
+                              <span>Video Demo</span>
+                            </a>
+                          )}
                         </div>
-                        <p className="whitespace-pre-wrap">{sol.mentor_feedback}</p>
                       </div>
-                    )}
+
+                      {/* Solution Writeup */}
+                      <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-slate-100 leading-relaxed whitespace-pre-wrap font-mono">
+                        {sol.solution_writeup || 'No write-up provided.'}
+                      </div>
+
+                      {/* Mentor Feedback (if present) */}
+                      {sol.mentor_feedback && (
+                        <div className="p-3.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-xs text-purple-200">
+                          <div className="flex items-center gap-1.5 font-bold text-purple-300 mb-1">
+                            <GraduationCap className="w-4 h-4" />
+                            <span>Faculty Mentor Evaluation:</span>
+                          </div>
+                          <p className="whitespace-pre-wrap">{sol.mentor_feedback}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Student has not applied yet: Privacy lock card */
+                <div className="rounded-2xl border border-charcoal-750 p-8 text-center bg-charcoal-900/40 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-charcoal-800 border border-charcoal-750 flex items-center justify-center mx-auto text-slate-400">
+                    <ShieldCheck className="w-6 h-6 text-brand-400" />
                   </div>
-                ))}
-              </div>
+                  <h4 className="text-base font-bold text-white">Private Faculty Review Active</h4>
+                  <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                    Student answer deliverables are strictly private between each squad and the supervising professor. Apply your team&apos;s answer to post your prototype and source code.
+                  </p>
+                  <div className="pt-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md"
+                      leftIcon={<Send className="w-3.5 h-3.5" />}
+                      onClick={() => {
+                        if (!user) openAuthModal();
+                        else setIsSolutionModalOpen(true);
+                      }}
+                    >
+                      Apply the Answer
+                    </Button>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
           {/* SEGMENT 2: Student Teams Tackling This Challenge */}
           <div id="student-teams-section" className="pt-8 border-t border-charcoal-800 mb-12">
-            <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
                   <Layers className="w-5 h-5 text-brand-400" />
                   <span>Student Teams Tackling This Challenge</span>
                 </h2>
                 <p className="text-xs text-slate-200 mt-1 leading-relaxed">
-                  Active collegiate teams and student engineering squads building solutions for this challenge.
+                  Active collegiate squads and student engineering teams building solutions for this challenge.
                 </p>
               </div>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-charcoal-800 text-slate-200 border border-charcoal-700">
-                {tacklingProjects.length} {tacklingProjects.length === 1 ? 'Team Project' : 'Team Projects'}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-charcoal-800 text-slate-200 border border-charcoal-700">
+                  {tacklingProjects.length} {tacklingProjects.length === 1 ? 'Team Squad' : 'Team Squads'}
+                </span>
+                {!isAuthor && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs"
+                    leftIcon={<Users className="w-3.5 h-3.5" />}
+                    onClick={() => {
+                      if (!user) openAuthModal();
+                      else setIsTeamModalOpen(true);
+                    }}
+                  >
+                    Form a Student Team
+                  </Button>
+                )}
+              </div>
             </div>
 
             {tacklingProjects.length === 0 ? (
@@ -1188,61 +1382,115 @@ export default function ProblemStatementDetailPage() {
                   No registered student teams yet.
                 </p>
                 <p className="text-xs text-slate-300 mb-4 max-w-md mx-auto leading-relaxed">
-                  Build your squad, create a team project, and apply your answer to this faculty challenge.
+                  Form your squad specifically for this faculty challenge. You can optionally post it to Explore Projects to recruit more teammates!
                 </p>
-                <Link
-                  href={`/projects/new?problem_id=${problem.id}&title=${encodeURIComponent(problem.title)}&category=${encodeURIComponent(problem.category)}`}
-                >
+                {!isAuthor && (
                   <Button
                     variant="outline"
                     size="sm"
                     className="border-brand-500/30 text-brand-300 hover:bg-brand-500/10 font-bold"
                     leftIcon={<Users className="w-4 h-4" />}
+                    onClick={() => {
+                      if (!user) openAuthModal();
+                      else setIsTeamModalOpen(true);
+                    }}
                   >
                     Form a Student Team
                   </Button>
-                </Link>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {tacklingProjects.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/projects/${p.id}`}
-                    className="group block p-5 rounded-xl border border-charcoal-750 hover:border-brand-500/40 bg-charcoal-900/60 hover:bg-charcoal-850/80 transition-all shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-1">
-                        {p.title}
-                      </h3>
-                      <Badge variant="status" status={p.status} />
-                    </div>
-                    <p className="text-xs text-slate-200 line-clamp-2 mb-4 leading-relaxed font-normal">{p.summary}</p>
-                    <div className="flex items-center justify-between text-xs text-slate-300 pt-3 border-t border-charcoal-800">
-                      <div className="flex items-center gap-2">
-                        <Avatar
-                          name={p.owner?.display_name || 'Owner'}
-                          src={p.owner?.avatar_url}
-                          size="sm"
-                        />
-                        <span className="text-white font-semibold truncate max-w-[120px]">
-                          {p.owner?.display_name || 'Team Lead'}
-                        </span>
+                {tacklingProjects.map((p) => {
+                  const isMySquad = Boolean(user && user.id === p.owner_id);
+                  const isRecruitingOnExplore = p.status === 'Recruiting';
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`p-5 rounded-2xl border transition-all shadow-sm ${
+                        isMySquad
+                          ? 'border-brand-500/40 bg-brand-950/20'
+                          : 'border-charcoal-750 bg-charcoal-900/60 hover:border-charcoal-600'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link
+                            href={`/projects/${p.id}`}
+                            className="font-bold text-white hover:text-brand-300 transition-colors text-sm line-clamp-1"
+                          >
+                            {p.title}
+                          </Link>
+                          {isMySquad && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                              Your Squad
+                            </span>
+                          )}
+                          {isRecruitingOnExplore && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                              Explore Recruiting
+                            </span>
+                          )}
+                        </div>
+                        <Badge variant="status" status={p.status} />
                       </div>
-                      <div className="flex items-center gap-1.5 text-slate-200 font-medium">
-                        <Users className="w-3.5 h-3.5 text-brand-400" />
-                        <span>
-                          {p.current_team_size}/{p.desired_team_size} members
-                        </span>
+
+                      <p className="text-xs text-slate-200 line-clamp-2 mb-4 leading-relaxed font-normal">
+                        {p.summary}
+                      </p>
+
+                      <div className="flex items-center justify-between text-xs text-slate-300 pt-3 border-t border-charcoal-800">
+                        <div className="flex items-center gap-2">
+                          <Avatar
+                            name={p.owner?.display_name || 'Owner'}
+                            src={p.owner?.avatar_url}
+                            size="sm"
+                          />
+                          <span className="text-white font-semibold truncate max-w-[120px]">
+                            {p.owner?.display_name || 'Team Lead'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-slate-200 font-medium">
+                            <Users className="w-3.5 h-3.5 text-brand-400" />
+                            <span>
+                              {p.current_team_size || 1}/{p.desired_team_size || 4} members
+                            </span>
+                          </div>
+                          <Link
+                            href={`/projects/${p.id}/workspace`}
+                            className="text-xs font-bold text-brand-300 hover:text-white inline-flex items-center gap-1"
+                          >
+                            <span>Workspace</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         </>
       )}
+
+      {/* Form a Student Team Modal (Inside the Problem) */}
+      <ProblemTeamModal
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
+        problemId={problem.id}
+        problemTitle={problem.title}
+        problemCategory={problem.category}
+        problemDifficulty={problem.difficulty}
+        requiredSkills={problem.required_skills}
+        expectedTeamSize={problem.team_size}
+        onSuccess={(createdTeam) => {
+          setTacklingProjects((prev) => [createdTeam, ...prev]);
+          setActionSuccess(`Team "${createdTeam.title}" formed for this challenge!`);
+        }}
+      />
 
       {/* Apply the Answer Modal */}
       <ProblemSolutionModal

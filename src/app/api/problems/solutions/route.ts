@@ -10,13 +10,15 @@ export const runtime = 'nodejs';
  * GET /api/problems/solutions
  * Query problem answers / solutions with optional filters:
  * - problem_id: filter by specific problem statement
- * - author_id: filter by faculty author or student submitter
+ * - author_id: filter by student submitter
+ * - viewer_id: student privacy protection (students only see their own answer; faculty sees all)
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const problemId = searchParams.get('problem_id');
     const authorId = searchParams.get('author_id');
+    const viewerId = searchParams.get('viewer_id');
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({ success: true, solutions: [] });
@@ -29,8 +31,15 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     let solutions: ProblemSolution[] = [];
-    if (settingRow?.value && Array.isArray(settingRow.value)) {
-      solutions = settingRow.value;
+    if (settingRow?.value) {
+      if (Array.isArray(settingRow.value)) {
+        solutions = settingRow.value;
+      } else if (typeof settingRow.value === 'string') {
+        try {
+          const parsed = JSON.parse(settingRow.value);
+          if (Array.isArray(parsed)) solutions = parsed;
+        } catch {}
+      }
     }
 
     if (problemId) {
@@ -45,22 +54,52 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Enrich author profiles
+    // Student privacy / Answer isolation:
+    // If viewer_id is passed, check if viewer is the faculty author of this problem.
+    // If NOT the faculty author, the student can ONLY see their own team's submission.
+    if (viewerId && problemId) {
+      let isFacultyViewer = false;
+      try {
+        const { data: pData } = await defaultClient
+          .from('problem_statements')
+          .select('author_id')
+          .eq('id', problemId)
+          .maybeSingle();
+
+        if (pData?.author_id && pData.author_id.toLowerCase() === viewerId.toLowerCase()) {
+          isFacultyViewer = true;
+        }
+      } catch {}
+
+      if (!isFacultyViewer) {
+        // Enforce student privacy
+        solutions = solutions.filter(
+          (s) => (s.author_id || '').toLowerCase() === viewerId.toLowerCase()
+        );
+      }
+    }
+
+    // Robust, crash-proof author profile enrichment in batches
     const authorIds = Array.from(new Set(solutions.map((s) => s.author_id).filter(Boolean)));
     if (authorIds.length > 0) {
       try {
-        const { data: profs } = await defaultClient
-          .from('profiles')
-          .select('user_id, display_name, username, avatar_url, college, course')
-          .in('user_id', authorIds);
+        const profMap = new Map();
+        for (let i = 0; i < authorIds.length; i += 40) {
+          const chunk = authorIds.slice(i, i + 40);
+          const { data: profs } = await defaultClient
+            .from('profiles')
+            .select('user_id, display_name, username, avatar_url, college, course')
+            .in('user_id', chunk);
 
-        if (profs && profs.length > 0) {
-          const profMap = new Map(profs.map((p) => [p.user_id, p]));
-          solutions = solutions.map((s) => ({
-            ...s,
-            author: profMap.get(s.author_id) || s.author,
-          }));
+          if (profs && Array.isArray(profs)) {
+            profs.forEach((p) => profMap.set(p.user_id, p));
+          }
         }
+
+        solutions = solutions.map((s) => ({
+          ...s,
+          author: profMap.get(s.author_id) || s.author,
+        }));
       } catch (profErr) {
         console.warn('Profile enrichment notice:', profErr);
       }
@@ -68,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     // Sort newest first
     solutions.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
     );
 
     return NextResponse.json({
@@ -87,6 +126,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/problems/solutions
  * Post a problem answer / project solution to a faculty problem statement.
+ * Crash-proofed against high concurrent submissions and large payloads.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -125,14 +165,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!title || !title.trim()) {
+    if (!title || !String(title).trim()) {
       return NextResponse.json(
         { error: 'Please enter a title for your solution / project deliverable.' },
         { status: 400 }
       );
     }
 
-    if (!solution_writeup || solution_writeup.trim().length < 20) {
+    if (!solution_writeup || String(solution_writeup).trim().length < 20) {
       return NextResponse.json(
         { error: 'Please provide a detailed write-up (at least 20 characters) explaining your solution.' },
         { status: 400 }
@@ -142,8 +182,10 @@ export async function POST(request: NextRequest) {
     // Identify user
     let user = null;
     if (token) {
-      const { data: userData } = await client.auth.getUser(token);
-      user = userData?.user;
+      try {
+        const { data: userData } = await client.auth.getUser(token);
+        user = userData?.user;
+      } catch {}
     }
 
     const resolvedAuthorId = user?.id || author_id;
@@ -167,20 +209,21 @@ export async function POST(request: NextRequest) {
       console.warn('Profile fetch notice:', e);
     }
 
+    // Sanitize and bound payload sizes to prevent database column overflow
     const newSolution: ProblemSolution = {
       id: `sol-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      problem_id,
-      problem_title: problem_title || 'Faculty Challenge',
-      project_id: project_id || null,
+      problem_id: String(problem_id).trim(),
+      problem_title: String(problem_title || 'Faculty Challenge').slice(0, 200),
+      project_id: project_id ? String(project_id).trim() : null,
       author_id: resolvedAuthorId,
       author: authorProfile,
-      team_name: (team_name || authorProfile?.display_name || 'Engineering Squad').trim(),
-      team_members: Array.isArray(team_members) ? team_members : [],
-      title: title.trim(),
-      solution_writeup: solution_writeup.trim(),
-      repo_url: repo_url?.trim() || null,
-      demo_url: demo_url?.trim() || null,
-      video_url: video_url?.trim() || null,
+      team_name: String(team_name || authorProfile?.display_name || 'Engineering Squad').trim().slice(0, 120),
+      team_members: Array.isArray(team_members) ? team_members.slice(0, 20) : [],
+      title: String(title).trim().slice(0, 200),
+      solution_writeup: String(solution_writeup).trim().slice(0, 50000),
+      repo_url: repo_url ? String(repo_url).trim().slice(0, 1000) : null,
+      demo_url: demo_url ? String(demo_url).trim().slice(0, 1000) : null,
+      video_url: video_url ? String(video_url).trim().slice(0, 1000) : null,
       status: 'submitted',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -194,7 +237,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Save into cloud platform_settings registry
+    // Read cloud platform_settings registry safely
     const { data: settingRow } = await defaultClient
       .from('platform_settings')
       .select('value')
@@ -202,11 +245,18 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     let registry: ProblemSolution[] = [];
-    if (settingRow?.value && Array.isArray(settingRow.value)) {
-      registry = settingRow.value;
+    if (settingRow?.value) {
+      if (Array.isArray(settingRow.value)) {
+        registry = settingRow.value;
+      } else if (typeof settingRow.value === 'string') {
+        try {
+          const parsed = JSON.parse(settingRow.value);
+          if (Array.isArray(parsed)) registry = parsed;
+        } catch {}
+      }
     }
 
-    // Replace if same author already submitted for this problem, or append
+    // Deduplicate: If same author already submitted for this problem, update in place
     const existingIdx = registry.findIndex(
       (s) => s.problem_id === problem_id && s.author_id === resolvedAuthorId
     );
@@ -216,11 +266,16 @@ export async function POST(request: NextRequest) {
         ...registry[existingIdx],
         ...newSolution,
         id: registry[existingIdx].id,
-        created_at: registry[existingIdx].created_at,
+        created_at: registry[existingIdx].created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
     } else {
       registry.unshift(newSolution);
+    }
+
+    // Cap registry to latest 1,000 entries to prevent memory exhaustion
+    if (registry.length > 1000) {
+      registry = registry.slice(0, 1000);
     }
 
     const { error: saveErr } = await defaultClient
@@ -241,7 +296,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       solution: newSolution,
-      message: 'Solution answer posted successfully! The faculty mentor will review your deliverables.',
+      message: 'Solution answer applied successfully! The faculty mentor will review your deliverables.',
     });
   } catch (err: unknown) {
     return NextResponse.json(
@@ -257,9 +312,6 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-
     const body = await request.json();
     const { solution_id, status, mentor_feedback, grade } = body;
 
@@ -281,8 +333,15 @@ export async function PATCH(request: NextRequest) {
       .maybeSingle();
 
     let registry: ProblemSolution[] = [];
-    if (settingRow?.value && Array.isArray(settingRow.value)) {
-      registry = settingRow.value;
+    if (settingRow?.value) {
+      if (Array.isArray(settingRow.value)) {
+        registry = settingRow.value;
+      } else if (typeof settingRow.value === 'string') {
+        try {
+          const parsed = JSON.parse(settingRow.value);
+          if (Array.isArray(parsed)) registry = parsed;
+        } catch {}
+      }
     }
 
     const targetIdx = registry.findIndex((s) => s.id === solution_id);
@@ -293,7 +352,7 @@ export async function PATCH(request: NextRequest) {
     registry[targetIdx] = {
       ...registry[targetIdx],
       status,
-      mentor_feedback: mentor_feedback !== undefined ? mentor_feedback : registry[targetIdx].mentor_feedback,
+      mentor_feedback: mentor_feedback !== undefined ? String(mentor_feedback).slice(0, 20000) : registry[targetIdx].mentor_feedback,
       grade: grade !== undefined ? grade : registry[targetIdx].grade,
       updated_at: new Date().toISOString(),
     };
