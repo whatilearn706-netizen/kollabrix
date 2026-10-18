@@ -42,6 +42,7 @@ import { UnstopHeroSearchBar } from '@/components/landing/UnstopHeroSearchBar';
 import { UnstopDomainGrid } from '@/components/landing/UnstopDomainGrid';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { ProblemShowcaseCard } from '@/components/problems/ProblemShowcaseCard';
+import { CustomAdminSpotlightSection } from '@/components/landing/CustomAdminSpotlightSection';
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
 
 const OrigamiBirdSculpture = dynamic(
@@ -357,7 +358,7 @@ export default function HomePage() {
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
       {/* Real-time Campus Opportunity Ticker (Unstop-Inspired) */}
-      <CampusOpportunityTicker />
+      {sectionsConfig.campusTicker !== false && <CampusOpportunityTicker />}
 
       {/* OAuth Notice Banner */}
       {oauthErrorNotice && (
@@ -443,7 +444,7 @@ export default function HomePage() {
                 </p>
 
                 {/* Unstop-Style Interactive Global Search Console */}
-                <UnstopHeroSearchBar />
+                {sectionsConfig.heroSearch !== false && <UnstopHeroSearchBar />}
 
                 {/* Direct Primary & Secondary Action CTAs */}
                 <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -525,9 +526,11 @@ export default function HomePage() {
               </div>
 
               {/* Right Column: Signature 3D Linkora Origami Bird */}
-              <div className="lg:col-span-5 flex items-center justify-center relative min-h-[360px] sm:min-h-[400px] lg:min-h-[440px] overflow-hidden">
-                <OrigamiBirdSculpture />
-              </div>
+              {sectionsConfig.origamiBird !== false && (
+                <div className="lg:col-span-5 flex items-center justify-center relative min-h-[360px] sm:min-h-[400px] lg:min-h-[440px] overflow-hidden">
+                  <OrigamiBirdSculpture />
+                </div>
+              )}
             </div>
           </div>
           <div className="glow-divider mt-12" />
@@ -535,10 +538,22 @@ export default function HomePage() {
       )}
 
       {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
-      <UnstopDomainGrid />
+      {sectionsConfig.domainGrid !== false && (
+        <UnstopDomainGrid
+          title={sectionsConfig.domainGridTitle}
+          subtitle={sectionsConfig.domainGridSubtitle}
+        />
+      )}
 
       {/* Opportunity Category Navigation Rail (Unstop-Inspired) */}
-      <OpportunityCategoryBar />
+      {sectionsConfig.categoryRails !== false && <OpportunityCategoryBar />}
+
+      {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: below_hero */}
+      {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
+        masterConfig.customSection &&
+        (masterConfig.customSection.position || 'below_hero') === 'below_hero' && (
+          <CustomAdminSpotlightSection config={masterConfig.customSection} />
+        )}
 
       {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
@@ -852,6 +867,13 @@ export default function HomePage() {
           user={user}
         />
       )}
+
+      {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: above_showcase */}
+      {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
+        masterConfig.customSection &&
+        masterConfig.customSection.position === 'above_showcase' && (
+          <CustomAdminSpotlightSection config={masterConfig.customSection} />
+        )}
 
       {/* =========================================================================
           SECTION 3: SHOWCASE (LIVE ACTIVE PROJECTS & HACKATHONS)
@@ -1199,6 +1221,13 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: above_footer */}
+      {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
+        masterConfig.customSection &&
+        masterConfig.customSection.position === 'above_footer' && (
+          <CustomAdminSpotlightSection config={masterConfig.customSection} />
+        )}
 
       {/* =========================================================================
           SECTION 5: BEGIN (CLOSING CALL TO ACTION)

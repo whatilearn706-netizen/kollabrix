@@ -101,7 +101,12 @@ const DOMAIN_CARDS: DomainCard[] = [
   },
 ];
 
-export function UnstopDomainGrid() {
+interface UnstopDomainGridProps {
+  title?: string;
+  subtitle?: string;
+}
+
+export function UnstopDomainGrid({ title, subtitle }: UnstopDomainGridProps = {}) {
   return (
     <section className="py-12 sm:py-16 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -113,10 +118,10 @@ export function UnstopDomainGrid() {
               <span>Explore Opportunities by Category</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              What do you want to achieve today?
+              {title || 'What do you want to achieve today?'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Pick your pathway to join collegiate hackathons, recruit teammates, or solve faculty challenges.
+              {subtitle || 'Pick your pathway to join collegiate hackathons, recruit teammates, or solve faculty challenges.'}
             </p>
           </div>
 

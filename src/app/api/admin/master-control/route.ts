@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
             badges: Array.isArray(row.value.badges) ? row.value.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
             maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(row.value.maintenance || {}) },
             workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(row.value.workspaceFeatures || {}) },
+            customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(row.value.customSection || {}) },
           };
         }
 
@@ -198,6 +199,7 @@ export async function POST(request: NextRequest) {
       badges: Array.isArray(incoming.badges) ? incoming.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
       maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(incoming.maintenance || {}) },
       workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(incoming.workspaceFeatures || {}) },
+      customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(incoming.customSection || {}) },
     };
 
     let savedToDb = false;

@@ -7,8 +7,28 @@ export interface BroadcastBannerConfig {
   dismissible: boolean;
 }
 
+export interface CustomSectionConfig {
+  enabled: boolean;
+  position: 'below_hero' | 'above_showcase' | 'above_footer';
+  badge: string;
+  title: string;
+  subtitle: string;
+  content: string;
+  primaryButtonText: string;
+  primaryButtonUrl: string;
+  secondaryButtonText?: string;
+  secondaryButtonUrl?: string;
+  theme: 'gradient_violet' | 'gradient_blue' | 'gradient_emerald' | 'gradient_amber' | 'slate_dark' | 'clean_white';
+  bannerImageUrl?: string;
+}
+
 export interface HomepageSectionToggles {
+  campusTicker?: boolean;
   hero: boolean;
+  heroSearch?: boolean;
+  origamiBird?: boolean;
+  domainGrid?: boolean;
+  categoryRails?: boolean;
   intent: boolean;
   workflow: boolean;
   showcase: boolean;
@@ -20,12 +40,15 @@ export interface HomepageSectionToggles {
   pulseLeaderboard?: boolean;
   pulseAiMatchmaker?: boolean;
   pulseLivePresence?: boolean;
+  customSection?: boolean;
   pulseTitle?: string;
   pulseSubtitle?: string;
   workflowTitle?: string;
   workflowSubtitle?: string;
   showcaseTitle?: string;
   showcaseSubtitle?: string;
+  domainGridTitle?: string;
+  domainGridSubtitle?: string;
 }
 
 export interface CollegeWhitelistItem {
@@ -71,6 +94,7 @@ export interface MasterControlConfig {
   badges: StudentBadgeAward[];
   maintenance: MaintenanceModeConfig;
   workspaceFeatures?: WorkspaceFeaturesConfig;
+  customSection?: CustomSectionConfig;
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
@@ -89,7 +113,12 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     dismissible: true,
   },
   sections: {
+    campusTicker: true,
     hero: true,
+    heroSearch: true,
+    origamiBird: true,
+    domainGrid: true,
+    categoryRails: true,
     intent: true,
     workflow: true,
     showcase: true,
@@ -101,12 +130,29 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     pulseLeaderboard: true,
     pulseAiMatchmaker: true,
     pulseLivePresence: true,
+    customSection: false,
     pulseTitle: 'Campus Innovation Hub',
     pulseSubtitle: 'Live university rankings, AI dream team matchmaking, and real-time collegiate sprint presence.',
-    workflowTitle: 'Workflow',
-    workflowSubtitle: 'From raw concept to verified career proof in three collegiate stages.',
+    workflowTitle: 'Collegiate Journey',
+    workflowSubtitle: 'From raw concept to verified career proof in four collegiate stages.',
     showcaseTitle: 'Showcase',
     showcaseSubtitle: 'Explore active projects recruiting collaborators, or enter upcoming university competitions.',
+    domainGridTitle: 'What do you want to achieve today?',
+    domainGridSubtitle: 'Pick your pathway to join collegiate hackathons, recruit teammates, or solve faculty challenges.',
+  },
+  customSection: {
+    enabled: false,
+    position: 'above_showcase',
+    badge: '🌟 SPECIAL ANNOUNCEMENT',
+    title: 'Grand Collegiate Winter Hackathon 2026',
+    subtitle: 'Over ₹5,00,000 in bounties, cloud grants, and direct interview fast-tracks for winning squads.',
+    content: 'Registration is now open for students across all engineering branches. Form teams of 2 to 4 developers and build open-source web, AI, or Web3 applications.',
+    primaryButtonText: 'Register Your Squad →',
+    primaryButtonUrl: '/hackathons',
+    secondaryButtonText: 'Find Teammates',
+    secondaryButtonUrl: '/teammates',
+    theme: 'gradient_violet',
+    bannerImageUrl: '',
   },
   colleges: [],
   badges: [],

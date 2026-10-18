@@ -29,6 +29,12 @@ import {
   Zap,
   Laptop,
   Headphones,
+  PlusCircle,
+  Layers,
+  Palette,
+  ArrowRight,
+  Globe,
+  Sliders,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -41,16 +47,76 @@ import {
   MaintenanceModeConfig,
   MasterControlConfig,
   WorkspaceFeaturesConfig,
+  CustomSectionConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'restricted' | 'workspace' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'restricted' | 'workspace' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
   initialSubTab?: SubTab;
   onNavigateTab?: (tab: any) => void;
 }
+
+const SPOTLIGHT_PRESETS = [
+  {
+    name: '🏆 Hackathon Drive',
+    badge: '🏆 NATIONAL COMPETITION',
+    title: 'Grand Collegiate Winter Hackathon 2026',
+    subtitle: 'Over ₹5,00,000 in bounties, cloud grants, and direct interview fast-tracks for winning squads.',
+    content: 'Registration is now open for students across all engineering branches. Form teams of 2 to 4 developers and build open-source web, AI, or Web3 applications.',
+    primaryButtonText: 'Register Your Squad →',
+    primaryButtonUrl: '/hackathons',
+    secondaryButtonText: 'Find Teammates',
+    secondaryButtonUrl: '/teammates',
+    theme: 'gradient_violet' as const,
+    position: 'above_showcase' as const,
+    bannerImageUrl: '',
+  },
+  {
+    name: '📢 Ambassador Hiring',
+    badge: '📢 STUDENT LEADERSHIP',
+    title: 'Lead Linkora on Your Campus',
+    subtitle: 'Become an official Campus Ambassador, host collegiate sprint sessions, and earn verified citations.',
+    content: 'Ambassadors receive exclusive swag kits, direct access to the founding team, and letter of recommendation citations signed by platform leads.',
+    primaryButtonText: 'Apply as Ambassador →',
+    primaryButtonUrl: '/explore',
+    secondaryButtonText: 'View Hall of Fame',
+    secondaryButtonUrl: '/explore',
+    theme: 'gradient_blue' as const,
+    position: 'below_hero' as const,
+    bannerImageUrl: '',
+  },
+  {
+    name: '💡 Problem Statement',
+    badge: '💡 REAL-WORLD CHALLENGE',
+    title: 'FinTech Algorithmic Routing Challenge',
+    subtitle: 'Sponsored by leading engineering firms — direct internship fast-track for top 5 solutions.',
+    content: 'Benchmark and deploy high-throughput microservice routing algorithms. Mentorship hours provided by verified senior software engineers.',
+    primaryButtonText: 'View Challenge Brief →',
+    primaryButtonUrl: '/explore',
+    secondaryButtonText: 'Submit Solution',
+    secondaryButtonUrl: '/projects/new',
+    theme: 'gradient_emerald' as const,
+    position: 'above_showcase' as const,
+    bannerImageUrl: '',
+  },
+  {
+    name: '🎉 Tech Fest & Workshop',
+    badge: '🎉 SPECIAL EVENT',
+    title: 'Collegiate AI & System Design Bootcamp',
+    subtitle: 'Free interactive 3-day bootcamp covering distributed systems, Next.js 15, and LLM fine-tuning.',
+    content: 'Open to all verified college students. Earn an accredited Proof-of-Work workshop badge upon project demo submission.',
+    primaryButtonText: 'Reserve Free Seat →',
+    primaryButtonUrl: '/explore',
+    secondaryButtonText: 'Browse Schedule',
+    secondaryButtonUrl: '/hackathons',
+    theme: 'gradient_amber' as const,
+    position: 'above_footer' as const,
+    bannerImageUrl: '',
+  },
+];
 
 export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab }: AdminMasterControlTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab || 'all');
@@ -96,10 +162,26 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
         const data = await res.json();
 
         if (res.ok && data.config) {
-          setConfig(data.config);
+          const merged: MasterControlConfig = {
+            ...DEFAULT_MASTER_CONTROL_CONFIG,
+            ...data.config,
+            sections: {
+              ...DEFAULT_MASTER_CONTROL_CONFIG.sections,
+              ...(data.config.sections || {}),
+            },
+            customSection: {
+              ...DEFAULT_MASTER_CONTROL_CONFIG.customSection!,
+              ...(data.config.customSection || {}),
+            },
+            workspaceFeatures: {
+              ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures!,
+              ...(data.config.workspaceFeatures || {}),
+            },
+          };
+          setConfig(merged);
           if (data.ceoStats) setCeoStats(data.ceoStats);
           try {
-            localStorage.setItem('linkora_master_control_v1', JSON.stringify(data.config));
+            localStorage.setItem('linkora_master_control_v1', JSON.stringify(merged));
           } catch (e) {}
         }
       } catch (err: any) {
@@ -285,12 +367,13 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
   const subTabs = [
     { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
+    { id: 'custom' as SubTab, label: '🌟 Custom Spotlight Builder', icon: PlusCircle },
+    { id: 'sections' as SubTab, label: '2. Homepage Sections (15 Elements)', icon: LayoutGrid },
     { id: 'workspace' as SubTab, label: '⚡ Workspace Modules (4 Centers)', icon: Zap },
-    { id: 'restricted' as SubTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'banner' as SubTab, label: '1. Broadcast Banner', icon: Megaphone },
-    { id: 'sections' as SubTab, label: '2. Homepage Sections', icon: LayoutGrid },
     { id: 'colleges' as SubTab, label: '3. College Whitelist', icon: GraduationCap },
     { id: 'badges' as SubTab, label: '4. Student Hall of Fame', icon: Award },
+    { id: 'restricted' as SubTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'ceo' as SubTab, label: '5. Executive CEO Analytics', icon: BarChart3 },
     { id: 'maintenance' as SubTab, label: '6. Maintenance & Access', icon: Lock },
   ];
@@ -367,16 +450,17 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-              Full Studio Active: All 6 Modules Stacked Below
+              Full Studio Active: All Modules Stacked Below
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
             {[
+              { id: 'module-custom', label: '🌟 Spotlight Builder', color: 'hover:border-amber-400 text-amber-300' },
+              { id: 'module-2', label: '2. Sections (15 Elements)', color: 'hover:border-amber-500 text-blue-300' },
               { id: 'module-workspace', label: '⚡ Workspace (4 Centers)', color: 'hover:border-violet-500 text-violet-300' },
-              { id: 'module-restricted', label: '🚫 Restricted Mode', color: 'hover:border-red-500 text-red-300' },
               { id: 'module-1', label: '1. Banner', color: 'hover:border-violet-500' },
-              { id: 'module-2', label: '2. Sections', color: 'hover:border-amber-500' },
+              { id: 'module-restricted', label: '🚫 Restricted Mode', color: 'hover:border-red-500 text-red-300' },
               { id: 'module-3', label: '3. Colleges', color: 'hover:border-emerald-500' },
               { id: 'module-4', label: '4. Badges', color: 'hover:border-pink-500' },
               { id: 'module-5', label: '5. CEO Analytics', color: 'hover:border-cyan-500' },
@@ -907,38 +991,123 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Section Toggles */}
             <div className="space-y-3 bg-charcoal-850 p-4 rounded-xl border border-charcoal-750">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Section Visibility (1-Click Switcher)
-              </h4>
-
-              {[
-                { key: 'hero' as const, label: 'Hero Header & Call to Action' },
-                { key: 'intent' as const, label: 'Intent Intelligence Console ("Find me a project...")' },
-                { key: 'workflow' as const, label: '3-Stage Collegiate Workflow' },
-                { key: 'showcase' as const, label: 'Featured Projects Showcase Grid' },
-                { key: 'colleges' as const, label: 'Verified Campus Partner Universities Grid' },
-                { key: 'badges' as const, label: 'Collegiate Honors & Student Hall of Fame' },
-                { key: 'hackathons' as const, label: 'Live Campus Hackathons Strip' },
-                { key: 'ctaBanner' as const, label: 'Bottom Join Linkora Banner' },
-              ].map(({ key, label }) => (
-                <label
-                  key={key}
-                  className="flex items-center justify-between p-3 rounded-xl bg-charcoal-800/80 border border-charcoal-700/60 hover:border-charcoal-600 cursor-pointer transition-colors"
-                >
-                  <span className="text-xs font-medium text-slate-200">{label}</span>
-                  <input
-                    type="checkbox"
-                    checked={config.sections[key]}
-                    onChange={(e) =>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-charcoal-750 pb-2.5">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    Section Visibility (15 Website Elements)
+                  </h4>
+                  <p className="text-[11px] text-slate-400">Turn any individual component live or off instantly.</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
                       setConfig({
                         ...config,
-                        sections: { ...config.sections, [key]: e.target.checked },
-                      })
-                    }
-                    className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-charcoal-900 border-charcoal-700"
-                  />
-                </label>
-              ))}
+                        sections: {
+                          ...config.sections,
+                          campusTicker: true,
+                          hero: true,
+                          heroSearch: true,
+                          origamiBird: true,
+                          domainGrid: true,
+                          categoryRails: true,
+                          customSection: true,
+                          intent: true,
+                          workflow: true,
+                          campusPulse: true,
+                          showcase: true,
+                          colleges: true,
+                          badges: true,
+                          hackathons: true,
+                          ctaBanner: true,
+                        },
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+                  >
+                    All ON (15)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfig({
+                        ...config,
+                        sections: {
+                          ...config.sections,
+                          campusTicker: false,
+                          hero: true,
+                          heroSearch: false,
+                          origamiBird: false,
+                          domainGrid: false,
+                          categoryRails: false,
+                          customSection: false,
+                          intent: false,
+                          workflow: false,
+                          campusPulse: false,
+                          showcase: false,
+                          colleges: false,
+                          badges: false,
+                          hackathons: false,
+                          ctaBanner: false,
+                        },
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 rounded bg-charcoal-750 text-slate-400 hover:text-slate-200 transition-colors"
+                  >
+                    Hero Only
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1 scrollbar-none">
+                {[
+                  { key: 'campusTicker' as const, label: '1. Top Live Opportunity Ticker', tag: 'Ticker', desc: 'Floating collegiate updates strip at very top' },
+                  { key: 'hero' as const, label: '2. Hero Header & Call to Action Stage', tag: 'Hero', desc: 'Main collegiate headline, subtitle & CTA buttons' },
+                  { key: 'heroSearch' as const, label: '3. Unstop Opportunity Search Console', tag: 'Search', desc: 'Category filter bar & trending tags (SIH, Google)' },
+                  { key: 'origamiBird' as const, label: '4. 3D Interactive Origami Bird Sculpture', tag: '3D Art', desc: 'Signature geometric bird in hero right column' },
+                  { key: 'domainGrid' as const, label: '5. 5-Domain Vibrant Explorer Cards', tag: 'Domains', desc: 'Unstop-style pastel cards: Hackathons, Squads, etc.' },
+                  { key: 'categoryRails' as const, label: '6. Opportunity Category Quick-Rails', tag: 'Nav Rail', desc: 'Horizontal quick-jump category navigation chips' },
+                  { key: 'customSection' as const, label: '7. Custom Website Spotlight / Announcement', tag: 'Spotlight', desc: 'Admin custom headline, banner, and CTA buttons' },
+                  { key: 'intent' as const, label: '8. Intent Intelligence Console', tag: 'AI Intent', desc: '"Find me a project..." natural-language matcher' },
+                  { key: 'workflow' as const, label: '9. 4-Stage Collegiate Architecture', tag: 'Workflow', desc: 'Match, Squad Up, Build, Prove & Win stages' },
+                  { key: 'campusPulse' as const, label: '10. Campus Innovation Hub', tag: 'Campus Hub', desc: 'Leaderboard, AI Smart Matchmaker, Live Presence' },
+                  { key: 'showcase' as const, label: '11. Opportunities Showcase (3-Tab Grid)', tag: 'Showcase', desc: 'Collegiate Projects, Hackathons, Problem Statements' },
+                  { key: 'colleges' as const, label: '12. Verified Campus Partner Universities', tag: 'Partners', desc: 'Participating college network grid' },
+                  { key: 'badges' as const, label: '13. Collegiate Honors & Hall of Fame', tag: 'Honors', desc: 'Verified student badges and award citations' },
+                  { key: 'hackathons' as const, label: '14. Live Campus Hackathons Strip', tag: 'Contests', desc: 'Department competition passcode and portals' },
+                  { key: 'ctaBanner' as const, label: '15. Bottom Join Linkora Free Banner', tag: 'Closing', desc: 'Closing call to action for students and faculty' },
+                ].map(({ key, label, tag, desc }) => (
+                  <label
+                    key={key}
+                    className="flex items-start justify-between p-2.5 rounded-xl bg-charcoal-800/80 border border-charcoal-700/60 hover:border-charcoal-600 cursor-pointer transition-colors"
+                  >
+                    <div className="space-y-0.5 pr-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-semibold text-slate-200">{label}</span>
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-charcoal-700 text-slate-300">
+                          {tag}
+                        </span>
+                        <span className={`text-[10px] font-mono font-bold ${config.sections[key] !== false ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          {config.sections[key] !== false ? '🟢 Live' : '⚪ Off'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-tight">{desc}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={config.sections[key] !== false}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          sections: { ...config.sections, [key]: e.target.checked },
+                        })
+                      }
+                      className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-charcoal-900 border-charcoal-700 shrink-0 mt-0.5"
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Custom Headlines */}
@@ -946,6 +1115,42 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                 Dynamic Section Titles & Copy
               </h4>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  5-Domain Explorer Cards Title (Unstop Grid)
+                </label>
+                <input
+                  type="text"
+                  value={config.sections.domainGridTitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, domainGridTitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  placeholder="e.g. What do you want to achieve today?"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  5-Domain Explorer Cards Subtitle
+                </label>
+                <textarea
+                  rows={2}
+                  value={config.sections.domainGridSubtitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sections: { ...config.sections, domainGridSubtitle: e.target.value },
+                    })
+                  }
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  placeholder="Subtitle for 5 domain explorer cards..."
+                />
+              </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
@@ -1195,6 +1400,443 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white"
                   placeholder="e.g. Live collegiate rankings, AI dream team matchmaking..."
                 />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 🌟 CUSTOM WEBSITE SPOTLIGHT & ANNOUNCEMENT BUILDER */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'custom') && (
+        <div id="module-custom" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  ADMIN SUPERPOWERS • SPOTLIGHT BUILDER
+                </span>
+                <span className={`text-xs font-mono font-bold ${(config.customSection?.enabled || config.sections.customSection) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {(config.customSection?.enabled || config.sections.customSection) ? '🟢 LIVE ON HOMEPAGE' : '⚪ CURRENTLY HIDDEN'}
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <span>Add Whatever You Want (Custom Website Spotlight Builder)</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Design custom announcements, hackathon registration spotlights, or special banners anywhere on the website without writing code.
+              </p>
+            </div>
+
+            {/* Master Switch */}
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer bg-charcoal-850 border border-charcoal-700 hover:border-charcoal-600 px-4 py-2 rounded-xl transition-colors">
+                <span className="text-xs font-bold text-slate-200">
+                  {(config.customSection?.enabled || config.sections.customSection) ? 'Section is LIVE' : 'Section is Hidden'}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={Boolean(config.customSection?.enabled || config.sections.customSection)}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    const updated = {
+                      ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                      enabled: isChecked,
+                    };
+                    setConfig({
+                      ...config,
+                      customSection: updated,
+                      sections: {
+                        ...config.sections,
+                        customSection: isChecked,
+                      },
+                    });
+                  }}
+                  className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-charcoal-900 border-charcoal-700"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="space-y-2 bg-charcoal-850 p-4 rounded-xl border border-charcoal-750">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                1-Click Starter Presets
+              </span>
+              <span className="text-[11px] text-slate-400">Click to instantly populate with tested layout</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              {SPOTLIGHT_PRESETS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const updated = {
+                      ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                      badge: preset.badge,
+                      title: preset.title,
+                      subtitle: preset.subtitle,
+                      content: preset.content,
+                      primaryButtonText: preset.primaryButtonText,
+                      primaryButtonUrl: preset.primaryButtonUrl,
+                      secondaryButtonText: preset.secondaryButtonText,
+                      secondaryButtonUrl: preset.secondaryButtonUrl,
+                      theme: preset.theme,
+                      position: preset.position,
+                      bannerImageUrl: preset.bannerImageUrl,
+                      enabled: true,
+                    };
+                    setConfig({
+                      ...config,
+                      customSection: updated,
+                      sections: {
+                        ...config.sections,
+                        customSection: true,
+                      },
+                    });
+                  }}
+                  className="text-left p-3 rounded-lg bg-charcoal-800 border border-charcoal-700 hover:border-amber-500/50 hover:bg-charcoal-750 transition-all text-xs font-medium text-slate-200"
+                >
+                  <div className="font-bold text-white mb-0.5">{preset.name}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{preset.title}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Editor Form & Live Preview Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Form Controls (7 cols) */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Position and Theme Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Homepage Placement
+                  </label>
+                  <select
+                    value={config.customSection?.position || 'above_showcase'}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          position: e.target.value as any,
+                        },
+                      })
+                    }
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white focus:ring-brand-500"
+                  >
+                    <option value="below_hero">Below Hero & Domain Cards (Top Priority)</option>
+                    <option value="above_showcase">Middle Stage (Above Opportunities Showcase)</option>
+                    <option value="above_footer">Bottom Stage (Above Join Linkora Footer)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Visual Color Theme
+                  </label>
+                  <select
+                    value={config.customSection?.theme || 'gradient_violet'}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          theme: e.target.value as any,
+                        },
+                      })
+                    }
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white focus:ring-brand-500"
+                  >
+                    <option value="gradient_violet">Violet Nebula (Indigo & Purple)</option>
+                    <option value="gradient_blue">Cyan Cyber (Blue & Cyan)</option>
+                    <option value="gradient_emerald">Emerald Mint (Green & Teal)</option>
+                    <option value="gradient_amber">Amber Sunburst (Orange & Amber)</option>
+                    <option value="slate_dark">Midnight Onyx (Dark Slate)</option>
+                    <option value="clean_white">Minimalist Porcelain (Crisp White)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Badge & Headline */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Top Pill Badge
+                  </label>
+                  <input
+                    type="text"
+                    value={config.customSection?.badge || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          badge: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="e.g. 🌟 SPECIAL ANNOUNCEMENT"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Main Headline / Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={config.customSection?.title || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          title: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="e.g. Grand Collegiate Winter Hackathon 2026"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Subtitle */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Supporting Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={config.customSection?.subtitle || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      customSection: {
+                        ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                        subtitle: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="e.g. Over ₹5,00,000 in bounties, cloud grants, and direct interview fast-tracks."
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Detailed Content / Markdown */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Detailed Content / Body Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={config.customSection?.content || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      customSection: {
+                        ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                        content: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Detailed announcement, instructions, eligibility criteria, or registration details..."
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Buttons Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-charcoal-850 p-3.5 rounded-xl border border-charcoal-750">
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                    Primary Button (Action 1)
+                  </span>
+                  <input
+                    type="text"
+                    value={config.customSection?.primaryButtonText || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          primaryButtonText: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="Button Text (e.g. Register Your Squad →)"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  />
+                  <input
+                    type="text"
+                    value={config.customSection?.primaryButtonUrl || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          primaryButtonUrl: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="Link URL (e.g. /hackathons or https://...)"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono text-[11px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                    Secondary Button (Action 2 - Optional)
+                  </span>
+                  <input
+                    type="text"
+                    value={config.customSection?.secondaryButtonText || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          secondaryButtonText: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="Button Text (e.g. Find Teammates)"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  />
+                  <input
+                    type="text"
+                    value={config.customSection?.secondaryButtonUrl || ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        customSection: {
+                          ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                          secondaryButtonUrl: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="Link URL (e.g. /teammates)"
+                    className="w-full bg-charcoal-800 border border-charcoal-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* Optional Banner Image URL */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Optional Right-Side Banner Image URL
+                </label>
+                <input
+                  type="text"
+                  value={config.customSection?.bannerImageUrl || ''}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      customSection: {
+                        ...(config.customSection || DEFAULT_MASTER_CONTROL_CONFIG.customSection!),
+                        bannerImageUrl: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="https://images.unsplash.com/... or direct image link (leave blank for full-width layout)"
+                  className="w-full bg-charcoal-800 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 font-mono text-[11px]"
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Live Interactive Preview (5 cols) */}
+            <div className="lg:col-span-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Real-Time Visitor Preview</span>
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Position: {config.customSection?.position || 'above_showcase'}
+                </span>
+              </div>
+
+              {/* Preview Card */}
+              <div className={`p-5 rounded-2xl border transition-all shadow-lg space-y-3 relative overflow-hidden ${
+                config.customSection?.theme === 'gradient_blue'
+                  ? 'bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 text-white border-blue-500/40'
+                  : config.customSection?.theme === 'gradient_emerald'
+                  ? 'bg-gradient-to-br from-emerald-950 via-teal-950 to-slate-950 text-white border-emerald-500/40'
+                  : config.customSection?.theme === 'gradient_amber'
+                  ? 'bg-gradient-to-br from-amber-950 via-orange-950 to-slate-950 text-white border-amber-500/40'
+                  : config.customSection?.theme === 'clean_white'
+                  ? 'bg-white text-slate-900 border-slate-300 shadow-xl'
+                  : config.customSection?.theme === 'slate_dark'
+                  ? 'bg-slate-900 text-white border-slate-700'
+                  : 'bg-gradient-to-br from-violet-950 via-indigo-950 to-slate-950 text-white border-violet-500/40'
+              }`}>
+                {/* Badge */}
+                {config.customSection?.badge && (
+                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/10 border border-white/20">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>{config.customSection.badge}</span>
+                  </div>
+                )}
+
+                <h4 className="text-base font-extrabold leading-snug">
+                  {config.customSection?.title || 'Your Custom Headline Here'}
+                </h4>
+
+                {config.customSection?.subtitle && (
+                  <p className="text-xs opacity-90 leading-relaxed font-medium">
+                    {config.customSection.subtitle}
+                  </p>
+                )}
+
+                {config.customSection?.content && (
+                  <p className="text-[11px] opacity-75 leading-relaxed line-clamp-3">
+                    {config.customSection.content}
+                  </p>
+                )}
+
+                {/* Banner Image Preview */}
+                {config.customSection?.bannerImageUrl && (
+                  <div className="rounded-lg overflow-hidden max-h-32 border border-white/20">
+                    <img
+                      src={config.customSection.bannerImageUrl}
+                      alt="Banner Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                {/* Buttons Preview */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {config.customSection?.primaryButtonText && (
+                    <span className="px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-sm inline-flex items-center gap-1">
+                      <span>{config.customSection.primaryButtonText}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
+                  )}
+                  {config.customSection?.secondaryButtonText && (
+                    <span className="px-3 py-1.5 rounded-xl border border-white/30 text-xs font-bold">
+                      {config.customSection.secondaryButtonText}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Publish Button */}
+              <div className="pt-2">
+                <Button
+                  onClick={() => handleSave()}
+                  disabled={isSaving}
+                  size="sm"
+                  variant="primary"
+                  className="w-full font-bold"
+                  leftIcon={isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                >
+                  {isSaving ? 'Publishing Changes...' : 'Save & Publish Spotlight Now'}
+                </Button>
               </div>
             </div>
           </div>
