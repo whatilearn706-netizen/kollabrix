@@ -6,7 +6,7 @@
 [![Explore Projects](https://img.shields.io/badge/Explore-Projects%20%26%20Teams-6366f1?style=for-the-badge)](https://linkora-link.online/explore)
 [![Hackathon Arena](https://img.shields.io/badge/Compete-Hackathon%20Arena-f59e0b?style=for-the-badge)](https://linkora-link.online/hackathons)
 
-🌐 **Explore the Live Platform**: [https://linkora-link.online](https://linkora-link.online)
+🌐 **Official Linkora Platform**: [https://linkora-link.online](https://linkora-link.online)
 
 ---
 
