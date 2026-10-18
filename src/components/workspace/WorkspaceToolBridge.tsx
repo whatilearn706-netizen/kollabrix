@@ -158,8 +158,35 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
         return clean;
       }
 
+      // Loom share URL conversion
       if (tool === 'loom' || clean.includes('loom.com/share/')) {
         return clean.replace('loom.com/share/', 'loom.com/embed/');
+      }
+
+      // YouTube Walkthrough Demo video conversion
+      if (clean.includes('youtube.com/watch') || clean.includes('youtu.be/')) {
+        let videoId = '';
+        if (clean.includes('v=')) {
+          videoId = clean.split('v=')[1]?.split('&')[0];
+        } else if (clean.includes('youtu.be/')) {
+          videoId = clean.split('youtu.be/')[1]?.split('?')[0];
+        }
+        if (videoId) {
+          return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0`;
+        }
+      }
+
+      // Miro Live Embed
+      if (tool === 'miro' || clean.includes('miro.com/app/board/')) {
+        if (!clean.includes('/live-embed/')) {
+          return clean.replace('/app/board/', '/app/live-embed/');
+        }
+        return clean;
+      }
+
+      // CodePen Embed
+      if (clean.includes('codepen.io') && clean.includes('/pen/')) {
+        return clean.replace('/pen/', '/embed/');
       }
 
       if (tool === 'canva' || clean.includes('canva.com')) {
@@ -174,6 +201,11 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
           return clean.replace(/\/edit.*$/, '/preview');
         }
         return clean;
+      }
+
+      // Custom web prototype -> route through proxy so X-Frame-Options doesn't block it
+      if (tool === 'custom') {
+        return `/api/proxy-preview?url=${encodeURIComponent(clean)}`;
       }
     } catch {}
 
@@ -768,7 +800,9 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
                 src={computeDemoFrameSrc()}
                 title="Live Prototype Preview"
                 className="w-full h-full border-0"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-presentation allow-pointer-lock"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
               />
             </div>
           </div>

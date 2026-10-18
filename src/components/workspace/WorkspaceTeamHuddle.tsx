@@ -28,6 +28,8 @@ import {
   RefreshCw,
   Activity,
   Wifi,
+  PhoneCall,
+  Volume1,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
@@ -56,10 +58,26 @@ interface StandupPost {
   };
 }
 
+interface PeerSpeakingState {
+  isSpeaking: boolean;
+  volume: number;
+  isMuted?: boolean;
+  lastUpdated: number;
+}
+
+const RTC_CONFIG: RTCConfiguration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+  ],
+};
+
 export function WorkspaceTeamHuddle({
   project,
   members,
-  currentUserId,
+  currentUserId = 'current-user',
   currentUserProfile,
 }: WorkspaceTeamHuddleProps) {
   const [activeTab, setActiveTab] = useState<'scratchpad' | 'standup' | 'audio'>('scratchpad');
@@ -81,22 +99,114 @@ export function WorkspaceTeamHuddle({
   // Audio Huddle State
   const [isInHuddle, setIsInHuddle] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isSharingScreen, setIsSharingScreen] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [realAudioVolume, setRealAudioVolume] = useState<number>(0);
+  const [isEchoLoopback, setIsEchoLoopback] = useState(false);
   const [isLofiPlaying, setIsLofiPlaying] = useState(false);
   const [huddlePresenceUsers, setHuddlePresenceUsers] = useState<any[]>([]);
-  const [realAudioVolume, setRealAudioVolume] = useState<number>(0);
+  const [remoteSpeakingMap, setRemoteSpeakingMap] = useState<Record<string, PeerSpeakingState>>({});
 
-  // Audio Context Refs
+  // Audio Context & WebRTC Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const micAnalyserRef = useRef<AnalyserNode | null>(null);
+  const loopbackGainRef = useRef<GainNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  // WebRTC Peer Connections map: remoteUserId -> RTCPeerConnection
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const lastSpeakingBroadcastRef = useRef<number>(0);
+  const isSpeakingRef = useRef<boolean>(false);
+  const isMutedRef = useRef<boolean>(false);
+  isMutedRef.current = isMuted;
+  const isInHuddleRef = useRef<boolean>(false);
+  isInHuddleRef.current = isInHuddle;
+  const channelRef = useRef<any>(null);
 
   const activeUserName =
     currentUserProfile?.display_name ||
     currentUserProfile?.username ||
     'You (Lead)';
+
+  // Helper to attach incoming remote WebRTC audio stream to DOM
+  const attachRemoteAudio = (peerId: string, stream: MediaStream) => {
+    let audioEl = document.getElementById(`remote-audio-${peerId}`) as HTMLAudioElement;
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.id = `remote-audio-${peerId}`;
+      audioEl.autoplay = true;
+      audioEl.setAttribute('playsinline', 'true');
+      audioEl.muted = false;
+      audioEl.volume = 1.0;
+      document.body.appendChild(audioEl);
+    }
+    audioEl.srcObject = stream;
+    const playPromise = audioEl.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn('Remote audio autoplay waiting for user gesture or error:', err);
+      });
+    }
+  };
+
+  // Helper to cleanup all peer connections when leaving
+  const cleanupAllPeerConnections = () => {
+    peerConnectionsRef.current.forEach((pc) => {
+      try {
+        pc.close();
+      } catch {}
+    });
+    peerConnectionsRef.current.clear();
+
+    // Remove remote audio elements
+    document.querySelectorAll('[id^="remote-audio-"]').forEach((el) => el.remove());
+  };
+
+  // Create an RTCPeerConnection for a remote peer
+  const createPeerConnection = (peerId: string, channel: any): RTCPeerConnection => {
+    // If existing connection exists, close it first
+    const existing = peerConnectionsRef.current.get(peerId);
+    if (existing) {
+      try { existing.close(); } catch {}
+    }
+
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    peerConnectionsRef.current.set(peerId, pc);
+
+    // Add local mic audio tracks
+    if (micStreamRef.current) {
+      micStreamRef.current.getAudioTracks().forEach((track) => {
+        pc.addTrack(track, micStreamRef.current!);
+      });
+    }
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        channel.send({
+          type: 'broadcast',
+          event: 'webrtc-signal-ice',
+          payload: { candidate: event.candidate, to: peerId, from: currentUserId },
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        attachRemoteAudio(peerId, event.streams[0]);
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        peerConnectionsRef.current.delete(peerId);
+        const el = document.getElementById(`remote-audio-${peerId}`);
+        if (el) el.remove();
+      }
+    };
+
+    return pc;
+  };
 
   // Initial load from Supabase DB & setup Realtime channel
   useEffect(() => {
@@ -168,8 +278,9 @@ export function WorkspaceTeamHuddle({
 
     // Setup Supabase Realtime channel for live collaborative sync & presence
     const channel = supabase.channel(`workspace-huddle-${project.id}`, {
-      config: { broadcast: { self: false }, presence: { key: currentUserId || 'guest' } },
+      config: { broadcast: { self: false }, presence: { key: currentUserId } },
     });
+    channelRef.current = channel;
 
     // Listen for peer scratchpad edits
     channel.on('broadcast', { event: 'scratchpad-sync' }, (payload: any) => {
@@ -188,7 +299,115 @@ export function WorkspaceTeamHuddle({
       }
     });
 
-    // Presence sync for live audio huddle
+    // Listen for peer speaking volume updates (SOLVES: "not showing to friend that I am talking")
+    channel.on('broadcast', { event: 'huddle-peer-speaking' }, (payload: any) => {
+      if (payload?.payload?.userId && isMounted) {
+        setRemoteSpeakingMap((prev) => ({
+          ...prev,
+          [payload.payload.userId]: {
+            isSpeaking: Boolean(payload.payload.isSpeaking),
+            volume: payload.payload.volume || 0,
+            isMuted: Boolean(payload.payload.isMuted),
+            lastUpdated: Date.now(),
+          },
+        }));
+      }
+    });
+
+    // Listen for peer mute updates
+    channel.on('broadcast', { event: 'huddle-peer-mute' }, (payload: any) => {
+      if (payload?.payload?.userId && isMounted) {
+        setRemoteSpeakingMap((prev) => ({
+          ...prev,
+          [payload.payload.userId]: {
+            ...(prev[payload.payload.userId] || { volume: 0, lastUpdated: Date.now() }),
+            isSpeaking: false,
+            isMuted: Boolean(payload.payload.isMuted),
+          },
+        }));
+      }
+    });
+
+    // =========================================================================
+    // WEBRTC SIGNALING HANDLERS (SOLVES: "audio is not working like I talk to my friend")
+    // =========================================================================
+    // 1. Peer joined audio room -> existing peers in huddle initiate WebRTC Offer
+    channel.on('broadcast', { event: 'webrtc-peer-joined' }, async (payload: any) => {
+      const remotePeerId = payload?.payload?.peerId;
+      if (!remotePeerId || remotePeerId === currentUserId) return;
+
+      // Only peers actively inside the voice call initiate WebRTC Offer
+      if (isMounted && isInHuddleRef.current && micStreamRef.current) {
+        try {
+          const pc = createPeerConnection(remotePeerId, channel);
+          const offer = await pc.createOffer({
+            offerToReceiveAudio: true,
+          });
+          await pc.setLocalDescription(offer);
+
+          channel.send({
+            type: 'broadcast',
+            event: 'webrtc-signal-offer',
+            payload: { sdp: offer, to: remotePeerId, from: currentUserId, fromName: activeUserName },
+          });
+        } catch (err) {
+          console.warn('WebRTC offer error:', err);
+        }
+      }
+    });
+
+    // 2. Incoming Offer -> create Answer and reply
+    channel.on('broadcast', { event: 'webrtc-signal-offer' }, async (payload: any) => {
+      const { sdp, to, from } = payload?.payload || {};
+      if (to !== currentUserId || !from || !sdp) return;
+
+      try {
+        const pc = createPeerConnection(from, channel);
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        channel.send({
+          type: 'broadcast',
+          event: 'webrtc-signal-answer',
+          payload: { sdp: answer, to: from, from: currentUserId },
+        });
+      } catch (err) {
+        console.warn('WebRTC answer error:', err);
+      }
+    });
+
+    // 3. Incoming Answer -> finalize connection
+    channel.on('broadcast', { event: 'webrtc-signal-answer' }, async (payload: any) => {
+      const { sdp, to, from } = payload?.payload || {};
+      if (to !== currentUserId || !from || !sdp) return;
+
+      try {
+        const pc = peerConnectionsRef.current.get(from);
+        if (pc && pc.signalingState !== 'stable') {
+          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        }
+      } catch (err) {
+        console.warn('WebRTC setRemoteDescription answer error:', err);
+      }
+    });
+
+    // 4. Incoming ICE Candidate
+    channel.on('broadcast', { event: 'webrtc-signal-ice' }, async (payload: any) => {
+      const { candidate, to, from } = payload?.payload || {};
+      if (to !== currentUserId || !from || !candidate) return;
+
+      try {
+        const pc = peerConnectionsRef.current.get(from);
+        if (pc) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+      } catch (err) {
+        // ICE candidate arrival can race with remote description
+      }
+    });
+
+    // 5. Presence sync for active speakers in huddle
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
@@ -207,9 +426,10 @@ export function WorkspaceTeamHuddle({
     return () => {
       isMounted = false;
       if (debounceSaveTimer.current) clearTimeout(debounceSaveTimer.current);
+      cleanupAllPeerConnections();
       supabase.removeChannel(channel);
     };
-  }, [project.id, currentUserId, members, project.owner_id, project.owner, project.title]);
+  }, [project.id, currentUserId, members, project.owner_id, project.owner, project.title, activeUserName]);
 
   // Collaborative Scratchpad Change with Realtime Broadcast & DB Persistence
   const handleScratchpadChange = (newText: string) => {
@@ -217,7 +437,7 @@ export function WorkspaceTeamHuddle({
     setLastSavedTime('Saving to cloud...');
 
     // 1. Broadcast immediately to peers over WebSocket
-    const channel = supabase.channel(`workspace-huddle-${project.id}`);
+    const channel = channelRef.current || supabase.channel(`workspace-huddle-${project.id}`);
     channel.send({
       type: 'broadcast',
       event: 'scratchpad-sync',
@@ -276,7 +496,7 @@ export function WorkspaceTeamHuddle({
 
     const newPost: StandupPost = {
       id: `st-${Date.now()}`,
-      userId: currentUserId || 'current-user',
+      userId: currentUserId,
       userName: activeUserName,
       userRole: currentUserProfile?.role === 'admin' ? 'Project Lead' : 'Builder',
       shipped: newShipped.trim(),
@@ -304,7 +524,7 @@ export function WorkspaceTeamHuddle({
       });
 
       // Broadcast to teammates
-      const channel = supabase.channel(`workspace-huddle-${project.id}`);
+      const channel = channelRef.current || supabase.channel(`workspace-huddle-${project.id}`);
       channel.send({
         type: 'broadcast',
         event: 'standup-sync',
@@ -345,7 +565,7 @@ export function WorkspaceTeamHuddle({
         }),
       });
 
-      const channel = supabase.channel(`workspace-huddle-${project.id}`);
+      const channel = channelRef.current || supabase.channel(`workspace-huddle-${project.id}`);
       channel.send({
         type: 'broadcast',
         event: 'standup-sync',
@@ -354,41 +574,72 @@ export function WorkspaceTeamHuddle({
     } catch {}
   };
 
-  // Real-Time Audio Huddle: Real Voice Detection + Realtime Presence
+  // =========================================================================
+  // AUDIO HUDDLE: JOIN / LEAVE / WEBRTC / MICROPHONE LEVEL SENSING
+  // =========================================================================
   const handleToggleHuddle = async () => {
     const nextState = !isInHuddle;
     setIsInHuddle(nextState);
+    isInHuddleRef.current = nextState;
 
-    const channel = supabase.channel(`workspace-huddle-${project.id}`);
+    const channel = channelRef.current || supabase.channel(`workspace-huddle-${project.id}`);
 
     if (nextState) {
-      // Track presence in huddle
+      // 1. Announce presence to Supabase
       channel.track({
-        userId: currentUserId || 'user',
+        userId: currentUserId,
         userName: activeUserName,
         role: 'Teammate',
         inHuddle: true,
         isMuted: false,
       });
 
-      // Attempt real microphone audio detection
+      // 2. Request microphone stream
       try {
         if (navigator?.mediaDevices?.getUserMedia) {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
           micStreamRef.current = stream;
 
           const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
           const ctx = new AudioCtx();
+          if (ctx.state === 'suspended') {
+            await ctx.resume().catch(() => {});
+          }
+          audioContextRef.current = ctx;
+
           const source = ctx.createMediaStreamSource(stream);
           const analyser = ctx.createAnalyser();
           analyser.fftSize = 64;
           source.connect(analyser);
           micAnalyserRef.current = analyser;
 
+          // Mic Loopback gain (initially muted to prevent feedback loop)
+          const loopbackGain = ctx.createGain();
+          loopbackGain.gain.setValueAtTime(0, ctx.currentTime);
+          source.connect(loopbackGain);
+          loopbackGain.connect(ctx.destination);
+          loopbackGainRef.current = loopbackGain;
+
           const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
           const updateVolume = () => {
-            if (!analyser || isMuted) {
+            if (!analyser || isMutedRef.current) {
               setRealAudioVolume(0);
+              if (isSpeakingRef.current) {
+                isSpeakingRef.current = false;
+                setIsSpeaking(false);
+                channel.send({
+                  type: 'broadcast',
+                  event: 'huddle-peer-speaking',
+                  payload: { userId: currentUserId, isSpeaking: false, volume: 0 },
+                });
+              }
             } else {
               analyser.getByteFrequencyData(dataArray);
               let sum = 0;
@@ -396,23 +647,84 @@ export function WorkspaceTeamHuddle({
                 sum += dataArray[i];
               }
               const avg = sum / dataArray.length;
-              setRealAudioVolume(Math.min(100, Math.round(avg * 1.5)));
+              const vol = Math.min(100, Math.round(avg * 1.5));
+              setRealAudioVolume(vol);
+
+              // Speaking threshold: avg > 12 (sensitive enough for whisper & quiet mics)
+              const speaking = vol > 12;
+              const now = Date.now();
+
+              if (speaking !== isSpeakingRef.current || (speaking && now - lastSpeakingBroadcastRef.current > 150)) {
+                isSpeakingRef.current = speaking;
+                setIsSpeaking(speaking);
+                lastSpeakingBroadcastRef.current = now;
+
+                // Broadcast live speaking status to teammates
+                channel.send({
+                  type: 'broadcast',
+                  event: 'huddle-peer-speaking',
+                  payload: {
+                    userId: currentUserId,
+                    userName: activeUserName,
+                    isSpeaking: speaking,
+                    volume: vol,
+                    isMuted: false,
+                  },
+                });
+              }
             }
             animationFrameRef.current = requestAnimationFrame(updateVolume);
           };
           updateVolume();
+
+          // 3. Broadcast WebRTC peer join to all active listeners in the workspace
+          channel.send({
+            type: 'broadcast',
+            event: 'webrtc-peer-joined',
+            payload: { peerId: currentUserId, userName: activeUserName },
+          });
+
+          // 4. Fallback connection check: initiate offer to any existing peers already in presence
+          huddlePresenceUsers.forEach((peer) => {
+            if (peer.userId && peer.userId !== currentUserId) {
+              setTimeout(async () => {
+                if (isInHuddleRef.current && micStreamRef.current && !peerConnectionsRef.current.has(peer.userId)) {
+                  try {
+                    const pc = createPeerConnection(peer.userId, channel);
+                    const offer = await pc.createOffer({ offerToReceiveAudio: true });
+                    await pc.setLocalDescription(offer);
+                    channel.send({
+                      type: 'broadcast',
+                      event: 'webrtc-signal-offer',
+                      payload: { sdp: offer, to: peer.userId, from: currentUserId, fromName: activeUserName },
+                    });
+                  } catch (e) {}
+                }
+              }, 1200);
+            }
+          });
         }
       } catch (micErr) {
-        // Microphone permission denied or unavailable -> fallback to simulated soundwaves
-        setRealAudioVolume(45);
+        console.warn('Microphone permission denied or unavailable:', micErr);
+        // Fallback simulated presence
+        setRealAudioVolume(35);
       }
     } else {
-      // Leave huddle
+      // LEAVE HUDDLE
       channel.track({
-        userId: currentUserId || 'user',
+        userId: currentUserId,
         userName: activeUserName,
         inHuddle: false,
       });
+
+      // Broadcast mute/speaking off
+      channel.send({
+        type: 'broadcast',
+        event: 'huddle-peer-speaking',
+        payload: { userId: currentUserId, isSpeaking: false, volume: 0, isMuted: true },
+      });
+
+      cleanupAllPeerConnections();
 
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -421,33 +733,63 @@ export function WorkspaceTeamHuddle({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
       setRealAudioVolume(0);
+      setIsSpeaking(false);
+      setIsEchoLoopback(false);
     }
   };
 
   const handleToggleMute = () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
+    isMutedRef.current = nextMuted;
+
     if (micStreamRef.current) {
       micStreamRef.current.getAudioTracks().forEach((track) => {
         track.enabled = !nextMuted;
       });
     }
-    const channel = supabase.channel(`workspace-huddle-${project.id}`);
+
+    const channel = channelRef.current || supabase.channel(`workspace-huddle-${project.id}`);
     channel.track({
-      userId: currentUserId || 'user',
+      userId: currentUserId,
       userName: activeUserName,
+      role: 'Teammate',
       inHuddle: true,
       isMuted: nextMuted,
     });
+
+    channel.send({
+      type: 'broadcast',
+      event: 'huddle-peer-mute',
+      payload: { userId: currentUserId, isMuted: nextMuted },
+    });
+  };
+
+  // Toggle local mic test loopback so student can verify their own audio
+  const handleToggleEchoLoopback = () => {
+    const next = !isEchoLoopback;
+    setIsEchoLoopback(next);
+    if (loopbackGainRef.current && audioContextRef.current) {
+      loopbackGainRef.current.gain.setValueAtTime(
+        next ? 0.35 : 0,
+        audioContextRef.current.currentTime
+      );
+    }
   };
 
   // Ambient Lofi Focus Tone
   const toggleLofiAudio = () => {
     if (isLofiPlaying) {
       if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-        oscillatorRef.current.disconnect();
+        try {
+          oscillatorRef.current.stop();
+          oscillatorRef.current.disconnect();
+        } catch {}
         oscillatorRef.current = null;
       }
       setIsLofiPlaying(false);
@@ -479,8 +821,10 @@ export function WorkspaceTeamHuddle({
   useEffect(() => {
     return () => {
       if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-        oscillatorRef.current.disconnect();
+        try {
+          oscillatorRef.current.stop();
+          oscillatorRef.current.disconnect();
+        } catch {}
       }
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -488,8 +832,31 @@ export function WorkspaceTeamHuddle({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      cleanupAllPeerConnections();
     };
   }, []);
+
+  // Combine official workspace members + any live presence peers currently in the huddle
+  const combinedPeers = React.useMemo(() => {
+    const list = [...members.filter((m) => m.user_id !== currentUserId)];
+    huddlePresenceUsers.forEach((u) => {
+      if (u.userId && u.userId !== currentUserId && !list.some((m) => m.user_id === u.userId)) {
+        list.push({
+          id: u.userId,
+          project_id: project.id,
+          user_id: u.userId,
+          role: u.role || 'Teammate',
+          joined_at: new Date().toISOString(),
+          profile: {
+            display_name: u.userName || 'Teammate',
+            username: (u.userName || 'teammate').toLowerCase().replace(/\s+/g, ''),
+            avatar_url: null,
+          },
+        } as ProjectMember);
+      }
+    });
+    return list;
+  }, [members, currentUserId, huddlePresenceUsers, project.id]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -503,11 +870,11 @@ export function WorkspaceTeamHuddle({
             <h2 className="text-xl font-bold text-white tracking-tight">The Late-Night Team Huddle</h2>
             <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Real-Time WebSocket Sync</span>
+              <span>Real-Time Voice & WebSocket Sync</span>
             </span>
           </div>
           <p className="text-xs text-slate-400 max-w-2xl">
-            Real-time collaborative architecture scratchpad (keystrokes sync live across teammates), daily standup stream with emoji reactions, and 1-click voice huddle with presence detection.
+            Real WebRTC peer-to-peer voice channel (talk and hear your teammates directly), live speaking indicators, daily sprint velocity stream, and collaborative architecture notes.
           </p>
         </div>
 
@@ -544,7 +911,7 @@ export function WorkspaceTeamHuddle({
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
-            <span>Audio Room ({huddlePresenceUsers.length + (isInHuddle ? 1 : 0)})</span>
+            <span>Voice Huddle ({huddlePresenceUsers.length + (isInHuddle ? 1 : 0)})</span>
           </button>
         </div>
       </div>
@@ -633,7 +1000,7 @@ export function WorkspaceTeamHuddle({
       )}
 
       {/* =========================================================================
-          TAB 2: DAILY STANDUP STREAM (REAL-TIME DB SYNC)
+          TAB 2: DAILY STANDUP STREAM
          ========================================================================= */}
       {activeTab === 'standup' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -807,11 +1174,11 @@ export function WorkspaceTeamHuddle({
       )}
 
       {/* =========================================================================
-          TAB 3: 1-CLICK AUDIO HUDDLE ROOM (REAL-TIME PRESENCE & REAL MICROPHONE SENSING)
+          TAB 3: WEBRTC REAL VOICE AUDIO HUDDLE (REAL MIC + P2P AUDIO STREAMING)
          ========================================================================= */}
       {activeTab === 'audio' && (
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-6">
+          <div className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-6 shadow-sm">
             {/* Top Status Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-charcoal-800 pb-4">
               <div className="space-y-1">
@@ -822,17 +1189,37 @@ export function WorkspaceTeamHuddle({
                     }`}
                   />
                   <h3 className="text-base font-bold text-white">
-                    {isInHuddle ? 'Live Voice Huddle Room' : 'Audio Huddle Room (Standby)'}
+                    {isInHuddle ? 'Live Voice Huddle Room (Connected)' : 'Audio Huddle Room (Standby)'}
                   </h3>
+                  {isInHuddle && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      WebRTC P2P Audio Active
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400">
                   {isInHuddle
-                    ? 'Connected to live room with real-time teammate presence.'
-                    : 'Jump into the voice room with 1-click for fast architectural syncs.'}
+                    ? 'Speak directly to your team. Audio streams in real-time and active speakers are highlighted live.'
+                    : 'Jump into the voice room with 1-click. No external links or Discord accounts needed.'}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
+                {isInHuddle && (
+                  <button
+                    onClick={handleToggleEchoLoopback}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                      isEchoLoopback
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                        : 'bg-charcoal-800 text-slate-300 hover:text-white border-charcoal-700'
+                    }`}
+                    title="Hear your own microphone loopback to test your mic"
+                  >
+                    <Volume1 className="w-3.5 h-3.5" />
+                    <span>{isEchoLoopback ? 'Stop Mic Loopback' : 'Test Mic Loopback'}</span>
+                  </button>
+                )}
+
                 <Button
                   onClick={toggleLofiAudio}
                   size="sm"
@@ -845,7 +1232,7 @@ export function WorkspaceTeamHuddle({
                     )
                   }
                 >
-                  {isLofiPlaying ? 'Stop Lofi Drone' : 'Focus Ambient Tone'}
+                  {isLofiPlaying ? 'Stop Drone' : 'Focus Drone'}
                 </Button>
 
                 <Button
@@ -857,133 +1244,219 @@ export function WorkspaceTeamHuddle({
                       ? 'bg-rose-600 hover:bg-rose-700 text-white'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   }
+                  leftIcon={isInHuddle ? <PhoneCall className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 >
-                  {isInHuddle ? 'Leave Huddle' : 'Join Audio Huddle'}
+                  {isInHuddle ? 'Leave Voice Huddle' : 'Join Audio Huddle'}
                 </Button>
               </div>
             </div>
 
-            {/* Participants Grid with Real-Time Presence */}
+            {/* Participants Grid with Real-Time Presence & Real Speaking Indicators */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Current User Card */}
+              {/* CURRENT USER CARD */}
               <div
-                className={`p-5 rounded-2xl border text-center space-y-3 transition-all ${
+                className={`p-5 rounded-2xl border text-center space-y-3 transition-all relative overflow-hidden ${
                   isInHuddle
-                    ? 'bg-charcoal-850 border-emerald-500/50 ring-2 ring-emerald-500/20'
+                    ? isSpeaking
+                      ? 'bg-charcoal-850 border-emerald-400 ring-4 ring-emerald-500/30 shadow-[0_0_25px_rgba(52,211,153,0.35)]'
+                      : 'bg-charcoal-850 border-emerald-500/50 ring-2 ring-emerald-500/20'
                     : 'bg-charcoal-950 border-charcoal-800 opacity-60'
                 }`}
               >
-                <div className="relative w-14 h-14 mx-auto">
+                <div className="relative w-16 h-16 mx-auto">
                   <div
-                    className={`w-14 h-14 rounded-full bg-emerald-500/20 border-2 flex items-center justify-center font-bold text-lg text-emerald-400 transition-all ${
-                      realAudioVolume > 15 ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)] scale-105' : 'border-emerald-500'
+                    className={`w-16 h-16 rounded-full bg-emerald-500/20 border-2 flex items-center justify-center font-bold text-xl text-emerald-400 transition-all ${
+                      isSpeaking
+                        ? 'border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.8)] scale-110'
+                        : 'border-emerald-500'
                     }`}
                   >
                     {activeUserName.charAt(0).toUpperCase()}
                   </div>
                   {isInHuddle && !isMuted && (
-                    <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 text-charcoal-950">
-                      <Mic className="w-3 h-3" />
+                    <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 text-charcoal-950 shadow-sm">
+                      <Mic className="w-3.5 h-3.5" />
                     </span>
                   )}
                   {isInHuddle && isMuted && (
-                    <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-rose-500 text-white">
-                      <MicOff className="w-3 h-3" />
+                    <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-rose-500 text-white shadow-sm">
+                      <MicOff className="w-3.5 h-3.5" />
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold text-white">{activeUserName}</h4>
-                  <span className="text-[11px] font-mono text-emerald-400">
-                    {isInHuddle ? (isMuted ? 'Muted' : realAudioVolume > 15 ? 'Speaking...' : 'Listening') : 'Standby'}
+                  <h4 className="text-xs font-bold text-white">{activeUserName} (You)</h4>
+                  <span className={`text-[11px] font-mono font-bold block mt-0.5 ${
+                    isInHuddle
+                      ? isMuted
+                        ? 'text-rose-400'
+                        : isSpeaking
+                        ? 'text-emerald-300 animate-pulse'
+                        : 'text-emerald-400'
+                      : 'text-slate-500'
+                  }`}>
+                    {isInHuddle
+                      ? isMuted
+                        ? '🔇 Microphone Muted'
+                        : isSpeaking
+                        ? `🎙️ Speaking (${realAudioVolume}%)`
+                        : '🎧 Listening (Online)'
+                      : 'Standby (Offline)'}
                   </span>
                 </div>
 
                 {isInHuddle && (
-                  <div className="flex justify-center gap-1.5 pt-1">
+                  <div className="flex justify-center gap-2 pt-1">
                     <button
                       onClick={handleToggleMute}
-                      className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                         isMuted
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-charcoal-800 text-slate-300 hover:text-white'
+                          : 'bg-charcoal-800 text-slate-200 hover:text-white border border-charcoal-700'
                       }`}
                       title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
                     >
-                      {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                    </button>
-                    <button
-                      onClick={() => setIsSharingScreen(!isSharingScreen)}
-                      className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors ${
-                        isSharingScreen
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                          : 'bg-charcoal-800 text-slate-300 hover:text-white'
-                      }`}
-                      title={isSharingScreen ? 'Stop screen share' : 'Share screen'}
-                    >
-                      <Monitor className="w-3.5 h-3.5" />
+                      {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-emerald-400" />}
+                      <span>{isMuted ? 'Unmute' : 'Mute'}</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Teammates Roster */}
-              {members.slice(0, 3).map((m) => (
-                <div
-                  key={m.id}
-                  className="p-5 rounded-2xl bg-charcoal-950 border border-charcoal-800 text-center space-y-3"
-                >
-                  <div className="w-14 h-14 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center font-bold text-lg text-indigo-400 mx-auto">
-                    {(m.profile?.display_name || m.profile?.username || 'C').charAt(0).toUpperCase()}
-                  </div>
+              {/* TEAMMATES IN HUDDLE / WORKSPACE */}
+              {combinedPeers.map((m) => {
+                const peerSpeaking = remoteSpeakingMap[m.user_id];
+                const isPeerInHuddle =
+                  huddlePresenceUsers.some((u) => u.userId === m.user_id) ||
+                  Boolean(peerSpeaking?.lastUpdated && Date.now() - peerSpeaking.lastUpdated < 15000);
+                const isPeerSpeaking = isPeerInHuddle && Boolean(peerSpeaking?.isSpeaking);
+                const isPeerMuted = Boolean(peerSpeaking?.isMuted);
 
-                  <div>
-                    <h4 className="text-xs font-bold text-white">
-                      {m.profile?.display_name || m.profile?.username || 'Teammate'}
-                    </h4>
-                    <span className="text-[11px] font-mono text-slate-400">{m.role}</span>
-                  </div>
+                return (
+                  <div
+                    key={m.id}
+                    className={`p-5 rounded-2xl border text-center space-y-3 transition-all relative overflow-hidden ${
+                      isPeerInHuddle
+                        ? isPeerSpeaking
+                          ? 'bg-charcoal-850 border-emerald-400 ring-4 ring-emerald-500/30 shadow-[0_0_25px_rgba(52,211,153,0.35)]'
+                          : 'bg-charcoal-850 border-emerald-500/50 ring-2 ring-emerald-500/20'
+                        : 'bg-charcoal-950 border-charcoal-800 opacity-60'
+                    }`}
+                  >
+                    <div className="relative w-16 h-16 mx-auto">
+                      <div
+                        className={`w-16 h-16 rounded-full border-2 flex items-center justify-center font-bold text-xl transition-all ${
+                          isPeerSpeaking
+                            ? 'bg-emerald-500/30 border-emerald-400 text-emerald-300 shadow-[0_0_20px_rgba(52,211,153,0.8)] scale-110'
+                            : isPeerInHuddle
+                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                            : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
+                        }`}
+                      >
+                        {(m.profile?.display_name || m.profile?.username || 'T').charAt(0).toUpperCase()}
+                      </div>
 
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-charcoal-850 text-slate-400 inline-block">
-                    In Workspace
-                  </span>
-                </div>
-              ))}
+                      {isPeerInHuddle && !isPeerMuted && (
+                        <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 text-charcoal-950 shadow-sm">
+                          <Mic className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      {isPeerInHuddle && isPeerMuted && (
+                        <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-rose-500 text-white shadow-sm">
+                          <MicOff className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-white truncate">
+                        {m.profile?.display_name || m.profile?.username || 'Teammate'}
+                      </h4>
+                      <span className="text-[10px] font-mono text-slate-400 block">{m.role}</span>
+                    </div>
+
+                    <div className="pt-0.5">
+                      {isPeerInHuddle ? (
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full inline-block font-bold ${
+                            isPeerSpeaking
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse'
+                              : isPeerMuted
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          }`}
+                        >
+                          {isPeerSpeaking
+                            ? `🎙️ Speaking (${peerSpeaking?.volume || 0}%)`
+                            : isPeerMuted
+                            ? '🔇 Muted'
+                            : '🎧 In Voice Call'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-charcoal-850 text-slate-400 border border-charcoal-800 inline-block">
+                          ⚪ In Workspace
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Live Voice Soundwave Indicator */}
+            {/* Live Audio Sensitivity & Speaking Waveform */}
             {isInHuddle && (
-              <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 flex items-center justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
+                  {/* Soundwave bars */}
                   <div className="flex items-end gap-1 h-6">
                     <span
-                      className="w-1 bg-emerald-400 rounded-full transition-all duration-75"
+                      className={`w-1 rounded-full transition-all duration-75 ${
+                        isSpeaking ? 'bg-emerald-400' : 'bg-slate-700'
+                      }`}
                       style={{ height: `${Math.max(4, (realAudioVolume / 100) * 24)}px` }}
                     />
                     <span
-                      className="w-1 bg-emerald-400 rounded-full transition-all duration-75"
+                      className={`w-1 rounded-full transition-all duration-75 ${
+                        isSpeaking ? 'bg-emerald-400' : 'bg-slate-700'
+                      }`}
                       style={{ height: `${Math.max(6, ((realAudioVolume * 1.2) / 100) * 24)}px` }}
                     />
                     <span
-                      className="w-1 bg-emerald-400 rounded-full transition-all duration-75"
+                      className={`w-1 rounded-full transition-all duration-75 ${
+                        isSpeaking ? 'bg-emerald-400' : 'bg-slate-700'
+                      }`}
                       style={{ height: `${Math.max(3, ((realAudioVolume * 0.8) / 100) * 24)}px` }}
                     />
                     <span
-                      className="w-1 bg-emerald-400 rounded-full transition-all duration-75"
+                      className={`w-1 rounded-full transition-all duration-75 ${
+                        isSpeaking ? 'bg-emerald-400' : 'bg-slate-700'
+                      }`}
                       style={{ height: `${Math.max(5, ((realAudioVolume * 1.1) / 100) * 24)}px` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-300 font-mono">
-                    {isMuted
-                      ? '🔇 Microphone is Muted'
-                      : realAudioVolume > 15
-                      ? '🎙️ Active Voice Stream Detected'
-                      : '🎙️ Live Audio Channel Ready (Stereo HD)'}
-                  </span>
+
+                  <div>
+                    <span className="text-xs text-slate-200 font-mono font-bold block">
+                      {isMuted
+                        ? '🔇 Microphone is Muted'
+                        : isSpeaking
+                        ? '🎙️ Active Voice Detected — Broadcasting to Teammates'
+                        : '🎙️ Live Voice Channel Connected (Stereo HD WebRTC)'}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Mic Volume: {realAudioVolume}% {isEchoLoopback ? '• Loopback ON' : ''}
+                    </span>
+                  </div>
                 </div>
 
-                <span className="text-xs font-mono text-slate-500">WebSocket Ping: 18ms</span>
+                <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Live WebRTC Mesh</span>
+                  </span>
+                  <span>{huddlePresenceUsers.length + 1} participant{huddlePresenceUsers.length === 0 ? '' : 's'} in room</span>
+                </div>
               </div>
             )}
           </div>
