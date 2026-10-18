@@ -12,7 +12,7 @@ import * as THREE from 'three';
  * - Neck part: Light burgundy
  * Features crisp flat-shaded paper facets, gliding flight kinematics, and interactive rotation.
  */
-export function OrigamiBirdSculpture({ isBlurred = false }: { isBlurred?: boolean }) {
+export function OrigamiBirdSculpture() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [webglSupported, setWebglSupported] = useState(true);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
@@ -54,10 +54,8 @@ export function OrigamiBirdSculpture({ isBlurred = false }: { isBlurred?: boolea
       // Scene
       const scene = new THREE.Scene();
 
-      // Camera: perfectly aligned with dynamic horizontal FOV compensation so wings are never clipped
-      const aspect = width / height;
-      const initialFov = aspect < 1.15 ? 40 * (1.15 / aspect) : 40;
-      const camera = new THREE.PerspectiveCamera(initialFov, aspect, 0.1, 100);
+      // Camera: perfectly aligned so the original origami bird fits cleanly inside the canvas with generous breathing room
+      const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
       camera.position.set(0, 0, 7.2);
 
       // Renderer
@@ -353,15 +351,13 @@ export function OrigamiBirdSculpture({ isBlurred = false }: { isBlurred?: boolea
       window.addEventListener('touchmove', handleTouchMove, { passive: true });
       window.addEventListener('touchend', handleTouchEnd);
 
-      // Resize handler keeping aspect ratio and full wingspan fully framed
+      // Resize handler keeping the aspect ratio tight and centered
       const handleResize = () => {
         if (!activeContainer || !renderer || !camera) return;
         const newWidth = activeContainer.clientWidth;
         const newHeight = activeContainer.clientHeight;
         if (newWidth === 0 || newHeight === 0) return;
-        const newAspect = newWidth / newHeight;
-        camera.aspect = newAspect;
-        camera.fov = newAspect < 1.15 ? 40 * (1.15 / newAspect) : 40;
+        camera.aspect = newWidth / newHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(newWidth, newHeight);
       };
@@ -457,28 +453,20 @@ export function OrigamiBirdSculpture({ isBlurred = false }: { isBlurred?: boolea
     >
       {/* Soft atmospheric ambient glow tailored to Emerald & Burgundy */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div
-          className={`w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl transition-opacity duration-700 ${
-            isBlurred ? 'opacity-30' : 'opacity-75'
-          }`}
-        />
+        <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75" />
       </div>
 
-      {/* Three.js canvas container with smooth animal blur animation */}
+      {/* Three.js canvas container */}
       <div
         ref={containerRef}
-        className={`relative w-full h-full z-10 cursor-grab active:cursor-grabbing transition-all duration-700 ease-out flex items-center justify-center ${
+        className={`relative w-full h-full z-10 cursor-grab active:cursor-grabbing transition-opacity duration-500 flex items-center justify-center ${
           isCanvasReady ? 'opacity-100' : 'opacity-0'
-        } ${
-          isBlurred
-            ? 'filter blur-[10px] brightness-[0.55] scale-[0.92] pointer-events-none'
-            : 'filter-none brightness-100 scale-100 pointer-events-auto'
         }`}
         title="Interactive 3D Origami Bird • Drag to rotate"
       />
 
       {/* Tactile hint pill */}
-      {isCanvasReady && !isBlurred && (
+      {isCanvasReady && (
         <div className="absolute bottom-2 right-4 z-20 pointer-events-none animate-fadeIn">
           <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 shadow-2xs flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

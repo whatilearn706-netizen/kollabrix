@@ -400,10 +400,10 @@ export default function HomePage() {
           <div className="absolute top-1/3 right-4 w-[500px] h-[500px] bg-gradient-to-bl from-pink-500/15 via-rose-500/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
 
-          <div className="max-w-7xl xl:max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
               {/* Left Column: Brand, Editorial Headline & Primary Actions */}
-              <div className="lg:col-span-5 xl:col-span-5 space-y-6 text-left">
+              <div className="lg:col-span-7 space-y-6 text-left">
                 {/* Glassmorphic Badge with Neon Radar Pulse */}
                 <div
                   style={{ borderRadius: theme.borderRadius }}
@@ -531,18 +531,21 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Center Column: Signature 3D Linkora Origami Bird Sculpture (Completely Isolated & Spacious) */}
+              {/* Right Column: Signature 3D Linkora Origami Bird (Exactly as originally before additions) */}
               {sectionsConfig.origamiBird !== false && (
-                <div className="lg:col-span-4 xl:col-span-4 flex items-center justify-center relative min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] overflow-hidden">
+                <div className="lg:col-span-5 flex items-center justify-center relative min-h-[360px] sm:min-h-[400px] lg:min-h-[440px] overflow-hidden">
                   <OrigamiBirdSculpture />
                 </div>
               )}
-
-              {/* Right Column: Dedicated Portals Side Rail & Lil Point of Linkora (Separated with Generous Gap) */}
-              <div className="lg:col-span-3 xl:col-span-3 flex items-center justify-center lg:justify-end">
-                <PortalsSideRail />
-              </div>
             </div>
+          </div>
+
+          {/* Dedicated Portals Side Rail & Lil Point of Linkora on the Far Right Edge (Separated with Huge Gap!) */}
+          <div className="hidden xl:flex absolute right-4 2xl:right-8 top-1/2 -translate-y-1/2 z-20">
+            <PortalsSideRail />
+          </div>
+          <div className="xl:hidden flex justify-center mt-6">
+            <PortalsSideRail />
           </div>
           <div className="glow-divider mt-12" />
         </section>
