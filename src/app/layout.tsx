@@ -18,17 +18,15 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Linkora (Linkora Link) — Student Project Collaboration & Hackathon Platform',
+    default: 'Linkora — Student Project Collaboration & Hackathon Platform',
     template: '%s | Linkora',
   },
   description:
-    'Linkora (Linkora Link) is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
   keywords: [
     'Linkora',
-    'Linkora Link',
-    'linkora link',
-    'linkora-link',
-    'linkora-link.online',
+    'linkora',
+    'LinkOra',
     'linkora online',
     'linkora platform',
     'linkora project collaboration',
@@ -66,16 +64,16 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
-    title: 'Linkora (Linkora Link) — Student Project Collaboration & Hackathon Platform',
+    title: 'Linkora — Student Project Collaboration & Hackathon Platform',
     description:
-      'Linkora (Linkora Link) is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+      'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
     siteName: 'Linkora',
     images: [
       {
         url: `${siteUrl}/brand/linkora-logo.png`,
         width: 1024,
         height: 1024,
-        alt: 'Linkora (Linkora Link) Brand Logo',
+        alt: 'Linkora Brand Logo',
       },
       {
         url: `${siteUrl}/icon-512.png`,
@@ -87,9 +85,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Linkora (Linkora Link) — Student Project Collaboration & Hackathon Platform',
+    title: 'Linkora — Student Project Collaboration & Hackathon Platform',
     description:
-      'Linkora (Linkora Link) is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+      'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
     images: [`${siteUrl}/brand/linkora-logo.png`],
   },
   robots: {
@@ -120,7 +118,7 @@ const jsonLd = {
       '@id': 'https://linkora-link.online/#website',
       url: 'https://linkora-link.online/',
       name: 'Linkora',
-      alternateName: ['Linkora Link', 'linkora link', 'linkora-link.online', 'Linkora Platform', 'LinkOra'],
+      alternateName: ['LinkOra'],
       description: 'College-Wide Student Project Collaboration & Hackathon Platform',
       inLanguage: 'en-US',
       potentialAction: {
@@ -139,7 +137,7 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': 'https://linkora-link.online/#organization',
       name: 'Linkora',
-      alternateName: ['Linkora Link', 'Linkora Platform'],
+      alternateName: ['LinkOra'],
       url: 'https://linkora-link.online/',
       logo: {
         '@type': 'ImageObject',
@@ -179,6 +177,8 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="application-name" content="Linkora" />
         <meta name="apple-mobile-web-app-title" content="Linkora" />
+        <meta name="site_name" content="Linkora" />
+        <meta property="og:site_name" content="Linkora" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
