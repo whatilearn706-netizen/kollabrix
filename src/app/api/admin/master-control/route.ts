@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
             colleges: Array.isArray(row.value.colleges) ? row.value.colleges : DEFAULT_MASTER_CONTROL_CONFIG.colleges,
             badges: Array.isArray(row.value.badges) ? row.value.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
             maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(row.value.maintenance || {}) },
+            workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(row.value.workspaceFeatures || {}) },
           };
         }
 
@@ -151,6 +152,7 @@ export async function GET(request: NextRequest) {
             colleges: Array.isArray(parsed.colleges) ? parsed.colleges : DEFAULT_MASTER_CONTROL_CONFIG.colleges,
             badges: Array.isArray(parsed.badges) ? parsed.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
             maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(parsed.maintenance || {}) },
+            workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(parsed.workspaceFeatures || {}) },
           };
         } catch (e) {}
       }
@@ -195,6 +197,7 @@ export async function POST(request: NextRequest) {
       colleges: Array.isArray(incoming.colleges) ? incoming.colleges : DEFAULT_MASTER_CONTROL_CONFIG.colleges,
       badges: Array.isArray(incoming.badges) ? incoming.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
       maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(incoming.maintenance || {}) },
+      workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(incoming.workspaceFeatures || {}) },
     };
 
     let savedToDb = false;

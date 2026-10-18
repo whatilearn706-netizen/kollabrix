@@ -27,6 +27,8 @@ import {
   Radio,
   Activity,
   Zap,
+  Laptop,
+  Headphones,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -38,10 +40,11 @@ import {
   StudentBadgeAward,
   MaintenanceModeConfig,
   MasterControlConfig,
+  WorkspaceFeaturesConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'restricted' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'restricted' | 'workspace' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
@@ -282,6 +285,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
   const subTabs = [
     { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
+    { id: 'workspace' as SubTab, label: '⚡ Workspace Modules (4 Centers)', icon: Zap },
     { id: 'restricted' as SubTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'banner' as SubTab, label: '1. Broadcast Banner', icon: Megaphone },
     { id: 'sections' as SubTab, label: '2. Homepage Sections', icon: LayoutGrid },
@@ -369,6 +373,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
             {[
+              { id: 'module-workspace', label: '⚡ Workspace (4 Centers)', color: 'hover:border-violet-500 text-violet-300' },
               { id: 'module-restricted', label: '🚫 Restricted Mode', color: 'hover:border-red-500 text-red-300' },
               { id: 'module-1', label: '1. Banner', color: 'hover:border-violet-500' },
               { id: 'module-2', label: '2. Sections', color: 'hover:border-amber-500' },
@@ -388,6 +393,294 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 {m.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* WORKSPACE COMMAND CENTER SUBTAB (4 MODULES) */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'workspace') && (
+        <div id="module-workspace" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-500/20 text-violet-300 border border-violet-500/40">
+                  WORKSPACE COMMAND CENTER
+                </span>
+                <span className="text-xs font-mono text-emerald-400 font-bold">
+                  {Object.values(config.workspaceFeatures || { aiCloserKit: true, liveToolBridge: true, teamHuddle: true, proofOfWork: true }).filter(Boolean).length} / 4 Modules Live
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-white">Project Workspace Modules (Live vs Hidden Toggles)</h3>
+              <p className="text-xs text-slate-400">
+                Turn each advanced collaboration module on or off across all project workspaces. Changes save to Supabase and take effect instantly.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedFeatures = {
+                    aiCloserKit: true,
+                    liveToolBridge: true,
+                    teamHuddle: true,
+                    proofOfWork: true,
+                  };
+                  const updatedConfig = { ...config, workspaceFeatures: updatedFeatures };
+                  setConfig(updatedConfig);
+                  handleSave(updatedConfig);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-750 border border-charcoal-700 text-xs text-slate-300 hover:text-white font-medium transition-colors"
+              >
+                Turn All 4 ON
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedFeatures = {
+                    aiCloserKit: false,
+                    liveToolBridge: false,
+                    teamHuddle: false,
+                    proofOfWork: false,
+                  };
+                  const updatedConfig = { ...config, workspaceFeatures: updatedFeatures };
+                  setConfig(updatedConfig);
+                  handleSave(updatedConfig);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-750 border border-charcoal-700 text-xs text-slate-400 hover:text-rose-400 font-medium transition-colors"
+              >
+                Turn All 4 OFF
+              </button>
+            </div>
+          </div>
+
+          {/* 4 Feature Toggle Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Feature 1: AI Hackathon Closer Kit */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              config.workspaceFeatures?.aiCloserKit ?? true
+                ? 'bg-charcoal-850/90 border-violet-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-70'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    config.workspaceFeatures?.aiCloserKit ?? true
+                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">1. The AI Hackathon Closer Kit</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Tab: /workspace/closer-kit</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.workspaceFeatures?.aiCloserKit ?? true}
+                    onChange={(e) => {
+                      const updatedFeatures = {
+                        ...(config.workspaceFeatures || { aiCloserKit: true, liveToolBridge: true, teamHuddle: true, proofOfWork: true }),
+                        aiCloserKit: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, workspaceFeatures: updatedFeatures };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                1-Click AI README.md generator with auto-attributed collegiate contributors, 2-Minute pitch deck script generator with rehearsal timer, and interactive Mermaid architecture diagrams.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-charcoal-800 text-[11px]">
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">README.md</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Pitch Deck</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Mermaid</span>
+                </div>
+                <span className={`font-mono font-bold ${(config.workspaceFeatures?.aiCloserKit ?? true) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {(config.workspaceFeatures?.aiCloserKit ?? true) ? '🟢 LIVE ON WORKSPACE' : '⚪ DISABLED (HIDDEN)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Feature 2: The Live Tool Bridge */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              config.workspaceFeatures?.liveToolBridge ?? true
+                ? 'bg-charcoal-850/90 border-blue-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-70'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    config.workspaceFeatures?.liveToolBridge ?? true
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Laptop className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">2. The Live Tool Bridge</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Tab: /workspace/bridge</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.workspaceFeatures?.liveToolBridge ?? true}
+                    onChange={(e) => {
+                      const updatedFeatures = {
+                        ...(config.workspaceFeatures || { aiCloserKit: true, liveToolBridge: true, teamHuddle: true, proofOfWork: true }),
+                        liveToolBridge: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, workspaceFeatures: updatedFeatures };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Live interactive Figma prototype embed, live Vercel/Web demo preview with multi-device viewport switchers (Desktop, Tablet, Mobile), and centralized Team Resource Vault.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-charcoal-800 text-[11px]">
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Figma Embed</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Device Viewports</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Vault</span>
+                </div>
+                <span className={`font-mono font-bold ${(config.workspaceFeatures?.liveToolBridge ?? true) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {(config.workspaceFeatures?.liveToolBridge ?? true) ? '🟢 LIVE ON WORKSPACE' : '⚪ DISABLED (HIDDEN)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Feature 3: The Late-Night Team Huddle */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              config.workspaceFeatures?.teamHuddle ?? true
+                ? 'bg-charcoal-850/90 border-emerald-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-70'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    config.workspaceFeatures?.teamHuddle ?? true
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Headphones className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">3. The Late-Night Team Huddle</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Tab: /workspace/huddle</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.workspaceFeatures?.teamHuddle ?? true}
+                    onChange={(e) => {
+                      const updatedFeatures = {
+                        ...(config.workspaceFeatures || { aiCloserKit: true, liveToolBridge: true, teamHuddle: true, proofOfWork: true }),
+                        teamHuddle: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, workspaceFeatures: updatedFeatures };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Shared real-time architecture scratchpad with quick templates, Daily Standup feed with teammate reaction emojis and streak integration, plus 1-click audio huddle room with ambient focus drone.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-charcoal-800 text-[11px]">
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Scratchpad</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Daily Standup</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Voice Huddle</span>
+                </div>
+                <span className={`font-mono font-bold ${(config.workspaceFeatures?.teamHuddle ?? true) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {(config.workspaceFeatures?.teamHuddle ?? true) ? '🟢 LIVE ON WORKSPACE' : '⚪ DISABLED (HIDDEN)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Feature 4: The Proof-of-Work Finish Line */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              config.workspaceFeatures?.proofOfWork ?? true
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-70'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    config.workspaceFeatures?.proofOfWork ?? true
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">4. The Proof-of-Work Finish Line</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Tab: /workspace/certificate</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.workspaceFeatures?.proofOfWork ?? true}
+                    onChange={(e) => {
+                      const updatedFeatures = {
+                        ...(config.workspaceFeatures || { aiCloserKit: true, liveToolBridge: true, teamHuddle: true, proofOfWork: true }),
+                        proofOfWork: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, workspaceFeatures: updatedFeatures };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Cryptographically verifiable collegiate completion certificate with printable high-resolution PDF view, 1-click recruiter-grade LinkedIn Case Study generator, and GitHub README badge embed.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-charcoal-800 text-[11px]">
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">Certificate Studio</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">LinkedIn Post</span>
+                  <span className="px-2 py-0.5 rounded-md bg-charcoal-800 text-slate-300 font-mono">GitHub Badge</span>
+                </div>
+                <span className={`font-mono font-bold ${(config.workspaceFeatures?.proofOfWork ?? true) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {(config.workspaceFeatures?.proofOfWork ?? true) ? '🟢 LIVE ON WORKSPACE' : '⚪ DISABLED (HIDDEN)'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}

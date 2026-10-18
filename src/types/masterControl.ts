@@ -57,15 +57,29 @@ export interface MaintenanceModeConfig {
   expectedBackAt?: string;
 }
 
+export interface WorkspaceFeaturesConfig {
+  aiCloserKit: boolean;
+  liveToolBridge: boolean;
+  teamHuddle: boolean;
+  proofOfWork: boolean;
+}
+
 export interface MasterControlConfig {
   banner: BroadcastBannerConfig;
   sections: HomepageSectionToggles;
   colleges: CollegeWhitelistItem[];
   badges: StudentBadgeAward[];
   maintenance: MaintenanceModeConfig;
+  workspaceFeatures?: WorkspaceFeaturesConfig;
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
+  workspaceFeatures: {
+    aiCloserKit: true,
+    liveToolBridge: true,
+    teamHuddle: true,
+    proofOfWork: true,
+  },
   banner: {
     enabled: true,
     text: '🚀 Linkora is live on campus! Assemble your hackathon dream team & showcase projects.',

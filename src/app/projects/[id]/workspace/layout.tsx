@@ -21,7 +21,15 @@ import {
   ExternalLink,
   Bot,
   GitBranch,
+  Sparkles,
+  Laptop,
+  Headphones,
+  Award,
 } from 'lucide-react';
+import {
+  WorkspaceFeaturesConfig,
+  DEFAULT_MASTER_CONTROL_CONFIG,
+} from '@/types/masterControl';
 
 interface WorkspaceContextType {
   project: Project;
@@ -30,6 +38,7 @@ interface WorkspaceContextType {
   isLead: boolean;
   currentUserMember: ProjectMember | null;
   refreshWorkspace: () => Promise<void>;
+  workspaceFeatures: WorkspaceFeaturesConfig;
 }
 
 export const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
@@ -62,6 +71,33 @@ export default function WorkspaceLayout({
   const [currentUserMember, setCurrentUserMember] = useState<ProjectMember | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [workspaceFeatures, setWorkspaceFeatures] = useState<WorkspaceFeaturesConfig>(
+    DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures || {
+      aiCloserKit: true,
+      liveToolBridge: true,
+      teamHuddle: true,
+      proofOfWork: true,
+    }
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchFeatures() {
+      try {
+        const res = await fetch('/api/master-control');
+        const data = await res.json();
+        if (isMounted && data?.config?.workspaceFeatures) {
+          setWorkspaceFeatures(data.config.workspaceFeatures);
+        }
+      } catch (err) {
+        console.warn('Could not load master control features in workspace layout:', err);
+      }
+    }
+    fetchFeatures();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const loadWorkspaceData = async (isInitial = false) => {
     const currentUserId = userRef.current?.id;
@@ -259,6 +295,42 @@ export default function WorkspaceLayout({
       href: `/projects/${projectId}/workspace/milestones`,
       icon: Milestone,
     },
+    ...(workspaceFeatures.aiCloserKit
+      ? [
+          {
+            label: 'AI Closer Kit',
+            href: `/projects/${projectId}/workspace/closer-kit`,
+            icon: Sparkles,
+          },
+        ]
+      : []),
+    ...(workspaceFeatures.liveToolBridge
+      ? [
+          {
+            label: 'Live Tool Bridge',
+            href: `/projects/${projectId}/workspace/bridge`,
+            icon: Laptop,
+          },
+        ]
+      : []),
+    ...(workspaceFeatures.teamHuddle
+      ? [
+          {
+            label: 'Team Huddle',
+            href: `/projects/${projectId}/workspace/huddle`,
+            icon: Headphones,
+          },
+        ]
+      : []),
+    ...(workspaceFeatures.proofOfWork
+      ? [
+          {
+            label: 'Proof-of-Work',
+            href: `/projects/${projectId}/workspace/certificate`,
+            icon: Award,
+          },
+        ]
+      : []),
     {
       label: 'AI Planner',
       href: `/projects/${projectId}/workspace/planner`,
@@ -285,6 +357,7 @@ export default function WorkspaceLayout({
         isLead,
         currentUserMember,
         refreshWorkspace: loadWorkspaceData,
+        workspaceFeatures,
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
