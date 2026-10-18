@@ -375,7 +375,18 @@ export default function HomePage() {
                   }}
                   className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
                 >
-                  {theme.heroHeadline || 'Build something bigger, together.'}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500">
+                    Linkora.
+                  </span>{' '}
+                  <span>
+                    {theme.heroHeadline ? (
+                      theme.heroHeadline.toLowerCase().startsWith('linkora')
+                        ? theme.heroHeadline.replace(/^linkora[:.]?\s*/i, '')
+                        : theme.heroHeadline
+                    ) : (
+                      'Build something bigger, together.'
+                    )}
+                  </span>
                 </h1>
 
                 <p
