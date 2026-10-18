@@ -382,7 +382,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (cachedUser) {
             setUser(JSON.parse(cachedUser));
             if (cachedProfile) setProfile(JSON.parse(cachedProfile));
-            if (cachedSession) setSession(JSON.parse(cachedSession));
+            if (cachedSession) {
+              const parsed = JSON.parse(cachedSession);
+              setSession(parsed);
+              if (parsed?.access_token && parsed?.refresh_token) {
+                supabase.auth.setSession({
+                  access_token: parsed.access_token,
+                  refresh_token: parsed.refresh_token,
+                }).then(({ data }) => {
+                  if (data?.session?.user) {
+                    setUser(data.session.user);
+                    setSession(data.session);
+                  }
+                }).catch(() => {});
+              }
+            }
           }
         } catch (e) {}
         setIsLoading(false);
@@ -433,7 +447,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (cachedUser) {
               setUser(JSON.parse(cachedUser));
               if (cachedProfile) setProfile(JSON.parse(cachedProfile));
-              if (cachedSession) setSession(JSON.parse(cachedSession));
+              if (cachedSession) {
+                const parsed = JSON.parse(cachedSession);
+                setSession(parsed);
+                if (parsed?.access_token && parsed?.refresh_token) {
+                  supabase.auth.setSession({
+                    access_token: parsed.access_token,
+                    refresh_token: parsed.refresh_token,
+                  }).catch(() => {});
+                }
+              }
             }
           } catch (e) {}
         }

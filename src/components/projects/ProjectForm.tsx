@@ -37,7 +37,7 @@ const STATUSES: ProjectStatus[] = ['Recruiting', 'In Progress', 'Completed'];
 
 export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps) {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
   const isVerifiedTeacher = Boolean(
     (profile?.role === 'teacher' || profile?.faculty_verified) &&
       (!profile?.birth_year || profile?.birth_year <= 2003)
@@ -262,6 +262,61 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
     try {
       setIsLoading(true);
 
+      // 1. Establish verified session with Supabase
+      let activeUserId = user?.id;
+      let activeSession: any = null;
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        activeSession = sessionData?.session;
+      } catch {}
+
+      if (!activeSession) {
+        // Try restoring from cached session
+        try {
+          const cachedSession = localStorage.getItem('linkora_auth_session');
+          if (cachedSession) {
+            const parsed = JSON.parse(cachedSession);
+            if (parsed?.access_token && parsed?.refresh_token) {
+              const { data: restored } = await supabase.auth.setSession({
+                access_token: parsed.access_token,
+                refresh_token: parsed.refresh_token,
+              });
+              activeSession = restored?.session;
+            }
+          }
+        } catch {}
+      }
+
+      if (activeSession?.user?.id) {
+        activeUserId = activeSession.user.id;
+      }
+
+      // Check if user is authenticated with Supabase Auth
+      if (!activeUserId) {
+        setError('Authentication required: Please sign in with Google or GitHub to publish your project and start your Daily Streak.');
+        openAuthModal('login');
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Ensure profile row exists in public.profiles to satisfy foreign key (owner_id -> profiles.user_id)
+      try {
+        await supabase.from('profiles').upsert(
+          {
+            user_id: activeUserId,
+            display_name: profile?.display_name || user?.user_metadata?.full_name || 'Student Builder',
+            username: profile?.username || `user_${activeUserId.slice(0, 8)}`,
+            skills: profile?.skills || technologies || ['Web Development'],
+            interests: profile?.interests || ['Campus Innovation'],
+            preferred_roles: profile?.preferred_roles || desiredRoles || ['Project Lead'],
+          },
+          { onConflict: 'user_id' }
+        );
+      } catch (profErr) {
+        console.warn('Profile ensure notice:', profErr);
+      }
+
       const payload = {
         title: title.trim(),
         summary: summary.trim(),
@@ -279,7 +334,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         documentation_url: documentationUrl.trim() || null,
         problem_statement_id: problemStatementId || null,
         application_deadline: applicationDeadline || null,
-        owner_id: user.id, // Strictly derived from the authenticated session
+        owner_id: activeUserId, // Strictly guaranteed to match active session UID
       };
 
       if (isEditing && initialData?.id) {
@@ -288,7 +343,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           .from('projects')
           .update(payload)
           .eq('id', initialData.id)
-          .eq('owner_id', user.id); // Guarded by session user
+          .eq('owner_id', activeUserId); // Guarded by session user
 
         if (updateError) {
           setError(updateError.message);
@@ -310,7 +365,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
             const { data: createdProb, error: probErr } = await supabase
               .from('problem_statements')
               .insert({
-                author_id: user.id,
+                author_id: activeUserId,
                 title: title.trim(),
                 description: description.trim(),
                 category,
@@ -338,7 +393,12 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           .single();
 
         if (insertError) {
-          setError(insertError.message);
+          if (insertError.code === '42501' || insertError.message?.toLowerCase().includes('row-level security')) {
+            setError('Authentication session needs verification: Please sign in with Google or GitHub to publish your project and claim your Daily Streak.');
+            openAuthModal('login');
+          } else {
+            setError(insertError.message);
+          }
           return;
         }
 
@@ -348,7 +408,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
             type: 'PROJECT_PUBLISHED',
             note: `Published project: ${title.trim()}`,
             title: title.trim(),
-            userId: user.id,
+            userId: activeUserId,
           });
         } catch (e) {
           console.warn('Streak activity record error:', e);
