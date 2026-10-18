@@ -180,6 +180,12 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
   const parseEmbedUrl = (rawUrl: string, tool: SupportedToolType, proxy: boolean = true): string => {
     let clean = rawUrl.trim();
     if (!clean) return '';
+
+    // Security Defense: Block script execution schemes, data payloads, and harmful protocols
+    if (/^(?:javascript|data|vbscript|file|blob):/i.test(clean)) {
+      return '';
+    }
+
     if (!/^https?:\/\//i.test(clean)) {
       clean = 'https://' + clean;
     }

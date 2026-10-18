@@ -31,6 +31,29 @@ export async function GET(request: NextRequest) {
 
   try {
     const parsedTarget = new URL(normalizedUrl);
+    const host = parsedTarget.hostname.toLowerCase();
+
+    // Security Defense: Block private IPs, cloud metadata endpoints, loopback, and internal network scans
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host === '169.254.169.254' ||
+      host.startsWith('10.') ||
+      host.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
+      host.endsWith('.internal') ||
+      host.endsWith('.local')
+    ) {
+      return new NextResponse(
+        `<!DOCTYPE html><html><body style="background:#0f172a;color:#ef4444;font-family:sans-serif;padding:32px;text-align:center;">
+          <h3 style="margin-bottom:8px;">⚠️ Security Protection Notice</h3>
+          <p style="color:#94a3b8;font-size:13px;max-width:400px;margin:0 auto;">Embedding internal loopback addresses or private local networks is blocked by the Linkora Security Shield.</p>
+        </body></html>`,
+        { status: 403, headers: { 'Content-Type': 'text/html' } }
+      );
+    }
 
     // Fetch target URL with browser-like user agent
     const response = await fetch(parsedTarget.toString(), {

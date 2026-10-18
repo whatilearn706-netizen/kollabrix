@@ -17,10 +17,10 @@ function getSupabaseClient() {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const projectId = searchParams.get('projectId');
+  const projectId = searchParams.get('projectId')?.trim();
 
-  if (!projectId) {
-    return NextResponse.json({ error: 'Missing projectId' }, { status: 400 });
+  if (!projectId || !/^[a-zA-Z0-9_\-\.]{1,64}$/.test(projectId)) {
+    return NextResponse.json({ error: 'Invalid or missing projectId' }, { status: 400 });
   }
 
   const settingKey = `workspace_data_${projectId}`;
@@ -59,11 +59,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { projectId, data } = body;
 
-    if (!projectId || !data) {
-      return NextResponse.json({ error: 'Missing projectId or data payload' }, { status: 400 });
+    if (!projectId || typeof projectId !== 'string' || !/^[a-zA-Z0-9_\-\.]{1,64}$/.test(projectId.trim())) {
+      return NextResponse.json({ error: 'Invalid projectId format' }, { status: 400 });
     }
 
-    const settingKey = `workspace_data_${projectId}`;
+    if (!data || typeof data !== 'object') {
+      return NextResponse.json({ error: 'Missing or invalid data payload' }, { status: 400 });
+    }
+
+    // Security Defense: Limit payload size to 300KB to prevent storage exhaustion attacks
+    const payloadStr = JSON.stringify(data);
+    if (payloadStr.length > 300000) {
+      return NextResponse.json({ error: 'Payload exceeds maximum allowed limit of 300KB' }, { status: 413 });
+    }
+
+    const settingKey = `workspace_data_${projectId.trim()}`;
     let savedToDb = false;
 
     if (isSupabaseConfigured()) {
