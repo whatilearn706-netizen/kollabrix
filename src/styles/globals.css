@@ -327,5 +327,39 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   -webkit-mask-image: linear-gradient(to top, black 25%, transparent 100%);
 }
 
+/* Backside Ambient Blur Atmosphere Animation for Transparent Portals Ring */
+@keyframes ambientBlurPulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15) rotate(180deg);
+  }
+}
+
+.ambient-blur-animation {
+  animation: ambientBlurPulse 12s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes ambientBlurPulseReverse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1.1) rotate(360deg);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(0.95) rotate(180deg);
+  }
+}
+
+.ambient-blur-animation-reverse {
+  animation: ambientBlurPulseReverse 16s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+
 
 

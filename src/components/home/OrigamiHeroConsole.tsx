@@ -117,16 +117,16 @@ export function OrigamiHeroConsole() {
   }, [isSpotlightOpen]);
 
   return (
-    <div className="relative w-full flex flex-col xl:flex-row items-center justify-between gap-4 select-none">
+    <div className="relative w-full flex flex-col xl:flex-row items-center justify-start gap-4 sm:gap-6 xl:gap-8 pr-6 sm:pr-12 xl:pr-20 2xl:pr-28 select-none">
       {/* 1. Center / Left Area: Clean, Unobstructed 3D Origami Animal Sculpture */}
-      <div className="relative flex-1 min-w-0 w-full h-[360px] sm:h-[420px] lg:h-[460px] flex items-center justify-center">
+      <div className="relative flex-1 min-w-0 max-w-[360px] sm:max-w-[400px] xl:max-w-[440px] w-full h-[360px] sm:h-[420px] lg:h-[460px] flex items-center justify-center">
         <OrigamiBirdSculpture isBlurred={false} />
       </div>
 
-      {/* 2. The Very Right Side of Origami Model: Side Scrolling Strip with Blur Animation */}
-      <div className="relative flex items-center gap-2 sm:gap-3 shrink-0 self-center xl:self-auto my-2 xl:my-0">
+      {/* 2. Side Scrolling Strip Shifted More Left, leaving generous breathing space at the screen end */}
+      <div className="relative flex items-center gap-2.5 sm:gap-3.5 shrink-0 self-center xl:self-auto my-2 xl:my-0">
         {/* Scrollable Container with Blur Curtains at Top and Bottom */}
-        <div className="relative w-[210px] sm:w-[230px] h-[340px] sm:h-[380px] rounded-2xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/70 dark:bg-charcoal-900/60 p-2 shadow-sm backdrop-blur-md overflow-hidden">
+        <div className="relative w-[200px] sm:w-[220px] h-[330px] sm:h-[370px] rounded-2xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/70 dark:bg-charcoal-900/60 p-2 shadow-sm backdrop-blur-md overflow-hidden">
           {/* Blur Curtains for Upper & Lower Margins */}
           <div className="scroll-blur-curtain-top" />
           <div className="scroll-blur-curtain-bottom" />
@@ -201,9 +201,10 @@ export function OrigamiHeroConsole() {
       </div>
 
       {/* =========================================================================
-          4. THE BIG RING TEMPLATE (Mac Command + Space Style Spotlight Overlay)
+          4. THE TRANSPARENT BIG RING TEMPLATE (Mac Command + Space Style)
           - The desktop/website screen is visible in background through frosted glass
-          - Centered futuristic BIG RING with Hackathons, Problems & Faculty Portal
+          - Dynamic animated atmospheric blur lighting on the backside
+          - Pure transparent frosted cyber-glass cards & center hub
           - Tapping anywhere outside the ring automatically closes it
          ========================================================================= */}
       {isSpotlightOpen && (
@@ -215,21 +216,33 @@ export function OrigamiHeroConsole() {
               setIsSpotlightOpen(false);
             }
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-2xl bg-slate-950/70 dark:bg-black/80 animate-fadeIn cursor-pointer overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-2xl bg-slate-950/45 dark:bg-black/55 animate-fadeIn cursor-pointer overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Linkora Big Portals Ring"
         >
+          {/* Animated Atmospheric Blur Atmosphere on the Backside */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+            {/* Pulsing Violet & Indigo Nebula Blur */}
+            <div className="absolute w-[440px] h-[440px] sm:w-[580px] sm:h-[580px] rounded-full bg-gradient-to-tr from-violet-600/35 via-indigo-600/30 to-pink-500/25 blur-[120px] ambient-blur-animation" />
+
+            {/* Pulsing Amber & Rose Flame Blur */}
+            <div className="absolute w-[380px] h-[380px] sm:w-[480px] sm:h-[480px] rounded-full bg-gradient-to-bl from-amber-500/30 via-rose-500/25 to-transparent blur-[110px] ambient-blur-animation-reverse" />
+
+            {/* Pulsing Emerald & Cyan Halo Blur */}
+            <div className="absolute w-[360px] h-[360px] sm:w-[450px] sm:h-[450px] rounded-full bg-gradient-to-r from-emerald-500/30 via-teal-500/20 to-transparent blur-[100px] ambient-blur-animation" />
+          </div>
+
           {/* Main Big Ring Container (Clicks inside do NOT close) */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[620px] aspect-square flex items-center justify-center select-none cursor-default blur-to-focus-card my-auto"
+            className="relative w-full max-w-[620px] aspect-square flex items-center justify-center select-none cursor-default blur-to-focus-card my-auto z-10"
           >
             {/* Multi-layered Concentric Rotating Orbital Rings (Sci-Fi Cybernetic Feel) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               {/* Outer Slow Rotating Ring */}
               <svg
-                className="w-full h-full animate-[spin_40s_linear_infinite] opacity-60 dark:opacity-75"
+                className="w-full h-full animate-[spin_40s_linear_infinite] opacity-75 dark:opacity-90"
                 viewBox="0 0 500 500"
               >
                 <circle
@@ -255,130 +268,127 @@ export function OrigamiHeroConsole() {
                   cy="250"
                   r="120"
                   fill="none"
-                  stroke="rgba(255,255,255,0.12)"
+                  stroke="rgba(255,255,255,0.22)"
                   strokeWidth="1"
                   strokeDasharray="3 6"
                 />
                 <defs>
                   <linearGradient id="bigRingGradOuter" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.9" />
-                    <stop offset="50%" stopColor="#ec4899" stopOpacity="0.7" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" />
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.95" />
+                    <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.95" />
                   </linearGradient>
                   <linearGradient id="bigRingGradInner" x1="100%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.8" />
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.85" />
                   </linearGradient>
                 </defs>
               </svg>
-
-              {/* Radiant Ambient Core Glow */}
-              <div className="absolute w-72 h-72 rounded-full bg-gradient-to-tr from-violet-600/25 via-pink-500/20 to-emerald-500/25 blur-3xl pointer-events-none" />
             </div>
 
-            {/* Center Command Core Hub */}
+            {/* Center Transparent Command Core Hub */}
             <div className="relative z-30 flex flex-col items-center justify-center text-center p-4">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-950/95 dark:bg-black/95 border-2 border-violet-500/70 shadow-2xl flex flex-col items-center justify-center p-3 backdrop-blur-2xl">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/10 dark:bg-white/[0.08] border border-white/25 dark:border-white/20 shadow-[0_8px_32px_0_rgba(139,92,246,0.35)] flex flex-col items-center justify-center p-3 backdrop-blur-3xl">
                 <BrandLogo size="sm" wordmarkColor="light" showWordmark={false} />
-                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white mt-1">
+                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white mt-1 drop-shadow-md">
                   LINKORA
                 </span>
-                <span className="text-[8px] font-mono text-violet-400 uppercase tracking-wider">
+                <span className="text-[8px] font-mono font-bold text-violet-300 uppercase tracking-wider">
                   PORTALS RING
                 </span>
               </div>
 
-              {/* Interactive Close & Keyboard Instruction */}
+              {/* Interactive Transparent Close & Keyboard Instruction */}
               <button
                 type="button"
                 onClick={() => setIsSpotlightOpen(false)}
-                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-700/80 text-[10px] font-mono font-bold text-slate-300 hover:text-white hover:border-slate-500 transition-colors shadow-sm"
+                className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 dark:bg-white/10 hover:bg-white/25 border border-white/25 text-[10px] font-mono font-bold text-white transition-all shadow-lg backdrop-blur-xl hover:scale-105"
               >
-                <X className="w-3 h-3 text-rose-400" />
+                <X className="w-3.5 h-3.5 text-rose-300" />
                 <span>ESC or Tap Outside to Close</span>
               </button>
             </div>
 
-            {/* THE THREE RADIAL NODES POSITIONED RADIAL ON THE BIG RING */}
+            {/* THE THREE RADIAL NODES POSITIONED ON THE BIG RING (PURE TRANSPARENT GLASS) */}
             <div className="absolute inset-0 pointer-events-none">
-              {/* 1. TOP NODE: College Hackathons */}
+              {/* 1. TOP NODE: College Hackathons (Transparent Glass) */}
               <div className="absolute top-1 sm:top-2 left-1/2 -translate-x-1/2 pointer-events-auto z-30 w-[240px] sm:w-[270px]">
                 <Link
                   href="/hackathons"
                   onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-4 rounded-2xl bg-slate-950/95 dark:bg-black/95 border border-amber-500/50 shadow-2xl backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-amber-400 hover:shadow-amber-500/20"
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-amber-400/40 hover:border-amber-400 shadow-[0_8px_32px_0_rgba(245,158,11,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full border bg-amber-500/20 text-amber-300 border-amber-500/40">
+                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full border bg-amber-500/25 text-amber-200 border-amber-400/50 backdrop-blur-md">
                       ARENA // BOUNTIES
                     </span>
-                    <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <div className="p-1.5 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-400/40">
                       <Trophy className="w-4 h-4" />
                     </div>
                   </div>
-                  <h4 className="text-sm sm:text-base font-black text-white group-hover:text-amber-400 transition-colors">
+                  <h4 className="text-sm sm:text-base font-black text-white group-hover:text-amber-300 transition-colors drop-shadow-md">
                     College Hackathons
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
                     Assemble squads, enter live collegiate hackathons, and win verified bounties.
                   </p>
-                  <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-amber-400">
+                  <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-xs font-bold text-amber-300">
                     <span>Explore Arenas</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
               </div>
 
-              {/* 2. BOTTOM-RIGHT NODE: Faculty Problem Statements */}
+              {/* 2. BOTTOM-RIGHT NODE: Faculty Problems (Transparent Glass) */}
               <div className="absolute bottom-2 sm:bottom-4 right-1 sm:right-2 pointer-events-auto z-30 w-[230px] sm:w-[260px]">
                 <Link
                   href="/problems"
                   onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-4 rounded-2xl bg-slate-950/95 dark:bg-black/95 border border-violet-500/50 shadow-2xl backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-violet-400 hover:shadow-violet-500/20"
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full border bg-violet-500/20 text-violet-300 border-violet-500/40">
+                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full border bg-violet-500/25 text-violet-200 border-violet-400/50 backdrop-blur-md">
                       FACULTY CHALLENGES
                     </span>
-                    <div className="p-1.5 rounded-lg bg-violet-500/20 text-violet-400 border border-violet-500/30">
+                    <div className="p-1.5 rounded-lg bg-violet-500/25 text-violet-300 border border-violet-400/40">
                       <Lightbulb className="w-4 h-4" />
                     </div>
                   </div>
-                  <h4 className="text-sm sm:text-base font-black text-white group-hover:text-violet-400 transition-colors">
+                  <h4 className="text-sm sm:text-base font-black text-white group-hover:text-violet-300 transition-colors drop-shadow-md">
                     Faculty Problems
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
                     Tackle engineering briefs published by college professors with verified answers.
                   </p>
-                  <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-violet-400">
+                  <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-xs font-bold text-violet-300">
                     <span>Solve Briefs</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
               </div>
 
-              {/* 3. BOTTOM-LEFT NODE: Faculty Portal */}
+              {/* 3. BOTTOM-LEFT NODE: Faculty Portal (Transparent Glass) */}
               <div className="absolute bottom-2 sm:bottom-4 left-1 sm:left-2 pointer-events-auto z-30 w-[230px] sm:w-[260px]">
                 <Link
                   href="/teacher/dashboard"
                   onClick={() => setIsSpotlightOpen(false)}
-                  className="group block p-3 sm:p-4 rounded-2xl bg-slate-950/95 dark:bg-black/95 border border-emerald-500/50 shadow-2xl backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-emerald-400 hover:shadow-emerald-500/20"
+                  className="group block p-3.5 sm:p-4 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-emerald-400/40 hover:border-emerald-400 shadow-[0_8px_32px_0_rgba(16,185,129,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+                    <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full border bg-emerald-500/25 text-emerald-200 border-emerald-400/50 backdrop-blur-md">
                       EDUCATOR DESK
                     </span>
-                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/25 text-emerald-300 border border-emerald-400/40">
                       <GraduationCap className="w-4 h-4" />
                     </div>
                   </div>
-                  <h4 className="text-sm sm:text-base font-black text-white group-hover:text-emerald-400 transition-colors">
+                  <h4 className="text-sm sm:text-base font-black text-white group-hover:text-emerald-300 transition-colors drop-shadow-md">
                     Faculty Portal
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-slate-200 dark:text-slate-200 mt-0.5 line-clamp-2 font-medium">
                     Teacher mentor desk, challenge creation, DigiLocker verification & reviews.
                   </p>
-                  <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-emerald-400">
+                  <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-xs font-bold text-emerald-300">
                     <span>Faculty Access</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
