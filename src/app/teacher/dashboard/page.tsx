@@ -189,7 +189,7 @@ export default function TeacherDashboardPage() {
     );
 
   const loadDashboardData = useCallback(async () => {
-    if (!isSupabaseConfigured() || !user) {
+    if (!isSupabaseConfigured()) {
       setIsLoading(false);
       return;
     }
@@ -237,12 +237,12 @@ export default function TeacherDashboardPage() {
         setProjects(projData as unknown as ProjectWithDetails[]);
       }
 
-      // 2. Fetch problems authored by this teacher
-      const { data: probData, error: probError } = await supabase
-        .from('problem_statements')
-        .select('*')
-        .eq('author_id', user.id)
-        .order('created_at', { ascending: false });
+      // 2. Fetch problems authored by this teacher (or all published problems for general visitors)
+      let probQuery = supabase.from('problem_statements').select('*');
+      if (user && isTeacher) {
+        probQuery = probQuery.eq('author_id', user.id);
+      }
+      const { data: probData, error: probError } = await probQuery.order('created_at', { ascending: false });
 
       let authoredProblems: ProblemStatement[] = [];
       if (!probError && probData) {
@@ -258,7 +258,9 @@ export default function TeacherDashboardPage() {
           .maybeSingle();
 
         if (commRow?.value && Array.isArray(commRow.value)) {
-          const matchingComm = commRow.value.filter((p: any) => p.author_id === user.id);
+          const matchingComm = commRow.value.filter((p: any) =>
+            user?.id ? p.author_id === user.id : Boolean(p)
+          );
           const existingIds = new Set(authoredProblems.map((p) => p.id));
           for (const cp of matchingComm) {
             if (cp && cp.id && !existingIds.has(cp.id)) {
@@ -271,36 +273,42 @@ export default function TeacherDashboardPage() {
       setMyProblems(authoredProblems);
 
       // 3. Fetch mentoring notes given by this teacher
-      const { data: noteData, error: noteError } = await supabase
-        .from('project_mentoring_notes')
-        .select(`
-          *,
-          project:projects(
-            id,
-            title,
-            category
-          )
-        `)
-        .eq('mentor_id', user.id)
-        .order('created_at', { ascending: false });
+      if (user?.id) {
+        const { data: noteData, error: noteError } = await supabase
+          .from('project_mentoring_notes')
+          .select(`
+            *,
+            project:projects(
+              id,
+              title,
+              category
+            )
+          `)
+          .eq('mentor_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (!noteError && noteData) {
-        setMyNotes(noteData as unknown as ProjectMentoringNote[]);
+        if (!noteError && noteData) {
+          setMyNotes(noteData as unknown as ProjectMentoringNote[]);
+        }
+      } else {
+        setMyNotes([]);
       }
 
       // 4. Fetch hackathons authored by this teacher with fallback & local sync
       let rawHacks: any[] = [];
       try {
-        const { data: hackData, error: hackError } = await supabase
+        let hackQuery = supabase
           .from('hackathons')
           .select(`
             *,
             participants:hackathon_participants(count),
             teams:hackathon_teams(count),
             submissions:hackathon_submissions(count)
-          `)
-          .eq('creator_id', user.id)
-          .order('created_at', { ascending: false });
+          `);
+        if (user && isTeacher) {
+          hackQuery = hackQuery.eq('creator_id', user.id);
+        }
+        const { data: hackData, error: hackError } = await hackQuery.order('created_at', { ascending: false });
 
         if (!hackError && hackData) {
           rawHacks = hackData.map((h: any) => ({
@@ -311,11 +319,11 @@ export default function TeacherDashboardPage() {
           }));
         } else {
           // Fallback to simple select without relations
-          const { data: simpleData } = await supabase
-            .from('hackathons')
-            .select('*')
-            .eq('creator_id', user.id)
-            .order('created_at', { ascending: false });
+          let fallbackQuery = supabase.from('hackathons').select('*');
+          if (user && isTeacher) {
+            fallbackQuery = fallbackQuery.eq('creator_id', user.id);
+          }
+          const { data: simpleData } = await fallbackQuery.order('created_at', { ascending: false });
 
           if (simpleData) {
             rawHacks = simpleData.map((h: any) => ({
@@ -356,7 +364,9 @@ export default function TeacherDashboardPage() {
             localStorage.setItem('teamforge_created_hackathons', JSON.stringify(survivingStored));
           }
 
-          localHacks = survivingStored.filter((h: any) => h.creator_id === user.id || !h.creator_id).map((h: any) => ({
+          localHacks = survivingStored.filter((h: any) =>
+            (user?.id ? h.creator_id === user.id : true) || !h.creator_id
+          ).map((h: any) => ({
             ...h,
             participants_count: 0,
             teams_count: 0,
@@ -399,7 +409,10 @@ export default function TeacherDashboardPage() {
 
       // 5. Fetch student applications for problems authored by this teacher
       try {
-        const appsRes = await fetch(`/api/problems/applications?author_id=${user.id}`);
+        const url = user?.id
+          ? `/api/problems/applications?author_id=${user.id}`
+          : '/api/problems/applications';
+        const appsRes = await fetch(url);
         const appsData = await appsRes.json();
         if (appsRes.ok && appsData.success && Array.isArray(appsData.applications)) {
           setProblemApplications(appsData.applications);
@@ -610,148 +623,7 @@ export default function TeacherDashboardPage() {
     });
   }, [projects, searchTerm, statusFilter, categoryFilter]);
 
-  if (!isTeacher) {
-    return (
-      <div className="min-h-screen py-16 px-4 sm:px-6 max-w-xl mx-auto">
-        {/* Platform Administrator Control Bar */}
-        {isAdmin && (
-          <div className="mb-4 p-4 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 text-xs text-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl">
-            <div>
-              <div className="font-bold flex items-center gap-1.5 text-indigo-300 text-sm">
-                <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                <span>Platform Owner / Admin Active ({user?.email || 'Owner'})</span>
-              </div>
-              <p className="text-slate-300 text-[11px] mt-1 leading-relaxed">
-                The Faculty Gate is shown so you can test DigiLocker or passcode verification. You can also bypass anytime.
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="primary"
-              onClick={() => setAdminBypassGranted(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 text-xs font-bold py-2 px-3.5 shadow-md"
-            >
-              Enter Dashboard →
-            </Button>
-          </div>
-        )}
 
-        {isPreviewingGateAsVisitor && (
-          <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between gap-3 shadow-lg">
-            <span className="font-semibold">👁️ Admin Faculty Gate Test View (Regular unverified visitors see this screen)</span>
-            <button
-              type="button"
-              onClick={() => setIsPreviewingGateAsVisitor(false)}
-              className="px-2.5 py-1 rounded-xl bg-amber-500 text-charcoal-950 font-bold hover:bg-amber-400 text-xs shrink-0"
-            >
-              ← Exit Test View
-            </button>
-          </div>
-        )}
-
-        <div className="rounded-2xl border border-brand-500/30 bg-midnight-900/90 p-8 shadow-card relative overflow-hidden">
-          {/* Top Indian Tricolor Strip */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-emerald-500 absolute top-0 left-0 right-0" />
-
-          <div className="w-12 h-12 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 mx-auto mb-4 mt-2">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-bold text-white text-center mb-2">
-            Faculty &amp; Mentor Verification
-          </h1>
-          <p className="text-sm text-slate-300 text-center mb-6 leading-relaxed">
-            The Mentor Dashboard gives professors and faculty access to monitor student project
-            milestones, provide formal evaluation notes, and author institution problem statements.
-          </p>
-
-          {/* PRIMARY: Government DigiLocker Verification */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/60 to-blue-950/40 border border-indigo-500/30 mb-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                Recommended: Instant Gov.in Verification
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">UIDAI / CBSE</span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Verify your official credentials directly through DigiLocker with E-Aadhaar or Class 12th Marksheet. Zero manual file uploads required.
-            </p>
-            <Button
-              type="button"
-              variant="primary"
-              className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-2.5 text-sm shadow-md"
-              onClick={() => setIsDocVerifyOpen(true)}
-              leftIcon={<ShieldCheck className="w-4 h-4 text-white" />}
-            >
-              🇮🇳 Connect DigiLocker (Aadhaar / Class 12th Marksheet)
-            </Button>
-          </div>
-
-          <div className="relative flex py-2 items-center mb-4">
-            <div className="flex-grow border-t border-midnight-750"></div>
-            <span className="flex-shrink mx-3 text-xs text-slate-500 uppercase font-semibold">Or Enter Institutional Passcode</span>
-            <div className="flex-grow border-t border-midnight-750"></div>
-          </div>
-
-          <form onSubmit={handleVerifyFaculty} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                Faculty Access Passcode
-              </label>
-              <Input
-                type="text"
-                value={facultyCode}
-                onChange={(e) => setFacultyCode(e.target.value)}
-                placeholder="e.g. FAC-849201"
-                className="font-mono uppercase bg-midnight-850 border-midnight-700 text-white"
-              />
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                Enter your campus administrator passcode (<code className="text-brand-300 font-mono font-bold">FAC-XXXXXX</code>). <span className="text-rose-400 font-semibold font-mono">FACULTY2026</span> is permanently disabled.
-              </p>
-            </div>
-
-            {verifyError && (
-              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
-                <span className="leading-relaxed">{verifyError}</span>
-              </div>
-            )}
-
-            {verifySuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>{verifySuccess}</span>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              variant="secondary"
-              className="w-full bg-midnight-800 hover:bg-midnight-750 text-white border border-midnight-700 font-semibold"
-              isLoading={isVerifying}
-              leftIcon={<KeyRound className="w-4 h-4" />}
-            >
-              Verify Faculty Passcode
-            </Button>
-          </form>
-
-          <FacultyVerificationModal
-            isOpen={isDocVerifyOpen}
-            onClose={() => setIsDocVerifyOpen(false)}
-            onSuccess={async () => {
-              setIsPreviewingGateAsVisitor(false);
-              await refreshProfile();
-              await loadDashboardData();
-              if (!user) {
-                openAuthModal('login');
-              }
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -1198,24 +1070,38 @@ export default function TeacherDashboardPage() {
                     <div className="flex items-center gap-2 shrink-0 flex-wrap">
                       <Button
                         size="sm"
-                        variant="primary"
+                        variant="outline"
                         onClick={() => {
-                          setSelectedProblemForReview(prob);
-                          setIsReviewModalOpen(true);
+                          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online'}/problems/${prob.id}`;
+                          navigator.clipboard.writeText(link);
+                          alert(`Problem link copied!\n${link}\n\nShare this directly with your students.`);
                         }}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/20"
-                        leftIcon={<Users className="w-3.5 h-3.5" />}
+                        className="text-xs text-brand-300 border-charcoal-700 hover:bg-charcoal-800"
+                        leftIcon={<Copy className="w-3.5 h-3.5 text-brand-400" />}
                       >
-                        Review Applicants ({appsForProb.length})
+                        Copy Link
                       </Button>
-                      <Link href={`/problems/${prob.id}/edit`}>
-                        <Button size="sm" variant="outline">
-                          Edit
-                        </Button>
-                      </Link>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online'}/problems/${prob.id}`;
+                          const text = `🎓 Faculty Problem Statement: "${prob.title}"\n\nApply your answers here: ${link}`;
+                          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        className="text-xs bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30"
+                        leftIcon={<MessageSquare className="w-3.5 h-3.5 text-emerald-400" />}
+                      >
+                        WhatsApp
+                      </Button>
                       <Link href={`/problems/${prob.id}`}>
                         <Button size="sm" variant="ghost">
                           View
+                        </Button>
+                      </Link>
+                      <Link href={`/problems/${prob.id}/edit`}>
+                        <Button size="sm" variant="outline">
+                          Edit
                         </Button>
                       </Link>
                     </div>

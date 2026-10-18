@@ -130,8 +130,13 @@ export function Navbar() {
     },
     {
       href: '/problems',
-      label: isFaculty ? 'Faculty Problems' : 'Problems',
-      icon: isFaculty ? GraduationCap : Lightbulb,
+      label: 'Problems',
+      icon: Lightbulb,
+    },
+    {
+      href: '/teacher/dashboard',
+      label: 'Faculty Portal',
+      icon: GraduationCap,
     },
   ];
 
@@ -236,25 +241,6 @@ export function Navbar() {
                 <span>Workspace</span>
               </Link>
 
-              {/* Faculty Portal - Only shown after verified faculty access */}
-              {isFaculty && (
-                <Link
-                  href="/teacher/dashboard"
-                  className={clsx(
-                    'px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ml-1 border',
-                    pathname.startsWith('/teacher')
-                      ? isNavbarDark
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 shadow-sm'
-                        : 'bg-purple-100 text-purple-900 border-purple-300 shadow-sm'
-                      : isNavbarDark
-                      ? 'text-purple-400 hover:bg-purple-900/30 border-purple-800/40'
-                      : 'text-purple-700 hover:bg-purple-50 border-purple-200'
-                  )}
-                >
-                  <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
-                  <span>Faculty Portal</span>
-                </Link>
-              )}
             </>
           )}
         </nav>
@@ -389,16 +375,14 @@ export function Navbar() {
                       <span>AI Project Planner</span>
                     </Link>
 
-                    {isFaculty && (
-                      <Link
-                        href="/teacher/dashboard"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 transition-colors font-bold"
-                      >
-                        <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
-                        <span>Faculty Portal</span>
-                      </Link>
-                    )}
+                    <Link
+                      href="/teacher/dashboard"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 transition-colors font-bold"
+                    >
+                      <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
+                      <span>Faculty Portal</span>
+                    </Link>
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
@@ -511,33 +495,23 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
-              {isFaculty ? (
-                <>
-                  <GraduationCap className="w-4 h-4 text-purple-400" />
-                  <span className="text-purple-300">Faculty Problems</span>
-                </>
-              ) : (
-                <>
-                  <Lightbulb className="w-4 h-4 text-amber-500" />
-                  <span>Problems</span>
-                </>
-              )}
+              <Lightbulb className="w-4 h-4 text-amber-500" />
+              <span>Problems</span>
+            </Link>
+
+            <Link
+              href="/teacher/dashboard"
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/10 transition-colors"
+            >
+              <GraduationCap className="w-4 h-4 text-purple-500" />
+              <span>Faculty Portal</span>
             </Link>
 
             {/* Authenticated-only navigation links */}
             {user && (
               <>
-                {/* Faculty Portal - only shown after faculty access */}
-                {isFaculty && (
-                  <Link
-                    href="/teacher/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/10 transition-colors"
-                  >
-                    <GraduationCap className="w-4 h-4 text-purple-500" />
-                    <span>Faculty Portal</span>
-                  </Link>
-                )}
 
                 <Link
                   href="/my-projects"
