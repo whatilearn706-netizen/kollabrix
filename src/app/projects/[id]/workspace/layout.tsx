@@ -101,8 +101,24 @@ export default function WorkspaceLayout({
   }, []);
 
   const loadWorkspaceData = async (isInitial = false) => {
-    const currentUserId = userRef.current?.id;
-    if (!projectId || !currentUserId) return;
+    let currentUserId = userRef.current?.id;
+    if (!currentUserId && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_auth_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          currentUserId = parsed?.id;
+        }
+        if (!currentUserId) {
+          const idMatch = document.cookie.match(/linkora_user_id=([^;]+)/);
+          if (idMatch && idMatch[1]) currentUserId = idMatch[1];
+        }
+      } catch (e) {}
+    }
+    if (!projectId || !currentUserId) {
+      if (isInitial) setIsLoading(false);
+      return;
+    }
     if (isInitial) {
       setIsLoading(true);
     }
@@ -265,8 +281,20 @@ export default function WorkspaceLayout({
   };
 
   useEffect(() => {
-    if (!isAuthLoading) {
-      if (!user?.id) {
+    let activeUserId = user?.id;
+    if (!activeUserId && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_auth_user');
+        if (cached) activeUserId = JSON.parse(cached)?.id;
+        if (!activeUserId) {
+          const idMatch = document.cookie.match(/linkora_user_id=([^;]+)/);
+          if (idMatch && idMatch[1]) activeUserId = idMatch[1];
+        }
+      } catch (e) {}
+    }
+
+    if (!isAuthLoading || activeUserId) {
+      if (!activeUserId) {
         setIsAuthorized(false);
         setIsLoading(false);
       } else {
