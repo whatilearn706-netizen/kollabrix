@@ -30,6 +30,7 @@ import {
   WorkspaceFeaturesConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
+import { DEMO_PROJECTS } from '@/data/mockProjects';
 
 interface WorkspaceContextType {
   project: Project;
@@ -107,7 +108,71 @@ export default function WorkspaceLayout({
     }
 
     try {
-      // 1. Fetch project
+      // Check in demo projects first
+      const demoMatch = DEMO_PROJECTS.find((p) => p.id === projectId);
+      if (demoMatch) {
+        setProject(demoMatch);
+        const demoMembers: ProjectMember[] = [
+          {
+            id: 'mem-demo-1',
+            project_id: demoMatch.id,
+            user_id: currentUserId,
+            role: 'Project Lead',
+            joined_at: new Date().toISOString(),
+            profile: {
+              user_id: currentUserId,
+              username: userRef.current?.user_metadata?.username || 'lead_builder',
+              display_name: userRef.current?.user_metadata?.display_name || 'Project Lead',
+              college: 'Institute of Engineering & Tech',
+              role: 'student',
+              skills: demoMatch.required_skills,
+              interests: ['Collegiate Innovation'],
+              preferred_roles: ['Project Lead'],
+            },
+          },
+          {
+            id: 'mem-demo-2',
+            project_id: demoMatch.id,
+            user_id: 'teammate-2',
+            role: 'Frontend Developer',
+            joined_at: new Date().toISOString(),
+            profile: {
+              user_id: 'teammate-2',
+              username: 'priya_ux',
+              display_name: 'Priya Patel',
+              college: 'Institute of Engineering & Tech',
+              role: 'student',
+              skills: ['React', 'Figma', 'TailwindCSS'],
+              interests: ['UI/UX Design'],
+              preferred_roles: ['Frontend Developer'],
+            },
+          },
+          {
+            id: 'mem-demo-3',
+            project_id: demoMatch.id,
+            user_id: 'teammate-3',
+            role: 'Full-Stack Developer',
+            joined_at: new Date().toISOString(),
+            profile: {
+              user_id: 'teammate-3',
+              username: 'rohan_edge',
+              display_name: 'Rohan Verma',
+              college: 'Institute of Engineering & Tech',
+              role: 'student',
+              skills: ['TypeScript', 'Supabase', 'Node.js'],
+              interests: ['Distributed Systems'],
+              preferred_roles: ['Backend Developer'],
+            },
+          },
+        ];
+        setMembers(demoMembers);
+        setCurrentUserMember(demoMembers[0]);
+        setIsAuthorized(true);
+        if (isInitial) setIsLoading(false);
+        return;
+      }
+
+      // 1. Fetch project from Supabase DB
       const { data: projData, error: projError } = await supabase
         .from('projects')
         .select('*')
