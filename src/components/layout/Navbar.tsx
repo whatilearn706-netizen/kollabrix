@@ -36,7 +36,12 @@ import {
   prefetchTeammatesData,
   prefetchHackathonsData,
 } from '@/lib/cache/pageDataCache';
-import { StreakNavbarButton, DailyStreakModal } from '@/components/gamification/DailyStreakHub';
+import {
+  StreakNavbarButton,
+  DailyStreakModal,
+  StreakCelebrationToast,
+  DailyStreakAutoPrompt,
+} from '@/components/gamification/DailyStreakHub';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -600,6 +605,12 @@ export function Navbar() {
         isOpen={isStreakModalOpen}
         onClose={() => setIsStreakModalOpen(false)}
       />
+
+      {/* Auto-Prompt for Day 0 First-Time Login */}
+      <DailyStreakAutoPrompt />
+
+      {/* Floating Streak Celebration Toast */}
+      <StreakCelebrationToast />
     </header>
   );
 }

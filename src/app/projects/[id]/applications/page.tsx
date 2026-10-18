@@ -25,6 +25,7 @@ import {
   Check,
   X,
 } from 'lucide-react';
+import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
 
 const AVAILABLE_ROLES: TeamRole[] = [
   'Frontend Developer',
@@ -210,6 +211,14 @@ export default function ProjectApplicationsPage() {
 
       if (!rpcError && data) {
         if (data.success) {
+          try {
+            recordDailyStreakActivity({
+              type: 'WORKSPACE_ACTIVITY',
+              note: `Accepted applicant into ${project.title}`,
+              title: project.title,
+              userId: user.id,
+            });
+          } catch {}
           setAcceptingApp(null);
           await loadData();
           return;
@@ -286,6 +295,16 @@ export default function ProjectApplicationsPage() {
       } catch {
         // Safe notification fallback
       }
+
+      // Record workspace activity for daily streak
+      try {
+        recordDailyStreakActivity({
+          type: 'WORKSPACE_ACTIVITY',
+          note: `Accepted applicant into ${project.title}`,
+          title: project.title,
+          userId: user.id,
+        });
+      } catch {}
 
       setAcceptingApp(null);
       await loadData();

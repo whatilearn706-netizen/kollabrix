@@ -15,6 +15,7 @@ import { Modal } from '@/components/ui/Modal';
 import { AlertCircle, CheckCircle2, Save, ArrowLeft, Users, GraduationCap, ShieldCheck, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
+import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
 
 export interface ProjectFormProps {
   initialData?: Project;
@@ -339,6 +340,18 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         if (insertError) {
           setError(insertError.message);
           return;
+        }
+
+        // Ignite / Advance Daily Streak upon publishing project
+        try {
+          recordDailyStreakActivity({
+            type: 'PROJECT_PUBLISHED',
+            note: `Published project: ${title.trim()}`,
+            title: title.trim(),
+            userId: user.id,
+          });
+        } catch (e) {
+          console.warn('Streak activity record error:', e);
         }
 
         if (creatorRole === 'teacher') {

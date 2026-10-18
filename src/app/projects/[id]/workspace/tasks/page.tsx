@@ -28,6 +28,7 @@ import {
   Milestone as MilestoneIcon,
   CheckCircle2,
 } from 'lucide-react';
+import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
 
 const TASK_STATUSES: TaskStatus[] = ['To Do', 'In Progress', 'In Review', 'Completed'];
 const TASK_PRIORITIES: TaskPriority[] = ['Low', 'Medium', 'High'];
@@ -228,6 +229,16 @@ export default function WorkspaceTasksPage() {
           return;
         }
       }
+
+      // Record workspace activity for daily streak
+      try {
+        recordDailyStreakActivity({
+          type: 'WORKSPACE_ACTIVITY',
+          note: `Updated workspace task: ${taskTitle.trim()}`,
+          title: project.title,
+          userId: user?.id,
+        });
+      } catch {}
 
       setIsModalOpen(false);
       await loadTasksAndMilestones();

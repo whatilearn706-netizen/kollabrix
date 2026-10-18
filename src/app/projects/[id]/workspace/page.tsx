@@ -29,6 +29,7 @@ import {
   Share2,
   Award,
 } from 'lucide-react';
+import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
 
 const TEAM_ROLES: TeamRole[] = [
   'Project Lead',
@@ -82,6 +83,16 @@ export default function WorkspaceOverviewPage() {
       if (error) {
         setActionError(error.message || 'Could not update role.');
       } else {
+        // Record workspace activity for daily streak
+        try {
+          recordDailyStreakActivity({
+            type: 'WORKSPACE_ACTIVITY',
+            note: `Updated teammate role to ${selectedRole}`,
+            title: project.title,
+            userId: user?.id,
+          });
+        } catch {}
+
         setEditingMemberId(null);
         await refreshWorkspace();
       }
