@@ -134,6 +134,65 @@ const jsonLd = {
       },
     },
     {
+      '@type': 'WebApplication',
+      '@id': 'https://linkora-link.online/#app',
+      name: 'Linkora',
+      alternateName: ['LinkOra', 'Linkora Platform'],
+      applicationCategory: 'EducationalApplication, DeveloperApplication, CollaborationPlatform',
+      operatingSystem: 'All Modern Web Browsers, iOS, Android, macOS, Windows',
+      browserRequirements: 'Requires JavaScript. Requires HTML5.',
+      url: 'https://linkora-link.online',
+      description:
+        'Linkora is the official student project collaboration network, real-time workspace huddle, and hackathon closer platform.',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+      featureList: [
+        'Universal Prototyping Canvas for Figma and Canva',
+        'In-Browser Team Voice Huddle',
+        'AI GitHub README and Pitch Deck Generator',
+        'Daily Build Streak Gamification',
+        'Cryptographically Verified Proof-of-Work Certificates',
+      ],
+    },
+    {
+      '@type': 'ItemList',
+      '@id': 'https://linkora-link.online/#sitelinks',
+      name: 'Linkora Sitelinks',
+      itemListElement: [
+        {
+          '@type': 'SiteNavigationElement',
+          position: 1,
+          name: 'Explore Projects',
+          description: 'Discover active collegiate engineering projects seeking collaborators.',
+          url: 'https://linkora-link.online/explore',
+        },
+        {
+          '@type': 'SiteNavigationElement',
+          position: 2,
+          name: 'Find Teammates',
+          description: 'Connect with university designers, coders, and builders.',
+          url: 'https://linkora-link.online/teammates',
+        },
+        {
+          '@type': 'SiteNavigationElement',
+          position: 3,
+          name: 'Hackathon Arena',
+          description: 'Join campus hackathons and build in private collaborative workspaces.',
+          url: 'https://linkora-link.online/hackathons',
+        },
+        {
+          '@type': 'SiteNavigationElement',
+          position: 4,
+          name: 'Problem Bank',
+          description: 'Solve real-world challenges curated by faculty and industry mentors.',
+          url: 'https://linkora-link.online/problems',
+        },
+      ],
+    },
+    {
       '@type': 'Organization',
       '@id': 'https://linkora-link.online/#organization',
       name: 'Linkora',
@@ -152,6 +211,7 @@ const jsonLd = {
       sameAs: [
         'https://linkora-link.online',
         'https://linkora.in',
+        'https://github.com/goyalmayank142-pixel/LinkOra',
       ],
     },
   ],
