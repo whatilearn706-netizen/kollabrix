@@ -540,13 +540,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Dedicated Portals Side Rail & Lil Point of Linkora on the Far Right Edge (Separated with Huge Gap!) */}
-          <div className="hidden xl:flex absolute right-4 2xl:right-8 top-1/2 -translate-y-1/2 z-20">
-            <PortalsSideRail />
-          </div>
-          <div className="xl:hidden flex justify-center mt-6">
-            <PortalsSideRail />
-          </div>
+          {/* Fixed Portals Side Rail (Fixed on screen, website scrolls normally) */}
+          <PortalsSideRail />
           <div className="glow-divider mt-12" />
         </section>
       )}
