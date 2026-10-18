@@ -128,7 +128,8 @@ export function Navbar() {
   ];
 
   return (
-    <header
+    <>
+      <header
       style={{
         backgroundColor:
           theme.navbarBgColor ||
@@ -599,18 +600,19 @@ export function Navbar() {
           </button>
         </div>
       )}
-
-      {/* Daily Streak Interactive Check-in Modal */}
-      <DailyStreakModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-      />
-
-      {/* Auto-Prompt for Day 0 First-Time Login */}
-      <DailyStreakAutoPrompt />
-
-      {/* Floating Streak Celebration Toast */}
-      <StreakCelebrationToast />
     </header>
-  );
+
+    {/* Daily Streak Interactive Check-in Modal */}
+    <DailyStreakModal
+      isOpen={isStreakModalOpen}
+      onClose={() => setIsStreakModalOpen(false)}
+    />
+
+    {/* Auto-Prompt for Day 0 First-Time Login */}
+    <DailyStreakAutoPrompt />
+
+    {/* Floating Streak Celebration Toast */}
+    <StreakCelebrationToast />
+  </>
+);
 }

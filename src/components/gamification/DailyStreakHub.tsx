@@ -499,7 +499,7 @@ export function DailyStreakModal({ isOpen, onClose }: DailyStreakModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
       <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-white my-auto max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -796,7 +796,7 @@ export function StreakCelebrationToast() {
   if (!toast || !toast.visible) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 animate-bounce duration-300 max-w-sm">
+    <div className="fixed bottom-5 right-5 z-[9999] animate-bounce duration-300 max-w-sm">
       <div className="p-4 rounded-2xl bg-slate-950 border-2 border-amber-500/80 shadow-2xl text-white flex items-start gap-3 backdrop-blur-lg">
         <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/50 flex items-center justify-center text-orange-400 shrink-0">
           <Flame className="w-5 h-5 fill-current animate-pulse" />
