@@ -48,12 +48,12 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 
 import { CollegiatePortalsRadar } from '@/components/home/CollegiatePortalsRadar';
 
-const OrigamiPortalRing = dynamic(
-  () => import('@/components/home/OrigamiPortalRing').then((m) => m.OrigamiPortalRing),
+const OrigamiHeroConsole = dynamic(
+  () => import('@/components/home/OrigamiHeroConsole').then((m) => m.OrigamiHeroConsole),
   {
     ssr: false,
     loading: () => (
-      <div className="relative w-full h-[440px] sm:h-[480px] lg:h-[520px] flex items-center justify-center select-none pointer-events-none">
+      <div className="relative w-full h-[400px] sm:h-[460px] flex items-center justify-center select-none pointer-events-none">
         <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
       </div>
     ),
@@ -398,7 +398,7 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
               {/* Left Column: Brand, Editorial Headline & Primary Actions */}
-              <div className="lg:col-span-7 space-y-6 text-left">
+              <div className="lg:col-span-6 xl:col-span-6 space-y-6 text-left">
                 {/* Glassmorphic Badge with Neon Radar Pulse */}
                 <div
                   style={{ borderRadius: theme.borderRadius }}
@@ -526,10 +526,10 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Linkora Origami Bird Sculpture & Futuristic Holographic Ring */}
+              {/* Right Column: Signature 3D Linkora Origami Bird + Very Right Side Scrolling Strip & Lil Point of Linkora */}
               {sectionsConfig.origamiBird !== false && (
-                <div className="lg:col-span-5 flex items-center justify-center relative min-h-[440px] sm:min-h-[480px] lg:min-h-[520px] overflow-visible">
-                  <OrigamiPortalRing />
+                <div className="lg:col-span-6 xl:col-span-6 flex items-center justify-center relative min-h-[400px] sm:min-h-[440px] overflow-visible">
+                  <OrigamiHeroConsole />
                 </div>
               )}
             </div>
