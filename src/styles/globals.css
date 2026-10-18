@@ -223,8 +223,10 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   overflow-x: hidden;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  max-height: calc(100vh - 310px);
+  max-height: calc(100vh - 290px);
   min-height: 480px;
 }
 
@@ -233,23 +235,23 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(0, 0, 0, 0.3) 1.5%,
-    rgba(0, 0, 0, 0.8) 3.5%,
+    rgba(0, 0, 0, 0.4) 1.5%,
+    rgba(0, 0, 0, 0.85) 3.5%,
     black 6%,
     black 93%,
-    rgba(0, 0, 0, 0.8) 96.5%,
-    rgba(0, 0, 0, 0.3) 98.5%,
+    rgba(0, 0, 0, 0.85) 96.5%,
+    rgba(0, 0, 0, 0.4) 98.5%,
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(0, 0, 0, 0.3) 1.5%,
-    rgba(0, 0, 0, 0.8) 3.5%,
+    rgba(0, 0, 0, 0.4) 1.5%,
+    rgba(0, 0, 0, 0.85) 3.5%,
     black 6%,
     black 93%,
-    rgba(0, 0, 0, 0.8) 96.5%,
-    rgba(0, 0, 0, 0.3) 98.5%,
+    rgba(0, 0, 0, 0.85) 96.5%,
+    rgba(0, 0, 0, 0.4) 98.5%,
     transparent 100%
   );
 }
@@ -276,12 +278,12 @@ div[role="dialog"] .bg-amber-500\/10 strong {
 /* Unique Blur-to-Focus Stack Animation */
 @keyframes blurToFocusStack {
   0% {
-    opacity: 0.25;
-    filter: blur(10px);
-    transform: translateY(22px) scale(0.965);
+    opacity: 0.2;
+    filter: blur(8px);
+    transform: translateY(18px) scale(0.97);
   }
-  60% {
-    filter: blur(2.5px);
+  65% {
+    filter: blur(2px);
   }
   100% {
     opacity: 1;
@@ -291,7 +293,7 @@ div[role="dialog"] .bg-amber-500\/10 strong {
 }
 
 .blur-to-focus-card {
-  animation: blurToFocusStack 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: blurToFocusStack 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: transform, opacity, filter;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease, box-shadow 0.25s ease;
 }
@@ -301,14 +303,14 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   position: absolute;
   left: 0;
   right: 0;
-  top: 38px;
-  height: 42px;
+  top: 0;
+  height: 52px;
   pointer-events: none;
   z-index: 10;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
 }
 
 .scroll-blur-curtain-bottom {
@@ -316,13 +318,13 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 48px;
+  height: 56px;
   pointer-events: none;
   z-index: 10;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  mask-image: linear-gradient(to top, black 30%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to top, black 30%, transparent 100%);
+  mask-image: linear-gradient(to top, black 25%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 25%, transparent 100%);
 }
 
 

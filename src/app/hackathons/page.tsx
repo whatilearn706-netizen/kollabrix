@@ -595,30 +595,14 @@ export default function HackathonsPage() {
         </div>
       </div>
 
-      {/* Scrollable Cyber Tech Container */}
-      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs overflow-hidden">
+      {/* Scrollable Container with Blur-to-Focus Stack */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
         {/* Blur Curtains for Upper & Lower Margins */}
         <div className="scroll-blur-curtain-top" />
         <div className="scroll-blur-curtain-bottom" />
 
-        {/* HUD Status Header */}
-        <div className="flex items-center justify-between px-3 py-2 mb-3 border-b border-slate-200/70 dark:border-charcoal-800/80 text-[11px] font-mono">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-            </span>
-            <span className="text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
-              COMPETITION RADAR // COLLEGIATE ARENA
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-            <span className="text-amber-600 dark:text-amber-400 font-bold">[{filteredHackathons.length} EVENTS]</span>
-          </div>
-        </div>
-
         {/* Hackathons Viewport with Blur-to-Focus Mask */}
-        <div className="tech-scroll-viewport blur-focus-scroll pr-1 sm:pr-2 py-2">
+        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, n) => (
