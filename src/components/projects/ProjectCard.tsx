@@ -227,29 +227,34 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           )}
         </div>
 
-        {/* Team Capacity & Link */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Team Capacity & Action CTA Button */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <div
-            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-semibold ${
+            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-mono font-semibold ${
               isTeamFull
                 ? 'bg-slate-500/10 text-slate-400'
+                : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
+                ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30 font-bold'
                 : 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
             }`}
           >
-            <Users className="w-3 h-3 text-emerald-500" />
+            <Users className="w-3 h-3 text-current" />
             <span>
-              {project.current_team_size || 1}/{project.desired_team_size || 4} Joined
+              {isTeamFull
+                ? 'Full Squad'
+                : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
+                ? '⚡ 1 Spot Left'
+                : `${project.current_team_size || 1}/${project.desired_team_size || 4} Joined`}
             </span>
           </div>
 
           <Link
             href={`/projects/${project.id}`}
-            style={{ color: theme.brandColor }}
-            className="inline-flex items-center gap-1 font-bold text-xs transition-colors group/link hover:underline"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-2xs group/link active:scale-[0.98]"
             aria-label={`View details for ${project.title}`}
           >
-            <span>View</span>
-            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1 group-hover/link:translate-x-1.5" />
+            <span>{isTeamFull ? 'View' : 'Apply'}</span>
+            <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/link:translate-x-1" />
           </Link>
         </div>
       </div>

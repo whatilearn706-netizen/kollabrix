@@ -12,7 +12,7 @@ import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { Project, Hackathon } from '@/types/database';
+import { Project, Hackathon, ProblemStatement } from '@/types/database';
 import {
   Compass,
   Users,
@@ -31,8 +31,16 @@ import {
   Zap,
   AlertCircle,
   Award,
+  Lightbulb,
+  Flame,
+  Radio,
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { OpportunityCategoryBar } from '@/components/landing/OpportunityCategoryBar';
+import { CampusOpportunityTicker } from '@/components/landing/CampusOpportunityTicker';
+import { HackathonCard } from '@/components/hackathons/HackathonCard';
+import { ProblemShowcaseCard } from '@/components/problems/ProblemShowcaseCard';
+import { DEMO_PROBLEMS } from '@/data/mockProblems';
 
 const OrigamiBirdSculpture = dynamic(
   () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
@@ -67,10 +75,11 @@ export default function HomePage() {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
   const { theme, isDark } = useSiteTheme();
-  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
-  const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>(DEMO_PROJECTS.slice(0, 3));
+  const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>(CURATED_HACKATHONS.slice(0, 3));
+  const [featuredProblems, setFeaturedProblems] = useState<ProblemStatement[]>(DEMO_PROBLEMS.slice(0, 3));
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [showcaseTab, setShowcaseTab] = useState<'projects' | 'hackathons'>('projects');
+  const [showcaseTab, setShowcaseTab] = useState<'projects' | 'hackathons' | 'problems'>('projects');
   const [quickPasscode, setQuickPasscode] = useState('');
   const [oauthErrorNotice, setOauthErrorNotice] = useState<string | null>(null);
   const [isSparkModalOpen, setIsSparkModalOpen] = useState(false);
@@ -261,18 +270,47 @@ export default function HomePage() {
         try {
           const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
           const hData = await hRes.json();
-          if (hRes.ok && hData.success && Array.isArray(hData.hackathons)) {
+          if (hRes.ok && hData.success && Array.isArray(hData.hackathons) && hData.hackathons.length > 0) {
             setActiveHackathons(hData.hackathons.slice(0, 3));
           } else {
-            setActiveHackathons([]);
+            setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
           }
         } catch {
-          setActiveHackathons([]);
+          setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
+        }
+
+        // Fetch live problem statements
+        try {
+          if (isSupabaseConfigured()) {
+            const { data: pRows } = await supabase
+              .from('problem_statements')
+              .select(`
+                *,
+                author:profiles!problem_statements_author_id_fkey(
+                  user_id,
+                  display_name,
+                  username,
+                  avatar_url,
+                  college,
+                  course
+                )
+              `)
+              .order('created_at', { ascending: false })
+              .limit(3);
+            if (pRows && pRows.length > 0) {
+              setFeaturedProblems(pRows as ProblemStatement[]);
+            } else {
+              setFeaturedProblems(DEMO_PROBLEMS.slice(0, 3));
+            }
+          }
+        } catch {
+          setFeaturedProblems(DEMO_PROBLEMS.slice(0, 3));
         }
       } catch (err) {
         console.warn('Error loading live homepage data:', err);
         setFeaturedProjects(DEMO_PROJECTS.slice(0, 3));
-        setActiveHackathons([]);
+        setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
+        setFeaturedProblems(DEMO_PROBLEMS.slice(0, 3));
       } finally {
         setIsLoadingData(false);
       }
@@ -316,6 +354,9 @@ export default function HomePage() {
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
+      {/* Real-time Campus Opportunity Ticker (Unstop-Inspired) */}
+      <CampusOpportunityTicker />
+
       {/* OAuth Notice Banner */}
       {oauthErrorNotice && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-xs font-medium text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
@@ -488,6 +529,9 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* Opportunity Category Navigation Rail (Unstop-Inspired) */}
+      <OpportunityCategoryBar />
+
       {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
          ========================================================================= */}
@@ -604,44 +648,44 @@ export default function HomePage() {
                 <span>02 • ARCHITECTURE</span>
               </div>
               <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                {sectionsConfig.workflowTitle || 'Workflow'}
+                {sectionsConfig.workflowTitle || 'Collegiate Journey'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 font-normal">
-                {sectionsConfig.workflowSubtitle || 'From raw concept to verified career proof in three collegiate stages.'}
+                {sectionsConfig.workflowSubtitle || 'From raw concept to verified career proof in four collegiate stages.'}
               </p>
             </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Stage 1: Connect */}
-            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-6 group relative overflow-hidden shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Stage 1: Match */}
+            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-slate-300 group-hover:text-emerald-300 transition-colors duration-200">
+                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-emerald-400 transition-colors duration-200">
                     01
                   </span>
-                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-emerald-100 transition-all duration-200">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-emerald-100 transition-all duration-200">
                     <Users className="w-5 h-5 text-emerald-700" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-200">
-                  Connect
+                <h3 className="text-xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-200">
+                  Match
                 </h3>
 
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                  Discover peers across campus whose tech stacks complement yours. Filter by languages, commit hours, and preferred roles to recruit a balanced squad.
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  Find peers across campuses whose tech stacks match yours. Filter by languages, commit hours, and target hackathons.
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    React.js
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    React
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
                     FastAPI
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    UI/UX
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    PyTorch
                   </span>
                 </div>
               </div>
@@ -655,36 +699,122 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Stage 2: Build */}
-            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-6 group relative overflow-hidden shadow-sm">
+            {/* Stage 2: Squad Up */}
+            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-slate-300 group-hover:text-blue-300 transition-colors duration-200">
+                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-blue-400 transition-colors duration-200">
                     02
                   </span>
-                  <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-blue-100 transition-all duration-200">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-blue-100 transition-all duration-200">
                     <Kanban className="w-5 h-5 text-blue-700" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-200">
-                  Build
+                <h3 className="text-xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-200">
+                  Squad Up
                 </h3>
 
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                  Collaborate in dedicated team workspaces with sprint kanbans, real-time discussions, and private collegiate hackathon problem statement tracks.
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  Lock your team capacity and assign clear responsibilities (Frontend, Backend, AI, Design) with 1-click approvals.
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    Sprint Kanban
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    Role Lock
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    Team Chat
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    1-Click Apply
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
                     Milestones
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/explore"
+                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
+              >
+                <span>Browse Squads</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
+              </Link>
+            </div>
+
+            {/* Stage 3: Real-Time Workspace */}
+            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-pink-400 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-pink-400 transition-colors duration-200">
+                    03
+                  </span>
+                  <div className="w-10 h-10 rounded-2xl bg-pink-50 border border-pink-200 text-pink-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-pink-100 transition-all duration-200">
+                    <Layers className="w-5 h-5 text-pink-700" />
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-black text-slate-900 group-hover:text-pink-700 transition-colors duration-200">
+                  Build Live
+                </h3>
+
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  No more dead WhatsApp groups. Collaborate in Universal Canvas (Figma/Canva live), Voice Huddle, and AI Closer Kit.
+                </p>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    Live Canvas
+                  </span>
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    Audio Huddle
+                  </span>
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    AI Pitch Kit
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/workspace/demo"
+                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
+              >
+                <span>Try Live Workspace</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
+              </Link>
+            </div>
+
+            {/* Stage 4: Prove & Win */}
+            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-amber-400 transition-colors duration-200">
+                    04
+                  </span>
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-amber-100 transition-all duration-200">
+                    <ShieldCheck className="w-5 h-5 text-amber-700" />
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-black text-slate-900 group-hover:text-amber-700 transition-colors duration-200">
+                  Prove &amp; Win
+                </h3>
+
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                  Export cryptographically signed Proof-of-Work credentials, link GitHub PRs, and showcase citations in the Hall of Fame.
+                </p>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    Signed Certs
+                  </span>
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    GitHub Proof
+                  </span>
+                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
+                    Hall of Fame
                   </span>
                 </div>
               </div>
@@ -694,49 +824,6 @@ export default function HomePage() {
                 className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
               >
                 <span>Browse Competitions</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
-              </Link>
-            </div>
-
-            {/* Stage 3: Verify */}
-            <div className="p-8 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-6 group relative overflow-hidden shadow-sm">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black font-mono text-slate-300 group-hover:text-rose-300 transition-colors duration-200">
-                    03
-                  </span>
-                  <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-rose-100 transition-all duration-200">
-                    <ShieldCheck className="w-5 h-5 text-rose-700" />
-                  </div>
-                </div>
-
-                <h3 className="text-2xl font-black text-slate-900 group-hover:text-rose-700 transition-colors duration-200">
-                  Verify
-                </h3>
-
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                  Link GitHub pull requests and commit hashes directly to completed tasks. Earn faculty reviews and export tamper-resistant proof of work.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    GitHub PRs
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    Unit Tests
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs transition-transform hover:scale-105">
-                    Faculty Review
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                href="/explore"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
-              >
-                <span>Explore Live Projects</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
               </Link>
             </div>
@@ -782,31 +869,53 @@ export default function HomePage() {
               </div>
 
             {/* Segmented Switcher */}
-            <div className="p-1 rounded-2xl bg-slate-100 border border-slate-200 flex items-center gap-1 shrink-0">
+            <div className="p-1.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center gap-1 shrink-0 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setShowcaseTab('projects')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                   showcaseTab === 'projects'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Compass className="w-4 h-4" />
-                <span>Projects</span>
+                <span>Collegiate Projects</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-white/10 font-mono">
+                  {featuredProjects.length}
+                </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowcaseTab('hackathons')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                   showcaseTab === 'hackathons'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <Trophy className="w-4 h-4" />
+                <Trophy className="w-4 h-4 text-amber-500" />
                 <span>Hackathons</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold">
+                  {activeHackathons.length} Live
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowcaseTab('problems')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                  showcaseTab === 'problems'
+                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Lightbulb className="w-4 h-4 text-blue-500" />
+                <span>Problem Briefs</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold">
+                  {featuredProblems.length}
+                </span>
               </button>
             </div>
           </div>
@@ -842,7 +951,7 @@ export default function HomePage() {
                     className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
                     rightIcon={<ArrowRight className="w-4 h-4" />}
                   >
-                    Browse All Projects
+                    Browse All Collegiate Projects
                   </Button>
                 </Link>
               </div>
@@ -854,55 +963,7 @@ export default function HomePage() {
             <div className="space-y-8 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {activeHackathons.map((hackathon) => (
-                  <div
-                    key={hackathon.id}
-                    className="p-6 rounded-3xl bg-slate-50/70 border border-slate-200/90 hover:border-slate-400 transition-all duration-200 shadow-2xs hover:shadow-lg flex flex-col justify-between space-y-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white text-slate-800 border border-slate-200 font-bold flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-slate-600" />
-                          <span>{hackathon.access_type === 'private' ? 'Private College' : 'Open Track'}</span>
-                        </span>
-                        <span className="text-xs font-mono font-bold text-slate-500">
-                          {hackathon.mode}
-                        </span>
-                      </div>
-
-                      <h4 className="text-base sm:text-lg font-black text-slate-900 line-clamp-1">
-                        {hackathon.title}
-                      </h4>
-
-                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                        {hackathon.description || 'Collegiate hackathon competition track.'}
-                      </p>
-
-                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs font-medium">
-                        <span className="text-slate-500">Prize Pool:</span>
-                        <span className="text-slate-900 font-black font-mono text-sm px-2 py-0.5 rounded-lg bg-white border border-slate-200">
-                          {hackathon.prize_pool || '₹1,50,000'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <Link
-                        href={
-                          hackathon.join_code
-                            ? `/h/${hackathon.join_code}`
-                            : `/hackathons/${hackathon.id}`
-                        }
-                      >
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="w-full justify-center text-xs font-bold bg-slate-900 hover:bg-black text-white shadow-2xs rounded-xl"
-                        >
-                          View Details &amp; Register
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
+                  <HackathonCard key={hackathon.id} hackathon={hackathon} />
                 ))}
               </div>
 
@@ -914,7 +975,31 @@ export default function HomePage() {
                     className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
                     rightIcon={<ArrowRight className="w-4 h-4" />}
                   >
-                    Browse All Hackathons
+                    Browse All Competitions &amp; Hackathons
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: PROBLEM STATEMENTS */}
+          {showcaseTab === 'problems' && (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {featuredProblems.map((problem) => (
+                  <ProblemShowcaseCard key={problem.id} problem={problem} />
+                ))}
+              </div>
+
+              <div className="pt-2 text-center">
+                <Link href="/problems">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
+                    rightIcon={<ArrowRight className="w-4 h-4" />}
+                  >
+                    Browse All Campus Problem Briefs
                   </Button>
                 </Link>
               </div>
