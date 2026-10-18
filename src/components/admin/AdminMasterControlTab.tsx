@@ -994,7 +994,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-charcoal-750 pb-2.5">
                 <div>
                   <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                    Section Visibility (15 Website Elements)
+                    Section Visibility (16 Website Elements)
                   </h4>
                   <p className="text-[11px] text-slate-400">Turn any individual component live or off instantly.</p>
                 </div>
@@ -1010,6 +1010,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                           hero: true,
                           heroSearch: true,
                           origamiBird: true,
+                          collegiateRadar: true,
                           domainGrid: true,
                           categoryRails: true,
                           customSection: true,
@@ -1026,7 +1027,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                     }}
                     className="text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-colors"
                   >
-                    All ON (15)
+                    All ON (16)
                   </button>
                   <button
                     type="button"
@@ -1039,6 +1040,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                           hero: true,
                           heroSearch: false,
                           origamiBird: false,
+                          collegiateRadar: false,
                           domainGrid: false,
                           categoryRails: false,
                           customSection: false,
@@ -1066,17 +1068,18 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   { key: 'hero' as const, label: '2. Hero Header & Call to Action Stage', tag: 'Hero', desc: 'Main collegiate headline, subtitle & CTA buttons' },
                   { key: 'heroSearch' as const, label: '3. Unstop Opportunity Search Console', tag: 'Search', desc: 'Category filter bar & trending tags (SIH, Google)' },
                   { key: 'origamiBird' as const, label: '4. 3D Interactive Origami Bird Sculpture', tag: '3D Art', desc: 'Signature geometric bird in hero right column' },
-                  { key: 'domainGrid' as const, label: '5. 5-Domain Vibrant Explorer Cards', tag: 'Domains', desc: 'Unstop-style pastel cards: Hackathons, Squads, etc.' },
-                  { key: 'categoryRails' as const, label: '6. Opportunity Category Quick-Rails', tag: 'Nav Rail', desc: 'Horizontal quick-jump category navigation chips' },
-                  { key: 'customSection' as const, label: '7. Custom Website Spotlight / Announcement', tag: 'Spotlight', desc: 'Admin custom headline, banner, and CTA buttons' },
-                  { key: 'intent' as const, label: '8. Intent Intelligence Console', tag: 'AI Intent', desc: '"Find me a project..." natural-language matcher' },
-                  { key: 'workflow' as const, label: '9. 4-Stage Collegiate Architecture', tag: 'Workflow', desc: 'Match, Squad Up, Build, Prove & Win stages' },
-                  { key: 'campusPulse' as const, label: '10. Campus Innovation Hub', tag: 'Campus Hub', desc: 'Leaderboard, AI Smart Matchmaker, Live Presence' },
-                  { key: 'showcase' as const, label: '11. Opportunities Showcase (3-Tab Grid)', tag: 'Showcase', desc: 'Collegiate Projects, Hackathons, Problem Statements' },
-                  { key: 'colleges' as const, label: '12. Verified Campus Partner Universities', tag: 'Partners', desc: 'Participating college network grid' },
-                  { key: 'badges' as const, label: '13. Collegiate Honors & Hall of Fame', tag: 'Honors', desc: 'Verified student badges and award citations' },
-                  { key: 'hackathons' as const, label: '14. Live Campus Hackathons Strip', tag: 'Contests', desc: 'Department competition passcode and portals' },
-                  { key: 'ctaBanner' as const, label: '15. Bottom Join Linkora Free Banner', tag: 'Closing', desc: 'Closing call to action for students and faculty' },
+                  { key: 'collegiateRadar' as const, label: '5. Collegiate Innovation Hubs (Portals Radar)', tag: 'Radar', desc: '3-card radar: College Hackathons, Faculty Briefs & Educator Desk' },
+                  { key: 'domainGrid' as const, label: '6. 5-Domain Vibrant Explorer Cards', tag: 'Domains', desc: 'Unstop-style pastel cards: Hackathons, Squads, etc.' },
+                  { key: 'categoryRails' as const, label: '7. Opportunity Category Quick-Rails', tag: 'Nav Rail', desc: 'Horizontal quick-jump category navigation chips' },
+                  { key: 'customSection' as const, label: '8. Custom Website Spotlight / Announcement', tag: 'Spotlight', desc: 'Admin custom headline, banner, and CTA buttons' },
+                  { key: 'intent' as const, label: '9. Intent Intelligence Console', tag: 'AI Intent', desc: '"Find me a project..." natural-language matcher' },
+                  { key: 'workflow' as const, label: '10. 4-Stage Collegiate Architecture', tag: 'Workflow', desc: 'Match, Squad Up, Build, Prove & Win stages' },
+                  { key: 'campusPulse' as const, label: '11. Campus Innovation Hub', tag: 'Campus Hub', desc: 'Leaderboard, AI Smart Matchmaker, Live Presence' },
+                  { key: 'showcase' as const, label: '12. Opportunities Showcase (3-Tab Grid)', tag: 'Showcase', desc: 'Collegiate Projects, Hackathons, Problem Statements' },
+                  { key: 'colleges' as const, label: '13. Verified Campus Partner Universities', tag: 'Partners', desc: 'Participating college network grid' },
+                  { key: 'badges' as const, label: '14. Collegiate Honors & Hall of Fame', tag: 'Honors', desc: 'Verified student badges and award citations' },
+                  { key: 'hackathons' as const, label: '15. Live Campus Hackathons Strip', tag: 'Contests', desc: 'Department competition passcode and portals' },
+                  { key: 'ctaBanner' as const, label: '16. Bottom Join Linkora Free Banner', tag: 'Closing', desc: 'Closing call to action for students and faculty' },
                 ].map(({ key, label, tag, desc }) => (
                   <label
                     key={key}

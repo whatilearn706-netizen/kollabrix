@@ -547,7 +547,7 @@ export default function HomePage() {
       )}
 
       {/* Collegiate Innovation Portals Radar (Hackathons, Problems & Faculty Portal) */}
-      <CollegiatePortalsRadar />
+      {sectionsConfig.collegiateRadar !== false && <CollegiatePortalsRadar />}
 
       {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
       {sectionsConfig.domainGrid !== false && (

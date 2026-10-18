@@ -27,6 +27,7 @@ export interface HomepageSectionToggles {
   hero: boolean;
   heroSearch?: boolean;
   origamiBird?: boolean;
+  collegiateRadar?: boolean;
   domainGrid?: boolean;
   categoryRails?: boolean;
   intent: boolean;
@@ -117,6 +118,7 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     hero: true,
     heroSearch: true,
     origamiBird: true,
+    collegiateRadar: true,
     domainGrid: true,
     categoryRails: true,
     intent: true,
