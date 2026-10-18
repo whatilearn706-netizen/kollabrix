@@ -32,7 +32,7 @@ import {
 
 export default function IcpcCollegiateArenaPage() {
   const { user, profile } = useAuth();
-  const [contests, setContests] = useState<IcpcContest[]>(CURATED_ICPC_CONTESTS);
+  const [contests, setContests] = useState<IcpcContest[]>([]);
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'upcoming' | 'ended'>('all');
@@ -61,14 +61,14 @@ export default function IcpcCollegiateArenaPage() {
       try {
         const res = await fetch(`/api/icpc?_t=${Date.now()}`);
         const data = await res.json();
-        if (data.success && Array.isArray(data.contests) && data.contests.length > 0) {
+        if (data.success && Array.isArray(data.contests)) {
           setContests(data.contests);
         }
         if (typeof data.isArenaLive === 'boolean') {
           setIsArenaLive(data.isArenaLive);
         }
       } catch (err) {
-        console.warn('Could not load live contests, using curated fallback:', err);
+        console.warn('Could not load live contests:', err);
       } finally {
         setIsLoading(false);
       }

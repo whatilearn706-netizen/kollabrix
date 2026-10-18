@@ -26,6 +26,9 @@ function getSupabaseClient() {
 
 export async function GET(request: NextRequest) {
   try {
+    const url = new URL(request.url);
+    const includeEmpty = url.searchParams.get('includeEmpty') === 'true';
+
     let dbContests: IcpcContest[] = [];
     let isArenaLive = memoryIsArenaLive;
     let deletedProblemIds = new Set<string>(memoryDeletedProblemIds);
@@ -34,7 +37,6 @@ export async function GET(request: NextRequest) {
     const client = getSupabaseClient();
     if (client) {
       try {
-        // 1. Read platform settings for ICPC
         const { data: settingRow } = await client
           .from('platform_settings')
           .select('key, value')
@@ -50,10 +52,16 @@ export async function GET(request: NextRequest) {
                 memoryIsArenaLive = isArenaLive;
               }
               if (Array.isArray(row.value.deletedProblemIds)) {
-                row.value.deletedProblemIds.forEach((id: string) => deletedProblemIds.add(id));
+                row.value.deletedProblemIds.forEach((id: string) => {
+                  deletedProblemIds.add(id);
+                  memoryDeletedProblemIds.add(id);
+                });
               }
               if (Array.isArray(row.value.deletedContestIds)) {
-                row.value.deletedContestIds.forEach((id: string) => deletedContestIds.add(id));
+                row.value.deletedContestIds.forEach((id: string) => {
+                  deletedContestIds.add(id);
+                  memoryDeletedContestIds.add(id);
+                });
               }
             }
           }
@@ -79,6 +87,11 @@ export async function GET(request: NextRequest) {
         ? c.problems.filter((p) => p && p.id && !deletedProblemIds.has(p.id))
         : [];
 
+      // If all problems in this contest were removed, don't show to students unless requested by admin
+      if (!includeEmpty && activeProblems.length === 0 && c.status !== 'upcoming') {
+        continue;
+      }
+
       uniqueContests.push({
         ...c,
         problems: activeProblems,
@@ -94,7 +107,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching ICPC contests:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to load contests', contests: CURATED_ICPC_CONTESTS, isArenaLive: true },
+      { success: false, error: error.message || 'Failed to load contests', contests: [], isArenaLive: true },
       { status: 500 }
     );
   }
@@ -192,17 +205,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: Remove a problem from a contest or remove an entire contest
+// DELETE: Remove a problem, remove a contest, clear all, or reset defaults
 export async function DELETE(request: NextRequest) {
   try {
-    let contestId: string | null = null;
-    let problemId: string | null = null;
-
     const url = new URL(request.url);
-    contestId = url.searchParams.get('contestId');
-    problemId = url.searchParams.get('problemId');
+    const clearAll = url.searchParams.get('clearAll') === 'true';
+    const resetDefaults = url.searchParams.get('resetDefaults') === 'true';
+    let contestId = url.searchParams.get('contestId');
+    let problemId = url.searchParams.get('problemId');
 
-    if (!contestId && !problemId) {
+    if (!contestId && !problemId && !clearAll && !resetDefaults) {
       try {
         const body = await request.json();
         contestId = body.contestId;
@@ -210,8 +222,91 @@ export async function DELETE(request: NextRequest) {
       } catch (e) {}
     }
 
+    const client = getSupabaseClient();
+
+    // 1. CLEAR ALL
+    if (clearAll) {
+      CURATED_ICPC_CONTESTS.forEach((c) => {
+        memoryDeletedContestIds.add(c.id);
+        c.problems.forEach((p) => memoryDeletedProblemIds.add(p.id));
+      });
+      memoryContests.forEach((c) => {
+        memoryDeletedContestIds.add(c.id);
+        c.problems.forEach((p) => memoryDeletedProblemIds.add(p.id));
+      });
+      memoryContests = [];
+
+      if (client) {
+        try {
+          const { data: settingRow } = await client
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'icpc_contests_v1')
+            .maybeSingle();
+
+          const dbList: IcpcContest[] = Array.isArray(settingRow?.value) ? settingRow.value : [];
+          dbList.forEach((c) => {
+            memoryDeletedContestIds.add(c.id);
+            c.problems.forEach((p) => memoryDeletedProblemIds.add(p.id));
+          });
+
+          await client.from('platform_settings').upsert({
+            key: 'icpc_settings_v1',
+            value: {
+              isArenaLive: memoryIsArenaLive,
+              deletedProblemIds: Array.from(memoryDeletedProblemIds),
+              deletedContestIds: Array.from(memoryDeletedContestIds),
+            },
+            updated_at: new Date().toISOString(),
+          });
+
+          await client.from('platform_settings').upsert({
+            key: 'icpc_contests_v1',
+            value: [],
+            updated_at: new Date().toISOString(),
+          });
+        } catch (dbErr) {
+          console.warn('Could not clear Supabase icpc tables:', dbErr);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'All contests and problems cleared from ICPC arena successfully.',
+      });
+    }
+
+    // 2. RESET DEFAULTS
+    if (resetDefaults) {
+      memoryDeletedProblemIds.clear();
+      memoryDeletedContestIds.clear();
+      memoryContests = [];
+
+      if (client) {
+        try {
+          await client.from('platform_settings').upsert({
+            key: 'icpc_settings_v1',
+            value: {
+              isArenaLive: true,
+              deletedProblemIds: [],
+              deletedContestIds: [],
+            },
+            updated_at: new Date().toISOString(),
+          });
+        } catch (dbErr) {
+          console.warn('Could not reset Supabase icpc settings:', dbErr);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Curated ICPC contests restored successfully.',
+      });
+    }
+
+    // 3. REMOVE SPECIFIC PROBLEM OR CONTEST
     if (!contestId && !problemId) {
-      return NextResponse.json({ success: false, error: 'Must provide contestId or problemId' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Must provide contestId, problemId, clearAll, or resetDefaults' }, { status: 400 });
     }
 
     if (problemId) {
@@ -221,8 +316,6 @@ export async function DELETE(request: NextRequest) {
       memoryDeletedContestIds.add(contestId);
     }
 
-    // Persist to Supabase
-    const client = getSupabaseClient();
     if (client) {
       try {
         const { data: settingRow } = await client

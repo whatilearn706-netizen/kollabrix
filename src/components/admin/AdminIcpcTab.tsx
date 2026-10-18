@@ -41,12 +41,14 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const [deleteTargetContest, setDeleteTargetContest] = useState<IcpcContest | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
+  const [isClearAllOpen, setIsClearAllOpen] = useState<boolean>(false);
+  const [isResetOpen, setIsResetOpen] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/icpc?_t=${Date.now()}`);
+      const res = await fetch(`/api/icpc?includeEmpty=true&_t=${Date.now()}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.contests)) {
         setContests(data.contests);
@@ -160,6 +162,54 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     }
   };
 
+  const handleClearAll = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/icpc?clearAll=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatusMessage({
+          type: 'success',
+          text: 'All contests and problems cleared from ICPC arena!',
+        });
+        setContests([]);
+        setIsClearAllOpen(false);
+      } else {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to clear arena.' });
+      }
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: err.message || 'Error clearing arena.' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleResetDefaults = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/icpc?resetDefaults=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatusMessage({
+          type: 'success',
+          text: 'Default curated ICPC contests restored successfully!',
+        });
+        setIsResetOpen(false);
+        await loadData();
+      } else {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to reset contests.' });
+      }
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: err.message || 'Error resetting contests.' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedContests((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -205,6 +255,24 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               Live Arena
             </Button>
           </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsResetOpen(true)}
+            className="border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10 text-xs font-bold"
+            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+          >
+            Restore Curated Contests
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsClearAllOpen(true)}
+            className="border-rose-500/40 text-rose-300 hover:bg-rose-500/15 text-xs font-bold"
+            leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+          >
+            Clear Arena (Wipe All)
+          </Button>
           <Button
             size="sm"
             variant="primary"
@@ -521,6 +589,76 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               leftIcon={<Trash2 className="w-3.5 h-3.5" />}
             >
               Delete Contest
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Clear All Confirmation Modal */}
+      <Modal
+        isOpen={isClearAllOpen}
+        onClose={() => setIsClearAllOpen(false)}
+        title="Clear Entire ICPC Arena"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs leading-relaxed space-y-1.5">
+            <p className="font-bold text-white text-sm">
+              Are you sure you want to remove ALL contests and problems from the arena?
+            </p>
+            <p>
+              This will wipe all active contests from the student feed immediately. You can restore default contests at any time.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button size="sm" variant="ghost" onClick={() => setIsClearAllOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleClearAll}
+              isLoading={isDeleting}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+            >
+              Wipe All Contests
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset Defaults Confirmation Modal */}
+      <Modal
+        isOpen={isResetOpen}
+        onClose={() => setIsResetOpen(false)}
+        title="Restore Default Curated ICPC Contests"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs leading-relaxed space-y-1.5">
+            <p className="font-bold text-white text-sm">
+              Restore default curated contests?
+            </p>
+            <p>
+              This will un-delete and restore the standard curated collegiate contests and their testcases.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button size="sm" variant="ghost" onClick={() => setIsResetOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleResetDefaults}
+              isLoading={isDeleting}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              Confirm Restore
             </Button>
           </div>
         </div>
