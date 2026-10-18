@@ -270,25 +270,25 @@ export default function ProblemStatementsPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-charcoal-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-charcoal-800 pb-6">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2">
             {isTeacher ? (
               <>
-                <GraduationCap className="w-4 h-4 text-purple-400" />
-                <span className="text-purple-300 font-bold">Faculty Problem Statements</span>
+                <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span className="text-purple-700 dark:text-purple-300 font-bold">Faculty Problem Statements</span>
               </>
             ) : (
               <>
-                <Lightbulb className="w-4 h-4 text-amber-400" />
-                <span className="text-amber-300 font-bold">Collegiate Challenges</span>
+                <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-amber-700 dark:text-amber-300 font-bold">Collegiate Challenges</span>
               </>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {isTeacher ? 'Faculty Problem Statements' : 'Collegiate Problems & Challenges'}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-200 max-w-2xl leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed font-medium">
             {isTeacher
               ? 'Author, supervise, and evaluate collegiate problem statements and institutional research challenges.'
               : 'Real-world challenges and academic problem statements proposed by college faculty mentors. Select your college, build a solution, and apply your answer directly.'}
@@ -354,10 +354,11 @@ export default function ProblemStatementsPage() {
 
       {/* Scrollable Cyber Tech Container */}
       <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs overflow-hidden">
-        {/* Futuristic Cyber Scanline Animation */}
-        <div className="cyber-scanline" />
+        {/* Blur Curtains for Upper & Lower Margins */}
+        <div className="scroll-blur-curtain-top" />
+        <div className="scroll-blur-curtain-bottom" />
 
-        {/* Cyber HUD Status Header */}
+        {/* HUD Status Header */}
         <div className="flex items-center justify-between px-3 py-2 mb-3 border-b border-slate-200/70 dark:border-charcoal-800/80 text-[11px] font-mono">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
@@ -369,18 +370,12 @@ export default function ProblemStatementsPage() {
             </span>
           </div>
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-            <Sparkles className="w-3 h-3 text-indigo-500" />
-            <span className="hidden sm:inline">SMOOTH CYBER SCROLL</span>
             <span className="text-indigo-600 dark:text-indigo-400 font-bold">[{filteredProblems.length} CHALLENGES]</span>
           </div>
         </div>
 
-        {/* Ambient Top & Bottom HUD Fade Overlays */}
-        <div className="pointer-events-none absolute inset-x-0 top-12 h-6 bg-gradient-to-b from-slate-50/80 dark:from-charcoal-900/80 to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-slate-50/90 dark:from-charcoal-900/90 to-transparent z-10" />
-
-        {/* Problems Viewport */}
-        <div className="tech-scroll-viewport pr-1 sm:pr-2 py-1">
+        {/* Problems Viewport with Blur-to-Focus Mask */}
+        <div className="tech-scroll-viewport blur-focus-scroll pr-1 sm:pr-2 py-2">
           {isLoading ? (
             <div className="py-20 text-center space-y-4">
               <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
@@ -432,8 +427,8 @@ export default function ProblemStatementsPage() {
                 return (
                   <div
                     key={problem.id}
-                    className="tech-card-entrance rounded-2xl bg-charcoal-900 border border-charcoal-750 hover:border-charcoal-600 p-6 flex flex-col justify-between gap-6 transition-all shadow-md group"
-                    style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                    className="blur-to-focus-card rounded-2xl bg-charcoal-900 border border-charcoal-750 hover:border-charcoal-600 p-6 flex flex-col justify-between gap-6 transition-all shadow-md group"
+                    style={{ animationDelay: `${Math.min(idx * 40, 360)}ms` }}
                   >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-2 flex-wrap">

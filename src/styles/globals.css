@@ -215,7 +215,7 @@ div[role="dialog"] .bg-amber-500\/10 strong {
 }
 
 /* ========================================================
-   Technology Animated Scroll Viewport & Cyber Scrollbar
+   Unique Blur-to-Focus Stack Scroll Physics & Animations
    ======================================================== */
 .tech-scroll-viewport {
   position: relative;
@@ -228,71 +228,101 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   min-height: 480px;
 }
 
-/* Futuristic Cyber Neon Scrollbar */
+/* Progressive Edge Blur & Focus Mask */
+.blur-focus-scroll {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 1.5%,
+    rgba(0, 0, 0, 0.8) 3.5%,
+    black 6%,
+    black 93%,
+    rgba(0, 0, 0, 0.8) 96.5%,
+    rgba(0, 0, 0, 0.3) 98.5%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 1.5%,
+    rgba(0, 0, 0, 0.8) 3.5%,
+    black 6%,
+    black 93%,
+    rgba(0, 0, 0, 0.8) 96.5%,
+    rgba(0, 0, 0, 0.3) 98.5%,
+    transparent 100%
+  );
+}
+
+/* Clean, Non-intrusive Scrollbar */
 .tech-scroll-viewport::-webkit-scrollbar {
-  width: 7px;
+  width: 6px;
 }
 
 .tech-scroll-viewport::-webkit-scrollbar-track {
-  background: rgba(99, 102, 241, 0.06);
-  border-radius: 9999px;
-  margin: 6px 0;
+  background: transparent;
 }
 
 .tech-scroll-viewport::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #8b5cf6 0%, #ec4899 50%, #3b82f6 100%);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.25s ease;
+  transition: background 0.2s ease;
 }
 
 .tech-scroll-viewport::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #a855f7 0%, #f43f5e 50%, #06b6d4 100%);
-  box-shadow: 0 0 16px rgba(236, 72, 153, 0.75);
+  background: rgba(99, 102, 241, 0.65);
 }
 
-/* Staggered Technology Card Entrance */
-@keyframes techCardPopIn {
+/* Unique Blur-to-Focus Stack Animation */
+@keyframes blurToFocusStack {
   0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
+    opacity: 0.25;
+    filter: blur(10px);
+    transform: translateY(22px) scale(0.965);
+  }
+  60% {
+    filter: blur(2.5px);
   }
   100% {
     opacity: 1;
+    filter: blur(0px);
     transform: translateY(0) scale(1);
   }
 }
 
-.tech-card-entrance {
-  animation: techCardPopIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
+.blur-to-focus-card {
+  animation: blurToFocusStack 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity, filter;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Cyber Scanline Laser Effect */
-@keyframes cyberScanline {
-  0% {
-    top: 0%;
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.9;
-  }
-  100% {
-    top: 100%;
-    opacity: 0;
-  }
-}
-
-.cyber-scanline {
+/* Blur Curtains for Upper & Lower Scroll Margins */
+.scroll-blur-curtain-top {
   position: absolute;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.6), rgba(236, 72, 153, 0.8), rgba(59, 130, 246, 0.6), transparent);
-  animation: cyberScanline 7s ease-in-out infinite;
+  top: 38px;
+  height: 42px;
   pointer-events: none;
-  z-index: 5;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+.scroll-blur-curtain-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to top, black 30%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 30%, transparent 100%);
 }
 
 
