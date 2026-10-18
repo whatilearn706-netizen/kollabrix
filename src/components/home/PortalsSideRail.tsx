@@ -17,56 +17,36 @@ import { BrandLogo } from '@/components/ui/BrandLogo';
 interface PortalItem {
   id: string;
   title: string;
-  subtitle: string;
-  desc: string;
   href: string;
   icon: React.ElementType;
   themeColor: 'amber' | 'violet' | 'emerald';
-  badgeClass: string;
-  borderClass: string;
   iconBgClass: string;
-  pulseClass: string;
 }
 
 const PORTAL_ITEMS: PortalItem[] = [
   {
     id: 'hackathons',
     title: 'College Hackathons',
-    subtitle: 'Campus Arenas',
-    desc: 'Assemble squads, enter live sprints & win verified prizes.',
     href: '/hackathons',
     icon: Trophy,
     themeColor: 'amber',
-    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    borderClass: 'border-amber-500/40 hover:border-amber-400',
-    iconBgClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    pulseClass: 'bg-amber-400',
+    iconBgClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
   },
   {
     id: 'problems',
     title: 'Faculty Problems',
-    subtitle: 'Professor Briefs',
-    desc: 'Solve engineering briefs published by faculty members.',
     href: '/problems',
     icon: Lightbulb,
     themeColor: 'violet',
-    badgeClass: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
-    borderClass: 'border-violet-500/40 hover:border-violet-400',
-    iconBgClass: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-    pulseClass: 'bg-violet-400',
+    iconBgClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
   },
   {
     id: 'faculty',
     title: 'Faculty Portal',
-    subtitle: 'Educator Desk',
-    desc: 'Teacher mentor desk, challenge creation & verification.',
     href: '/teacher/dashboard',
     icon: GraduationCap,
     themeColor: 'emerald',
-    badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    borderClass: 'border-emerald-500/40 hover:border-emerald-400',
-    iconBgClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    pulseClass: 'bg-emerald-400',
+    iconBgClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
   },
 ];
 
@@ -105,63 +85,50 @@ export function PortalsSideRail() {
 
   return (
     <div className="relative flex items-center justify-center lg:justify-end select-none w-full">
-      {/* Side Scrolling Console + Lil Point of Linkora */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Vertical Scrolling Console with Blur Curtains */}
-        <div className="relative w-[195px] sm:w-[210px] h-[330px] sm:h-[360px] rounded-2xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-2 shadow-xs backdrop-blur-md overflow-hidden">
-          {/* Blur Curtains for Upper & Lower Margins */}
-          <div className="scroll-blur-curtain-top" />
-          <div className="scroll-blur-curtain-bottom" />
+      {/* Side Scrolling Names (Written directly on the website) + Lil Point of Linkora */}
+      <div className="flex items-center gap-2.5 sm:gap-3 bg-transparent">
+        {/* Vertical Scrolling Names Container - Exactly 2 names visible before scrolling */}
+        <div className="relative w-[175px] sm:w-[195px] h-[82px] border-l-2 border-slate-300/80 dark:border-white/15 pl-2 sm:pl-2.5 overflow-hidden select-none">
+          {/* Subtle blur curtains for upper & lower scroll edges */}
+          <div className="rail-blur-curtain-top" />
+          <div className="rail-blur-curtain-bottom" />
 
-          {/* Scrolling Viewport with Blur-to-Focus Mask */}
+          {/* Scrolling Viewport with Blur Mask & Snap */}
           <div
             ref={scrollRef}
-            className="tech-scroll-viewport blur-focus-scroll h-full px-1 py-2.5 space-y-2.5 overscroll-contain"
+            className="tech-scroll-viewport blur-focus-scroll h-full space-y-1.5 overscroll-contain snap-y snap-mandatory scrollbar-none py-0.5"
             style={{ maxHeight: '100%' }}
           >
             {PORTAL_ITEMS.map((item, idx) => {
               const Icon = item.icon;
               return (
-                <div
+                <button
                   key={item.id}
+                  type="button"
                   onClick={() => setIsSpotlightOpen(true)}
-                  className={`blur-to-focus-card group relative cursor-pointer rounded-xl border bg-white/95 dark:bg-charcoal-900/90 p-2.5 shadow-xs transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${item.borderClass}`}
-                  style={{ animationDelay: `${idx * 0.1}s` }}
-                  title="Click to Open Spotlight Ring"
+                  className="snap-start w-full h-[38px] flex items-center gap-2 px-1.5 text-left cursor-pointer transition-all duration-200 group rounded-lg hover:bg-slate-500/5 dark:hover:bg-white/5 active:scale-[0.98]"
+                  style={{ animationDelay: `${idx * 0.08}s` }}
+                  title="Click to Open Portals Ring"
                 >
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <div className={`p-1.5 rounded-lg border ${item.iconBgClass}`}>
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="flex items-center gap-1 text-[8px] font-mono font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      <span className={`w-1.5 h-1.5 rounded-full ${item.pulseClass} animate-pulse`} />
-                      <span>{item.subtitle}</span>
-                    </span>
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-all duration-200 ${item.iconBgClass} group-hover:scale-110`}>
+                    <Icon className="w-3.5 h-3.5" />
                   </div>
-
-                  <h4 className="text-xs font-black text-slate-900 dark:text-white group-hover:text-violet-500 dark:group-hover:text-violet-400 transition-colors truncate">
+                  <span className="text-xs sm:text-[13px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors truncate">
                     {item.title}
-                  </h4>
-                  <p className="text-[9.5px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">
-                    {item.desc}
-                  </p>
-
-                  <div className="mt-1.5 pt-1 border-t border-slate-100 dark:border-charcoal-800 flex items-center justify-between text-[9px] font-bold text-slate-400 group-hover:text-violet-500">
-                    <span>Expand Ring</span>
-                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
+                  </span>
+                  <ChevronRight className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-auto shrink-0" />
+                </button>
               );
             })}
           </div>
         </div>
 
         {/* The "Lil Point of Linkora" */}
-        <div className="flex flex-col items-center gap-1.5">
+        <div className="flex flex-col items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setIsSpotlightOpen(true)}
-            className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-900 dark:bg-black border-2 border-violet-500/70 shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:border-violet-400 hover:shadow-violet-500/30"
+            className="group relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 dark:bg-black border-2 border-violet-500/70 shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:border-violet-400 hover:shadow-violet-500/30"
             aria-label="Lil Point of Linkora - Open Spotlight Ring"
             title="Lil Point of Linkora • Tap or press ⌘+Space to open Big Ring"
           >
@@ -169,14 +136,14 @@ export function PortalsSideRail() {
             <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500 via-pink-500 to-emerald-500 opacity-70 blur-xs animate-ping pointer-events-none" />
 
             {/* Glowing Center Core */}
-            <span className="relative z-10 w-4 h-4 rounded-full bg-gradient-to-tr from-emerald-400 via-violet-400 to-pink-400 flex items-center justify-center shadow-inner group-hover:rotate-45 transition-transform">
+            <span className="relative z-10 w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-emerald-400 via-violet-400 to-pink-400 flex items-center justify-center shadow-inner group-hover:rotate-45 transition-transform">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             </span>
           </button>
 
           {/* Shortcut hint pill */}
-          <span className="hidden sm:inline-flex items-center gap-0.5 text-[8.5px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded bg-slate-100 dark:bg-charcoal-800/80 border border-slate-200 dark:border-charcoal-700">
-            <Command className="w-2.5 h-2.5" />
+          <span className="hidden sm:inline-flex items-center gap-0.5 text-[7.5px] font-mono font-bold text-slate-400 dark:text-slate-500">
+            <Command className="w-2 h-2" />
             <span>Space</span>
           </span>
         </div>

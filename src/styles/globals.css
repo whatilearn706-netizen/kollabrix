@@ -327,6 +327,35 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   -webkit-mask-image: linear-gradient(to top, black 25%, transparent 100%);
 }
 
+/* Compact Blur Curtains for Written-On-Page Portals Rail (Shows 2 Names Before Scroll) */
+.rail-blur-curtain-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 16px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to bottom, black 15%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 15%, transparent 100%);
+}
+
+.rail-blur-curtain-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to top, black 15%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 15%, transparent 100%);
+}
+
 /* Backside Ambient Blur Atmosphere Animation for Transparent Portals Ring */
 @keyframes ambientBlurPulse {
   0%, 100% {
