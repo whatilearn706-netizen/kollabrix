@@ -73,42 +73,32 @@ export function ProblemApplyModal({
     setError(null);
 
     try {
-      if (isSupabaseConfigured()) {
-        // 1. Check for existing pending application
-        const { data: existing } = await supabase
-          .from('problem_applications')
-          .select('id, status')
-          .eq('problem_statement_id', problemId)
-          .eq('applicant_id', user.id)
-          .eq('status', 'Pending')
-          .maybeSingle();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        if (existing) {
-          setError('You already have a pending application for this problem statement.');
-          setIsSubmitting(false);
-          return;
-        }
-
-        // 2. Insert into problem_applications
-        const { error: insertErr } = await supabase.from('problem_applications').insert({
+      const res = await fetch('/api/problems/apply', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
           problem_statement_id: problemId,
           applicant_id: user.id,
           proposed_role: proposedRole,
           message: message.trim(),
-          status: 'Pending',
-        });
+        }),
+      });
 
-        if (insertErr) {
-          // If table not yet migrated, fall back gracefully to saving locally
-          console.warn('DB application insert note:', insertErr.message);
-        }
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        throw new Error(resData?.error || 'Failed to submit application.');
       }
 
-      // Save locally to localStorage as backup/demo support
+      // Save locally to localStorage as instant UI mirror
       if (typeof window !== 'undefined') {
         const storedKey = `tf_problem_apps_${problemId}`;
         const existingStored = JSON.parse(localStorage.getItem(storedKey) || '[]');
-        existingStored.push({
+        const appObj = resData.application || {
           id: `app_${Date.now()}`,
           problem_statement_id: problemId,
           applicant_id: user.id,
@@ -122,7 +112,8 @@ export function ProblemApplyModal({
             avatar_url: profile?.avatar_url,
             college: profile?.college || 'Engineering College',
           },
-        });
+        };
+        existingStored.unshift(appObj);
         localStorage.setItem(storedKey, JSON.stringify(existingStored));
       }
 

@@ -107,6 +107,11 @@ export default function TeacherDashboardPage() {
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
+  // Problem applications review state
+  const [problemApplications, setProblemApplications] = useState<any[]>([]);
+  const [selectedProblemForReview, setSelectedProblemForReview] = useState<ProblemStatement | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
   // Faculty verification state for non-teachers
   const [facultyCode, setFacultyCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -384,6 +389,17 @@ export default function TeacherDashboardPage() {
     }
 
       setMyHackathons(dedupedHacks);
+
+      // 5. Fetch student applications for problems authored by this teacher
+      try {
+        const appsRes = await fetch(`/api/problems/applications?author_id=${user.id}`);
+        const appsData = await appsRes.json();
+        if (appsRes.ok && appsData.success && Array.isArray(appsData.applications)) {
+          setProblemApplications(appsData.applications);
+        }
+      } catch (err) {
+        console.warn('Problem applications load notice:', err);
+      }
     } catch {
       // Graceful fallback
     } finally {
@@ -536,6 +552,27 @@ export default function TeacherDashboardPage() {
       setFeedbackError(err instanceof Error ? err.message : 'Failed to submit feedback.');
     } finally {
       setIsSubmittingFeedback(false);
+    }
+  };
+
+  const handleReviewProblemApp = async (appId: string, newStatus: 'Accepted' | 'Rejected') => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      await fetch('/api/problems/applications', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ application_id: appId, status: newStatus }),
+      });
+
+      setProblemApplications((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, status: newStatus } : a))
+      );
+    } catch (err) {
+      console.warn('Error reviewing problem applicant:', err);
     }
   };
 
@@ -1065,56 +1102,87 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {myProblems.map((prob) => (
-                <div
-                  key={prob.id}
-                  className="p-5 rounded-2xl border border-charcoal-800 bg-charcoal-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Badge variant="category" size="sm">
-                        {prob.category}
-                      </Badge>
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                          prob.status === 'Published'
-                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                            : prob.status === 'Draft'
-                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                            : 'bg-slate-700/50 text-slate-400 border-slate-600'
-                        }`}
-                      >
-                        {prob.status}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        Posted {new Date(prob.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <Link
-                      href={`/problems/${prob.id}`}
-                      className="text-base font-bold text-white hover:text-brand-300 transition-colors"
-                    >
-                      {prob.title}
-                    </Link>
-                    <p className="text-xs text-slate-400 line-clamp-1 mt-1 max-w-2xl">
-                      {prob.description}
-                    </p>
-                  </div>
+              {myProblems.map((prob) => {
+                const appsForProb = problemApplications.filter(
+                  (a) => a.problem_statement_id === prob.id
+                );
+                const pendingCount = appsForProb.filter((a) => a.status === 'Pending').length;
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link href={`/problems/${prob.id}/edit`}>
-                      <Button size="sm" variant="outline">
-                        Edit
+                return (
+                  <div
+                    key={prob.id}
+                    className="p-5 rounded-2xl border border-charcoal-800 bg-charcoal-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Badge variant="category" size="sm">
+                          {prob.category}
+                        </Badge>
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                            prob.status === 'Published'
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : prob.status === 'Draft'
+                              ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                              : 'bg-slate-700/50 text-slate-400 border-slate-600'
+                          }`}
+                        >
+                          {prob.status}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Posted {new Date(prob.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <Link
+                        href={`/problems/${prob.id}`}
+                        className="text-base font-bold text-white hover:text-brand-300 transition-colors"
+                      >
+                        {prob.title}
+                      </Link>
+                      <p className="text-xs text-slate-400 line-clamp-1 mt-1 max-w-2xl">
+                        {prob.description}
+                      </p>
+
+                      <div className="flex items-center gap-3 mt-3">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-indigo-300 font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                          <Users className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>{appsForProb.length} {appsForProb.length === 1 ? 'Applicant' : 'Applicants'}</span>
+                          {pendingCount > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">
+                              {pendingCount} new
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          setSelectedProblemForReview(prob);
+                          setIsReviewModalOpen(true);
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/20"
+                        leftIcon={<Users className="w-3.5 h-3.5" />}
+                      >
+                        Review Applicants ({appsForProb.length})
                       </Button>
-                    </Link>
-                    <Link href={`/problems/${prob.id}`}>
-                      <Button size="sm" variant="ghost">
-                        View
-                      </Button>
-                    </Link>
+                      <Link href={`/problems/${prob.id}/edit`}>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </Link>
+                      <Link href={`/problems/${prob.id}`}>
+                        <Button size="sm" variant="ghost">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1432,6 +1500,167 @@ export default function TeacherDashboardPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Problem Applicants Review Modal */}
+      <Modal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setSelectedProblemForReview(null);
+        }}
+        title={`Review Applicants: ${selectedProblemForReview?.title || 'Problem Challenge'}`}
+        maxWidth="lg"
+      >
+        <div className="space-y-4 pt-1">
+          {/* Header summary */}
+          <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="category" size="sm">
+                {selectedProblemForReview?.category}
+              </Badge>
+              <span className="text-xs text-slate-400">
+                Difficulty: <strong className="text-white">{selectedProblemForReview?.difficulty}</strong>
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 line-clamp-2">
+              {selectedProblemForReview?.description}
+            </p>
+          </div>
+
+          {/* List of applicants */}
+          {(() => {
+            const apps = problemApplications.filter(
+              (a) => a.problem_statement_id === selectedProblemForReview?.id
+            );
+
+            if (apps.length === 0) {
+              const problemLink = typeof window !== 'undefined'
+                ? `${window.location.origin}/problems/${selectedProblemForReview?.id}`
+                : `/problems/${selectedProblemForReview?.id}`;
+
+              return (
+                <div className="py-10 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-white">No Student Applicants Yet</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    Students will appear here as soon as they click <strong>&quot;Apply to Tackle this Problem&quot;</strong>. Share the link in your college WhatsApp group to kick off team formation!
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(problemLink);
+                      alert('Problem statement link copied! Share this with your students.');
+                    }}
+                    leftIcon={<Copy className="w-3.5 h-3.5" />}
+                    className="text-xs text-brand-300 border-brand-500/30"
+                  >
+                    Copy Student Invite Link
+                  </Button>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                {apps.map((app) => (
+                  <div
+                    key={app.id}
+                    className="p-4 rounded-xl bg-charcoal-950/80 border border-charcoal-800 space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          src={app.applicant?.avatar_url}
+                          name={app.applicant?.display_name || 'Student'}
+                          size="md"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-white">
+                              {app.applicant?.display_name || 'Student'}
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-400">
+                              @{app.applicant?.username}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400">
+                            {app.applicant?.college || 'College of Engineering'}
+                            {app.applicant?.course ? ` • ${app.applicant.course}` : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                          app.status === 'Accepted'
+                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                            : app.status === 'Rejected'
+                            ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                            : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                        }`}
+                      >
+                        {app.status}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-charcoal-900 border border-charcoal-800 text-xs text-slate-200 leading-relaxed">
+                      <div className="text-[10px] uppercase font-bold text-indigo-400 mb-1">
+                        Proposed Role: {app.proposed_role}
+                      </div>
+                      <p className="italic">&ldquo;{app.message}&rdquo;</p>
+                    </div>
+
+                    {app.applicant?.skills && app.applicant.skills.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {app.applicant.skills.map((skill: string) => (
+                          <span
+                            key={skill}
+                            className="text-[10px] px-2 py-0.5 rounded-full bg-charcoal-800 text-slate-300 border border-charcoal-700"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-charcoal-800/80 text-[11px] text-slate-400">
+                      <span>Applied {new Date(app.created_at).toLocaleDateString()}</span>
+
+                      <div className="flex items-center gap-2">
+                        {app.status !== 'Accepted' && (
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-7 px-3"
+                            onClick={() => handleReviewProblemApp(app.id, 'Accepted')}
+                            leftIcon={<CheckCircle2 className="w-3 h-3" />}
+                          >
+                            Accept
+                          </Button>
+                        )}
+                        {app.status !== 'Rejected' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-400 border-red-500/30 hover:bg-red-500/10 text-xs h-7 px-3"
+                            onClick={() => handleReviewProblemApp(app.id, 'Rejected')}
+                            leftIcon={<AlertCircle className="w-3 h-3" />}
+                          >
+                            Decline
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
       </Modal>
 
       <CreateHackathonModal

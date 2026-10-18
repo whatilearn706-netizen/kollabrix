@@ -155,33 +155,17 @@ export default function ProblemStatementDetailPage() {
     if (!id) return;
     let apps: ProblemApplication[] = [];
 
-    if (isSupabaseConfigured()) {
-      try {
-        const { data, error: appErr } = await supabase
-          .from('problem_applications')
-          .select(`
-            *,
-            applicant:profiles!problem_applications_applicant_id_fkey(
-              user_id,
-              display_name,
-              username,
-              avatar_url,
-              college,
-              course
-            )
-          `)
-          .eq('problem_statement_id', id)
-          .order('created_at', { ascending: false });
-
-        if (!appErr && data) {
-          apps = data as unknown as ProblemApplication[];
-        }
-      } catch {
-        // Fallback gracefully
+    try {
+      const res = await fetch(`/api/problems/applications?problem_id=${id}`);
+      const resData = await res.json();
+      if (res.ok && resData.success && Array.isArray(resData.applications)) {
+        apps = resData.applications;
       }
+    } catch (e) {
+      console.warn('Notice loading applications from API:', e);
     }
 
-    // Merge with local storage apps
+    // Merge with local storage apps backup
     if (typeof window !== 'undefined') {
       const local = JSON.parse(localStorage.getItem(`tf_problem_apps_${id}`) || '[]');
       const existingIds = new Set(apps.map((a) => a.id));
@@ -213,12 +197,16 @@ export default function ProblemStatementDetailPage() {
     setActionSuccess(null);
 
     try {
-      if (isSupabaseConfigured()) {
-        await supabase
-          .from('problem_applications')
-          .update({ status: 'Withdrawn' })
-          .eq('id', userApplication.id);
-      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      await fetch('/api/problems/applications', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ application_id: userApplication.id, status: 'Withdrawn' }),
+      });
 
       // Update localStorage
       if (typeof window !== 'undefined') {
@@ -245,12 +233,16 @@ export default function ProblemStatementDetailPage() {
   const handleReviewApplicant = async (appId: string, newStatus: 'Accepted' | 'Rejected') => {
     setActionSuccess(null);
     try {
-      if (isSupabaseConfigured()) {
-        await supabase
-          .from('problem_applications')
-          .update({ status: newStatus })
-          .eq('id', appId);
-      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      await fetch('/api/problems/applications', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ application_id: appId, status: newStatus }),
+      });
 
       if (typeof window !== 'undefined') {
         const key = `tf_problem_apps_${id}`;
