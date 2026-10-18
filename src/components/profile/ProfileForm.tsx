@@ -164,6 +164,9 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       const data = await res.json();
 
       if (res.ok && data.success) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('teamforge_verified_faculty', 'true');
+        }
         setProfileRole('teacher');
         setFacultyVerifyMsg({ text: data.message || 'Verified! You now have faculty mentor permissions.', isError: false });
         await refreshProfile();
@@ -653,17 +656,17 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               <span className="text-sm font-semibold text-white">Institutional Role</span>
             </div>
             <span className="text-xs font-semibold uppercase px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
-              {initialProfile?.birth_year && initialProfile.birth_year > 2003
-                ? `Student (Born ${initialProfile.birth_year})`
-                : profileRole === 'teacher'
-                ? 'Faculty / Mentor'
-                : profileRole === 'admin'
+              {profileRole === 'admin'
                 ? 'Administrator'
+                : profileRole === 'teacher' || initialProfile?.faculty_verified
+                ? 'Faculty / Mentor'
+                : initialProfile?.birth_year && initialProfile.birth_year > 2003
+                ? `Student (Born ${initialProfile.birth_year})`
                 : 'Student'}
             </span>
           </div>
 
-          {profileRole !== 'teacher' || (initialProfile?.birth_year && initialProfile.birth_year > 2003) ? (
+          {profileRole !== 'teacher' && !initialProfile?.faculty_verified ? (
             <div className="pt-2 border-t border-charcoal-750 space-y-3">
               <p className="text-xs text-slate-400">
                 Are you a college professor or academic mentor? Enter your institutional faculty passcode to activate educator privileges (authoring problem statements and providing project reviews).

@@ -74,8 +74,10 @@ export default function NewHackathonPage() {
   const [copiedLink, setCopiedLink] = useState(false);
 
   const isTeacher =
-    (profile?.role === 'teacher' || profile?.role === 'admin') &&
-    (!profile?.birth_year || profile?.birth_year <= 2003);
+    profile?.role === 'teacher' ||
+    profile?.role === 'admin' ||
+    Boolean(profile?.faculty_verified) ||
+    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

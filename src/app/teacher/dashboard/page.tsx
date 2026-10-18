@@ -170,7 +170,9 @@ export default function TeacherDashboardPage() {
   const isTeacher =
     !isRevoked &&
     !isPreviewingGateAsVisitor &&
-    ((profile?.role === 'teacher' && (!profile?.birth_year || profile?.birth_year <= 2003)) ||
+    (profile?.role === 'teacher' ||
+     profile?.role === 'admin' ||
+     Boolean(profile?.faculty_verified) ||
      (isAdmin && adminBypassGranted && !isRevoked) ||
      (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true' && !isRevoked));
 
@@ -427,6 +429,9 @@ export default function TeacherDashboardPage() {
       if (res.ok && resData.success) {
         setIsRevoked(false);
         setVerifyError(null);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('teamforge_verified_faculty', 'true');
+        }
         setVerifySuccess(resData.message || 'Faculty status verified! Loading mentor dashboard...');
         await refreshProfile();
         await loadDashboardData();

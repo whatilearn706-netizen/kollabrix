@@ -39,8 +39,10 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
   const isVerifiedTeacher = Boolean(
-    (profile?.role === 'teacher' || profile?.faculty_verified) &&
-      (!profile?.birth_year || profile?.birth_year <= 2003)
+    profile?.role === 'teacher' ||
+      profile?.role === 'admin' ||
+      profile?.faculty_verified ||
+      (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true')
   );
   const [creatorRole, setCreatorRole] = useState<'student' | 'teacher'>(() =>
     isVerifiedTeacher ? 'teacher' : 'student'
@@ -516,11 +518,11 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Teacher / Mentor / Professor</h4>
                     <span className="text-[10px] text-indigo-600 font-semibold">
-                      {profile?.birth_year && profile.birth_year > 2003
-                        ? `❌ Student Only (Born ${profile.birth_year})`
-                        : profile?.role === 'teacher' && profile?.faculty_verified && profile?.birth_year && profile.birth_year <= 2003
+                      {isVerifiedTeacher || profile?.role === 'teacher' || profile?.role === 'admin' || profile?.faculty_verified
                         ? '✓ Verified Faculty'
-                        : 'Requires Aadhaar Card (Born ≤ 2003)'}
+                        : profile?.birth_year && profile.birth_year > 2003
+                        ? `Student (Born ${profile.birth_year})`
+                        : 'Requires Faculty Passcode or DigiLocker'}
                     </span>
                   </div>
                 </div>
@@ -782,7 +784,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         maxWidth="md"
       >
         <div className="space-y-4 pt-1">
-          {profile?.birth_year && profile.birth_year > 2003 ? (
+          {!isVerifiedTeacher && profile?.birth_year && profile.birth_year > 2003 ? (
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 space-y-2">
                 <div className="flex items-center gap-2 text-red-300 font-semibold text-sm">
@@ -790,7 +792,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
                   <span>Student Account (Born {profile.birth_year})</span>
                 </div>
                 <p className="text-xs text-red-200/90 leading-relaxed">
-                  Your verification records confirm your birth year is <strong>{profile.birth_year}</strong> (Age: {2026 - profile.birth_year} years). Institutional faculty rules strictly require birth year &le; 2003. You are creating this project as a Student.
+                  Your verification records confirm your birth year is <strong>{profile.birth_year}</strong> (Age: {2026 - profile.birth_year} years). Institutional faculty rules require verification via an institutional faculty passcode or verified mentor credentials.
                 </p>
                 <p className="text-xs text-slate-300">
                   You can explore published faculty challenges in the Mentor Portal, or proceed proposing this project as a Student.

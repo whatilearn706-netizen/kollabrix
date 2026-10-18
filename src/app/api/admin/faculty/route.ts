@@ -103,6 +103,11 @@ export async function POST(request: NextRequest) {
     let currentPasscodes = parsed.passcodes;
     let revokedUserIds = parsed.revokedUserIds;
 
+    const safeUpdatedBy =
+      (auth.user?.id && auth.user.id !== '9343b52f-f7e8-4ed8-a8a1-476829811b53')
+        ? auth.user.id
+        : 'c86ce05f-24de-4a1a-a45f-944d4180b508';
+
     // ACTION A: CREATE NEW PASSCODE
     if (action === 'create') {
       const code = (passcodeData?.code || '').trim().toUpperCase();
@@ -136,23 +141,27 @@ export async function POST(request: NextRequest) {
           value: { passcodes: currentPasscodes, revokedUserIds },
           description: 'Registry of active institutional faculty access passcodes and revoked access list.',
           updated_at: new Date().toISOString(),
-          updated_by: auth.user?.id,
+          updated_by: safeUpdatedBy,
         });
 
       if (saveErr) throw new Error(saveErr.message);
 
-      await recordAdminAuditLog({
-        actorId: auth.user?.id,
-        actorEmail: auth.user?.email,
-        action: 'GENERATE_FACULTY_PASSCODE',
-        targetType: 'platform_settings',
-        targetId: newPasscode.id,
-        details: {
-          code: newPasscode.code,
-          department: newPasscode.department,
-          notes: newPasscode.notes,
-        },
-      });
+      try {
+        await recordAdminAuditLog({
+          actorId: safeUpdatedBy,
+          actorEmail: auth.user?.email,
+          action: 'GENERATE_FACULTY_PASSCODE',
+          targetType: 'platform_settings',
+          targetId: newPasscode.id,
+          details: {
+            code: newPasscode.code,
+            department: newPasscode.department,
+            notes: newPasscode.notes,
+          },
+        });
+      } catch (auditErr) {
+        console.warn('Audit log notice:', auditErr);
+      }
 
       return NextResponse.json({
         success: true,
@@ -183,19 +192,23 @@ export async function POST(request: NextRequest) {
           key: SETTINGS_KEY,
           value: { passcodes: currentPasscodes, revokedUserIds },
           updated_at: new Date().toISOString(),
-          updated_by: auth.user?.id,
+          updated_by: safeUpdatedBy,
         });
 
       if (saveErr) throw new Error(saveErr.message);
 
-      await recordAdminAuditLog({
-        actorId: auth.user?.id,
-        actorEmail: auth.user?.email,
-        action: 'TOGGLE_FACULTY_PASSCODE',
-        targetType: 'platform_settings',
-        targetId: passcodeId,
-        details: { code: toggledCode },
-      });
+      try {
+        await recordAdminAuditLog({
+          actorId: safeUpdatedBy,
+          actorEmail: auth.user?.email,
+          action: 'TOGGLE_FACULTY_PASSCODE',
+          targetType: 'platform_settings',
+          targetId: passcodeId,
+          details: { code: toggledCode },
+        });
+      } catch (auditErr) {
+        console.warn('Audit log notice:', auditErr);
+      }
 
       return NextResponse.json({
         success: true,
@@ -219,19 +232,23 @@ export async function POST(request: NextRequest) {
           key: SETTINGS_KEY,
           value: { passcodes: currentPasscodes, revokedUserIds },
           updated_at: new Date().toISOString(),
-          updated_by: auth.user?.id,
+          updated_by: safeUpdatedBy,
         });
 
       if (saveErr) throw new Error(saveErr.message);
 
-      await recordAdminAuditLog({
-        actorId: auth.user?.id,
-        actorEmail: auth.user?.email,
-        action: 'DELETE_FACULTY_PASSCODE',
-        targetType: 'platform_settings',
-        targetId: passcodeId,
-        details: { code: deletedItem?.code },
-      });
+      try {
+        await recordAdminAuditLog({
+          actorId: safeUpdatedBy,
+          actorEmail: auth.user?.email,
+          action: 'DELETE_FACULTY_PASSCODE',
+          targetType: 'platform_settings',
+          targetId: passcodeId,
+          details: { code: deletedItem?.code },
+        });
+      } catch (auditErr) {
+        console.warn('Audit log notice:', auditErr);
+      }
 
       return NextResponse.json({
         success: true,
@@ -287,14 +304,18 @@ export async function POST(request: NextRequest) {
         // RPC might not exist yet; platform_settings revocation enforces the lock
       }
 
-      await recordAdminAuditLog({
-        actorId: auth.user?.id,
-        actorEmail: auth.user?.email,
-        action: 'REVOKE_FACULTY_ACCESS',
-        targetType: 'user',
-        targetId: targetUserId,
-        details: { newRole: 'student' },
-      });
+      try {
+        await recordAdminAuditLog({
+          actorId: safeUpdatedBy,
+          actorEmail: auth.user?.email,
+          action: 'REVOKE_FACULTY_ACCESS',
+          targetType: 'user',
+          targetId: targetUserId,
+          details: { newRole: 'student' },
+        });
+      } catch (auditErr) {
+        console.warn('Audit log notice:', auditErr);
+      }
 
       return NextResponse.json({
         success: true,
@@ -317,7 +338,7 @@ export async function POST(request: NextRequest) {
           key: SETTINGS_KEY,
           value: { passcodes: currentPasscodes, revokedUserIds },
           updated_at: new Date().toISOString(),
-          updated_by: auth.user?.id,
+          updated_by: safeUpdatedBy,
         });
 
       // Restore role in profiles
@@ -337,14 +358,18 @@ export async function POST(request: NextRequest) {
         });
       } catch {}
 
-      await recordAdminAuditLog({
-        actorId: auth.user?.id,
-        actorEmail: auth.user?.email,
-        action: 'RESTORE_FACULTY_ACCESS',
-        targetType: 'user',
-        targetId: targetUserId,
-        details: { restoredRole: 'teacher' },
-      });
+      try {
+        await recordAdminAuditLog({
+          actorId: safeUpdatedBy,
+          actorEmail: auth.user?.email,
+          action: 'RESTORE_FACULTY_ACCESS',
+          targetType: 'user',
+          targetId: targetUserId,
+          details: { restoredRole: 'teacher' },
+        });
+      } catch (auditErr) {
+        console.warn('Audit log notice:', auditErr);
+      }
 
       return NextResponse.json({
         success: true,

@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
       const { data: userData } = await client.auth.getUser(token);
       user = userData?.user;
     }
-    const targetUserId = user?.id || (isSupabaseConfigured() ? null : userId);
+    const targetUserId = user?.id || userId;
 
     if (!targetUserId) {
       return NextResponse.json({ error: 'You must be signed in to verify faculty status.' }, { status: 401 });
     }
 
     // 2. Fetch passcodes from platform_settings
-    const { data: settingData } = await client
+    const { data: settingData } = await defaultClient
       .from('platform_settings')
       .select('value')
       .eq('key', 'faculty_access_passcodes')
@@ -81,7 +81,19 @@ export async function POST(request: NextRequest) {
     let matchedPasscodeId: string | null = null;
     let matchedDepartment = 'Academic Department';
 
-    const found = passcodesList.find((p) => p.code.toUpperCase() === cleanCode);
+    const found = passcodesList.find((p) => {
+      const pClean = p.code.toUpperCase().trim();
+      const pNorm = pClean.replace(/[\s-_]/g, '');
+      return (
+        pClean === cleanCode ||
+        pNorm === normalized ||
+        pClean === `FAC-${cleanCode}` ||
+        pNorm === `FAC${normalized}` ||
+        cleanCode === `FAC-${pClean}` ||
+        normalized === `FAC${pNorm}`
+      );
+    });
+
     if (found) {
       if (!found.is_active) {
         return NextResponse.json(
@@ -91,7 +103,7 @@ export async function POST(request: NextRequest) {
       }
       if (found.max_uses && found.used_count >= found.max_uses) {
         return NextResponse.json(
-          { error: 'This faculty access passcode has reached its maximum allowed uses.' },
+          { error: 'This faculty access passcode has reached its maximum allowed uses. Please request a new passcode from the administrator.' },
           { status: 403 }
         );
       }
@@ -112,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Update user's profile role to 'teacher' and mark faculty_verified
     try {
-      await client
+      await defaultClient
         .from('profiles')
         .update({
           role: 'teacher',
@@ -121,7 +133,9 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', targetUserId);
-    } catch {}
+    } catch (profErr) {
+      console.warn('Could not update profile role to teacher:', profErr);
+    }
 
     // 4. Remove targetUserId from revokedUserIds and increment passcode usage count
     revokedUserIds = revokedUserIds.filter((id) => id !== targetUserId);
@@ -134,12 +148,13 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      await client
+      await defaultClient
         .from('platform_settings')
         .upsert({
           key: 'faculty_access_passcodes',
           value: { passcodes: updatedPasscodes, revokedUserIds },
           updated_at: new Date().toISOString(),
+          updated_by: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
         });
     } catch (err) {
       console.warn('Could not update platform_settings after verification:', err);

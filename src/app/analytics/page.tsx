@@ -28,8 +28,10 @@ export default function CollegeAnalyticsPage() {
   const { user, profile, isLoading: isAuthLoading } = useAuth();
 
   const isAuthorized =
-    (profile?.role === 'teacher' || profile?.role === 'admin' || profile?.faculty_verified) &&
-    (!profile?.birth_year || profile?.birth_year <= 2003);
+    profile?.role === 'teacher' ||
+    profile?.role === 'admin' ||
+    Boolean(profile?.faculty_verified) ||
+    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 
   const [analytics, setAnalytics] = useState<CollegeAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

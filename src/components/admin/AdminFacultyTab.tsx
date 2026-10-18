@@ -59,12 +59,19 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
   const [isRevoking, setIsRevoking] = useState(false);
   const [isRestoringId, setIsRestoringId] = useState<string | null>(null);
 
+  const getAuthHeaders = () => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
+    if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
+    return headers;
+  };
+
   // Load Data
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const headers: Record<string, string> = {};
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const headers = getAuthHeaders();
 
       const res = await fetch('/api/admin/faculty', { headers });
       const data = await res.json();
@@ -103,8 +110,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
 
     try {
       setIsGenerating(true);
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const headers: Record<string, string> = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
 
       const res = await fetch('/api/admin/faculty', {
         method: 'POST',
@@ -142,8 +148,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
   // Toggle Passcode
   const handleTogglePasscode = async (passcodeId: string) => {
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const headers: Record<string, string> = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
 
       const res = await fetch('/api/admin/faculty', {
         method: 'POST',
@@ -163,8 +168,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
     if (!confirm('Are you sure you want to permanently delete this faculty passcode?')) return;
 
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const headers: Record<string, string> = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
 
       const res = await fetch('/api/admin/faculty', {
         method: 'POST',
@@ -184,8 +188,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
     if (!revokeUser) return;
     try {
       setIsRevoking(true);
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const headers: Record<string, string> = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
 
       const res = await fetch('/api/admin/faculty', {
         method: 'POST',
@@ -221,8 +224,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
   const handleRestoreFaculty = async (user: any) => {
     try {
       setIsRestoringId(user.user_id);
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const headers: Record<string, string> = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
 
       const res = await fetch('/api/admin/faculty', {
         method: 'POST',

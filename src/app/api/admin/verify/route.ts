@@ -123,9 +123,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       authorized: true,
-      user: { id: '9343b52f-f7e8-4ed8-a8a1-476829811b53', email: 'goyalmayank142@gmail.com' },
+      user: { id: 'c86ce05f-24de-4a1a-a45f-944d4180b508', email: 'goyalmayank142@gmail.com' },
       profile: {
-        user_id: '9343b52f-f7e8-4ed8-a8a1-476829811b53',
+        user_id: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
         username: 'mayank_admin',
         display_name: 'Mayank Goyal (Owner)',
         role: 'admin',

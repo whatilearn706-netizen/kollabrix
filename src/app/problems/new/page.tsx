@@ -67,8 +67,10 @@ export default function NewProblemStatementPage() {
   const [isDocVerifyOpen, setIsDocVerifyOpen] = useState(false);
 
   const isTeacher =
-    (profile?.role === 'teacher' || profile?.role === 'admin') &&
-    (!profile?.birth_year || profile?.birth_year <= 2003);
+    profile?.role === 'teacher' ||
+    profile?.role === 'admin' ||
+    Boolean(profile?.faculty_verified) ||
+    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 
   const handleVerifyFaculty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +97,9 @@ export default function NewProblemStatementPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('teamforge_verified_faculty', 'true');
+        }
         setVerifySuccess(data.message || 'Faculty status verified! Unlocking authoring portal...');
         await refreshProfile();
       } else {

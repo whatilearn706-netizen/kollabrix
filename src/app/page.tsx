@@ -115,8 +115,10 @@ export default function HomePage() {
   }, []);
 
   const isTeacher =
-    (profile?.role === 'teacher' || profile?.role === 'admin') &&
-    (!profile?.birth_year || profile?.birth_year <= 2003);
+    profile?.role === 'teacher' ||
+    profile?.role === 'admin' ||
+    Boolean(profile?.faculty_verified) ||
+    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 
   // Load real projects and hackathons from Supabase (with demo fallback)
   useEffect(() => {

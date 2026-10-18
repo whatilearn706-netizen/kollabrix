@@ -51,8 +51,10 @@ export default function ProblemStatementsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<ProjectDifficulty | 'All'>('All');
 
   const isTeacher =
-    (profile?.role === 'teacher' || profile?.role === 'admin') &&
-    (!profile?.birth_year || profile?.birth_year <= 2003);
+    profile?.role === 'teacher' ||
+    profile?.role === 'admin' ||
+    Boolean(profile?.faculty_verified) ||
+    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 
   const loadProblems = useCallback(async () => {
     setIsLoading(true);
