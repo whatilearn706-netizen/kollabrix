@@ -48,16 +48,21 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 
 import { CollegiatePortalsRadar } from '@/components/home/CollegiatePortalsRadar';
 
-const OrigamiHeroConsole = dynamic(
-  () => import('@/components/home/OrigamiHeroConsole').then((m) => m.OrigamiHeroConsole),
+const OrigamiBirdSculpture = dynamic(
+  () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
   {
     ssr: false,
     loading: () => (
-      <div className="relative w-full h-[400px] sm:h-[460px] flex items-center justify-center select-none pointer-events-none">
+      <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
         <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
       </div>
     ),
   }
+);
+
+const PortalsSideRail = dynamic(
+  () => import('@/components/home/PortalsSideRail').then((m) => m.PortalsSideRail),
+  { ssr: false }
 );
 
 const ProjectSparkGeneratorModal = dynamic(
@@ -395,8 +400,8 @@ export default function HomePage() {
           <div className="absolute top-1/3 right-4 w-[500px] h-[500px] bg-gradient-to-bl from-pink-500/15 via-rose-500/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
+          <div className="max-w-7xl xl:max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-center">
               {/* Left Column: Brand, Editorial Headline & Primary Actions */}
               <div className="lg:col-span-5 xl:col-span-5 space-y-6 text-left">
                 {/* Glassmorphic Badge with Neon Radar Pulse */}
@@ -526,12 +531,17 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Linkora Origami Bird + Very Right Side Scrolling Strip & Lil Point of Linkora */}
+              {/* Center Column: Signature 3D Linkora Origami Bird Sculpture (Completely Isolated & Spacious) */}
               {sectionsConfig.origamiBird !== false && (
-                <div className="lg:col-span-7 xl:col-span-7 flex items-center justify-center relative min-h-[420px] sm:min-h-[480px] overflow-visible">
-                  <OrigamiHeroConsole />
+                <div className="lg:col-span-4 xl:col-span-4 flex items-center justify-center relative min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] overflow-hidden">
+                  <OrigamiBirdSculpture />
                 </div>
               )}
+
+              {/* Right Column: Dedicated Portals Side Rail & Lil Point of Linkora (Separated with Generous Gap) */}
+              <div className="lg:col-span-3 xl:col-span-3 flex items-center justify-center lg:justify-end">
+                <PortalsSideRail />
+              </div>
             </div>
           </div>
           <div className="glow-divider mt-12" />
