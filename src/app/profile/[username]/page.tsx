@@ -13,6 +13,7 @@ import { ProjectCard } from '@/components/projects/ProjectCard';
 import { GithubProfileCard } from '@/components/github/GithubProfileCard';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 import {
   ArrowLeft,
   Edit3,
@@ -537,7 +538,7 @@ export default function PublicProfilePage() {
                         </span>
                         {task.evidence_url && (
                           <a
-                            href={task.evidence_url}
+                            href={safeExternalUrl(task.evidence_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[11px] text-brand-600 dark:text-brand-400 hover:underline font-medium"

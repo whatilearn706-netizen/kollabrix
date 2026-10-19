@@ -74,6 +74,50 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // ── Authentication Check: Only verified faculty or administrators can crown winners ──
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    if (!token && isSupabaseConfigured()) {
+      return NextResponse.json({ error: 'Authentication required to publish competition winners.' }, { status: 401 });
+    }
+
+    let authUserId: string | null = null;
+    let isAuthorized = false;
+
+    if (token) {
+      try {
+        const { data: authData } = await defaultClient.auth.getUser(token);
+        authUserId = authData?.user?.id || null;
+      } catch {}
+    }
+
+    if (authUserId) {
+      if (
+        authUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        authUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53'
+      ) {
+        isAuthorized = true;
+      } else {
+        try {
+          const { data: prof } = await defaultClient
+            .from('profiles')
+            .select('role')
+            .eq('user_id', authUserId)
+            .maybeSingle();
+          if (prof?.role === 'admin' || prof?.role === 'teacher') {
+            isAuthorized = true;
+          }
+        } catch {}
+      }
+    }
+
+    if (!isAuthorized && isSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only faculty mentors and platform administrators can publish competition results.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const {
       problem_id,

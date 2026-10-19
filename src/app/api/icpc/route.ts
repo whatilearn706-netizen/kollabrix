@@ -3,6 +3,8 @@ import { CURATED_ICPC_CONTESTS } from '@/data/mockIcpcContests';
 import { IcpcContest } from '@/types/icpc';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { verifyAdminSession } from '@/lib/admin/adminAuth';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -111,8 +113,12 @@ export async function GET(request: NextRequest) {
         };
       });
 
+      // Security Defense: Strip raw passcode so it is not visible in browser network inspection
+      const { passcode: rawPasscode, ...safeContest } = c;
+
       uniqueContests.push({
-        ...c,
+        ...safeContest,
+        hasPasscode: Boolean(rawPasscode),
         contestType: c.contestType || (c.status === 'ended' ? 'practice' : 'contest'),
         problems: sanitizedProblems,
       });
@@ -135,6 +141,49 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // ── Authentication Check: Only verified faculty or administrators can create contests ──
+    const auth = await verifyAdminSession(request);
+    let isAuthorized = auth.authorized;
+
+    if (!isAuthorized) {
+      // Check if user is a verified teacher
+      const authHeader = request.headers.get('authorization');
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      if (token && isSupabaseConfigured()) {
+        const client = getSupabaseClient();
+        if (client) {
+          const { data: userData } = await client.auth.getUser(token);
+          if (userData?.user) {
+            const { data: prof } = await client
+              .from('profiles')
+              .select('role, faculty_verified')
+              .eq('user_id', userData.user.id)
+              .maybeSingle();
+            if (prof?.role === 'teacher' || prof?.role === 'admin' || prof?.faculty_verified) {
+              isAuthorized = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Only verified faculty mentors or administrators can create ICPC contests.' },
+        { status: 403 }
+      );
+    }
+
+    // ── Rate limit: max 5 contest creations per hour ──
+    const ip = getClientIp(request);
+    const rateCheck = checkIpRateLimit(`create-icpc:${ip}`, 5, 60 * 60 * 1000, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many contest creations. Please wait before creating another.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { title, subtitle, durationMinutes, problems, rules, visibility, passcode, college, contestType } = body;
 
@@ -232,9 +281,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: Remove a problem, remove a contest, clear all, or reset defaults
+// DELETE: Remove a problem, remove a contest, clear all, or reset defaults (Admin Only)
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await verifyAdminSession(request);
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Only administrators can delete ICPC contests or problems.' },
+        { status: 403 }
+      );
+    }
+
     const url = new URL(request.url);
     const clearAll = url.searchParams.get('clearAll') === 'true';
     const resetDefaults = url.searchParams.get('resetDefaults') === 'true';
@@ -393,9 +450,17 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH: Toggle ICPC Arena Live / Offline or update settings
+// PATCH: Toggle ICPC Arena Live / Offline or update settings (Admin Only)
 export async function PATCH(request: NextRequest) {
   try {
+    const auth = await verifyAdminSession(request);
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Only administrators can modify ICPC arena live status.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { isArenaLive } = body;
 

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+
+/** Strip HTML tags and dangerous chars from user text */
+function sanitizeText(str: string | undefined, maxLen = 3000): string {
+  if (!str) return '';
+  return str.replace(/<[^>]*>/g, '').replace(/[<>"'`]/g, '').trim().slice(0, maxLen);
+}
 
 export const runtime = 'nodejs';
 
@@ -41,6 +48,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Message length cap ──────────────────────────────────────────────────────
+    if (message.trim().length > 3000) {
+      return NextResponse.json(
+        { error: 'Application message must be under 3000 characters.' },
+        { status: 400 }
+      );
+    }
+
     let resolvedApplicantId = applicant_id;
     if (token) {
       const { data: authUser } = await client.auth.getUser(token);
@@ -53,6 +68,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'You must be signed in to apply to this problem statement.' },
         { status: 401 }
+      );
+    }
+
+    // ── Per-user rate limit: max 10 applications per 24 h ──────────────────────
+    const ip = getClientIp(request);
+    const rlKey = `apply:${resolvedApplicantId}:${ip}`;
+    const rateCheck = checkIpRateLimit(rlKey, 10, 24 * 60 * 60 * 1000, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      const waitMins = Math.ceil((rateCheck.retryAfterMs ?? 3600000) / 60000);
+      return NextResponse.json(
+        { error: `You have submitted too many applications today. Please wait ${waitMins} minute(s).` },
+        { status: 429 }
       );
     }
 
@@ -161,10 +188,10 @@ export async function POST(request: NextRequest) {
       problem_title: problemTitle,
       author_id: authorId,
       applicant_id: resolvedApplicantId,
-      proposed_role,
-      team_size: team_size || 'Solo Applicant',
-      team_status: team_status || 'solo',
-      message: message.trim(),
+      proposed_role: sanitizeText(proposed_role, 100),
+      team_size: sanitizeText(team_size, 50) || 'Solo Applicant',
+      team_status: sanitizeText(team_status, 30) || 'solo',
+      message: sanitizeText(message, 3000),
       status: 'Pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

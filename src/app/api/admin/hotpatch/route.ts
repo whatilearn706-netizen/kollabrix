@@ -98,13 +98,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, hotpatch });
     }
 
-    // Unauthenticated callers (client injector) only receive the safe public fields
+    // Unauthenticated callers (client injector) only receive the safe public CSS and banner fields
     return NextResponse.json({
       success: true,
       hotpatch: {
         enabled: hotpatch.enabled,
         customCss: hotpatch.customCss,
-        customJs: hotpatch.customJs,
+        customJs: '', // never expose or serve dynamic JS to public unauthenticated requests
         topBannerText: hotpatch.topBannerText,
         topBannerBg: hotpatch.topBannerBg,
       },

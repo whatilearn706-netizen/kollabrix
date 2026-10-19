@@ -10,10 +10,10 @@ export const revalidate = 0;
 export const runtime = 'nodejs';
 
 const DEFAULT_SECURITY_CONFIG = {
-  whatsappPhone: process.env.WHATSAPP_PHONE || '+918209681378', // Default to Mayank's phone
+  whatsappPhone: process.env.WHATSAPP_PHONE || '',
   whatsappApiKey: process.env.WHATSAPP_CALLMEBOT_APIKEY || '',
-  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '8576371651:AAFwsq298GDouxiqP5te1rxbULvA2NOVlMU',
-  telegramChatId: process.env.TELEGRAM_CHAT_ID || '2035561422',
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
   telegramAlertsEnabled: true,
   alertsEnabled: true,
   autoMaintenanceOnHighThreat: false,
@@ -23,7 +23,7 @@ const DEFAULT_SECURITY_CONFIG = {
     xssInjectionPayload: true,
     dbTampering: true,
   },
-  emergencyKey: 'linkora-sec-emergency-2026',
+  emergencyKey: process.env.EMERGENCY_MAINTENANCE_KEY || 'linkora-sec-emergency-2026',
 };
 
 // In-memory fallback

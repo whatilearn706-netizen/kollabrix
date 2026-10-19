@@ -49,6 +49,7 @@ import {
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
+import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 
 export default function ProblemStatementDetailPage() {
   const params = useParams();
@@ -1035,7 +1036,7 @@ export default function ProblemStatementDetailPage() {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               {problemResult?.demo_url && (
                 <a
-                  href={problemResult.demo_url}
+                  href={safeExternalUrl(problemResult.demo_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-colors"
@@ -1046,7 +1047,7 @@ export default function ProblemStatementDetailPage() {
               )}
               {problemResult?.repo_url && (
                 <a
-                  href={problemResult.repo_url}
+                  href={safeExternalUrl(problemResult.repo_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-charcoal-800 hover:bg-charcoal-750 text-white border border-charcoal-700 transition-colors"
@@ -1057,7 +1058,7 @@ export default function ProblemStatementDetailPage() {
               )}
               {problemResult?.video_url && (
                 <a
-                  href={problemResult.video_url}
+                  href={safeExternalUrl(problemResult.video_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-pink-600/20 hover:bg-pink-600/30 text-pink-300 border border-pink-500/30 transition-colors"
@@ -1192,7 +1193,7 @@ export default function ProblemStatementDetailPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           {sol.repo_url && (
                             <a
-                              href={sol.repo_url}
+                              href={safeExternalUrl(sol.repo_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 hover:bg-charcoal-750 text-slate-100 border border-charcoal-700 transition-colors"
@@ -1203,7 +1204,7 @@ export default function ProblemStatementDetailPage() {
                           )}
                           {sol.demo_url && (
                             <a
-                              href={sol.demo_url}
+                              href={safeExternalUrl(sol.demo_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-colors"
@@ -1214,7 +1215,7 @@ export default function ProblemStatementDetailPage() {
                           )}
                           {sol.video_url && (
                             <a
-                              href={sol.video_url}
+                              href={safeExternalUrl(sol.video_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 transition-colors"
@@ -1286,7 +1287,7 @@ export default function ProblemStatementDetailPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           {sol.repo_url && (
                             <a
-                              href={sol.repo_url}
+                              href={safeExternalUrl(sol.repo_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 hover:bg-charcoal-750 text-slate-100 border border-charcoal-700 transition-colors"
@@ -1297,7 +1298,7 @@ export default function ProblemStatementDetailPage() {
                           )}
                           {sol.demo_url && (
                             <a
-                              href={sol.demo_url}
+                              href={safeExternalUrl(sol.demo_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-colors"
@@ -1308,7 +1309,7 @@ export default function ProblemStatementDetailPage() {
                           )}
                           {sol.video_url && (
                             <a
-                              href={sol.video_url}
+                              href={safeExternalUrl(sol.video_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/30 transition-colors"

@@ -57,6 +57,7 @@ import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementM
 import { EvaluationModal } from '@/components/hackathons/EvaluationModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
+import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 
 interface TeamWithMembers extends HackathonTeam {
   members?: Array<HackathonTeamMember & { profile?: { display_name: string; avatar_url: string | null; college?: string | null } }>;
@@ -2225,7 +2226,7 @@ export default function HackathonWorkspacePage() {
                           <div className="flex items-center gap-3 pt-1 text-xs">
                             {sub.repository_url && (
                               <a
-                                href={sub.repository_url}
+                                href={safeExternalUrl(sub.repository_url)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-slate-400 hover:text-white inline-flex items-center gap-1"
@@ -2236,7 +2237,7 @@ export default function HackathonWorkspacePage() {
                             )}
                             {sub.demo_url && (
                               <a
-                                href={sub.demo_url}
+                                href={safeExternalUrl(sub.demo_url)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-brand-400 hover:text-brand-300 inline-flex items-center gap-1"
@@ -2247,7 +2248,7 @@ export default function HackathonWorkspacePage() {
                             )}
                             {sub.video_url && (
                               <a
-                                href={sub.video_url}
+                                href={safeExternalUrl(sub.video_url)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-red-400 hover:text-red-300 inline-flex items-center gap-1"
@@ -2354,7 +2355,7 @@ export default function HackathonWorkspacePage() {
                               </div>
                               {item.demo_url && (
                                 <a
-                                  href={item.demo_url}
+                                  href={safeExternalUrl(item.demo_url)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="p-2 rounded-lg bg-brand-500/20 text-brand-300 hover:bg-brand-500/30"

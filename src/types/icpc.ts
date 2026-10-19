@@ -39,6 +39,7 @@ export interface IcpcContest {
   status: ContestStatus;
   visibility: 'public' | 'passcode';
   passcode?: string;
+  hasPasscode?: boolean;
   bannerGradient?: string;
   participantCount: number;
   problems: IcpcProblem[];

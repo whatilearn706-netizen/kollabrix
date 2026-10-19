@@ -54,29 +54,47 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Student privacy / Answer isolation:
-    // If viewer_id is passed, check if viewer is the faculty author of this problem.
-    // If NOT the faculty author, the student can ONLY see their own team's submission.
-    if (viewerId && problemId) {
-      let isFacultyViewer = false;
+    // ── Student privacy / Answer isolation ──
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    let authUserId: string | null = null;
+    let isFacultyOrAdmin = false;
+
+    if (token) {
       try {
-        const { data: pData } = await defaultClient
-          .from('problem_statements')
-          .select('author_id')
-          .eq('id', problemId)
-          .maybeSingle();
-
-        if (pData?.author_id && pData.author_id.toLowerCase() === viewerId.toLowerCase()) {
-          isFacultyViewer = true;
-        }
+        const { data: authData } = await defaultClient.auth.getUser(token);
+        authUserId = authData?.user?.id || null;
       } catch {}
+    }
 
-      if (!isFacultyViewer) {
-        // Enforce student privacy
-        solutions = solutions.filter(
-          (s) => (s.author_id || '').toLowerCase() === viewerId.toLowerCase()
-        );
+    if (authUserId) {
+      if (
+        authUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        authUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53'
+      ) {
+        isFacultyOrAdmin = true;
+      } else {
+        try {
+          const { data: prof } = await defaultClient
+            .from('profiles')
+            .select('role')
+            .eq('user_id', authUserId)
+            .maybeSingle();
+          if (prof?.role === 'admin' || prof?.role === 'teacher') {
+            isFacultyOrAdmin = true;
+          }
+        } catch {}
       }
+    }
+
+    if (!isFacultyOrAdmin) {
+      // Normal students can ONLY see their own team's submissions
+      if (!authUserId) {
+        return NextResponse.json({ success: true, solutions: [] });
+      }
+      solutions = solutions.filter(
+        (s) => (s.author_id || '').toLowerCase() === authUserId.toLowerCase()
+      );
     }
 
     // Robust, crash-proof author profile enrichment in batches
@@ -312,6 +330,50 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    // ── Authentication Check: Only verified faculty or administrators can evaluate solutions ──
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    if (!token && isSupabaseConfigured()) {
+      return NextResponse.json({ error: 'Authentication required to evaluate student solutions.' }, { status: 401 });
+    }
+
+    let authUserId: string | null = null;
+    let isAuthorized = false;
+
+    if (token) {
+      try {
+        const { data: authData } = await defaultClient.auth.getUser(token);
+        authUserId = authData?.user?.id || null;
+      } catch {}
+    }
+
+    if (authUserId) {
+      if (
+        authUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        authUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53'
+      ) {
+        isAuthorized = true;
+      } else {
+        try {
+          const { data: prof } = await defaultClient
+            .from('profiles')
+            .select('role')
+            .eq('user_id', authUserId)
+            .maybeSingle();
+          if (prof?.role === 'admin' || prof?.role === 'teacher') {
+            isAuthorized = true;
+          }
+        } catch {}
+      }
+    }
+
+    if (!isAuthorized && isSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only faculty mentors and administrators are authorized to grade solutions.' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { solution_id, status, mentor_feedback, grade } = body;
 

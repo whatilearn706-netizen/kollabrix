@@ -144,8 +144,6 @@ export function CreateHackathonModal({
           const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
             access_type: accessType,
             join_code: resData.joinCode,
-            password_hash: resData.hackathon.password_hash,
-            password_salt: resData.hackathon.password_salt,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
             banner_url: bannerUrl.trim() || null,

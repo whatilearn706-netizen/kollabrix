@@ -22,6 +22,7 @@ import {
   Video,
   FileText,
 } from 'lucide-react';
+import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 
 interface EvaluationModalProps {
   hackathonId: string;
@@ -189,7 +190,7 @@ export function EvaluationModal({
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-charcoal-800">
             {submission.repository_url && (
               <a
-                href={submission.repository_url}
+                href={safeExternalUrl(submission.repository_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-charcoal-950 border border-charcoal-750 text-xs text-slate-300 hover:text-white"
@@ -201,7 +202,7 @@ export function EvaluationModal({
             )}
             {submission.demo_url && (
               <a
-                href={submission.demo_url}
+                href={safeExternalUrl(submission.demo_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-brand-500/15 border border-brand-500/30 text-xs text-brand-300 hover:text-brand-200"
@@ -212,7 +213,7 @@ export function EvaluationModal({
             )}
             {submission.video_url && (
               <a
-                href={submission.video_url}
+                href={safeExternalUrl(submission.video_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-red-500/15 border border-red-500/30 text-xs text-red-300 hover:text-red-200"
@@ -223,7 +224,7 @@ export function EvaluationModal({
             )}
             {submission.documentation_url && (
               <a
-                href={submission.documentation_url}
+                href={safeExternalUrl(submission.documentation_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-500/15 border border-indigo-500/30 text-xs text-indigo-300 hover:text-indigo-200"

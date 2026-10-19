@@ -54,16 +54,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. Identify current user
+    // 1. Identify current user strictly from verified session
     let user = null;
     if (token) {
       const { data: userData } = await client.auth.getUser(token);
       user = userData?.user;
     }
-    const targetUserId = user?.id || userId;
+    const targetUserId = user?.id;
 
     if (!targetUserId) {
       return NextResponse.json({ error: 'You must be signed in to verify faculty status.' }, { status: 401 });
+    }
+
+    // ── Rate limit: max 5 passcode verification attempts per IP/user per 15 minutes ──
+    const { checkIpRateLimit, getClientIp } = await import('@/lib/security/ipRateLimit');
+    const ip = getClientIp(request);
+    const rlKey = `faculty-passcode:${targetUserId}:${ip}`;
+    const rateCheck = checkIpRateLimit(rlKey, 5, 15 * 60 * 1000, 15 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      const waitMins = Math.ceil((rateCheck.retryAfterMs ?? 900000) / 60000);
+      return NextResponse.json(
+        { error: `Too many failed passcode attempts. Please wait ${waitMins} minute(s) before trying again.` },
+        { status: 429 }
+      );
     }
 
     // 2. Fetch passcodes from platform_settings

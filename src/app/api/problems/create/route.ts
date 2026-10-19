@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+
+/** Sanitize text input — strip HTML, limit length */
+function sanitize(str: string | undefined, maxLen = 5000): string {
+  if (!str) return '';
+  return str.replace(/<[^>]*>/g, '').replace(/[<>"'`]/g, '').trim().slice(0, maxLen);
+}
 
 export const runtime = 'nodejs';
 
@@ -37,12 +44,30 @@ export async function POST(request: NextRequest) {
       team_size,
     } = body;
 
-    const authorId = author_id || bodyAuthorId;
+    // ── SECURITY: Always override authorId from verified JWT — never trust body ──
+    let authorId = author_id || bodyAuthorId;
+    if (token) {
+      const { data: authUser } = await client.auth.getUser(token);
+      if (authUser?.user?.id) {
+        authorId = authUser.user.id; // server-verified identity overrides whatever the client sent
+      }
+    }
 
     if (!authorId) {
       return NextResponse.json(
         { error: 'Author identification is required to publish a problem statement.' },
         { status: 401 }
+      );
+    }
+
+    // ── Rate limit: max 5 problem statements per faculty per day ────────────────
+    const ip = getClientIp(request);
+    const rateCheck = checkIpRateLimit(`create-problem:${authorId}:${ip}`, 5, 24 * 60 * 60 * 1000, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      const waitMins = Math.ceil((rateCheck.retryAfterMs ?? 3600000) / 60000);
+      return NextResponse.json(
+        { error: `You have created too many problem statements today. Please wait ${waitMins} minute(s).` },
+        { status: 429 }
       );
     }
 
@@ -53,6 +78,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Length caps ─────────────────────────────────────────────────────────────
+    if (title.trim().length > 200) {
+      return NextResponse.json({ error: 'Title must be under 200 characters.' }, { status: 400 });
+    }
+    if (description.trim().length > 10000) {
+      return NextResponse.json({ error: 'Description must be under 10,000 characters.' }, { status: 400 });
+    }
+
     const resolvedSkills = Array.isArray(required_skills)
       ? required_skills
       : Array.isArray(bodySkills)
@@ -60,6 +93,8 @@ export async function POST(request: NextRequest) {
       : ['Problem Solving'];
 
     const resolvedTeamSize = team_size || (min_team_size && max_team_size ? `${min_team_size} - ${max_team_size} Students` : '2 - 4 Students');
+
+
 
     if (!isSupabaseConfigured()) {
       const mockId = `prob-mock-${Date.now()}`;

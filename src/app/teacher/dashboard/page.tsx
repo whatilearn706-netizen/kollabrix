@@ -175,9 +175,7 @@ export default function TeacherDashboardPage() {
   const isAdmin = Boolean(
     profile?.role === 'admin' ||
     user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-    (typeof window !== 'undefined' &&
-      (localStorage.getItem('linkora_admin_session') === 'true' ||
-       localStorage.getItem('linkora_admin_role') === 'admin'))
+    user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
   );
 
   // Strict Faculty Check: Requires verified teacher status in DB or explicit admin bypass

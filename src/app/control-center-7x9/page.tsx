@@ -45,17 +45,7 @@ import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
-    if (typeof window !== 'undefined') {
-      if (
-        localStorage.getItem('linkora_admin_session') === 'true' ||
-        document.cookie.includes('linkora_admin_session=true')
-      ) {
-        return true;
-      }
-    }
-    return null;
-  });
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [authToken, setAuthToken] = useState<string | undefined>();
   const [adminUser, setAdminUser] = useState<any>(null);
   const [adminProfile, setAdminProfile] = useState<any>(null);
@@ -92,30 +82,10 @@ export default function AdminControlCenterPage() {
         }
       } catch (e) {}
 
-      // 2. Check stored admin session or cookie
-      if (typeof window !== 'undefined') {
-        const hasAdmin =
-          localStorage.getItem('linkora_admin_session') === 'true' ||
-          document.cookie.includes('linkora_admin_session=true');
-        if (hasAdmin) {
-          setIsAdmin(true);
-          setAdminUser({ id: 'c86ce05f-24de-4a1a-a45f-944d4180b508', email: 'goyalmayank142@gmail.com' });
-          setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
-        }
-      }
-
       if (isAuthLoading) return;
 
       if (!user) {
-        if (
-          typeof window !== 'undefined' &&
-          (localStorage.getItem('linkora_admin_session') === 'true' ||
-            document.cookie.includes('linkora_admin_session=true'))
-        ) {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
+        setIsAdmin(false);
         return;
       }
 
@@ -350,13 +320,17 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can view platform settings" ON public.platform_settings;
-CREATE POLICY "Public can view platform settings" ON public.platform_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public can view safe platform settings" ON public.platform_settings;
+CREATE POLICY "Public can view safe platform settings" ON public.platform_settings FOR SELECT USING (
+    key IN ('explore_config', 'theme_config', 'homepage_config', 'restricted_words', 'deadlines_config', 'community_problem_statements', 'spark_templates_v1', 'linkora_leaderboard_v1', 'site_master_control_config')
+    OR public.is_admin(auth.uid())
+);
 
 DROP POLICY IF EXISTS "Admins can insert platform settings" ON public.platform_settings;
-CREATE POLICY "Admins can insert platform settings" ON public.platform_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admins can insert platform settings" ON public.platform_settings FOR INSERT WITH CHECK (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "Admins can update platform settings" ON public.platform_settings;
-CREATE POLICY "Admins can update platform settings" ON public.platform_settings FOR UPDATE USING (true);`;
+CREATE POLICY "Admins can update platform settings" ON public.platform_settings FOR UPDATE USING (public.is_admin(auth.uid()));`;
 
   // State 3: Authorized Administrator! Render the Admin Control Center
   return (

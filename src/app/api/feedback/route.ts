@@ -3,6 +3,17 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { UserFeedbackItem } from '@/types/communityFeatures';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+
+/** Strip HTML/script tags from user input to prevent stored XSS */
+function sanitize(str: string | undefined, maxLen = 500): string {
+  if (!str) return '';
+  return str
+    .replace(/<[^>]*>/g, '') // strip HTML tags
+    .replace(/[<>"'`]/g, '') // strip remaining dangerous chars
+    .trim()
+    .slice(0, maxLen);
+}
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -24,12 +35,31 @@ function getSupabaseClient() {
 // POST: Public submission of student & user feedback
 export async function POST(request: NextRequest) {
   try {
+    // ── Rate limit: max 3 feedback submissions per IP per hour ──
+    const ip = getClientIp(request);
+    const rateCheck = checkIpRateLimit(`feedback:${ip}`, 3, 60 * 60 * 1000, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      const waitMins = Math.ceil((rateCheck.retryAfterMs ?? 3600000) / 60000);
+      return NextResponse.json(
+        { error: `Too many feedback submissions. Please wait ${waitMins} minute(s) before trying again.` },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rateCheck.retryAfterMs ?? 3600000) / 1000)) } }
+      );
+    }
+
     const body = await request.json();
     const { name, email, campus, role, category, rating, message } = body;
 
     if (!message || typeof message !== 'string' || message.trim().length < 3) {
       return NextResponse.json(
         { error: 'Please enter a valid feedback message (at least 3 characters).' },
+        { status: 400 }
+      );
+    }
+
+    // ── Enforce message length cap (prevent storage exhaustion) ──
+    if (message.trim().length > 2000) {
+      return NextResponse.json(
+        { error: 'Feedback message must be under 2000 characters.' },
         { status: 400 }
       );
     }
@@ -57,13 +87,13 @@ export async function POST(request: NextRequest) {
 
     const newFeedback: UserFeedbackItem = {
       id: `fb-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name: (name || 'Anonymous Student').trim(),
-      email: (email || 'student@linkora.in').trim(),
-      campus: (campus || '').trim(),
+      name: sanitize(name || 'Anonymous Student', 100),
+      email: sanitize(email || 'student@linkora.in', 200),
+      campus: sanitize(campus, 150),
       role: validRole as UserFeedbackItem['role'],
       category: validCategory as UserFeedbackItem['category'],
       rating: numericRating,
-      message: message.trim(),
+      message: sanitize(message, 2000),
       createdAt: new Date().toISOString(),
       status: 'new',
     };

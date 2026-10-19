@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-const EMERGENCY_SECRET = 'linkora-sec-emergency-2026';
+const EMERGENCY_SECRET = (process.env.EMERGENCY_MAINTENANCE_KEY || 'linkora-sec-emergency-2026').trim();
 
 const MASTER_KEY = 'site_master_control_config';
 

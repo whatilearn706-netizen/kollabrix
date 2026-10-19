@@ -80,12 +80,10 @@ export async function POST(request: NextRequest) {
 
     const resolvedBannerUrl = bannerUrl?.trim() || banner_url?.trim() || null;
 
-    // Embed resilient metadata comment so it's readable even if columns are missing
+    // Embed resilient metadata comment (safe fields only; passwords remain strictly in protected columns)
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
       access_type: accessType,
       join_code: joinCode,
-      password_hash: passwordHash,
-      password_salt: passwordSalt,
       min_team_size: minTeamSize,
       max_team_size: maxTeamSize,
       banner_url: resolvedBannerUrl,

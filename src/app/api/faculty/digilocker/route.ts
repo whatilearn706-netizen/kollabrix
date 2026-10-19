@@ -28,26 +28,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Valid birth year is required from DigiLocker document.' }, { status: 400 });
     }
 
-    // 1. Identify current user from token, session, or cookie
+    // 1. Identify current user from token strictly on server
     let user = null;
     if (token) {
       const { data: userData } = await client.auth.getUser(token);
       user = userData?.user;
-    } else {
-      const { data: sessionData } = await client.auth.getUser();
-      user = sessionData?.user;
     }
 
-    const targetUserId = user?.id || (isSupabaseConfigured() ? null : userId);
+    const targetUserId = user?.id;
     if (!targetUserId) {
       return NextResponse.json(
-        { error: 'You must be signed in to your account before verifying with DigiLocker.' },
+        { error: 'You must be signed in with an active account before verifying with DigiLocker.' },
         { status: 401 }
       );
     }
 
+    // ── Rate limit: max 5 DigiLocker verification attempts per IP/user per hour ──
+    const { checkIpRateLimit, getClientIp } = await import('@/lib/security/ipRateLimit');
+    const ip = getClientIp(request);
+    const rlKey = `digilocker:${targetUserId}:${ip}`;
+    const rateCheck = checkIpRateLimit(rlKey, 5, 60 * 60 * 1000, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many verification attempts. Please wait an hour before submitting again.' },
+        { status: 429 }
+      );
+    }
+
+    const isOwner =
+      targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+      user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+
     const isFacultyEligible = parsedYear < 2003;
-    const resolvedRole = isFacultyEligible ? 'teacher' : 'student';
+    // Security Defense: Students cannot self-elevate to teacher immediately without admin approval,
+    // unless it is the verified platform owner
+    const resolvedRole = isOwner ? 'teacher' : (isFacultyEligible ? 'teacher' : 'student');
     const docTypeLabel = docType === 'marksheet_12th' ? 'digilocker_12th' : 'digilocker_aadhaar';
     const currentYear = 2026;
     const age = currentYear - parsedYear;
@@ -56,19 +71,21 @@ export async function POST(request: NextRequest) {
     const resolvedGender = gender || 'Male';
     const resolvedDob = inputDob || `15/07/${parsedYear}`;
 
-    // 2. Update profile in Supabase (only standard columns to prevent schema errors)
-    if (isSupabaseConfigured() && targetUserId && !targetUserId.startsWith('guest_')) {
+    // 2. Only platform owner or authorized admin can auto-promote directly
+    if (isSupabaseConfigured() && targetUserId && isOwner) {
       try {
         await client
           .from('profiles')
           .update({
-            role: resolvedRole,
+            role: 'teacher',
+            faculty_verified: true,
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', targetUserId);
       } catch (err) {
         console.warn('Profile role update warning:', err);
       }
+    }
 
       // 3. Persist verified DigiLocker record into platform_settings
       try {
@@ -101,7 +118,6 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.warn('DigiLocker registry save note:', err);
       }
-    }
 
     const last4 = (aadhaarLast4 || '8921').replace(/\D/g, '').slice(-4) || '8921';
     const maskedAadhaar = `XXXX XXXX ${last4}`;
