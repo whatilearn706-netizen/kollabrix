@@ -301,7 +301,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
       // Check if user is authenticated with Supabase Auth
       if (!activeUserId) {
-        setError('Authentication required: Please sign in with Google or GitHub to publish your project and start your Daily Streak.');
+        setError('Authentication required: Please sign in with Google, LinkedIn, or GitHub to publish your project and start your Daily Streak.');
         openAuthModal('login');
         setIsLoading(false);
         return;
@@ -401,7 +401,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
         if (insertError) {
           if (insertError.code === '42501' || insertError.message?.toLowerCase().includes('row-level security')) {
-            setError('Authentication session needs verification: Please sign in with Google or GitHub to publish your project and claim your Daily Streak.');
+            setError('Authentication session needs verification: Please sign in with Google, LinkedIn, or GitHub to publish your project and claim your Daily Streak.');
             openAuthModal('login');
           } else {
             setError(insertError.message);

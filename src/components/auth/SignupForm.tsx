@@ -50,11 +50,20 @@ function GitHubIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+function LinkedInIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9h2.77v8.37H6.46v-8.37M7.84 6.2a1.62 1.62 0 1 0 0 3.24 1.62 1.62 0 0 0 0-3.24z" />
+    </svg>
+  );
+}
+
 export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile/setup' }: SignupFormProps) {
   const router = useRouter();
 
   // General States
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isLinkedInLoading, setIsLinkedInLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -105,7 +114,78 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
   };
 
-  // 2. GitHub 1-Click Sign-up
+  // 2. LinkedIn 1-Click Sign-up (LinkedIn OIDC)
+  const handleLinkedInSignUp = async () => {
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!isSupabaseConfigured()) {
+      setError('Supabase credentials are not configured yet in .env.local.');
+      return;
+    }
+
+    const canonicalOrigin = typeof window !== 'undefined'
+      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-link.online')
+      : 'https://linkora-link.online';
+
+    try {
+      setIsLinkedInLoading(true);
+
+      // Attempt modern LinkedIn OpenID Connect (OIDC) first
+      const { data, error: linkedinError } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin_oidc',
+        options: {
+          redirectTo: `${canonicalOrigin}/auth/callback?next=${redirectUrl}`,
+          scopes: 'openid profile email',
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (linkedinError) {
+        // Fallback to legacy linkedin provider in case project was configured as 'linkedin'
+        const fallback = await supabase.auth.signInWithOAuth({
+          provider: 'linkedin',
+          options: {
+            redirectTo: `${canonicalOrigin}/auth/callback?next=${redirectUrl}`,
+            skipBrowserRedirect: true,
+          },
+        });
+        if (fallback.error) {
+          setError(
+            fallback.error.message.includes('provider is not enabled') || fallback.error.message.includes('Unsupported provider')
+              ? 'LinkedIn sign-in is not enabled in your Supabase project yet. Go to Supabase Console -> Authentication -> Providers -> LinkedIn (OIDC) to enable it.'
+              : fallback.error.message
+          );
+          return;
+        }
+        if (fallback.data?.url) {
+          window.location.href = fallback.data.url;
+          return;
+        }
+      }
+
+      if (data?.url) {
+        // Preflight check to verify provider is enabled before redirecting
+        const res = await fetch(data.url).catch(() => null);
+        if (res && !res.ok) {
+          const errJson = await res.json().catch(() => null);
+          if (errJson?.msg?.includes('provider is not enabled') || errJson?.error_code === 'validation_failed') {
+            setError(
+              'LinkedIn sign-in is not enabled in your Supabase project yet. Follow the activation guide to enable it in Supabase Console -> Authentication -> Providers -> LinkedIn (OIDC).'
+            );
+            return;
+          }
+        }
+        window.location.href = data.url;
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'LinkedIn sign-up could not be initiated.');
+    } finally {
+      setIsLinkedInLoading(false);
+    }
+  };
+
+  // 3. GitHub 1-Click Sign-up
   const handleGitHubSignUp = async () => {
     setError(null);
     setSuccessMessage(null);
@@ -154,7 +234,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
     }
   };
 
-  const isAnyLoading = isGoogleLoading || isGitHubLoading;
+  const isAnyLoading = isGoogleLoading || isLinkedInLoading || isGitHubLoading;
 
   return (
     <div className="w-full space-y-4 text-slate-900">
@@ -173,7 +253,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         </div>
       )}
 
-      {/* 1-Click Fast OAuth Actions (Google + GitHub) */}
+      {/* 1-Click Fast OAuth Actions (Google + LinkedIn + GitHub) */}
       <div className="space-y-3">
         {/* Google 1-Click */}
         <button
@@ -184,6 +264,17 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
         >
           <GoogleIcon className="w-5 h-5 shrink-0" />
           <span>{isGoogleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
+        </button>
+
+        {/* LinkedIn 1-Click */}
+        <button
+          type="button"
+          onClick={handleLinkedInSignUp}
+          disabled={isAnyLoading}
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] disabled:opacity-60"
+        >
+          <LinkedInIcon className="w-5 h-5 shrink-0" />
+          <span>{isLinkedInLoading ? 'Connecting to LinkedIn...' : 'Continue with LinkedIn'}</span>
         </button>
 
         {/* GitHub 1-Click */}
