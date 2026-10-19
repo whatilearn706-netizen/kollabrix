@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
+import { sendTelegramSecurityAlert } from '@/lib/security/telegramAlert';
 
 export const runtime = 'nodejs';
 
@@ -70,6 +71,13 @@ export async function POST(request: NextRequest) {
 
   const rate = checkRateLimit(ip);
   if (!rate.allowed) {
+    sendTelegramSecurityAlert({
+      title: '⛔ Blocked Intruder Probing Admin Portal',
+      description: `IP ${ip} attempted admin access during an active 15-minute security lockout.`,
+      ip,
+      origin: request.nextUrl.origin,
+    }).catch(() => {});
+
     return NextResponse.json(
       {
         authorized: false,
@@ -98,6 +106,16 @@ export async function POST(request: NextRequest) {
 
     if (!enteredPasscode || enteredPasscode !== serverSecret) {
       const fail = recordFailure(ip);
+
+      sendTelegramSecurityAlert({
+        title: fail.locked ? '🚨 High Alert: Admin Security Lockout Triggered' : '⚠️ Failed Admin Passcode Attempt',
+        description: fail.locked
+          ? `IP ${ip} entered 5 incorrect passcodes and has been locked out for 15 minutes.`
+          : `An incorrect admin passcode was entered from IP ${ip}. Remaining attempts: ${fail.remaining}.`,
+        ip,
+        origin: request.nextUrl.origin,
+      }).catch(() => {});
+
       if (fail.locked) {
         return NextResponse.json(
           {
