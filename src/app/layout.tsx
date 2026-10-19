@@ -8,6 +8,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
 import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner';
+import { GlobalHotPatchInjector } from '@/components/common/GlobalHotPatchInjector';
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 import { Analytics } from '@vercel/analytics/next';
@@ -249,6 +250,7 @@ export default function RootLayout({
           <SiteThemeProvider>
             <RestrictedWordsGuard>
               <GlobalBroadcastBanner />
+              <GlobalHotPatchInjector />
               <MaintenanceModeGate>
                 <SetupBanner />
                 <Navbar />

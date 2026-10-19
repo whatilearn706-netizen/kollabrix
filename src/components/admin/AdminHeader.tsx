@@ -22,6 +22,7 @@ import {
   Sparkles,
   Crown,
   Terminal,
+  Code2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -29,6 +30,8 @@ export type AdminTab =
   | 'overview'
   | 'master'
   | 'restricted'
+  | 'security'
+  | 'hotpatch'
   | 'intent'
   | 'notes'
   | 'users'
@@ -57,6 +60,8 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const tabs = [
     { id: 'master' as AdminTab, label: '👑 ALL 6 MASTER CONTROLS', icon: Crown },
+    { id: 'security' as AdminTab, label: '🛡️ WhatsApp Watchdog & Security', icon: ShieldAlert },
+    { id: 'hotpatch' as AdminTab, label: '🤖 AI Hot-Patch & Code Desk', icon: Code2 },
     { id: 'restricted' as AdminTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
     { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
     { id: 'icpc' as AdminTab, label: '⚡ ICPC Arena', icon: Terminal },

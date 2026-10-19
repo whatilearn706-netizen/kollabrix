@@ -35,6 +35,8 @@ import { AdminIntentShowcaseTab } from '@/components/admin/AdminIntentShowcaseTa
 import { AdminMasterControlTab } from '@/components/admin/AdminMasterControlTab';
 import { AdminRestrictedWordsTab } from '@/components/admin/AdminRestrictedWordsTab';
 import { AdminIcpcTab } from '@/components/admin/AdminIcpcTab';
+import { AdminSecurityWatchdogTab } from '@/components/admin/AdminSecurityWatchdogTab';
+import { AdminHotPatchTab } from '@/components/admin/AdminHotPatchTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
@@ -419,6 +421,14 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
 
       {currentTab === 'restricted' && (
         <AdminRestrictedWordsTab authToken={authToken} />
+      )}
+
+      {currentTab === 'security' && (
+        <AdminSecurityWatchdogTab authToken={authToken} />
+      )}
+
+      {currentTab === 'hotpatch' && (
+        <AdminHotPatchTab authToken={authToken} />
       )}
 
       {currentTab === 'intent' && (
