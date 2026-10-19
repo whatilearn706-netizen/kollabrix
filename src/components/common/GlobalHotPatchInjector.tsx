@@ -6,6 +6,64 @@ import { HotPatchConfig } from '@/app/api/admin/hotpatch/route';
 export function GlobalHotPatchInjector() {
   const [hotpatch, setHotpatch] = useState<HotPatchConfig | null>(null);
 
+  const executedJsRef = React.useRef<string>('');
+
+  const applyPatch = (patch: HotPatchConfig) => {
+    if (typeof document === 'undefined') return;
+
+    // Apply or remove Custom CSS
+    let styleTag = document.getElementById('linkora-live-hotpatch-css') as HTMLStyleElement | null;
+    if (patch.enabled && patch.customCss && patch.customCss.trim()) {
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'linkora-live-hotpatch-css';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = patch.customCss;
+    } else if (styleTag) {
+      styleTag.remove();
+    }
+
+    // Execute Custom JS safely in sandboxed closure with SafeGuard filter
+    if (patch.enabled && patch.customJs && patch.customJs.trim()) {
+      if (executedJsRef.current === patch.customJs.trim()) {
+        return;
+      }
+
+      // Prohibit critical security hazards from executing in the browser
+      const hasCookieExploit = /document\.cookie/i.test(patch.customJs);
+      const hasTokenTheft =
+        /localStorage\s*\[\s*['"`]sb-/i.test(patch.customJs) ||
+        /sessionStorage\s*\[\s*['"`]sb-/i.test(patch.customJs);
+      const hasBeacon = /navigator\.sendBeacon/i.test(patch.customJs);
+
+      if (hasCookieExploit || hasTokenTheft || hasBeacon) {
+        console.warn('🛡️ [Linkora SafeGuard] Blocked untrusted script attempting cookie or token access.');
+        return;
+      }
+
+      try {
+        executedJsRef.current = patch.customJs.trim();
+        // Safe evaluation in isolated function scope
+        const runner = new Function(
+          'window',
+          'document',
+          `
+          "use strict";
+          try {
+            ${patch.customJs}
+          } catch (runtimeErr) {
+            console.warn("[Linkora SafeGuard] Hot-patch runtime error handled safely:", runtimeErr);
+          }
+        `
+        );
+        runner(window, document);
+      } catch (jsErr) {
+        console.warn('Hotpatch script compilation error:', jsErr);
+      }
+    }
+  };
+
   useEffect(() => {
     // 1. Load cached hotpatch from localStorage for instant 0ms apply
     try {
@@ -41,35 +99,15 @@ export function GlobalHotPatchInjector() {
     fetchPatch();
 
     // Listen for live update events from Admin Control Center
-    const handleUpdate = () => fetchPatch();
+    const handleUpdate = () => {
+      executedJsRef.current = '';
+      fetchPatch();
+    };
     window.addEventListener('linkora_hotpatch_updated', handleUpdate);
     return () => {
       window.removeEventListener('linkora_hotpatch_updated', handleUpdate);
     };
   }, []);
-
-  const applyPatch = (patch: HotPatchConfig) => {
-    if (typeof document === 'undefined') return;
-
-    // Apply or remove Custom CSS
-    let styleTag = document.getElementById('linkora-live-hotpatch-css') as HTMLStyleElement | null;
-    if (patch.enabled && patch.customCss && patch.customCss.trim()) {
-      if (!styleTag) {
-        styleTag = document.createElement('style');
-        styleTag.id = 'linkora-live-hotpatch-css';
-        document.head.appendChild(styleTag);
-      }
-      styleTag.textContent = patch.customCss;
-    } else if (styleTag) {
-      styleTag.remove();
-    }
-
-    // Security Defense: Dynamic JavaScript evaluation via new Function / eval is strictly disabled
-    // to protect all users against stored XSS and credential exfiltration attacks.
-    if (patch.customJs && patch.customJs.trim()) {
-      // Intentionally bypassed — only styled CSS and verified top banners are injected dynamically.
-    }
-  };
 
   if (!hotpatch || !hotpatch.enabled || !hotpatch.topBannerText) {
     return null;

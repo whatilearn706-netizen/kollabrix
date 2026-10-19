@@ -42,7 +42,13 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
   useEffect(() => {
     async function loadHotpatch() {
       try {
-        const res = await fetch('/api/admin/hotpatch');
+        const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
+        const res = await fetch('/api/admin/hotpatch', {
+          headers: {
+            'x-admin-passcode': savedPasscode,
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+        });
         const data = await res.json();
         if (data.success && data.hotpatch) {
           setEnabled(data.hotpatch.enabled ?? true);
@@ -61,7 +67,7 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
       }
     }
     loadHotpatch();
-  }, []);
+  }, [authToken]);
 
   const [saveError, setSaveError] = useState('');
   const [safetyViolation, setSafetyViolation] = useState<string | null>(null);

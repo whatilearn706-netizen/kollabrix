@@ -66,7 +66,8 @@ CREATE POLICY "Public can view safe platform settings"
             'community_problem_statements',
             'spark_templates_v1',
             'linkora_leaderboard_v1',
-            'site_master_control_config'
+            'site_master_control_config',
+            'linkora_hotpatch_v1'
         )
         OR public.is_admin(auth.uid())
         OR auth.uid() = 'c86ce05f-24de-4a1a-a45f-944d4180b508'::uuid
