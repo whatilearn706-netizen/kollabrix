@@ -72,6 +72,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/ai-spark',
+        destination: '/spark',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
