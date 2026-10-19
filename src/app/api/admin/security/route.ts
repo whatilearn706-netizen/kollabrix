@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
+import { sendTelegramSecurityAlert } from '@/lib/security/telegramAlert';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,6 +10,9 @@ export const runtime = 'nodejs';
 
 const DEFAULT_SECURITY_CONFIG = {
   whatsappPhone: '', // e.g. +91 9876543210
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
+  telegramAlertsEnabled: true,
   alertsEnabled: true,
   autoMaintenanceOnHighThreat: false,
   alertTypes: {
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest) {
     const client = getSupabaseClient();
 
     // Admin actions require verified administrative authorization
-    if (action === 'save_config' || action === 'generate_whatsapp_alert') {
+    if (action === 'save_config' || action === 'generate_whatsapp_alert' || action === 'send_telegram_test') {
       const auth = await verifyAdminSession(request);
       if (!auth.authorized) {
         return NextResponse.json({ success: false, error: auth.error || 'Unauthorized: Admin authentication required.' }, { status: 403 });
@@ -120,7 +124,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Security Watchdog & WhatsApp alert preferences saved successfully!',
+        message: 'Security Watchdog, WhatsApp & Telegram alert preferences saved successfully!',
         config: memorySecurityConfig,
       });
     }
@@ -150,6 +154,23 @@ export async function POST(request: NextRequest) {
         } catch (dbErr) {
           console.warn('Could not save security event to Supabase:', dbErr);
         }
+      }
+
+      // Auto-dispatch Telegram alert if configured
+      if (
+        memorySecurityConfig.telegramAlertsEnabled !== false &&
+        (memorySecurityConfig.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN) &&
+        (memorySecurityConfig.telegramChatId || process.env.TELEGRAM_CHAT_ID)
+      ) {
+        sendTelegramSecurityAlert({
+          botToken: memorySecurityConfig.telegramBotToken,
+          chatId: memorySecurityConfig.telegramChatId,
+          title: newEvt.title,
+          description: newEvt.description,
+          ip: newEvt.ip,
+          origin: request.nextUrl.origin,
+          emergencyKey: memorySecurityConfig.emergencyKey,
+        }).catch((err) => console.warn('Automatic Telegram alert failed:', err));
       }
 
       return NextResponse.json({ success: true, event: newEvt });
@@ -188,6 +209,36 @@ export async function POST(request: NextRequest) {
         messageText,
         whatsappUrl,
         emergencyLink,
+      });
+    }
+
+    // 4. SEND INSTANT TEST TELEGRAM ALERT
+    if (action === 'send_telegram_test') {
+      const origin = body.origin || request.nextUrl.origin || 'https://linkora.in';
+      const botToken = body.botToken || memorySecurityConfig.telegramBotToken;
+      const chatId = body.chatId || memorySecurityConfig.telegramChatId;
+
+      if (!botToken || !chatId) {
+        return NextResponse.json({
+          success: false,
+          error: 'Please enter both your Telegram Bot Token and Telegram Chat ID first.',
+        }, { status: 400 });
+      }
+
+      const res = await sendTelegramSecurityAlert({
+        botToken,
+        chatId,
+        title: 'Security Watchdog Test Alert (Verification)',
+        description: 'Telegram automated security dispatch is operational! Any critical suspicious activity will automatically buzz your phone with 1-tap maintenance controls.',
+        ip: '103.14.24.89 (Simulated Test)',
+        origin,
+        emergencyKey: memorySecurityConfig.emergencyKey,
+      });
+
+      return NextResponse.json({
+        success: res.success,
+        result: res,
+        error: res.success ? undefined : (res as any).error || (res as any).reason || 'Failed to dispatch Telegram message. Check your bot token and chat ID.',
       });
     }
 

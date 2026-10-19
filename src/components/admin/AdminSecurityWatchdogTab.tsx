@@ -29,6 +29,15 @@ interface AdminSecurityWatchdogTabProps {
 export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTabProps) {
   const [phone, setPhone] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [telegramBotToken, setTelegramBotToken] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
+  const [telegramAlertsEnabled, setTelegramAlertsEnabled] = useState(true);
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
+  const [telegramTestSuccess, setTelegramTestSuccess] = useState(false);
+  const [telegramTestError, setTelegramTestError] = useState('');
+  const [isSavingTelegram, setIsSavingTelegram] = useState(false);
+  const [telegramSaveSuccess, setTelegramSaveSuccess] = useState(false);
+
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,6 +53,9 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
         if (data.success) {
           if (data.config?.whatsappPhone) setPhone(data.config.whatsappPhone);
           if (typeof data.config?.alertsEnabled === 'boolean') setAlertsEnabled(data.config.alertsEnabled);
+          if (data.config?.telegramBotToken) setTelegramBotToken(data.config.telegramBotToken);
+          if (data.config?.telegramChatId) setTelegramChatId(data.config.telegramChatId);
+          if (typeof data.config?.telegramAlertsEnabled === 'boolean') setTelegramAlertsEnabled(data.config.telegramAlertsEnabled);
           if (Array.isArray(data.events)) setEvents(data.events);
         }
       } catch (e) {
@@ -54,7 +66,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
     }
     loadSecurity();
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora.in';
     setEmergencyLink(`${origin}/api/admin/emergency-maintenance?key=linkora-sec-emergency-2026&action=activate`);
   }, []);
 
@@ -74,6 +86,9 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
           action: 'save_config',
           config: {
             whatsappPhone: phone.trim(),
+            telegramBotToken: telegramBotToken.trim(),
+            telegramChatId: telegramChatId.trim(),
+            telegramAlertsEnabled,
             alertsEnabled,
           },
         }),
@@ -87,6 +102,76 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
       console.warn('Failed to save security config:', e);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveTelegramConfig = async () => {
+    setIsSavingTelegram(true);
+    setTelegramSaveSuccess(false);
+    try {
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
+      const res = await fetch('/api/admin/security', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': savedPasscode,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'save_config',
+          config: {
+            whatsappPhone: phone.trim(),
+            telegramBotToken: telegramBotToken.trim(),
+            telegramChatId: telegramChatId.trim(),
+            telegramAlertsEnabled,
+            alertsEnabled,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTelegramSaveSuccess(true);
+        setTimeout(() => setTelegramSaveSuccess(false), 3000);
+      }
+    } catch (e) {
+      console.warn('Failed to save Telegram config:', e);
+    } finally {
+      setIsSavingTelegram(false);
+    }
+  };
+
+  const handleTestTelegramAlert = async () => {
+    setIsTestingTelegram(true);
+    setTelegramTestSuccess(false);
+    setTelegramTestError('');
+    try {
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora.in';
+      const res = await fetch('/api/admin/security', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': savedPasscode,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'send_telegram_test',
+          botToken: telegramBotToken.trim(),
+          chatId: telegramChatId.trim(),
+          origin,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTelegramTestSuccess(true);
+        setTimeout(() => setTelegramTestSuccess(false), 5000);
+      } else {
+        setTelegramTestError(data.error || 'Failed to dispatch Telegram message. Check bot token and chat ID.');
+      }
+    } catch (e: any) {
+      setTelegramTestError(e.message || 'Network error triggering Telegram alert');
+    } finally {
+      setIsTestingTelegram(false);
     }
   };
 
@@ -282,6 +367,126 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
               Every public visitor immediately sees: <em>"Campus Platform Upgrade in Progress"</em>. Your database and code remain 100% safe, while you alone can log into the Admin Control Center to review and fix things.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Telegram 24/7 Automated Alert Dispatcher */}
+      <div className="p-6 rounded-3xl bg-charcoal-900 border border-sky-500/30 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-charcoal-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center">
+              <Send className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>Telegram 24/7 Automated Security Bot</span>
+                <span className="text-[10px] font-mono text-sky-400 bg-sky-500/15 px-2 py-0.5 rounded-full border border-sky-500/30">
+                  100% Automated • Background Push
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Instantly buzzes your phone with threat details and 1-tap maintenance buttons without manual intervention.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3-Step Setup Instructions Box */}
+        <div className="p-4 rounded-2xl bg-sky-500/5 border border-sky-500/20 text-xs text-slate-300 space-y-2">
+          <span className="font-bold text-sky-300 flex items-center gap-1.5 text-xs">
+            <Zap className="w-3.5 h-3.5 text-sky-400" />
+            How to set up your Telegram Bot in 60 seconds (Free & Unlimited):
+          </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] pt-1">
+            <div className="p-2.5 rounded-xl bg-charcoal-950/80 border border-charcoal-800">
+              <span className="font-bold text-sky-400 block mb-0.5">1. Create Bot</span>
+              <span>Search for <strong>@BotFather</strong> on Telegram, send <code>/newbot</code>, give it a name, and copy the HTTP API token.</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-charcoal-950/80 border border-charcoal-800">
+              <span className="font-bold text-sky-400 block mb-0.5">2. Get Your Chat ID</span>
+              <span>Search for <strong>@userinfobot</strong> on Telegram, click Start, and copy your numeric <code>Id</code>.</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-charcoal-950/80 border border-charcoal-800">
+              <span className="font-bold text-sky-400 block mb-0.5">3. Paste & Test</span>
+              <span>Paste both below, click <strong>Save Telegram Setup</strong>, and tap <strong>Test Alert</strong> to verify!</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1">
+              Telegram Bot Token (from @BotFather)
+            </label>
+            <Input
+              type="password"
+              placeholder="e.g. 7123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+              value={telegramBotToken}
+              onChange={(e) => setTelegramBotToken(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1">
+              Your Telegram Chat ID (from @userinfobot)
+            </label>
+            <Input
+              placeholder="e.g. 987654321"
+              value={telegramChatId}
+              onChange={(e) => setTelegramChatId(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+          <div>
+            <span className="text-xs font-bold text-white block">Auto-Dispatch on Suspicious Activity</span>
+            <span className="text-[11px] text-slate-400">Silently call Telegram Bot API to notify your phone whenever threats are detected</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={telegramAlertsEnabled}
+            onChange={(e) => setTelegramAlertsEnabled(e.target.checked)}
+            className="w-4 h-4 accent-sky-500 rounded"
+          />
+        </div>
+
+        {telegramTestSuccess && (
+          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>Success! A test security alert with 1-tap maintenance controls was dispatched to your Telegram! Check your phone.</span>
+          </div>
+        )}
+
+        {telegramTestError && (
+          <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{telegramTestError}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-2 gap-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleTestTelegramAlert}
+            isLoading={isTestingTelegram}
+            leftIcon={<Send className="w-3.5 h-3.5 text-sky-400" />}
+            className="text-xs font-mono text-sky-300 border-sky-500/30 hover:bg-sky-500/10"
+          >
+            Send Test Alert to My Telegram
+          </Button>
+
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={handleSaveTelegramConfig}
+            isLoading={isSavingTelegram}
+            leftIcon={telegramSaveSuccess ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
+            className="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs"
+          >
+            {telegramSaveSuccess ? 'Saved!' : 'Save Telegram Setup'}
+          </Button>
         </div>
       </div>
 
