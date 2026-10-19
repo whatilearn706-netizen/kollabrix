@@ -37,6 +37,10 @@ import { AdminRestrictedWordsTab } from '@/components/admin/AdminRestrictedWords
 import { AdminIcpcTab } from '@/components/admin/AdminIcpcTab';
 import { AdminSecurityWatchdogTab } from '@/components/admin/AdminSecurityWatchdogTab';
 import { AdminHotPatchTab } from '@/components/admin/AdminHotPatchTab';
+import { AdminFeedbackTab } from '@/components/admin/AdminFeedbackTab';
+import { AdminLeaderboardTab } from '@/components/admin/AdminLeaderboardTab';
+import { AdminDeadlinesTab } from '@/components/admin/AdminDeadlinesTab';
+import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
@@ -417,6 +421,22 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
 
       {currentTab === 'master' && (
         <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+      )}
+
+      {currentTab === 'feedback' && (
+        <AdminFeedbackTab authToken={authToken} />
+      )}
+
+      {currentTab === 'leaderboard' && (
+        <AdminLeaderboardTab authToken={authToken} />
+      )}
+
+      {currentTab === 'deadlines' && (
+        <AdminDeadlinesTab authToken={authToken} />
+      )}
+
+      {currentTab === 'spark' && (
+        <AdminSparkTab authToken={authToken} />
       )}
 
       {currentTab === 'restricted' && (

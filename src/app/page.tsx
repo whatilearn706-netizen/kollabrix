@@ -34,6 +34,8 @@ import {
   Lightbulb,
   Flame,
   Radio,
+  Clock,
+  MessageSquare,
 } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { OpportunityCategoryBar } from '@/components/landing/OpportunityCategoryBar';
@@ -498,18 +500,27 @@ export default function HomePage() {
 
                 {/* Floating Live Telemetry Chips */}
                 <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200">
-                    <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">250+</strong> Active Squads</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-500 fill-violet-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">94%</strong> Match Accuracy</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200">
-                    <Trophy className="w-3.5 h-3.5 text-pink-500 fill-pink-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">18+</strong> Collegiate Hackathons</span>
-                  </div>
+                  <Link
+                    href="/spark"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                    <span><strong className="font-bold text-slate-900 dark:text-white">AI Spark</strong> Studio</span>
+                  </Link>
+                  <Link
+                    href="/leaderboard"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer"
+                  >
+                    <Trophy className="w-3.5 h-3.5 text-violet-500 fill-violet-500/20" />
+                    <span><strong className="font-bold text-slate-900 dark:text-white">National</strong> Leaderboard</span>
+                  </Link>
+                  <Link
+                    href="/deadlines"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                    <span><strong className="font-bold text-slate-900 dark:text-white">Live</strong> Deadlines</span>
+                  </Link>
                 </div>
 
                 {/* High-signal Trust Chips */}
@@ -528,6 +539,14 @@ export default function HomePage() {
                     <GraduationCap className="w-4 h-4 text-blue-500 shrink-0" />
                     <span>Faculty Mentorship</span>
                   </div>
+                  <span className="text-slate-300 dark:text-slate-700">•</span>
+                  <Link
+                    href="/feedback"
+                    className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 hover:underline font-bold"
+                  >
+                    <MessageSquare className="w-4 h-4 text-violet-500 shrink-0" />
+                    <span>Submit Feedback</span>
+                  </Link>
                 </div>
               </div>
 

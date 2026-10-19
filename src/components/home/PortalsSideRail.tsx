@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Command,
   Terminal,
+  Clock,
+  MessageSquare,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
@@ -55,6 +57,38 @@ const PORTAL_ITEMS: PortalItem[] = [
     title: 'ICPC Arena',
     href: '/icpc',
     icon: Terminal,
+    themeColor: 'cyan',
+    iconBgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+  },
+  {
+    id: 'leaderboard',
+    title: 'Campus Leaderboard',
+    href: '/leaderboard',
+    icon: Trophy,
+    themeColor: 'amber',
+    iconBgClass: 'bg-amber-500/15 text-amber-500 dark:text-amber-300 border-amber-500/30',
+  },
+  {
+    id: 'deadlines',
+    title: 'Deadlines Radar',
+    href: '/deadlines',
+    icon: Clock,
+    themeColor: 'emerald',
+    iconBgClass: 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border-rose-500/30',
+  },
+  {
+    id: 'spark',
+    title: 'AI Spark Studio',
+    href: '/spark',
+    icon: Sparkles,
+    themeColor: 'violet',
+    iconBgClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
+  },
+  {
+    id: 'feedback',
+    title: 'User Feedback',
+    href: '/feedback',
+    icon: MessageSquare,
     themeColor: 'cyan',
     iconBgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
   },

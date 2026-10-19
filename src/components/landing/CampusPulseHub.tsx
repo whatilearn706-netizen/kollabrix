@@ -274,6 +274,20 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
   // Active subtab
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'matchmaker' | 'presence'>('leaderboard');
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
+  const [collegesList, setCollegesList] = useState<CollegeLeaderboardItem[]>(LEADERBOARD_COLLEGES);
+
+  useEffect(() => {
+    async function fetchColleges() {
+      try {
+        const res = await fetch('/api/leaderboard');
+        const data = await res.json();
+        if (data.colleges && Array.isArray(data.colleges) && data.colleges.length > 0) {
+          setCollegesList(data.colleges);
+        }
+      } catch (e) {}
+    }
+    fetchColleges();
+  }, []);
 
   // Sync activeTab if current tab gets disabled by admin
   useEffect(() => {
@@ -382,7 +396,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
   }
 
   // Filtered leaderboard colleges
-  const filteredColleges = LEADERBOARD_COLLEGES.filter((c) => {
+  const filteredColleges = collegesList.filter((c) => {
     const matchesFilter = collegeFilter === 'all' || c.category === collegeFilter;
     const matchesSearch =
       c.name.toLowerCase().includes(collegeSearch.toLowerCase()) ||
@@ -499,6 +513,14 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
                   <Share2 className="w-3.5 h-3.5" />
                   <span>Generate My Campus Card</span>
                 </button>
+
+                <Link
+                  href="/leaderboard"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition shrink-0"
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                  <span>View Full National Board →</span>
+                </Link>
               </div>
             </div>
 

@@ -64,13 +64,28 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/leaderboard" className="hover:opacity-100 transition-opacity font-medium">
+                  Campus Leaderboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/deadlines" className="hover:opacity-100 transition-opacity font-medium">
+                  Deadlines Radar
+                </Link>
+              </li>
+              <li>
                 <Link href="/hackathons" className="hover:opacity-100 transition-opacity font-medium">
                   {theme.hackathonsTitle || 'College Hackathons'}
                 </Link>
               </li>
               <li>
-                <Link href="/planner" className="hover:opacity-100 transition-opacity font-medium">
-                  AI Project Planner
+                <Link href="/spark" className="hover:opacity-100 transition-opacity font-medium">
+                  AI Spark Studio
+                </Link>
+              </li>
+              <li>
+                <Link href="/feedback" className="hover:opacity-100 transition-opacity font-medium text-violet-400">
+                  💬 Community Feedback
                 </Link>
               </li>
             </ul>

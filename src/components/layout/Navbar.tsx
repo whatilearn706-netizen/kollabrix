@@ -29,6 +29,8 @@ import {
   Sun,
   Moon,
   Lightbulb,
+  Clock,
+  MessageSquare,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
@@ -122,6 +124,16 @@ export function Navbar() {
       href: '/teammates',
       label: 'Teammates',
       icon: Users,
+    },
+    {
+      href: '/leaderboard',
+      label: 'Leaderboard',
+      icon: Trophy,
+    },
+    {
+      href: '/deadlines',
+      label: 'Deadlines',
+      icon: Clock,
     },
     {
       href: '/my-projects',
@@ -337,11 +349,20 @@ export function Navbar() {
                     )}
 
                     <Link
+                      href="/spark"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>AI Spark Studio</span>
+                    </Link>
+
+                    <Link
                       href="/planner"
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-medium"
                     >
-                      <Bot className="w-3.5 h-3.5 text-amber-500" />
+                      <Bot className="w-3.5 h-3.5 text-indigo-400" />
                       <span>AI Project Planner</span>
                     </Link>
 
@@ -352,6 +373,15 @@ export function Navbar() {
                     >
                       <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
                       <span>Faculty Portal</span>
+                    </Link>
+
+                    <Link
+                      href="/feedback"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-violet-400 hover:bg-violet-500/10 transition-colors font-bold"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
+                      <span>Community Feedback</span>
                     </Link>
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
@@ -467,6 +497,46 @@ export function Navbar() {
             >
               <Lightbulb className="w-4 h-4 text-amber-500" />
               <span>Problems</span>
+            </Link>
+
+            <Link
+              href="/leaderboard"
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span>Campus Leaderboard</span>
+            </Link>
+
+            <Link
+              href="/deadlines"
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Clock className="w-4 h-4 text-rose-500" />
+              <span>Deadlines Radar</span>
+            </Link>
+
+            <Link
+              href="/spark"
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>AI Spark Studio</span>
+            </Link>
+
+            <Link
+              href="/feedback"
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4 text-violet-400" />
+              <span>Submit Feedback</span>
             </Link>
 
             <Link

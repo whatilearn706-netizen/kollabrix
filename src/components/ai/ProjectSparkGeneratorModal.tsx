@@ -295,8 +295,20 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Type any project idea or problem. Linkora AI constructs a tailored roadmap, tech stack, and squad composition.
+                Type any project idea or problem to generate a tailored roadmap and squad composition.
               </p>
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push('/spark');
+                  }}
+                  className="text-xs font-bold text-violet-600 hover:text-violet-700 underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Open Dedicated Spark Studio Page →</span>
+                </button>
+              </div>
             </div>
           </div>
           <button

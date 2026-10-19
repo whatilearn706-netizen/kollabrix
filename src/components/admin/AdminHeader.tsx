@@ -23,12 +23,18 @@ import {
   Crown,
   Terminal,
   Code2,
+  MessageSquare,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
   | 'master'
+  | 'feedback'
+  | 'leaderboard'
+  | 'deadlines'
+  | 'spark'
   | 'restricted'
   | 'security'
   | 'hotpatch'
@@ -60,6 +66,10 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const tabs = [
     { id: 'master' as AdminTab, label: '👑 ALL 6 MASTER CONTROLS', icon: Crown },
+    { id: 'feedback' as AdminTab, label: '💬 User Feedback Desk', icon: MessageSquare },
+    { id: 'leaderboard' as AdminTab, label: '🏆 Campus Leaderboard', icon: Trophy },
+    { id: 'deadlines' as AdminTab, label: '⏳ Deadlines Radar', icon: Clock },
+    { id: 'spark' as AdminTab, label: '✨ AI Spark Templates', icon: Sparkles },
     { id: 'security' as AdminTab, label: '🛡️ WhatsApp Watchdog & Security', icon: ShieldAlert },
     { id: 'hotpatch' as AdminTab, label: '🤖 AI Hot-Patch & Code Desk', icon: Code2 },
     { id: 'restricted' as AdminTab, label: '🚫 Restricted Mode', icon: ShieldAlert },
