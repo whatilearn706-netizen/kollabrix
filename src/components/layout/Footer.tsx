@@ -84,19 +84,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
-                      window.openLinkoraFeedback();
-                    } else if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
-                    }
-                  }}
-                  className="hover:opacity-100 transition-opacity font-medium text-violet-400 cursor-pointer text-left"
+                <a
+                  href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+                  className="hover:opacity-100 transition-opacity font-medium text-violet-400 cursor-pointer text-left inline-block"
                 >
                   💬 Community Feedback
-                </button>
+                </a>
               </li>
             </ul>
           </div>

@@ -197,7 +197,13 @@ export function FeedbackModal() {
               Write Your Feedback
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Your feedback is sent directly to Mayank in the Admin Control Center.
+              Have an idea or bug report? Send directly to{' '}
+              <a
+                href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+                className="text-cyan-300 underline font-mono font-bold hover:text-cyan-200"
+              >
+                whatilearn706@gmail.com
+              </a>
             </p>
           </div>
 

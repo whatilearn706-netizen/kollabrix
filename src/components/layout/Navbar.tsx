@@ -365,21 +365,14 @@ export function Navbar() {
                       <span>Faculty Portal</span>
                     </Link>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
-                          window.openLinkoraFeedback();
-                        } else if (typeof window !== 'undefined') {
-                          window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
-                        }
-                      }}
+                    <a
+                      href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+                      onClick={() => setUserDropdownOpen(false)}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-violet-400 hover:bg-violet-500/10 transition-colors font-bold text-left cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
                       <span>Community Feedback</span>
-                    </button>
+                    </a>
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
@@ -526,21 +519,14 @@ export function Navbar() {
               <span>AI Spark Studio</span>
             </Link>
 
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
-                  window.openLinkoraFeedback();
-                } else if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
-                }
-              }}
+            <a
+              href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+              onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 text-violet-400" />
               <span>Community Feedback</span>
-            </button>
+            </a>
 
             <Link
               href="/teacher/dashboard"

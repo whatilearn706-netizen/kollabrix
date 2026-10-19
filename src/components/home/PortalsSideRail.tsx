@@ -83,7 +83,7 @@ const PORTAL_ITEMS: PortalItem[] = [
   {
     id: 'feedback',
     title: 'Community Feedback',
-    href: '#feedback',
+    href: 'mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback',
     icon: MessageSquare,
     themeColor: 'cyan',
     iconBgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
@@ -207,34 +207,32 @@ export function PortalsSideRail() {
     };
   }, [isSpotlightOpen]);
 
-  const triggerFeedbackModal = () => {
+  const FEEDBACK_MAILTO = 'mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback';
+
+  const triggerFeedbackAction = () => {
     if (typeof window !== 'undefined') {
-      if (typeof window.openLinkoraFeedback === 'function') {
-        window.openLinkoraFeedback();
-      }
-      window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
-      window.dispatchEvent(new CustomEvent('linkora-feedback'));
+      window.location.href = FEEDBACK_MAILTO;
     }
   };
 
   const handleLinkClick = (href: string, e?: React.MouseEvent) => {
-    if (href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
+    if (href.startsWith('mailto:') || href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
       setIsSpotlightOpen(false);
-      triggerFeedbackModal();
+      triggerFeedbackAction();
       return;
     }
     setIsSpotlightOpen(false);
   };
 
   const handleRailClick = (e: React.MouseEvent, href: string) => {
-    if (href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
+    if (href.startsWith('mailto:') || href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
       e.preventDefault();
       e.stopPropagation();
-      triggerFeedbackModal();
+      triggerFeedbackAction();
       return;
     }
   };
@@ -267,20 +265,15 @@ export function PortalsSideRail() {
             >
               {PORTAL_ITEMS.map((item, idx) => {
                 const Icon = item.icon;
-                const isFeedback = item.id === 'feedback' || item.href === '#feedback';
+                const isFeedback = item.id === 'feedback' || item.href.includes('mailto:') || item.href === '#feedback';
                 if (isFeedback) {
                   return (
-                    <button
+                    <a
                       key={item.id}
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        triggerFeedbackModal();
-                      }}
+                      href={FEEDBACK_MAILTO}
                       className="snap-start w-full h-[38px] flex items-center gap-2 px-1.5 text-left cursor-pointer transition-all duration-200 group rounded-lg hover:bg-slate-500/10 dark:hover:bg-white/10 active:scale-[0.98]"
                       style={{ animationDelay: `${idx * 0.08}s` }}
-                      title="Open Community Feedback"
+                      title="Email Community Feedback"
                     >
                       <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-all duration-200 ${item.iconBgClass} group-hover:scale-110`}>
                         <Icon className="w-3.5 h-3.5" />
@@ -289,7 +282,7 @@ export function PortalsSideRail() {
                         {item.title}
                       </span>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-auto shrink-0" />
-                    </button>
+                    </a>
                   );
                 }
                 return (
@@ -515,15 +508,14 @@ export function PortalsSideRail() {
                   <GraduationCap className="w-2.5 h-2.5" />
                   <span>Faculty</span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={(e) => handleLinkClick('#feedback', e)}
+                <a
+                  href={FEEDBACK_MAILTO}
                   className="px-2 py-1 rounded-lg text-[9px] font-bold text-cyan-300 hover:bg-white/10 flex items-center gap-1 transition-all cursor-pointer"
-                  title="Community Feedback"
+                  title="Email Community Feedback"
                 >
                   <MessageSquare className="w-2.5 h-2.5" />
                   <span>Feedback</span>
-                </button>
+                </a>
               </div>
             </div>
 
@@ -615,10 +607,10 @@ export function PortalsSideRail() {
 
               {/* 4. BOTTOM-RIGHT: Write Feedback (4:30 on Ring) */}
               <div className="absolute bottom-2 sm:bottom-4 right-1 sm:right-3 pointer-events-auto z-30 w-[190px] sm:w-[225px]">
-                <button
-                  type="button"
-                  onClick={(e) => handleLinkClick('#feedback', e)}
-                  className="group block w-full text-left p-2.5 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
+                <a
+                  href={FEEDBACK_MAILTO}
+                  onClick={() => setIsSpotlightOpen(false)}
+                  className="group block w-full text-left p-2.5 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[7.5px] sm:text-[8px] font-mono font-black px-1.5 py-0.5 rounded-full border bg-cyan-500/25 text-cyan-200 border-cyan-400/50 backdrop-blur-md">
@@ -638,7 +630,7 @@ export function PortalsSideRail() {
                     <span>Community Feedback</span>
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -678,14 +670,14 @@ export function PortalsSideRail() {
             <div className="grid grid-cols-2 gap-2.5 max-h-[70vh] overflow-y-auto pr-1">
               {PORTAL_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const isFeedback = item.id === 'feedback' || item.href === '#feedback';
+                const isFeedback = item.id === 'feedback' || item.href.includes('mailto:') || item.href === '#feedback';
                 if (isFeedback) {
                   return (
-                    <button
+                    <a
                       key={item.id}
-                      type="button"
-                      onClick={(e) => handleLinkClick('#feedback', e)}
-                      className="p-3 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-cyan-400/30 hover:border-cyan-400 transition-all flex flex-col justify-between group active:scale-[0.98] text-left"
+                      href={FEEDBACK_MAILTO}
+                      onClick={() => setIsSpotlightOpen(false)}
+                      className="p-3 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-cyan-400/30 hover:border-cyan-400 transition-all flex flex-col justify-between group active:scale-[0.98] text-left cursor-pointer"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-2">
@@ -707,7 +699,7 @@ export function PortalsSideRail() {
                         <span>Feedback</span>
                         <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
-                    </button>
+                    </a>
                   );
                 }
                 return (
