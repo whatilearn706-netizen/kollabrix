@@ -3,15 +3,17 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { sendTelegramSecurityAlert } from '@/lib/security/telegramAlert';
+import { sendAutomatedWhatsAppAlert } from '@/lib/security/whatsappAlert';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
 const DEFAULT_SECURITY_CONFIG = {
-  whatsappPhone: '', // e.g. +91 9876543210
-  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
-  telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
+  whatsappPhone: process.env.WHATSAPP_PHONE || '+918209681378', // Default to Mayank's phone
+  whatsappApiKey: process.env.WHATSAPP_CALLMEBOT_APIKEY || '',
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '8576371651:AAFwsq298GDouxiqP5te1rxbULvA2NOVlMU',
+  telegramChatId: process.env.TELEGRAM_CHAT_ID || '2035561422',
   telegramAlertsEnabled: true,
   alertsEnabled: true,
   autoMaintenanceOnHighThreat: false,
@@ -99,7 +101,12 @@ export async function POST(request: NextRequest) {
     const client = getSupabaseClient();
 
     // Admin actions require verified administrative authorization
-    if (action === 'save_config' || action === 'generate_whatsapp_alert' || action === 'send_telegram_test') {
+    if (
+      action === 'save_config' ||
+      action === 'generate_whatsapp_alert' ||
+      action === 'send_telegram_test' ||
+      action === 'send_whatsapp_automated_test'
+    ) {
       const auth = await verifyAdminSession(request);
       if (!auth.authorized) {
         return NextResponse.json({ success: false, error: auth.error || 'Unauthorized: Admin authentication required.' }, { status: 403 });
@@ -173,6 +180,23 @@ export async function POST(request: NextRequest) {
         }).catch((err) => console.warn('Automatic Telegram alert failed:', err));
       }
 
+      // Auto-dispatch WhatsApp alert via CallMeBot if configured
+      if (
+        memorySecurityConfig.alertsEnabled !== false &&
+        (memorySecurityConfig.whatsappPhone || process.env.WHATSAPP_PHONE) &&
+        (memorySecurityConfig.whatsappApiKey || process.env.WHATSAPP_CALLMEBOT_APIKEY)
+      ) {
+        sendAutomatedWhatsAppAlert({
+          phone: memorySecurityConfig.whatsappPhone,
+          apiKey: memorySecurityConfig.whatsappApiKey,
+          title: newEvt.title,
+          description: newEvt.description,
+          ip: newEvt.ip,
+          origin: request.nextUrl.origin,
+          emergencyKey: memorySecurityConfig.emergencyKey,
+        }).catch((err) => console.warn('Automatic WhatsApp alert failed:', err));
+      }
+
       return NextResponse.json({ success: true, event: newEvt });
     }
 
@@ -239,6 +263,36 @@ export async function POST(request: NextRequest) {
         success: res.success,
         result: res,
         error: res.success ? undefined : (res as any).error || (res as any).reason || 'Failed to dispatch Telegram message. Check your bot token and chat ID.',
+      });
+    }
+
+    // 5. SEND INSTANT TEST AUTOMATED WHATSAPP ALERT (VIA CALLMEBOT)
+    if (action === 'send_whatsapp_automated_test') {
+      const origin = body.origin || request.nextUrl.origin || 'https://linkora.in';
+      const phone = body.phone || memorySecurityConfig.whatsappPhone || process.env.WHATSAPP_PHONE;
+      const apiKey = body.apiKey || memorySecurityConfig.whatsappApiKey || process.env.WHATSAPP_CALLMEBOT_APIKEY;
+
+      if (!phone || !apiKey) {
+        return NextResponse.json({
+          success: false,
+          error: 'Please enter both your WhatsApp Phone number and CallMeBot API Key first.',
+        }, { status: 400 });
+      }
+
+      const res = await sendAutomatedWhatsAppAlert({
+        phone,
+        apiKey,
+        title: 'Security Watchdog WhatsApp Verification Test',
+        description: 'WhatsApp automated background dispatch is operational! Any critical threats will now automatically buzz your phone with 1-tap maintenance controls.',
+        ip: '103.14.24.89 (Simulated Test)',
+        origin,
+        emergencyKey: memorySecurityConfig.emergencyKey,
+      });
+
+      return NextResponse.json({
+        success: res.success,
+        result: res,
+        error: res.success ? undefined : (res as any).error || (res as any).reason || (res as any).response || 'Failed to dispatch WhatsApp message. Please verify your phone number and CallMeBot API key.',
       });
     }
 

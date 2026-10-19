@@ -27,8 +27,13 @@ interface AdminSecurityWatchdogTabProps {
 }
 
 export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTabProps) {
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+918209681378');
+  const [whatsappApiKey, setWhatsappApiKey] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [isTestingWhatsAppAuto, setIsTestingWhatsAppAuto] = useState(false);
+  const [whatsappAutoSuccess, setWhatsappAutoSuccess] = useState(false);
+  const [whatsappAutoError, setWhatsappAutoError] = useState('');
+
   const [telegramBotToken, setTelegramBotToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
   const [telegramAlertsEnabled, setTelegramAlertsEnabled] = useState(true);
@@ -52,6 +57,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
         const data = await res.json();
         if (data.success) {
           if (data.config?.whatsappPhone) setPhone(data.config.whatsappPhone);
+          if (data.config?.whatsappApiKey) setWhatsappApiKey(data.config.whatsappApiKey);
           if (typeof data.config?.alertsEnabled === 'boolean') setAlertsEnabled(data.config.alertsEnabled);
           if (data.config?.telegramBotToken) setTelegramBotToken(data.config.telegramBotToken);
           if (data.config?.telegramChatId) setTelegramChatId(data.config.telegramChatId);
@@ -86,6 +92,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
           action: 'save_config',
           config: {
             whatsappPhone: phone.trim(),
+            whatsappApiKey: whatsappApiKey.trim(),
             telegramBotToken: telegramBotToken.trim(),
             telegramChatId: telegramChatId.trim(),
             telegramAlertsEnabled,
@@ -121,6 +128,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
           action: 'save_config',
           config: {
             whatsappPhone: phone.trim(),
+            whatsappApiKey: whatsappApiKey.trim(),
             telegramBotToken: telegramBotToken.trim(),
             telegramChatId: telegramChatId.trim(),
             telegramAlertsEnabled,
@@ -137,6 +145,41 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
       console.warn('Failed to save Telegram config:', e);
     } finally {
       setIsSavingTelegram(false);
+    }
+  };
+
+  const handleTestAutomatedWhatsAppAlert = async () => {
+    setIsTestingWhatsAppAuto(true);
+    setWhatsappAutoSuccess(false);
+    setWhatsappAutoError('');
+    try {
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora.in';
+      const res = await fetch('/api/admin/security', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': savedPasscode,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'send_whatsapp_automated_test',
+          phone: phone.trim(),
+          apiKey: whatsappApiKey.trim(),
+          origin,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWhatsappAutoSuccess(true);
+        setTimeout(() => setWhatsappAutoSuccess(false), 5000);
+      } else {
+        setWhatsappAutoError(data.error || 'Failed to dispatch automated WhatsApp message. Check your phone number and CallMeBot API key.');
+      }
+    } catch (e: any) {
+      setWhatsappAutoError(e.message || 'Network error triggering automated WhatsApp alert');
+    } finally {
+      setIsTestingWhatsAppAuto(false);
     }
   };
 
@@ -254,60 +297,125 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
       {/* Grid: WhatsApp Notification Setup & Emergency 1-Tap Link */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* WhatsApp Phone Card */}
-        <div className="p-6 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-xl space-y-4">
+        <div className="p-6 rounded-3xl bg-charcoal-900 border border-emerald-500/30 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-charcoal-800 pb-3">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-emerald-400" />
               <h3 className="text-sm font-bold text-white">WhatsApp Emergency Alerts</h3>
             </div>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-              Instant Dispatch
+              100% Automated • Background Push
             </span>
           </div>
 
           <p className="text-xs text-slate-400 leading-relaxed">
-            Whenever suspicious behavior occurs (unauthorized admin logins, brute force, or tampering), Linkora formats a real-time WhatsApp alert sent directly to your phone with the remedy and 1-tap kill-switch.
+            Linkora delivers real-time emergency alerts directly to your personal WhatsApp with 1-tap maintenance buttons whenever threats or brute-force attempts are detected.
           </p>
 
-          <div className="space-y-3 pt-1">
+          {/* Quick CallMeBot Free Activation Helper */}
+          <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-slate-300 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                Activate Free WhatsApp Background Push (10 Seconds):
+              </span>
+              <a
+                href="https://wa.me/34644444762?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 underline underline-offset-2"
+              >
+                <span>Tap to Send on WhatsApp</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-normal">
+              1. Tap above (or message <code className="text-emerald-300">+34 644 44 47 62</code>) with: <code className="text-emerald-300 font-bold">I allow callmebot to send me messages</code><br />
+              2. CallMeBot will reply with your free <strong>API Key</strong>. Paste it below and hit <strong>Save WhatsApp Setup</strong>!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                Your WhatsApp Phone Number (with Country Code)
+                Your WhatsApp Phone Number
               </label>
               <Input
-                placeholder="e.g. +91 9876543210"
+                placeholder="e.g. +91 8209681378"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
               <span className="text-[10px] font-mono text-slate-500 mt-1 block">
-                Format: +[Country Code][10-digit number] (e.g. +919876543210 for India)
+                Include country code (+91 for India)
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-              <div>
-                <span className="text-xs font-bold text-white block">Automatic Watchdog Alerts</span>
-                <span className="text-[11px] text-slate-400">Generate alerts on high-severity security events</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={alertsEnabled}
-                onChange={(e) => setAlertsEnabled(e.target.checked)}
-                className="w-4 h-4 accent-emerald-500 rounded"
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                CallMeBot API Key
+              </label>
+              <Input
+                type="password"
+                placeholder="Paste API key from CallMeBot"
+                value={whatsappApiKey}
+                onChange={(e) => setWhatsappApiKey(e.target.value)}
               />
+              <span className="text-[10px] font-mono text-slate-500 mt-1 block">
+                Free key received on WhatsApp
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleTestWhatsAppAlert}
-              leftIcon={<Send className="w-3.5 h-3.5 text-emerald-400" />}
-              className="text-xs font-mono text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10"
-            >
-              Test Alert to My WhatsApp
-            </Button>
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+            <div>
+              <span className="text-xs font-bold text-white block">Auto-Dispatch on Suspicious Activity</span>
+              <span className="text-[11px] text-slate-400">Silently buzz WhatsApp whenever threats are detected</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={alertsEnabled}
+              onChange={(e) => setAlertsEnabled(e.target.checked)}
+              className="w-4 h-4 accent-emerald-500 rounded"
+            />
+          </div>
+
+          {whatsappAutoSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Success! A test security alert was sent directly to your WhatsApp! Check your phone.</span>
+            </div>
+          )}
+
+          {whatsappAutoError && (
+            <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{whatsappAutoError}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between pt-2 gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleTestAutomatedWhatsAppAlert}
+                isLoading={isTestingWhatsAppAuto}
+                leftIcon={<Send className="w-3.5 h-3.5 text-emerald-400" />}
+                className="text-xs font-mono text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10"
+              >
+                ⚡ Test Automated Push
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleTestWhatsAppAlert}
+                className="text-xs text-slate-400 hover:text-slate-200"
+                title="Preview pre-filled alert link in WhatsApp Web/App"
+              >
+                Preview Link
+              </Button>
+            </div>
 
             <Button
               size="sm"
@@ -317,7 +425,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
               leftIcon={saveSuccess ? <CheckCircle2 className="w-3.5 h-3.5" /> : undefined}
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
             >
-              {saveSuccess ? 'Saved!' : 'Save Phone'}
+              {saveSuccess ? 'Saved!' : 'Save WhatsApp Setup'}
             </Button>
           </div>
         </div>

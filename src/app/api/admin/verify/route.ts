@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { sendTelegramSecurityAlert } from '@/lib/security/telegramAlert';
+import { sendAutomatedWhatsAppAlert } from '@/lib/security/whatsappAlert';
 
 export const runtime = 'nodejs';
 
@@ -107,11 +108,21 @@ export async function POST(request: NextRequest) {
     if (!enteredPasscode || enteredPasscode !== serverSecret) {
       const fail = recordFailure(ip);
 
+      const alertTitle = fail.locked ? '🚨 High Alert: Admin Security Lockout Triggered' : '⚠️ Failed Admin Passcode Attempt';
+      const alertDesc = fail.locked
+        ? `IP ${ip} entered 5 incorrect passcodes and has been locked out for 15 minutes.`
+        : `An incorrect admin passcode was entered from IP ${ip}. Remaining attempts: ${fail.remaining}.`;
+
       sendTelegramSecurityAlert({
-        title: fail.locked ? '🚨 High Alert: Admin Security Lockout Triggered' : '⚠️ Failed Admin Passcode Attempt',
-        description: fail.locked
-          ? `IP ${ip} entered 5 incorrect passcodes and has been locked out for 15 minutes.`
-          : `An incorrect admin passcode was entered from IP ${ip}. Remaining attempts: ${fail.remaining}.`,
+        title: alertTitle,
+        description: alertDesc,
+        ip,
+        origin: request.nextUrl.origin,
+      }).catch(() => {});
+
+      sendAutomatedWhatsAppAlert({
+        title: alertTitle,
+        description: alertDesc,
         ip,
         origin: request.nextUrl.origin,
       }).catch(() => {});
