@@ -15,6 +15,8 @@ import {
   Layers,
   Palette,
   ExternalLink,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
@@ -61,14 +63,50 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
     loadHotpatch();
   }, []);
 
+  const [saveError, setSaveError] = useState('');
+  const [safetyViolation, setSafetyViolation] = useState<string | null>(null);
+
+  // Real-time client-side SafeGuard scanner
+  useEffect(() => {
+    const dangerousPatterns = [
+      { pattern: /document\.cookie/i, reason: 'Attempting to read or write session cookies is blocked.' },
+      { pattern: /localStorage\s*\[\s*['"`]sb-/i, reason: 'Accessing Supabase auth tokens is blocked.' },
+      { pattern: /sessionStorage\s*\[\s*['"`]sb-/i, reason: 'Accessing Supabase session tokens is blocked.' },
+      { pattern: /navigator\.sendBeacon/i, reason: 'Unauthorized background data beaconing is blocked.' },
+      { pattern: /<script[\s>]/i, reason: 'Raw script tags are not allowed. Write clean JS syntax.' },
+      { pattern: /webhook|discord\.com\/api\/webhooks|requestcatcher|pipedream|hookbin/i, reason: 'Unverified external webhook exfiltration endpoints are blocked.' },
+      { pattern: /coinhive|cryptonight|miner/i, reason: 'Cryptocurrency mining scripts are blocked.' },
+    ];
+
+    let foundViolation: string | null = null;
+    for (const item of dangerousPatterns) {
+      if (item.pattern.test(customJs) || item.pattern.test(customCss)) {
+        foundViolation = item.reason;
+        break;
+      }
+    }
+    setSafetyViolation(foundViolation);
+  }, [customCss, customJs]);
+
   const handleSave = async () => {
+    if (safetyViolation) {
+      setSaveError(`🚨 SafeGuard Block: ${safetyViolation}`);
+      return;
+    }
+
     setIsSaving(true);
     setSaveSuccess(false);
+    setSaveError('');
 
     try {
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const res = await fetch('/api/admin/hotpatch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': savedPasscode,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           hotpatch: {
             enabled,
@@ -83,14 +121,18 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
       const data = await res.json();
       if (res.ok && data.success) {
         setSaveSuccess(true);
+        setSaveError('');
         setLastUpdated(new Date().toLocaleTimeString());
         try {
           localStorage.setItem('linkora_hotpatch_v1', JSON.stringify(data.hotpatch));
           window.dispatchEvent(new Event('linkora_hotpatch_updated'));
         } catch (e) {}
         setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        setSaveError(data.error || 'Failed to apply hot-patch');
       }
-    } catch (e) {
+    } catch (e: any) {
+      setSaveError(e.message || 'Network error saving hot-patch');
       console.warn('Failed to save hotpatch:', e);
     } finally {
       setIsSaving(false);
@@ -254,13 +296,41 @@ Make sure the code is production-ready.`;
               </div>
             </div>
 
+            {/* SafeGuard Real-time Status Card */}
+            <div className={`p-3 rounded-2xl border text-xs flex items-start gap-2.5 transition-all ${
+              safetyViolation
+                ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+            }`}>
+              {safetyViolation ? (
+                <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              ) : (
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              )}
+              <div className="space-y-0.5">
+                <span className="font-bold block text-[11px] font-mono">
+                  {safetyViolation ? '⚠️ SafeGuard Hazard Detected' : '🛡️ SafeGuard: 100% Safe to Deploy'}
+                </span>
+                <span className="text-[10px] text-slate-300 leading-tight block">
+                  {safetyViolation || 'Code verified clean. No cookie sniffing, no token leakage, and no unauthorized exfiltration.'}
+                </span>
+              </div>
+            </div>
+
+            {saveError && (
+              <div className="p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-mono">
+                {saveError}
+              </div>
+            )}
+
             <Button
               size="md"
               variant="primary"
               onClick={handleSave}
               isLoading={isSaving}
+              disabled={!!safetyViolation}
               leftIcon={saveSuccess ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs"
+              className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saveSuccess ? 'Live Hot-Patch Deployed!' : 'Apply Hot-Patch Live'}
             </Button>

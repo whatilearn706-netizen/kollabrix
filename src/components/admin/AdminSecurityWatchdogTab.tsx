@@ -62,9 +62,14 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
     setIsSaving(true);
     setSaveSuccess(false);
     try {
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const res = await fetch('/api/admin/security', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': savedPasscode,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           action: 'save_config',
           config: {
@@ -87,10 +92,15 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
 
   const handleTestWhatsAppAlert = async () => {
     try {
+      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
       const res = await fetch('/api/admin/security', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': savedPasscode,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           action: 'generate_whatsapp_alert',
           phone,

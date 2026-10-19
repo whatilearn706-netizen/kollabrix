@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { verifyAdminSession } from '@/lib/admin/adminAuth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -92,6 +93,14 @@ export async function POST(request: NextRequest) {
     const { action, config, event } = body;
 
     const client = getSupabaseClient();
+
+    // Admin actions require verified administrative authorization
+    if (action === 'save_config' || action === 'generate_whatsapp_alert') {
+      const auth = await verifyAdminSession(request);
+      if (!auth.authorized) {
+        return NextResponse.json({ success: false, error: auth.error || 'Unauthorized: Admin authentication required.' }, { status: 403 });
+      }
+    }
 
     // 1. SAVE CONFIG
     if (action === 'save_config' && config) {

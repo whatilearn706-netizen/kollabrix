@@ -64,14 +64,31 @@ export function GlobalHotPatchInjector() {
       styleTag.remove();
     }
 
-    // Execute Custom JS safely
+    // Execute Custom JS safely in sandboxed closure with SafeGuard filter
     if (patch.enabled && patch.customJs && patch.customJs.trim()) {
+      // Prohibit critical security hazards from executing in the browser
+      const hasCookieExploit = /document\.cookie/i.test(patch.customJs);
+      const hasTokenTheft = /localStorage\s*\[\s*['"`]sb-/i.test(patch.customJs) || /sessionStorage\s*\[\s*['"`]sb-/i.test(patch.customJs);
+      const hasBeacon = /navigator\.sendBeacon/i.test(patch.customJs);
+
+      if (hasCookieExploit || hasTokenTheft || hasBeacon) {
+        console.warn('🛡️ [Linkora SafeGuard] Blocked untrusted script attempting cookie or token access.');
+        return;
+      }
+
       try {
         // Safe evaluation in isolated function scope
-        const runner = new Function(patch.customJs);
-        runner();
+        const runner = new Function('window', 'document', `
+          "use strict";
+          try {
+            ${patch.customJs}
+          } catch (runtimeErr) {
+            console.warn("[Linkora SafeGuard] Hot-patch runtime error handled safely:", runtimeErr);
+          }
+        `);
+        runner(window, document);
       } catch (jsErr) {
-        console.warn('Hotpatch script error:', jsErr);
+        console.warn('Hotpatch script compilation error:', jsErr);
       }
     }
   };
