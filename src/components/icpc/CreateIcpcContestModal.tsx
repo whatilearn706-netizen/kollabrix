@@ -16,8 +16,13 @@ import {
   Clock,
   Sparkles,
   Award,
+  Copy,
+  Check,
+  BookOpen,
+  Lock,
+  Layers,
 } from 'lucide-react';
-import { IcpcContest, IcpcProblem, ProblemDifficulty } from '@/types/icpc';
+import { IcpcContest, IcpcProblem, ProblemDifficulty, ContestType } from '@/types/icpc';
 
 interface CreateIcpcContestModalProps {
   isOpen: boolean;
@@ -41,6 +46,9 @@ interface ProblemDraft {
   sampleInput: string;
   sampleOutput: string;
   explanation: string;
+  solutionCode: string;
+  solutionExplanation: string;
+  solutionLanguage: 'cpp' | 'python' | 'java';
 }
 
 const DEFAULT_PROBLEM_DRAFT: ProblemDraft = {
@@ -57,6 +65,9 @@ const DEFAULT_PROBLEM_DRAFT: ProblemDraft = {
   sampleInput: '4\n1 2 3 4',
   sampleOutput: '10',
   explanation: 'Sum of the array is 10.',
+  solutionCode: '',
+  solutionExplanation: '',
+  solutionLanguage: 'cpp',
 };
 
 export function CreateIcpcContestModal({
@@ -66,11 +77,13 @@ export function CreateIcpcContestModal({
   organizerName = 'Faculty Mentor',
   collegeName = 'Collegiate Network',
 }: CreateIcpcContestModalProps) {
+  const [contestType, setContestType] = useState<ContestType>('contest');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(180);
   const [visibility, setVisibility] = useState<'public' | 'passcode'>('public');
   const [passcode, setPasscode] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
   const [rulesText, setRulesText] = useState(
     '1. Standard LeetCode / ICPC time limits apply.\n2. Submissions evaluated against hidden testbench.\n3. Verified college proof badge awarded.'
   );
@@ -90,12 +103,43 @@ export function CreateIcpcContestModal({
       sampleInput: '4\n1 3\n2 6\n8 10\n15 18',
       sampleOutput: '3',
       explanation: 'Intervals [1,3] and [2,6] merge into [1,6].',
+      solutionCode: `#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Sort by start interval and merge linearly in O(N log N)
+int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
+    if (intervals.empty()) return 0;
+    sort(intervals.begin(), intervals.end());
+    int count = 1;
+    int curEnd = intervals[0].second;
+    for (size_t i = 1; i < intervals.size(); ++i) {
+        if (intervals[i].first <= curEnd) {
+            curEnd = max(curEnd, intervals[i].second);
+        } else {
+            count++;
+            curEnd = intervals[i].second;
+        }
+    }
+    return count;
+}`,
+      solutionExplanation: 'Sort all intervals by their start coordinate in O(N log N). Iterate through and maintain the current interval horizon. Whenever an interval begins after current horizon, emit a new disjoint segment. Time Complexity: O(N log N), Space: O(1).',
+      solutionLanguage: 'cpp',
     },
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const handleCopyInviteLink = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
+    const code = passcode.trim() || 'ICPC2026';
+    const url = `${origin}/icpc?passcode=${encodeURIComponent(code)}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2200);
+  };
 
   const handleAddProblem = () => {
     setProblems((prev) => [
@@ -157,6 +201,9 @@ export function CreateIcpcContestModal({
         sampleInput: p.sampleInput.trim(),
         sampleOutput: p.sampleOutput.trim(),
         explanation: p.explanation.trim() || undefined,
+        solutionCode: p.solutionCode.trim() || undefined,
+        solutionExplanation: p.solutionExplanation.trim() || undefined,
+        solutionLanguage: p.solutionLanguage || 'cpp',
       }));
 
       const res = await fetch('/api/icpc', {
@@ -165,9 +212,10 @@ export function CreateIcpcContestModal({
         body: JSON.stringify({
           title,
           subtitle,
+          contestType,
           durationMinutes,
           visibility,
-          passcode,
+          passcode: visibility === 'passcode' ? passcode : undefined,
           rules,
           problems: formattedProblems,
           organizer: organizerName,
@@ -177,7 +225,11 @@ export function CreateIcpcContestModal({
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMsg('🎉 ICPC Contest published live for students!');
+        setSuccessMsg(
+          contestType === 'practice'
+            ? '🎉 Practice Problem Round published to Practice & Past!'
+            : '🎉 Live ICPC Contest published live for students!'
+        );
         if (onCreated && data.contest) {
           onCreated(data.contest);
         }
@@ -195,7 +247,7 @@ export function CreateIcpcContestModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Upload ICPC Contest (LeetCode-Style)" maxWidth="3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Upload ICPC Contest / Practice Round" maxWidth="3xl">
       <form onSubmit={handleSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto px-1 pr-2">
         {/* Banner Intro */}
         <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-violet-500/10 border border-cyan-500/30 flex items-start gap-3">
@@ -207,7 +259,7 @@ export function CreateIcpcContestModal({
               Faculty ICPC Algorithmic Desk
             </h4>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-              Design and upload competitive programming contests for students. Add LeetCode-style problem descriptions, time & memory limits, and sample testcases.
+              Design and upload competitive programming contests and practice problem sets. Upload official solutions and algorithmic editorials that reveal automatically after the contest timeline ends.
             </p>
           </div>
         </div>
@@ -226,6 +278,70 @@ export function CreateIcpcContestModal({
           </div>
         )}
 
+        {/* Contest Category / Type Selector */}
+        <div className="space-y-2">
+          <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Select Destination & Mode *
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              onClick={() => setContestType('contest')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                contestType === 'contest'
+                  ? 'bg-cyan-500/15 border-cyan-500/50 shadow-sm'
+                  : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700 hover:border-slate-400'
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full border mt-0.5 shrink-0 flex items-center justify-center ${
+                  contestType === 'contest' ? 'border-cyan-400 bg-cyan-500' : 'border-slate-400'
+                }`}
+              >
+                {contestType === 'contest' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">Live ICPC Contest</span>
+                  <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Live / Upcoming
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Timed competition with live leaderboard. Solutions remain <strong>strictly locked</strong> until the contest timer expires.
+                </p>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setContestType('practice')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                contestType === 'practice'
+                  ? 'bg-indigo-500/15 border-indigo-500/50 shadow-sm'
+                  : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700 hover:border-slate-400'
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full border mt-0.5 shrink-0 flex items-center justify-center ${
+                  contestType === 'practice' ? 'border-indigo-400 bg-indigo-500' : 'border-slate-400'
+                }`}
+              >
+                {contestType === 'practice' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">Practice Round</span>
+                  <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Practice & Past
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Self-paced problem set for interview prep. Official solutions and editorials are readily accessible to learners.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Contest Metadata */}
         <div className="space-y-4">
           <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -234,10 +350,10 @@ export function CreateIcpcContestModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
-                Contest Title *
+                {contestType === 'practice' ? 'Practice Set Title *' : 'Contest Title *'}
               </label>
               <Input
-                placeholder="e.g., ICPC Regional Speedrun #4"
+                placeholder={contestType === 'practice' ? 'e.g., Dynamic Programming Masterclass' : 'e.g., ICPC Regional Speedrun #4'}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -276,8 +392,8 @@ export function CreateIcpcContestModal({
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value as any)}
                 options={[
-                  { value: 'public', label: 'Public (All Campus Students)' },
-                  { value: 'passcode', label: 'Passcode Protected (Classroom Only)' },
+                  { value: 'public', label: 'Public (All Campus Students - No Link Needed)' },
+                  { value: 'passcode', label: 'Private (Classroom Passcode & Link)' },
                 ]}
               />
             </div>
@@ -294,6 +410,36 @@ export function CreateIcpcContestModal({
               </div>
             )}
           </div>
+
+          {/* If Private Contest: Show Direct Room Link with 1-Click Copy */}
+          {visibility === 'passcode' && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs font-bold text-amber-300">
+                    Private Classroom Room Link
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyInviteLink}
+                  leftIcon={copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
+                  className="h-7 text-xs font-mono border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                >
+                  {copiedLink ? 'Copied Link!' : 'Copy Link'}
+                </Button>
+              </div>
+              <p className="text-[11px] font-mono text-slate-300 truncate bg-charcoal-900/60 p-2 rounded-xl border border-charcoal-700/50">
+                {typeof window !== 'undefined' ? `${window.location.origin}/icpc?passcode=${encodeURIComponent(passcode.trim() || 'ICPC2026')}` : '/icpc?passcode=...'}
+              </p>
+              <p className="text-[10px] text-amber-400/80">
+                Only students with this link or passcode will be able to enter and solve this contest.
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
@@ -315,7 +461,7 @@ export function CreateIcpcContestModal({
                 2. Problems (LeetCode Style) • {problems.length} Problem{problems.length > 1 ? 's' : ''}
               </h4>
               <p className="text-[11px] text-slate-400">
-                Define statements, constraints, and testcases for students to solve.
+                Define statements, constraints, testcases, and faculty official solutions.
               </p>
             </div>
             <Button
@@ -493,6 +639,61 @@ export function CreateIcpcContestModal({
                     />
                   </div>
                 </div>
+
+                {/* Faculty Solution & Editorial Section */}
+                <div className="p-3.5 rounded-2xl bg-cyan-500/5 dark:bg-charcoal-900 border border-cyan-500/20 space-y-3 pt-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        💡 Official Faculty Solution & Editorial
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-cyan-300 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20">
+                      {contestType === 'practice' ? 'Unlocked immediately in Practice' : 'Unlocks automatically after contest'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
+                        Solution Language
+                      </label>
+                      <Select
+                        value={p.solutionLanguage}
+                        onChange={(e) => handleProblemChange(idx, 'solutionLanguage', e.target.value)}
+                        options={[
+                          { value: 'cpp', label: 'C++ (Fast I/O)' },
+                          { value: 'python', label: 'Python 3' },
+                          { value: 'java', label: 'Java' },
+                        ]}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
+                        Editorial Explanation / Algorithmic Approach
+                      </label>
+                      <Input
+                        placeholder="e.g. Optimal O(N log N) interval sweep with prefix min..."
+                        value={p.solutionExplanation}
+                        onChange={(e) => handleProblemChange(idx, 'solutionExplanation', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
+                      Optimal Reference Code (Teacher's Solution)
+                    </label>
+                    <Textarea
+                      rows={5}
+                      className="font-mono text-xs text-cyan-300 bg-charcoal-950"
+                      placeholder={`// Provide the official reference code in ${p.solutionLanguage.toUpperCase()}...\n// This solution is displayed to students after the contest ends.`}
+                      value={p.solutionCode}
+                      onChange={(e) => handleProblemChange(idx, 'solutionCode', e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -510,7 +711,7 @@ export function CreateIcpcContestModal({
             leftIcon={<Sparkles className="w-4 h-4 text-cyan-300" />}
             className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold"
           >
-            Publish ICPC Contest Live
+            {contestType === 'practice' ? 'Publish Practice Round' : 'Publish Live ICPC Contest'}
           </Button>
         </div>
       </form>

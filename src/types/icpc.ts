@@ -15,9 +15,14 @@ export interface IcpcProblem {
   sampleInput: string;
   sampleOutput: string;
   explanation?: string;
+  solutionCode?: string;
+  solutionExplanation?: string;
+  solutionLanguage?: string;
+  isSolutionLocked?: boolean;
 }
 
 export type ContestStatus = 'live' | 'upcoming' | 'ended';
+export type ContestType = 'contest' | 'practice';
 
 export interface IcpcContest {
   id: string;
@@ -27,6 +32,7 @@ export interface IcpcContest {
   organizerRole?: string;
   college?: string;
   authorId?: string;
+  contestType?: ContestType;
   startTime: string;
   endTime: string;
   durationMinutes: number;
@@ -53,4 +59,11 @@ export interface ContestSubmission {
   memory: string;
   submittedAt: string;
   pointsEarned: number;
+}
+
+export interface StudentIcpcProgress {
+  streak: number;
+  lastSolvedDate?: string; // YYYY-MM-DD
+  totalPoints: number;
+  solvedProblemIds: string[];
 }

@@ -92,9 +92,29 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // Check anti-cheat timeline lock:
+      // If contest is live and has not ended yet, lock solutionCode to prevent leaks
+      const isContestLive = c.contestType !== 'practice' && (c.status === 'live' && new Date() < new Date(c.endTime));
+
+      const sanitizedProblems = activeProblems.map((p) => {
+        if (isContestLive) {
+          // Mask solution code & explanation while live contest is actively underway
+          const { solutionCode, solutionExplanation, ...rest } = p;
+          return {
+            ...rest,
+            isSolutionLocked: true,
+          };
+        }
+        return {
+          ...p,
+          isSolutionLocked: false,
+        };
+      });
+
       uniqueContests.push({
         ...c,
-        problems: activeProblems,
+        contestType: c.contestType || (c.status === 'ended' ? 'practice' : 'contest'),
+        problems: sanitizedProblems,
       });
     }
 
@@ -116,7 +136,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, subtitle, durationMinutes, problems, rules, visibility, passcode, college } = body;
+    const { title, subtitle, durationMinutes, problems, rules, visibility, passcode, college, contestType } = body;
 
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, error: 'Contest title is required.' }, { status: 400 });
@@ -126,22 +146,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Please add at least one problem to the contest.' }, { status: 400 });
     }
 
+    const isPractice = contestType === 'practice';
+    const computedStatus = isPractice ? 'ended' : 'live';
+
     const newContest: IcpcContest = {
       id: `icpc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
-      subtitle: subtitle?.trim() || 'Collegiate Programming Challenge • LeetCode Style',
+      subtitle: subtitle?.trim() || (isPractice ? 'Collegiate Practice Problem Set • LeetCode Style' : 'Collegiate Programming Challenge • LeetCode Style'),
       organizer: body.organizer || 'Verified Faculty Member',
       organizerRole: body.organizerRole || 'Faculty Mentor & Contest Director',
       college: college || 'Partner Collegiate Network',
+      contestType: isPractice ? 'practice' : 'contest',
       startTime: body.startTime || new Date().toISOString(),
-      endTime: body.endTime || new Date(Date.now() + (durationMinutes || 180) * 60000).toISOString(),
+      endTime: body.endTime || (isPractice ? new Date().toISOString() : new Date(Date.now() + (durationMinutes || 180) * 60000).toISOString()),
       durationMinutes: Number(durationMinutes) || 180,
-      status: 'live',
+      status: computedStatus,
       visibility: visibility === 'passcode' ? 'passcode' : 'public',
       passcode: passcode?.trim() || undefined,
-      bannerGradient: body.bannerGradient || 'from-cyan-600 via-indigo-600 to-violet-600',
+      bannerGradient: body.bannerGradient || (isPractice ? 'from-indigo-600 via-purple-600 to-pink-600' : 'from-cyan-600 via-indigo-600 to-violet-600'),
       participantCount: 1,
-      scoringType: 'leetcode',
+      scoringType: isPractice ? 'leetcode' : 'icpc',
       rules: Array.isArray(rules) && rules.length > 0 ? rules : [
         'Standard LeetCode / ICPC time limits apply.',
         'Submissions evaluated against hidden and sample testcases.',
@@ -162,6 +186,9 @@ export async function POST(request: NextRequest) {
         sampleInput: p.sampleInput?.trim() || '1\n5',
         sampleOutput: p.sampleOutput?.trim() || '5',
         explanation: p.explanation?.trim() || undefined,
+        solutionCode: p.solutionCode?.trim() || undefined,
+        solutionExplanation: p.solutionExplanation?.trim() || undefined,
+        solutionLanguage: p.solutionLanguage || 'cpp',
       })),
     };
 
