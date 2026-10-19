@@ -50,6 +50,7 @@ import {
   Settings,
   Eye,
   Terminal,
+  ShieldAlert,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
@@ -173,27 +174,28 @@ export default function TeacherDashboardPage() {
 
   const isAdmin = Boolean(
     profile?.role === 'admin' ||
-    user?.email === 'goyalmayank142@gmail.com' ||
+    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
     (typeof window !== 'undefined' &&
       (localStorage.getItem('linkora_admin_session') === 'true' ||
        localStorage.getItem('linkora_admin_role') === 'admin'))
   );
 
+  // Strict Faculty Check: Requires verified teacher status in DB or explicit admin bypass
   const isTeacher =
     !isRevoked &&
     !isPreviewingGateAsVisitor &&
     Boolean(
       profile?.role === 'teacher' ||
-      profile?.role === 'admin' ||
       Boolean(profile?.faculty_verified) ||
-      (isAdmin && adminBypassGranted && !isRevoked) ||
-      (profile?.role !== 'student' &&
-        typeof window !== 'undefined' &&
-        user?.id &&
-        localStorage.getItem(`linkora_faculty_verified_${user.id}`) === 'true')
+      (isAdmin && adminBypassGranted && !isRevoked)
     );
 
   const loadDashboardData = useCallback(async () => {
+    if (!isTeacher) {
+      setIsLoading(false);
+      return;
+    }
+
     if (!isSupabaseConfigured()) {
       setIsLoading(false);
       return;
@@ -641,8 +643,205 @@ export default function TeacherDashboardPage() {
 
 
 
+  // 1. Loading state while checking authentication and server revocation status
+  if (isCheckingStatus) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mx-auto animate-pulse">
+            <GraduationCap className="w-7 h-7" />
+          </div>
+          <p className="text-xs font-mono text-slate-400">Verifying Institutional Faculty Credentials...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated Visitor Gate
+  if (!user) {
+    return (
+      <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-elevated text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-charcoal-800 border border-charcoal-700 flex items-center justify-center text-amber-400 mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              Faculty Portal Locked
+            </div>
+            <h1 className="text-2xl font-black text-white">Institutional Sign-In Required</h1>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              The Faculty &amp; Academic Mentor Portal is restricted to verified educators, professors, and collegiate contest coordinators. Please sign in to verify your faculty credentials.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <Button
+              variant="primary"
+              size="md"
+              className="w-full text-xs font-bold bg-gradient-to-r from-brand-600 to-indigo-600"
+              onClick={() => openAuthModal('login')}
+              leftIcon={<KeyRound className="w-4 h-4" />}
+            >
+              Sign In to Verify Faculty Access
+            </Button>
+            <Link href="/problems" className="block">
+              <Button variant="outline" size="md" className="w-full text-xs">
+                Browse Public Faculty Problems →
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Authenticated User without Faculty Credentials Gate
+  if (!isTeacher) {
+    return (
+      <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-lg w-full p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-elevated space-y-6">
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500/20 via-brand-500/20 to-indigo-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400 mx-auto shadow-lg">
+              <GraduationCap className="w-8 h-8 text-emerald-400" />
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Educator Verification Required
+            </div>
+            <h1 className="text-2xl font-black text-white">Institutional Faculty Gate</h1>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Welcome, <strong className="text-white">{profile?.display_name || user.email}</strong>. This portal allows verified professors and mentors to author problem statements, evaluate student submissions, and host campus hackathons.
+            </p>
+          </div>
+
+          {/* Passcode Verification Form */}
+          <form onSubmit={handleVerifyFaculty} className="space-y-3 p-5 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                Institutional Faculty Passcode
+              </label>
+              <span className="text-[10px] font-mono text-slate-400">Issued by Campus Admin</span>
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="e.g. FAC-948210"
+                value={facultyCode}
+                onChange={(e) => setFacultyCode(e.target.value)}
+                className="font-mono uppercase text-xs bg-charcoal-900 border-charcoal-700"
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                isLoading={isVerifying}
+                className="shrink-0 text-xs font-bold"
+              >
+                Verify &amp; Enter
+              </Button>
+            </div>
+
+            {verifyError && (
+              <p className="text-xs text-rose-400 font-medium pt-1 flex items-start gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{verifyError}</span>
+              </p>
+            )}
+
+            {verifySuccess && (
+              <p className="text-xs text-emerald-400 font-medium pt-1 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{verifySuccess}</span>
+              </p>
+            )}
+          </form>
+
+          {/* Alternative: DigiLocker Verification */}
+          <div className="pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              className="w-full text-xs font-bold border-brand-500/30 text-brand-300 hover:bg-brand-500/10"
+              onClick={() => setIsDocVerifyOpen(true)}
+              leftIcon={<ShieldCheck className="w-4 h-4" />}
+            >
+              Verify via DigiLocker / Institutional Document
+            </Button>
+          </div>
+
+          <FacultyVerificationModal
+            isOpen={isDocVerifyOpen}
+            onClose={() => setIsDocVerifyOpen(false)}
+            onSuccess={async () => {
+              await refreshProfile();
+              await loadDashboardData();
+            }}
+          />
+
+          {/* Admin Bypass Option if logged in as Admin */}
+          {isAdmin && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Platform Administrator Detected
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200">
+                  Owner
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                You are signed in with platform administrator authority ({user.email}). You can enter with an administrative bypass to inspect student projects and hackathons.
+              </p>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => setAdminBypassGranted(true)}
+                className="w-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-charcoal-950"
+              >
+                ⚡ Enter Faculty Portal with Admin Bypass
+              </Button>
+            </div>
+          )}
+
+          <div className="text-center pt-2">
+            <Link href="/" className="text-xs text-slate-400 hover:text-white transition-colors">
+              ← Return to Student Campus Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Admin Faculty Bypass Indicator */}
+      {isAdmin && adminBypassGranted && (
+        <div className="mb-6 p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-300 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span><strong>Administrator Faculty Bypass Active</strong> — Viewing Faculty Dashboard as Platform Owner.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setAdminBypassGranted(false);
+              setIsPreviewingGateAsVisitor(true);
+            }}
+            className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 font-bold text-xs text-amber-200 transition-colors shrink-0 cursor-pointer"
+          >
+            🔒 Lock &amp; Test Gate
+          </button>
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>

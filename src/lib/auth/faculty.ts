@@ -17,44 +17,11 @@ export function isFacultyUser(
 ): boolean {
   if (!user) return false;
 
-  // 1. Explicit faculty or administrator roles in database
-  if (profile?.role === 'teacher' || profile?.role === 'admin') {
+  // 1. Explicit verified educator status in database
+  if (profile?.role === 'teacher' || Boolean(profile?.faculty_verified)) {
     return true;
   }
 
-  // 2. Profile has verified faculty flag
-  if (Boolean(profile?.faculty_verified)) {
-    return true;
-  }
-
-  // 3. Platform founder / owner
-  if (
-    user.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-    user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-  ) {
-    return true;
-  }
-
-  // 4. If the user's role in the database is explicitly 'student' and not verified, reject immediately.
-  // This prevents stray localStorage flags from elevating random student accounts on shared devices.
-  if (profile?.role === 'student') {
-    if (typeof window !== 'undefined') {
-      // Clean up any stale generic faculty flag if active user is a student
-      try {
-        localStorage.removeItem('teamforge_verified_faculty');
-      } catch (e) {}
-    }
-    return false;
-  }
-
-  // 5. Per-user verified token tied strictly to this user's unique ID
-  if (typeof window !== 'undefined') {
-    try {
-      if (localStorage.getItem(`linkora_faculty_verified_${user.id}`) === 'true') {
-        return true;
-      }
-    } catch (e) {}
-  }
-
+  // 2. Regular students and unverified accounts are strictly blocked
   return false;
 }
