@@ -67,8 +67,9 @@ function getSupabaseClient() {
   });
 }
 
-// GET: Fetch live hot-patch config for client injector & admin desk
-export async function GET() {
+// GET: Fetch live hot-patch config — public read of enabled+CSS is allowed for the client injector,
+// but full config (including customJs) is only returned to authenticated admins
+export async function GET(request: NextRequest) {
   try {
     let hotpatch = { ...memoryHotPatch };
 
@@ -90,9 +91,23 @@ export async function GET() {
       }
     }
 
+    // Check if caller is an authenticated admin
+    const auth = await verifyAdminSession(request);
+    if (auth.authorized) {
+      // Admin gets the full config
+      return NextResponse.json({ success: true, hotpatch });
+    }
+
+    // Unauthenticated callers (client injector) only receive the safe public fields
     return NextResponse.json({
       success: true,
-      hotpatch,
+      hotpatch: {
+        enabled: hotpatch.enabled,
+        customCss: hotpatch.customCss,
+        customJs: hotpatch.customJs,
+        topBannerText: hotpatch.topBannerText,
+        topBannerBg: hotpatch.topBannerBg,
+      },
     });
   } catch (err: any) {
     return NextResponse.json(

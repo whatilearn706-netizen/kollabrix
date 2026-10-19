@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   const key = url.searchParams.get('key');
   const action = url.searchParams.get('action'); // 'activate' | 'deactivate' | 'status'
 
-  if (key !== EMERGENCY_SECRET && key !== 'owner-admin') {
+  if (key !== EMERGENCY_SECRET) {
     return new Response(
       `<!DOCTYPE html>
       <html>
