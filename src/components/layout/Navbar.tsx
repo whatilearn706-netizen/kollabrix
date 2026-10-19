@@ -126,16 +126,6 @@ export function Navbar() {
       icon: Users,
     },
     {
-      href: '/leaderboard',
-      label: 'Leaderboard',
-      icon: Trophy,
-    },
-    {
-      href: '/deadlines',
-      label: 'Deadlines',
-      icon: Clock,
-    },
-    {
       href: '/my-projects',
       label: 'Workspace',
       icon: Briefcase,

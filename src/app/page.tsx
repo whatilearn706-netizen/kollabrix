@@ -71,6 +71,11 @@ const ProjectSparkGeneratorModal = dynamic(
   () => import('@/components/ai/ProjectSparkGeneratorModal').then((m) => m.ProjectSparkGeneratorModal),
   { ssr: false }
 );
+
+const WebsiteFeedbackSection = dynamic(
+  () => import('@/components/home/WebsiteFeedbackSection').then((m) => m.WebsiteFeedbackSection),
+  { ssr: false }
+);
 import {
   HomepageIntentConfig,
   HomepageShowcaseConfig,
@@ -1259,6 +1264,11 @@ export default function HomePage() {
         masterConfig.customSection.position === 'above_footer' && (
           <CustomAdminSpotlightSection config={masterConfig.customSection} />
         )}
+
+      {/* =========================================================================
+          SECTION 4.5: WRITE YOUR FEEDBACK (COMMUNITY HUB DIRECTLY IN WEBSITE)
+         ========================================================================= */}
+      <WebsiteFeedbackSection />
 
       {/* =========================================================================
           SECTION 5: BEGIN (CLOSING CALL TO ACTION)
