@@ -541,13 +541,20 @@ export default function HomePage() {
                     <span>Faculty Mentorship</span>
                   </div>
                   <span className="text-slate-300 dark:text-slate-700">•</span>
-                  <Link
-                    href="/feedback"
-                    className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 hover:underline font-bold"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
+                        window.openLinkoraFeedback();
+                      } else if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400 hover:underline font-bold cursor-pointer"
                   >
                     <MessageSquare className="w-4 h-4 text-violet-500 shrink-0" />
                     <span>Submit Feedback</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
 

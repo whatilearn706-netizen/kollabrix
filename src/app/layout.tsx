@@ -11,6 +11,7 @@ import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner
 import { GlobalHotPatchInjector } from '@/components/common/GlobalHotPatchInjector';
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -257,6 +258,7 @@ export default function RootLayout({
                 <main className="flex-1 flex flex-col">{children}</main>
                 <Footer />
                 <AuthModal />
+                <FeedbackModal />
               </MaintenanceModeGate>
             </RestrictedWordsGuard>
           </SiteThemeProvider>

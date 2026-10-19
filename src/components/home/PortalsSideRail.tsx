@@ -215,19 +215,25 @@ export function PortalsSideRail() {
     }
   };
 
-  const handleLinkClick = (href: string) => {
-    setIsSpotlightOpen(false);
+  const handleLinkClick = (href: string, e?: React.MouseEvent) => {
     if (href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      setIsSpotlightOpen(false);
       setTimeout(() => {
         triggerFeedbackModal();
-      }, 50);
+      }, 30);
       return;
     }
+    setIsSpotlightOpen(false);
   };
 
   const handleRailClick = (e: React.MouseEvent, href: string) => {
     if (href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
       e.preventDefault();
+      e.stopPropagation();
       triggerFeedbackModal();
       return;
     }
@@ -576,10 +582,10 @@ export function PortalsSideRail() {
 
               {/* 4. BOTTOM-RIGHT: Write Feedback (4:30 on Ring) */}
               <div className="absolute bottom-2 sm:bottom-4 right-1 sm:right-3 pointer-events-auto z-30 w-[190px] sm:w-[225px]">
-                <Link
-                  href="#feedback"
-                  onClick={() => handleLinkClick('#feedback')}
-                  className="group block p-2.5 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
+                <button
+                  type="button"
+                  onClick={(e) => handleLinkClick('#feedback', e)}
+                  className="group block w-full text-left p-2.5 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[7.5px] sm:text-[8px] font-mono font-black px-1.5 py-0.5 rounded-full border bg-cyan-500/25 text-cyan-200 border-cyan-400/50 backdrop-blur-md">
@@ -599,7 +605,7 @@ export function PortalsSideRail() {
                     <span>Write Feedback</span>
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -639,6 +645,38 @@ export function PortalsSideRail() {
             <div className="grid grid-cols-2 gap-2.5 max-h-[70vh] overflow-y-auto pr-1">
               {PORTAL_ITEMS.map((item) => {
                 const Icon = item.icon;
+                const isFeedback = item.id === 'feedback' || item.href === '#feedback';
+                if (isFeedback) {
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={(e) => handleLinkClick('#feedback', e)}
+                      className="p-3 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-cyan-400/30 hover:border-cyan-400 transition-all flex flex-col justify-between group active:scale-[0.98] text-left"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center border ${item.iconBgClass}`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <span className={`text-[7px] font-mono font-bold px-1 py-0.5 rounded ${item.badgeBgClass} ${item.badgeTextClass}`}>
+                            {item.id.toUpperCase()}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                          {item.title}
+                        </h4>
+                        <p className="text-[9px] text-slate-400 line-clamp-2 mt-0.5">
+                          {item.description}
+                        </p>
+                      </div>
+                      <div className="mt-2 pt-1 border-t border-white/10 flex items-center justify-between text-[9px] font-bold text-cyan-300 group-hover:text-cyan-200">
+                        <span>Write</span>
+                        <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </button>
+                  );
+                }
                 return (
                   <Link
                     key={item.id}

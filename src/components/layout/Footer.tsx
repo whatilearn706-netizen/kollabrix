@@ -84,9 +84,19 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/feedback" className="hover:opacity-100 transition-opacity font-medium text-violet-400">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
+                      window.openLinkoraFeedback();
+                    } else if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+                    }
+                  }}
+                  className="hover:opacity-100 transition-opacity font-medium text-violet-400 cursor-pointer text-left"
+                >
                   💬 Community Feedback
-                </Link>
+                </button>
               </li>
             </ul>
           </div>

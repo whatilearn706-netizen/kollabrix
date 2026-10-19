@@ -100,29 +100,62 @@ export async function POST(request: NextRequest) {
 
     const client = getSupabaseClient();
     if (client) {
-      // 1. Fetch current feedbacks list
-      const { data: existingRow } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', FEEDBACK_SETTINGS_KEY)
-        .maybeSingle();
+      try {
+        let currentList: UserFeedbackItem[] = [];
 
-      const currentList: UserFeedbackItem[] = Array.isArray(existingRow?.value)
-        ? existingRow.value
-        : [];
+        // 1. Fetch current feedbacks from site_master_control_config
+        const { data: masterRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'site_master_control_config')
+          .maybeSingle();
 
-      // Prepend newest feedback
-      const updatedList = [newFeedback, ...currentList].slice(0, 500); // keep up to 500 records
+        if (Array.isArray(masterRow?.value?.feedbacks)) {
+          currentList = masterRow.value.feedbacks;
+        }
 
-      // 2. Persist to platform_settings
-      const { error: upsertErr } = await client.from('platform_settings').upsert({
-        key: FEEDBACK_SETTINGS_KEY,
-        value: updatedList,
-        updated_at: new Date().toISOString(),
-      });
+        // 2. Also check dedicated row
+        const { data: dedicatedRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', FEEDBACK_SETTINGS_KEY)
+          .maybeSingle();
 
-      if (upsertErr) {
-        console.warn('Feedback save warning in platform_settings:', upsertErr);
+        if (Array.isArray(dedicatedRow?.value)) {
+          const map = new Map<string, UserFeedbackItem>();
+          for (const item of [...currentList, ...dedicatedRow.value]) {
+            if (item && item.id) map.set(item.id, item);
+          }
+          currentList = Array.from(map.values());
+        }
+
+        // Prepend newest feedback
+        const updatedList = [newFeedback, ...currentList.filter(f => f.id !== newFeedback.id)].slice(0, 500);
+
+        // 3. Persist directly into site_master_control_config (RLS guaranteed)
+        if (masterRow) {
+          const curVal = masterRow.value || {};
+          const { error: masterErr } = await client
+            .from('platform_settings')
+            .update({
+              value: { ...curVal, feedbacks: updatedList },
+              updated_at: new Date().toISOString(),
+            })
+            .eq('key', 'site_master_control_config');
+
+          if (masterErr) {
+            console.warn('Feedback save warning in site_master_control_config:', masterErr);
+          }
+        }
+
+        // 4. Also persist to dedicated row
+        await client.from('platform_settings').upsert({
+          key: FEEDBACK_SETTINGS_KEY,
+          value: updatedList,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('Feedback persist exception:', e);
       }
     }
 
@@ -147,14 +180,34 @@ export async function GET(request: NextRequest) {
     let feedbacks: UserFeedbackItem[] = [];
 
     if (client) {
-      const { data } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', FEEDBACK_SETTINGS_KEY)
-        .maybeSingle();
+      try {
+        const { data: masterRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'site_master_control_config')
+          .maybeSingle();
 
-      if (Array.isArray(data?.value)) {
-        feedbacks = data.value;
+        if (Array.isArray(masterRow?.value?.feedbacks)) {
+          feedbacks = masterRow.value.feedbacks;
+        }
+
+        const { data: dedicatedRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', FEEDBACK_SETTINGS_KEY)
+          .maybeSingle();
+
+        if (Array.isArray(dedicatedRow?.value)) {
+          const map = new Map<string, UserFeedbackItem>();
+          for (const item of [...feedbacks, ...dedicatedRow.value]) {
+            if (item && item.id) map.set(item.id, item);
+          }
+          feedbacks = Array.from(map.values());
+        }
+
+        feedbacks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      } catch (e) {
+        console.warn('Failed reading feedbacks:', e);
       }
     }
 

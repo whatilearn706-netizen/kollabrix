@@ -46,7 +46,6 @@ import {
   DailyStreakAutoPrompt,
 } from '@/components/gamification/DailyStreakHub';
 import { isFacultyUser } from '@/lib/auth/faculty';
-import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -243,6 +242,30 @@ export function Navbar() {
             )}
           </button>
 
+          {/* Direct 1-Tap Feedback Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
+                window.openLinkoraFeedback();
+              } else if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+              }
+            }}
+            style={{ borderRadius: theme.borderRadius }}
+            className={clsx(
+              'hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all border shadow-2xs cursor-pointer active:scale-95',
+              isNavbarDark
+                ? 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/50'
+                : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
+            )}
+            title="Write Feedback to Linkora Admin"
+            aria-label="Write Feedback"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-violet-500" />
+            <span>Feedback</span>
+          </button>
+
           {/* Daily Streak Flame Button */}
           <StreakNavbarButton onClick={() => setIsStreakModalOpen(true)} />
 
@@ -366,14 +389,21 @@ export function Navbar() {
                       <span>Faculty Portal</span>
                     </Link>
 
-                    <Link
-                      href="/feedback"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-violet-400 hover:bg-violet-500/10 transition-colors font-bold"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
+                          window.openLinkoraFeedback();
+                        } else if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+                        }
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-violet-400 hover:bg-violet-500/10 transition-colors font-bold text-left cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
-                      <span>Community Feedback</span>
-                    </Link>
+                      <span>Write Feedback</span>
+                    </button>
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
@@ -628,9 +658,6 @@ export function Navbar() {
 
     {/* Auto-Prompt for Day 0 First-Time Login */}
     <DailyStreakAutoPrompt />
-
-    {/* Platform-wide Write Your Feedback Modal (Opens from Command+K or Side Rail) */}
-    <FeedbackModal />
 
     {/* Floating Streak Celebration Toast */}
     <StreakCelebrationToast />

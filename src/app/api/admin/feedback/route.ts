@@ -21,6 +21,69 @@ function getSupabaseClient() {
   });
 }
 
+async function loadAllFeedbacks(client: any): Promise<UserFeedbackItem[]> {
+  let list: UserFeedbackItem[] = [];
+  try {
+    const { data: masterRow } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'site_master_control_config')
+      .maybeSingle();
+
+    if (Array.isArray(masterRow?.value?.feedbacks)) {
+      list = masterRow.value.feedbacks;
+    }
+
+    const { data: dedicatedRow } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', FEEDBACK_SETTINGS_KEY)
+      .maybeSingle();
+
+    if (Array.isArray(dedicatedRow?.value)) {
+      const map = new Map<string, UserFeedbackItem>();
+      for (const item of [...list, ...dedicatedRow.value]) {
+        if (item && item.id) map.set(item.id, item);
+      }
+      list = Array.from(map.values());
+    }
+
+    list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  } catch (err) {
+    console.warn('Error loading feedbacks:', err);
+  }
+  return list;
+}
+
+async function saveAllFeedbacks(client: any, list: UserFeedbackItem[]) {
+  try {
+    const { data: masterRow } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'site_master_control_config')
+      .maybeSingle();
+
+    if (masterRow) {
+      const curVal = masterRow.value || {};
+      await client
+        .from('platform_settings')
+        .update({
+          value: { ...curVal, feedbacks: list },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('key', 'site_master_control_config');
+    }
+
+    await client.from('platform_settings').upsert({
+      key: FEEDBACK_SETTINGS_KEY,
+      value: list,
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('Error saving feedbacks:', err);
+  }
+}
+
 // GET: Admin-only retrieval of all feedbacks
 export async function GET(request: NextRequest) {
   try {
@@ -33,15 +96,7 @@ export async function GET(request: NextRequest) {
     let feedbacks: UserFeedbackItem[] = [];
 
     if (client) {
-      const { data } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', FEEDBACK_SETTINGS_KEY)
-        .maybeSingle();
-
-      if (Array.isArray(data?.value)) {
-        feedbacks = data.value;
-      }
+      feedbacks = await loadAllFeedbacks(client);
     }
 
     return NextResponse.json({
@@ -87,15 +142,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
     }
 
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', FEEDBACK_SETTINGS_KEY)
-      .maybeSingle();
-
-    const currentList: UserFeedbackItem[] = Array.isArray(existingRow?.value)
-      ? existingRow.value
-      : [];
+    const currentList = await loadAllFeedbacks(client);
 
     const itemIndex = currentList.findIndex((item) => item.id === id);
     if (itemIndex === -1) {
@@ -110,11 +157,7 @@ export async function PATCH(request: NextRequest) {
 
     currentList[itemIndex] = updatedItem;
 
-    await client.from('platform_settings').upsert({
-      key: FEEDBACK_SETTINGS_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    await saveAllFeedbacks(client, currentList);
 
     return NextResponse.json({
       success: true,
@@ -153,23 +196,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
     }
 
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', FEEDBACK_SETTINGS_KEY)
-      .maybeSingle();
-
-    const currentList: UserFeedbackItem[] = Array.isArray(existingRow?.value)
-      ? existingRow.value
-      : [];
-
+    const currentList = await loadAllFeedbacks(client);
     const updatedList = currentList.filter((item) => item.id !== id);
 
-    await client.from('platform_settings').upsert({
-      key: FEEDBACK_SETTINGS_KEY,
-      value: updatedList,
-      updated_at: new Date().toISOString(),
-    });
+    await saveAllFeedbacks(client, updatedList);
 
     return NextResponse.json({
       success: true,
