@@ -45,7 +45,7 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
 
   try {
     // 0. Strict Server-side Admin Secret Check
-    const adminSecret = (process.env.ADMIN_PASSCODE || process.env.ADMIN_SECRET_KEY || 'CAMPUS2026').trim();
+    const adminSecret = (process.env.ADMIN_PASSCODE || process.env.ADMIN_SECRET_KEY || '').trim();
     const passcodeHeader = (request.headers.get('x-admin-passcode') || '').trim();
     if (adminSecret && passcodeHeader && passcodeHeader === adminSecret) {
       return {

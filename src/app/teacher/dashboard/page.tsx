@@ -483,10 +483,10 @@ export default function TeacherDashboardPage() {
       return;
     }
 
-    // Allow admin passcode bypass directly
-    if (code === 'ADMIN7X9' || cleanNoSpaces === 'ADMIN7X9') {
+    // Allow admin bypass only for verified administrators
+    if (isAdmin && (code === 'ADMIN7X9' || cleanNoSpaces === 'ADMIN7X9')) {
       setAdminBypassGranted(true);
-      setVerifySuccess('Admin access granted! Entering Faculty Dashboard...');
+      setVerifySuccess('Admin access verified! Entering Faculty Dashboard...');
       return;
     }
 
