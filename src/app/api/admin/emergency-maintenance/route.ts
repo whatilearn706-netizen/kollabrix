@@ -9,6 +9,8 @@ export const runtime = 'nodejs';
 
 const EMERGENCY_SECRET = 'linkora-sec-emergency-2026';
 
+const MASTER_KEY = 'site_master_control_config';
+
 function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
       const { data } = await client
         .from('platform_settings')
         .select('value')
-        .eq('key', 'master_control_config_v1')
+        .eq('key', MASTER_KEY)
         .maybeSingle();
 
       if (data?.value) {
@@ -58,28 +60,41 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  let newMode: 'maintenance' | 'public' = currentConfig.maintenance.mode === 'maintenance' ? 'maintenance' : 'public';
+  let newMode: 'maintenance' | 'public' = currentConfig.maintenance?.mode === 'maintenance' ? 'maintenance' : 'public';
   let message = '';
 
   if (action === 'activate') {
     newMode = 'maintenance';
-    currentConfig.maintenance.mode = 'maintenance';
-    currentConfig.maintenance.maintenanceHeadline = currentConfig.maintenance.maintenanceHeadline || 'Campus Platform Upgrade in Progress';
-    currentConfig.maintenance.maintenanceMessage = currentConfig.maintenance.maintenanceMessage || 'Linkora is currently undergoing scheduled platform upgrades to optimize high-performance collegiate services. We will be back online shortly.';
+    currentConfig.maintenance = {
+      ...(currentConfig.maintenance || DEFAULT_MASTER_CONTROL_CONFIG.maintenance),
+      mode: 'maintenance',
+      maintenanceHeadline: currentConfig.maintenance?.maintenanceHeadline || 'Campus Platform Upgrade in Progress',
+      maintenanceMessage: currentConfig.maintenance?.maintenanceMessage || 'Linkora is currently undergoing scheduled platform upgrades to optimize high-performance collegiate services. We will be back online shortly.',
+    };
     message = '🚨 EMERGENCY MAINTENANCE IS NOW ACTIVE! Your website is safely hidden from public visitors.';
   } else if (action === 'deactivate') {
     newMode = 'public';
-    currentConfig.maintenance.mode = 'public';
+    currentConfig.maintenance = {
+      ...(currentConfig.maintenance || DEFAULT_MASTER_CONTROL_CONFIG.maintenance),
+      mode: 'public',
+    };
     message = '✅ MAINTENANCE DEACTIVATED! Linkora is now live and accessible to all students.';
   }
 
   if (client && (action === 'activate' || action === 'deactivate')) {
     try {
-      await client.from('platform_settings').upsert({
-        key: 'master_control_config_v1',
-        value: currentConfig,
-        updated_at: new Date().toISOString(),
-      });
+      await Promise.allSettled([
+        client.from('platform_settings').upsert({
+          key: MASTER_KEY,
+          value: currentConfig,
+          updated_at: new Date().toISOString(),
+        }),
+        client.from('platform_settings').upsert({
+          key: 'master_control_config_v1',
+          value: currentConfig,
+          updated_at: new Date().toISOString(),
+        }),
+      ]);
     } catch (e) {
       console.warn('Emergency maintenance write error:', e);
     }
@@ -138,6 +153,10 @@ export async function GET(request: NextRequest) {
 
   return new Response(html, {
     status: 200,
-    headers: { 'Content-Type': 'text/html' },
+    headers: {
+      'Content-Type': 'text/html',
+      'Set-Cookie': `linkora_master_control_config=${encodeURIComponent(JSON.stringify(currentConfig))}; Path=/; Max-Age=31536000; SameSite=Lax`,
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
   });
 }

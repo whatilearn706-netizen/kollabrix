@@ -42,9 +42,9 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
 
     const checkMode = async () => {
       try {
-        const res = await fetch('/api/master-control', {
+        const res = await fetch(`/api/master-control?_t=${Date.now()}`, {
           cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' },
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
         });
         if (res.ok) {
           const data = await res.json();
