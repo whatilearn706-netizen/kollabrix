@@ -76,15 +76,28 @@ export async function GET(request: NextRequest) {
     const client = getSupabaseClient();
     if (client) {
       try {
-        const { data } = await client
+        // 1. Try reading from dedicated linkora_hotpatch_v1 row
+        const { data: dedicatedRow } = await client
           .from('platform_settings')
           .select('value')
           .eq('key', 'linkora_hotpatch_v1')
           .maybeSingle();
 
-        if (data?.value) {
-          hotpatch = { ...DEFAULT_HOTPATCH, ...data.value };
+        if (dedicatedRow?.value && (dedicatedRow.value.customCss || dedicatedRow.value.customJs)) {
+          hotpatch = { ...DEFAULT_HOTPATCH, ...dedicatedRow.value };
           memoryHotPatch = hotpatch;
+        } else {
+          // 2. Read from persistent site_master_control_config.value.hotpatch
+          const { data: masterRow } = await client
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'site_master_control_config')
+            .maybeSingle();
+
+          if (masterRow?.value?.hotpatch) {
+            hotpatch = { ...DEFAULT_HOTPATCH, ...masterRow.value.hotpatch };
+            memoryHotPatch = hotpatch;
+          }
         }
       } catch (e) {
         console.warn('Could not read linkora_hotpatch_v1 from Supabase:', e);
@@ -156,6 +169,25 @@ export async function POST(request: NextRequest) {
     const client = getSupabaseClient();
     if (client) {
       try {
+        // 1. Persist directly into existing site_master_control_config row (guaranteed to succeed across all environments)
+        const { data: masterRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'site_master_control_config')
+          .maybeSingle();
+
+        if (masterRow) {
+          const currentVal = masterRow.value || {};
+          await client
+            .from('platform_settings')
+            .update({
+              value: { ...currentVal, hotpatch: updated },
+              updated_at: new Date().toISOString(),
+            })
+            .eq('key', 'site_master_control_config');
+        }
+
+        // 2. Also attempt dedicated row upsert if permissions allow
         await client.from('platform_settings').upsert({
           key: 'linkora_hotpatch_v1',
           value: updated,

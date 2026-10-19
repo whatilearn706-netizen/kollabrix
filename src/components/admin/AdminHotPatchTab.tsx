@@ -42,10 +42,27 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
   const [lastUpdated, setLastUpdated] = useState('');
 
   useEffect(() => {
+    // 1. Instant 0ms load from localStorage so text is never empty on refresh
+    try {
+      const cached = localStorage.getItem('linkora_hotpatch_v1');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed) {
+          setEnabled(parsed.enabled ?? true);
+          if (parsed.customCss) setCustomCss(parsed.customCss);
+          if (parsed.customJs) setCustomJs(parsed.customJs);
+          if (parsed.topBannerText) setTopBannerText(parsed.topBannerText);
+          if (parsed.topBannerBg) setTopBannerBg(parsed.topBannerBg);
+          if (parsed.updatedAt) setLastUpdated(new Date(parsed.updatedAt).toLocaleTimeString());
+        }
+      }
+    } catch (e) {}
+
+    // 2. Authoritative server & database sync
     async function loadHotpatch() {
       try {
         const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || 'admin7x9' : 'admin7x9';
-        const res = await fetch('/api/admin/hotpatch', {
+        const res = await fetch(`/api/admin/hotpatch?_t=${Date.now()}`, {
           headers: {
             'x-admin-passcode': savedPasscode,
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -54,13 +71,23 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
         const data = await res.json();
         if (data.success && data.hotpatch) {
           setEnabled(data.hotpatch.enabled ?? true);
-          setCustomCss(data.hotpatch.customCss || '');
-          setCustomJs(data.hotpatch.customJs || '');
-          setTopBannerText(data.hotpatch.topBannerText || '');
-          setTopBannerBg(data.hotpatch.topBannerBg || '#0284c7');
+          // Only update editor if server has code or localStorage was empty
+          if (data.hotpatch.customCss || data.hotpatch.customJs || !localStorage.getItem('linkora_hotpatch_v1')) {
+            setCustomCss(data.hotpatch.customCss || '');
+            setCustomJs(data.hotpatch.customJs || '');
+          }
+          if (data.hotpatch.topBannerText !== undefined) {
+            setTopBannerText(data.hotpatch.topBannerText || '');
+          }
+          if (data.hotpatch.topBannerBg) {
+            setTopBannerBg(data.hotpatch.topBannerBg || '#0284c7');
+          }
           if (data.hotpatch.updatedAt) {
             setLastUpdated(new Date(data.hotpatch.updatedAt).toLocaleTimeString());
           }
+          try {
+            localStorage.setItem('linkora_hotpatch_v1', JSON.stringify(data.hotpatch));
+          } catch (e) {}
         }
       } catch (err) {
         console.warn('Could not load hotpatch:', err);
