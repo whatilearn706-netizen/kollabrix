@@ -3,6 +3,8 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 
+import { cleanHotPatchCode } from '@/lib/security/hotpatchCleaner';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
@@ -43,7 +45,6 @@ function auditHotPatchSafety(css: string, js: string): { safe: boolean; reason?:
     { pattern: /localStorage\s*\[\s*['"`]sb-/i, reason: 'Accessing Supabase authentication tokens is prohibited.' },
     { pattern: /sessionStorage\s*\[\s*['"`]sb-/i, reason: 'Accessing Supabase session tokens is prohibited.' },
     { pattern: /navigator\.sendBeacon/i, reason: 'Unauthorized background data beaconing is prohibited.' },
-    { pattern: /<script[\s>]/i, reason: 'Raw script tag injection is prohibited. Use standard JavaScript syntax.' },
     { pattern: /webhook|discord\.com\/api\/webhooks|requestcatcher|pipedream|hookbin/i, reason: 'Unverified external webhook exfiltration endpoints are blocked.' },
     { pattern: /coinhive|cryptonight|miner/i, reason: 'Cryptocurrency mining scripts are strictly prohibited.' },
   ];
@@ -121,8 +122,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Hotpatch data required' }, { status: 400 });
     }
 
-    const customCss = hotpatch.customCss || '';
-    const customJs = hotpatch.customJs || '';
+    const rawCss = hotpatch.customCss || '';
+    const rawJs = hotpatch.customJs || '';
+
+    // Auto-clean markdown code blocks and HTML wrapper tags from Claude/ChatGPT
+    const customCss = cleanHotPatchCode(rawCss, 'css');
+    const customJs = cleanHotPatchCode(rawJs, 'js');
 
     // 2. SafeGuard Security Shield Audit
     const safety = auditHotPatchSafety(customCss, customJs);

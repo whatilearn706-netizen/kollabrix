@@ -1,68 +1,88 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { HotPatchConfig } from '@/app/api/admin/hotpatch/route';
+import { cleanHotPatchCode } from '@/lib/security/hotpatchCleaner';
 
 export function GlobalHotPatchInjector() {
   const [hotpatch, setHotpatch] = useState<HotPatchConfig | null>(null);
-
-  const executedJsRef = React.useRef<string>('');
+  const executedJsRef = useRef<string>('');
+  const pathname = usePathname();
 
   const applyPatch = (patch: HotPatchConfig) => {
     if (typeof document === 'undefined') return;
 
-    // Apply or remove Custom CSS
+    // Clean any Claude / ChatGPT markdown blocks or wrapping <style>/<script> tags
+    const cleanCss = cleanHotPatchCode(patch.customCss || '', 'css');
+    const cleanJs = cleanHotPatchCode(patch.customJs || '', 'js');
+
+    // 1. Apply or remove Custom CSS
     let styleTag = document.getElementById('linkora-live-hotpatch-css') as HTMLStyleElement | null;
-    if (patch.enabled && patch.customCss && patch.customCss.trim()) {
+    if (patch.enabled && cleanCss) {
       if (!styleTag) {
         styleTag = document.createElement('style');
         styleTag.id = 'linkora-live-hotpatch-css';
         document.head.appendChild(styleTag);
+      } else {
+        // Re-append to bottom of head to maintain cascade priority over other styles
+        document.head.appendChild(styleTag);
       }
-      styleTag.textContent = patch.customCss;
+      styleTag.textContent = cleanCss;
     } else if (styleTag) {
       styleTag.remove();
     }
 
-    // Execute Custom JS safely in sandboxed closure with SafeGuard filter
-    if (patch.enabled && patch.customJs && patch.customJs.trim()) {
-      if (executedJsRef.current === patch.customJs.trim()) {
-        return;
-      }
-
+    // 2. Execute Custom JS safely in sandboxed closure with SafeGuard filter
+    if (patch.enabled && cleanJs) {
       // Prohibit critical security hazards from executing in the browser
-      const hasCookieExploit = /document\.cookie/i.test(patch.customJs);
+      const hasCookieExploit = /document\.cookie/i.test(cleanJs);
       const hasTokenTheft =
-        /localStorage\s*\[\s*['"`]sb-/i.test(patch.customJs) ||
-        /sessionStorage\s*\[\s*['"`]sb-/i.test(patch.customJs);
-      const hasBeacon = /navigator\.sendBeacon/i.test(patch.customJs);
+        /localStorage\s*\[\s*['"`]sb-/i.test(cleanJs) ||
+        /sessionStorage\s*\[\s*['"`]sb-/i.test(cleanJs);
+      const hasBeacon = /navigator\.sendBeacon/i.test(cleanJs);
 
       if (hasCookieExploit || hasTokenTheft || hasBeacon) {
         console.warn('🛡️ [Linkora SafeGuard] Blocked untrusted script attempting cookie or token access.');
         return;
       }
 
-      try {
-        executedJsRef.current = patch.customJs.trim();
-        // Safe evaluation in isolated function scope
-        const runner = new Function(
-          'window',
-          'document',
+      const executeScript = () => {
+        try {
+          const runner = new Function(
+            'window',
+            'document',
+            `
+            "use strict";
+            try {
+              ${cleanJs}
+            } catch (runtimeErr) {
+              console.warn("[Linkora SafeGuard] Hot-patch runtime error handled safely:", runtimeErr);
+            }
           `
-          "use strict";
-          try {
-            ${patch.customJs}
-          } catch (runtimeErr) {
-            console.warn("[Linkora SafeGuard] Hot-patch runtime error handled safely:", runtimeErr);
-          }
-        `
-        );
-        runner(window, document);
-      } catch (jsErr) {
-        console.warn('Hotpatch script compilation error:', jsErr);
+          );
+          runner(window, document);
+        } catch (jsErr) {
+          console.warn('Hotpatch script compilation error:', jsErr);
+        }
+      };
+
+      // Run immediately
+      executeScript();
+
+      // Also run after a short micro-delay to catch dynamically mounted React components
+      if (typeof window !== 'undefined') {
+        setTimeout(executeScript, 120);
       }
     }
   };
+
+  // Re-apply styles and scripts on route transitions (SPA navigation)
+  useEffect(() => {
+    if (hotpatch) {
+      applyPatch(hotpatch);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     // 1. Load cached hotpatch from localStorage for instant 0ms apply
@@ -98,14 +118,29 @@ export function GlobalHotPatchInjector() {
 
     fetchPatch();
 
-    // Listen for live update events from Admin Control Center
+    // 3. Listen for live update events from current window
     const handleUpdate = () => {
       executedJsRef.current = '';
       fetchPatch();
     };
     window.addEventListener('linkora_hotpatch_updated', handleUpdate);
+
+    // 4. Listen for storage updates from OTHER browser tabs
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'linkora_hotpatch_v1' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          executedJsRef.current = '';
+          applyPatch(parsed);
+          setHotpatch(parsed);
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
     return () => {
       window.removeEventListener('linkora_hotpatch_updated', handleUpdate);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
