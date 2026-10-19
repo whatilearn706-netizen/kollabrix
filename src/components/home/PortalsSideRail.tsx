@@ -82,7 +82,7 @@ const PORTAL_ITEMS: PortalItem[] = [
   },
   {
     id: 'feedback',
-    title: 'Write Feedback',
+    title: 'Community Feedback',
     href: '#feedback',
     icon: MessageSquare,
     themeColor: 'cyan',
@@ -92,7 +92,7 @@ const PORTAL_ITEMS: PortalItem[] = [
     badgeBgClass: 'bg-cyan-500/25 border-cyan-400/50',
     badgeTextClass: 'text-cyan-200',
     description: 'Direct message to Admin Control Center with ideas & bug reports.',
-    ctaText: 'Write Feedback',
+    ctaText: 'Community Feedback',
     ctaClass: 'text-cyan-300',
   },
   {
@@ -208,10 +208,12 @@ export function PortalsSideRail() {
   }, [isSpotlightOpen]);
 
   const triggerFeedbackModal = () => {
-    if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
-      window.openLinkoraFeedback();
-    } else if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
+      if (typeof window.openLinkoraFeedback === 'function') {
+        window.openLinkoraFeedback();
+      }
       window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+      window.dispatchEvent(new CustomEvent('linkora-feedback'));
     }
   };
 
@@ -222,9 +224,7 @@ export function PortalsSideRail() {
         e.stopPropagation();
       }
       setIsSpotlightOpen(false);
-      setTimeout(() => {
-        triggerFeedbackModal();
-      }, 30);
+      triggerFeedbackModal();
       return;
     }
     setIsSpotlightOpen(false);
@@ -267,11 +267,35 @@ export function PortalsSideRail() {
             >
               {PORTAL_ITEMS.map((item, idx) => {
                 const Icon = item.icon;
+                const isFeedback = item.id === 'feedback' || item.href === '#feedback';
+                if (isFeedback) {
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        triggerFeedbackModal();
+                      }}
+                      className="snap-start w-full h-[38px] flex items-center gap-2 px-1.5 text-left cursor-pointer transition-all duration-200 group rounded-lg hover:bg-slate-500/10 dark:hover:bg-white/10 active:scale-[0.98]"
+                      style={{ animationDelay: `${idx * 0.08}s` }}
+                      title="Open Community Feedback"
+                    >
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-all duration-200 ${item.iconBgClass} group-hover:scale-110`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-xs sm:text-[13px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors truncate">
+                        {item.title}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ml-auto shrink-0" />
+                    </button>
+                  );
+                }
                 return (
                   <Link
                     key={item.id}
                     href={item.href}
-                    onClick={(e) => handleRailClick(e, item.href)}
                     className="snap-start w-full h-[38px] flex items-center gap-2 px-1.5 text-left cursor-pointer transition-all duration-200 group rounded-lg hover:bg-slate-500/10 dark:hover:bg-white/10 active:scale-[0.98]"
                     style={{ animationDelay: `${idx * 0.08}s` }}
                     title={`Open ${item.title}`}
@@ -491,6 +515,15 @@ export function PortalsSideRail() {
                   <GraduationCap className="w-2.5 h-2.5" />
                   <span>Faculty</span>
                 </Link>
+                <button
+                  type="button"
+                  onClick={(e) => handleLinkClick('#feedback', e)}
+                  className="px-2 py-1 rounded-lg text-[9px] font-bold text-cyan-300 hover:bg-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                  title="Community Feedback"
+                >
+                  <MessageSquare className="w-2.5 h-2.5" />
+                  <span>Feedback</span>
+                </button>
               </div>
             </div>
 
@@ -596,13 +629,13 @@ export function PortalsSideRail() {
                     </div>
                   </div>
                   <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-cyan-300 transition-colors drop-shadow-md">
-                    Write Feedback
+                    Community Feedback
                   </h4>
                   <p className="text-[9.5px] sm:text-[10px] text-slate-200 mt-0.5 line-clamp-2 font-medium leading-tight">
                     Direct message to Admin Control Center with ideas & bug reports.
                   </p>
                   <div className="mt-1.5 pt-1 border-t border-white/15 flex items-center justify-between text-[10px] font-bold text-cyan-300">
-                    <span>Write Feedback</span>
+                    <span>Community Feedback</span>
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </button>
@@ -671,7 +704,7 @@ export function PortalsSideRail() {
                         </p>
                       </div>
                       <div className="mt-2 pt-1 border-t border-white/10 flex items-center justify-between text-[9px] font-bold text-cyan-300 group-hover:text-cyan-200">
-                        <span>Write</span>
+                        <span>Feedback</span>
                         <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </button>

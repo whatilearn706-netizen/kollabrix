@@ -242,30 +242,6 @@ export function Navbar() {
             )}
           </button>
 
-          {/* Direct 1-Tap Feedback Button */}
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
-                window.openLinkoraFeedback();
-              } else if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
-              }
-            }}
-            style={{ borderRadius: theme.borderRadius }}
-            className={clsx(
-              'hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all border shadow-2xs cursor-pointer active:scale-95',
-              isNavbarDark
-                ? 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/50'
-                : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
-            )}
-            title="Write Feedback to Linkora Admin"
-            aria-label="Write Feedback"
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-violet-500" />
-            <span>Feedback</span>
-          </button>
-
           {/* Daily Streak Flame Button */}
           <StreakNavbarButton onClick={() => setIsStreakModalOpen(true)} />
 
@@ -402,7 +378,7 @@ export function Navbar() {
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-violet-400 hover:bg-violet-500/10 transition-colors font-bold text-left cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
-                      <span>Write Feedback</span>
+                      <span>Community Feedback</span>
                     </button>
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
@@ -563,7 +539,7 @@ export function Navbar() {
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 text-violet-400" />
-              <span>Submit Feedback</span>
+              <span>Community Feedback</span>
             </button>
 
             <Link
