@@ -46,6 +46,7 @@ import {
   DailyStreakAutoPrompt,
 } from '@/components/gamification/DailyStreakHub';
 import { isFacultyUser } from '@/lib/auth/faculty';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -519,15 +520,21 @@ export function Navbar() {
               <span>AI Spark Studio</span>
             </Link>
 
-            <Link
-              href="/feedback"
-              prefetch={true}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
+                  window.openLinkoraFeedback();
+                } else if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+                }
+              }}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 text-violet-400" />
               <span>Submit Feedback</span>
-            </Link>
+            </button>
 
             <Link
               href="/teacher/dashboard"
@@ -621,6 +628,9 @@ export function Navbar() {
 
     {/* Auto-Prompt for Day 0 First-Time Login */}
     <DailyStreakAutoPrompt />
+
+    {/* Platform-wide Write Your Feedback Modal (Opens from Command+K or Side Rail) */}
+    <FeedbackModal />
 
     {/* Floating Streak Celebration Toast */}
     <StreakCelebrationToast />

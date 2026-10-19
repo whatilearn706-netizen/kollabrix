@@ -83,7 +83,7 @@ const PORTAL_ITEMS: PortalItem[] = [
   {
     id: 'feedback',
     title: 'Write Feedback',
-    href: '/#feedback-section',
+    href: '#feedback',
     icon: MessageSquare,
     themeColor: 'cyan',
     iconBgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
@@ -207,27 +207,29 @@ export function PortalsSideRail() {
     };
   }, [isSpotlightOpen]);
 
+  const triggerFeedbackModal = () => {
+    if (typeof window !== 'undefined' && window.openLinkoraFeedback) {
+      window.openLinkoraFeedback();
+    } else if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-linkora-feedback'));
+    }
+  };
+
   const handleLinkClick = (href: string) => {
     setIsSpotlightOpen(false);
-    if (href.startsWith('/#') && typeof window !== 'undefined' && window.location.pathname === '/') {
-      const id = href.replace('/#', '');
-      const el = document.getElementById(id);
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth' });
-        }, 60);
-      }
+    if (href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
+      setTimeout(() => {
+        triggerFeedbackModal();
+      }, 50);
+      return;
     }
   };
 
   const handleRailClick = (e: React.MouseEvent, href: string) => {
-    if (href.startsWith('/#') && typeof window !== 'undefined' && window.location.pathname === '/') {
+    if (href === '#feedback' || href === '/#feedback-section' || href.includes('feedback')) {
       e.preventDefault();
-      const id = href.replace('/#', '');
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+      triggerFeedbackModal();
+      return;
     }
   };
 
@@ -575,8 +577,8 @@ export function PortalsSideRail() {
               {/* 4. BOTTOM-RIGHT: Write Feedback (4:30 on Ring) */}
               <div className="absolute bottom-2 sm:bottom-4 right-1 sm:right-3 pointer-events-auto z-30 w-[190px] sm:w-[225px]">
                 <Link
-                  href="/#feedback-section"
-                  onClick={() => handleLinkClick('/#feedback-section')}
+                  href="#feedback"
+                  onClick={() => handleLinkClick('#feedback')}
                   className="group block p-2.5 sm:p-3.5 rounded-2xl bg-white/10 dark:bg-white/[0.08] hover:bg-white/15 dark:hover:bg-white/[0.12] border border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)] backdrop-blur-2xl transition-all duration-300 hover:scale-105"
                 >
                   <div className="flex items-center justify-between mb-1">
