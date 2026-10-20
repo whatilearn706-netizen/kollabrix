@@ -97,10 +97,48 @@ export default function HomePage() {
   const [quickPasscode, setQuickPasscode] = useState('');
   const [oauthErrorNotice, setOauthErrorNotice] = useState<string | null>(null);
   const [isSparkModalOpen, setIsSparkModalOpen] = useState(false);
-  const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(DEFAULT_HOMEPAGE_INTENT_CONFIG);
-  const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(DEFAULT_HOMEPAGE_SHOWCASE_CONFIG);
-  const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionToggles>(DEFAULT_MASTER_CONTROL_CONFIG.sections);
-  const [masterConfig, setMasterConfig] = useState<MasterControlConfig>(DEFAULT_MASTER_CONTROL_CONFIG);
+  const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const localI = localStorage.getItem('linkora_intent_config_v1');
+        if (localI) return JSON.parse(localI);
+      } catch (e) {}
+    }
+    return DEFAULT_HOMEPAGE_INTENT_CONFIG;
+  });
+  const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const localS = localStorage.getItem('linkora_showcase_config_v1');
+        if (localS) return JSON.parse(localS);
+      } catch (e) {}
+    }
+    return DEFAULT_HOMEPAGE_SHOWCASE_CONFIG;
+  });
+  const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionToggles>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedM = localStorage.getItem('linkora_master_control_v1');
+        if (cachedM) {
+          const parsed = JSON.parse(cachedM);
+          if (parsed?.sections) return { ...DEFAULT_MASTER_CONTROL_CONFIG.sections, ...parsed.sections };
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_MASTER_CONTROL_CONFIG.sections;
+  });
+  const [masterConfig, setMasterConfig] = useState<MasterControlConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedM = localStorage.getItem('linkora_master_control_v1');
+        if (cachedM) {
+          const parsed = JSON.parse(cachedM);
+          if (parsed) return { ...DEFAULT_MASTER_CONTROL_CONFIG, ...parsed };
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_MASTER_CONTROL_CONFIG;
+  });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
