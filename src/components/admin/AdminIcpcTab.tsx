@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Terminal,
@@ -20,17 +20,27 @@ import {
   ChevronUp,
   Flame,
   Radio,
+  Smartphone,
+  Maximize2,
+  ShieldAlert,
+  UserX,
+  UserCheck,
+  ShieldOff,
+  AlertTriangle,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
-import { IcpcContest, IcpcProblem } from '@/types/icpc';
+import { IcpcContest, IcpcProblem, ProctorIncident, ProctorLiveStats, ProctorViolationType } from '@/types/icpc';
 
 interface AdminIcpcTabProps {
   authToken?: string;
 }
 
 export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
+  const [icpcAdminView, setIcpcAdminView] = useState<'contests' | 'proctor'>('contests');
   const [contests, setContests] = useState<IcpcContest[]>([]);
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -44,6 +54,27 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const [isClearAllOpen, setIsClearAllOpen] = useState<boolean>(false);
   const [isResetOpen, setIsResetOpen] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Proctoring Watchdog State
+  const [proctorIncidents, setProctorIncidents] = useState<ProctorIncident[]>([]);
+  const [proctorStats, setProctorStats] = useState<ProctorLiveStats>({
+    activeSessions: 0,
+    totalViolations: 0,
+    phoneViolations: 0,
+    screenViolations: 0,
+    gazeViolations: 0,
+    pasteViolations: 0,
+    flaggedStudentsCount: 0,
+  });
+  const [isProctorLoading, setIsProctorLoading] = useState<boolean>(false);
+  const [proctorSearchQuery, setProctorSearchQuery] = useState<string>('');
+  const [proctorFilterViolation, setProctorFilterViolation] = useState<'all' | ProctorViolationType>('all');
+  const [autoRefreshProctor, setAutoRefreshProctor] = useState<boolean>(true);
+
+  // Suspension Modal State
+  const [suspendingIncident, setSuspendingIncident] = useState<ProctorIncident | null>(null);
+  const [isSuspending, setIsSuspending] = useState<boolean>(false);
+  const [suspendReason, setSuspendReason] = useState<string>('');
 
   const loadData = async () => {
     setIsLoading(true);
@@ -226,6 +257,137 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     }
   };
 
+  // Proctoring telemetry functions
+  const loadProctorData = useCallback(async () => {
+    setIsProctorLoading(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`/api/icpc/proctor?_t=${Date.now()}`, { headers });
+      const data = await res.json();
+      if (data.success) {
+        setProctorIncidents(data.incidents || []);
+        if (data.stats) setProctorStats(data.stats);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch proctor data:', err);
+    } finally {
+      setIsProctorLoading(false);
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    loadProctorData();
+    if (!autoRefreshProctor) return;
+    const interval = setInterval(() => {
+      loadProctorData();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [loadProctorData, autoRefreshProctor]);
+
+  const handleExecuteSuspend = async () => {
+    if (!suspendingIncident) return;
+    setIsSuspending(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/admin/users/moderate', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'suspend',
+          targetUserId: suspendingIncident.studentId,
+          reason:
+            suspendReason.trim() ||
+            `ICPC Anti-Cheat Proctoring Violation: ${suspendingIncident.violationType} (${suspendingIncident.details})`,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatusMessage({
+          type: 'success',
+          text: `Account "${suspendingIncident.studentName}" has been successfully suspended platform-wide.`,
+        });
+        setSuspendingIncident(null);
+        setSuspendReason('');
+        await loadProctorData();
+      } else {
+        setStatusMessage({
+          type: 'error',
+          text: data.error || 'Failed to suspend student account.',
+        });
+      }
+    } catch (err: any) {
+      setStatusMessage({
+        type: 'error',
+        text: err.message || 'Error suspending student account.',
+      });
+    } finally {
+      setIsSuspending(false);
+    }
+  };
+
+  const handleDismissIncident = async (id: string) => {
+    try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`/api/icpc/proctor?id=${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setProctorIncidents((prev) => prev.filter((i) => i.id !== id));
+      }
+    } catch {}
+  };
+
+  const handleClearAllProctorLogs = async () => {
+    if (!confirm('Are you sure you want to clear all logged proctoring alerts?')) return;
+    try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/icpc/proctor?all=true', {
+        method: 'DELETE',
+        headers,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setProctorIncidents([]);
+        setProctorStats({
+          activeSessions: 0,
+          totalViolations: 0,
+          phoneViolations: 0,
+          screenViolations: 0,
+          gazeViolations: 0,
+          pasteViolations: 0,
+          flaggedStudentsCount: 0,
+        });
+        setStatusMessage({
+          type: 'success',
+          text: 'All ICPC proctoring violation logs cleared successfully.',
+        });
+      }
+    } catch {}
+  };
+
+  const filteredProctorIncidents = proctorIncidents.filter((inc) => {
+    const matchSearch =
+      !proctorSearchQuery.trim() ||
+      inc.studentName.toLowerCase().includes(proctorSearchQuery.toLowerCase()) ||
+      (inc.studentEmail && inc.studentEmail.toLowerCase().includes(proctorSearchQuery.toLowerCase())) ||
+      (inc.college && inc.college.toLowerCase().includes(proctorSearchQuery.toLowerCase())) ||
+      inc.contestTitle.toLowerCase().includes(proctorSearchQuery.toLowerCase()) ||
+      (inc.problemTitle && inc.problemTitle.toLowerCase().includes(proctorSearchQuery.toLowerCase()));
+
+    const matchType =
+      proctorFilterViolation === 'all' || inc.violationType === proctorFilterViolation;
+
+    return matchSearch && matchType;
+  });
+
   const toggleExpand = (id: string) => {
     setExpandedContests((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -320,7 +482,46 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         </div>
       )}
 
-      {/* MASTER TOGGLE: LIVE VS OFFLINE */}
+      {/* Sub-Navigation: Contests vs Anti-Cheat Live Proctor Watchdog */}
+      <div className="flex items-center gap-2 border-b border-charcoal-800 pb-2 text-xs overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setIcpcAdminView('contests')}
+          className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            icpcAdminView === 'contests'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+              : 'text-slate-400 hover:text-white hover:bg-charcoal-850 border border-transparent'
+          }`}
+        >
+          <Code2 className="w-4 h-4 text-cyan-400" />
+          <span>Contests &amp; Problems ({contests.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIcpcAdminView('proctor');
+            loadProctorData();
+          }}
+          className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            icpcAdminView === 'proctor'
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-xs'
+              : 'text-slate-400 hover:text-white hover:bg-charcoal-850 border border-transparent'
+          }`}
+        >
+          <ShieldAlert className="w-4 h-4 text-rose-400" />
+          <span>🛡️ Anti-Cheat &amp; Live Proctor Watchdog</span>
+          {proctorStats.totalViolations > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-rose-600 text-white font-bold animate-pulse">
+              {proctorStats.totalViolations} Alerts
+            </span>
+          )}
+        </button>
+      </div>
+
+      {icpcAdminView === 'contests' && (
+        <div className="space-y-6">
+          {/* MASTER TOGGLE: LIVE VS OFFLINE */}
       <div className="p-5 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-elevated">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -541,6 +742,239 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           })
         )}
       </div>
+    </div>
+  )}
+
+      {/* ========================================================================= */}
+      {/* VIEW 2: ANTI-CHEAT & LIVE PROCTOR WATCHDOG */}
+      {/* ========================================================================= */}
+      {icpcAdminView === 'proctor' && (
+        <div className="space-y-6">
+          {/* Proctor Telemetry Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Total Incidents</span>
+              <div className="text-2xl font-black text-rose-400 mt-1">{proctorStats.totalViolations}</div>
+            </div>
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-rose-500/30 bg-rose-500/5">
+              <span className="text-[11px] font-mono text-rose-300 uppercase tracking-wider block">📱 Phone Caught</span>
+              <div className="text-2xl font-black text-rose-400 mt-1">{proctorStats.phoneViolations}</div>
+            </div>
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-amber-500/30 bg-amber-500/5">
+              <span className="text-[11px] font-mono text-amber-300 uppercase tracking-wider block">🖥️ Screen / Tab</span>
+              <div className="text-2xl font-black text-amber-400 mt-1">{proctorStats.screenViolations}</div>
+            </div>
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-yellow-500/30 bg-yellow-500/5">
+              <span className="text-[11px] font-mono text-yellow-300 uppercase tracking-wider block">👀 Gaze Deviation</span>
+              <div className="text-2xl font-black text-yellow-400 mt-1">{proctorStats.gazeViolations}</div>
+            </div>
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-purple-500/30 bg-purple-500/5">
+              <span className="text-[11px] font-mono text-purple-300 uppercase tracking-wider block">📋 AI Paste</span>
+              <div className="text-2xl font-black text-purple-400 mt-1">{proctorStats.pasteViolations}</div>
+            </div>
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">👤 Flagged Students</span>
+              <div className="text-2xl font-black text-white mt-1">{proctorStats.flaggedStudentsCount}</div>
+            </div>
+          </div>
+
+          {/* Controls & Filter Bar */}
+          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={proctorSearchQuery}
+                  onChange={(e) => setProctorSearchQuery(e.target.value)}
+                  placeholder="Search by student username, college, contest..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 font-mono"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setAutoRefreshProctor(!autoRefreshProctor)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-colors flex items-center gap-1.5 ${
+                    autoRefreshProctor
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                      : 'bg-charcoal-950 border-charcoal-800 text-slate-400'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${autoRefreshProctor ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                  <span>{autoRefreshProctor ? 'Live Sync (5s)' : 'Paused'}</span>
+                </button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={loadProctorData}
+                  isLoading={isProctorLoading}
+                  leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+                  className="border-charcoal-750 text-slate-300 text-xs font-bold"
+                >
+                  Refresh
+                </Button>
+
+                {proctorIncidents.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleClearAllProctorLogs}
+                    leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                    className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10 text-xs font-bold"
+                  >
+                    Clear All Logs
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Violation Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-charcoal-800/80 text-xs">
+              <span className="text-[11px] font-mono text-slate-500 shrink-0 uppercase">Filter:</span>
+              {[
+                { id: 'all', label: 'All Incidents' },
+                { id: 'PHONE_DETECTED', label: '📱 Phone Detected' },
+                { id: 'FULLSCREEN_EXIT', label: '🖥️ Screen Exited' },
+                { id: 'TAB_SWITCH', label: '🔀 Tab Switched' },
+                { id: 'GAZE_DEVIATION', label: '👀 Gaze Deviation' },
+                { id: 'SUSPICIOUS_PASTE', label: '📋 AI Paste' },
+              ].map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => setProctorFilterViolation(chip.id as any)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    proctorFilterViolation === chip.id
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
+                      : 'text-slate-400 hover:text-white bg-charcoal-950 border border-charcoal-800'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Incidents Stream */}
+          <div className="space-y-3">
+            {filteredProctorIncidents.length === 0 ? (
+              <div className="p-12 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-white">No Proctoring Incidents Found</h4>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  All active and recent ICPC arena contestant sessions are operating within verified academic standards. Violations will appear here live in real-time.
+                </p>
+              </div>
+            ) : (
+              filteredProctorIncidents.map((inc) => (
+                <div
+                  key={inc.id}
+                  className="p-4 sm:p-5 rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-charcoal-700 transition-all space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-charcoal-950 border border-charcoal-750 flex items-center justify-center text-rose-400 font-bold shrink-0">
+                        {inc.violationType === 'PHONE_DETECTED' ? (
+                          <Smartphone className="w-4 h-4 text-rose-400" />
+                        ) : inc.violationType === 'FULLSCREEN_EXIT' ? (
+                          <Maximize2 className="w-4 h-4 text-amber-400" />
+                        ) : inc.violationType === 'TAB_SWITCH' ? (
+                          <ExternalLink className="w-4 h-4 text-orange-400" />
+                        ) : inc.violationType === 'GAZE_DEVIATION' ? (
+                          <Eye className="w-4 h-4 text-yellow-400" />
+                        ) : (
+                          <Code2 className="w-4 h-4 text-purple-400" />
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm font-bold text-white">{inc.studentName}</h4>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            ({inc.studentId})
+                          </span>
+                          {inc.college && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-charcoal-800 text-slate-300 font-medium">
+                              {inc.college}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          Contest: <strong className="text-slate-200">{inc.contestTitle}</strong>
+                          {inc.problemTitle ? ` • Problem: ${inc.problemTitle}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                          inc.violationType === 'PHONE_DETECTED'
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            : inc.violationType === 'FULLSCREEN_EXIT'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : inc.violationType === 'TAB_SWITCH'
+                            ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+                            : inc.violationType === 'GAZE_DEVIATION'
+                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
+                            : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                        }`}
+                      >
+                        {inc.violationType.replace('_', ' ')}
+                      </span>
+
+                      <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded-md">
+                        Warning #{inc.warningCount}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 bg-charcoal-950 p-3 rounded-xl border border-charcoal-800/80 font-mono">
+                    {inc.details}
+                  </p>
+
+                  <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-xs text-slate-400">
+                    <span className="flex items-center gap-1 font-mono text-[11px]">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      <span>{new Date(inc.timestamp).toLocaleString()}</span>
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDismissIncident(inc.id)}
+                        className="text-slate-400 hover:text-white text-xs h-7"
+                      >
+                        Dismiss
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          setSuspendingIncident(inc);
+                          setSuspendReason(
+                            `ICPC Contest Anti-Cheat Proctoring Violation: ${inc.violationType} (${inc.details})`
+                          );
+                        }}
+                        className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs h-7"
+                        leftIcon={<UserX className="w-3.5 h-3.5" />}
+                      >
+                        Suspend Account
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Delete Problem Confirmation Modal */}
       <Modal
@@ -691,6 +1125,64 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           loadData();
         }}
       />
+
+      {/* Suspend Account Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(suspendingIncident)}
+        onClose={() => setSuspendingIncident(null)}
+        title="Suspend Student Account • Anti-Cheat Enforcement"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs leading-relaxed space-y-2">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <ShieldAlert className="w-4 h-4 text-rose-400" />
+              <span>Confirm Platform Suspension</span>
+            </div>
+            <p>
+              You are about to suspend <strong>{suspendingIncident?.studentName}</strong> (ID: {suspendingIncident?.studentId}) due to suspicious proctoring violations in contest: <em>{suspendingIncident?.contestTitle}</em>.
+            </p>
+            <p className="text-[11px] text-rose-300">
+              • The student will be immediately locked out of active ICPC contests and workspace sprints.
+              • Their account status will be set to Suspended platform-wide.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Official Suspension Reason
+            </label>
+            <textarea
+              rows={3}
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+              placeholder="State the anti-cheat proctoring infraction..."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSuspendingIncident(null)}
+              disabled={isSuspending}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleExecuteSuspend}
+              isLoading={isSuspending}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+              leftIcon={<UserX className="w-3.5 h-3.5" />}
+            >
+              Confirm Platform Suspension
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

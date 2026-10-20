@@ -68,3 +68,39 @@ export interface StudentIcpcProgress {
   totalPoints: number;
   solvedProblemIds: string[];
 }
+
+export type ProctorViolationType =
+  | 'FULLSCREEN_EXIT'
+  | 'TAB_SWITCH'
+  | 'PHONE_DETECTED'
+  | 'GAZE_DEVIATION'
+  | 'SUSPICIOUS_PASTE'
+  | 'FACE_MISSING';
+
+export interface ProctorIncident {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentEmail?: string;
+  college?: string;
+  contestId: string;
+  contestTitle: string;
+  problemId?: string;
+  problemTitle?: string;
+  violationType: ProctorViolationType;
+  details: string;
+  timestamp: string;
+  warningCount: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  resolved?: boolean;
+}
+
+export interface ProctorLiveStats {
+  activeSessions: number;
+  totalViolations: number;
+  phoneViolations: number;
+  screenViolations: number;
+  gazeViolations: number;
+  pasteViolations: number;
+  flaggedStudentsCount: number;
+}

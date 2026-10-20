@@ -36,6 +36,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { IcpcContest, IcpcProblem, ContestSubmission, StudentIcpcProgress } from '@/types/icpc';
+import { IcpcProctorGuard, checkSuspiciousPaste } from '@/components/icpc/IcpcProctorGuard';
 
 export default function IcpcCollegiateArenaPage() {
   const { user, profile } = useAuth();
@@ -686,14 +687,36 @@ export default function IcpcCollegiateArenaPage() {
           )}
         </section>
 
-        {/* LeetCode-style Problem Solver Modal */}
+        {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}
         {activeProblem && selectedContest && (
-          <Modal
-            isOpen={Boolean(activeProblem)}
-            onClose={() => setActiveProblem(null)}
-            title={`${selectedContest.title} • ${activeProblem.title}`}
-            maxWidth="4xl"
+          <IcpcProctorGuard
+            contestId={selectedContest.id}
+            contestTitle={selectedContest.title}
+            problemId={activeProblem.id}
+            problemTitle={activeProblem.title}
+            studentId={user?.id || 'anon'}
+            studentName={profile?.display_name || user?.user_metadata?.display_name || 'Contestant'}
+            studentEmail={user?.email}
+            college={(profile as any)?.college || 'Collegiate Builder'}
+            isActive={Boolean(activeProblem)}
+            onCloseArena={() => {
+              if (typeof document !== 'undefined' && document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+              }
+              setActiveProblem(null);
+            }}
           >
+            <Modal
+              isOpen={Boolean(activeProblem)}
+              onClose={() => {
+                if (typeof document !== 'undefined' && document.fullscreenElement) {
+                  document.exitFullscreen().catch(() => {});
+                }
+                setActiveProblem(null);
+              }}
+              title={`${selectedContest.title} • ${activeProblem.title}`}
+              maxWidth="4xl"
+            >
             <div className="space-y-4 max-h-[80vh] overflow-y-auto px-1 pr-2">
               {/* Problem Header Info */}
               <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-charcoal-800 border border-charcoal-700">
@@ -843,6 +866,30 @@ export default function IcpcCollegiateArenaPage() {
                       rows={9}
                       value={userCode}
                       onChange={(e) => setUserCode(e.target.value)}
+                      onPaste={(e) => {
+                        const pasted = e.clipboardData?.getData('text') || '';
+                        const check = checkSuspiciousPaste(pasted);
+                        if (check.isSuspicious) {
+                          fetch('/api/icpc/proctor', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              studentId: user?.id || 'anon',
+                              studentName: profile?.display_name || user?.user_metadata?.display_name || 'Contestant',
+                              studentEmail: user?.email,
+                              college: (profile as any)?.college || 'Collegiate Builder',
+                              contestId: selectedContest.id,
+                              contestTitle: selectedContest.title,
+                              problemId: activeProblem.id,
+                              problemTitle: activeProblem.title,
+                              violationType: 'SUSPICIOUS_PASTE',
+                              details: check.reason,
+                              severity: 'high',
+                            }),
+                          }).catch(() => {});
+                          alert(`⚠️ Proctoring Alert: Suspicious external code paste detected!\n${check.reason}\nThis incident has been logged for recruiter and admin review.`);
+                        }
+                      }}
                       placeholder={`// Write your ${selectedLanguage.toUpperCase()} algorithm solution here from scratch...\n// Read input from standard input and print the answer to standard output.`}
                       className="w-full p-3 font-mono text-xs bg-charcoal-950 text-cyan-200 border border-charcoal-700 rounded-2xl focus:outline-none focus:border-cyan-500 selection:bg-cyan-500/30"
                       spellCheck={false}
@@ -1016,7 +1063,8 @@ export default function IcpcCollegiateArenaPage() {
               })()}
             </div>
           </Modal>
-        )}
+        </IcpcProctorGuard>
+      )}
 
         {/* Host ICPC Contest Modal */}
         <CreateIcpcContestModal
