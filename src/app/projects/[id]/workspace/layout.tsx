@@ -246,21 +246,21 @@ export default function WorkspaceLayout({
           const isMem = (teamMems || []).some((m: any) => m.user_id === currentUserId);
 
           if (isLeader || isMem) {
-            // Build synthetic Project object
+            // Build synthetic Project object (Strictly categorized as Hackathon Sprint so it never leaks into Explore or Permanent Projects)
             const hackProj: Project = {
               id: teamData.id,
               owner_id: teamData.leader_id,
               title: teamData.team_name,
-              summary: teamData.description || `Hackathon Team Sprint: ${h?.title || 'Campus Hackathon'}`,
+              summary: `Hackathon Team Sprint: ${h?.title || 'Campus Hackathon'}${teamData.description ? ` — ${teamData.description}` : ''}`,
               description: `### Problem Statement\n${teamData.challenge?.title || teamData.description || 'Assigned Hackathon Challenge'}\n\n### Proposed Solution\nBuilding an innovative solution for ${h?.title || 'the campus hackathon sprint'}.\n\n### Tech Stack & Architecture\n${(h?.themes || ['Next.js', 'React', 'TypeScript', 'TailwindCSS']).join(', ')}\n\n### Who We Need\nCollegiate student builders collaborating during the hackathon sprint.`,
-              category: 'Web Development',
+              category: 'Hackathon Sprint' as any,
               difficulty: 'Intermediate',
               technologies: h?.themes || ['Next.js', 'React', 'TypeScript'],
               required_skills: h?.themes || ['Rapid Prototyping', 'Full-Stack'],
               desired_roles: ['Project Lead', 'Frontend Developer', 'Backend Developer', 'AI/ML Engineer'],
               current_team_size: teamMems?.length || 1,
               desired_team_size: h?.max_team_size || 4,
-              status: closed ? 'Completed' : 'Recruiting',
+              status: closed ? 'Completed' : 'In Progress',
               created_at: teamData.created_at || new Date().toISOString(),
               updated_at: teamData.updated_at || new Date().toISOString(),
             };

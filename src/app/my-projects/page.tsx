@@ -408,56 +408,6 @@ function MyProjectsContent() {
         </Link>
       </div>
 
-      {/* ACTIVE HACKATHON SPRINT BANNER (Visible immediately if user has an ongoing hackathon team) */}
-      {activeHackathonSprints.length > 0 && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-xs">
-              <Zap className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
-                  Active Hackathon Team Sprint
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Workshop Open
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                {activeHackathonSprints[0].hackathon.title} — Team &ldquo;{activeHackathonSprints[0].team_name}&rdquo;
-              </h3>
-              <p className="text-xs text-slate-300 mt-0.5 flex items-center gap-3">
-                <span className="flex items-center gap-1 text-amber-300 font-mono font-semibold">
-                  <Clock className="w-3 h-3" />
-                  {activeHackathonSprints[0].timeRemaining}
-                </span>
-                <span>•</span>
-                <span>Host: {activeHackathonSprints[0].hackathon.organizer}</span>
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href={
-              activeHackathonSprints[0].hackathon?.join_code
-                ? `/h/${activeHackathonSprints[0].hackathon.join_code}`
-                : `/hackathons/${activeHackathonSprints[0].hackathon_id}/workspace`
-            }
-          >
-            <Button
-              variant="primary"
-              size="sm"
-              className="bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm"
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-            >
-              Participated
-            </Button>
-          </Link>
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-charcoal-800 pb-3 text-sm overflow-x-auto scrollbar-none">
         <button
@@ -842,8 +792,13 @@ function MyProjectsContent() {
                         </Link>
 
                         <Link href={h.join_code ? `/h/${h.join_code}` : `/hackathons/${h.id}/workspace`}>
-                          <Button variant="outline" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                            View Hackathon
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold"
+                            rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                          >
+                            Participated
                           </Button>
                         </Link>
                       </div>

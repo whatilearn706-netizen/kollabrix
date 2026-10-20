@@ -100,7 +100,13 @@ export default function ExploreProjectsPage() {
 
     if (!isSupabaseConfigured()) {
       // Offline / Demo Fallback Mode
-      let list = [...DEMO_PROJECTS];
+      let list = DEMO_PROJECTS.filter(
+        (p) =>
+          p.category !== ('Hackathon Sprint' as any) &&
+          !p.category?.toLowerCase().includes('hackathon') &&
+          !p.summary?.startsWith('Hackathon Team Sprint') &&
+          !p.title?.toLowerCase().includes('hackathon sprint')
+      );
 
       if (filters.search && filters.search.trim()) {
         const q = filters.search.toLowerCase().trim();
@@ -155,6 +161,7 @@ export default function ExploreProjectsPage() {
 
     try {
       // Build dynamic database query with exact count
+      // Strictly exclude hackathon sprints so Explore ONLY displays user-created projects
       let query = supabase
         .from('projects')
         .select(
@@ -170,7 +177,9 @@ export default function ExploreProjectsPage() {
           )
         `,
           { count: 'exact' }
-        );
+        )
+        .neq('category', 'Hackathon Sprint')
+        .not('summary', 'ilike', 'Hackathon Team Sprint%');
 
       // Filters
       if (filters.category && filters.category !== 'All') {
@@ -247,12 +256,29 @@ export default function ExploreProjectsPage() {
       } catch {}
 
       const filterDeleted = (arr: Project[]) => {
-        if (deletedSet.size === 0) return arr;
-        return arr.filter(
-          (p) =>
-            !deletedSet.has((p.id || '').toLowerCase()) &&
-            !deletedSet.has((p.title || '').trim().toLowerCase())
-        );
+        return arr.filter((p) => {
+          if (deletedSet.size > 0) {
+            if (
+              deletedSet.has((p.id || '').toLowerCase()) ||
+              deletedSet.has((p.title || '').trim().toLowerCase())
+            ) {
+              return false;
+            }
+          }
+          // Strictly exclude any hackathon sprint items from Explore
+          const cat = (p.category || '').toLowerCase();
+          const sum = (p.summary || '').toLowerCase();
+          const tit = (p.title || '').toLowerCase();
+          if (
+            cat === 'hackathon sprint' ||
+            cat.includes('hackathon') ||
+            sum.startsWith('hackathon team sprint') ||
+            tit.includes('hackathon sprint')
+          ) {
+            return false;
+          }
+          return true;
+        });
       };
 
       if (error) {
