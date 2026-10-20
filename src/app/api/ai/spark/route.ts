@@ -6,10 +6,11 @@ import { SparkModelSettings } from '@/app/api/spark/settings/route';
 export const runtime = 'nodejs';
 
 export interface SparkScorecard {
-  innovation: number;
-  feasibility: number;
-  judgeAppeal: number;
-  overall: number;
+  technicalComplexity: number; // 0-100 (Weight: 30%)
+  novelty: number;              // 0-100 (Weight: 25%)
+  feasibility: number;          // 0-100 (Weight: 25%)
+  impact: number;               // 0-100 (Weight: 20%)
+  overall: number;              // Weighted 0-100
   critique: string;
 }
 
@@ -64,6 +65,15 @@ export interface SparkBlueprintResponse {
   matchScore?: number;
 }
 
+// Active models to try in order of speed and capability
+const GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-flash-latest',
+  'gemini-3.5-flash-lite',
+  'gemma-4-31b-it',
+];
+
 function toTitleCase(str: string): string {
   return str
     .split(' ')
@@ -78,6 +88,62 @@ function extractCleanTerms(raw: string): string {
     .replace(/\b(a|an|the|app|for|with|in|to|and|of|using|i|want|build|make|create|like|system|platform)\b/gi, '')
     .trim()
     .replace(/\s+/g, ' ');
+}
+
+/**
+ * Strict Input Quality Gate: Rejects gibberish, keyboard mashing, and nonsensical words
+ */
+function validateIdeaPrompt(prompt: string): { valid: boolean; reason?: string } {
+  const p = prompt.trim();
+  if (!p || p.length < 5) {
+    return { valid: false, reason: 'Please describe what you want to build (at least 5 characters).' };
+  }
+
+  // 1. Repeating characters check (e.g. 'aaaa', 'zzzzz', 'blabla')
+  if (/(.)\1{3,}/.test(p)) {
+    return { valid: false, reason: 'Your prompt contains repetitive test characters. Please describe a genuine project concept.' };
+  }
+
+  // 2. Token / word analysis
+  const words = p.split(/\s+/).filter(Boolean);
+
+  // Reject single-word inputs that cannot form a full project vision
+  if (words.length <= 1) {
+    return {
+      valid: false,
+      reason: "Please enter a complete project concept with at least 2–3 words (e.g. 'AI attendance with face liveness' or 'Hostel midnight cart pooling'). A single random word cannot be architected into an engineering blueprint."
+    };
+  }
+
+  // 3. Gibberish word ratio check
+  let gibberishCount = 0;
+  for (const w of words) {
+    const clean = w.replace(/[^a-zA-Z]/g, '').toLowerCase();
+    if (clean.length >= 4) {
+      const vowels = (clean.match(/[aeiouy]/gi) || []).length;
+      if (vowels === 0 || /^[bcdfghjklmnpqrstvwxz]{4,}$/i.test(clean)) {
+        gibberishCount++;
+      }
+    }
+  }
+
+  if (gibberishCount > 0 && gibberishCount >= Math.ceil(words.length / 2)) {
+    return {
+      valid: false,
+      reason: "This prompt appears to be random keystrokes or meaningless text. Please enter a real project idea or problem statement to generate an engineering blueprint."
+    };
+  }
+
+  // 4. Keyboard mash sequence patterns
+  const mashPatterns = [/asdf/i, /hjkl/i, /qwer/i, /zxcv/i, /12345/i, /blabla/i, /test123/i];
+  if (mashPatterns.some((rx) => rx.test(p)) && words.length <= 3) {
+    return {
+      valid: false,
+      reason: "Please enter a meaningful project concept. The prompt looks like random keyboard typing."
+    };
+  }
+
+  return { valid: true };
 }
 
 // Compute skill gap between user provided skills and project roles
@@ -112,7 +178,7 @@ function computeSkillGaps(
   });
 
   const analysis = covered.length > 0
-    ? `You have skills aligned with ${covered.join(' & ')}. You urgently need to recruit ${missing.length > 0 ? missing.join(' and ') : 'collaborators'} to complete your squad on Linkora.`
+    ? `You have skills aligned with ${covered.join(' & ')}. You need to recruit ${missing.length > 0 ? missing.join(' and ') : 'collaborators'} to complete your squad on Linkora.`
     : `Your skills provide a strong foundation. Recruit ${missing.join(', ')} on Linkora to assemble a complementary hackathon squad.`;
 
   return {
@@ -124,7 +190,7 @@ function computeSkillGaps(
 }
 
 /**
- * Intelligent Dynamic Synthesis Engine v2 (Option 5 Full Blueprint)
+ * Intelligent Dynamic Synthesis Engine v2 with Authentic 4-Axis Hackathon Rubric
  */
 function synthesizeDynamicBlueprint(
   prompt: string,
@@ -147,20 +213,29 @@ function synthesizeDynamicBlueprint(
   const isSecurity = /security|cyber|hack|auth|encrypt|phish|vulnerab|penetrat|privacy|firewall|network/i.test(p);
   const isGreen = /green|solar|waste|recycle|energy|carbon|water|pollution|climate|ev|electric vehicle/i.test(p);
 
+  // Complexity & Novelty grading based on domain and scope
+  const isBasicCrud = /todo|notes|calculator|crud|simple|basic|counter|timer/i.test(p) && !isAI && !isIoT;
+
+  let technicalComplexity = isBasicCrud ? 35 : isIoT || isWeb3 ? 92 : isAI ? 90 : 84;
+  let novelty = isBasicCrud ? 28 : isIoT ? 88 : isAI ? 92 : 82;
+  let feasibility = isBasicCrud ? 98 : isIoT ? 78 : isAI ? 84 : 90;
+  let impact = isHealth ? 95 : isAgri || isGreen ? 94 : isBasicCrud ? 30 : 86;
+
+  let critique = isBasicCrud
+    ? 'Low technical complexity. Standard CRUD patterns score low with hackathon juries. Introduce real-time peer sync or edge offline support to make this competitive.'
+    : isIoT
+    ? 'Exceptional hardware telemetry with high live demo impact. Keep the sensor pipeline simple to guarantee reliable stage demonstrations.'
+    : 'Strong collegiate relevance with clear MVP feasibility. The winning differentiator lies in low-latency event synchronization.';
+
   let category = 'Web Development';
-  let difficulty: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate';
+  let difficulty: 'Beginner' | 'Intermediate' | 'Advanced' = isBasicCrud ? 'Beginner' : isIoT || isWeb3 ? 'Advanced' : 'Intermediate';
   let title = `${coreSubject}: Autonomous Real-Time Hub`;
   let tagline = `Solving collegiate and real-world ${coreSubject.toLowerCase()} challenges through modern reactive engineering.`;
   let summary = `Architected as a multi-tier collaborative platform, ${coreSubject} unifies real-time event streams with intelligent processing to eliminate manual bottlenecks for campus communities.`;
 
-  let innovationScore = 88;
-  let feasibilityScore = 92;
-  let judgeAppealScore = 90;
-  let critique = `Strong practical relevance with high weekend demonstrability. Differentiator lies in low-latency event synchronization.`;
-
   let winningTwist = `P2P dynamic routing combined with localized offline caching, reducing cloud infrastructure cost to near zero while guaranteeing sub-50ms responsiveness.`;
   let elevatorPitch: SparkElevatorPitch = {
-    problem: `Students and university operators currently rely on fragmented, slow manual tools to handle ${coreSubject.toLowerCase()}.`,
+    problem: `Students and campus operators currently rely on fragmented, slow manual tools to handle ${coreSubject.toLowerCase()}.`,
     solution: `A unified platform with reactive state sync, verified cryptographic audit trails, and automated workflow dispatch.`,
     unfairAdvantage: `Zero friction onboarding, instant peer-to-peer collaboration, and native integration into collegiate workspaces.`,
   };
@@ -202,9 +277,10 @@ function synthesizeDynamicBlueprint(
     title = `${coreSubject}: Precision Agro-Telemetry & Autonomous Edge Diagnostics`;
     tagline = `Transforming field monitoring with real-time sensor fusion and lightweight on-device vision.`;
     summary = `Combines localized ESP32 telemetry nodes with edge-quantized computer vision to detect crop distress markers and optimize irrigation before yield degradation occurs.`;
-    innovationScore = 94;
-    feasibilityScore = 86;
-    judgeAppealScore = 95;
+    technicalComplexity = 94;
+    novelty = 90;
+    feasibility = 82;
+    impact = 96;
     critique = `Exceptional social impact for Smart India Hackathon and national contests. Demonstrating edge ML inference live guarantees high judge scoring.`;
     winningTwist = `Edge-quantized YOLOv8 model running directly in-browser via WebAssembly / ONNX, enabling zero-internet offline disease detection in remote rural farmlands.`;
     elevatorPitch = {
@@ -235,21 +311,17 @@ function synthesizeDynamicBlueprint(
         focus: `Build interactive geospatial telemetry maps, moisture trend visualizers, and offline PWA service workers.`,
       },
     ];
-    resumeBullets = [
-      `Developed edge-quantized YOLOv8 plant pathology model deployed via ONNX WebAssembly, achieving 94.2% diagnostic accuracy offline.`,
-      `Engineered low-power MQTT telemetry ingest pipeline connecting 10+ ESP32 sensor clusters with sub-second dashboard refreshes.`,
-      `Built offline-first progressive web application (PWA) with client-side IndexedDB caching and geospatial heatmaps.`,
-    ];
   } else if (isHealth) {
     category = 'AI/ML';
     difficulty = 'Advanced';
     title = `${coreSubject}: Clinical Diagnostics Copilot & Triage Radar`;
     tagline = `Accelerating outpatient triage, medical report interpretation, and patient tracking.`;
     summary = `Bridges complex medical lab records and clinical vitals into structured actionable summaries with privacy-preserving localized embeddings.`;
-    innovationScore = 92;
-    feasibilityScore = 87;
-    judgeAppealScore = 96;
-    critique = `High commercial and healthcare relevance. Focus on patient privacy and hallucination guards to impress judges.`;
+    technicalComplexity = 93;
+    novelty = 89;
+    feasibility = 84;
+    impact = 97;
+    critique = `High healthcare and societal impact. Emphasize patient data privacy and zero-hallucination verification to secure high jury ratings.`;
     winningTwist = `Strict local differential privacy layer with self-verifying citation highlights in lab reports, preventing AI hallucinations.`;
     elevatorPitch = {
       problem: `Doctors spend 40% of their clinic time navigating dense historical lab reports and unstructured test notes.`,
@@ -279,58 +351,8 @@ function synthesizeDynamicBlueprint(
         focus: `Design high-density visual vitals dashboards and clear patient risk level indicators.`,
       },
     ];
-    resumeBullets = [
-      `Engineered privacy-preserving clinical RAG pipeline using pgvector and FastAPI, parsing 50-page medical PDFs in under 1.8 seconds.`,
-      `Designed deterministic citation verification system reducing LLM hallucination rate in medical biomarker extraction to <1.2%.`,
-      `Implemented end-to-end AES-256 field-level encrypted patient database architecture with strict role-based access control (RBAC).`,
-    ];
-  } else if (isAI) {
-    category = 'AI/ML';
-    difficulty = 'Advanced';
-    title = `${coreSubject}: Multi-Agent Autonomous Workflow Orchestrator`;
-    tagline = `Empowering campus builders with autonomous agentic problem decomposition and tool calling.`;
-    summary = `Leverages specialized cooperative autonomous agents to break down complex multi-step objectives into verifiable parallel code execution streams.`;
-    innovationScore = 96;
-    feasibilityScore = 89;
-    judgeAppealScore = 97;
-    critique = `At the cutting-edge of 2026 tech trends. Agentic workflows with human-in-the-loop controls score exceptionally high with tech juries.`;
-    winningTwist = `Deterministic human-in-the-loop checkpointing with rollback capabilities, allowing agents to execute complex shell/API workflows safely.`;
-    elevatorPitch = {
-      problem: `Traditional chat LLMs hallucinate on multi-step workflows and lack real execution sandbox capabilities.`,
-      solution: `A coordinated multi-agent runtime where specialized agents write, verify, and execute code within isolated containers.`,
-      unfairAdvantage: `Instant parallel task decomposition with visual tree-of-thought progress tracking.`,
-    };
-    techStackByCategory = {
-      frontend: ['Next.js 14', 'React Flow', 'TailwindCSS', 'Zustand'],
-      backend: ['FastAPI', 'Python 3.12', 'LangGraph / AutoGen'],
-      database: ['PostgreSQL (Supabase)', 'Qdrant / Milvus (Vector)'],
-      aiOrCloud: ['Gemini 1.5 Flash', 'Groq / Llama 3', 'Docker Sandboxes'],
-    };
-    rolesBreakdown = [
-      {
-        role: 'Agentic Systems & LLM Architect',
-        skills: ['LangGraph', 'Python', 'Tool Calling', 'Vector DBs'],
-        focus: `Design agent orchestration graphs, memory persistence layers, and deterministic tool schemas.`,
-      },
-      {
-        role: 'Full-Stack Runtime Engineer',
-        skills: ['Next.js 14', 'TypeScript', 'FastAPI', 'WebSockets'],
-        focus: `Construct reactive agent tree-of-thought canvas and stream token-by-token agent reasoning.`,
-      },
-      {
-        role: 'Cloud Sandbox & DevOps Specialist',
-        skills: ['Docker', 'Firecracker', 'Linux Security', 'AWS/GCP'],
-        focus: `Provision ephemeral execution environments to run agent-generated code safely without host risk.`,
-      },
-    ];
-    resumeBullets = [
-      `Architected multi-agent autonomous system using LangGraph and FastAPI, executing 15-step engineering workflows with 96% task completion.`,
-      `Developed reactive DAG visualization canvas with React Flow and WebSockets, rendering live agent reasoning trees with <40ms update latency.`,
-      `Integrated secure ephemeral Docker sandbox runtime executing untrusted code with resource quotas and automated rollback mechanisms.`,
-    ];
   }
 
-  // Combine technologies into flat list
   const technologies = [
     ...techStackByCategory.frontend,
     ...techStackByCategory.backend,
@@ -340,6 +362,11 @@ function synthesizeDynamicBlueprint(
 
   const desired_roles = rolesBreakdown.map((r) => r.role);
   const skillGaps = computeSkillGaps(userSkillsInput, rolesBreakdown);
+
+  // Overall weighted score: Complexity (30%) + Novelty (25%) + Feasibility (25%) + Impact (20%)
+  const overall = Math.round(
+    technicalComplexity * 0.3 + novelty * 0.25 + feasibility * 0.25 + impact * 0.2
+  );
 
   const milestones = [
     {
@@ -371,10 +398,11 @@ function synthesizeDynamicBlueprint(
     difficulty,
     summary,
     scores: {
-      innovation: innovationScore,
-      feasibility: feasibilityScore,
-      judgeAppeal: judgeAppealScore,
-      overall: Math.round((innovationScore * 0.35 + feasibilityScore * 0.3 + judgeAppealScore * 0.35)),
+      technicalComplexity,
+      novelty,
+      feasibility,
+      impact,
+      overall,
       critique,
     },
     winningTwist,
@@ -398,8 +426,13 @@ export async function POST(request: NextRequest) {
     const track = (body.track || '').trim();
     const userSkills = body.userSkills;
 
-    if (!prompt || prompt.length < 3) {
-      return NextResponse.json({ error: 'Please enter a project idea or concept to spark.' }, { status: 400 });
+    // Quality gate: Detect and reject gibberish/nonsense before running
+    const validation = validateIdeaPrompt(prompt);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.reason || 'Please provide a valid project idea.' },
+        { status: 400 }
+      );
     }
 
     // Check master spark settings for admin overrides
@@ -417,30 +450,38 @@ export async function POST(request: NextRequest) {
 
     let blueprint: SparkBlueprintResponse | null = null;
 
-    // 1. If Gemini is available and preferred/auto
+    // 1. If Gemini key is available, execute multi-model cascade
     if (geminiKey && (preferredEngine === 'auto' || preferredEngine === 'gemini')) {
-      try {
-        const sysPrompt = `You are a Principal Software Architect and Hackathon Grand Prize Judge.
-A student gave you their raw project idea: "${prompt}".
+      const sysPrompt = `You are a Principal Software Architect and Hackathon Grand Prize Judge.
+Evaluate the student project idea: "${prompt}".
 ${track ? `Target Hackathon Track: "${track}".` : ''}
 ${userSkills ? `Student's Existing Skills: "${Array.isArray(userSkills) ? userSkills.join(', ') : userSkills}".` : ''}
 ${sparkSettings.customSystemPrompt ? `Additional Admin Instructions: ${sparkSettings.customSystemPrompt}` : ''}
 
-Generate an authentic, highly tailored engineering blueprint strictly matching their exact concept. Do NOT give generic boilerplate answers. Tailor every field specifically to their concept.
+CRITICAL QUALITY CHECK:
+If the user's prompt is random keystrokes (e.g. "asdfgh"), keyboard mash, or nonsensical gibberish that does not describe a valid application, return ONLY:
+{ "error": "This prompt does not describe a recognizable project concept or problem statement. Please describe what you want to build." }
+
+Otherwise, grade the idea realistically based on 4 authentic hackathon judging criteria:
+1. Technical Complexity (30% weight): Depth of engineering, multi-tier systems, edge cases. (Simple CRUD app = 20-40; Advanced system = 85-98)
+2. Novelty & Differentiation (25% weight): Is this a unique twist or a generic clone?
+3. 48-Hour Feasibility (25% weight): Can a student squad demo an MVP in 48 hours?
+4. Real-World Impact (20% weight): Severity of the problem solved.
 
 Return ONLY a valid JSON object matching this exact schema:
 {
-  "title": "Creative, punchy, professional title based on their idea",
+  "title": "Creative, professional title based on their idea",
   "tagline": "A single compelling sentence describing the value proposition",
   "category": "Web Development" | "AI/ML" | "Mobile Apps" | "Developer Tools" | "Social Impact" | "IoT/Hardware" | "FinTech" | "Cybersecurity",
   "difficulty": "Beginner" | "Intermediate" | "Advanced",
   "summary": "2-3 detailed sentences explaining technical architecture, problem solved, and end user outcome for their exact idea.",
   "scores": {
-    "innovation": number between 75 and 98,
-    "feasibility": number between 75 and 98,
-    "judgeAppeal": number between 75 and 98,
-    "overall": number between 75 and 98,
-    "critique": "1-2 sentences explaining why this scores high with hackathon judges and what will make it win."
+    "technicalComplexity": number between 25 and 98 based on real engineering depth,
+    "novelty": number between 25 and 98 based on how unique it is,
+    "feasibility": number between 25 and 98 based on 48h hackathon reality,
+    "impact": number between 25 and 98 based on real-world problem severity,
+    "overall": calculated weighted score,
+    "critique": "1-2 sentences explaining why this scores high or low with hackathon judges and what will make it win."
   },
   "winningTwist": "A specific killer feature or unfair architectural advantage that elevates this from a generic clone into a hackathon winner.",
   "elevatorPitch": {
@@ -484,48 +525,78 @@ Return ONLY a valid JSON object matching this exact schema:
   ]
 }`;
 
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-          {
+      for (const model of GEMINI_MODELS) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 22000);
+
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+          const res = await fetch(url, {
             method: 'POST',
+            signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: sysPrompt }] }],
               generationConfig: {
                 responseMimeType: 'application/json',
                 temperature: sparkSettings.temperature || 0.7,
+                thinkingConfig: {
+                  thinkingBudget: 0,
+                },
               },
             }),
+          });
+          clearTimeout(timeout);
+
+          if (res.ok) {
+            const aiJson = await res.json();
+            const text = aiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              const parsed = JSON.parse(text);
+
+              if (parsed.error) {
+                return NextResponse.json({ error: parsed.error }, { status: 400 });
+              }
+
+              const flatTech = [
+                ...(parsed.techStackByCategory?.frontend || []),
+                ...(parsed.techStackByCategory?.backend || []),
+                ...(parsed.techStackByCategory?.database || []),
+                ...(parsed.techStackByCategory?.aiOrCloud || []),
+              ];
+
+              const roles = (parsed.rolesBreakdown || []).map((r: any) => r.role);
+              const skillGaps = computeSkillGaps(userSkills, parsed.rolesBreakdown || []);
+
+              // Ensure calibrated 4-axis weighted overall score
+              const scores = parsed.scores || {};
+              const techComp = Math.max(10, Math.min(99, Number(scores.technicalComplexity) || 80));
+              const nov = Math.max(10, Math.min(99, Number(scores.novelty) || 80));
+              const feas = Math.max(10, Math.min(99, Number(scores.feasibility) || 80));
+              const imp = Math.max(10, Math.min(99, Number(scores.impact) || 80));
+              const calculatedOverall = Math.round(techComp * 0.3 + nov * 0.25 + feas * 0.25 + imp * 0.2);
+
+              scores.technicalComplexity = techComp;
+              scores.novelty = nov;
+              scores.feasibility = feas;
+              scores.impact = imp;
+              scores.overall = scores.overall || calculatedOverall;
+
+              blueprint = {
+                ...parsed,
+                scores,
+                technologies: flatTech.length > 0 ? flatTech : ['Next.js 14', 'TypeScript', 'TailwindCSS', 'PostgreSQL'],
+                desired_roles: roles.length > 0 ? roles : ['Full-Stack Lead', 'Backend Specialist', 'UI/UX Designer'],
+                skillGaps,
+                hackathonTrack: track || 'Open Innovation Track',
+                engine: `Google Gemini (${model})`,
+              };
+              break; // Success! Exit model loop
+            }
           }
-        );
-
-        if (res.ok) {
-          const aiJson = await res.json();
-          const text = aiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            const parsed = JSON.parse(text);
-            const flatTech = [
-              ...(parsed.techStackByCategory?.frontend || []),
-              ...(parsed.techStackByCategory?.backend || []),
-              ...(parsed.techStackByCategory?.database || []),
-              ...(parsed.techStackByCategory?.aiOrCloud || []),
-            ];
-
-            const roles = (parsed.rolesBreakdown || []).map((r: any) => r.role);
-            const skillGaps = computeSkillGaps(userSkills, parsed.rolesBreakdown || []);
-
-            blueprint = {
-              ...parsed,
-              technologies: flatTech.length > 0 ? flatTech : ['Next.js 14', 'TypeScript', 'TailwindCSS', 'PostgreSQL'],
-              desired_roles: roles.length > 0 ? roles : ['Full-Stack Lead', 'Backend Specialist', 'UI/UX Designer'],
-              skillGaps,
-              hackathonTrack: track || 'Open Innovation Track',
-              engine: 'Google Gemini 1.5 Flash',
-            };
-          }
+        } catch (err: any) {
+          console.warn(`Gemini model ${model} failed, trying next:`, err.message);
         }
-      } catch (err) {
-        console.warn('Gemini spark call warning:', err);
       }
     }
 
@@ -543,7 +614,7 @@ Return ONLY a valid JSON object matching this exact schema:
             messages: [
               {
                 role: 'system',
-                content: 'You are an elite hackathon judge and principal software architect. Generate comprehensive project blueprint JSON conforming strictly to the requested schema.',
+                content: 'You are an elite hackathon judge and principal software architect. Evaluate the student idea against 4 criteria: Technical Complexity (30%), Novelty (25%), 48h Feasibility (25%), and Impact (20%). If input is nonsense, return {"error": "..."}. Otherwise output strictly the requested JSON schema.',
               },
               {
                 role: 'user',
@@ -560,6 +631,10 @@ Return ONLY a valid JSON object matching this exact schema:
           const content = aiJson.choices?.[0]?.message?.content;
           if (content) {
             const parsed = JSON.parse(content);
+            if (parsed.error) {
+              return NextResponse.json({ error: parsed.error }, { status: 400 });
+            }
+
             const flatTech = [
               ...(parsed.techStackByCategory?.frontend || []),
               ...(parsed.techStackByCategory?.backend || []),
@@ -585,7 +660,7 @@ Return ONLY a valid JSON object matching this exact schema:
       }
     }
 
-    // 3. Dynamic Contextual Neural Synthesis Engine (Runs reliably anywhere without API keys)
+    // 3. Fallback to Dynamic Contextual Neural Synthesis Engine (Only if LLMs are unavailable)
     if (!blueprint) {
       blueprint = synthesizeDynamicBlueprint(prompt, track, userSkills);
     }

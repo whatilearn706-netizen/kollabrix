@@ -615,6 +615,9 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
                       <div className="text-right">
                         <span className="text-[10px] font-mono uppercase text-slate-500">Scorecard:</span>
                         <div className="text-xs font-bold text-amber-400">{testResult.scores.overall}/100 Overall</div>
+                        <div className="text-[10px] text-slate-400">
+                          Tech: {testResult.scores.technicalComplexity}% • Nov: {testResult.scores.novelty}% • Feas: {testResult.scores.feasibility}% • Imp: {testResult.scores.impact}%
+                        </div>
                       </div>
                     )}
                   </div>

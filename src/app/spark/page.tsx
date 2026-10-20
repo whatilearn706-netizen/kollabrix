@@ -87,8 +87,28 @@ export default function SparkStudioPage() {
 
   const handleGenerate = async (customPrompt?: string) => {
     const textToRun = (customPrompt || prompt).trim();
-    if (!textToRun || textToRun.length < 3) {
-      setErrorMsg('Please describe your idea or hackathon concept (at least 3 characters).');
+    if (!textToRun || textToRun.length < 5) {
+      setErrorMsg('Please describe what you want to build (at least 5 characters).');
+      return;
+    }
+
+    // Client-side quick validation against random keystrokes / gibberish
+    const words = textToRun.split(/\s+/).filter(Boolean);
+    if (words.length <= 1) {
+      setErrorMsg(
+        "Please enter a complete project concept with at least 2–3 words (e.g. 'AI attendance with face liveness' or 'Hostel midnight cart pooling'). A single random word cannot be architected into an engineering blueprint."
+      );
+      return;
+    }
+
+    if (/(.)\1{3,}/.test(textToRun)) {
+      setErrorMsg('Your prompt contains repetitive test characters. Please describe a genuine project concept.');
+      return;
+    }
+
+    const mashPatterns = [/asdf/i, /hjkl/i, /qwer/i, /zxcv/i, /12345/i, /blabla/i, /test123/i];
+    if (mashPatterns.some((rx) => rx.test(textToRun)) && words.length <= 3) {
+      setErrorMsg('Please enter a meaningful project concept. The prompt looks like random keyboard typing.');
       return;
     }
 
@@ -124,6 +144,7 @@ export default function SparkStudioPage() {
 
   const copyBlueprintMarkdown = () => {
     if (!blueprint) return;
+    const scores = blueprint.scores;
     const md = `# ${blueprint.title}
 *${blueprint.tagline}*
 
@@ -132,12 +153,13 @@ export default function SparkStudioPage() {
 
 ---
 
-## 🏆 Hackathon Scorecard
-- **Overall Readiness:** ${blueprint.scores?.overall || 90}/100
-- **Innovation Score:** ${blueprint.scores?.innovation || 92}/100
-- **Weekend Feasibility:** ${blueprint.scores?.feasibility || 88}/100
-- **Judge Appeal:** ${blueprint.scores?.judgeAppeal || 94}/100
-- *Critique:* ${blueprint.scores?.critique || 'High competitive appeal.'}
+## 🏆 Hackathon Judging Scorecard
+- **Overall Hackathon Readiness:** ${scores?.overall || 85}/100
+- **🛠️ Technical Depth & Architecture (30% weight):** ${scores?.technicalComplexity ?? 85}/100
+- **💡 Novelty & Differentiation (25% weight):** ${scores?.novelty ?? 85}/100
+- **⏱️ 48-Hour Weekend Feasibility (25% weight):** ${scores?.feasibility ?? 85}/100
+- **🎯 Real-World Problem Impact (20% weight):** ${scores?.impact ?? 85}/100
+- *Judge Critique:* ${scores?.critique || 'High competitive appeal.'}
 
 ## ⚡ The Winning Twist
 ${blueprint.winningTwist}
@@ -403,54 +425,122 @@ ${blueprint.milestones
             {/* Scorecard Matrix */}
             {blueprint.scores && (
               <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-transparent border border-amber-500/20 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-500" />
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                      Hackathon Readiness &amp; Scoring Matrix
+                      Official Hackathon Judging Rubric &amp; Readiness
                     </span>
                   </div>
-                  <div className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500 text-white shadow-2xs">
-                    {blueprint.scores.overall}/100 Overall Score
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+                      Formula: 30% Tech + 25% Novelty + 25% Feasibility + 20% Impact
+                    </span>
+                    <div className="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-2xs">
+                      {blueprint.scores.overall}/100 Overall Score
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">Novelty &amp; Innovation</span>
-                      <span className="font-bold text-amber-600 dark:text-amber-400">{blueprint.scores.innovation}%</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* 1. Technical Complexity (30%) */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+                        <span>🛠️ Tech Depth</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">30%</span>
+                      </span>
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400">
+                        {blueprint.scores.technicalComplexity ?? 80}%
+                      </span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-charcoal-700 overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full" style={{ width: `${blueprint.scores.innovation}%` }} />
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all duration-700"
+                        style={{ width: `${blueprint.scores.technicalComplexity ?? 80}%` }}
+                      />
                     </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                      Multi-tier architecture, telemetry &amp; non-trivial data pipelines.
+                    </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">Weekend Feasibility</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{blueprint.scores.feasibility}%</span>
+                  {/* 2. Novelty & Differentiation (25%) */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+                        <span>💡 Novelty</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">25%</span>
+                      </span>
+                      <span className="font-extrabold text-amber-600 dark:text-amber-400">
+                        {blueprint.scores.novelty ?? 80}%
+                      </span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-charcoal-700 overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${blueprint.scores.feasibility}%` }} />
+                      <div
+                        className="h-full bg-amber-500 rounded-full transition-all duration-700"
+                        style={{ width: `${blueprint.scores.novelty ?? 80}%` }}
+                      />
                     </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                      Unfair differentiator versus standard clones &amp; competitors.
+                    </p>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">Judge Appeal</span>
-                      <span className="font-bold text-violet-600 dark:text-violet-400">{blueprint.scores.judgeAppeal}%</span>
+                  {/* 3. 48h Weekend Feasibility (25%) */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+                        <span>⏱️ 48h Feasibility</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">25%</span>
+                      </span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                        {blueprint.scores.feasibility ?? 80}%
+                      </span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-charcoal-700 overflow-hidden">
-                      <div className="h-full bg-violet-500 rounded-full" style={{ width: `${blueprint.scores.judgeAppeal}%` }} />
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                        style={{ width: `${blueprint.scores.feasibility ?? 80}%` }}
+                      />
                     </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                      Realistic scope for a student squad to demo a working MVP.
+                    </p>
+                  </div>
+
+                  {/* 4. Real-World Impact (20%) */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+                        <span>🎯 Problem Impact</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400">20%</span>
+                      </span>
+                      <span className="font-extrabold text-rose-600 dark:text-rose-400">
+                        {blueprint.scores.impact ?? 80}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-charcoal-700 overflow-hidden">
+                      <div
+                        className="h-full bg-rose-500 rounded-full transition-all duration-700"
+                        style={{ width: `${blueprint.scores.impact ?? 80}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                      Severity of campus, healthcare, or societal bottleneck addressed.
+                    </p>
                   </div>
                 </div>
 
                 {blueprint.scores.critique && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 italic">
-                    💡 <strong className="text-slate-800 dark:text-slate-200 not-italic">Judge Critique:</strong> {blueprint.scores.critique}
-                  </p>
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-charcoal-800/80 border border-amber-500/30 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                    <div className="font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                      <span>💡 Principal Judge Critique &amp; Strategy:</span>
+                    </div>
+                    <p className="italic leading-relaxed">
+                      "{blueprint.scores.critique}"
+                    </p>
+                  </div>
                 )}
               </div>
             )}
