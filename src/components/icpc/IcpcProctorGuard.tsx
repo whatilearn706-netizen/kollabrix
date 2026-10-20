@@ -53,13 +53,10 @@ export function IcpcProctorGuard({
   onCloseArena,
   children,
 }: IcpcProctorGuardProps) {
-  // Pre-flight check state
-  const [isPreflightOpen, setIsPreflightOpen] = useState(true);
+  // Proctoring telemetry state
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isFullscreenActive, setIsFullscreenActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-
-  // Proctoring telemetry state
   const [warningCount, setWarningCount] = useState(0);
   const [activeWarning, setActiveWarning] = useState<{
     type: ProctorViolationType;
@@ -163,7 +160,7 @@ export function IcpcProctorGuard({
     [warningCount, studentId, studentName, studentEmail, college, contestId, contestTitle, problemId, problemTitle, onSecurityIncident, playAlertSound]
   );
 
-  // Request Wide-Angle Webcam Stream
+  // Request Wide-Angle Webcam Stream with Reliable Fallback
   const initWebcam = useCallback(async () => {
     setCameraError(null);
     try {
@@ -171,30 +168,48 @@ export function IcpcProctorGuard({
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
 
-      // Request 1080p / 720p wide-angle camera constraints
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          facingMode: 'user',
-        },
-        audio: false,
-      });
+      let stream: MediaStream | null = null;
+      try {
+        // Attempt ideal wide-angle 720p/1080p constraints
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user',
+          },
+          audio: false,
+        });
+      } catch (specErr) {
+        // Fallback to basic video constraint if camera rejected custom width/height
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
 
       streamRef.current = stream;
-      if (videoRef.current) {
+      if (videoRef.current && stream) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => {});
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(() => {});
+        };
       }
       setHasCameraPermission(true);
       return true;
     } catch (err: any) {
       console.warn('Webcam permission error:', err);
-      setCameraError('Camera access denied or unavailable. ICPC proctoring requires a wide-angle camera.');
+      setCameraError('Camera access required for AI anti-cheat proctoring. Please allow camera access in browser permissions.');
       setHasCameraPermission(false);
       return false;
     }
   }, []);
+
+  // Auto-start webcam immediately on mount when active
+  useEffect(() => {
+    if (isActive) {
+      initWebcam();
+    }
+  }, [isActive, initWebcam]);
 
   // Request Fullscreen
   const requestArenaFullscreen = useCallback(async () => {
@@ -210,21 +225,12 @@ export function IcpcProctorGuard({
     }
   }, []);
 
-  // Complete pre-flight setup and enter arena
-  const handleConfirmStart = async () => {
-    let camOk = hasCameraPermission;
-    if (!camOk) {
-      camOk = await initWebcam();
-    }
-    if (!camOk) return;
-
-    await requestArenaFullscreen();
-    setIsPreflightOpen(false);
-  };
-
   // Full-Screen and Tab Visibility Event Listeners (with 2-Second Rule)
   useEffect(() => {
-    if (!isActive || isPreflightOpen) return;
+    if (!isActive) return;
+
+    // Check initial full screen status
+    setIsFullscreenActive(Boolean(document.fullscreenElement));
 
     // Fullscreen change handler
     const handleFullscreenChange = () => {
@@ -306,11 +312,11 @@ export function IcpcProctorGuard({
       if (fullscreenExitTimerRef.current) clearTimeout(fullscreenExitTimerRef.current);
       if (tabBlurTimerRef.current) clearTimeout(tabBlurTimerRef.current);
     };
-  }, [isActive, isPreflightOpen, triggerViolation]);
+  }, [isActive, triggerViolation]);
 
   // Real-time Vision Frame Processing (Phone & Eye/Gaze Tracking)
   useEffect(() => {
-    if (!isActive || isPreflightOpen || !hasCameraPermission) return;
+    if (!isActive || !hasCameraPermission) return;
 
     const canvas = canvasRef.current || document.createElement('canvas');
     canvas.width = 320;
@@ -479,7 +485,7 @@ export function IcpcProctorGuard({
         proctorIntervalRef.current = null;
       }
     };
-  }, [isActive, isPreflightOpen, hasCameraPermission, triggerViolation]);
+  }, [isActive, hasCameraPermission, triggerViolation]);
 
   // Clean up streams on unmount
   useEffect(() => {
@@ -492,146 +498,8 @@ export function IcpcProctorGuard({
 
   return (
     <>
-      {/* ── PRE-FLIGHT SETUP MODAL (Security Gate Before Contest) ── */}
-      <Modal
-        isOpen={isPreflightOpen && isActive}
-        onClose={() => {
-          if (onCloseArena) onCloseArena();
-          else setIsPreflightOpen(false);
-        }}
-        title="ICPC Secure Proctored Arena • Integrity Lock"
-        maxWidth="2xl"
-      >
-        <div className="space-y-5 p-1 text-slate-200">
-          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
-            <ShieldCheck className="w-6 h-6 shrink-0 text-cyan-400" />
-            <div className="text-xs">
-              <strong className="block font-bold text-white text-sm">
-                Recruiter-Grade Anti-Cheat Environment
-              </strong>
-              <span>
-                To guarantee fair leaderboards and verified streak credibility, this contest requires strict full-screen locking and AI wide-angle camera proctoring.
-              </span>
-            </div>
-          </div>
-
-          {/* Camera Setup & Wide-Angle Preview */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="font-bold text-white flex items-center gap-1.5">
-                <Camera className="w-3.5 h-3.5 text-cyan-400" />
-                Wide-Angle Camera Calibration
-              </span>
-              <span className={hasCameraPermission ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
-                {hasCameraPermission ? '● Camera Verified' : '○ Permission Needed'}
-              </span>
-            </div>
-
-            <div className="relative aspect-video rounded-2xl bg-charcoal-950 border border-charcoal-700 overflow-hidden flex items-center justify-center">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover mirror"
-              />
-
-              {!hasCameraPermission && (
-                <div className="absolute inset-0 bg-charcoal-950/90 flex flex-col items-center justify-center gap-3 p-4 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                    <Video className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Enable Camera Access</h4>
-                    <p className="text-xs text-slate-400 max-w-sm mt-1">
-                      Position your laptop so your face, desk, and hands are visible. Wide-angle camera monitors for mobile phone usage and gaze deviations.
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={initWebcam}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
-                    leftIcon={<Camera className="w-3.5 h-3.5" />}
-                  >
-                    Allow Wide-Angle Camera
-                  </Button>
-                </div>
-              )}
-
-              {cameraError && (
-                <div className="absolute bottom-2 inset-x-2 p-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] text-center font-mono">
-                  {cameraError}
-                </div>
-              )}
-
-              {/* Guide Overlay */}
-              {hasCameraPermission && (
-                <div className="absolute inset-4 border border-dashed border-cyan-400/30 rounded-xl pointer-events-none flex flex-col justify-between p-2">
-                  <span className="text-[10px] font-mono text-cyan-300/80 bg-charcoal-950/80 px-2 py-0.5 rounded self-start">
-                    Wide-Angle Field Verified
-                  </span>
-                  <span className="text-[10px] font-mono text-cyan-300/80 bg-charcoal-950/80 px-2 py-0.5 rounded self-end">
-                    Keep Hands &amp; Laptop Area Visible
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Security Rules Checklist */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-            <div className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-800 space-y-1">
-              <span className="font-bold text-white flex items-center gap-1.5 text-[11px]">
-                <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-                Full-Screen Lockdown
-              </span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Leaving full-screen or switching tabs for more than 2 seconds triggers security warnings and alerts admins.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-800 space-y-1">
-              <span className="font-bold text-white flex items-center gap-1.5 text-[11px]">
-                <Smartphone className="w-3.5 h-3.5 text-rose-400" />
-                AI Phone &amp; Gaze Shield
-              </span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Using a phone or looking away from your monitor triggers automatic detection within 2 seconds.
-              </p>
-            </div>
-          </div>
-
-          {/* Confirm Button */}
-          <div className="pt-2 flex items-center justify-between border-t border-charcoal-800">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                if (onCloseArena) onCloseArena();
-                else setIsPreflightOpen(false);
-              }}
-              className="text-slate-400"
-            >
-              Cancel
-            </Button>
-
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={handleConfirmStart}
-              disabled={!hasCameraPermission}
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold"
-            >
-              Enter Protected Full-Screen Arena
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── PROCTOR PIP FLOATING WIDGET (When inside Arena) ── */}
-      {!isPreflightOpen && isActive && (
+      {/* ── PROCTOR PIP FLOATING WIDGET (Active inside Arena) ── */}
+      {isActive && (
         <div
           className={`fixed z-50 transition-all duration-300 shadow-2xl rounded-2xl border ${
             activeWarning
@@ -678,41 +546,66 @@ export function IcpcProctorGuard({
           {!isPipMinimized && (
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black mt-2.5 border border-charcoal-800">
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  (videoRef as any).current = el;
+                  if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                    el.srcObject = streamRef.current;
+                    el.play().catch(() => {});
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
                 className="w-full h-full object-cover mirror"
               />
 
-              {/* Status HUD Overlays */}
-              <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
-                <span
-                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
-                    phoneStatus === 'suspect'
-                      ? 'bg-rose-600 text-white animate-pulse'
-                      : 'bg-charcoal-950/80 text-emerald-300'
-                  }`}
-                >
-                  <Smartphone className="w-2.5 h-2.5" />
-                  {phoneStatus === 'suspect' ? 'PHONE SUSPECT' : 'Phone Clear'}
-                </span>
+              {!hasCameraPermission && (
+                <div className="absolute inset-0 bg-charcoal-950/95 flex flex-col items-center justify-center p-3 text-center gap-2">
+                  <Camera className="w-5 h-5 text-amber-400" />
+                  <span className="text-[11px] font-bold text-white leading-tight">Camera Access Required</span>
+                  <p className="text-[9px] text-slate-400 leading-tight">
+                    Wide-angle proctoring must be active to track mobile phone and screen focus.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={initWebcam}
+                    className="mt-1 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold shadow-md"
+                  >
+                    Enable Camera
+                  </button>
+                </div>
+              )}
 
-                <span
-                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
-                    gazeStatus === 'normal'
-                      ? 'bg-charcoal-950/80 text-emerald-300'
-                      : 'bg-amber-500/80 text-black'
-                  }`}
-                >
-                  <Eye className="w-2.5 h-2.5" />
-                  {gazeStatus === 'normal'
-                    ? 'Focus: Screen'
-                    : gazeStatus === 'down_excessive'
-                    ? 'Gaze: Down'
-                    : 'Gaze: Away'}
-                </span>
-              </div>
+              {/* Status HUD Overlays */}
+              {hasCameraPermission && (
+                <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 pointer-events-none">
+                  <span
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
+                      phoneStatus === 'suspect'
+                        ? 'bg-rose-600 text-white animate-pulse'
+                        : 'bg-charcoal-950/80 text-emerald-300'
+                    }`}
+                  >
+                    <Smartphone className="w-2.5 h-2.5" />
+                    {phoneStatus === 'suspect' ? 'PHONE SUSPECT' : 'Phone Clear'}
+                  </span>
+
+                  <span
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
+                      gazeStatus === 'normal'
+                        ? 'bg-charcoal-950/80 text-emerald-300'
+                        : 'bg-amber-500/80 text-black'
+                    }`}
+                  >
+                    <Eye className="w-2.5 h-2.5" />
+                    {gazeStatus === 'normal'
+                      ? 'Focus: Screen'
+                      : gazeStatus === 'down_excessive'
+                      ? 'Gaze: Down'
+                      : 'Gaze: Away'}
+                  </span>
+                </div>
+              )}
 
               {!isFullscreenActive && (
                 <div className="absolute inset-0 bg-rose-950/90 flex flex-col items-center justify-center p-2 text-center text-xs text-rose-200">

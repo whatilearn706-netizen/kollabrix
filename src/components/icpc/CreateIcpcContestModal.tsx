@@ -23,6 +23,8 @@ import {
   Layers,
 } from 'lucide-react';
 import { IcpcContest, IcpcProblem, ProblemDifficulty, ContestType } from '@/types/icpc';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { supabase } from '@/lib/supabase/client';
 
 interface CreateIcpcContestModalProps {
   isOpen: boolean;
@@ -77,6 +79,7 @@ export function CreateIcpcContestModal({
   organizerName = 'Faculty Mentor',
   collegeName = 'Collegiate Network',
 }: CreateIcpcContestModalProps) {
+  const { user, profile } = useAuth();
   const [contestType, setContestType] = useState<ContestType>('contest');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -206,9 +209,21 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
         solutionLanguage: p.solutionLanguage || 'cpp',
       }));
 
+      let token: string | null = null;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        token = sessionData?.session?.access_token || null;
+      } catch (e) {}
+
+      const reqHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
+      if (user?.id) reqHeaders['x-user-id'] = user.id;
+
       const res = await fetch('/api/icpc', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: reqHeaders,
         body: JSON.stringify({
           title,
           subtitle,
@@ -218,8 +233,11 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           passcode: visibility === 'passcode' ? passcode : undefined,
           rules,
           problems: formattedProblems,
-          organizer: organizerName,
-          college: collegeName,
+          organizer: organizerName || profile?.display_name || user?.user_metadata?.display_name || 'Verified Faculty Mentor',
+          college: collegeName || (profile as any)?.college || 'Partner Collegiate Network',
+          creatorId: user?.id,
+          userRole: profile?.role,
+          facultyVerified: profile?.faculty_verified || Boolean(profile?.college) || profile?.role === 'teacher' || profile?.role === 'admin',
         }),
       });
 
