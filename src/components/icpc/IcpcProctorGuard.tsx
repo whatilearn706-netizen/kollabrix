@@ -77,8 +77,6 @@ export function IcpcProctorGuard({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const proctorIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const warningCountRef = useRef(0);
 
   // Persistence Timers
@@ -86,7 +84,6 @@ export function IcpcProctorGuard({
   const focusLostStartTimeRef = useRef<number | null>(null);
   const phoneDetectionStartTimeRef = useRef<number | null>(null);
   const gazeDeviationStartTimeRef = useRef<number | null>(null);
-  const voiceStartTimeRef = useRef<number | null>(null);
   const recentViolationsRef = useRef<Record<string, number>>({});
 
   // Audio warning sound synthesizer (Web Audio API)
@@ -176,7 +173,7 @@ export function IcpcProctorGuard({
     [studentId, studentName, studentEmail, college, contestId, contestTitle, problemId, problemTitle, onSecurityIncident, playAlertSound]
   );
 
-  // Request Wide-Angle Webcam + Audio Stream for Siri & Anti-Cheat proctoring
+  // Request Wide-Angle Webcam Stream (Video Only — No Microphone to prevent ambient noise false alerts)
   const initWebcam = useCallback(async () => {
     setCameraError(null);
     try {
@@ -186,29 +183,19 @@ export function IcpcProctorGuard({
 
       let stream: MediaStream | null = null;
       try {
-        // Attempt wide-angle camera + microphone for Siri and voice detection
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280 },
             height: { ideal: 720 },
             facingMode: 'user',
           },
-          audio: true,
+          audio: false,
         });
       } catch (specErr) {
-        try {
-          // Fallback to basic video + audio
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          });
-        } catch (audioFailErr) {
-          // Fallback to video only if microphone is completely blocked
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false,
-          });
-        }
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
       }
 
       streamRef.current = stream;
@@ -219,36 +206,6 @@ export function IcpcProctorGuard({
         };
       }
 
-      // Configure Audio Analysis & Siri Hardware Seizure Detection
-      const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length > 0) {
-        const audioTrack = audioTracks[0];
-        // If macOS Siri or another application seizes the hardware microphone
-        audioTrack.onmute = () => {
-          triggerViolation(
-            'TAB_SWITCH',
-            'Siri / Audio Interruption Detected',
-            'System voice assistant or external application seized audio control from proctor guard.',
-            'critical'
-          );
-        };
-
-        try {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            const audioCtx = new AudioContextClass();
-            const source = audioCtx.createMediaStreamSource(stream);
-            const analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
-            analyserRef.current = analyser;
-            audioContextRef.current = audioCtx;
-          }
-        } catch (audioCtxErr) {
-          console.warn('Proctor audio analyser setup:', audioCtxErr);
-        }
-      }
-
       setHasCameraPermission(true);
       return true;
     } catch (err: any) {
@@ -257,7 +214,7 @@ export function IcpcProctorGuard({
       setHasCameraPermission(false);
       return false;
     }
-  }, [triggerViolation]);
+  }, []);
 
   // Auto-start webcam immediately on mount when active
   useEffect(() => {
@@ -292,7 +249,7 @@ export function IcpcProctorGuard({
   }, []);
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
-  // Intercepts and blocks Siri, Spotlight, Raycast shortcuts, menu bar touches, and 4-finger swipes
+  // Intercepts and blocks Siri, Spotlight, Raycast shortcuts and 4-finger swipes
   useEffect(() => {
     if (!isActive) return;
 
@@ -323,7 +280,7 @@ export function IcpcProctorGuard({
 
     // Block horizontal trackpad gestures (swiping spaces or navigation)
     const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > 15) {
+      if (Math.abs(e.deltaX) > 25 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         e.preventDefault();
         triggerViolation(
           'TAB_SWITCH',
@@ -334,39 +291,12 @@ export function IcpcProctorGuard({
       }
     };
 
-    // Detect mouse moving into top edge of screen where macOS menu bar / Siri icon is located
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY <= 3) {
-        triggerViolation(
-          'TAB_SWITCH',
-          'macOS Menu Bar Access Attempted',
-          'Pointer reached macOS menu bar (Siri / System menu area). Accessing system tools during contest is prohibited.',
-          'high'
-        );
-      }
-    };
-
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0) {
-        triggerViolation(
-          'TAB_SWITCH',
-          'Siri / macOS Menu Bar Clicked',
-          'Pointer left contest arena into macOS system menu bar. Accessing Siri or system menus is strictly prohibited.',
-          'critical'
-        );
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
       if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.unlock) {
         (navigator as any).keyboard.unlock();
       }
@@ -384,14 +314,13 @@ export function IcpcProctorGuard({
       const isCompliant = hasFocus && isVisible;
 
       if (!isCompliant) {
-        // Continuous loud alarm while off-screen or unfocused
         playAlertSound('critical');
 
         // Send macOS system Desktop Notification to all spaces
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           try {
             new Notification('🚨 LINKORA ICPC SECURITY VIOLATION', {
-              body: 'Siri / Desktop switch detected! Return to the contest immediately.',
+              body: 'Screen switch detected! You navigated away from the contest. Return immediately.',
               icon: '/icon.png',
             });
           } catch (notifErr) {}
@@ -401,11 +330,11 @@ export function IcpcProctorGuard({
           focusLostStartTimeRef.current = Date.now();
         } else {
           const elapsed = Date.now() - focusLostStartTimeRef.current;
-          if (elapsed >= 200) {
+          if (elapsed >= 1500) {
             triggerViolation(
               'TAB_SWITCH',
               'Siri / External Application / Desktop Switch Detected',
-              `Contest window lost focus or was moved off-screen for ${(elapsed / 1000).toFixed(1)}s (voice assistant, desktop swipe, or external window active). Screen switching is strictly prohibited.`,
+              `Contest window lost focus or was moved off-screen for ${(elapsed / 1000).toFixed(1)}s (Siri, external window, or desktop swipe active). Screen switching is strictly prohibited.`,
               'critical'
             );
           }
@@ -415,7 +344,7 @@ export function IcpcProctorGuard({
         if (focusLostStartTimeRef.current) {
           const awayDuration = Date.now() - focusLostStartTimeRef.current;
           focusLostStartTimeRef.current = null;
-          if (awayDuration >= 200) {
+          if (awayDuration >= 1200) {
             triggerViolation(
               'TAB_SWITCH',
               'Desktop / External Window Switch Detected',
@@ -427,15 +356,13 @@ export function IcpcProctorGuard({
       }
     };
 
-    const poller = setInterval(checkFocusAndVisibility, 100);
+    const poller = setInterval(checkFocusAndVisibility, 200);
 
     const handleWindowBlur = () => {
-      triggerViolation(
-        'TAB_SWITCH',
-        'Siri / External Application Opened',
-        'Contest window lost focus (Siri, Spotlight, or external app opened). System overlays are strictly prohibited.',
-        'critical'
-      );
+      if (!focusLostStartTimeRef.current) {
+        focusLostStartTimeRef.current = Date.now();
+      }
+      checkFocusAndVisibility();
     };
 
     const handleWindowFocus = () => {
@@ -468,7 +395,7 @@ export function IcpcProctorGuard({
     };
   }, [isActive, triggerViolation, playAlertSound]);
 
-  // Full-Screen Change Event Listener (with 1.0-Second Rule)
+  // Full-Screen Change Event Listener (with 1.5-Second Rule)
   useEffect(() => {
     if (!isActive) return;
 
@@ -485,11 +412,11 @@ export function IcpcProctorGuard({
             triggerViolation(
               'FULLSCREEN_EXIT',
               'Full-Screen Mode Exited',
-              'Contestant left full-screen mode for more than 1 second. Screen switching is prohibited during ICPC contests.',
+              'Contestant left full-screen mode for more than 1.5 seconds. Screen switching is prohibited during ICPC contests.',
               'high'
             );
           }
-        }, 1000);
+        }, 1500);
       } else {
         if (fullscreenExitTimerRef.current) {
           clearTimeout(fullscreenExitTimerRef.current);
@@ -508,7 +435,7 @@ export function IcpcProctorGuard({
     };
   }, [isActive, triggerViolation]);
 
-  // ── REAL-TIME VISION & AUDIO PROCESSING (Phone, Eye/Gaze & Voice Detection) ──
+  // ── REAL-TIME VISION FRAME PROCESSING (Phone & Laptop Gaze Tracking) ──
   useEffect(() => {
     if (!isActive || !hasCameraPermission) return;
 
@@ -523,39 +450,12 @@ export function IcpcProctorGuard({
 
       const now = Date.now();
 
-      // ── Voice / Speech / Siri invocation detection via microphone ──
-      if (analyserRef.current) {
-        try {
-          const dataArr = new Uint8Array(analyserRef.current.frequencyBinCount);
-          analyserRef.current.getByteFrequencyData(dataArr);
-          let sum = 0;
-          for (let i = 0; i < dataArr.length; i++) sum += dataArr[i];
-          const avgVol = sum / dataArr.length;
-
-          // If voice/speech detected during contest (avgVol > 22) for > 600ms
-          if (avgVol > 22) {
-            if (!voiceStartTimeRef.current) {
-              voiceStartTimeRef.current = now;
-            } else if (now - voiceStartTimeRef.current >= 600) {
-              triggerViolation(
-                'TAB_SWITCH',
-                'Siri / Voice Assistant Speech Detected',
-                'Contestant speaking or voice assistant interaction detected in audio feed (> 0.6s). Silence is strictly required during ICPC contests.',
-                'critical'
-              );
-            }
-          } else {
-            voiceStartTimeRef.current = null;
-          }
-        } catch (audioErr) {}
-      }
-
       // Draw current video frame to low-res canvas for fast pixel analysis
       ctx.drawImage(video, 0, 0, 320, 240);
       const frameData = ctx.getImageData(0, 0, 320, 240);
       const { data, width, height } = frameData;
 
-      // ── 1. Face & Strict Laptop Gaze Tracking Algorithm ──
+      // ── 1. Face & Laptop Gaze Cone Tracking Algorithm ──
       let skinPixelCount = 0;
       let sumX = 0;
       let sumY = 0;
@@ -599,11 +499,11 @@ export function IcpcProctorGuard({
         setGazeStatus('missing');
         if (!gazeDeviationStartTimeRef.current) {
           gazeDeviationStartTimeRef.current = now;
-        } else if (now - gazeDeviationStartTimeRef.current >= 800) {
+        } else if (now - gazeDeviationStartTimeRef.current >= 1200) {
           triggerViolation(
             'FACE_MISSING',
             'Face Not Detected in Frame',
-            'Contestant face not visible in camera proctor feed for > 0.8s. Keep your face centered in the camera.',
+            'Contestant face not visible in camera proctor feed for > 1.2s. Keep your face centered in the camera.',
             'medium'
           );
         }
@@ -618,20 +518,20 @@ export function IcpcProctorGuard({
         let isGazeDeviated = false;
         let deviationReason = '';
 
-        // Strict cone: contestant must look straight at the laptop screen
-        if (avgX < 0.42 || leftRatio > 0.63) {
+        // Strict forward cone: contestant must look straight at the laptop screen
+        if (avgX < 0.40 || leftRatio > 0.65) {
           setGazeStatus('away_left');
           isGazeDeviated = true;
           deviationReason = 'Contestant looking away to the left of the laptop.';
-        } else if (avgX > 0.58 || leftRatio < 0.37) {
+        } else if (avgX > 0.60 || leftRatio < 0.35) {
           setGazeStatus('away_right');
           isGazeDeviated = true;
           deviationReason = 'Contestant looking away to the right of the laptop.';
-        } else if (avgY < 0.28) {
+        } else if (avgY < 0.25) {
           setGazeStatus('away_up');
           isGazeDeviated = true;
           deviationReason = 'Contestant looking upward away from the laptop screen.';
-        } else if (avgY > 0.54) {
+        } else if (avgY > 0.58) {
           setGazeStatus('down_excessive');
           isGazeDeviated = true;
           deviationReason = 'Contestant looking downward toward lap/desk area.';
@@ -643,11 +543,11 @@ export function IcpcProctorGuard({
         if (isGazeDeviated) {
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 750) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 1200) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Away from Laptop Screen Detected',
-              `${deviationReason} Looking away from the contest arena for > 0.75s is prohibited.`,
+              `${deviationReason} Looking away from the contest arena for > 1.2s is prohibited.`,
               'medium'
             );
           }
@@ -655,8 +555,7 @@ export function IcpcProctorGuard({
       }
 
       // ── 2. Smartphone & Mobile Device Detection Algorithm ──
-      // Refined phone detection:
-      // Identifies mobile phones held in hands in the lower 60% of the frame (desk/chest zone).
+      // Identifies mobile phones held in hands in the lower 60% of the frame (desk/hands zone).
       // Zero false-positives on clothing; highly sensitive to phones (light or dark mode).
       let phoneCandidateFound = false;
       const lowerYStart = Math.floor(height * 0.35);
@@ -701,8 +600,8 @@ export function IcpcProctorGuard({
           const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
           const gradY = Math.abs(lum1 - lumDown);
 
-          // Active phone screen (lum > 120, low color saturation)
-          const isIlluminatedScreen = lum1 > 120 && Math.abs(r1 - g1) < 35 && Math.abs(r1 - b1) < 40;
+          // Active phone screen (lum > 125, low color saturation)
+          const isIlluminatedScreen = lum1 > 125 && Math.abs(r1 - g1) < 32 && Math.abs(r1 - b1) < 36;
           const isSharpPhoneEdge = gradX > 25 || gradY > 25;
 
           if (isIlluminatedScreen || isSharpPhoneEdge) {
@@ -722,15 +621,14 @@ export function IcpcProctorGuard({
         ? Math.max(phoneH / phoneW, phoneW / phoneH) 
         : 1;
 
-      // Criteria for phone candidate:
-      // 1) Compact rectangular cluster matching phone dimensions (W: 22-140px, H: 35-180px)
+      // Phone detected if:
+      // 1) Compact rectangular object (width 22-135px, height 35-175px, width < 55% of canvas)
       // 2) Phone aspect ratio (1.25 to 2.8)
       // 3) Either illuminated screen (>= 12 pts) OR dense edges (>= 22 pts)
       // 4) Hand skin points present in the lower frame (proving hands are raised holding an object)
-      // 5) NOT covering entire chest (phoneW < width * 0.55)
       if (
-        phoneW >= 22 && phoneW <= 140 &&
-        phoneH >= 35 && phoneH <= 180 &&
+        phoneW >= 22 && phoneW <= 135 &&
+        phoneH >= 35 && phoneH <= 175 &&
         phoneW < width * 0.55 &&
         phoneAspect >= 1.25 && phoneAspect <= 2.8 &&
         handSkinPoints >= 15 &&
@@ -743,12 +641,11 @@ export function IcpcProctorGuard({
         setPhoneStatus('suspect');
         if (!phoneDetectionStartTimeRef.current) {
           phoneDetectionStartTimeRef.current = now;
-        } else if (now - phoneDetectionStartTimeRef.current >= 800) {
-          // Detected continuously for >= 800ms!
+        } else if (now - phoneDetectionStartTimeRef.current >= 1200) {
           triggerViolation(
             'PHONE_DETECTED',
             'Mobile Phone Detected in Camera Feed',
-            'Mobile smartphone detected in hands for > 0.8s. Handheld device usage is strictly prohibited.',
+            'Mobile smartphone detected in hands for > 1.2s. Handheld device usage is strictly prohibited.',
             'critical'
           );
         }
@@ -756,7 +653,7 @@ export function IcpcProctorGuard({
         setPhoneStatus('clear');
         phoneDetectionStartTimeRef.current = null;
       }
-    }, 250);
+    }, 300);
 
     return () => {
       if (proctorIntervalRef.current) {
@@ -766,14 +663,11 @@ export function IcpcProctorGuard({
     };
   }, [isActive, hasCameraPermission, triggerViolation]);
 
-  // Clean up streams & audio context on unmount
+  // Clean up streams on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {});
       }
     };
   }, []);
