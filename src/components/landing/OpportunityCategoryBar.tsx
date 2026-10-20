@@ -148,14 +148,12 @@ export function OpportunityCategoryBar() {
               >
                 <div
                   data-rail-icon="true"
-                  data-keep-icon="true"
                   className={`w-10 h-10 rounded-xl ${cat.iconBg} flex items-center justify-center shrink-0 border border-black/5 dark:border-white/10 shadow-sm group-hover:scale-110 transition-transform duration-200`}
                   style={{ backgroundColor: cat.iconHex, color: '#ffffff' }}
                 >
                   <Icon
-                    className="w-5 h-5 text-white"
+                    className="w-5 h-5 text-white m-auto block shrink-0"
                     strokeWidth={2.2}
-                    style={{ display: 'block', color: '#ffffff', stroke: 'currentColor' }}
                   />
                 </div>
 
@@ -165,7 +163,7 @@ export function OpportunityCategoryBar() {
                       {cat.name}
                     </span>
                     {cat.badge && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase rounded-md bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-md bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs whitespace-nowrap">
                         {cat.badge}
                       </span>
                     )}

@@ -35,7 +35,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     title: 'Hackathons & Contests',
     subtitle: 'Compete & Win Cash',
     description: 'Enter SIH 2026, Google Solution Challenge, ETHIndia & collegiate hackathon tracks.',
-    badge: '18+ Live • ₹25L+ Prizes',
+    badge: '18+ Contests',
     href: '/hackathons',
     icon: Trophy,
     gradientBg: 'from-blue-50/90 via-sky-50/70 to-indigo-50/80 dark:from-blue-950/40 dark:via-sky-950/30 dark:to-indigo-950/40',
@@ -50,7 +50,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     title: 'Collegiate Squads',
     subtitle: 'Build Real Software',
     description: 'Collaborate on production engineering, open-source repos & campus startup apps.',
-    badge: '250+ Squads Recruiting',
+    badge: '250+ Squads',
     href: '/explore',
     icon: Compass,
     gradientBg: 'from-violet-50/90 via-purple-50/70 to-fuchsia-50/80 dark:from-violet-950/40 dark:via-purple-950/30 dark:to-fuchsia-950/40',
@@ -65,7 +65,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     title: 'Student Matchmaker',
     subtitle: 'Assemble Dream Teams',
     description: 'Match with complementary frontend, backend, AI and UI/UX peers across 38+ universities.',
-    badge: '94% Match Rate',
+    badge: '94% Match',
     href: '/teammates',
     icon: Users2,
     gradientBg: 'from-amber-50/90 via-orange-50/70 to-yellow-50/80 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-yellow-950/40',
@@ -80,7 +80,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     title: 'Problem Statements',
     subtitle: 'Faculty & Industry Briefs',
     description: 'Solve real challenges proposed by university professors with verified mentorship credits.',
-    badge: '12 Academic Briefs',
+    badge: '12 Briefs',
     href: '/problems',
     icon: Lightbulb,
     gradientBg: 'from-emerald-50/90 via-teal-50/70 to-green-50/80 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-green-950/40',
@@ -95,7 +95,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     title: 'Real-Time Workspace',
     subtitle: 'Universal Canvas & Voice',
     description: 'Embed Figma & Canva live, launch WebRTC voice huddles, and generate AI pitch decks.',
-    badge: 'Beyond Unstop',
+    badge: 'Canvas & Voice',
     href: '/workspace/demo',
     icon: Layers,
     gradientBg: 'from-rose-50/90 via-pink-50/70 to-red-50/80 dark:from-rose-950/40 dark:via-pink-950/30 dark:to-red-950/40',
@@ -157,21 +157,19 @@ export function UnstopDomainGrid({ title, subtitle }: UnstopDomainGridProps = {}
 
                 <div className="space-y-4">
                   {/* Top Row: Icon & Badge */}
-                  <div className="flex items-start justify-between gap-2" data-keep-icon="true">
+                  <div className="flex items-center justify-between gap-2 w-full">
                     <div
-                      data-keep-icon="true"
                       data-domain-icon="true"
                       style={{ backgroundColor: card.iconHex }}
                       className={`w-12 h-12 rounded-2xl ${card.iconBg} shadow-md flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200`}
                     >
                       <Icon
-                        className={`w-6 h-6 ${card.iconColor}`}
+                        className={`w-6 h-6 ${card.iconColor} m-auto block shrink-0`}
                         strokeWidth={2.2}
-                        style={{ display: 'block', color: '#ffffff', stroke: 'currentColor' }}
                       />
                     </div>
 
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white dark:bg-white/10 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 shadow-2xs whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white dark:bg-white/10 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 shadow-2xs whitespace-nowrap shrink-0">
                       {card.badge}
                     </span>
                   </div>
