@@ -54,21 +54,12 @@ import {
   Layers,
   ChevronRight,
   Search,
-  CheckSquare,
-  Headphones,
-  Laptop,
-  MessageSquare,
-  Send,
+  LayoutDashboard,
 } from 'lucide-react';
 import { AddChallengeModal } from '@/components/hackathons/AddChallengeModal';
 import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementModal';
 import { EvaluationModal } from '@/components/hackathons/EvaluationModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
-import { WorkspaceTeamHuddle } from '@/components/workspace/WorkspaceTeamHuddle';
-import { WorkspaceToolBridge } from '@/components/workspace/WorkspaceToolBridge';
-import { WorkspaceCloserKit } from '@/components/workspace/WorkspaceCloserKit';
-import { HackathonSprintTasks } from '@/components/hackathons/HackathonSprintTasks';
-import { HackathonSprintChat } from '@/components/hackathons/HackathonSprintChat';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 import { isHackathonClosed } from '@/lib/hackathons/hackathonStatus';
@@ -102,27 +93,11 @@ export default function HackathonWorkspacePage() {
     'overview',
     'challenges',
     'team',
-    'tasks',
-    'huddle',
-    'bridge',
-    'closer-kit',
-    'discussions',
     'submission',
     'judging',
   ].includes(urlTab)) ? urlTab : 'overview';
 
-  const [activeTab, setActiveTab] = useState<
-    | 'overview'
-    | 'challenges'
-    | 'team'
-    | 'tasks'
-    | 'huddle'
-    | 'bridge'
-    | 'closer-kit'
-    | 'discussions'
-    | 'submission'
-    | 'judging'
-  >(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'challenges' | 'team' | 'submission' | 'judging'>(initialTab);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,88 +109,12 @@ export default function HackathonWorkspacePage() {
       'overview',
       'challenges',
       'team',
-      'tasks',
-      'huddle',
-      'bridge',
-      'closer-kit',
-      'discussions',
       'submission',
       'judging',
     ].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
-
-  // Synthetic Project & Members representation for full workspace feature parity
-  const syntheticProject: Project = useMemo(() => {
-    return {
-      id: myTeam?.id || `hackathon-${hackathon?.id || 'event'}`,
-      title: myTeam ? `${myTeam.team_name} — ${hackathon?.title || 'Hackathon'}` : (hackathon?.title || 'Hackathon Event'),
-      summary: myTeam?.description || hackathon?.description || 'Hackathon Team Sprint',
-      description: myTeam?.description || hackathon?.description || 'Collaborative team sprint workspace for collegiate hackathon.',
-      category: 'Web Development',
-      difficulty: 'Intermediate',
-      technologies: hackathon?.themes || ['Next.js', 'React', 'TypeScript', 'TailwindCSS'],
-      required_skills: hackathon?.themes || ['Hackathon Sprint', 'Rapid Prototyping', 'Full-Stack'],
-      desired_roles: ['Frontend Developer', 'Backend Developer', 'Full-Stack Developer', 'AI/ML Engineer'],
-      status: isClosed ? 'Completed' : 'In Progress',
-      owner_id: myTeam?.leader_id || hackathon?.creator_id || user?.id || '',
-      current_team_size: myTeam?.members?.length || 1,
-      desired_team_size: hackathon?.max_team_size || 4,
-      repository_url: mySubmission?.repository_url || null,
-      demo_url: mySubmission?.demo_url || null,
-      video_url: mySubmission?.video_url || null,
-      documentation_url: mySubmission?.documentation_url || null,
-      created_at: myTeam?.created_at || hackathon?.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      owner: {
-        user_id: myTeam?.leader_id || user?.id || '',
-        display_name: myTeam?.leader?.display_name || user?.user_metadata?.display_name || 'Team Lead',
-        username: myTeam?.leader?.username || user?.user_metadata?.username || 'leader',
-        avatar_url: myTeam?.leader?.avatar_url || null,
-      },
-    };
-  }, [myTeam, hackathon, isClosed, user, mySubmission]);
-
-  const syntheticMembers: ProjectMember[] = useMemo(() => {
-    if (myTeam?.members && myTeam.members.length > 0) {
-      return myTeam.members.map((m, idx) => ({
-        id: m.id || `mem-${idx}`,
-        project_id: syntheticProject.id,
-        user_id: m.user_id,
-        role: (m.role === 'Leader' ? 'Project Lead' : 'Contributor') as TeamRole,
-        joined_at: m.joined_at || new Date().toISOString(),
-        profile: {
-          user_id: m.user_id,
-          display_name: m.profile?.display_name || 'Teammate',
-          username: m.profile?.username || 'teammate',
-          avatar_url: m.profile?.avatar_url || null,
-          college: m.profile?.college || null,
-          skills: m.profile?.skills || [],
-        },
-      }));
-    }
-    if (user) {
-      return [
-        {
-          id: `mem-${user.id}`,
-          project_id: syntheticProject.id,
-          user_id: user.id,
-          role: 'Project Lead' as TeamRole,
-          joined_at: new Date().toISOString(),
-          profile: {
-            user_id: user.id,
-            display_name: profile?.display_name || user.user_metadata?.display_name || 'Participant',
-            username: profile?.username || user.user_metadata?.username || 'participant',
-            avatar_url: profile?.avatar_url || null,
-            college: (profile as any)?.college || null,
-            skills: profile?.skills || [],
-          },
-        },
-      ];
-    }
-    return [];
-  }, [myTeam, syntheticProject.id, user, profile]);
 
   // Modals state
   const [isAddChallengeOpen, setIsAddChallengeOpen] = useState(false);
@@ -1363,66 +1262,6 @@ export default function HackathonWorkspacePage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('tasks')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'tasks'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <CheckSquare className={`w-3.5 h-3.5 ${activeTab === 'tasks' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Tasks & Kanban</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('huddle')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'huddle'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Headphones className={`w-3.5 h-3.5 ${activeTab === 'huddle' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Team Huddle (Audio)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('bridge')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'bridge'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Laptop className={`w-3.5 h-3.5 ${activeTab === 'bridge' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Live Tool Bridge</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('closer-kit')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'closer-kit'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Sparkles className={`w-3.5 h-3.5 ${activeTab === 'closer-kit' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>AI Closer Kit (Pitch)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('discussions')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'discussions'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <MessageSquare className={`w-3.5 h-3.5 ${activeTab === 'discussions' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Sprint Chat</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('submission')}
           className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'submission'
@@ -1768,31 +1607,44 @@ export default function HackathonWorkspacePage() {
                   )}
                 </div>
 
-                {/* Team Invite Code */}
-                {myTeam.invite_code && (
-                  <div className="p-3 bg-charcoal-950 rounded-xl border border-charcoal-800 space-y-1">
-                    <span className="text-[10px] font-semibold text-slate-400 block uppercase">
-                      Teammate Invite Code
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-sm text-brand-300">
-                        {myTeam.invite_code}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <Link href={`/projects/${myTeam.id}/workspace`}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm"
+                      leftIcon={<LayoutDashboard className="w-4 h-4" />}
+                    >
+                      Open Team Workspace
+                    </Button>
+                  </Link>
+
+                  {/* Team Invite Code */}
+                  {myTeam.invite_code && (
+                    <div className="p-3 bg-charcoal-950 rounded-xl border border-charcoal-800 space-y-1">
+                      <span className="text-[10px] font-semibold text-slate-400 block uppercase">
+                        Teammate Invite Code
                       </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(myTeam.invite_code!);
-                          setCopiedTeamCode(true);
-                          setTimeout(() => setCopiedTeamCode(false), 2000);
-                        }}
-                        className="text-slate-400 hover:text-white p-1 rounded"
-                        title="Copy code"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-sm text-brand-300">
+                          {myTeam.invite_code}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(myTeam.invite_code!);
+                            setCopiedTeamCode(true);
+                            setTimeout(() => setCopiedTeamCode(false), 2000);
+                          }}
+                          className="text-slate-400 hover:text-white p-1 rounded"
+                          title="Copy code"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {copiedTeamCode && <span className="text-[10px] text-emerald-400">Code copied!</span>}
                     </div>
-                    {copiedTeamCode && <span className="text-[10px] text-emerald-400">Code copied!</span>}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Selected Challenge */}
@@ -2219,159 +2071,6 @@ export default function HackathonWorkspacePage() {
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB: TASKS & SPRINT KANBAN */}
-      {/* ========================================================================= */}
-      {activeTab === 'tasks' && (
-        <div className="space-y-6">
-          {!myTeam ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 max-w-xl mx-auto my-8">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
-                <Users className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-white">Squad Required for Sprint Kanban</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Form or join a hackathon squad to divide tasks, assign roles, and track real-time progress before the deadline.
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setActiveTab('team')}
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-              >
-                Register or Join a Team
-              </Button>
-            </div>
-          ) : (
-            <HackathonSprintTasks
-              projectId={syntheticProject.id}
-              members={syntheticMembers}
-              isClosed={isClosed}
-              currentUserId={user?.id}
-              currentUserName={profile?.display_name || user?.user_metadata?.display_name}
-            />
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB: TEAM HUDDLE (LIVE AUDIO ROOM & STANDUPS) */}
-      {/* ========================================================================= */}
-      {activeTab === 'huddle' && (
-        <div className="space-y-6">
-          {!myTeam ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 max-w-xl mx-auto my-8">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
-                <Headphones className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-white">Squad Required for Team Voice Huddle</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Connect live on audio with your teammates, post hourly standup notes, and use the shared real-time scratchpad.
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setActiveTab('team')}
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-              >
-                Register or Join a Team
-              </Button>
-            </div>
-          ) : (
-            <WorkspaceTeamHuddle
-              project={syntheticProject}
-              members={syntheticMembers}
-              currentUserId={user?.id}
-              currentUserProfile={profile}
-            />
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB: LIVE TOOL BRIDGE (SANDBOX & DEVICE VIEWPORTS) */}
-      {/* ========================================================================= */}
-      {activeTab === 'bridge' && (
-        <div className="space-y-6">
-          {!myTeam ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 max-w-xl mx-auto my-8">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
-                <Laptop className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-white">Squad Required for Live Tool Bridge</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Test your prototype on mobile, tablet, and desktop viewports simultaneously, and embed collaborative design boards.
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setActiveTab('team')}
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-              >
-                Register or Join a Team
-              </Button>
-            </div>
-          ) : (
-            <WorkspaceToolBridge
-              project={syntheticProject}
-              currentUserId={user?.id}
-            />
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB: AI CLOSER KIT (PITCH SCRIPT & README BUILDER) */}
-      {/* ========================================================================= */}
-      {activeTab === 'closer-kit' && (
-        <div className="space-y-6">
-          <WorkspaceCloserKit
-            project={syntheticProject}
-            members={syntheticMembers}
-            currentUserId={user?.id}
-          />
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB: SPRINT CHAT (REALTIME TEAM MESSAGING) */}
-      {/* ========================================================================= */}
-      {activeTab === 'discussions' && (
-        <div className="space-y-6">
-          {!myTeam ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 max-w-xl mx-auto my-8">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
-                <MessageSquare className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-white">Squad Required for Live Chat</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Form or join a squad to coordinate live with teammates during the hackathon sprint.
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setActiveTab('team')}
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-              >
-                Register or Join a Team
-              </Button>
-            </div>
-          ) : (
-            <HackathonSprintChat
-              projectId={syntheticProject.id}
-              currentUserId={user?.id}
-              currentUserName={profile?.display_name || user?.user_metadata?.display_name}
-              currentUserAvatar={profile?.avatar_url}
-              isClosed={isClosed}
-            />
-          )}
         </div>
       )}
 

@@ -89,7 +89,11 @@ function MyProjectsContent() {
         .order('created_at', { ascending: false });
 
       if (ownedData) {
-        setLeadingProjects(ownedData as Project[]);
+        // Only permanent projects belong here (exclude hackathon sprint projects)
+        const permProjects = (ownedData as Project[]).filter(
+          (p) => p.category !== ('Hackathon Sprint' as any) && !p.summary?.startsWith('Hackathon Team Sprint')
+        );
+        setLeadingProjects(permProjects);
       }
 
       // 2. Fetch permanent projects where user is a joined team member
@@ -118,7 +122,10 @@ function MyProjectsContent() {
           .map((m) => ({
             ...(m.project as unknown as Project),
             userRole: m.role,
-          }));
+          }))
+          .filter(
+            (p) => p.category !== ('Hackathon Sprint' as any) && !p.summary?.startsWith('Hackathon Team Sprint')
+          );
         setJoinedProjects(joined);
       }
 
@@ -432,14 +439,20 @@ function MyProjectsContent() {
             </div>
           </div>
 
-          <Link href={`/hackathons/${activeHackathonSprints[0].hackathon_id}/workspace`}>
+          <Link
+            href={
+              activeHackathonSprints[0].hackathon?.join_code
+                ? `/h/${activeHackathonSprints[0].hackathon.join_code}`
+                : `/hackathons/${activeHackathonSprints[0].hackathon_id}/workspace`
+            }
+          >
             <Button
               variant="primary"
               size="sm"
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold whitespace-nowrap shadow-sm"
+              className="bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              Open Team Workshop
+              Participated
             </Button>
           </Link>
         </div>
@@ -816,53 +829,23 @@ function MyProjectsContent() {
                         </div>
                       </div>
 
-                      {/* Sprint Feature Badges / Quick Links */}
-                      <div className="pt-2 border-t border-charcoal-800 flex flex-wrap items-center gap-1.5">
-                        <Link href={`/hackathons/${h.id}/workspace?tab=tasks`}>
-                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
-                            <CheckSquare className="w-3 h-3 text-amber-400" />
-                            Tasks & Kanban
-                          </span>
-                        </Link>
-                        <Link href={`/hackathons/${h.id}/workspace?tab=huddle`}>
-                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
-                            <Headphones className="w-3 h-3 text-amber-400" />
-                            Team Huddle
-                          </span>
-                        </Link>
-                        <Link href={`/hackathons/${h.id}/workspace?tab=bridge`}>
-                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
-                            <Laptop className="w-3 h-3 text-amber-400" />
-                            Live Bridge
-                          </span>
-                        </Link>
-                        <Link href={`/hackathons/${h.id}/workspace?tab=closer-kit`}>
-                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
-                            <Sparkles className="w-3 h-3 text-amber-400" />
-                            AI Pitch Kit
-                          </span>
-                        </Link>
-                      </div>
-
                       <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2 flex-wrap">
-                        <Link href={`/hackathons/${h.id}/workspace`}>
+                        <Link href={`/projects/${item.team_id || item.team?.id || `hackathon-${h.id}`}/workspace`}>
                           <Button
                             variant="primary"
                             size="sm"
-                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
+                            className="bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white font-bold shadow-sm"
                             leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}
                           >
-                            Open Team Workshop
+                            Workspace
                           </Button>
                         </Link>
 
-                        {h.join_code && (
-                          <Link href={`/h/${h.join_code}`}>
-                            <Button variant="ghost" size="sm" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
-                              Event Brief
-                            </Button>
-                          </Link>
-                        )}
+                        <Link href={h.join_code ? `/h/${h.join_code}` : `/hackathons/${h.id}/workspace`}>
+                          <Button variant="outline" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                            View Hackathon
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   );

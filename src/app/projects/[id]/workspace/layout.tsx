@@ -25,12 +25,14 @@ import {
   Laptop,
   Headphones,
   Award,
+  Clock,
 } from 'lucide-react';
 import {
   WorkspaceFeaturesConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
+import { isHackathonClosed } from '@/lib/hackathons/hackathonStatus';
 
 interface WorkspaceContextType {
   project: Project;
@@ -72,6 +74,8 @@ export default function WorkspaceLayout({
   const [currentUserMember, setCurrentUserMember] = useState<ProjectMember | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hackathonId, setHackathonId] = useState<string | null>(null);
+  const [isHackathonClosedState, setIsHackathonClosedState] = useState<boolean>(false);
   const [workspaceFeatures, setWorkspaceFeatures] = useState<WorkspaceFeaturesConfig>(
     DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures || {
       aiCloserKit: true,
@@ -189,11 +193,166 @@ export default function WorkspaceLayout({
       }
 
       // 1. Fetch project from Supabase DB
-      const { data: projData, error: projError } = await supabase
+      let { data: projData, error: projError } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
         .single();
+
+      let detectedHackathonId: string | null = null;
+      let detectedClosed = false;
+
+      if (projError || !projData) {
+        // A. Check if projectId matches a team in hackathon_teams
+        let cleanTeamId = projectId;
+        if (cleanTeamId.startsWith('hackathon-')) {
+          cleanTeamId = cleanTeamId.replace('hackathon-', '');
+        }
+
+        const { data: teamData } = await supabase
+          .from('hackathon_teams')
+          .select('*, hackathon:hackathons(*), challenge:hackathon_challenges(*)')
+          .eq('id', cleanTeamId)
+          .maybeSingle();
+
+        if (teamData) {
+          detectedHackathonId = teamData.hackathon_id;
+          const h = teamData.hackathon;
+          const closed = isHackathonClosed(h);
+          detectedClosed = closed;
+
+          // Fetch team members with profiles
+          const { data: teamMems } = await supabase
+            .from('hackathon_team_members')
+            .select(`
+              *,
+              profile:profiles(
+                user_id,
+                username,
+                display_name,
+                avatar_url,
+                bio,
+                college,
+                course,
+                skills,
+                interests,
+                is_suspended,
+                status
+              )
+            `)
+            .eq('team_id', teamData.id);
+
+          const isLeader = teamData.leader_id === currentUserId;
+          const isMem = (teamMems || []).some((m: any) => m.user_id === currentUserId);
+
+          if (isLeader || isMem) {
+            // Build synthetic Project object
+            const hackProj: Project = {
+              id: teamData.id,
+              owner_id: teamData.leader_id,
+              title: teamData.team_name,
+              summary: teamData.description || `Hackathon Team Sprint: ${h?.title || 'Campus Hackathon'}`,
+              description: `### Problem Statement\n${teamData.challenge?.title || teamData.description || 'Assigned Hackathon Challenge'}\n\n### Proposed Solution\nBuilding an innovative solution for ${h?.title || 'the campus hackathon sprint'}.\n\n### Tech Stack & Architecture\n${(h?.themes || ['Next.js', 'React', 'TypeScript', 'TailwindCSS']).join(', ')}\n\n### Who We Need\nCollegiate student builders collaborating during the hackathon sprint.`,
+              category: 'Web Development',
+              difficulty: 'Intermediate',
+              technologies: h?.themes || ['Next.js', 'React', 'TypeScript'],
+              required_skills: h?.themes || ['Rapid Prototyping', 'Full-Stack'],
+              desired_roles: ['Project Lead', 'Frontend Developer', 'Backend Developer', 'AI/ML Engineer'],
+              current_team_size: teamMems?.length || 1,
+              desired_team_size: h?.max_team_size || 4,
+              status: closed ? 'Completed' : 'Recruiting',
+              created_at: teamData.created_at || new Date().toISOString(),
+              updated_at: teamData.updated_at || new Date().toISOString(),
+            };
+
+            // Self-heal: ensure row exists in projects table for DB relation foreign keys
+            try {
+              await supabase.from('projects').upsert({
+                id: hackProj.id,
+                owner_id: hackProj.owner_id,
+                title: hackProj.title,
+                summary: hackProj.summary,
+                description: hackProj.description,
+                category: hackProj.category,
+                difficulty: hackProj.difficulty,
+                technologies: hackProj.technologies,
+                required_skills: hackProj.required_skills,
+                desired_roles: hackProj.desired_roles,
+                current_team_size: hackProj.current_team_size,
+                desired_team_size: hackProj.desired_team_size,
+                status: hackProj.status,
+              }, { onConflict: 'id' });
+            } catch (e) {}
+
+            // Also ensure project_members has rows for foreign keys
+            try {
+              for (const tm of (teamMems || [])) {
+                await supabase.from('project_members').upsert({
+                  id: tm.id,
+                  project_id: teamData.id,
+                  user_id: tm.user_id,
+                  role: tm.role === 'Leader' ? 'Project Lead' : tm.role || 'Contributor',
+                }, { onConflict: 'id' });
+              }
+            } catch (e) {}
+
+            projData = hackProj;
+            projError = null;
+          }
+        } else if (projectId.startsWith('hackathon-')) {
+          const hackId = projectId.replace('hackathon-', '');
+          const { data: hData } = await supabase
+            .from('hackathons')
+            .select('*')
+            .eq('id', hackId)
+            .maybeSingle();
+
+          if (hData) {
+            detectedHackathonId = hData.id;
+            detectedClosed = isHackathonClosed(hData);
+
+            const { data: existingTeam } = await supabase
+              .from('hackathon_teams')
+              .select('*')
+              .eq('hackathon_id', hackId)
+              .eq('leader_id', currentUserId)
+              .maybeSingle();
+
+            let targetTeam = existingTeam;
+            if (!targetTeam) {
+              const teamName = `Team ${userRef.current?.user_metadata?.display_name || userRef.current?.email?.split('@')[0] || 'Alpha'}`;
+              const { data: createdTeam } = await supabase
+                .from('hackathon_teams')
+                .insert({
+                  hackathon_id: hackId,
+                  team_name: teamName,
+                  leader_id: currentUserId,
+                  invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                })
+                .select('*')
+                .single();
+
+              if (createdTeam) {
+                targetTeam = createdTeam;
+                await supabase.from('hackathon_team_members').insert({
+                  team_id: createdTeam.id,
+                  hackathon_id: hackId,
+                  user_id: currentUserId,
+                  role: 'Leader',
+                });
+              }
+            }
+
+            if (targetTeam) {
+              router.replace(`/projects/${targetTeam.id}/workspace`);
+              return;
+            }
+          }
+        }
+      }
+
+      setHackathonId(detectedHackathonId);
+      setIsHackathonClosedState(detectedClosed);
 
       if (projError || !projData) {
         setIsAuthorized(false);
@@ -342,6 +501,34 @@ export default function WorkspaceLayout({
     );
   }
 
+  if (isHackathonClosedState) {
+    return (
+      <div className="max-w-md mx-auto my-20 p-8 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 shadow-elevated">
+        <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+          <Clock className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-white">Hackathon Sprint Concluded</h2>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          The official hackathon timeline has ended. As scheduled, temporary event sprint workshops are closed and archived. Your permanent projects remain accessible forever.
+        </p>
+        <div className="pt-2 flex justify-center gap-3">
+          <Link href="/my-projects">
+            <Button variant="primary" size="sm">
+              Back to Workspaces
+            </Button>
+          </Link>
+          {hackathonId && (
+            <Link href={`/hackathons/${hackathonId}/workspace`}>
+              <Button variant="outline" size="sm">
+                View Event Submissions
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthorized || !project) {
     return (
       <div className="max-w-md mx-auto my-20 p-8 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 shadow-elevated">
@@ -370,6 +557,7 @@ export default function WorkspaceLayout({
 
   const isOwner = user?.id === project.owner_id;
   const isLead = isOwner || currentUserMember?.role === 'Project Lead';
+  const isHackathonWorkspace = Boolean(hackathonId) || project.category === ('Hackathon Sprint' as any);
 
   const navItems = [
     {
@@ -388,7 +576,7 @@ export default function WorkspaceLayout({
       href: `/projects/${projectId}/workspace/milestones`,
       icon: Milestone,
     },
-    ...(workspaceFeatures.aiCloserKit
+    ...(!isHackathonWorkspace && workspaceFeatures.aiCloserKit
       ? [
           {
             label: 'AI Closer Kit',
@@ -397,7 +585,7 @@ export default function WorkspaceLayout({
           },
         ]
       : []),
-    ...(workspaceFeatures.liveToolBridge
+    ...(!isHackathonWorkspace && workspaceFeatures.liveToolBridge
       ? [
           {
             label: 'Live Tool Bridge',
@@ -406,7 +594,7 @@ export default function WorkspaceLayout({
           },
         ]
       : []),
-    ...(workspaceFeatures.teamHuddle
+    ...(!isHackathonWorkspace && workspaceFeatures.teamHuddle
       ? [
           {
             label: 'Team Huddle',
@@ -415,7 +603,7 @@ export default function WorkspaceLayout({
           },
         ]
       : []),
-    ...(workspaceFeatures.proofOfWork
+    ...(!isHackathonWorkspace && workspaceFeatures.proofOfWork
       ? [
           {
             label: 'Proof-of-Work',
@@ -458,9 +646,13 @@ export default function WorkspaceLayout({
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-charcoal-800">
           <div className="flex items-center gap-3">
             <Link
-              href={`/projects/${project.id}`}
+              href={
+                hackathonId
+                  ? `/hackathons/${hackathonId}/workspace`
+                  : `/projects/${project.id}`
+              }
               className="p-2 rounded-xl bg-charcoal-900 hover:bg-charcoal-800 border border-charcoal-750 text-slate-400 hover:text-white transition-colors"
-              title="Return to Public Project Page"
+              title={hackathonId ? 'Return to Hackathon' : 'Return to Public Project Page'}
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -482,7 +674,14 @@ export default function WorkspaceLayout({
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href={`/projects/${project.id}`} target="_blank">
+            <Link
+              href={
+                hackathonId
+                  ? `/hackathons/${hackathonId}/workspace`
+                  : `/projects/${project.id}`
+              }
+              target="_blank"
+            >
               <Button variant="ghost" size="sm" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
                 Public View
               </Button>
