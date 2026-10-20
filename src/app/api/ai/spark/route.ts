@@ -4,6 +4,7 @@ import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFea
 import { SparkModelSettings } from '@/app/api/spark/settings/route';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export interface SparkScorecard {
   technicalComplexity: number; // 0-100 (Weight: 30%)
@@ -65,12 +66,12 @@ export interface SparkBlueprintResponse {
   matchScore?: number;
 }
 
-// Active models to try in order of speed and capability
+// Active models to try in order of speed, quota availability and capability
 const GEMINI_MODELS = [
+  'gemini-3.1-flash-lite',
   'gemini-3.8-flash',
   'gemini-3.7-flash',
   'gemini-flash-latest',
-  'gemini-3.5-flash-lite',
   'gemma-4-31b-it',
 ];
 
@@ -531,19 +532,21 @@ Return ONLY a valid JSON object matching this exact schema:
           const timeout = setTimeout(() => controller.abort(), 22000);
 
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+          const genConfig: any = {
+            responseMimeType: 'application/json',
+            temperature: sparkSettings.temperature || 0.7,
+          };
+          if (model.includes('flash')) {
+            genConfig.thinkingConfig = { thinkingBudget: 0 };
+          }
+
           const res = await fetch(url, {
             method: 'POST',
             signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: sysPrompt }] }],
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: sparkSettings.temperature || 0.7,
-                thinkingConfig: {
-                  thinkingBudget: 0,
-                },
-              },
+              generationConfig: genConfig,
             }),
           });
           clearTimeout(timeout);
