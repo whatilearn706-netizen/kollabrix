@@ -21,8 +21,19 @@ interface AdminDeadlinesTabProps {
 }
 
 export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
-  const [deadlines, setDeadlines] = useState<CampusDeadlineItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [deadlines, setDeadlines] = useState<CampusDeadlineItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_deadlines_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return DEFAULT_CAMPUS_DEADLINES;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [actionSuccess, setActionSuccess] = useState<string>('');
@@ -41,13 +52,13 @@ export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
   const [tags, setTags] = useState('Teams of 2-4, Cash Prize');
 
   const fetchDeadlines = async () => {
-    setIsLoading(true);
     setActionError('');
     try {
       const res = await fetch('/api/deadlines');
       const data = await res.json();
       if (data.deadlines && Array.isArray(data.deadlines)) {
         setDeadlines(data.deadlines);
+        try { localStorage.setItem('linkora_deadlines_cache', JSON.stringify(data.deadlines)); } catch {}
       }
     } catch (err: any) {
       setActionError(err.message);

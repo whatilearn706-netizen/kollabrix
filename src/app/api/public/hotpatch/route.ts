@@ -30,29 +30,26 @@ export async function GET() {
           auth: { persistSession: false },
         });
 
-        const { data: dedicatedRow, error: dedicatedError } = await client
+        const { data: rows } = await client
           .from('platform_settings')
-          .select('value')
-          .eq('key', 'linkora_hotpatch_v1')
-          .maybeSingle();
+          .select('key, value')
+          .in('key', ['linkora_hotpatch_v1', 'site_master_control_config']);
 
-        if (dedicatedError) throw dedicatedError;
+        if (Array.isArray(rows)) {
+          const dedicatedRow = rows.find((r: any) => r.key === 'linkora_hotpatch_v1');
+          const masterRow = rows.find((r: any) => r.key === 'site_master_control_config');
 
-        if (dedicatedRow?.value) {
-          stored = dedicatedRow.value as Record<string, unknown>;
-        } else {
-          const { data: masterRow, error: masterError } = await client
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'site_master_control_config')
-            .maybeSingle();
+          const dedicatedVal = (dedicatedRow?.value as Record<string, unknown>) || null;
+          const masterVal = (masterRow?.value?.hotpatch as Record<string, unknown>) || null;
 
-          if (masterError) throw masterError;
-
-          const masterValue = masterRow?.value as
-            | Record<string, unknown>
-            | null;
-          stored = (masterValue?.hotpatch as Record<string, unknown>) || {};
+          // Pick whichever was saved more recently or has content
+          if (dedicatedVal && masterVal) {
+            const dedicatedTime = dedicatedVal.updatedAt ? new Date(dedicatedVal.updatedAt as string).getTime() : 0;
+            const masterTime = masterVal.updatedAt ? new Date(masterVal.updatedAt as string).getTime() : 0;
+            stored = dedicatedTime >= masterTime ? dedicatedVal : masterVal;
+          } else {
+            stored = dedicatedVal || masterVal || {};
+          }
         }
       }
     }
@@ -64,6 +61,8 @@ export async function GET() {
           : DEFAULT_HOTPATCH.enabled,
       customCss:
         typeof stored.customCss === 'string' ? stored.customCss : '',
+      customJs:
+        typeof stored.customJs === 'string' ? stored.customJs : '',
       topBannerText:
         typeof stored.topBannerText === 'string'
           ? stored.topBannerText

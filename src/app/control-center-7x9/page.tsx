@@ -45,12 +45,19 @@ import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('linkora_admin_verified');
+      if (stored === 'true') return true;
+    }
+    return null;
+  });
   const [authToken, setAuthToken] = useState<string | undefined>();
   const [adminUser, setAdminUser] = useState<any>(null);
   const [adminProfile, setAdminProfile] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState<AdminTab>('master');
   const [masterSubTab, setMasterSubTab] = useState<'all' | 'restricted' | 'workspace' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance'>('all');
+  const [visitedTabs, setVisitedTabs] = useState<Set<AdminTab>>(() => new Set<AdminTab>(['master']));
   const [overviewStats, setOverviewStats] = useState<any>(null);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [isOverviewLoading, setIsOverviewLoading] = useState(false);
@@ -58,6 +65,16 @@ export default function AdminControlCenterPage() {
   const [copiedSql, setCopiedSql] = useState(false);
   const [directPasscode, setDirectPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
+
+  // Track visited tabs so tab transitions are 0ms instant without remounting lag
+  useEffect(() => {
+    setVisitedTabs((prev) => {
+      if (prev.has(currentTab)) return prev;
+      const next = new Set(prev);
+      next.add(currentTab);
+      return next;
+    });
+  }, [currentTab]);
 
   // Parse URL query params (?tab=master&sub=colleges)
   useEffect(() => {
@@ -77,12 +94,12 @@ export default function AdminControlCenterPage() {
     async function verify() {
       if (isAuthLoading) return;
 
-      setIsAdmin(false);
-      setAdminUser(null);
-      setAdminProfile(null);
-
       if (!user) {
+        setIsAdmin(false);
+        setAdminUser(null);
+        setAdminProfile(null);
         setAuthToken(undefined);
+        try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
         return;
       }
 
@@ -93,7 +110,9 @@ export default function AdminControlCenterPage() {
         if (cancelled) return;
 
         if (!token) {
+          setIsAdmin(false);
           setAuthToken(undefined);
+          try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
           return;
         }
 
@@ -112,16 +131,19 @@ export default function AdminControlCenterPage() {
           setIsAdmin(true);
           setAdminUser(result.user);
           setAdminProfile(result.profile);
+          try { sessionStorage.setItem('linkora_admin_verified', 'true'); } catch {}
         } else {
           setIsAdmin(false);
           setAdminUser(null);
           setAdminProfile(null);
+          try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
         }
       } catch {
         if (!cancelled) {
           setIsAdmin(false);
           setAdminUser(null);
           setAdminProfile(null);
+          try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
         }
       }
     }
@@ -133,15 +155,14 @@ export default function AdminControlCenterPage() {
     };
   }, [user, isAuthLoading]);
 
-  // Load Overview Data when admin verified
+  // Load Overview Data when overview tab is opened
   useEffect(() => {
     async function loadOverview() {
-      if (!isAdmin) return;
+      if (!isAdmin || currentTab !== 'overview' || overviewStats) return;
       setIsOverviewLoading(true);
       try {
         const headers: Record<string, string> = {};
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
 
         const res = await fetch('/api/admin/overview', { headers });
         const data = await res.json();
@@ -157,19 +178,19 @@ export default function AdminControlCenterPage() {
     }
 
     loadOverview();
-  }, [isAdmin, authToken]);
+  }, [isAdmin, authToken, currentTab, overviewStats]);
 
   const handleUnlockWithPasscode = (e: React.FormEvent) => {
     e.preventDefault();
     setPasscodeError('Passcode sign-in is disabled. Sign in with your authorized administrator account.');
   };
 
-  // Loading state
-  if ((isAuthLoading && isAdmin === null)) {
+  // Loading state (sleek skeleton without jarring layout shifts)
+  if (isAdmin === null || (isAuthLoading && !isAdmin)) {
     return (
-      <div className="min-h-screen py-24 px-4 max-w-4xl mx-auto space-y-4 animate-pulse">
-        <div className="h-28 rounded-2xl bg-charcoal-900 border border-charcoal-800" />
-        <div className="h-96 rounded-2xl bg-charcoal-900 border border-charcoal-800" />
+      <div className="min-h-screen py-10 px-4 max-w-7xl mx-auto space-y-6 animate-pulse">
+        <div className="h-40 rounded-2xl bg-charcoal-900 border border-charcoal-800" />
+        <div className="h-96 rounded-2xl bg-charcoal-900/60 border border-charcoal-800" />
       </div>
     );
   }
@@ -326,80 +347,138 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
         </div>
       </div>
 
-      {/* Tab Panels */}
-      {currentTab === 'overview' && (
-        <AdminOverviewTab
-          stats={overviewStats}
-          recentLogs={recentLogs}
-          isLoading={isOverviewLoading}
-          onNavigateTab={setCurrentTab}
-          onNavigateMasterSubTab={setMasterSubTab}
-        />
+      {/* Smooth, Instant Tab Panels (Keeps visited tabs mounted for 0ms transitions without remounting) */}
+      {visitedTabs.has('overview') && (
+        <div className={currentTab === 'overview' ? 'block' : 'hidden'}>
+          <AdminOverviewTab
+            stats={overviewStats}
+            recentLogs={recentLogs}
+            isLoading={isOverviewLoading}
+            onNavigateTab={setCurrentTab}
+            onNavigateMasterSubTab={setMasterSubTab}
+          />
+        </div>
       )}
 
-      {currentTab === 'master' && (
-        <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+      {visitedTabs.has('master') && (
+        <div className={currentTab === 'master' ? 'block' : 'hidden'}>
+          <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+        </div>
       )}
 
-      {currentTab === 'feedback' && (
-        <AdminFeedbackTab authToken={authToken} />
+      {visitedTabs.has('feedback') && (
+        <div className={currentTab === 'feedback' ? 'block' : 'hidden'}>
+          <AdminFeedbackTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'leaderboard' && (
-        <AdminLeaderboardTab authToken={authToken} />
+      {visitedTabs.has('leaderboard') && (
+        <div className={currentTab === 'leaderboard' ? 'block' : 'hidden'}>
+          <AdminLeaderboardTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'deadlines' && (
-        <AdminDeadlinesTab authToken={authToken} />
+      {visitedTabs.has('deadlines') && (
+        <div className={currentTab === 'deadlines' ? 'block' : 'hidden'}>
+          <AdminDeadlinesTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'spark' && (
-        <AdminSparkTab authToken={authToken} />
+      {visitedTabs.has('spark') && (
+        <div className={currentTab === 'spark' ? 'block' : 'hidden'}>
+          <AdminSparkTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'restricted' && (
-        <AdminRestrictedWordsTab authToken={authToken} />
+      {visitedTabs.has('restricted') && (
+        <div className={currentTab === 'restricted' ? 'block' : 'hidden'}>
+          <AdminRestrictedWordsTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'security' && (
-        <AdminSecurityWatchdogTab authToken={authToken} />
+      {visitedTabs.has('security') && (
+        <div className={currentTab === 'security' ? 'block' : 'hidden'}>
+          <AdminSecurityWatchdogTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'hotpatch' && (
-        <AdminHotPatchTab authToken={authToken} />
+      {visitedTabs.has('hotpatch') && (
+        <div className={currentTab === 'hotpatch' ? 'block' : 'hidden'}>
+          <AdminHotPatchTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'intent' && (
-        <AdminIntentShowcaseTab authToken={authToken} />
+      {visitedTabs.has('intent') && (
+        <div className={currentTab === 'intent' ? 'block' : 'hidden'}>
+          <AdminIntentShowcaseTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'notes' && (
-        <AdminNotesTab authToken={authToken} />
+      {visitedTabs.has('notes') && (
+        <div className={currentTab === 'notes' ? 'block' : 'hidden'}>
+          <AdminNotesTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'users' && (
-        <AdminUsersTab currentAdminId={adminUser?.id || user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508'} authToken={authToken} />
+      {visitedTabs.has('users') && (
+        <div className={currentTab === 'users' ? 'block' : 'hidden'}>
+          <AdminUsersTab currentAdminId={adminUser?.id || user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508'} authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'content' && <AdminContentTab authToken={authToken} />}
-
-      {currentTab === 'explore' && <AdminExploreTab authToken={authToken} />}
-
-      {currentTab === 'taxonomy' && <AdminTaxonomyTab authToken={authToken} />}
-
-      {currentTab === 'faculty' && <AdminFacultyTab authToken={authToken} />}
-
-      {currentTab === 'hackathons' && <AdminHackathonsTab authToken={authToken} />}
-
-      {currentTab === 'icpc' && <AdminIcpcTab authToken={authToken} />}
-
-      {currentTab === 'theme' && (
-        <AdminThemeTab authToken={authToken} adminEmail={adminUser?.email || user?.email || 'goyalmayank142@gmail.com'} />
+      {visitedTabs.has('content') && (
+        <div className={currentTab === 'content' ? 'block' : 'hidden'}>
+          <AdminContentTab authToken={authToken} />
+        </div>
       )}
 
-      {currentTab === 'enterprise' && <AdminEnterpriseTab authToken={authToken} />}
+      {visitedTabs.has('explore') && (
+        <div className={currentTab === 'explore' ? 'block' : 'hidden'}>
+          <AdminExploreTab authToken={authToken} />
+        </div>
+      )}
 
-      {currentTab === 'audit' && <AdminAuditLogsTab authToken={authToken} />}
+      {visitedTabs.has('taxonomy') && (
+        <div className={currentTab === 'taxonomy' ? 'block' : 'hidden'}>
+          <AdminTaxonomyTab authToken={authToken} />
+        </div>
+      )}
+
+      {visitedTabs.has('faculty') && (
+        <div className={currentTab === 'faculty' ? 'block' : 'hidden'}>
+          <AdminFacultyTab authToken={authToken} />
+        </div>
+      )}
+
+      {visitedTabs.has('hackathons') && (
+        <div className={currentTab === 'hackathons' ? 'block' : 'hidden'}>
+          <AdminHackathonsTab authToken={authToken} />
+        </div>
+      )}
+
+      {visitedTabs.has('icpc') && (
+        <div className={currentTab === 'icpc' ? 'block' : 'hidden'}>
+          <AdminIcpcTab authToken={authToken} />
+        </div>
+      )}
+
+      {visitedTabs.has('theme') && (
+        <div className={currentTab === 'theme' ? 'block' : 'hidden'}>
+          <AdminThemeTab authToken={authToken} adminEmail={adminUser?.email || user?.email || 'goyalmayank142@gmail.com'} />
+        </div>
+      )}
+
+      {visitedTabs.has('enterprise') && (
+        <div className={currentTab === 'enterprise' ? 'block' : 'hidden'}>
+          <AdminEnterpriseTab authToken={authToken} />
+        </div>
+      )}
+
+      {visitedTabs.has('audit') && (
+        <div className={currentTab === 'audit' ? 'block' : 'hidden'}>
+          <AdminAuditLogsTab authToken={authToken} />
+        </div>
+      )}
 
       {/* Supabase DB SQL Modal */}
       <Modal

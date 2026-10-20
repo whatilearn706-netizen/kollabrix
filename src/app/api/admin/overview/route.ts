@@ -37,60 +37,68 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 1. Users Counts
-    const { count: totalUsers } = await client.from('profiles').select('*', { count: 'exact', head: true });
-    const { count: totalStudents } = await client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student');
-    const { count: totalTeachers } = await client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher');
-    const { count: totalAdmins } = await client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin');
-    const { count: totalSuspended } = await client.from('profiles').select('*', { count: 'exact', head: true }).or('is_suspended.eq.true,status.eq.suspended');
+    // Run all database count queries concurrently via Promise.allSettled for ultra-fast response
+    const [
+      usersRes,
+      studentsRes,
+      teachersRes,
+      adminsRes,
+      suspendedRes,
+      projsRes,
+      recruitingRes,
+      inProgRes,
+      completedRes,
+      featuredRes,
+      hacksRes,
+      privHacksRes,
+      teamsRes,
+      subsRes,
+      auditCountRes,
+      recentLogsRes,
+    ] = await Promise.allSettled([
+      client.from('profiles').select('*', { count: 'exact', head: true }),
+      client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+      client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
+      client.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
+      client.from('profiles').select('*', { count: 'exact', head: true }).or('is_suspended.eq.true,status.eq.suspended'),
+      client.from('projects').select('*', { count: 'exact', head: true }),
+      client.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'Recruiting'),
+      client.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'In Progress'),
+      client.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'Completed'),
+      client.from('projects').select('*', { count: 'exact', head: true }).eq('is_featured', true),
+      client.from('hackathons').select('*', { count: 'exact', head: true }),
+      client.from('hackathons').select('*', { count: 'exact', head: true }).eq('access_type', 'private'),
+      client.from('hackathon_teams').select('*', { count: 'exact', head: true }),
+      client.from('hackathon_submissions').select('*', { count: 'exact', head: true }),
+      client.from('admin_audit_logs').select('*', { count: 'exact', head: true }),
+      client.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(6),
+    ]);
 
-    // 2. Projects Counts
-    const { count: totalProjects } = await client.from('projects').select('*', { count: 'exact', head: true });
-    const { count: recruitingProjects } = await client.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'Recruiting');
-    const { count: inProgressProjects } = await client.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'In Progress');
-    const { count: completedProjects } = await client.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'Completed');
-    let featuredProjects = 0;
-    try {
-      const { count: feat } = await client.from('projects').select('*', { count: 'exact', head: true }).eq('is_featured', true);
-      featuredProjects = feat || 0;
-    } catch {}
+    const getCount = (r: PromiseSettledResult<any>) =>
+      r.status === 'fulfilled' && typeof r.value?.count === 'number' ? r.value.count : 0;
 
-    // 3. Hackathons Counts
-    let totalHackathons = 0;
-    let privateHackathons = 0;
-    let publicHackathons = 0;
-    try {
-      const { count: totalHacks } = await client.from('hackathons').select('*', { count: 'exact', head: true });
-      totalHackathons = totalHacks || 0;
-      const { count: privHacks } = await client.from('hackathons').select('*', { count: 'exact', head: true }).eq('access_type', 'private');
-      privateHackathons = privHacks || 0;
-      publicHackathons = Math.max(0, totalHackathons - privateHackathons);
-    } catch {}
+    const totalUsers = getCount(usersRes);
+    const totalStudents = getCount(studentsRes);
+    const totalTeachers = getCount(teachersRes);
+    const totalAdmins = getCount(adminsRes);
+    const totalSuspended = getCount(suspendedRes);
 
-    // 4. Teams & Submissions
-    let totalTeams = 0;
-    let totalSubmissions = 0;
-    try {
-      const { count: teams } = await client.from('hackathon_teams').select('*', { count: 'exact', head: true });
-      totalTeams = teams || 0;
-      const { count: subs } = await client.from('hackathon_submissions').select('*', { count: 'exact', head: true });
-      totalSubmissions = subs || 0;
-    } catch {}
+    const totalProjects = getCount(projsRes);
+    const recruitingProjects = getCount(recruitingRes);
+    const inProgressProjects = getCount(inProgRes);
+    const completedProjects = getCount(completedRes);
+    const featuredProjects = getCount(featuredRes);
 
-    // 5. Audit Logs
-    let auditLogsCount = 0;
-    let recentLogs: any[] = [];
-    try {
-      const { count: logCount } = await client.from('admin_audit_logs').select('*', { count: 'exact', head: true });
-      auditLogsCount = logCount || 0;
+    const totalHackathons = getCount(hacksRes);
+    const privateHackathons = getCount(privHacksRes);
+    const publicHackathons = Math.max(0, totalHackathons - privateHackathons);
 
-      const { data: logs } = await client
-        .from('admin_audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(6);
-      recentLogs = logs || [];
-    } catch {}
+    const totalTeams = getCount(teamsRes);
+    const totalSubmissions = getCount(subsRes);
+    const auditLogsCount = getCount(auditCountRes);
+    const recentLogs = recentLogsRes.status === 'fulfilled' && Array.isArray(recentLogsRes.value?.data)
+      ? recentLogsRes.value.data
+      : [];
 
     return NextResponse.json({
       success: true,

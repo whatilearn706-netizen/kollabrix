@@ -15,6 +15,7 @@ export function GlobalHotPatchInjector() {
 
     // Clean any Claude / ChatGPT markdown blocks or wrapping <style>/<script> tags
     const cleanCss = cleanHotPatchCode(patch.customCss || '', 'css');
+    const cleanJs = cleanHotPatchCode(patch.customJs || '', 'js');
 
     // 1. Apply or remove Custom CSS
     let styleTag = document.getElementById('linkora-live-hotpatch-css') as HTMLStyleElement | null;
@@ -32,8 +33,28 @@ export function GlobalHotPatchInjector() {
       styleTag.remove();
     }
 
-    // Security: never execute remotely supplied JavaScript in the public page.
+    // 2. Apply or remove Custom JS (Authoritative Admin HotPatch Desk)
+    let scriptTag = document.getElementById('linkora-live-hotpatch-js') as HTMLScriptElement | null;
+    if (patch.enabled && cleanJs) {
+      // Remove old script tag before re-executing
+      if (scriptTag) {
+        scriptTag.remove();
+      }
 
+      try {
+        const newScript = document.createElement('script');
+        newScript.id = 'linkora-live-hotpatch-js';
+        newScript.type = 'text/javascript';
+        newScript.textContent = `try { ${cleanJs} } catch (err) { console.warn("[Linkora HotPatch execution notice]:", err); }`;
+        document.body.appendChild(newScript);
+        executedJsRef.current = cleanJs;
+      } catch (scriptErr) {
+        console.warn('Could not inject live hotpatch JS:', scriptErr);
+      }
+    } else if (scriptTag) {
+      scriptTag.remove();
+      executedJsRef.current = '';
+    }
   };
 
   // Re-apply styles and scripts on route transitions (SPA navigation)
@@ -44,13 +65,21 @@ export function GlobalHotPatchInjector() {
   }, [pathname]);
 
   useEffect(() => {
-    // Public display settings are fetched from the public endpoint.
-    // Do not trust cached admin configuration in the public page.
-    try {
-      localStorage.removeItem('linkora_hotpatch_v1');
-    } catch (e) {}
+    // 1. Instant 0ms load from localStorage so custom UI/dock renders immediately without flicker
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_hotpatch_v1');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            setHotpatch(parsed);
+            applyPatch(parsed);
+          }
+        }
+      } catch (e) {}
+    }
 
-    // 2. Fetch fresh patch from server
+    // 2. Fetch fresh patch from server & synchronize
     const fetchPatch = async () => {
       try {
         const res = await fetch(`/api/public/hotpatch?_t=${Date.now()}`);
@@ -71,7 +100,7 @@ export function GlobalHotPatchInjector() {
 
     fetchPatch();
 
-    // 3. Listen for live update events from current window
+    // 3. Listen for live update events from admin desk
     const handleUpdate = () => {
       executedJsRef.current = '';
       fetchPatch();

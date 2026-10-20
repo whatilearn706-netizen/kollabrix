@@ -126,7 +126,27 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
       setActiveSubTab(initialSubTab);
     }
   }, [initialSubTab]);
-  const [config, setConfig] = useState<MasterControlConfig>(DEFAULT_MASTER_CONTROL_CONFIG);
+  const [config, setConfig] = useState<MasterControlConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_master_control_v1');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            return {
+              ...DEFAULT_MASTER_CONTROL_CONFIG,
+              ...parsed,
+              sections: {
+                ...DEFAULT_MASTER_CONTROL_CONFIG.sections,
+                ...(parsed.sections || {}),
+              },
+            };
+          }
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_MASTER_CONTROL_CONFIG;
+  });
   const [ceoStats, setCeoStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

@@ -20,8 +20,19 @@ interface AdminSparkTabProps {
 }
 
 export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
-  const [templates, setTemplates] = useState<SparkTemplateItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [templates, setTemplates] = useState<SparkTemplateItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_spark_admin_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return DEFAULT_SPARK_TEMPLATES;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [actionSuccess, setActionSuccess] = useState<string>('');
@@ -38,13 +49,16 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
   const [featured, setFeatured] = useState(true);
 
   const fetchTemplates = async () => {
-    setIsLoading(true);
     setActionError('');
     try {
-      const res = await fetch('/api/spark/templates');
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/spark/templates', { headers });
       const data = await res.json();
-      if (data.templates && Array.isArray(data.templates)) {
+      if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
         setTemplates(data.templates);
+        try { localStorage.setItem('linkora_spark_admin_cache', JSON.stringify(data.templates)); } catch {}
       }
     } catch (err: any) {
       setActionError(err.message);
@@ -55,7 +69,7 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
 
   useEffect(() => {
     fetchTemplates();
-  }, []);
+  }, [authToken]);
 
   const handleAddTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +97,10 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add template');
 
-      if (data.templates) setTemplates(data.templates);
+      if (data.templates) {
+        setTemplates(data.templates);
+        try { localStorage.setItem('linkora_spark_admin_cache', JSON.stringify(data.templates)); } catch {}
+      }
       setIsAddModalOpen(false);
       setTitle('');
       setTagline('');
@@ -110,8 +127,16 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete');
 
-      if (data.templates) setTemplates(data.templates);
-      else setTemplates((prev) => prev.filter((t) => t.id !== id));
+      if (data.templates) {
+        setTemplates(data.templates);
+        try { localStorage.setItem('linkora_spark_admin_cache', JSON.stringify(data.templates)); } catch {}
+      } else {
+        setTemplates((prev) => {
+          const updated = prev.filter((t) => t.id !== id);
+          try { localStorage.setItem('linkora_spark_admin_cache', JSON.stringify(updated)); } catch {}
+          return updated;
+        });
+      }
 
       setActionSuccess(`Removed ${templateTitle}.`);
       setTimeout(() => setActionSuccess(''), 3000);
