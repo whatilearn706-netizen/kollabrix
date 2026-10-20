@@ -73,6 +73,7 @@ export function IcpcProctorGuard({
     return true;
   });
   const [copiedMacCommand, setCopiedMacCommand] = useState(false);
+  const [isFocusLost, setIsFocusLost] = useState(false);
   const [activeWarning, setActiveWarning] = useState<{
     type: ProctorViolationType;
     message: string;
@@ -393,13 +394,20 @@ export function IcpcProctorGuard({
       const isCompliant = hasFocus && isVisible;
 
       if (!isCompliant) {
+        // INSTANT BLACKOUT: Obscure screen immediately so contestant cannot read problem
+        setIsFocusLost(true);
         playAlertSound('critical');
+
+        // Auto-refocus attempt to close non-activating overlay
+        try {
+          window.focus();
+        } catch (e) {}
 
         // Send macOS system Desktop Notification to all spaces
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           try {
             new Notification('🚨 LINKORA ICPC SECURITY VIOLATION', {
-              body: 'Siri or external screen switch detected! Return to the contest arena immediately.',
+              body: 'Siri / Raycast / External window detected! Contest arena has been blacked out.',
               icon: '/icon.png',
             });
           } catch (notifErr) {}
@@ -409,25 +417,26 @@ export function IcpcProctorGuard({
           focusLostStartTimeRef.current = Date.now();
         } else {
           const elapsed = Date.now() - focusLostStartTimeRef.current;
-          if (elapsed >= 500) {
+          if (elapsed >= 300) {
             triggerViolation(
               'SIRI_ATTEMPT',
-              'Siri / External Assistant Window Detected',
-              `Contest window lost focus to Siri or an external app for ${(elapsed / 1000).toFixed(1)}s. Siri and external overlays are strictly prohibited during contests.`,
+              'Siri / Raycast / Assistant Overlay Detected',
+              `Contest window lost focus to Siri, Raycast, or an external overlay for ${(elapsed / 1000).toFixed(1)}s. The contest arena was blacked out. Using assistant overlays during contests is strictly prohibited.`,
               'critical'
             );
           }
         }
       } else {
-        // Returned to compliant state (e.g. swiped back to arena)
+        setIsFocusLost(false);
+        // Returned to compliant state (e.g. closed Raycast / swiped back to arena)
         if (focusLostStartTimeRef.current) {
           const awayDuration = Date.now() - focusLostStartTimeRef.current;
           focusLostStartTimeRef.current = null;
-          if (awayDuration >= 800) {
+          if (awayDuration >= 500) {
             triggerViolation(
               'SIRI_ATTEMPT',
-              'Siri / External Window Switch Detected',
-              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s (Siri or external window active). Screen switching is strictly prohibited.`,
+              'Siri / Raycast / External Window Switch Detected',
+              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s (Siri or Raycast active). Screen switching is strictly prohibited.`,
               'critical'
             );
           }
@@ -438,13 +447,16 @@ export function IcpcProctorGuard({
     const poller = setInterval(checkFocusAndVisibility, 150);
 
     const handleWindowBlur = () => {
+      setIsFocusLost(true);
       if (!focusLostStartTimeRef.current) {
         focusLostStartTimeRef.current = Date.now();
       }
+      playAlertSound('critical');
       checkFocusAndVisibility();
     };
 
     const handleWindowFocus = () => {
+      setIsFocusLost(false);
       checkFocusAndVisibility();
     };
 
@@ -994,25 +1006,25 @@ export function IcpcProctorGuard({
               </div>
             </div>
 
-            {/* Mac OS Siri Disabler Helper */}
+            {/* Mac OS Siri & Raycast Disabler Helper */}
             <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 text-left space-y-2.5">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="font-bold text-slate-200 flex items-center gap-1.5">
-                  <span>🍎</span> macOS Contestants: Disable Siri at OS Level
+                  <span>🍎</span> macOS Contestants: Close Raycast &amp; Siri
                 </span>
                 <span className="text-[10px] text-cyan-400 font-mono">Recommended</span>
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Run this command in Mac Terminal to turn off Siri during your contest, or toggle it in <strong>System Settings → Siri &amp; Spotlight</strong>:
+                If you use <strong>Raycast, Spotlight, or Siri</strong>, run this in Mac Terminal before starting to completely quit background processes so overlay shortcuts cannot trigger:
               </p>
               <div className="flex items-center gap-2 bg-charcoal-900 p-2 rounded-xl border border-charcoal-750 font-mono text-[11px] text-slate-300">
                 <code className="flex-1 truncate select-all text-cyan-300">
-                  defaults write com.apple.assistant.support "Assistant Enabled" -bool false; killall Siri
+                  killall Raycast 2&gt;/dev/null; killall Siri 2&gt;/dev/null; defaults write com.apple.assistant.support &quot;Assistant Enabled&quot; -bool false
                 </code>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText('defaults write com.apple.assistant.support "Assistant Enabled" -bool false; killall Siri');
+                    navigator.clipboard.writeText('killall Raycast 2>/dev/null; killall Siri 2>/dev/null; defaults write com.apple.assistant.support "Assistant Enabled" -bool false');
                     setCopiedMacCommand(true);
                     setTimeout(() => setCopiedMacCommand(false), 2500);
                   }}
@@ -1092,7 +1104,75 @@ export function IcpcProctorGuard({
         </div>
       )}
 
-      {children}
+      {/* ── PERSISTENT REAL-TIME BLACKOUT OVERLAY (WHILE WINDOW UNFOCUSED / OVERLAY ACTIVE) ── */}
+      {isActive && isFocusLost && (
+        <div
+          onClick={() => {
+            try {
+              window.focus();
+            } catch (e) {}
+            setIsFocusLost(false);
+          }}
+          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center p-4 text-center select-none cursor-pointer animate-in fade-in duration-100"
+        >
+          <div className="max-w-lg w-full p-6 sm:p-8 rounded-3xl bg-charcoal-950/95 border-2 border-rose-500 shadow-2xl shadow-rose-500/50 space-y-5 text-white">
+            <div className="w-20 h-20 rounded-3xl bg-rose-600/20 border-2 border-rose-500 flex items-center justify-center mx-auto text-rose-400 animate-bounce">
+              <ShieldAlert className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-mono font-black text-rose-400 tracking-widest uppercase px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30">
+                🚨 CONTEST ARENA BLACKOUT ACTIVE
+              </span>
+              <h2 className="text-2xl font-black text-white tracking-tight">Siri / Raycast / Overlay Detected!</h2>
+              <p className="text-xs text-rose-200 leading-relaxed font-mono">
+                The contest problem and editor have been completely blacked out because an external search overlay (Raycast, Siri, Spotlight, or external app) was detected on your screen.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-xs font-mono text-slate-300 space-y-2 text-left">
+              <div className="flex items-center gap-2 text-rose-400 font-bold">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span>Security Incident Recorded in Admin Control Center</span>
+              </div>
+              <div className="text-[11px] text-slate-400 leading-tight">
+                • <strong>To Unlock Arena:</strong> Close Raycast / Siri (<code className="text-cyan-300">Esc</code> key) and click anywhere here.
+              </div>
+              <div className="text-[11px] text-slate-400 leading-tight">
+                • <strong>Quit Shortcut:</strong> In Mac Terminal run <code className="text-cyan-300">killall Raycast; killall Siri</code> to prevent it from popping up.
+              </div>
+            </div>
+
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={(e) => {
+                e.stopPropagation();
+                try {
+                  window.focus();
+                } catch (err) {}
+                setIsFocusLost(false);
+                focusLostStartTimeRef.current = null;
+              }}
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm py-3.5 shadow-xl shadow-rose-500/30 rounded-2xl flex items-center justify-center gap-2"
+            >
+              <Radio className="w-4 h-4 text-white" />
+              <span>Click to Dismiss &amp; Refocus Contest Arena</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div
+        className="w-full h-full transition-all duration-150"
+        style={{
+          filter: isFocusLost ? 'blur(45px) brightness(0.12)' : 'none',
+          pointerEvents: isFocusLost ? 'none' : 'auto',
+          userSelect: isFocusLost ? 'none' : 'auto',
+        }}
+      >
+        {children}
+      </div>
     </>
   );
 }
