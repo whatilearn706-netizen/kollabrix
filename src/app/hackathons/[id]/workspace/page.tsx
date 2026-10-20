@@ -58,6 +58,7 @@ import { EvaluationModal } from '@/components/hackathons/EvaluationModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
+import { isHackathonClosed } from '@/lib/hackathons/hackathonStatus';
 
 interface TeamWithMembers extends HackathonTeam {
   members?: Array<HackathonTeamMember & { profile?: { display_name: string; avatar_url: string | null; college?: string | null } }>;
@@ -85,6 +86,8 @@ export default function HackathonWorkspacePage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'challenges' | 'team' | 'submission' | 'judging'>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isClosed = useMemo(() => isHackathonClosed(hackathon), [hackathon]);
 
   // Modals state
   const [isAddChallengeOpen, setIsAddChallengeOpen] = useState(false);
@@ -645,6 +648,11 @@ export default function HackathonWorkspacePage() {
 
     if (!user || !hackathon) return;
 
+    if (isClosed) {
+      setTeamActionError('Team registration is closed because the hackathon timeline has ended.');
+      return;
+    }
+
     if (!newTeamName.trim()) {
       setTeamActionError('Please provide a team name.');
       return;
@@ -700,6 +708,18 @@ export default function HackathonWorkspacePage() {
 
         if (memberErr) {
           console.error('Supabase member insertion error:', memberErr.message);
+        }
+
+        // Also sync hackathon_participants
+        try {
+          await supabase.from('hackathon_participants').upsert({
+            hackathon_id: canonicalHackId,
+            user_id: user.id,
+            role: 'leader',
+            team_id: team.id,
+          }, { onConflict: 'hackathon_id,user_id' });
+        } catch (pErr) {
+          console.warn('Sync participant error:', pErr);
         }
       } else {
         // Fallback team creation object for mock/offline hackathons
@@ -779,6 +799,11 @@ export default function HackathonWorkspacePage() {
 
     if (!user || !hackathon) return;
 
+    if (isClosed) {
+      setTeamActionError('Team joining is closed because the hackathon timeline has ended.');
+      return;
+    }
+
     const codeToUse = (directCode || joinTeamCode).trim().toUpperCase();
 
     if (!codeToUse) {
@@ -844,6 +869,18 @@ export default function HackathonWorkspacePage() {
         if (joinErr) {
           console.error('Supabase join error:', joinErr);
           throw new Error(joinErr.message);
+        }
+
+        // Also sync hackathon_participants
+        try {
+          await supabase.from('hackathon_participants').upsert({
+            hackathon_id: canonicalHackId,
+            user_id: user.id,
+            role: 'participant',
+            team_id: targetTeam.id,
+          }, { onConflict: 'hackathon_id,user_id' });
+        } catch (pErr) {
+          console.warn('Sync participant error:', pErr);
         }
       }
 
@@ -1092,6 +1129,22 @@ export default function HackathonWorkspacePage() {
             <div className="text-xs text-slate-500 pt-1">
               Organized by <strong className="text-slate-300">{hackathon.organizer}</strong>
             </div>
+
+            {isClosed ? (
+              <div className="mt-3.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 font-medium shadow-xs">
+                <Lock className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>
+                  <strong>Hackathon Timeline Closed:</strong> The event deadline has passed. The active team workshop is now closed and in read-only archive mode.
+                </span>
+              </div>
+            ) : (
+              <div className="mt-3.5 p-2.5 px-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span>
+                  <strong>Active Hackathon Workshop:</strong> Collaborate with your student team, choose problem statements, and submit code before the deadline.
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Quick Actions & Countdown */}
@@ -1596,6 +1649,17 @@ export default function HackathonWorkspacePage() {
                   ))}
                 </div>
               </div>
+            </div>
+          ) : isClosed ? (
+            /* Student has NO team AND hackathon is closed */
+            <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 shadow-subtle">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400 mx-auto">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Event Registration &amp; Team Workshop Closed</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                The official timeline for this hackathon has ended. Collaborative team workshops are active only during the official hackathon duration.
+              </p>
             </div>
           ) : (
             /* Student has NO team: Create or Join */
