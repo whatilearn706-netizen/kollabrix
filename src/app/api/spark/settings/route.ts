@@ -6,14 +6,29 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
+export interface SparkScoringWeights {
+  technical: number; // default 30
+  novelty: number;   // default 25
+  feasibility: number; // default 25
+  impact: number;    // default 20
+}
+
 export interface SparkModelSettings {
   engine: 'auto' | 'gemini' | 'openai' | 'neural';
   geminiApiKey?: string;
   openaiApiKey?: string;
   temperature: number;
   customSystemPrompt?: string;
+  scoringWeights?: SparkScoringWeights;
   lastUpdated?: string;
 }
+
+const DEFAULT_WEIGHTS: SparkScoringWeights = {
+  technical: 30,
+  novelty: 25,
+  feasibility: 25,
+  impact: 20,
+};
 
 const DEFAULT_SETTINGS: SparkModelSettings = {
   engine: 'auto',
@@ -21,6 +36,7 @@ const DEFAULT_SETTINGS: SparkModelSettings = {
   openaiApiKey: '',
   temperature: 0.7,
   customSystemPrompt: '',
+  scoringWeights: DEFAULT_WEIGHTS,
 };
 
 function maskKey(key?: string): string {
@@ -54,6 +70,7 @@ export async function GET(request: NextRequest) {
         hasEnvOpenAI,
         temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.7,
         customSystemPrompt: settings.customSystemPrompt || '',
+        scoringWeights: settings.scoringWeights || DEFAULT_WEIGHTS,
         lastUpdated: settings.lastUpdated || null,
       },
     });
@@ -83,6 +100,14 @@ export async function POST(request: NextRequest) {
         : current.openaiApiKey,
       temperature: typeof body.temperature === 'number' ? Math.max(0.1, Math.min(1.0, body.temperature)) : current.temperature,
       customSystemPrompt: typeof body.customSystemPrompt === 'string' ? body.customSystemPrompt.trim() : current.customSystemPrompt,
+      scoringWeights: body.scoringWeights
+        ? {
+            technical: Math.max(0, Math.min(100, Number(body.scoringWeights.technical) || 30)),
+            novelty: Math.max(0, Math.min(100, Number(body.scoringWeights.novelty) || 25)),
+            feasibility: Math.max(0, Math.min(100, Number(body.scoringWeights.feasibility) || 25)),
+            impact: Math.max(0, Math.min(100, Number(body.scoringWeights.impact) || 20)),
+          }
+        : current.scoringWeights || DEFAULT_WEIGHTS,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -102,6 +127,7 @@ export async function POST(request: NextRequest) {
         hasCustomOpenAiKey: Boolean(updated.openaiApiKey),
         temperature: updated.temperature,
         customSystemPrompt: updated.customSystemPrompt,
+        scoringWeights: updated.scoringWeights,
         lastUpdated: updated.lastUpdated,
       },
     });

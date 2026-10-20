@@ -46,7 +46,27 @@ export function isColorDark(colorStr?: string): boolean {
 }
 
 export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<SiteThemeConfig>(DEFAULT_SITE_THEME);
+  const [theme, setTheme] = useState<SiteThemeConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const userPref = localStorage.getItem('linkora_user_theme_mode');
+        if (userPref === 'dark') {
+          return {
+            ...DEFAULT_SITE_THEME,
+            backgroundColor: '#090B10',
+            surfaceColor: '#11141E',
+            borderColor: '#1F2436',
+            headingColor: '#F8FAFC',
+            bodyTextColor: '#CBD5E1',
+            mutedTextColor: '#64748B',
+            navbarStyle: 'dark',
+            cardShadow: 'glow',
+          };
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_SITE_THEME;
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const isDark = isColorDark(theme.backgroundColor);

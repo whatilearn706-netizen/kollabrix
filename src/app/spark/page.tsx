@@ -154,11 +154,11 @@ export default function SparkStudioPage() {
 ---
 
 ## 🏆 Hackathon Judging Scorecard
-- **Overall Hackathon Readiness:** ${scores?.overall || 85}/100
-- **🛠️ Technical Depth & Architecture (30% weight):** ${scores?.technicalComplexity ?? 85}/100
-- **💡 Novelty & Differentiation (25% weight):** ${scores?.novelty ?? 85}/100
-- **⏱️ 48-Hour Weekend Feasibility (25% weight):** ${scores?.feasibility ?? 85}/100
-- **🎯 Real-World Problem Impact (20% weight):** ${scores?.impact ?? 85}/100
+- **Overall Hackathon Readiness:** ${Math.round(scores?.overall || 85)}/100
+- **🛠️ Technical Depth & Architecture:** ${scores?.technicalComplexity ?? 85}/100
+- **💡 Novelty & Differentiation:** ${scores?.novelty ?? 85}/100
+- **⏱️ 48-Hour Weekend Feasibility:** ${scores?.feasibility ?? 85}/100
+- **🎯 Real-World Problem Impact:** ${scores?.impact ?? 85}/100
 - *Judge Critique:* ${scores?.critique || 'High competitive appeal.'}
 
 ## ⚡ The Winning Twist
@@ -432,23 +432,17 @@ ${blueprint.milestones
                       Official Hackathon Judging Rubric &amp; Readiness
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-                      Formula: 30% Tech + 25% Novelty + 25% Feasibility + 20% Impact
-                    </span>
-                    <div className="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-2xs">
-                      {blueprint.scores.overall}/100 Overall Score
-                    </div>
+                  <div className="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-2xs">
+                    {Math.round(blueprint.scores.overall)}/100 Overall Score
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* 1. Technical Complexity (30%) */}
+                  {/* 1. Technical Complexity */}
                   <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
                         <span>🛠️ Tech Depth</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">30%</span>
                       </span>
                       <span className="font-extrabold text-blue-600 dark:text-blue-400">
                         {blueprint.scores.technicalComplexity ?? 80}%
@@ -465,12 +459,11 @@ ${blueprint.milestones
                     </p>
                   </div>
 
-                  {/* 2. Novelty & Differentiation (25%) */}
+                  {/* 2. Novelty & Differentiation */}
                   <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
                         <span>💡 Novelty</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">25%</span>
                       </span>
                       <span className="font-extrabold text-amber-600 dark:text-amber-400">
                         {blueprint.scores.novelty ?? 80}%
@@ -487,12 +480,11 @@ ${blueprint.milestones
                     </p>
                   </div>
 
-                  {/* 3. 48h Weekend Feasibility (25%) */}
+                  {/* 3. 48h Weekend Feasibility */}
                   <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
                         <span>⏱️ 48h Feasibility</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">25%</span>
                       </span>
                       <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
                         {blueprint.scores.feasibility ?? 80}%
@@ -509,12 +501,11 @@ ${blueprint.milestones
                     </p>
                   </div>
 
-                  {/* 4. Real-World Impact (20%) */}
+                  {/* 4. Real-World Impact */}
                   <div className="p-3.5 rounded-xl bg-white dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
                         <span>🎯 Problem Impact</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400">20%</span>
                       </span>
                       <span className="font-extrabold text-rose-600 dark:text-rose-400">
                         {blueprint.scores.impact ?? 80}%

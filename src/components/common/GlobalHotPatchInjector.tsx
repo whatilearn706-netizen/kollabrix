@@ -24,11 +24,10 @@ export function GlobalHotPatchInjector() {
         styleTag = document.createElement('style');
         styleTag.id = 'linkora-live-hotpatch-css';
         document.head.appendChild(styleTag);
-      } else {
-        // Re-append to bottom of head to maintain cascade priority over other styles
-        document.head.appendChild(styleTag);
+        styleTag.textContent = cleanCss;
+      } else if (styleTag.textContent !== cleanCss) {
+        styleTag.textContent = cleanCss;
       }
-      styleTag.textContent = cleanCss;
     } else if (styleTag) {
       styleTag.remove();
     }
@@ -36,7 +35,12 @@ export function GlobalHotPatchInjector() {
     // 2. Apply or remove Custom JS (Authoritative Admin HotPatch Desk)
     let scriptTag = document.getElementById('linkora-live-hotpatch-js') as HTMLScriptElement | null;
     if (patch.enabled && cleanJs) {
-      // Remove old script tag before re-executing
+      // Deduplication Guard: If this exact JS is already injected and active, do not tear down
+      // the DOM and re-execute. This prevents duplicate executions, flicker, and reload glitches.
+      if (executedJsRef.current === cleanJs && scriptTag) {
+        return;
+      }
+
       if (scriptTag) {
         scriptTag.remove();
       }

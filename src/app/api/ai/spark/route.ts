@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFeatures';
-import { SparkModelSettings } from '@/app/api/spark/settings/route';
+import { SparkModelSettings, SparkScoringWeights } from '@/app/api/spark/settings/route';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -196,7 +196,8 @@ function computeSkillGaps(
 function synthesizeDynamicBlueprint(
   prompt: string,
   track?: string,
-  userSkillsInput?: string | string[]
+  userSkillsInput?: string | string[],
+  customWeights?: SparkScoringWeights
 ): SparkBlueprintResponse {
   const p = prompt.toLowerCase().trim();
   const rawTerms = extractCleanTerms(p);
@@ -364,9 +365,16 @@ function synthesizeDynamicBlueprint(
   const desired_roles = rolesBreakdown.map((r) => r.role);
   const skillGaps = computeSkillGaps(userSkillsInput, rolesBreakdown);
 
-  // Overall weighted score: Complexity (30%) + Novelty (25%) + Feasibility (25%) + Impact (20%)
+  // Overall weighted score based on admin-configured formula
+  const weights = customWeights || { technical: 30, novelty: 25, feasibility: 25, impact: 20 };
+  const wTech = Math.max(0, Number(weights.technical) || 30);
+  const wNov = Math.max(0, Number(weights.novelty) || 25);
+  const wFeas = Math.max(0, Number(weights.feasibility) || 25);
+  const wImp = Math.max(0, Number(weights.impact) || 20);
+  const totalW = (wTech + wNov + wFeas + wImp) || 100;
+
   const overall = Math.round(
-    technicalComplexity * 0.3 + novelty * 0.25 + feasibility * 0.25 + impact * 0.2
+    (technicalComplexity * wTech + novelty * wNov + feasibility * wFeas + impact * wImp) / totalW
   );
 
   const milestones = [
@@ -449,6 +457,14 @@ export async function POST(request: NextRequest) {
     const openaiKey = sparkSettings.openaiApiKey || process.env.OPENAI_API_KEY;
     const preferredEngine = sparkSettings.engine || 'auto';
 
+    // Admin-configured scoring weights
+    const weights = sparkSettings.scoringWeights || { technical: 30, novelty: 25, feasibility: 25, impact: 20 };
+    const wTech = Math.max(0, Number(weights.technical) || 30);
+    const wNov = Math.max(0, Number(weights.novelty) || 25);
+    const wFeas = Math.max(0, Number(weights.feasibility) || 25);
+    const wImp = Math.max(0, Number(weights.impact) || 20);
+    const totalW = (wTech + wNov + wFeas + wImp) || 100;
+
     let blueprint: SparkBlueprintResponse | null = null;
 
     // 1. If Gemini key is available, execute multi-model cascade
@@ -463,11 +479,11 @@ CRITICAL QUALITY CHECK:
 If the user's prompt is random keystrokes (e.g. "asdfgh"), keyboard mash, or nonsensical gibberish that does not describe a valid application, return ONLY:
 { "error": "This prompt does not describe a recognizable project concept or problem statement. Please describe what you want to build." }
 
-Otherwise, grade the idea realistically based on 4 authentic hackathon judging criteria:
-1. Technical Complexity (30% weight): Depth of engineering, multi-tier systems, edge cases. (Simple CRUD app = 20-40; Advanced system = 85-98)
-2. Novelty & Differentiation (25% weight): Is this a unique twist or a generic clone?
-3. 48-Hour Feasibility (25% weight): Can a student squad demo an MVP in 48 hours?
-4. Real-World Impact (20% weight): Severity of the problem solved.
+Otherwise, grade the idea realistically based on 4 authentic hackathon judging criteria with these administrative formula weights:
+1. Technical Complexity (${wTech}% weight): Depth of engineering, multi-tier systems, edge cases. (Simple CRUD app = 20-40; Advanced system = 85-98)
+2. Novelty & Differentiation (${wNov}% weight): Is this a unique twist or a generic clone?
+3. 48-Hour Feasibility (${wFeas}% weight): Can a student squad demo an MVP in 48 hours?
+4. Real-World Impact (${wImp}% weight): Severity of the problem solved.
 
 Return ONLY a valid JSON object matching this exact schema:
 {
@@ -571,19 +587,21 @@ Return ONLY a valid JSON object matching this exact schema:
               const roles = (parsed.rolesBreakdown || []).map((r: any) => r.role);
               const skillGaps = computeSkillGaps(userSkills, parsed.rolesBreakdown || []);
 
-              // Ensure calibrated 4-axis weighted overall score
+              // Ensure calibrated 4-axis weighted overall score using admin formula
               const scores = parsed.scores || {};
               const techComp = Math.max(10, Math.min(99, Number(scores.technicalComplexity) || 80));
               const nov = Math.max(10, Math.min(99, Number(scores.novelty) || 80));
               const feas = Math.max(10, Math.min(99, Number(scores.feasibility) || 80));
               const imp = Math.max(10, Math.min(99, Number(scores.impact) || 80));
-              const calculatedOverall = Math.round(techComp * 0.3 + nov * 0.25 + feas * 0.25 + imp * 0.2);
+              const calculatedOverall = Math.round(
+                (techComp * wTech + nov * wNov + feas * wFeas + imp * wImp) / totalW
+              );
 
               scores.technicalComplexity = techComp;
               scores.novelty = nov;
               scores.feasibility = feas;
               scores.impact = imp;
-              scores.overall = scores.overall || calculatedOverall;
+              scores.overall = calculatedOverall;
 
               blueprint = {
                 ...parsed,
@@ -617,7 +635,7 @@ Return ONLY a valid JSON object matching this exact schema:
             messages: [
               {
                 role: 'system',
-                content: 'You are an elite hackathon judge and principal software architect. Evaluate the student idea against 4 criteria: Technical Complexity (30%), Novelty (25%), 48h Feasibility (25%), and Impact (20%). If input is nonsense, return {"error": "..."}. Otherwise output strictly the requested JSON schema.',
+                content: `You are an elite hackathon judge and principal software architect. Evaluate the student idea against 4 criteria: Technical Complexity (${wTech}%), Novelty (${wNov}%), 48h Feasibility (${wFeas}%), and Impact (${wImp}%). If input is nonsense, return {"error": "..."}. Otherwise output strictly the requested JSON schema.`,
               },
               {
                 role: 'user',
@@ -648,8 +666,23 @@ Return ONLY a valid JSON object matching this exact schema:
             const roles = (parsed.rolesBreakdown || []).map((r: any) => r.role);
             const skillGaps = computeSkillGaps(userSkills, parsed.rolesBreakdown || []);
 
+            const scores = parsed.scores || {};
+            const techComp = Math.max(10, Math.min(99, Number(scores.technicalComplexity) || 80));
+            const nov = Math.max(10, Math.min(99, Number(scores.novelty) || 80));
+            const feas = Math.max(10, Math.min(99, Number(scores.feasibility) || 80));
+            const imp = Math.max(10, Math.min(99, Number(scores.impact) || 80));
+            const calculatedOverall = Math.round(
+              (techComp * wTech + nov * wNov + feas * wFeas + imp * wImp) / totalW
+            );
+            scores.technicalComplexity = techComp;
+            scores.novelty = nov;
+            scores.feasibility = feas;
+            scores.impact = imp;
+            scores.overall = calculatedOverall;
+
             blueprint = {
               ...parsed,
+              scores,
               technologies: flatTech.length > 0 ? flatTech : ['Next.js 14', 'TypeScript', 'TailwindCSS', 'PostgreSQL'],
               desired_roles: roles.length > 0 ? roles : ['Full-Stack Lead', 'Backend Specialist', 'UI/UX Designer'],
               skillGaps,
@@ -665,7 +698,7 @@ Return ONLY a valid JSON object matching this exact schema:
 
     // 3. Fallback to Dynamic Contextual Neural Synthesis Engine (Only if LLMs are unavailable)
     if (!blueprint) {
-      blueprint = synthesizeDynamicBlueprint(prompt, track, userSkills);
+      blueprint = synthesizeDynamicBlueprint(prompt, track, userSkills, weights);
     }
 
     return NextResponse.json({

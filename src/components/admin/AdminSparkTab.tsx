@@ -22,11 +22,19 @@ import {
   EyeOff,
   Database,
   Trophy,
+  Scale,
 } from 'lucide-react';
 import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFeatures';
 
 interface AdminSparkTabProps {
   authToken?: string;
+}
+
+export interface SparkScoringWeights {
+  technical: number;
+  novelty: number;
+  feasibility: number;
+  impact: number;
 }
 
 interface SparkModelSettings {
@@ -39,6 +47,7 @@ interface SparkModelSettings {
   hasEnvOpenAI: boolean;
   temperature: number;
   customSystemPrompt: string;
+  scoringWeights?: SparkScoringWeights;
   lastUpdated?: string | null;
 }
 
@@ -75,6 +84,12 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
     hasEnvOpenAI: false,
     temperature: 0.7,
     customSystemPrompt: '',
+    scoringWeights: {
+      technical: 30,
+      novelty: 25,
+      feasibility: 25,
+      impact: 20,
+    },
     lastUpdated: null,
   });
   const [isLoadingSettings, setIsLoadingSettings] = useState<boolean>(false);
@@ -109,7 +124,15 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
       const res = await fetch('/api/spark/settings', { headers });
       const data = await res.json();
       if (data.success && data.settings) {
-        setModelSettings(data.settings);
+        setModelSettings({
+          ...data.settings,
+          scoringWeights: data.settings.scoringWeights || {
+            technical: 30,
+            novelty: 25,
+            feasibility: 25,
+            impact: 20,
+          },
+        });
       }
     } catch (err: any) {
       console.warn('Could not fetch spark settings:', err);
@@ -138,6 +161,7 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
           openaiApiKey: modelSettings.openaiApiKey,
           temperature: modelSettings.temperature,
           customSystemPrompt: modelSettings.customSystemPrompt,
+          scoringWeights: modelSettings.scoringWeights,
         }),
       });
 
@@ -145,9 +169,17 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
       if (!res.ok) throw new Error(data.error || 'Failed to save settings');
 
       if (data.settings) {
-        setModelSettings(data.settings);
+        setModelSettings({
+          ...data.settings,
+          scoringWeights: data.settings.scoringWeights || {
+            technical: 30,
+            novelty: 25,
+            feasibility: 25,
+            impact: 20,
+          },
+        });
       }
-      setActionSuccess('AI Spark Model Settings updated successfully!');
+      setActionSuccess('AI Spark Model Settings & Scoring Formula updated successfully!');
       setTimeout(() => setActionSuccess(''), 3000);
     } catch (err: any) {
       setActionError(err.message);
@@ -295,6 +327,36 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
       t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.prompt.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const currentWeights: SparkScoringWeights = modelSettings.scoringWeights || {
+    technical: 30,
+    novelty: 25,
+    feasibility: 25,
+    impact: 20,
+  };
+
+  const totalWeights =
+    (currentWeights.technical || 0) +
+    (currentWeights.novelty || 0) +
+    (currentWeights.feasibility || 0) +
+    (currentWeights.impact || 0);
+
+  const updateWeight = (key: keyof SparkScoringWeights, val: number) => {
+    setModelSettings({
+      ...modelSettings,
+      scoringWeights: {
+        ...currentWeights,
+        [key]: Math.max(0, Math.min(100, val)),
+      },
+    });
+  };
+
+  const applyPreset = (preset: SparkScoringWeights) => {
+    setModelSettings({
+      ...modelSettings,
+      scoringWeights: preset,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -507,6 +569,167 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
                   placeholder="e.g. Prioritize Smart India Hackathon themes and Indian campus engineering patterns. Ensure tech stacks are modern (Next.js 14, FastAPI, Supabase)."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-800 border border-charcoal-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
+              </div>
+
+              {/* Official Hackathon Scoring Formula & Weights (Admin Confidential) */}
+              <div className="p-5 rounded-2xl bg-charcoal-800/80 border border-charcoal-700 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-charcoal-700 pb-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-amber-400" />
+                      <h4 className="text-sm font-bold text-white">
+                        Official Hackathon Scoring Formula &amp; Weights
+                      </h4>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                        Admin Only • Hidden from Public Users
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Configure the exact mathematical weights used to compute overall hackathon readiness scores. Normal users on the website see the calibrated scores without seeing the internal formula or percentage weights.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+                        totalWeights === 100
+                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                          : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                      }`}
+                    >
+                      Sum: {totalWeights}% {totalWeights === 100 ? '✓ Balanced' : '⚠️ Adjust to 100%'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4 Weight Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Technical Depth */}
+                  <div className="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-700/80 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                      <span>🛠️ Tech Depth</span>
+                      <span className="font-mono text-blue-400 font-extrabold">{currentWeights.technical}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="70"
+                      step="5"
+                      value={currentWeights.technical}
+                      onChange={(e) => updateWeight('technical', Number(e.target.value))}
+                      className="w-full accent-blue-500 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-500">
+                      Architecture depth, telemetry &amp; non-trivial data pipelines.
+                    </p>
+                  </div>
+
+                  {/* Novelty */}
+                  <div className="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-700/80 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                      <span>💡 Novelty &amp; Twist</span>
+                      <span className="font-mono text-amber-400 font-extrabold">{currentWeights.novelty}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="70"
+                      step="5"
+                      value={currentWeights.novelty}
+                      onChange={(e) => updateWeight('novelty', Number(e.target.value))}
+                      className="w-full accent-amber-500 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-500">
+                      Unfair advantage and differentiation over competitors.
+                    </p>
+                  </div>
+
+                  {/* 48h Feasibility */}
+                  <div className="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-700/80 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                      <span>⏱️ 48h Feasibility</span>
+                      <span className="font-mono text-emerald-400 font-extrabold">{currentWeights.feasibility}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="70"
+                      step="5"
+                      value={currentWeights.feasibility}
+                      onChange={(e) => updateWeight('feasibility', Number(e.target.value))}
+                      className="w-full accent-emerald-500 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-500">
+                      Realistic scope for a student squad to demo a working MVP.
+                    </p>
+                  </div>
+
+                  {/* Real-World Impact */}
+                  <div className="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-700/80 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                      <span>🎯 Problem Impact</span>
+                      <span className="font-mono text-rose-400 font-extrabold">{currentWeights.impact}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="70"
+                      step="5"
+                      value={currentWeights.impact}
+                      onChange={(e) => updateWeight('impact', Number(e.target.value))}
+                      className="w-full accent-rose-500 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-500">
+                      Urgency &amp; severity of the problem solved.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Presets */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+                  <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                    <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Quick Presets:</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => applyPreset({ technical: 30, novelty: 25, feasibility: 25, impact: 20 })}
+                      className="px-2.5 py-1 rounded-lg bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
+                    >
+                      Default Balanced (30/25/25/20)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset({ technical: 40, novelty: 20, feasibility: 20, impact: 20 })}
+                      className="px-2.5 py-1 rounded-lg bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
+                    >
+                      Tech Heavy (40/20/20/20)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset({ technical: 20, novelty: 40, feasibility: 20, impact: 20 })}
+                      className="px-2.5 py-1 rounded-lg bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
+                    >
+                      Novelty Heavy (20/40/20/20)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset({ technical: 25, novelty: 20, feasibility: 20, impact: 35 })}
+                      className="px-2.5 py-1 rounded-lg bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
+                    >
+                      Impact Heavy (25/20/20/35)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mathematical Formula Preview for Admin */}
+                <div className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-700/60 font-mono text-[11px] text-slate-300 flex items-center justify-between">
+                  <span>
+                    Formula: ({currentWeights.technical}% × Tech) + ({currentWeights.novelty}% × Novelty) + ({currentWeights.feasibility}% × Feas) + ({currentWeights.impact}% × Impact)
+                  </span>
+                  <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Admin Confidential</span>
+                </div>
               </div>
 
               <div className="flex justify-end pt-2">
