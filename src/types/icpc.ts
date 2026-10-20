@@ -75,7 +75,8 @@ export type ProctorViolationType =
   | 'PHONE_DETECTED'
   | 'GAZE_DEVIATION'
   | 'SUSPICIOUS_PASTE'
-  | 'FACE_MISSING';
+  | 'FACE_MISSING'
+  | 'SIRI_ATTEMPT';
 
 export interface ProctorIncident {
   id: string;

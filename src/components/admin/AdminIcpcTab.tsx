@@ -836,6 +836,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               <span className="text-[11px] font-mono text-slate-500 shrink-0 uppercase">Filter:</span>
               {[
                 { id: 'all', label: 'All Incidents' },
+                { id: 'SIRI_ATTEMPT', label: '🛑 Siri Attempt' },
                 { id: 'PHONE_DETECTED', label: '📱 Phone Detected' },
                 { id: 'FULLSCREEN_EXIT', label: '🖥️ Screen Exited' },
                 { id: 'TAB_SWITCH', label: '🔀 Tab Switched' },
@@ -878,7 +879,9 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-charcoal-950 border border-charcoal-750 flex items-center justify-center text-rose-400 font-bold shrink-0">
-                        {inc.violationType === 'PHONE_DETECTED' ? (
+                        {inc.violationType === 'SIRI_ATTEMPT' ? (
+                          <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
+                        ) : inc.violationType === 'PHONE_DETECTED' ? (
                           <Smartphone className="w-4 h-4 text-rose-400" />
                         ) : inc.violationType === 'FULLSCREEN_EXIT' ? (
                           <Maximize2 className="w-4 h-4 text-amber-400" />
@@ -913,7 +916,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                          inc.violationType === 'PHONE_DETECTED'
+                          inc.violationType === 'SIRI_ATTEMPT' || inc.violationType === 'PHONE_DETECTED'
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                             : inc.violationType === 'FULLSCREEN_EXIT'
                             ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'

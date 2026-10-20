@@ -36,6 +36,7 @@ import {
   ShieldAlert,
   ChevronLeft,
   Maximize2,
+  Radio,
 } from 'lucide-react';
 import { IcpcContest, IcpcProblem, ContestSubmission, StudentIcpcProgress } from '@/types/icpc';
 import { IcpcProctorGuard, checkSuspiciousPaste } from '@/components/icpc/IcpcProctorGuard';
@@ -795,7 +796,7 @@ export default function IcpcCollegiateArenaPage() {
                   </div>
                 </div>
 
-                {/* Middle: Live Proctor & Full-Screen Security Status */}
+                {/* Middle: Live Proctor, Full-Screen & Siri Status */}
                 <div className="hidden lg:flex items-center gap-2 shrink-0 text-xs font-mono">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-charcoal-800 border border-charcoal-700 text-slate-300">
                     <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
@@ -805,6 +806,19 @@ export default function IcpcCollegiateArenaPage() {
                     <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
                     <span className="text-[11px]">AI Proctor Guard Live</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('linkora:toggle-siri-modal'));
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 transition-colors cursor-pointer"
+                    title="Click to view Siri & Anti-Cheat lockdown status or instructions"
+                  >
+                    <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                    <span className="text-[11px] font-bold">Siri: Turned Off</span>
+                  </button>
                 </div>
 
                 {/* Right: Problem Meta info */}

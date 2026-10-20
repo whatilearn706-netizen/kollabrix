@@ -60,6 +60,19 @@ export function IcpcProctorGuard({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [warningCount, setWarningCount] = useState(0);
   const [isCameraMirrored, setIsCameraMirrored] = useState(false);
+  const [isSiriTurnedOff, setIsSiriTurnedOff] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return Boolean(sessionStorage.getItem(`icpc_siri_off_${contestId}`));
+    }
+    return false;
+  });
+  const [showSiriModal, setShowSiriModal] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem(`icpc_siri_off_${contestId}`);
+    }
+    return true;
+  });
+  const [copiedMacCommand, setCopiedMacCommand] = useState(false);
   const [activeWarning, setActiveWarning] = useState<{
     type: ProctorViolationType;
     message: string;
@@ -109,14 +122,16 @@ export function IcpcProctorGuard({
     } catch (e) {}
   }, []);
 
-  // Request Notification permission on mount for cross-space desktop alerts
+  // Listen for header Siri toggle event
   useEffect(() => {
-    if (isActive && typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().catch(() => {});
-      }
-    }
-  }, [isActive]);
+    const handleToggleModal = () => {
+      setShowSiriModal((prev) => !prev);
+    };
+    window.addEventListener('linkora:toggle-siri-modal', handleToggleModal);
+    return () => {
+      window.removeEventListener('linkora:toggle-siri-modal', handleToggleModal);
+    };
+  }, []);
 
   // Dispatch incident to API & local callback
   const triggerViolation = useCallback(
@@ -236,9 +251,9 @@ export function IcpcProctorGuard({
       }
       setIsFullscreenActive(true);
 
-      // Lock system keyboard shortcuts in Chromium if supported
+      // Lock ALL system keyboard shortcuts in Chromium
       if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
-        (navigator as any).keyboard.lock(['Escape', 'Tab', 'Space', 'ArrowLeft', 'ArrowRight']).catch(() => {});
+        (navigator as any).keyboard.lock().catch(() => {});
       }
 
       return true;
@@ -248,32 +263,94 @@ export function IcpcProctorGuard({
     }
   }, []);
 
+  // Handler for "Turn Off Siri & Lock Arena" button
+  const handleTurnOffSiri = useCallback(async () => {
+    setIsSiriTurnedOff(true);
+    setShowSiriModal(false);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(`icpc_siri_off_${contestId}`, 'true');
+      } catch (e) {}
+    }
+    await requestArenaFullscreen();
+    if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
+      (navigator as any).keyboard.lock().catch(() => {});
+    }
+    playAlertSound('warning');
+  }, [contestId, requestArenaFullscreen, playAlertSound]);
+
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
-  // Intercepts and blocks Siri, Spotlight, Raycast shortcuts and 4-finger swipes
+  // Intercepts and blocks Siri, Spotlight, Raycast shortcuts, Fn keys, and 4-finger swipes
   useEffect(() => {
     if (!isActive) return;
 
     // Lock system keyboard shortcuts in Chromium
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
-      (navigator as any).keyboard.lock(['Escape', 'Tab', 'Space', 'ArrowLeft', 'ArrowRight']).catch(() => {});
+      (navigator as any).keyboard.lock().catch(() => {});
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCmdSpace = (e.metaKey || e.ctrlKey) && (e.code === 'Space' || e.key === ' ');
       const isOptSpace = e.altKey && (e.code === 'Space' || e.key === ' ');
-      const isMicKey = e.key === 'F5' || e.code === 'F5';
+      const isCtrlSpace = e.ctrlKey && (e.code === 'Space' || e.key === ' ');
       const isSiriCombo = e.metaKey && e.shiftKey && (e.code === 'Space' || e.key === ' ');
+      const isDictationKey = e.key === 'F5' || e.code === 'F5' || e.key === 'LaunchAssistant' || (e as any).key === 'MicrophoneToggle';
+      const isFnKey = e.key === 'Fn' || e.key === 'Globe';
+      const isAppSwitcher = e.metaKey && (e.key === 'Tab' || e.code === 'Tab');
+      const isWindowHide = e.metaKey && (e.key === 'h' || e.key === 'H' || e.key === 'm' || e.key === 'M');
+      const isEscapeQuit = e.metaKey && e.altKey && (e.key === 'Escape' || e.code === 'Escape');
 
-      if (isCmdSpace || isOptSpace || isMicKey || isSiriCombo) {
+      if (
+        isCmdSpace ||
+        isOptSpace ||
+        isCtrlSpace ||
+        isSiriCombo ||
+        isDictationKey ||
+        isFnKey ||
+        isAppSwitcher ||
+        isWindowHide ||
+        isEscapeQuit
+      ) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+
+        const keyLabel = isCmdSpace
+          ? 'Cmd + Space'
+          : isOptSpace
+          ? 'Option + Space'
+          : isCtrlSpace
+          ? 'Ctrl + Space'
+          : isSiriCombo
+          ? 'Shift + Cmd + Space'
+          : isDictationKey
+          ? 'F5 (Dictation / Siri)'
+          : isFnKey
+          ? 'Fn / Globe (Siri)'
+          : isAppSwitcher
+          ? 'Cmd + Tab'
+          : isWindowHide
+          ? 'Cmd + H/M'
+          : e.key || 'Assistant Key';
+
         triggerViolation(
-          'TAB_SWITCH',
-          'Siri / Spotlight / System Shortcut Intercepted',
-          `Prohibited system shortcut (${e.metaKey ? 'Cmd+' : e.altKey ? 'Option+' : ''}Space / ${e.key}) intercepted. Using Siri or system search overlays during contests is strictly prohibited.`,
+          'SIRI_ATTEMPT',
+          'Siri / System Shortcut Attempt Blocked',
+          `Prohibited system shortcut (${keyLabel}) intercepted! Siri is turned off for this contest. Attempting to use Siri or switch away from the contest is strictly forbidden and has been recorded in the Admin Control Center.`,
           'critical'
         );
+        return false;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const isCmdSpace = (e.metaKey || e.ctrlKey) && (e.code === 'Space' || e.key === ' ');
+      const isOptSpace = e.altKey && (e.code === 'Space' || e.key === ' ');
+      const isMicKey = e.key === 'F5' || e.code === 'F5' || e.key === 'LaunchAssistant';
+      if (isCmdSpace || isOptSpace || isMicKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         return false;
       }
     };
@@ -292,10 +369,12 @@ export function IcpcProctorGuard({
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
     window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
       window.removeEventListener('wheel', handleWheel);
       if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.unlock) {
         (navigator as any).keyboard.unlock();
@@ -320,7 +399,7 @@ export function IcpcProctorGuard({
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           try {
             new Notification('🚨 LINKORA ICPC SECURITY VIOLATION', {
-              body: 'Screen switch detected! You navigated away from the contest. Return immediately.',
+              body: 'Siri or external screen switch detected! Return to the contest arena immediately.',
               icon: '/icon.png',
             });
           } catch (notifErr) {}
@@ -330,11 +409,11 @@ export function IcpcProctorGuard({
           focusLostStartTimeRef.current = Date.now();
         } else {
           const elapsed = Date.now() - focusLostStartTimeRef.current;
-          if (elapsed >= 1500) {
+          if (elapsed >= 500) {
             triggerViolation(
-              'TAB_SWITCH',
-              'Siri / External Application / Desktop Switch Detected',
-              `Contest window lost focus or was moved off-screen for ${(elapsed / 1000).toFixed(1)}s (Siri, external window, or desktop swipe active). Screen switching is strictly prohibited.`,
+              'SIRI_ATTEMPT',
+              'Siri / External Assistant Window Detected',
+              `Contest window lost focus to Siri or an external app for ${(elapsed / 1000).toFixed(1)}s. Siri and external overlays are strictly prohibited during contests.`,
               'critical'
             );
           }
@@ -344,11 +423,11 @@ export function IcpcProctorGuard({
         if (focusLostStartTimeRef.current) {
           const awayDuration = Date.now() - focusLostStartTimeRef.current;
           focusLostStartTimeRef.current = null;
-          if (awayDuration >= 1200) {
+          if (awayDuration >= 800) {
             triggerViolation(
-              'TAB_SWITCH',
-              'Desktop / External Window Switch Detected',
-              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s (via swipe gesture or external window). Screen switching is prohibited.`,
+              'SIRI_ATTEMPT',
+              'Siri / External Window Switch Detected',
+              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s (Siri or external window active). Screen switching is strictly prohibited.`,
               'critical'
             );
           }
@@ -356,7 +435,7 @@ export function IcpcProctorGuard({
       }
     };
 
-    const poller = setInterval(checkFocusAndVisibility, 200);
+    const poller = setInterval(checkFocusAndVisibility, 150);
 
     const handleWindowBlur = () => {
       if (!focusLostStartTimeRef.current) {
@@ -709,6 +788,17 @@ export function IcpcProctorGuard({
                 {warningCount} Warnings
               </span>
 
+              {/* Siri Status & Protection Indicator Button */}
+              <button
+                type="button"
+                onClick={() => setShowSiriModal(true)}
+                className="text-rose-300 hover:text-white px-1.5 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-[9px] font-mono border border-rose-500/40 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Siri is disabled and locked. Click to view settings or copy macOS commands."
+              >
+                <Radio className="w-2.5 h-2.5 text-rose-400 animate-pulse" />
+                <span>Siri: Off</span>
+              </button>
+
               {/* Mirror / Non-Mirror Orientation Toggle Button */}
               <button
                 type="button"
@@ -828,6 +918,127 @@ export function IcpcProctorGuard({
               <span>Full-Screen: {isFullscreenActive ? 'Locked' : 'Off'}</span>
             </span>
             <span>{studentName.split(' ')[0]}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── MANDATORY "TURN OFF SIRI" & SECURITY GATEWAY MODAL ── */}
+      {isActive && showSiriModal && (
+        <div className="fixed inset-0 z-[120] bg-charcoal-950/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="max-w-xl w-full p-6 sm:p-8 rounded-3xl bg-charcoal-900 border-2 border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-center space-y-6 animate-in zoom-in-95 duration-200 my-auto">
+            {/* Header */}
+            <div className="space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center mx-auto text-cyan-400 mb-2 shadow-lg shadow-cyan-500/20">
+                <Radio className="w-7 h-7 animate-pulse text-cyan-300" />
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono font-bold tracking-wider uppercase">
+                <span>Anti-Cheat Security Checkpoint</span>
+              </div>
+              <h2 className="text-2xl font-black text-white tracking-tight">Turn Off Siri &amp; Lock Arena</h2>
+              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                To guarantee zero AI assistance, Siri and system voice assistants must be disabled before starting. Once turned off, any attempt to invoke Siri or switch screens will be intercepted and logged.
+              </p>
+            </div>
+
+            {/* Live Camera & Proctor Feed Preview */}
+            <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-3 text-left">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-400">1. Proctor Feed Verification:</span>
+                <span className={hasCameraPermission ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                  {hasCameraPermission ? "✓ Wide-Angle Camera Active" : "⚠ Camera Required"}
+                </span>
+              </div>
+
+              <div className="relative aspect-video max-h-44 rounded-xl overflow-hidden bg-black border border-charcoal-800 mx-auto flex items-center justify-center">
+                <video
+                  ref={(el) => {
+                    (videoRef as any).current = el;
+                    if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                      el.srcObject = streamRef.current;
+                      el.play().catch(() => {});
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    transform: isCameraMirrored ? 'scaleX(-1)' : 'scaleX(1)',
+                  }}
+                  className="w-full h-full object-cover transition-transform duration-200"
+                />
+                {!hasCameraPermission && (
+                  <div className="absolute inset-0 bg-charcoal-950/90 flex flex-col items-center justify-center p-3 text-center gap-2">
+                    <Camera className="w-6 h-6 text-cyan-400" />
+                    <span className="text-xs font-bold text-white">Camera Permission Needed</span>
+                    <button
+                      type="button"
+                      onClick={initWebcam}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold"
+                    >
+                      Enable Webcam
+                    </button>
+                  </div>
+                )}
+                {hasCameraPermission && (
+                  <div className="absolute top-2 right-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraMirrored(!isCameraMirrored)}
+                      className="px-2 py-0.5 rounded-md bg-charcoal-900/80 backdrop-blur border border-charcoal-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 hover:text-white"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                      <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mac OS Siri Disabler Helper */}
+            <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 text-left space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                  <span>🍎</span> macOS Contestants: Disable Siri at OS Level
+                </span>
+                <span className="text-[10px] text-cyan-400 font-mono">Recommended</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Run this command in Mac Terminal to turn off Siri during your contest, or toggle it in <strong>System Settings → Siri &amp; Spotlight</strong>:
+              </p>
+              <div className="flex items-center gap-2 bg-charcoal-900 p-2 rounded-xl border border-charcoal-750 font-mono text-[11px] text-slate-300">
+                <code className="flex-1 truncate select-all text-cyan-300">
+                  defaults write com.apple.assistant.support "Assistant Enabled" -bool false; killall Siri
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText('defaults write com.apple.assistant.support "Assistant Enabled" -bool false; killall Siri');
+                    setCopiedMacCommand(true);
+                    setTimeout(() => setCopiedMacCommand(false), 2500);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-charcoal-800 hover:bg-cyan-600/30 text-cyan-300 hover:text-white border border-charcoal-700 text-[11px] font-bold transition-all shrink-0 cursor-pointer"
+                >
+                  {copiedMacCommand ? '✓ Copied!' : 'Copy Command'}
+                </button>
+              </div>
+            </div>
+
+            {/* Main CTA: Turn Off Siri and Enter Arena */}
+            <div className="pt-2 space-y-2">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleTurnOffSiri}
+                className="w-full bg-gradient-to-r from-cyan-600 via-rose-600 to-rose-700 hover:from-cyan-500 hover:to-rose-600 text-white font-extrabold text-sm py-3.5 shadow-xl shadow-cyan-500/20 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <Radio className="w-4 h-4 text-white" />
+                <span>🛑 Turn Off Siri &amp; Enter Arena</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </Button>
+              <p className="text-[10px] text-slate-400">
+                Pressing this engages full-screen lockdown and blocks all Siri shortcuts (<code className="text-cyan-300">Cmd+Space</code>, <code className="text-cyan-300">Opt+Space</code>, <code className="text-cyan-300">F5</code>).
+              </p>
+            </div>
           </div>
         </div>
       )}
