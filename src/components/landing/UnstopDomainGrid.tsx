@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Trophy,
   Compass,
-  Users,
+  Users2,
   Lightbulb,
   Layers,
   ArrowRight,
@@ -25,6 +25,7 @@ interface DomainCard {
   borderColor: string;
   iconBg: string;
   iconColor: string;
+  iconHex: string;
   buttonColor: string;
 }
 
@@ -41,6 +42,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     borderColor: 'border-blue-200/80 hover:border-blue-400 dark:border-blue-800/40 dark:hover:border-blue-500',
     iconBg: 'bg-blue-600 text-white shadow-blue-500/30',
     iconColor: 'text-white',
+    iconHex: '#2563eb',
     buttonColor: 'bg-blue-600 hover:bg-blue-700 text-white',
   },
   {
@@ -55,6 +57,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     borderColor: 'border-violet-200/80 hover:border-violet-400 dark:border-violet-800/40 dark:hover:border-violet-500',
     iconBg: 'bg-violet-600 text-white shadow-violet-500/30',
     iconColor: 'text-white',
+    iconHex: '#7c3aed',
     buttonColor: 'bg-violet-600 hover:bg-violet-700 text-white',
   },
   {
@@ -62,13 +65,14 @@ const DOMAIN_CARDS: DomainCard[] = [
     title: 'Student Matchmaker',
     subtitle: 'Assemble Dream Teams',
     description: 'Match with complementary frontend, backend, AI and UI/UX peers across 38+ universities.',
-    badge: '94% Match Accuracy',
+    badge: '94% Match Rate',
     href: '/teammates',
-    icon: Users,
+    icon: Users2,
     gradientBg: 'from-amber-50/90 via-orange-50/70 to-yellow-50/80 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-yellow-950/40',
     borderColor: 'border-amber-200/80 hover:border-amber-400 dark:border-amber-800/40 dark:hover:border-amber-500',
     iconBg: 'bg-amber-500 text-white shadow-amber-500/30',
     iconColor: 'text-white',
+    iconHex: '#f59e0b',
     buttonColor: 'bg-amber-600 hover:bg-amber-700 text-white',
   },
   {
@@ -83,6 +87,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     borderColor: 'border-emerald-200/80 hover:border-emerald-400 dark:border-emerald-800/40 dark:hover:border-emerald-500',
     iconBg: 'bg-emerald-600 text-white shadow-emerald-500/30',
     iconColor: 'text-white',
+    iconHex: '#059669',
     buttonColor: 'bg-emerald-600 hover:bg-emerald-700 text-white',
   },
   {
@@ -97,6 +102,7 @@ const DOMAIN_CARDS: DomainCard[] = [
     borderColor: 'border-rose-200/80 hover:border-rose-400 dark:border-rose-800/40 dark:hover:border-rose-500',
     iconBg: 'bg-rose-600 text-white shadow-rose-500/30',
     iconColor: 'text-white',
+    iconHex: '#e11d48',
     buttonColor: 'bg-rose-600 hover:bg-rose-700 text-white',
   },
 ];
@@ -142,6 +148,8 @@ export function UnstopDomainGrid({ title, subtitle }: UnstopDomainGridProps = {}
               <Link
                 key={card.id}
                 href={card.href}
+                data-domain-card="true"
+                data-no-override="true"
                 className={`group flex flex-col justify-between p-6 rounded-3xl bg-gradient-to-br ${card.gradientBg} border ${card.borderColor} shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden`}
               >
                 {/* Subtle top edge glow */}
@@ -149,11 +157,18 @@ export function UnstopDomainGrid({ title, subtitle }: UnstopDomainGridProps = {}
 
                 <div className="space-y-4">
                   {/* Top Row: Icon & Badge */}
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2" data-keep-icon="true">
                     <div
+                      data-keep-icon="true"
+                      data-domain-icon="true"
+                      style={{ backgroundColor: card.iconHex }}
                       className={`w-12 h-12 rounded-2xl ${card.iconBg} shadow-md flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200`}
                     >
-                      <Icon className={`w-6 h-6 ${card.iconColor}`} />
+                      <Icon
+                        className={`w-6 h-6 ${card.iconColor}`}
+                        strokeWidth={2.2}
+                        style={{ display: 'block', color: '#ffffff', stroke: 'currentColor' }}
+                      />
                     </div>
 
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white dark:bg-white/10 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 shadow-2xs whitespace-nowrap">

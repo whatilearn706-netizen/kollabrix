@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Trophy,
   Compass,
-  Users,
+  Users2,
   Lightbulb,
   Layers,
   Award,
@@ -21,7 +21,9 @@ interface CategoryItem {
   badge?: string;
   icon: React.ElementType;
   href: string;
-  accentColor: string;
+  iconBg: string;
+  iconColor: string;
+  iconHex: string;
   borderColor: string;
   textColor: string;
   bgColor: string;
@@ -35,7 +37,9 @@ const CATEGORIES: CategoryItem[] = [
     badge: '₹25L+ Prizes',
     icon: Trophy,
     href: '/hackathons',
-    accentColor: 'from-amber-500/20 to-orange-500/20',
+    iconBg: 'bg-amber-500 text-white shadow-md shadow-amber-500/25',
+    iconColor: 'text-white',
+    iconHex: '#f59e0b',
     borderColor: 'hover:border-amber-500/40 border-amber-500/20',
     textColor: 'text-amber-800 dark:text-amber-300',
     bgColor: 'bg-amber-50/50 dark:bg-amber-500/5',
@@ -47,7 +51,9 @@ const CATEGORIES: CategoryItem[] = [
     badge: 'Active Now',
     icon: Compass,
     href: '/explore',
-    accentColor: 'from-violet-500/20 to-indigo-500/20',
+    iconBg: 'bg-violet-600 text-white shadow-md shadow-violet-500/25',
+    iconColor: 'text-white',
+    iconHex: '#7c3aed',
     borderColor: 'hover:border-violet-500/40 border-violet-500/20',
     textColor: 'text-violet-800 dark:text-violet-300',
     bgColor: 'bg-violet-50/50 dark:bg-violet-500/5',
@@ -57,9 +63,11 @@ const CATEGORIES: CategoryItem[] = [
     name: 'Student Matchmaker',
     count: '94% Match Rate',
     badge: 'Squad Up',
-    icon: Users,
+    icon: Users2,
     href: '/teammates',
-    accentColor: 'from-emerald-500/20 to-teal-500/20',
+    iconBg: 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25',
+    iconColor: 'text-white',
+    iconHex: '#059669',
     borderColor: 'hover:border-emerald-500/40 border-emerald-500/20',
     textColor: 'text-emerald-800 dark:text-emerald-300',
     bgColor: 'bg-emerald-50/50 dark:bg-emerald-500/5',
@@ -71,7 +79,9 @@ const CATEGORIES: CategoryItem[] = [
     badge: 'Campus Tracks',
     icon: Lightbulb,
     href: '/problems',
-    accentColor: 'from-blue-500/20 to-cyan-500/20',
+    iconBg: 'bg-blue-600 text-white shadow-md shadow-blue-500/25',
+    iconColor: 'text-white',
+    iconHex: '#2563eb',
     borderColor: 'hover:border-blue-500/40 border-blue-500/20',
     textColor: 'text-blue-800 dark:text-blue-300',
     bgColor: 'bg-blue-50/50 dark:bg-blue-500/5',
@@ -83,10 +93,12 @@ const CATEGORIES: CategoryItem[] = [
     badge: 'Universal Bridge',
     icon: Layers,
     href: '/workspace/demo',
-    accentColor: 'from-pink-500/20 to-rose-500/20',
-    borderColor: 'hover:border-pink-500/40 border-pink-500/20',
-    textColor: 'text-pink-800 dark:text-pink-300',
-    bgColor: 'bg-pink-50/50 dark:bg-pink-500/5',
+    iconBg: 'bg-rose-600 text-white shadow-md shadow-rose-500/25',
+    iconColor: 'text-white',
+    iconHex: '#e11d48',
+    borderColor: 'hover:border-rose-500/40 border-rose-500/20',
+    textColor: 'text-rose-800 dark:text-rose-300',
+    bgColor: 'bg-rose-50/50 dark:bg-rose-500/5',
   },
   {
     id: 'credentials',
@@ -95,7 +107,9 @@ const CATEGORIES: CategoryItem[] = [
     badge: 'LinkedIn Ready',
     icon: Award,
     href: '/analytics',
-    accentColor: 'from-cyan-500/20 to-teal-500/20',
+    iconBg: 'bg-cyan-600 text-white shadow-md shadow-cyan-500/25',
+    iconColor: 'text-white',
+    iconHex: '#0891b2',
     borderColor: 'hover:border-cyan-500/40 border-cyan-500/20',
     textColor: 'text-cyan-800 dark:text-cyan-300',
     bgColor: 'bg-cyan-50/50 dark:bg-cyan-500/5',
@@ -128,12 +142,21 @@ export function OpportunityCategoryBar() {
               <Link
                 key={cat.id}
                 href={cat.href}
+                data-rail-card="true"
+                data-no-override="true"
                 className={`snap-start shrink-0 group flex items-center gap-3.5 px-4 py-3 rounded-2xl border transition-all duration-200 backdrop-blur-sm ${cat.bgColor} ${cat.borderColor} hover:shadow-md hover:scale-[1.02] active:scale-[0.99]`}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${cat.accentColor} flex items-center justify-center shrink-0 border border-slate-200/50 dark:border-white/10 group-hover:scale-110 transition-transform duration-200`}
+                  data-rail-icon="true"
+                  data-keep-icon="true"
+                  className={`w-10 h-10 rounded-xl ${cat.iconBg} flex items-center justify-center shrink-0 border border-black/5 dark:border-white/10 shadow-sm group-hover:scale-110 transition-transform duration-200`}
+                  style={{ backgroundColor: cat.iconHex, color: '#ffffff' }}
                 >
-                  <Icon className={`w-5 h-5 ${cat.textColor}`} />
+                  <Icon
+                    className="w-5 h-5 text-white"
+                    strokeWidth={2.2}
+                    style={{ display: 'block', color: '#ffffff', stroke: 'currentColor' }}
+                  />
                 </div>
 
                 <div className="text-left pr-2">
