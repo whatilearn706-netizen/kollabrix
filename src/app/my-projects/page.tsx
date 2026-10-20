@@ -27,6 +27,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Copy,
+  CheckSquare,
+  Headphones,
+  Laptop,
 } from 'lucide-react';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
@@ -232,14 +235,30 @@ function MyProjectsContent() {
           for (const p of partData as any[]) {
             const h = p?.hackathon;
             if (h?.id && !hackathonMap.has(h.id)) {
+              let actualTeamName = 'Participant (Click to Form Squad)';
+              let teamObj: any = null;
+              if (p.team_id) {
+                try {
+                  const { data: tData } = await supabase
+                    .from('hackathon_teams')
+                    .select('id, team_name, invite_code, leader_id')
+                    .eq('id', p.team_id)
+                    .maybeSingle();
+                  if (tData) {
+                    actualTeamName = tData.team_name;
+                    teamObj = tData;
+                  }
+                } catch (e) {}
+              }
               const closed = isHackathonClosed(h);
               hackathonMap.set(h.id, {
                 hackathon_id: h.id,
                 team_id: p.team_id || null,
-                team_name: 'Enrolled Hackathon Participant',
-                role: p.role || 'Participant',
+                team_name: actualTeamName,
+                invite_code: teamObj?.invite_code || null,
+                role: p.role || (teamObj?.leader_id === currentUserId ? 'Leader' : 'Participant'),
                 hackathon: h,
-                team: null,
+                team: teamObj,
                 members: [],
                 isClosed: closed,
                 timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
@@ -797,7 +816,35 @@ function MyProjectsContent() {
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2">
+                      {/* Sprint Feature Badges / Quick Links */}
+                      <div className="pt-2 border-t border-charcoal-800 flex flex-wrap items-center gap-1.5">
+                        <Link href={`/hackathons/${h.id}/workspace?tab=tasks`}>
+                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
+                            <CheckSquare className="w-3 h-3 text-amber-400" />
+                            Tasks & Kanban
+                          </span>
+                        </Link>
+                        <Link href={`/hackathons/${h.id}/workspace?tab=huddle`}>
+                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
+                            <Headphones className="w-3 h-3 text-amber-400" />
+                            Team Huddle
+                          </span>
+                        </Link>
+                        <Link href={`/hackathons/${h.id}/workspace?tab=bridge`}>
+                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
+                            <Laptop className="w-3 h-3 text-amber-400" />
+                            Live Bridge
+                          </span>
+                        </Link>
+                        <Link href={`/hackathons/${h.id}/workspace?tab=closer-kit`}>
+                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-800 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
+                            <Sparkles className="w-3 h-3 text-amber-400" />
+                            AI Pitch Kit
+                          </span>
+                        </Link>
+                      </div>
+
+                      <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2 flex-wrap">
                         <Link href={`/hackathons/${h.id}/workspace`}>
                           <Button
                             variant="primary"
