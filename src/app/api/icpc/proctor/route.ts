@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
       details = 'Security incident recorded',
       warningCount = 1,
       severity = 'medium',
+      screenSnapshot,
     } = body;
 
     const newIncident: ProctorIncident = {
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
       warningCount: Number(warningCount) || 1,
       severity: severity as any,
       resolved: false,
+      screenSnapshot: typeof screenSnapshot === 'string' && screenSnapshot.startsWith('data:image/') ? screenSnapshot : undefined,
     };
 
     const currentIncidents = await loadProctorIncidents();

@@ -836,10 +836,10 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               <span className="text-[11px] font-mono text-slate-500 shrink-0 uppercase">Filter:</span>
               {[
                 { id: 'all', label: 'All Incidents' },
-                { id: 'SIRI_ATTEMPT', label: '🛑 Siri Attempt' },
+                { id: 'SCREEN_SHARE_STOPPED', label: '🛑 Screen Share Terminated' },
+                { id: 'TAB_SWITCH', label: '🔀 App / Tab Switch' },
                 { id: 'PHONE_DETECTED', label: '📱 Phone Detected' },
                 { id: 'FULLSCREEN_EXIT', label: '🖥️ Screen Exited' },
-                { id: 'TAB_SWITCH', label: '🔀 Tab Switched' },
                 { id: 'GAZE_DEVIATION', label: '👀 Gaze Deviation' },
                 { id: 'SUSPICIOUS_PASTE', label: '📋 AI Paste' },
               ].map((chip) => (
@@ -879,7 +879,9 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-charcoal-950 border border-charcoal-750 flex items-center justify-center text-rose-400 font-bold shrink-0">
-                        {inc.violationType === 'SIRI_ATTEMPT' ? (
+                        {inc.violationType === 'SCREEN_SHARE_STOPPED' ? (
+                          <Maximize2 className="w-4 h-4 text-rose-400 animate-pulse" />
+                        ) : inc.violationType === 'SIRI_ATTEMPT' ? (
                           <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
                         ) : inc.violationType === 'PHONE_DETECTED' ? (
                           <Smartphone className="w-4 h-4 text-rose-400" />
@@ -916,7 +918,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                          inc.violationType === 'SIRI_ATTEMPT' || inc.violationType === 'PHONE_DETECTED'
+                          inc.violationType === 'SCREEN_SHARE_STOPPED' || inc.violationType === 'SIRI_ATTEMPT' || inc.violationType === 'PHONE_DETECTED'
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                             : inc.violationType === 'FULLSCREEN_EXIT'
                             ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
@@ -939,6 +941,22 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                   <p className="text-xs text-slate-300 bg-charcoal-950 p-3 rounded-xl border border-charcoal-800/80 font-mono">
                     {inc.details}
                   </p>
+
+                  {/* Render Screen Snapshot Evidence if captured */}
+                  {inc.screenSnapshot && (
+                    <div className="rounded-xl overflow-hidden border border-charcoal-750 bg-black max-w-md">
+                      <div className="px-3 py-1.5 bg-charcoal-950 border-b border-charcoal-800 text-[10px] font-mono font-bold text-rose-300 flex items-center justify-between">
+                        <span>📸 Contestant Monitor Capture</span>
+                        <span className="text-[9px] text-slate-400">Click to expand</span>
+                      </div>
+                      <img
+                        src={inc.screenSnapshot}
+                        alt="Incident Monitor Capture"
+                        className="w-full h-auto object-cover max-h-52 cursor-pointer hover:opacity-95 transition-opacity"
+                        onClick={() => window.open(inc.screenSnapshot, '_blank')}
+                      />
+                    </div>
+                  )}
 
                   <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-xs text-slate-400">
                     <span className="flex items-center gap-1 font-mono text-[11px]">

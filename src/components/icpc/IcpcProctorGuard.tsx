@@ -19,6 +19,8 @@ import {
   Layers,
   ArrowRight,
   RefreshCw,
+  Monitor,
+  MonitorOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -56,29 +58,22 @@ export function IcpcProctorGuard({
 }: IcpcProctorGuardProps) {
   // Proctoring telemetry state
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [hasScreenPermission, setHasScreenPermission] = useState(false);
   const [isFullscreenActive, setIsFullscreenActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [screenError, setScreenError] = useState<string | null>(null);
   const [warningCount, setWarningCount] = useState(0);
   const [isCameraMirrored, setIsCameraMirrored] = useState(false);
-  const [isSiriTurnedOff, setIsSiriTurnedOff] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return Boolean(sessionStorage.getItem(`icpc_siri_off_${contestId}`));
-    }
-    return false;
-  });
-  const [showSiriModal, setShowSiriModal] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return !sessionStorage.getItem(`icpc_siri_off_${contestId}`);
-    }
-    return true;
-  });
-  const [copiedMacCommand, setCopiedMacCommand] = useState(false);
+  const [pipFeedMode, setPipFeedMode] = useState<'camera' | 'screen'>('camera');
+  const [showEntranceModal, setShowEntranceModal] = useState(true);
+  const [isTerminated, setIsTerminated] = useState(false);
   const [isFocusLost, setIsFocusLost] = useState(false);
   const [activeWarning, setActiveWarning] = useState<{
     type: ProctorViolationType;
     message: string;
     details: string;
     timestamp: string;
+    screenSnapshot?: string;
   } | null>(null);
 
   // Vision telemetry
@@ -88,8 +83,10 @@ export function IcpcProctorGuard({
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
+  const screenVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const proctorIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const warningCountRef = useRef(0);
 
@@ -123,38 +120,62 @@ export function IcpcProctorGuard({
     } catch (e) {}
   }, []);
 
-  // Listen for header Siri toggle event
-  useEffect(() => {
-    const handleToggleModal = () => {
-      setShowSiriModal((prev) => !prev);
-    };
-    window.addEventListener('linkora:toggle-siri-modal', handleToggleModal);
-    return () => {
-      window.removeEventListener('linkora:toggle-siri-modal', handleToggleModal);
-    };
+  // Capture instant screen snapshot from the screen share feed
+  const captureScreenSnapshot = useCallback((): string | undefined => {
+    try {
+      const screenVideo = screenVideoRef.current;
+      if (!screenVideo || screenVideo.readyState < 2) return undefined;
+
+      const snapCanvas = document.createElement('canvas');
+      snapCanvas.width = 640;
+      snapCanvas.height = 360;
+      const ctx = snapCanvas.getContext('2d');
+      if (!ctx) return undefined;
+
+      ctx.drawImage(screenVideo, 0, 0, 640, 360);
+      return snapCanvas.toDataURL('image/jpeg', 0.65);
+    } catch (e) {
+      console.warn('Could not capture screen snapshot:', e);
+      return undefined;
+    }
   }, []);
 
   // Dispatch incident to API & local callback
   const triggerViolation = useCallback(
-    async (type: ProctorViolationType, message: string, details: string, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
-      // Cooldown debounce per violation type: max 1 alert per 3 seconds of same type
+    async (
+      type: ProctorViolationType,
+      message: string,
+      details: string,
+      severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+    ) => {
+      if (isTerminated) return;
+
       const now = Date.now();
       const lastTrigger = recentViolationsRef.current[type] || 0;
       if (now - lastTrigger < 3000) return;
       recentViolationsRef.current[type] = now;
 
-      playAlertSound(severity === 'critical' ? 'critical' : 'warning');
+      playAlertSound('critical');
       warningCountRef.current += 1;
       const nextCount = warningCountRef.current;
       setWarningCount(nextCount);
+
+      // Grab screen snapshot evidence from live monitor share
+      const screenSnapshot = captureScreenSnapshot();
 
       const incidentData = {
         type,
         message,
         details,
         timestamp: new Date().toLocaleTimeString(),
+        screenSnapshot,
       };
       setActiveWarning(incidentData);
+
+      // Auto-terminate session on 3 violations or when screen share stopped
+      if (nextCount >= 3 || type === 'SCREEN_SHARE_STOPPED') {
+        setIsTerminated(true);
+      }
 
       // Report to server API
       try {
@@ -171,6 +192,7 @@ export function IcpcProctorGuard({
           details,
           warningCount: nextCount,
           severity,
+          screenSnapshot,
         };
 
         const res = await fetch('/api/icpc/proctor', {
@@ -186,10 +208,23 @@ export function IcpcProctorGuard({
         console.warn('Failed to report proctor violation:', err);
       }
     },
-    [studentId, studentName, studentEmail, college, contestId, contestTitle, problemId, problemTitle, onSecurityIncident, playAlertSound]
+    [
+      isTerminated,
+      captureScreenSnapshot,
+      playAlertSound,
+      studentId,
+      studentName,
+      studentEmail,
+      college,
+      contestId,
+      contestTitle,
+      problemId,
+      problemTitle,
+      onSecurityIncident,
+    ]
   );
 
-  // Request Wide-Angle Webcam Stream (Video Only — No Microphone to prevent ambient noise false alerts)
+  // Request Wide-Angle Webcam Stream
   const initWebcam = useCallback(async () => {
     setCameraError(null);
     try {
@@ -232,6 +267,60 @@ export function IcpcProctorGuard({
     }
   }, []);
 
+  // Request Entire Screen Share Stream
+  const initScreenShare = useCallback(async () => {
+    setScreenError(null);
+    try {
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        setScreenError('Screen sharing is not supported in this browser environment. Please use Google Chrome or Edge.');
+        return false;
+      }
+
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          displaySurface: 'monitor',
+        } as any,
+        audio: false,
+      });
+
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          setHasScreenPermission(false);
+          triggerViolation(
+            'SCREEN_SHARE_STOPPED',
+            'Screen Sharing Was Terminated',
+            'Mandatory screen sharing was stopped during the active contest. The contest arena has been disqualified and session terminated.',
+            'critical'
+          );
+          setIsTerminated(true);
+        };
+      }
+
+      screenStreamRef.current = stream;
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = stream;
+        screenVideoRef.current.play().catch(() => {});
+      }
+
+      setHasScreenPermission(true);
+      return true;
+    } catch (err: any) {
+      console.warn('Screen share error:', err);
+      setScreenError(
+        err.name === 'NotAllowedError'
+          ? 'Screen share permission was denied. You must share your entire screen to participate in ICPC contests.'
+          : 'Failed to access screen share: ' + (err.message || 'Unknown error')
+      );
+      setHasScreenPermission(false);
+      return false;
+    }
+  }, [triggerViolation]);
+
   // Auto-start webcam immediately on mount when active
   useEffect(() => {
     if (isActive) {
@@ -264,28 +353,28 @@ export function IcpcProctorGuard({
     }
   }, []);
 
-  // Handler for "Turn Off Siri & Lock Arena" button
-  const handleTurnOffSiri = useCallback(async () => {
-    setIsSiriTurnedOff(true);
-    setShowSiriModal(false);
-    if (typeof window !== 'undefined') {
-      try {
-        sessionStorage.setItem(`icpc_siri_off_${contestId}`, 'true');
-      } catch (e) {}
+  // Enter Arena Handler (Engages Fullscreen & Locks Arena)
+  const handleStartContest = useCallback(async () => {
+    if (!hasCameraPermission) {
+      const camOk = await initWebcam();
+      if (!camOk) return;
     }
+    if (!hasScreenPermission) {
+      const screenOk = await initScreenShare();
+      if (!screenOk) return;
+    }
+
+    setShowEntranceModal(false);
     await requestArenaFullscreen();
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
     }
-    playAlertSound('warning');
-  }, [contestId, requestArenaFullscreen, playAlertSound]);
+  }, [hasCameraPermission, hasScreenPermission, initWebcam, initScreenShare, requestArenaFullscreen]);
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
-  // Intercepts and blocks Siri, Spotlight, Raycast shortcuts, Fn keys, and 4-finger swipes
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || showEntranceModal) return;
 
-    // Lock system keyboard shortcuts in Chromium
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
     }
@@ -327,7 +416,7 @@ export function IcpcProctorGuard({
           : isDictationKey
           ? 'F5 (Dictation / Siri)'
           : isFnKey
-          ? 'Fn / Globe (Siri)'
+          ? 'Fn / Globe'
           : isAppSwitcher
           ? 'Cmd + Tab'
           : isWindowHide
@@ -335,9 +424,9 @@ export function IcpcProctorGuard({
           : e.key || 'Assistant Key';
 
         triggerViolation(
-          'SIRI_ATTEMPT',
-          'Siri / System Shortcut Attempt Blocked',
-          `Prohibited system shortcut (${keyLabel}) intercepted! Siri is turned off for this contest. Attempting to use Siri or switch away from the contest is strictly forbidden and has been recorded in the Admin Control Center.`,
+          'TAB_SWITCH',
+          'Prohibited Shortcut Intercepted',
+          `Prohibited system shortcut (${keyLabel}) intercepted! External assistant overlays and window switches are strictly prohibited.`,
           'critical'
         );
         return false;
@@ -381,12 +470,12 @@ export function IcpcProctorGuard({
         (navigator as any).keyboard.unlock();
       }
     };
-  }, [isActive, triggerViolation]);
+  }, [isActive, showEntranceModal, triggerViolation]);
 
   // ── HIGH-FREQUENCY FOCUS, VISIBILITY & DESKTOP GESTURE MONITOR ──
   // Catches Siri overlay, Raycast, Spotlight, and macOS 4-finger Spaces gestures
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || showEntranceModal) return;
 
     const checkFocusAndVisibility = () => {
       const hasFocus = typeof document !== 'undefined' ? document.hasFocus() : true;
@@ -398,20 +487,9 @@ export function IcpcProctorGuard({
         setIsFocusLost(true);
         playAlertSound('critical');
 
-        // Auto-refocus attempt to close non-activating overlay
         try {
           window.focus();
         } catch (e) {}
-
-        // Send macOS system Desktop Notification to all spaces
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-          try {
-            new Notification('🚨 LINKORA ICPC SECURITY VIOLATION', {
-              body: 'Siri / Raycast / External window detected! Contest arena has been blacked out.',
-              icon: '/icon.png',
-            });
-          } catch (notifErr) {}
-        }
 
         if (!focusLostStartTimeRef.current) {
           focusLostStartTimeRef.current = Date.now();
@@ -419,24 +497,23 @@ export function IcpcProctorGuard({
           const elapsed = Date.now() - focusLostStartTimeRef.current;
           if (elapsed >= 300) {
             triggerViolation(
-              'SIRI_ATTEMPT',
-              'Siri / Raycast / Assistant Overlay Detected',
-              `Contest window lost focus to Siri, Raycast, or an external overlay for ${(elapsed / 1000).toFixed(1)}s. The contest arena was blacked out. Using assistant overlays during contests is strictly prohibited.`,
+              'TAB_SWITCH',
+              'External App / Overlay / Desktop Switch Detected',
+              `Contest window lost focus to an external window or overlay for ${(elapsed / 1000).toFixed(1)}s. The contest arena was blacked out. Switching windows or using overlays during contests is strictly prohibited.`,
               'critical'
             );
           }
         }
       } else {
         setIsFocusLost(false);
-        // Returned to compliant state (e.g. closed Raycast / swiped back to arena)
         if (focusLostStartTimeRef.current) {
           const awayDuration = Date.now() - focusLostStartTimeRef.current;
           focusLostStartTimeRef.current = null;
           if (awayDuration >= 500) {
             triggerViolation(
-              'SIRI_ATTEMPT',
-              'Siri / Raycast / External Window Switch Detected',
-              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s (Siri or Raycast active). Screen switching is strictly prohibited.`,
+              'TAB_SWITCH',
+              'External Window Navigation Detected',
+              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s. Screen switching is strictly prohibited.`,
               'critical'
             );
           }
@@ -484,11 +561,11 @@ export function IcpcProctorGuard({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handleWindowBlur);
     };
-  }, [isActive, triggerViolation, playAlertSound]);
+  }, [isActive, showEntranceModal, triggerViolation, playAlertSound]);
 
   // Full-Screen Change Event Listener (with 1.5-Second Rule)
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || showEntranceModal) return;
 
     setIsFullscreenActive(Boolean(document.fullscreenElement));
 
@@ -524,11 +601,11 @@ export function IcpcProctorGuard({
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       if (fullscreenExitTimerRef.current) clearTimeout(fullscreenExitTimerRef.current);
     };
-  }, [isActive, triggerViolation]);
+  }, [isActive, showEntranceModal, triggerViolation]);
 
   // ── REAL-TIME VISION FRAME PROCESSING (Phone & Laptop Gaze Tracking) ──
   useEffect(() => {
-    if (!isActive || !hasCameraPermission) return;
+    if (!isActive || !hasCameraPermission || showEntranceModal) return;
 
     const canvas = canvasRef.current || document.createElement('canvas');
     canvas.width = 320;
@@ -553,13 +630,11 @@ export function IcpcProctorGuard({
       let leftSkinCount = 0;
       let rightSkinCount = 0;
 
-      // Sample every 3rd pixel for speed & accurate face geometry
       for (let i = 0; i < data.length; i += 12) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
 
-        // Skin-tone heuristic in RGB space
         const isSkin =
           r > 60 &&
           g > 35 &&
@@ -586,7 +661,6 @@ export function IcpcProctorGuard({
       }
 
       if (skinPixelCount < 250) {
-        // Face missing or obstructed
         setGazeStatus('missing');
         if (!gazeDeviationStartTimeRef.current) {
           gazeDeviationStartTimeRef.current = now;
@@ -599,17 +673,15 @@ export function IcpcProctorGuard({
           );
         }
       } else {
-        const avgX = sumX / skinPixelCount / width; // normalized 0..1
-        const avgY = sumY / skinPixelCount / height; // normalized 0..1
+        const avgX = sumX / skinPixelCount / width;
+        const avgY = sumY / skinPixelCount / height;
 
-        // Face profile asymmetry: turning head left or right shifts visible skin ratio
         const totalSkin = leftSkinCount + rightSkinCount;
         const leftRatio = totalSkin > 0 ? leftSkinCount / totalSkin : 0.5;
 
         let isGazeDeviated = false;
         let deviationReason = '';
 
-        // Strict forward cone: contestant must look straight at the laptop screen
         if (avgX < 0.40 || leftRatio > 0.65) {
           setGazeStatus('away_left');
           isGazeDeviated = true;
@@ -646,8 +718,6 @@ export function IcpcProctorGuard({
       }
 
       // ── 2. Smartphone & Mobile Device Detection Algorithm ──
-      // Identifies mobile phones held in hands in the lower 60% of the frame (desk/hands zone).
-      // Zero false-positives on clothing; highly sensitive to phones (light or dark mode).
       let phoneCandidateFound = false;
       const lowerYStart = Math.floor(height * 0.35);
       let phoneEdgePoints = 0;
@@ -666,7 +736,6 @@ export function IcpcProctorGuard({
           const b1 = data[idx + 2];
           const lum1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1;
 
-          // Skin tone detector
           const isSkin =
             r1 > 60 &&
             g1 > 35 &&
@@ -680,7 +749,6 @@ export function IcpcProctorGuard({
             continue;
           }
 
-          // Gradients for phone bezel and screen edge detection
           const rRight = data[idx + 12];
           const gRight = data[idx + 13];
           const bRight = data[idx + 14];
@@ -691,7 +759,6 @@ export function IcpcProctorGuard({
           const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
           const gradY = Math.abs(lum1 - lumDown);
 
-          // Active phone screen (lum > 125, low color saturation)
           const isIlluminatedScreen = lum1 > 125 && Math.abs(r1 - g1) < 32 && Math.abs(r1 - b1) < 36;
           const isSharpPhoneEdge = gradX > 25 || gradY > 25;
 
@@ -712,11 +779,6 @@ export function IcpcProctorGuard({
         ? Math.max(phoneH / phoneW, phoneW / phoneH) 
         : 1;
 
-      // Phone detected if:
-      // 1) Compact rectangular object (width 22-135px, height 35-175px, width < 55% of canvas)
-      // 2) Phone aspect ratio (1.25 to 2.8)
-      // 3) Either illuminated screen (>= 12 pts) OR dense edges (>= 22 pts)
-      // 4) Hand skin points present in the lower frame (proving hands are raised holding an object)
       if (
         phoneW >= 22 && phoneW <= 135 &&
         phoneH >= 35 && phoneH <= 175 &&
@@ -752,7 +814,7 @@ export function IcpcProctorGuard({
         proctorIntervalRef.current = null;
       }
     };
-  }, [isActive, hasCameraPermission, triggerViolation]);
+  }, [isActive, hasCameraPermission, showEntranceModal, triggerViolation]);
 
   // Clean up streams on unmount
   useEffect(() => {
@@ -760,13 +822,31 @@ export function IcpcProctorGuard({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
     };
   }, []);
 
   return (
     <>
+      {/* ── HIDDEN CONSTANT SCREEN SHARE VIDEO ELEMENT FOR SNAPSHOT PIPELINE ── */}
+      <video
+        ref={(el) => {
+          (screenVideoRef as any).current = el;
+          if (el && screenStreamRef.current && el.srcObject !== screenStreamRef.current) {
+            el.srcObject = screenStreamRef.current;
+            el.play().catch(() => {});
+          }
+        }}
+        autoPlay
+        playsInline
+        muted
+        className="hidden"
+      />
+
       {/* ── PROCTOR PIP FLOATING WIDGET (Active inside Arena) ── */}
-      {isActive && (
+      {isActive && !showEntranceModal && !isTerminated && (
         <div
           className={`fixed z-50 transition-all duration-300 shadow-2xl rounded-2xl border ${
             activeWarning
@@ -797,35 +877,46 @@ export function IcpcProctorGuard({
                     : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
                 }`}
               >
-                {warningCount} Warnings
+                {warningCount} / 3 Warnings
               </span>
 
-              {/* Siri Status & Protection Indicator Button */}
+              {/* Feed Switcher: Camera vs Screen Share */}
               <button
                 type="button"
-                onClick={() => setShowSiriModal(true)}
-                className="text-rose-300 hover:text-white px-1.5 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-[9px] font-mono border border-rose-500/40 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Siri is disabled and locked. Click to view settings or copy macOS commands."
+                onClick={() => setPipFeedMode((prev) => (prev === 'camera' ? 'screen' : 'camera'))}
+                className="text-cyan-300 hover:text-white px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-[9px] font-mono border border-cyan-500/40 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Switch PiP preview between camera and screen share"
               >
-                <Radio className="w-2.5 h-2.5 text-rose-400 animate-pulse" />
-                <span>Siri: Off</span>
+                {pipFeedMode === 'camera' ? (
+                  <>
+                    <Monitor className="w-2.5 h-2.5 text-cyan-400" />
+                    <span>Screen</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-2.5 h-2.5 text-cyan-400" />
+                    <span>Camera</span>
+                  </>
+                )}
               </button>
 
-              {/* Mirror / Non-Mirror Orientation Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setIsCameraMirrored((prev) => !prev)}
-                className="text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Toggle between non-mirrored and mirrored camera orientation"
-              >
-                <RefreshCw className="w-2.5 h-2.5" />
-                <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
-              </button>
+              {/* Mirror / Non-Mirror Orientation Toggle Button (Camera only) */}
+              {pipFeedMode === 'camera' && (
+                <button
+                  type="button"
+                  onClick={() => setIsCameraMirrored((prev) => !prev)}
+                  className="text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Toggle between non-mirrored and mirrored camera orientation"
+                >
+                  <RefreshCw className="w-2.5 h-2.5" />
+                  <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={() => setIsPipMinimized(!isPipMinimized)}
-                className="text-slate-400 hover:text-white p-1 rounded-md text-[10px] font-mono"
+                className="text-slate-400 hover:text-white p-1 rounded-md text-[10px] font-mono cursor-pointer"
               >
                 {isPipMinimized ? 'Expand' : 'Mini'}
               </button>
@@ -835,6 +926,7 @@ export function IcpcProctorGuard({
           {/* Video Preview */}
           {!isPipMinimized && (
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black mt-2.5 border border-charcoal-800">
+              {/* Webcam Feed */}
               <video
                 ref={(el) => {
                   (videoRef as any).current = el;
@@ -847,30 +939,30 @@ export function IcpcProctorGuard({
                 playsInline
                 muted
                 style={{
+                  display: pipFeedMode === 'camera' ? 'block' : 'none',
                   transform: isCameraMirrored ? 'scaleX(-1)' : 'scaleX(1)',
                 }}
                 className="w-full h-full object-cover transition-transform duration-200"
               />
 
-              {!hasCameraPermission && (
-                <div className="absolute inset-0 bg-charcoal-950/95 flex flex-col items-center justify-center p-3 text-center gap-2">
-                  <Camera className="w-5 h-5 text-amber-400" />
-                  <span className="text-[11px] font-bold text-white leading-tight">Camera Access Required</span>
-                  <p className="text-[9px] text-slate-400 leading-tight">
-                    Wide-angle proctoring must be active to track mobile phone and screen focus.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={initWebcam}
-                    className="mt-1 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold shadow-md"
-                  >
-                    Enable Camera
-                  </button>
-                </div>
+              {/* Screen Share Feed in PiP */}
+              {pipFeedMode === 'screen' && (
+                <video
+                  ref={(el) => {
+                    if (el && screenStreamRef.current && el.srcObject !== screenStreamRef.current) {
+                      el.srcObject = screenStreamRef.current;
+                      el.play().catch(() => {});
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-contain bg-black"
+                />
               )}
 
               {/* Status HUD Overlays */}
-              {hasCameraPermission && (
+              {hasCameraPermission && pipFeedMode === 'camera' && (
                 <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 pointer-events-none">
                   <span
                     className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
@@ -908,13 +1000,22 @@ export function IcpcProctorGuard({
                 </div>
               )}
 
+              {pipFeedMode === 'screen' && (
+                <div className="absolute top-1.5 left-1.5 pointer-events-none">
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 bg-charcoal-950/80 text-cyan-300">
+                    <Monitor className="w-2.5 h-2.5" />
+                    Monitor Shared Live
+                  </span>
+                </div>
+              )}
+
               {!isFullscreenActive && (
                 <div className="absolute inset-0 bg-rose-950/90 flex flex-col items-center justify-center p-2 text-center text-xs text-rose-200">
                   <Maximize2 className="w-5 h-5 text-rose-400 mb-1" />
                   <span className="font-bold">Not in Fullscreen!</span>
                   <button
                     onClick={requestArenaFullscreen}
-                    className="mt-1 px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold"
+                    className="mt-1 px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold cursor-pointer"
                   >
                     Restore Fullscreen
                   </button>
@@ -934,129 +1035,251 @@ export function IcpcProctorGuard({
         </div>
       )}
 
-      {/* ── MANDATORY "TURN OFF SIRI" & SECURITY GATEWAY MODAL ── */}
-      {isActive && showSiriModal && (
+      {/* ── MANDATORY DUAL-LENS PROCTOR ENTRANCE MODAL ── */}
+      {isActive && showEntranceModal && (
         <div className="fixed inset-0 z-[120] bg-charcoal-950/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="max-w-xl w-full p-6 sm:p-8 rounded-3xl bg-charcoal-900 border-2 border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-center space-y-6 animate-in zoom-in-95 duration-200 my-auto">
             {/* Header */}
             <div className="space-y-2">
               <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center mx-auto text-cyan-400 mb-2 shadow-lg shadow-cyan-500/20">
-                <Radio className="w-7 h-7 animate-pulse text-cyan-300" />
+                <ShieldCheck className="w-7 h-7 text-cyan-300" />
               </div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] font-mono font-bold tracking-wider uppercase">
-                <span>Anti-Cheat Security Checkpoint</span>
+                <span>ICPC Dual-Lens Security Checkpoint</span>
               </div>
-              <h2 className="text-2xl font-black text-white tracking-tight">Turn Off Siri &amp; Lock Arena</h2>
+              <h2 className="text-2xl font-black text-white tracking-tight">Camera &amp; Screen Share Required</h2>
               <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-                To guarantee zero AI assistance, Siri and system voice assistants must be disabled before starting. Once turned off, any attempt to invoke Siri or switch screens will be intercepted and logged.
+                To guarantee zero external assistance, you must grant both <strong>Wide-Angle Webcam</strong> and <strong>Entire Screen Share</strong> permissions before entering the arena.
               </p>
             </div>
 
-            {/* Live Camera & Proctor Feed Preview */}
-            <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-3 text-left">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-400">1. Proctor Feed Verification:</span>
-                <span className={hasCameraPermission ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
-                  {hasCameraPermission ? "✓ Wide-Angle Camera Active" : "⚠ Camera Required"}
-                </span>
+            {/* Verification Steps Container */}
+            <div className="space-y-3 text-left">
+              {/* Step 1: Wide-Angle Camera Proctor */}
+              <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-cyan-400" />
+                    <span>1. Wide-Angle Camera Proctor:</span>
+                  </span>
+                  <span className={hasCameraPermission ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                    {hasCameraPermission ? '✓ Camera Active' : '⚠ Action Required'}
+                  </span>
+                </div>
+
+                <div className="relative aspect-video max-h-40 rounded-xl overflow-hidden bg-black border border-charcoal-800 mx-auto flex items-center justify-center">
+                  <video
+                    ref={(el) => {
+                      (videoRef as any).current = el;
+                      if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                        el.srcObject = streamRef.current;
+                        el.play().catch(() => {});
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      transform: isCameraMirrored ? 'scaleX(-1)' : 'scaleX(1)',
+                    }}
+                    className="w-full h-full object-cover transition-transform duration-200"
+                  />
+                  {!hasCameraPermission && (
+                    <div className="absolute inset-0 bg-charcoal-950/90 flex flex-col items-center justify-center p-3 text-center gap-2">
+                      <Camera className="w-6 h-6 text-cyan-400" />
+                      <span className="text-xs font-bold text-white">Camera Access Required</span>
+                      <button
+                        type="button"
+                        onClick={initWebcam}
+                        className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        Enable Webcam
+                      </button>
+                    </div>
+                  )}
+                  {hasCameraPermission && (
+                    <div className="absolute top-2 right-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsCameraMirrored(!isCameraMirrored)}
+                        className="px-2 py-0.5 rounded-md bg-charcoal-900/80 backdrop-blur border border-charcoal-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 hover:text-white cursor-pointer"
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" />
+                        <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="relative aspect-video max-h-44 rounded-xl overflow-hidden bg-black border border-charcoal-800 mx-auto flex items-center justify-center">
-                <video
-                  ref={(el) => {
-                    (videoRef as any).current = el;
-                    if (el && streamRef.current && el.srcObject !== streamRef.current) {
-                      el.srcObject = streamRef.current;
-                      el.play().catch(() => {});
-                    }
-                  }}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{
-                    transform: isCameraMirrored ? 'scaleX(-1)' : 'scaleX(1)',
-                  }}
-                  className="w-full h-full object-cover transition-transform duration-200"
-                />
-                {!hasCameraPermission && (
-                  <div className="absolute inset-0 bg-charcoal-950/90 flex flex-col items-center justify-center p-3 text-center gap-2">
-                    <Camera className="w-6 h-6 text-cyan-400" />
-                    <span className="text-xs font-bold text-white">Camera Permission Needed</span>
+              {/* Step 2: Mandatory Entire Screen Sharing */}
+              <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                    <Monitor className="w-4 h-4 text-emerald-400" />
+                    <span>2. Entire Screen Share:</span>
+                  </span>
+                  <span className={hasScreenPermission ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                    {hasScreenPermission ? '✓ Screen Sharing Active' : '⚠ Action Required'}
+                  </span>
+                </div>
+
+                {!hasScreenPermission ? (
+                  <div className="p-3.5 rounded-xl bg-charcoal-900/80 border border-charcoal-750 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="space-y-0.5 text-left">
+                      <p className="text-xs font-bold text-white">Share Entire Screen</p>
+                      <p className="text-[11px] text-slate-400">
+                        Choose <strong className="text-cyan-300">&quot;Entire Screen&quot;</strong> when prompted so your full monitor is monitored.
+                      </p>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={initScreenShare}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 cursor-pointer"
+                    >
+                      <Monitor className="w-3.5 h-3.5 mr-1.5" />
+                      <span>Start Screen Share</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>Entire monitor sharing verified and connected</span>
+                    </span>
                     <button
                       type="button"
-                      onClick={initWebcam}
-                      className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold"
+                      onClick={initScreenShare}
+                      className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
                     >
-                      Enable Webcam
+                      Change Screen
                     </button>
                   </div>
                 )}
-                {hasCameraPermission && (
-                  <div className="absolute top-2 right-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsCameraMirrored(!isCameraMirrored)}
-                      className="px-2 py-0.5 rounded-md bg-charcoal-900/80 backdrop-blur border border-charcoal-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 hover:text-white"
-                    >
-                      <RefreshCw className="w-2.5 h-2.5" />
-                      <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
-                    </button>
-                  </div>
+
+                {screenError && (
+                  <p className="text-[11px] font-mono text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">
+                    ⚠ {screenError}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Mac OS Siri & Raycast Disabler Helper */}
-            <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 text-left space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="font-bold text-slate-200 flex items-center gap-1.5">
-                  <span>🍎</span> macOS Contestants: Close Raycast &amp; Siri
-                </span>
-                <span className="text-[10px] text-cyan-400 font-mono">Recommended</span>
+            {/* Anti-Cheat Notice */}
+            <div className="p-3.5 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 text-left text-[11px] text-slate-400 space-y-1 font-mono">
+              <div className="text-slate-300 font-bold flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                <span>Zero-Tolerance Academic Integrity Rules:</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                If you use <strong>Raycast, Spotlight, or Siri</strong>, run this in Mac Terminal before starting to completely quit background processes so overlay shortcuts cannot trigger:
-              </p>
-              <div className="flex items-center gap-2 bg-charcoal-900 p-2 rounded-xl border border-charcoal-750 font-mono text-[11px] text-slate-300">
-                <code className="flex-1 truncate select-all text-cyan-300">
-                  killall Raycast 2&gt;/dev/null; killall Siri 2&gt;/dev/null; defaults write com.apple.assistant.support &quot;Assistant Enabled&quot; -bool false
-                </code>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText('killall Raycast 2>/dev/null; killall Siri 2>/dev/null; defaults write com.apple.assistant.support "Assistant Enabled" -bool false');
-                    setCopiedMacCommand(true);
-                    setTimeout(() => setCopiedMacCommand(false), 2500);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-charcoal-800 hover:bg-cyan-600/30 text-cyan-300 hover:text-white border border-charcoal-700 text-[11px] font-bold transition-all shrink-0 cursor-pointer"
-                >
-                  {copiedMacCommand ? '✓ Copied!' : 'Copy Command'}
-                </button>
-              </div>
+              <p>• Raycast, Siri, Spotlight, external windows, and 4-finger swipes will trigger an instant arena blackout.</p>
+              <p>• Contestant monitor frames are automatically screenshotted and submitted to the faculty control center.</p>
+              <p>• Stopping screen share or exceeding 3 warnings will result in immediate disqualification.</p>
             </div>
 
-            {/* Main CTA: Turn Off Siri and Enter Arena */}
+            {/* Main CTA: Start Dual-Proctor and Enter Arena */}
             <div className="pt-2 space-y-2">
               <Button
                 variant="primary"
                 size="lg"
-                onClick={handleTurnOffSiri}
-                className="w-full bg-gradient-to-r from-cyan-600 via-rose-600 to-rose-700 hover:from-cyan-500 hover:to-rose-600 text-white font-extrabold text-sm py-3.5 shadow-xl shadow-cyan-500/20 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all"
+                disabled={!hasCameraPermission || !hasScreenPermission}
+                onClick={handleStartContest}
+                className={`w-full font-extrabold text-sm py-3.5 shadow-xl rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  hasCameraPermission && hasScreenPermission
+                    ? 'bg-gradient-to-r from-cyan-600 via-emerald-600 to-cyan-500 hover:from-cyan-500 hover:to-emerald-500 text-white shadow-cyan-500/20'
+                    : 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed opacity-60'
+                }`}
               >
-                <Radio className="w-4 h-4 text-white" />
-                <span>🛑 Turn Off Siri &amp; Enter Arena</span>
-                <ArrowRight className="w-4 h-4 text-white" />
+                <ShieldCheck className="w-4 h-4" />
+                <span>
+                  {hasCameraPermission && hasScreenPermission
+                    ? 'Enter ICPC Contest Arena & Engage Lockdown'
+                    : 'Enable Camera & Screen Share to Enter'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
               </Button>
-              <p className="text-[10px] text-slate-400">
-                Pressing this engages full-screen lockdown and blocks all Siri shortcuts (<code className="text-cyan-300">Cmd+Space</code>, <code className="text-cyan-300">Opt+Space</code>, <code className="text-cyan-300">F5</code>).
-              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SECURITY VIOLATION ALERT OVERLAY MODAL ── */}
-      {activeWarning && (
+      {/* ── PERMANENT DISQUALIFICATION & SESSION TERMINATION OVERLAY ── */}
+      {isActive && isTerminated && (
+        <div className="fixed inset-0 z-[10000] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="max-w-lg w-full p-6 sm:p-8 rounded-3xl bg-charcoal-950 border-2 border-rose-500 shadow-2xl shadow-rose-500/50 text-center space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="w-20 h-20 rounded-3xl bg-rose-600/20 border-2 border-rose-500 flex items-center justify-center mx-auto text-rose-400 animate-pulse">
+              <ShieldAlert className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-mono font-black text-rose-400 tracking-widest uppercase px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30">
+                🚨 CONTEST DISQUALIFIED // SESSION TERMINATED
+              </span>
+              <h2 className="text-2xl font-black text-white tracking-tight">Academic Integrity Policy Enforced</h2>
+              <p className="text-xs text-rose-200 leading-relaxed font-mono">
+                {warningCount >= 3
+                  ? 'Contestant exceeded the maximum allowable proctor warnings (3 violations recorded).'
+                  : 'Mandatory screen sharing was terminated during the active contest.'}
+              </p>
+            </div>
+
+            {/* Evidence & Details Box */}
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-xs font-mono text-slate-300 space-y-2 text-left">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Contestant:</span>
+                <strong className="text-white">{studentName} ({studentId})</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Contest:</span>
+                <strong className="text-cyan-300">{contestTitle}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Total Violations:</span>
+                <span className="text-rose-400 font-bold">{warningCount} Violations</span>
+              </div>
+
+              {activeWarning?.screenSnapshot && (
+                <div className="pt-2 border-t border-charcoal-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Latest Screen Capture Evidence:</span>
+                  <div className="rounded-xl overflow-hidden border border-rose-500/40 bg-black">
+                    <img
+                      src={activeWarning.screenSnapshot}
+                      alt="Violation Evidence"
+                      className="w-full h-auto object-cover max-h-40"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[10px] text-slate-400 pt-1 leading-tight">
+                All telemetry records, monitor captures, and webcam logs have been submitted to the ICPC Administrative Control Center for faculty review.
+              </p>
+            </div>
+
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                if (typeof document !== 'undefined' && document.fullscreenElement) {
+                  document.exitFullscreen().catch(() => {});
+                }
+                if (onCloseArena) {
+                  onCloseArena();
+                } else {
+                  window.location.href = '/icpc';
+                }
+              }}
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm py-3.5 shadow-xl shadow-rose-500/30 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Exit Contest Arena</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── SECURITY VIOLATION ALERT OVERLAY MODAL (For Warnings 1 & 2) ── */}
+      {activeWarning && !isTerminated && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="max-w-md w-full p-6 rounded-3xl bg-charcoal-950 border-2 border-rose-500 text-center space-y-4 shadow-2xl shadow-rose-500/30 animate-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-3xl bg-rose-500/20 border-2 border-rose-500/40 flex items-center justify-center mx-auto text-rose-400 animate-bounce">
@@ -1065,13 +1288,28 @@ export function IcpcProctorGuard({
 
             <div className="space-y-1.5">
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-rose-400 px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30">
-                ICPC PROCTOR WARNING // INCIDENT #{warningCount}
+                ICPC PROCTOR WARNING // INCIDENT #{warningCount} OF 3
               </span>
               <h3 className="text-xl font-black text-white">{activeWarning.message}</h3>
               <p className="text-xs text-slate-300 leading-relaxed">{activeWarning.details}</p>
             </div>
 
-            <div className="p-3 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-[11px] font-mono text-slate-400 space-y-1">
+            {/* Screen snapshot preview if available */}
+            {activeWarning.screenSnapshot && (
+              <div className="rounded-xl overflow-hidden border border-rose-500/40 bg-black text-left">
+                <div className="px-2.5 py-1 bg-charcoal-900 border-b border-charcoal-800 text-[10px] font-mono text-rose-300 flex items-center justify-between">
+                  <span>📸 Monitor Screen Snapshot</span>
+                  <span className="text-slate-400">Logged to Admin</span>
+                </div>
+                <img
+                  src={activeWarning.screenSnapshot}
+                  alt="Incident Monitor Capture"
+                  className="w-full h-auto object-cover max-h-36"
+                />
+              </div>
+            )}
+
+            <div className="p-3 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-[11px] font-mono text-slate-400 space-y-1 text-left">
               <div className="flex justify-between">
                 <span>Account:</span>
                 <strong className="text-white">{studentName}</strong>
@@ -1081,8 +1319,8 @@ export function IcpcProctorGuard({
                 <strong className="text-cyan-300">{activeWarning.timestamp}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Status:</span>
-                <span className="text-rose-400 font-bold">Logged to Admin Control Center</span>
+                <span>Warning Status:</span>
+                <span className="text-rose-400 font-bold">{3 - warningCount} warnings remaining before Disqualification</span>
               </div>
             </div>
 
@@ -1090,7 +1328,7 @@ export function IcpcProctorGuard({
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold"
+                className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold cursor-pointer"
                 onClick={async () => {
                   focusLostStartTimeRef.current = null;
                   await requestArenaFullscreen();
@@ -1105,7 +1343,7 @@ export function IcpcProctorGuard({
       )}
 
       {/* ── PERSISTENT REAL-TIME BLACKOUT OVERLAY (WHILE WINDOW UNFOCUSED / OVERLAY ACTIVE) ── */}
-      {isActive && isFocusLost && (
+      {isActive && isFocusLost && !showEntranceModal && !isTerminated && (
         <div
           onClick={() => {
             try {
@@ -1124,22 +1362,22 @@ export function IcpcProctorGuard({
               <span className="text-[11px] font-mono font-black text-rose-400 tracking-widest uppercase px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30">
                 🚨 CONTEST ARENA BLACKOUT ACTIVE
               </span>
-              <h2 className="text-2xl font-black text-white tracking-tight">Siri / Raycast / Overlay Detected!</h2>
+              <h2 className="text-2xl font-black text-white tracking-tight">External Window / Overlay Detected!</h2>
               <p className="text-xs text-rose-200 leading-relaxed font-mono">
-                The contest problem and editor have been completely blacked out because an external search overlay (Raycast, Siri, Spotlight, or external app) was detected on your screen.
+                The contest problem and editor have been completely blacked out because an external search overlay (Raycast, Siri, Spotlight, or external application) was detected on your screen.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-xs font-mono text-slate-300 space-y-2 text-left">
               <div className="flex items-center gap-2 text-rose-400 font-bold">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                <span>Security Incident Recorded in Admin Control Center</span>
+                <span>Screen Capture Incident Recorded in Admin Control Center</span>
               </div>
               <div className="text-[11px] text-slate-400 leading-tight">
                 • <strong>To Unlock Arena:</strong> Close Raycast / Siri (<code className="text-cyan-300">Esc</code> key) and click anywhere here.
               </div>
               <div className="text-[11px] text-slate-400 leading-tight">
-                • <strong>Quit Shortcut:</strong> In Mac Terminal run <code className="text-cyan-300">killall Raycast; killall Siri</code> to prevent it from popping up.
+                • <strong>Warning Rule:</strong> Contestants reaching 3 warnings will be permanently disqualified and locked out.
               </div>
             </div>
 
@@ -1154,7 +1392,7 @@ export function IcpcProctorGuard({
                 setIsFocusLost(false);
                 focusLostStartTimeRef.current = null;
               }}
-              className="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm py-3.5 shadow-xl shadow-rose-500/30 rounded-2xl flex items-center justify-center gap-2"
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm py-3.5 shadow-xl shadow-rose-500/30 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
             >
               <Radio className="w-4 h-4 text-white" />
               <span>Click to Dismiss &amp; Refocus Contest Arena</span>
@@ -1163,12 +1401,13 @@ export function IcpcProctorGuard({
         </div>
       )}
 
+      {/* Main children container with blackout filter when window unfocused or terminated */}
       <div
         className="w-full h-full transition-all duration-150"
         style={{
-          filter: isFocusLost ? 'blur(45px) brightness(0.12)' : 'none',
-          pointerEvents: isFocusLost ? 'none' : 'auto',
-          userSelect: isFocusLost ? 'none' : 'auto',
+          filter: isFocusLost || isTerminated ? 'blur(45px) brightness(0.12)' : 'none',
+          pointerEvents: isFocusLost || isTerminated ? 'none' : 'auto',
+          userSelect: isFocusLost || isTerminated ? 'none' : 'auto',
         }}
       >
         {children}
@@ -1181,7 +1420,6 @@ export function IcpcProctorGuard({
 export function checkSuspiciousPaste(text: string): { isSuspicious: boolean; reason: string } {
   if (!text) return { isSuspicious: false, reason: '' };
 
-  // Detect ChatGPT / Claude markdown code fences or conversational boilerplate
   const hasAiFence = /```(cpp|python|java|c|javascript)?/i.test(text);
   const hasAiIntro = /(here is the (code|solution|algorithm)|optimal approach|time complexity:|space complexity:)/i.test(text);
   const isLargeSuddenBlock = text.length > 250 && text.split('\n').length > 10;

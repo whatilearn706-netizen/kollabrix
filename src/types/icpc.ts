@@ -76,6 +76,7 @@ export type ProctorViolationType =
   | 'GAZE_DEVIATION'
   | 'SUSPICIOUS_PASTE'
   | 'FACE_MISSING'
+  | 'SCREEN_SHARE_STOPPED'
   | 'SIRI_ATTEMPT';
 
 export interface ProctorIncident {
@@ -94,6 +95,7 @@ export interface ProctorIncident {
   warningCount: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
   resolved?: boolean;
+  screenSnapshot?: string;
 }
 
 export interface ProctorLiveStats {
