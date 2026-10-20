@@ -107,3 +107,19 @@ export interface ProctorLiveStats {
   pasteViolations: number;
   flaggedStudentsCount: number;
 }
+
+export interface ActiveProctorSession {
+  id: string; // studentId
+  studentId: string;
+  studentName: string;
+  studentEmail?: string;
+  college?: string;
+  contestId: string;
+  contestTitle: string;
+  problemTitle?: string;
+  warningCount: number;
+  screenSnapshot?: string;
+  lastHeartbeat: string;
+  status: 'active' | 'cautioned' | 'demolished';
+  cautionMessage?: string;
+}

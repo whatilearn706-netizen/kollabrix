@@ -21,11 +21,14 @@ import {
   RefreshCw,
   Monitor,
   MonitorOff,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { ProctorIncident, ProctorViolationType } from '@/types/icpc';
+
+const MAX_WARNINGS = 10;
 
 interface IcpcProctorGuardProps {
   contestId: string;
@@ -67,6 +70,9 @@ export function IcpcProctorGuard({
   const [pipFeedMode, setPipFeedMode] = useState<'camera' | 'screen'>('camera');
   const [showEntranceModal, setShowEntranceModal] = useState(true);
   const [isTerminated, setIsTerminated] = useState(false);
+  const [isDemolishedByAdmin, setIsDemolishedByAdmin] = useState(false);
+  const [adminCautionMessage, setAdminCautionMessage] = useState<string | null>(null);
+  const [externalMeetingUrl, setExternalMeetingUrl] = useState<string>('');
   const [isFocusLost, setIsFocusLost] = useState(false);
   const [activeWarning, setActiveWarning] = useState<{
     type: ProctorViolationType;
@@ -172,8 +178,8 @@ export function IcpcProctorGuard({
       };
       setActiveWarning(incidentData);
 
-      // Auto-terminate session on 3 violations or when screen share stopped
-      if (nextCount >= 3 || type === 'SCREEN_SHARE_STOPPED') {
+      // Auto-terminate session on 10 violations or when screen share stopped
+      if (nextCount >= MAX_WARNINGS || type === 'SCREEN_SHARE_STOPPED') {
         setIsTerminated(true);
       }
 
@@ -321,10 +327,18 @@ export function IcpcProctorGuard({
     }
   }, [triggerViolation]);
 
-  // Auto-start webcam immediately on mount when active
+  // Auto-start webcam immediately on mount when active & fetch proctor config
   useEffect(() => {
     if (isActive) {
       initWebcam();
+      fetch('/api/icpc/proctor')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.proctorMeetingUrl) {
+            setExternalMeetingUrl(data.proctorMeetingUrl);
+          }
+        })
+        .catch(() => {});
     }
   }, [isActive, initWebcam]);
 
@@ -370,6 +384,61 @@ export function IcpcProctorGuard({
       (navigator as any).keyboard.lock().catch(() => {});
     }
   }, [hasCameraPermission, hasScreenPermission, initWebcam, initScreenShare, requestArenaFullscreen]);
+
+  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 8 SECONDS) ──
+  useEffect(() => {
+    if (!isActive || showEntranceModal || isTerminated) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        const snap = captureScreenSnapshot();
+        const res = await fetch('/api/icpc/proctor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'heartbeat',
+            studentId,
+            studentName,
+            studentEmail,
+            college,
+            contestId,
+            contestTitle,
+            problemTitle,
+            warningCount: warningCountRef.current,
+            screenSnapshot: snap,
+          }),
+        });
+        const data = await res.json();
+        if (data.isDemolished) {
+          setIsTerminated(true);
+          setIsDemolishedByAdmin(true);
+          playAlertSound('critical');
+        } else if (data.cautionMessage) {
+          setAdminCautionMessage(data.cautionMessage);
+          playAlertSound('warning');
+        }
+      } catch (err) {
+        // Silently tolerate temporary network glitch
+      }
+    };
+
+    sendHeartbeat();
+    const heartbeatTimer = setInterval(sendHeartbeat, 8000);
+    return () => clearInterval(heartbeatTimer);
+  }, [
+    isActive,
+    showEntranceModal,
+    isTerminated,
+    studentId,
+    studentName,
+    studentEmail,
+    college,
+    contestId,
+    contestTitle,
+    problemTitle,
+    captureScreenSnapshot,
+    playAlertSound,
+  ]);
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
   useEffect(() => {
@@ -473,7 +542,6 @@ export function IcpcProctorGuard({
   }, [isActive, showEntranceModal, triggerViolation]);
 
   // ── HIGH-FREQUENCY FOCUS, VISIBILITY & DESKTOP GESTURE MONITOR ──
-  // Catches Siri overlay, Raycast, Spotlight, and macOS 4-finger Spaces gestures
   useEffect(() => {
     if (!isActive || showEntranceModal) return;
 
@@ -483,7 +551,6 @@ export function IcpcProctorGuard({
       const isCompliant = hasFocus && isVisible;
 
       if (!isCompliant) {
-        // INSTANT BLACKOUT: Obscure screen immediately so contestant cannot read problem
         setIsFocusLost(true);
         playAlertSound('critical');
 
@@ -618,7 +685,6 @@ export function IcpcProctorGuard({
 
       const now = Date.now();
 
-      // Draw current video frame to low-res canvas for fast pixel analysis
       ctx.drawImage(video, 0, 0, 320, 240);
       const frameData = ctx.getImageData(0, 0, 320, 240);
       const { data, width, height } = frameData;
@@ -660,15 +726,15 @@ export function IcpcProctorGuard({
         }
       }
 
-      if (skinPixelCount < 250) {
+      if (skinPixelCount < 180) {
         setGazeStatus('missing');
         if (!gazeDeviationStartTimeRef.current) {
           gazeDeviationStartTimeRef.current = now;
-        } else if (now - gazeDeviationStartTimeRef.current >= 1200) {
+        } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
           triggerViolation(
             'FACE_MISSING',
             'Face Not Detected in Frame',
-            'Contestant face not visible in camera proctor feed for > 1.2s. Keep your face centered in the camera.',
+            'Contestant face not visible in camera proctor feed for > 3.5s. Keep your face centered in the camera.',
             'medium'
           );
         }
@@ -682,22 +748,23 @@ export function IcpcProctorGuard({
         let isGazeDeviated = false;
         let deviationReason = '';
 
-        if (avgX < 0.40 || leftRatio > 0.65) {
+        // Calibrated cone: wide natural tolerance so looking straight or at problem text never glitches
+        if (avgX < 0.18 || leftRatio > 0.88) {
           setGazeStatus('away_left');
           isGazeDeviated = true;
-          deviationReason = 'Contestant looking away to the left of the laptop.';
-        } else if (avgX > 0.60 || leftRatio < 0.35) {
+          deviationReason = 'Contestant turned head far left away from the laptop.';
+        } else if (avgX > 0.82 || leftRatio < 0.12) {
           setGazeStatus('away_right');
           isGazeDeviated = true;
-          deviationReason = 'Contestant looking away to the right of the laptop.';
-        } else if (avgY < 0.25) {
+          deviationReason = 'Contestant turned head far right away from the laptop.';
+        } else if (avgY < 0.15) {
           setGazeStatus('away_up');
           isGazeDeviated = true;
           deviationReason = 'Contestant looking upward away from the laptop screen.';
-        } else if (avgY > 0.58) {
+        } else if (avgY > 0.72) {
           setGazeStatus('down_excessive');
           isGazeDeviated = true;
-          deviationReason = 'Contestant looking downward toward lap/desk area.';
+          deviationReason = 'Contestant looking excessively downward toward lap area.';
         } else {
           setGazeStatus('normal');
           gazeDeviationStartTimeRef.current = null;
@@ -706,11 +773,11 @@ export function IcpcProctorGuard({
         if (isGazeDeviated) {
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 1200) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Away from Laptop Screen Detected',
-              `${deviationReason} Looking away from the contest arena for > 1.2s is prohibited.`,
+              `${deviationReason} Looking away from the contest arena for > 3.5s is prohibited.`,
               'medium'
             );
           }
@@ -794,11 +861,11 @@ export function IcpcProctorGuard({
         setPhoneStatus('suspect');
         if (!phoneDetectionStartTimeRef.current) {
           phoneDetectionStartTimeRef.current = now;
-        } else if (now - phoneDetectionStartTimeRef.current >= 1200) {
+        } else if (now - phoneDetectionStartTimeRef.current >= 1500) {
           triggerViolation(
             'PHONE_DETECTED',
             'Mobile Phone Detected in Camera Feed',
-            'Mobile smartphone detected in hands for > 1.2s. Handheld device usage is strictly prohibited.',
+            'Mobile smartphone detected in hands for > 1.5s. Handheld device usage is strictly prohibited.',
             'critical'
           );
         }
@@ -872,12 +939,12 @@ export function IcpcProctorGuard({
                 className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
                   warningCount === 0
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : warningCount < 3
+                    : warningCount < 6
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
                 }`}
               >
-                {warningCount} / 3 Warnings
+                {warningCount} / {MAX_WARNINGS} Warnings
               </span>
 
               {/* Feed Switcher: Camera vs Screen Share */}
@@ -1053,6 +1120,30 @@ export function IcpcProctorGuard({
               </p>
             </div>
 
+            {/* External Meeting Call Banner (if configured by faculty proctor) */}
+            {externalMeetingUrl && (
+              <div className="p-3.5 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-between gap-3 text-left">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1">
+                    <Video className="w-3 h-3" />
+                    <span>Faculty Live Proctor Room Active</span>
+                  </span>
+                  <p className="text-xs text-slate-200">
+                    Join the proctor video meeting to broadcast your screen directly to the proctoring panel.
+                  </p>
+                </div>
+                <a
+                  href={externalMeetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs flex items-center gap-1.5 shrink-0 transition-colors"
+                >
+                  <span>Join Call</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+
             {/* Verification Steps Container */}
             <div className="space-y-3 text-left">
               {/* Step 1: Wide-Angle Camera Proctor */}
@@ -1174,7 +1265,7 @@ export function IcpcProctorGuard({
               </div>
               <p>• Raycast, Siri, Spotlight, external windows, and 4-finger swipes will trigger an instant arena blackout.</p>
               <p>• Contestant monitor frames are automatically screenshotted and submitted to the faculty control center.</p>
-              <p>• Stopping screen share or exceeding 3 warnings will result in immediate disqualification.</p>
+              <p>• Stopping screen share, reaching {MAX_WARNINGS} warnings, or proctor demolition will result in immediate disqualification.</p>
             </div>
 
             {/* Main CTA: Start Dual-Proctor and Enter Arena */}
@@ -1203,6 +1294,40 @@ export function IcpcProctorGuard({
         </div>
       )}
 
+      {/* ── ADMIN FACULTY CAUTION MODAL ── */}
+      {adminCautionMessage && (
+        <div className="fixed inset-0 z-[10500] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="max-w-md w-full p-6 rounded-3xl bg-charcoal-950 border-2 border-amber-500 text-center space-y-4 shadow-2xl shadow-amber-500/30 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border-2 border-amber-500/40 flex items-center justify-center mx-auto text-amber-400 animate-pulse">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+                PROCTOR CAUTION FROM FACULTY
+              </span>
+              <h3 className="text-xl font-black text-white">Live Caution Issued</h3>
+              <p className="text-xs text-amber-200 leading-relaxed font-mono bg-charcoal-900 p-3 rounded-xl border border-charcoal-800">
+                &ldquo;{adminCautionMessage}&rdquo;
+              </p>
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              Please comply with all contest rules. Further violations will lead to immediate session demolition.
+            </p>
+
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold cursor-pointer"
+              onClick={() => setAdminCautionMessage(null)}
+            >
+              I Acknowledge Caution &amp; Resume Contest
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ── PERMANENT DISQUALIFICATION & SESSION TERMINATION OVERLAY ── */}
       {isActive && isTerminated && (
         <div className="fixed inset-0 z-[10000] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-4 animate-in fade-in duration-300">
@@ -1215,10 +1340,14 @@ export function IcpcProctorGuard({
               <span className="text-[11px] font-mono font-black text-rose-400 tracking-widest uppercase px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30">
                 🚨 CONTEST DISQUALIFIED // SESSION TERMINATED
               </span>
-              <h2 className="text-2xl font-black text-white tracking-tight">Academic Integrity Policy Enforced</h2>
+              <h2 className="text-2xl font-black text-white tracking-tight">
+                {isDemolishedByAdmin ? 'Contest Demolished by Admin Proctor' : 'Academic Integrity Policy Enforced'}
+              </h2>
               <p className="text-xs text-rose-200 leading-relaxed font-mono">
-                {warningCount >= 3
-                  ? 'Contestant exceeded the maximum allowable proctor warnings (3 violations recorded).'
+                {isDemolishedByAdmin
+                  ? 'The contest faculty administrator has reviewed your session and forcefully demolished your contest attempt.'
+                  : warningCount >= MAX_WARNINGS
+                  ? `Contestant exceeded the maximum allowable proctor warnings (${MAX_WARNINGS} violations recorded).`
                   : 'Mandatory screen sharing was terminated during the active contest.'}
               </p>
             </div>
@@ -1278,7 +1407,7 @@ export function IcpcProctorGuard({
         </div>
       )}
 
-      {/* ── SECURITY VIOLATION ALERT OVERLAY MODAL (For Warnings 1 & 2) ── */}
+      {/* ── SECURITY VIOLATION ALERT OVERLAY MODAL (For Warnings < MAX_WARNINGS) ── */}
       {activeWarning && !isTerminated && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="max-w-md w-full p-6 rounded-3xl bg-charcoal-950 border-2 border-rose-500 text-center space-y-4 shadow-2xl shadow-rose-500/30 animate-in zoom-in-95 duration-200">
@@ -1288,7 +1417,7 @@ export function IcpcProctorGuard({
 
             <div className="space-y-1.5">
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-rose-400 px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30">
-                ICPC PROCTOR WARNING // INCIDENT #{warningCount} OF 3
+                ICPC PROCTOR WARNING // INCIDENT #{warningCount} OF {MAX_WARNINGS}
               </span>
               <h3 className="text-xl font-black text-white">{activeWarning.message}</h3>
               <p className="text-xs text-slate-300 leading-relaxed">{activeWarning.details}</p>
@@ -1320,7 +1449,7 @@ export function IcpcProctorGuard({
               </div>
               <div className="flex justify-between">
                 <span>Warning Status:</span>
-                <span className="text-rose-400 font-bold">{3 - warningCount} warnings remaining before Disqualification</span>
+                <span className="text-rose-400 font-bold">{MAX_WARNINGS - warningCount} warnings remaining before Disqualification</span>
               </div>
             </div>
 
@@ -1377,7 +1506,7 @@ export function IcpcProctorGuard({
                 • <strong>To Unlock Arena:</strong> Close Raycast / Siri (<code className="text-cyan-300">Esc</code> key) and click anywhere here.
               </div>
               <div className="text-[11px] text-slate-400 leading-tight">
-                • <strong>Warning Rule:</strong> Contestants reaching 3 warnings will be permanently disqualified and locked out.
+                • <strong>Warning Rule:</strong> Contestants reaching {MAX_WARNINGS} warnings will be permanently disqualified and locked out.
               </div>
             </div>
 

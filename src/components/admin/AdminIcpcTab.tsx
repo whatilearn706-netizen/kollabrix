@@ -29,11 +29,15 @@ import {
   AlertTriangle,
   Clock,
   Calendar,
+  Monitor,
+  Video,
+  Send,
+  AlertOctagon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
-import { IcpcContest, IcpcProblem, ProctorIncident, ProctorLiveStats, ProctorViolationType } from '@/types/icpc';
+import { IcpcContest, IcpcProblem, ProctorIncident, ProctorLiveStats, ProctorViolationType, ActiveProctorSession } from '@/types/icpc';
 
 interface AdminIcpcTabProps {
   authToken?: string;
@@ -70,6 +74,20 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const [proctorSearchQuery, setProctorSearchQuery] = useState<string>('');
   const [proctorFilterViolation, setProctorFilterViolation] = useState<'all' | ProctorViolationType>('all');
   const [autoRefreshProctor, setAutoRefreshProctor] = useState<boolean>(true);
+
+  // Live Monitor Grid & External Meeting State
+  const [proctorSubView, setProctorSubView] = useState<'live_monitors' | 'incidents_log'>('live_monitors');
+  const [activeSessions, setActiveSessions] = useState<ActiveProctorSession[]>([]);
+  const [proctorMeetingUrl, setProctorMeetingUrl] = useState<string>('');
+  const [meetingUrlInput, setMeetingUrlInput] = useState<string>('');
+  const [isSavingMeetingUrl, setIsSavingMeetingUrl] = useState<boolean>(false);
+  const [cautionTargetSession, setCautionTargetSession] = useState<ActiveProctorSession | null>(null);
+  const [cautionMessageText, setCautionMessageText] = useState<string>('Keep your attention focused strictly on the contest problem and editor.');
+  const [isSendingCaution, setIsSendingCaution] = useState<boolean>(false);
+  const [demolishTargetSession, setDemolishTargetSession] = useState<ActiveProctorSession | null>(null);
+  const [demolishReasonText, setDemolishReasonText] = useState<string>('Academic integrity violation detected by proctor. Session forcefully terminated.');
+  const [isDemolishing, setIsDemolishing] = useState<boolean>(false);
+  const [expandedScreenImage, setExpandedScreenImage] = useState<{ src: string; title: string } | null>(null);
 
   // Suspension Modal State
   const [suspendingIncident, setSuspendingIncident] = useState<ProctorIncident | null>(null);
@@ -268,6 +286,11 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       if (data.success) {
         setProctorIncidents(data.incidents || []);
         if (data.stats) setProctorStats(data.stats);
+        if (Array.isArray(data.activeSessions)) setActiveSessions(data.activeSessions);
+        if (typeof data.proctorMeetingUrl === 'string') {
+          setProctorMeetingUrl(data.proctorMeetingUrl);
+          setMeetingUrlInput((prev) => prev || data.proctorMeetingUrl);
+        }
       }
     } catch (err) {
       console.warn('Failed to fetch proctor data:', err);
@@ -275,6 +298,90 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       setIsProctorLoading(false);
     }
   }, [authToken]);
+
+  const handleSendCaution = async () => {
+    if (!cautionTargetSession) return;
+    setIsSendingCaution(true);
+    try {
+      const res = await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'caution',
+          studentId: cautionTargetSession.studentId,
+          message: cautionMessageText.trim() || 'Keep your attention focused strictly on the contest problem and editor.',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({
+          type: 'success',
+          text: `Caution alert sent to ${cautionTargetSession.studentName}!`,
+        });
+        setCautionTargetSession(null);
+        await loadProctorData();
+      }
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: 'Failed to deliver caution.' });
+    } finally {
+      setIsSendingCaution(false);
+    }
+  };
+
+  const handleExecuteDemolish = async () => {
+    if (!demolishTargetSession) return;
+    setIsDemolishing(true);
+    try {
+      const res = await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'demolish',
+          studentId: demolishTargetSession.studentId,
+          reason: demolishReasonText.trim() || 'Session forcefully demolished and contestant disqualified by faculty administrator.',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({
+          type: 'success',
+          text: `Session demolished and ${demolishTargetSession.studentName} disqualified from contest!`,
+        });
+        setDemolishTargetSession(null);
+        await loadProctorData();
+      }
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: 'Failed to demolish session.' });
+    } finally {
+      setIsDemolishing(false);
+    }
+  };
+
+  const handleSaveMeetingUrl = async () => {
+    setIsSavingMeetingUrl(true);
+    try {
+      const res = await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_meeting_url',
+          meetingUrl: meetingUrlInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProctorMeetingUrl(data.meetingUrl);
+        setStatusMessage({
+          type: 'success',
+          text: 'External proctor meeting URL updated successfully!',
+        });
+      }
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Failed to save meeting URL.' });
+    } finally {
+      setIsSavingMeetingUrl(false);
+    }
+  };
 
   useEffect(() => {
     loadProctorData();
@@ -756,21 +863,21 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Total Incidents</span>
               <div className="text-2xl font-black text-rose-400 mt-1">{proctorStats.totalViolations}</div>
             </div>
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-cyan-500/30 bg-cyan-500/5">
+              <span className="text-[11px] font-mono text-cyan-300 uppercase tracking-wider block">🖥️ Active Monitors</span>
+              <div className="text-2xl font-black text-cyan-400 mt-1">{activeSessions.length}</div>
+            </div>
             <div className="p-4 rounded-2xl bg-charcoal-900 border border-rose-500/30 bg-rose-500/5">
               <span className="text-[11px] font-mono text-rose-300 uppercase tracking-wider block">📱 Phone Caught</span>
               <div className="text-2xl font-black text-rose-400 mt-1">{proctorStats.phoneViolations}</div>
             </div>
             <div className="p-4 rounded-2xl bg-charcoal-900 border border-amber-500/30 bg-amber-500/5">
-              <span className="text-[11px] font-mono text-amber-300 uppercase tracking-wider block">🖥️ Screen / Tab</span>
+              <span className="text-[11px] font-mono text-amber-300 uppercase tracking-wider block">🔀 App / Overlay</span>
               <div className="text-2xl font-black text-amber-400 mt-1">{proctorStats.screenViolations}</div>
             </div>
             <div className="p-4 rounded-2xl bg-charcoal-900 border border-yellow-500/30 bg-yellow-500/5">
               <span className="text-[11px] font-mono text-yellow-300 uppercase tracking-wider block">👀 Gaze Deviation</span>
               <div className="text-2xl font-black text-yellow-400 mt-1">{proctorStats.gazeViolations}</div>
-            </div>
-            <div className="p-4 rounded-2xl bg-charcoal-900 border border-purple-500/30 bg-purple-500/5">
-              <span className="text-[11px] font-mono text-purple-300 uppercase tracking-wider block">📋 AI Paste</span>
-              <div className="text-2xl font-black text-purple-400 mt-1">{proctorStats.pasteViolations}</div>
             </div>
             <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800">
               <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">👤 Flagged Students</span>
@@ -778,222 +885,445 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             </div>
           </div>
 
-          {/* Controls & Filter Bar */}
-          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-3">
+          {/* External Proctor Meeting App Connector */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-900 border border-cyan-500/30 space-y-3">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={proctorSearchQuery}
-                  onChange={(e) => setProctorSearchQuery(e.target.value)}
-                  placeholder="Search by student username, college, contest..."
-                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 font-mono"
-                />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-wider font-mono">
+                  <Video className="w-4 h-4 text-cyan-400" />
+                  <span>External Proctor Meeting App (Google Meet / Zoom / Discord / Teams)</span>
+                </div>
+                <p className="text-[11px] text-slate-400 max-w-2xl leading-relaxed">
+                  For mass proctoring (50+ to 100+ students), set a live conference call URL. All contestants will see this link on entering the arena so faculty can view all shared screens simultaneously in Google Meet or Zoom while Linkora automates cautions, blackouts, and terminations.
+                </p>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setAutoRefreshProctor(!autoRefreshProctor)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-colors flex items-center gap-1.5 ${
-                    autoRefreshProctor
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                      : 'bg-charcoal-950 border-charcoal-800 text-slate-400'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${autoRefreshProctor ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-                  <span>{autoRefreshProctor ? 'Live Sync (5s)' : 'Paused'}</span>
-                </button>
-
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <input
+                  type="url"
+                  value={meetingUrlInput}
+                  onChange={(e) => setMeetingUrlInput(e.target.value)}
+                  placeholder="https://meet.google.com/xyz-abc"
+                  className="w-full sm:w-64 px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                />
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={loadProctorData}
-                  isLoading={isProctorLoading}
-                  leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-                  className="border-charcoal-750 text-slate-300 text-xs font-bold"
+                  variant="primary"
+                  onClick={handleSaveMeetingUrl}
+                  isLoading={isSavingMeetingUrl}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shrink-0 cursor-pointer"
                 >
-                  Refresh
+                  Save Call URL
                 </Button>
-
-                {proctorIncidents.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleClearAllProctorLogs}
-                    leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-                    className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10 text-xs font-bold"
+                {proctorMeetingUrl && (
+                  <a
+                    href={proctorMeetingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors"
                   >
-                    Clear All Logs
-                  </Button>
+                    <span>Open Room</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 )}
               </div>
             </div>
-
-            {/* Violation Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-charcoal-800/80 text-xs">
-              <span className="text-[11px] font-mono text-slate-500 shrink-0 uppercase">Filter:</span>
-              {[
-                { id: 'all', label: 'All Incidents' },
-                { id: 'SCREEN_SHARE_STOPPED', label: '🛑 Screen Share Terminated' },
-                { id: 'TAB_SWITCH', label: '🔀 App / Tab Switch' },
-                { id: 'PHONE_DETECTED', label: '📱 Phone Detected' },
-                { id: 'FULLSCREEN_EXIT', label: '🖥️ Screen Exited' },
-                { id: 'GAZE_DEVIATION', label: '👀 Gaze Deviation' },
-                { id: 'SUSPICIOUS_PASTE', label: '📋 AI Paste' },
-              ].map((chip) => (
-                <button
-                  key={chip.id}
-                  onClick={() => setProctorFilterViolation(chip.id as any)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
-                    proctorFilterViolation === chip.id
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
-                      : 'text-slate-400 hover:text-white bg-charcoal-950 border border-charcoal-800'
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Incidents Stream */}
-          <div className="space-y-3">
-            {filteredProctorIncidents.length === 0 ? (
-              <div className="p-12 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <h4 className="text-sm font-bold text-white">No Proctoring Incidents Found</h4>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  All active and recent ICPC arena contestant sessions are operating within verified academic standards. Violations will appear here live in real-time.
-                </p>
+          {/* Sub-View Switcher Pills */}
+          <div className="flex items-center gap-2 border-b border-charcoal-800 pb-3">
+            <button
+              type="button"
+              onClick={() => setProctorSubView('live_monitors')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                proctorSubView === 'live_monitors'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg shadow-cyan-500/10'
+                  : 'text-slate-400 hover:text-white bg-charcoal-900 border border-charcoal-800'
+              }`}
+            >
+              <Monitor className="w-4 h-4 text-cyan-400" />
+              <span>Live Contestant Monitors</span>
+              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-[10px] font-mono font-bold text-cyan-300">
+                {activeSessions.length} Active
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProctorSubView('incidents_log')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                proctorSubView === 'incidents_log'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-lg shadow-rose-500/10'
+                  : 'text-slate-400 hover:text-white bg-charcoal-900 border border-charcoal-800'
+              }`}
+            >
+              <ShieldAlert className="w-4 h-4 text-rose-400" />
+              <span>Incident Security History</span>
+              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-[10px] font-mono font-bold text-rose-300">
+                {proctorIncidents.length}
+              </span>
+            </button>
+          </div>
+
+          {/* SUB-VIEW 1: LIVE CONTESTANT MONITORS GRID */}
+          {proctorSubView === 'live_monitors' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <span>Real-Time Monitor Feeds (Auto-synced every 5 seconds):</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{activeSessions.length} Active Screen Shares</span>
+                </span>
               </div>
-            ) : (
-              filteredProctorIncidents.map((inc) => (
-                <div
-                  key={inc.id}
-                  className="p-4 sm:p-5 rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-charcoal-700 transition-all space-y-3"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-charcoal-950 border border-charcoal-750 flex items-center justify-center text-rose-400 font-bold shrink-0">
-                        {inc.violationType === 'SCREEN_SHARE_STOPPED' ? (
-                          <Maximize2 className="w-4 h-4 text-rose-400 animate-pulse" />
-                        ) : inc.violationType === 'SIRI_ATTEMPT' ? (
-                          <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
-                        ) : inc.violationType === 'PHONE_DETECTED' ? (
-                          <Smartphone className="w-4 h-4 text-rose-400" />
-                        ) : inc.violationType === 'FULLSCREEN_EXIT' ? (
-                          <Maximize2 className="w-4 h-4 text-amber-400" />
-                        ) : inc.violationType === 'TAB_SWITCH' ? (
-                          <ExternalLink className="w-4 h-4 text-orange-400" />
-                        ) : inc.violationType === 'GAZE_DEVIATION' ? (
-                          <Eye className="w-4 h-4 text-yellow-400" />
-                        ) : (
-                          <Code2 className="w-4 h-4 text-purple-400" />
+
+              {activeSessions.length === 0 ? (
+                <div className="p-12 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto">
+                    <Monitor className="w-7 h-7" />
+                  </div>
+                  <h4 className="text-sm font-bold text-white">No Active Contestant Screens Right Now</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                    When contestants enter the ICPC contest arena and share their screen, their monitor captures will stream live here. You will be able to issue warnings (Caution) or demolish sessions in real-time.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {activeSessions.map((session) => (
+                    <div
+                      key={session.studentId}
+                      className="rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between overflow-hidden shadow-xl"
+                    >
+                      {/* Card Header */}
+                      <div className="p-3.5 border-b border-charcoal-800 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs font-bold text-white truncate">{session.studentName}</h4>
+                          <span
+                            className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
+                              session.status === 'demolished'
+                                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                : session.warningCount > 0
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            }`}
+                          >
+                            {session.status === 'demolished'
+                              ? '🛑 Demolished'
+                              : session.warningCount > 0
+                              ? `⚠️ ${session.warningCount} / 10 Warns`
+                              : '🟢 Live Shared'}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">
+                          {session.college || session.studentId} • {session.contestTitle}
+                        </div>
+                        {session.problemTitle && (
+                          <div className="text-[10px] text-cyan-300 font-mono truncate">
+                            Problem: {session.problemTitle}
+                          </div>
                         )}
                       </div>
 
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm font-bold text-white">{inc.studentName}</h4>
-                          <span className="text-[10px] font-mono text-slate-400">
-                            ({inc.studentId})
-                          </span>
-                          {inc.college && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-charcoal-800 text-slate-300 font-medium">
-                              {inc.college}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400">
-                          Contest: <strong className="text-slate-200">{inc.contestTitle}</strong>
-                          {inc.problemTitle ? ` • Problem: ${inc.problemTitle}` : ''}
-                        </p>
+                      {/* Monitor Snapshot Feed */}
+                      <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden group">
+                        {session.screenSnapshot ? (
+                          <>
+                            <img
+                              src={session.screenSnapshot}
+                              alt={`${session.studentName} monitor`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 cursor-pointer"
+                              onClick={() =>
+                                setExpandedScreenImage({
+                                  src: session.screenSnapshot!,
+                                  title: `${session.studentName} — Live Screen Capture`,
+                                })
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedScreenImage({
+                                  src: session.screenSnapshot!,
+                                  title: `${session.studentName} — Live Screen Capture`,
+                                })
+                              }
+                              className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 backdrop-blur text-[10px] font-mono text-slate-300 hover:text-white border border-charcoal-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              <Maximize2 className="w-3 h-3" />
+                              <span>Zoom Screen</span>
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-slate-500 text-xs font-mono p-4 text-center">
+                            <Monitor className="w-6 h-6 animate-pulse text-cyan-400" />
+                            <span>Monitor Connected</span>
+                            <span className="text-[10px] text-slate-600">Capturing initial frame...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Card Action Controls */}
+                      <div className="p-3 bg-charcoal-950/70 border-t border-charcoal-800 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setCautionTargetSession(session);
+                            setCautionMessageText('Keep your eyes strictly focused on the contest problem and editor.');
+                          }}
+                          disabled={session.status === 'demolished'}
+                          className="flex-1 border-amber-500/40 text-amber-300 hover:bg-amber-500/15 text-[11px] font-bold h-8 cursor-pointer"
+                          leftIcon={<AlertTriangle className="w-3 h-3 text-amber-400" />}
+                        >
+                          Give Caution
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => {
+                            setDemolishTargetSession(session);
+                            setDemolishReasonText('Academic integrity violation detected by proctor. Session forcefully terminated.');
+                          }}
+                          disabled={session.status === 'demolished'}
+                          className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold h-8 cursor-pointer"
+                          leftIcon={<AlertOctagon className="w-3 h-3 text-white" />}
+                        >
+                          Demolish
+                        </Button>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                          inc.violationType === 'SCREEN_SHARE_STOPPED' || inc.violationType === 'SIRI_ATTEMPT' || inc.violationType === 'PHONE_DETECTED'
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                            : inc.violationType === 'FULLSCREEN_EXIT'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                            : inc.violationType === 'TAB_SWITCH'
-                            ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
-                            : inc.violationType === 'GAZE_DEVIATION'
-                            ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
-                            : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                        }`}
-                      >
-                        {inc.violationType.replace('_', ' ')}
-                      </span>
-
-                      <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded-md">
-                        Warning #{inc.warningCount}
-                      </span>
-                    </div>
+          {/* SUB-VIEW 2: INCIDENTS SECURITY HISTORY LOG */}
+          {proctorSubView === 'incidents_log' && (
+            <div className="space-y-4">
+              {/* Controls & Filter Bar */}
+              <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={proctorSearchQuery}
+                      onChange={(e) => setProctorSearchQuery(e.target.value)}
+                      placeholder="Search by student username, college, contest..."
+                      className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 font-mono"
+                    />
                   </div>
 
-                  <p className="text-xs text-slate-300 bg-charcoal-950 p-3 rounded-xl border border-charcoal-800/80 font-mono">
-                    {inc.details}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setAutoRefreshProctor(!autoRefreshProctor)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-colors flex items-center gap-1.5 ${
+                        autoRefreshProctor
+                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                          : 'bg-charcoal-950 border-charcoal-800 text-slate-400'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${autoRefreshProctor ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                      <span>{autoRefreshProctor ? 'Live Sync (5s)' : 'Paused'}</span>
+                    </button>
 
-                  {/* Render Screen Snapshot Evidence if captured */}
-                  {inc.screenSnapshot && (
-                    <div className="rounded-xl overflow-hidden border border-charcoal-750 bg-black max-w-md">
-                      <div className="px-3 py-1.5 bg-charcoal-950 border-b border-charcoal-800 text-[10px] font-mono font-bold text-rose-300 flex items-center justify-between">
-                        <span>📸 Contestant Monitor Capture</span>
-                        <span className="text-[9px] text-slate-400">Click to expand</span>
-                      </div>
-                      <img
-                        src={inc.screenSnapshot}
-                        alt="Incident Monitor Capture"
-                        className="w-full h-auto object-cover max-h-52 cursor-pointer hover:opacity-95 transition-opacity"
-                        onClick={() => window.open(inc.screenSnapshot, '_blank')}
-                      />
-                    </div>
-                  )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={loadProctorData}
+                      isLoading={isProctorLoading}
+                      leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+                      className="border-charcoal-750 text-slate-300 text-xs font-bold"
+                    >
+                      Refresh
+                    </Button>
 
-                  <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-xs text-slate-400">
-                    <span className="flex items-center gap-1 font-mono text-[11px]">
-                      <Clock className="w-3 h-3 text-slate-500" />
-                      <span>{new Date(inc.timestamp).toLocaleString()}</span>
-                    </span>
-
-                    <div className="flex items-center gap-2">
+                    {proctorIncidents.length > 0 && (
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => handleDismissIncident(inc.id)}
-                        className="text-slate-400 hover:text-white text-xs h-7"
+                        variant="outline"
+                        onClick={handleClearAllProctorLogs}
+                        leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                        className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10 text-xs font-bold"
                       >
-                        Dismiss
+                        Clear All Logs
                       </Button>
-
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => {
-                          setSuspendingIncident(inc);
-                          setSuspendReason(
-                            `ICPC Contest Anti-Cheat Proctoring Violation: ${inc.violationType} (${inc.details})`
-                          );
-                        }}
-                        className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs h-7"
-                        leftIcon={<UserX className="w-3.5 h-3.5" />}
-                      >
-                        Suspend Account
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+
+                {/* Violation Filter Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 border-t border-charcoal-800/80 text-xs">
+                  <span className="text-[11px] font-mono text-slate-500 shrink-0 uppercase">Filter:</span>
+                  {[
+                    { id: 'all', label: 'All Incidents' },
+                    { id: 'SCREEN_SHARE_STOPPED', label: '🛑 Screen Share Terminated' },
+                    { id: 'TAB_SWITCH', label: '🔀 App / Tab Switch' },
+                    { id: 'PHONE_DETECTED', label: '📱 Phone Detected' },
+                    { id: 'FULLSCREEN_EXIT', label: '🖥️ Screen Exited' },
+                    { id: 'GAZE_DEVIATION', label: '👀 Gaze Deviation' },
+                    { id: 'SUSPICIOUS_PASTE', label: '📋 AI Paste' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.id}
+                      onClick={() => setProctorFilterViolation(chip.id as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                        proctorFilterViolation === chip.id
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
+                          : 'text-slate-400 hover:text-white bg-charcoal-950 border border-charcoal-800'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Incidents Stream */}
+              <div className="space-y-3">
+                {filteredProctorIncidents.length === 0 ? (
+                  <div className="p-12 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-bold text-white">No Proctoring Incidents Found</h4>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      All active and recent ICPC arena contestant sessions are operating within verified academic standards. Violations will appear here live in real-time.
+                    </p>
+                  </div>
+                ) : (
+                  filteredProctorIncidents.map((inc) => (
+                    <div
+                      key={inc.id}
+                      className="p-4 sm:p-5 rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-charcoal-700 transition-all space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-charcoal-950 border border-charcoal-750 flex items-center justify-center text-rose-400 font-bold shrink-0">
+                            {inc.violationType === 'SCREEN_SHARE_STOPPED' ? (
+                              <Maximize2 className="w-4 h-4 text-rose-400 animate-pulse" />
+                            ) : inc.violationType === 'SIRI_ATTEMPT' ? (
+                              <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
+                            ) : inc.violationType === 'PHONE_DETECTED' ? (
+                              <Smartphone className="w-4 h-4 text-rose-400" />
+                            ) : inc.violationType === 'FULLSCREEN_EXIT' ? (
+                              <Maximize2 className="w-4 h-4 text-amber-400" />
+                            ) : inc.violationType === 'TAB_SWITCH' ? (
+                              <ExternalLink className="w-4 h-4 text-orange-400" />
+                            ) : inc.violationType === 'GAZE_DEVIATION' ? (
+                              <Eye className="w-4 h-4 text-yellow-400" />
+                            ) : (
+                              <Code2 className="w-4 h-4 text-purple-400" />
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-white">{inc.studentName}</h4>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                ({inc.studentId})
+                              </span>
+                              {inc.college && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-charcoal-800 text-slate-300 font-medium">
+                                  {inc.college}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-400">
+                              Contest: <strong className="text-slate-200">{inc.contestTitle}</strong>
+                              {inc.problemTitle ? ` • Problem: ${inc.problemTitle}` : ''}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                              inc.violationType === 'SCREEN_SHARE_STOPPED' || inc.violationType === 'SIRI_ATTEMPT' || inc.violationType === 'PHONE_DETECTED'
+                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                : inc.violationType === 'FULLSCREEN_EXIT'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                : inc.violationType === 'TAB_SWITCH'
+                                ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+                                : inc.violationType === 'GAZE_DEVIATION'
+                                ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
+                                : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            }`}
+                          >
+                            {inc.violationType.replace('_', ' ')}
+                          </span>
+
+                          <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded-md">
+                            Warning #{inc.warningCount} / 10
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-300 bg-charcoal-950 p-3 rounded-xl border border-charcoal-800/80 font-mono">
+                        {inc.details}
+                      </p>
+
+                      {/* Render Screen Snapshot Evidence if captured */}
+                      {inc.screenSnapshot && (
+                        <div className="rounded-xl overflow-hidden border border-charcoal-750 bg-black max-w-md">
+                          <div className="px-3 py-1.5 bg-charcoal-950 border-b border-charcoal-800 text-[10px] font-mono font-bold text-rose-300 flex items-center justify-between">
+                            <span>📸 Contestant Monitor Capture</span>
+                            <span className="text-[9px] text-slate-400">Click to expand</span>
+                          </div>
+                          <img
+                            src={inc.screenSnapshot}
+                            alt="Incident Monitor Capture"
+                            className="w-full h-auto object-cover max-h-52 cursor-pointer hover:opacity-95 transition-opacity"
+                            onClick={() =>
+                              setExpandedScreenImage({
+                                src: inc.screenSnapshot!,
+                                title: `${inc.studentName} — Violation Capture (${inc.violationType})`,
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-xs text-slate-400">
+                        <span className="flex items-center gap-1 font-mono text-[11px]">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          <span>{new Date(inc.timestamp).toLocaleString()}</span>
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDismissIncident(inc.id)}
+                            className="text-slate-400 hover:text-white text-xs h-7"
+                          >
+                            Dismiss
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => {
+                              setSuspendingIncident(inc);
+                              setSuspendReason(
+                                `ICPC Contest Anti-Cheat Proctoring Violation: ${inc.violationType} (${inc.details})`
+                              );
+                            }}
+                            className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs h-7"
+                            leftIcon={<UserX className="w-3.5 h-3.5" />}
+                          >
+                            Suspend Account
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1200,6 +1530,149 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               leftIcon={<UserX className="w-3.5 h-3.5" />}
             >
               Confirm Platform Suspension
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Give Caution Modal */}
+      <Modal
+        isOpen={Boolean(cautionTargetSession)}
+        onClose={() => setCautionTargetSession(null)}
+        title={`Issue Live Caution • ${cautionTargetSession?.studentName}`}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs leading-relaxed space-y-1.5">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <span>Broadcast Immediate Caution Alert</span>
+            </div>
+            <p>
+              Sending this caution will pop up a high-priority warning directly on <strong>{cautionTargetSession?.studentName}&apos;s</strong> screen inside the arena with an audio alert.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Caution Message to Contestant
+            </label>
+            <textarea
+              rows={3}
+              value={cautionMessageText}
+              onChange={(e) => setCautionMessageText(e.target.value)}
+              placeholder="e.g. Keep your attention focused on the code editor. Do not switch screens or look away."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setCautionTargetSession(null)}
+              disabled={isSendingCaution}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleSendCaution}
+              isLoading={isSendingCaution}
+              className="bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs"
+              leftIcon={<Send className="w-3.5 h-3.5" />}
+            >
+              Deliver Caution to Screen
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Demolish / Disqualify Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(demolishTargetSession)}
+        onClose={() => setDemolishTargetSession(null)}
+        title={`Demolish Contest • ${demolishTargetSession?.studentName}`}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs leading-relaxed space-y-2">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <AlertOctagon className="w-4 h-4 text-rose-400 animate-pulse" />
+              <span>Force Demolish Contest Session</span>
+            </div>
+            <p>
+              Are you sure you want to <strong>demolish</strong> the contest attempt of <strong>{demolishTargetSession?.studentName}</strong>?
+            </p>
+            <p className="text-[11px] text-rose-300">
+              • The student&apos;s contest arena will be permanently locked with an unclosable Disqualification overlay.
+              • Their session and code submissions will be halted immediately.
+              • A critical security incident will be logged in academic records.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Official Demolish / Disqualification Reason
+            </label>
+            <textarea
+              rows={3}
+              value={demolishReasonText}
+              onChange={(e) => setDemolishReasonText(e.target.value)}
+              placeholder="State the academic integrity infraction..."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 font-mono"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setDemolishTargetSession(null)}
+              disabled={isDemolishing}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleExecuteDemolish}
+              isLoading={isDemolishing}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+              leftIcon={<AlertOctagon className="w-3.5 h-3.5" />}
+            >
+              Confirm Demolish &amp; Disqualify
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Full-Screen Monitor Image Zoom Modal */}
+      <Modal
+        isOpen={Boolean(expandedScreenImage)}
+        onClose={() => setExpandedScreenImage(null)}
+        title={expandedScreenImage?.title || 'Contestant Screen Capture'}
+        maxWidth="4xl"
+      >
+        <div className="space-y-3">
+          {expandedScreenImage && (
+            <div className="rounded-2xl overflow-hidden border border-charcoal-750 bg-black">
+              <img
+                src={expandedScreenImage.src}
+                alt={expandedScreenImage.title}
+                className="w-full h-auto object-contain max-h-[75vh]"
+              />
+            </div>
+          )}
+          <div className="flex justify-end pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setExpandedScreenImage(null)}
+              className="text-xs font-mono"
+            >
+              Close
             </Button>
           </div>
         </div>
