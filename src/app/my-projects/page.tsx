@@ -392,11 +392,11 @@ function MyProjectsContent() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-            <Layers className="w-7 h-7 text-brand-400" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <Layers className="w-7 h-7 text-brand-500 dark:text-brand-400" />
             <span>My Projects &amp; Workspaces</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
             Access permanent project workspaces and active campus hackathon workshops.
           </p>
         </div>
@@ -409,19 +409,21 @@ function MyProjectsContent() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-charcoal-800 pb-3 text-sm overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-charcoal-800 pb-3 text-sm overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('leading')}
-          className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'leading'
-              ? 'bg-charcoal-800 text-white border border-charcoal-700 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850'
+              ? 'bg-slate-900 text-white dark:bg-charcoal-800 dark:text-white border border-slate-800 dark:border-charcoal-700 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
           }`}
         >
           <span>Projects I Lead (Permanent)</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-mono ${
-              activeTab === 'leading' ? 'bg-brand-500 text-white' : 'bg-charcoal-750 text-slate-400'
+            className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
+              activeTab === 'leading'
+                ? 'bg-brand-500 text-white'
+                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
             }`}
           >
             {leadingProjects.length}
@@ -430,16 +432,18 @@ function MyProjectsContent() {
 
         <button
           onClick={() => setActiveTab('joined')}
-          className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'joined'
-              ? 'bg-charcoal-800 text-white border border-charcoal-700 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850'
+              ? 'bg-slate-900 text-white dark:bg-charcoal-800 dark:text-white border border-slate-800 dark:border-charcoal-700 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
           }`}
         >
           <span>Teams I Joined (Permanent)</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-mono ${
-              activeTab === 'joined' ? 'bg-brand-500 text-white' : 'bg-charcoal-750 text-slate-400'
+            className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
+              activeTab === 'joined'
+                ? 'bg-brand-500 text-white'
+                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
             }`}
           >
             {joinedProjects.length}
@@ -448,23 +452,25 @@ function MyProjectsContent() {
 
         <button
           onClick={() => setActiveTab('hackathons')}
-          className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'hackathons'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850'
+              ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
           }`}
         >
-          <Trophy className="w-4 h-4 text-amber-400" />
+          <Trophy className="w-4 h-4 text-amber-500" />
           <span>Active Hackathon Sprints</span>
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
-              activeTab === 'hackathons' ? 'bg-amber-500 text-white' : 'bg-charcoal-750 text-slate-400'
+              activeTab === 'hackathons'
+                ? 'bg-amber-500 text-white'
+                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
             }`}
           >
             {activeHackathonSprints.length}
           </span>
           {activeHackathonSprints.length > 0 && (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block ml-0.5" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block ml-0.5" />
           )}
         </button>
       </div>
