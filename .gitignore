@@ -32,3 +32,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env*
+
+# Local security-review backups (never commit)
+security-backup-*/
+src/app/api/admin/emergency-maintenance/route.ts.backup-*

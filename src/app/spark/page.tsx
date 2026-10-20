@@ -44,6 +44,7 @@ interface SparkBlueprint {
     deliverables: string;
   }[];
   engine?: string;
+  matchedBlueprint?: string;
 }
 
 const QUICK_INSPIRATIONS = [
@@ -64,27 +65,17 @@ export default function SparkStudioPage() {
   const [copied, setCopied] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const [templates, setTemplates] = useState<SparkTemplateItem[]>(DEFAULT_SPARK_TEMPLATES);
-  const [isLoadingTemplates, setIsLoadingTemplates] = useState<boolean>(false);
+  const [selectedDomain, setSelectedDomain] = useState<string>('All');
 
-  // Fetch curated templates
-  useEffect(() => {
-    async function loadTemplates() {
-      setIsLoadingTemplates(true);
-      try {
-        const res = await fetch('/api/spark/templates');
-        const data = await res.json();
-        if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
-          setTemplates(data.templates);
-        }
-      } catch (e) {
-        console.warn('Error loading spark templates:', e);
-      } finally {
-        setIsLoadingTemplates(false);
-      }
-    }
-    loadTemplates();
-  }, []);
+  const DOMAIN_FILTERS = [
+    'All',
+    'AI / ML',
+    'Fullstack Web',
+    'Mobile Apps',
+    'IoT / Hardware',
+    'FinTech & Web3',
+    'Campus Utilities',
+  ];
 
   const handleGenerate = async (inputPrompt?: string) => {
     const textToRun = inputPrompt || prompt;
@@ -266,9 +257,16 @@ ${blueprint.milestones
                   <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-violet-500/15 border border-violet-500/30 text-violet-600 dark:text-violet-400">
                     Difficulty: {blueprint.difficulty}
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                    ⚡ AI Synthesized
-                  </span>
+                  {blueprint.matchedBlueprint ? (
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Curated Foundation: {blueprint.matchedBlueprint}</span>
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                      ⚡ AI Synthesized
+                    </span>
+                  )}
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
                   {blueprint.title}
@@ -416,63 +414,53 @@ ${blueprint.milestones
           </div>
         )}
 
-        {/* Curated Templates & Blueprints Section */}
-        <div className="space-y-6 pt-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                Featured Collegiate Blueprints
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                Curated and vetted project ideas ready for collegiate team recruitment.
-              </p>
-            </div>
+        {/* Redesigned AI Spark Architecture Guide (Blueprints are dynamically matched) */}
+        <div className="pt-8 border-t border-slate-200 dark:border-charcoal-800 space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+              How AI Spark Synthesizes Your Architecture
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Linkora analyzes your project name and vision against verified engineering patterns to recommend the optimal tech stack, team roles, and milestones.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {templates.map((tpl) => (
-              <div
-                key={tpl.id}
-                className="p-5 rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 hover:border-amber-500/40 transition-all space-y-3 group"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                    {tpl.category}
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    {tpl.difficulty}
-                  </span>
-                </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
-                  {tpl.title}
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
-                  {tpl.tagline || tpl.prompt}
-                </p>
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {tpl.technologies.slice(0, 4).map((tech) => (
-                    <span
-                      key={tech}
-                      className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-charcoal-800 text-slate-600 dark:text-slate-400"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrompt(tpl.prompt);
-                    handleGenerate(tpl.prompt);
-                    window.scrollTo({ top: 100, behavior: 'smooth' });
-                  }}
-                  className="w-full pt-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <span>Load & Synthesize Blueprint</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div className="p-5 rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 space-y-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 font-mono text-xs font-bold flex items-center justify-center">
+                01
               </div>
-            ))}
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                Intelligent Pattern Matching
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                When you enter your project thought, AI Spark instantly scans curated engineering blueprints to find the most suitable architectural foundation.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 space-y-2.5">
+              <div className="w-8 h-8 rounded-xl bg-violet-500/10 text-violet-500 font-mono text-xs font-bold flex items-center justify-center">
+                02
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                Tailored Squad Roles
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Generates 3 to 4 specialized collegiate builder positions with specific skill matrices so you know exactly who to recruit on Linkora.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 space-y-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 font-mono text-xs font-bold flex items-center justify-center">
+                03
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                1-Click Project Launch
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Seamlessly convert your synthesized blueprint directly into an active project listing with pre-filled roles, ready for collaborator applications.
+              </p>
+            </div>
           </div>
         </div>
       </div>

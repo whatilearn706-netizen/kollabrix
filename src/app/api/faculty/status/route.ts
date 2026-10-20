@@ -3,6 +3,7 @@ import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { parseFacultySettings } from '@/lib/admin/facultyPasscodes';
+import { getMasterControlRecord } from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 
@@ -38,14 +39,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ isFaculty: true, isRevoked: false, authenticated: true });
     }
 
-    // 1. Check if user is in revoked list in platform_settings
-    const { data: settingData } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'faculty_access_passcodes')
-      .maybeSingle();
+    // 1. Check if user is in revoked list in master control or platform_settings
+    let rawSettings: any = null;
+    try {
+      const master = await getMasterControlRecord();
+      if (master?.facultySettings) {
+        rawSettings = master.facultySettings;
+      }
+    } catch {}
 
-    const { revokedUserIds } = parseFacultySettings(settingData?.value);
+    if (!rawSettings) {
+      const { data: settingData } = await client
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'faculty_access_passcodes')
+        .maybeSingle();
+      rawSettings = settingData?.value;
+    }
+
+    const { revokedUserIds } = parseFacultySettings(rawSettings);
     const isRevoked = revokedUserIds.includes(user.id);
 
     if (isRevoked) {

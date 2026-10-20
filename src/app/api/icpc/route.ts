@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -15,6 +16,45 @@ let memoryContests: IcpcContest[] = [];
 let memoryDeletedProblemIds: Set<string> = new Set();
 let memoryDeletedContestIds: Set<string> = new Set();
 let memoryIsArenaLive: boolean = true;
+
+async function loadIcpcMasterData() {
+  try {
+    const data = await getMasterControlSubkey<any>('icpc', {
+      contests: [],
+      isArenaLive: true,
+      deletedProblemIds: [],
+      deletedContestIds: [],
+    });
+    return {
+      contests: Array.isArray(data?.contests) ? (data.contests as IcpcContest[]) : [],
+      isArenaLive: typeof data?.isArenaLive === 'boolean' ? data.isArenaLive : true,
+      deletedProblemIds: Array.isArray(data?.deletedProblemIds) ? (data.deletedProblemIds as string[]) : [],
+      deletedContestIds: Array.isArray(data?.deletedContestIds) ? (data.deletedContestIds as string[]) : [],
+    };
+  } catch (e) {
+    return {
+      contests: [],
+      isArenaLive: true,
+      deletedProblemIds: [],
+      deletedContestIds: [],
+    };
+  }
+}
+
+async function saveIcpcMasterData(updated: {
+  contests?: IcpcContest[];
+  isArenaLive?: boolean;
+  deletedProblemIds?: string[];
+  deletedContestIds?: string[];
+}) {
+  const current = await loadIcpcMasterData();
+  const next = {
+    ...current,
+    ...updated,
+  };
+  await updateMasterControlSubkey('icpc', next);
+  return next;
+}
 
 function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
@@ -36,42 +76,25 @@ export async function GET(request: NextRequest) {
     let deletedProblemIds = new Set<string>(memoryDeletedProblemIds);
     let deletedContestIds = new Set<string>(memoryDeletedContestIds);
 
-    const client = getSupabaseClient();
-    if (client) {
-      try {
-        const { data: settingRow } = await client
-          .from('platform_settings')
-          .select('key, value')
-          .in('key', ['icpc_contests_v1', 'icpc_settings_v1']);
-
-        if (settingRow && Array.isArray(settingRow)) {
-          for (const row of settingRow) {
-            if (row.key === 'icpc_contests_v1' && Array.isArray(row.value)) {
-              dbContests = row.value;
-            } else if (row.key === 'icpc_settings_v1' && row.value) {
-              if (typeof row.value.isArenaLive === 'boolean') {
-                isArenaLive = row.value.isArenaLive;
-                memoryIsArenaLive = isArenaLive;
-              }
-              if (Array.isArray(row.value.deletedProblemIds)) {
-                row.value.deletedProblemIds.forEach((id: string) => {
-                  deletedProblemIds.add(id);
-                  memoryDeletedProblemIds.add(id);
-                });
-              }
-              if (Array.isArray(row.value.deletedContestIds)) {
-                row.value.deletedContestIds.forEach((id: string) => {
-                  deletedContestIds.add(id);
-                  memoryDeletedContestIds.add(id);
-                });
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Could not read icpc data from platform_settings:', err);
+    // Also load from authoritative master control record
+    try {
+      const masterData = await loadIcpcMasterData();
+      if (masterData.contests.length > 0) {
+        dbContests = [...masterData.contests, ...dbContests];
       }
-    }
+      if (typeof masterData.isArenaLive === 'boolean') {
+        isArenaLive = masterData.isArenaLive;
+        memoryIsArenaLive = isArenaLive;
+      }
+      masterData.deletedProblemIds.forEach((id) => {
+        deletedProblemIds.add(id);
+        memoryDeletedProblemIds.add(id);
+      });
+      masterData.deletedContestIds.forEach((id) => {
+        deletedContestIds.add(id);
+        memoryDeletedContestIds.add(id);
+      });
+    } catch (e) {}
 
     // Merge: custom teacher contests first, followed by curated contests
     const rawContests = [...dbContests, ...memoryContests, ...CURATED_ICPC_CONTESTS];
@@ -244,27 +267,13 @@ export async function POST(request: NextRequest) {
     // Save to memory cache
     memoryContests.unshift(newContest);
 
-    // Save to Supabase if configured
-    const client = getSupabaseClient();
-    if (client) {
-      try {
-        const { data: settingRow } = await client
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'icpc_contests_v1')
-          .maybeSingle();
-
-        const currentList: IcpcContest[] = Array.isArray(settingRow?.value) ? settingRow.value : [];
-        const updatedList = [newContest, ...currentList];
-
-        await client.from('platform_settings').upsert({
-          key: 'icpc_contests_v1',
-          value: updatedList,
-          updated_at: new Date().toISOString(),
-        });
-      } catch (dbErr) {
-        console.warn('Could not persist contest to platform_settings:', dbErr);
-      }
+    // Save to Supabase master control record
+    try {
+      const masterData = await loadIcpcMasterData();
+      const updatedList = [newContest, ...masterData.contests.filter((c) => c.id !== newContest.id)];
+      await saveIcpcMasterData({ contests: updatedList });
+    } catch (dbErr) {
+      console.warn('Could not persist contest to master control:', dbErr);
     }
 
     return NextResponse.json({
@@ -320,38 +329,14 @@ export async function DELETE(request: NextRequest) {
       });
       memoryContests = [];
 
-      if (client) {
-        try {
-          const { data: settingRow } = await client
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'icpc_contests_v1')
-            .maybeSingle();
-
-          const dbList: IcpcContest[] = Array.isArray(settingRow?.value) ? settingRow.value : [];
-          dbList.forEach((c) => {
-            memoryDeletedContestIds.add(c.id);
-            c.problems.forEach((p) => memoryDeletedProblemIds.add(p.id));
-          });
-
-          await client.from('platform_settings').upsert({
-            key: 'icpc_settings_v1',
-            value: {
-              isArenaLive: memoryIsArenaLive,
-              deletedProblemIds: Array.from(memoryDeletedProblemIds),
-              deletedContestIds: Array.from(memoryDeletedContestIds),
-            },
-            updated_at: new Date().toISOString(),
-          });
-
-          await client.from('platform_settings').upsert({
-            key: 'icpc_contests_v1',
-            value: [],
-            updated_at: new Date().toISOString(),
-          });
-        } catch (dbErr) {
-          console.warn('Could not clear Supabase icpc tables:', dbErr);
-        }
+      try {
+        await saveIcpcMasterData({
+          contests: [],
+          deletedContestIds: Array.from(memoryDeletedContestIds),
+          deletedProblemIds: Array.from(memoryDeletedProblemIds),
+        });
+      } catch (dbErr) {
+        console.warn('Could not clear master control icpc tables:', dbErr);
       }
 
       return NextResponse.json({
@@ -366,20 +351,15 @@ export async function DELETE(request: NextRequest) {
       memoryDeletedContestIds.clear();
       memoryContests = [];
 
-      if (client) {
-        try {
-          await client.from('platform_settings').upsert({
-            key: 'icpc_settings_v1',
-            value: {
-              isArenaLive: true,
-              deletedProblemIds: [],
-              deletedContestIds: [],
-            },
-            updated_at: new Date().toISOString(),
-          });
-        } catch (dbErr) {
-          console.warn('Could not reset Supabase icpc settings:', dbErr);
-        }
+      try {
+        await saveIcpcMasterData({
+          contests: [],
+          deletedContestIds: [],
+          deletedProblemIds: [],
+          isArenaLive: true,
+        });
+      } catch (dbErr) {
+        console.warn('Could not reset master control icpc settings:', dbErr);
       }
 
       return NextResponse.json({
@@ -400,42 +380,16 @@ export async function DELETE(request: NextRequest) {
       memoryDeletedContestIds.add(contestId);
     }
 
-    if (client) {
-      try {
-        const { data: settingRow } = await client
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'icpc_settings_v1')
-          .maybeSingle();
-
-        const currentSettings = settingRow?.value || {};
-        const deletedProblems: string[] = Array.isArray(currentSettings.deletedProblemIds)
-          ? [...currentSettings.deletedProblemIds]
-          : [];
-        const deletedContests: string[] = Array.isArray(currentSettings.deletedContestIds)
-          ? [...currentSettings.deletedContestIds]
-          : [];
-
-        if (problemId && !deletedProblems.includes(problemId)) {
-          deletedProblems.push(problemId);
-        }
-        if (contestId && !problemId && !deletedContests.includes(contestId)) {
-          deletedContests.push(contestId);
-        }
-
-        await client.from('platform_settings').upsert({
-          key: 'icpc_settings_v1',
-          value: {
-            ...currentSettings,
-            isArenaLive: typeof currentSettings.isArenaLive === 'boolean' ? currentSettings.isArenaLive : true,
-            deletedProblemIds: deletedProblems,
-            deletedContestIds: deletedContests,
-          },
-          updated_at: new Date().toISOString(),
-        });
-      } catch (dbErr) {
-        console.warn('Could not persist deleted problem/contest to Supabase:', dbErr);
-      }
+    try {
+      const masterData = await loadIcpcMasterData();
+      const deletedProblems = Array.from(new Set([...masterData.deletedProblemIds, ...(problemId ? [problemId] : [])]));
+      const deletedContests = Array.from(new Set([...masterData.deletedContestIds, ...(contestId && !problemId ? [contestId] : [])]));
+      await saveIcpcMasterData({
+        deletedProblemIds: deletedProblems,
+        deletedContestIds: deletedContests,
+      });
+    } catch (dbErr) {
+      console.warn('Could not persist deleted problem/contest to master control:', dbErr);
     }
 
     return NextResponse.json({
@@ -470,29 +424,10 @@ export async function PATCH(request: NextRequest) {
 
     memoryIsArenaLive = isArenaLive;
 
-    const client = getSupabaseClient();
-    if (client) {
-      try {
-        const { data: settingRow } = await client
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'icpc_settings_v1')
-          .maybeSingle();
-
-        const currentSettings = settingRow?.value || {};
-        await client.from('platform_settings').upsert({
-          key: 'icpc_settings_v1',
-          value: {
-            ...currentSettings,
-            isArenaLive,
-            deletedProblemIds: currentSettings.deletedProblemIds || Array.from(memoryDeletedProblemIds),
-            deletedContestIds: currentSettings.deletedContestIds || Array.from(memoryDeletedContestIds),
-          },
-          updated_at: new Date().toISOString(),
-        });
-      } catch (dbErr) {
-        console.warn('Could not persist arena live toggle to Supabase:', dbErr);
-      }
+    try {
+      await saveIcpcMasterData({ isArenaLive });
+    } catch (dbErr) {
+      console.warn('Could not persist arena live toggle to master control:', dbErr);
     }
 
     return NextResponse.json({

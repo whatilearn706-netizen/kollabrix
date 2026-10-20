@@ -6,7 +6,6 @@ export async function sendTelegramSecurityAlert({
   ip,
   timestamp,
   origin = 'https://linkora.in',
-  emergencyKey = 'linkora-sec-emergency-2026',
 }: {
   botToken?: string;
   chatId?: string;
@@ -15,7 +14,6 @@ export async function sendTelegramSecurityAlert({
   ip?: string;
   timestamp?: string;
   origin?: string;
-  emergencyKey?: string;
 }) {
   const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
   const chat = chatId || process.env.TELEGRAM_CHAT_ID;
@@ -25,8 +23,6 @@ export async function sendTelegramSecurityAlert({
   }
 
   const time = timestamp || new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' });
-  const emergencyLink = `${origin}/api/admin/emergency-maintenance?key=${emergencyKey}&action=activate`;
-  const restoreLink = `${origin}/api/admin/emergency-maintenance?key=${emergencyKey}&action=deactivate`;
   const auditLink = `${origin}/control-center-7x9?tab=audit`;
 
   const text = 
@@ -40,13 +36,8 @@ ${description ? `📝 *Details*: ${description}\n` : ''}📍 *Source IP*: \`${ip
 
 💡 *What To Do*:
 1. Review live Audit Logs: [Open Audit Desk](${auditLink})
-2. If anything feels broken or under attack, tap the 1-Tap Kill Switch below to put the platform into instant Maintenance:
-
-🔴 *1-Tap Instant Maintenance*:
-${emergencyLink}
-
-🟢 *Restore Website*:
-${restoreLink}`;
+2. Open the authorized admin dashboard to review and manage maintenance:
+${origin}/control-center-7x9`;
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -60,9 +51,7 @@ ${restoreLink}`;
         reply_markup: {
           inline_keyboard: [
             [
-              { text: '🔴 ACTIVATE MAINTENANCE', url: emergencyLink },
-              { text: '🟢 RESTORE SITE', url: restoreLink },
-            ],
+                ],
             [
               { text: '📊 VIEW AUDIT LOGS', url: auditLink },
             ],

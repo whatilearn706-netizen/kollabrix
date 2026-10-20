@@ -9,6 +9,7 @@ import {
   HomepageShowcaseConfig,
 } from '@/types/homepageConfig';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
+import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -29,7 +30,36 @@ export async function GET(request: NextRequest) {
     let intentConfig: HomepageIntentConfig = DEFAULT_HOMEPAGE_INTENT_CONFIG;
     let showcaseConfig: HomepageShowcaseConfig = DEFAULT_HOMEPAGE_SHOWCASE_CONFIG;
 
-    if (isSupabaseConfigured()) {
+    // 1. Authoritative Master Control Storage
+    try {
+      const master = await getMasterControlRecord();
+      if (master?.homepageIntent) {
+        intentConfig = {
+          ...DEFAULT_HOMEPAGE_INTENT_CONFIG,
+          ...master.homepageIntent,
+          candidates: Array.isArray(master.homepageIntent.candidates)
+            ? master.homepageIntent.candidates
+            : DEFAULT_HOMEPAGE_INTENT_CONFIG.candidates,
+          projectSlots: Array.isArray(master.homepageIntent.projectSlots)
+            ? master.homepageIntent.projectSlots
+            : DEFAULT_HOMEPAGE_INTENT_CONFIG.projectSlots,
+        };
+      }
+      if (master?.homepageShowcase) {
+        showcaseConfig = {
+          ...DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
+          ...master.homepageShowcase,
+          selectedProjectIds: Array.isArray(master.homepageShowcase.selectedProjectIds)
+            ? master.homepageShowcase.selectedProjectIds
+            : DEFAULT_HOMEPAGE_SHOWCASE_CONFIG.selectedProjectIds,
+        };
+      }
+    } catch (masterErr) {
+      console.warn('Could not read homepage config from masterControlRecord:', masterErr);
+    }
+
+    // 2. Fallback to platform_settings separate rows if master was empty
+    if (isSupabaseConfigured() && (!intentConfig.candidates?.length && !showcaseConfig.selectedProjectIds?.length)) {
       try {
         const { data: rows } = await client
           .from('platform_settings')
@@ -62,7 +92,7 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (dbErr) {
-        console.warn('Could not read homepage config from platform_settings:', dbErr);
+        console.warn('Could not read homepage config from platform_settings rows:', dbErr);
       }
     }
 
@@ -138,19 +168,31 @@ export async function POST(request: NextRequest) {
 
     if (isSupabaseConfigured()) {
       if (intentConfig) {
-        await client.from('platform_settings').upsert({
-          key: INTENT_KEY,
-          value: intentConfig,
-          updated_at: new Date().toISOString(),
-        });
+        // Save to master control storage (permanent, bypasses RLS blocks)
+        await updateMasterControlSubkey('homepageIntent', intentConfig);
+
+        // Also try direct table update for legacy readers if exists
+        try {
+          await client.from('platform_settings').upsert({
+            key: INTENT_KEY,
+            value: intentConfig,
+            updated_at: new Date().toISOString(),
+          });
+        } catch {}
       }
 
       if (showcaseConfig) {
-        await client.from('platform_settings').upsert({
-          key: SHOWCASE_KEY,
-          value: showcaseConfig,
-          updated_at: new Date().toISOString(),
-        });
+        // Save to master control storage (permanent, bypasses RLS blocks)
+        await updateMasterControlSubkey('homepageShowcase', showcaseConfig);
+
+        // Also try direct table update for legacy readers if exists
+        try {
+          await client.from('platform_settings').upsert({
+            key: SHOWCASE_KEY,
+            value: showcaseConfig,
+            updated_at: new Date().toISOString(),
+          });
+        } catch {}
 
         // Also sync is_featured flags on projects table if selected
         if (showcaseConfig.selectedProjectIds && Array.isArray(showcaseConfig.selectedProjectIds)) {

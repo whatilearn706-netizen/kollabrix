@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
+import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFeatures';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +23,8 @@ export interface SparkBlueprintResponse {
     deliverables: string;
   }[];
   engine: string;
+  matchedBlueprint?: string;
+  matchScore?: number;
 }
 
 // Capitalize words cleanly
@@ -315,6 +319,103 @@ function synthesizeDynamicBlueprint(prompt: string): SparkBlueprintResponse {
   };
 }
 
+function matchCuratedBlueprint(prompt: string, templates: SparkTemplateItem[]): SparkBlueprintResponse | null {
+  if (!templates || templates.length === 0) return null;
+
+  const p = prompt.toLowerCase().trim();
+  const promptWords = p
+    .replace(/[^\w\s]/gi, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !['app', 'for', 'with', 'the', 'and', 'project', 'make', 'build', 'want', 'system', 'platform'].includes(w));
+
+  if (promptWords.length === 0) return null;
+
+  let bestMatch: SparkTemplateItem | null = null;
+  let bestScore = 0;
+
+  for (const tpl of templates) {
+    let score = 0;
+    const targetText = `${tpl.title} ${tpl.tagline || ''} ${tpl.prompt || ''} ${tpl.category || ''} ${tpl.technologies.join(' ')}`.toLowerCase();
+
+    // Check whole prompt inclusion
+    if (targetText.includes(p) || p.includes(tpl.title.toLowerCase())) {
+      score += 10;
+    }
+
+    // Word-by-word matching
+    for (const word of promptWords) {
+      if (tpl.title.toLowerCase().includes(word)) {
+        score += 3.5;
+      } else if (targetText.includes(word)) {
+        score += 1.5;
+      }
+    }
+
+    // Category match bonus
+    if (tpl.category && p.includes(tpl.category.toLowerCase())) {
+      score += 2;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = tpl;
+    }
+  }
+
+  // Threshold check: need at least 3 points to qualify as a real match
+  if (bestMatch && bestScore >= 3) {
+    const rawSubject = toTitleCase(extractCleanTerms(prompt)) || bestMatch.title;
+    const isDirectTitle = prompt.length >= 3 && prompt.length <= 45 && !prompt.includes('\n');
+    const adaptedTitle = isDirectTitle
+      ? toTitleCase(prompt)
+      : `${rawSubject}: ${bestMatch.tagline || bestMatch.title}`;
+
+    return {
+      title: adaptedTitle,
+      tagline: bestMatch.tagline || `Production-grade architecture foundation based on ${bestMatch.title}`,
+      category: bestMatch.category || 'Web Development',
+      difficulty: bestMatch.difficulty || 'Intermediate',
+      summary: `Tailored engineering blueprint for "${prompt}". Synthesized and optimized using Linkora's curated "${bestMatch.title}" architectural framework, featuring enterprise-grade patterns, clean component boundaries, and high-performance data contracts.`,
+      technologies: bestMatch.technologies || ['Next.js', 'TypeScript', 'TailwindCSS', 'PostgreSQL'],
+      desired_roles: bestMatch.roles || ['Fullstack Lead Engineer', 'Backend Specialist', 'UI/UX Designer'],
+      rolesBreakdown: (bestMatch.roles || ['Fullstack Lead Engineer', 'Backend Specialist', 'UI/UX Designer']).map((r, i) => ({
+        role: r,
+        skills: bestMatch!.technologies.slice(i * 2, i * 2 + 3).length > 0
+          ? bestMatch!.technologies.slice(i * 2, i * 2 + 3)
+          : ['TypeScript', 'Architecture', 'System Design'],
+        focus: `Lead implementation of the ${r.toLowerCase()} domain for ${adaptedTitle}.`,
+      })),
+      milestones: [
+        {
+          title: 'Phase 1: Architecture & Foundation Contracts',
+          duration: 'Week 1',
+          deliverables: `Setup core repository, schema models, and base UI scaffolds for ${adaptedTitle}.`,
+        },
+        {
+          title: 'Phase 2: Core Engine & Domain Logic',
+          duration: 'Week 2',
+          deliverables: `Develop core business logic, API routes, and state persistence with test cases.`,
+        },
+        {
+          title: 'Phase 3: Integration, Telemetry & Security',
+          duration: 'Week 3',
+          deliverables: `Wire end-to-end user flows, add error boundaries, and benchmark response latencies.`,
+        },
+        {
+          title: 'Phase 4: Production Deployment & Pitch Demo',
+          duration: 'Week 4',
+          deliverables: `Ship public deployment, generate README badges, and prepare live demo showcase.`,
+        },
+      ],
+      engine: `🎯 Matched Curated Architecture: ${bestMatch.title}`,
+      matchedBlueprint: bestMatch.title,
+      matchScore: Math.min(99, Math.round(55 + bestScore * 7)),
+    };
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -322,6 +423,17 @@ export async function POST(request: NextRequest) {
 
     if (!prompt) {
       return NextResponse.json({ error: 'Please enter a project idea or concept to spark.' }, { status: 400 });
+    }
+
+    // 1. Check if user prompt matches any curated blueprint in the admin's database
+    const rawCurated = await getMasterControlSubkey<SparkTemplateItem[]>('sparkTemplates', DEFAULT_SPARK_TEMPLATES);
+    const templatesList = Array.isArray(rawCurated) && rawCurated.length > 0 ? rawCurated : DEFAULT_SPARK_TEMPLATES;
+    const curatedMatch = matchCuratedBlueprint(prompt, templatesList);
+    if (curatedMatch) {
+      return NextResponse.json({
+        success: true,
+        blueprint: curatedMatch,
+      });
     }
 
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;

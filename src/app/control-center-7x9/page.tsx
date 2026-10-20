@@ -70,75 +70,68 @@ export default function AdminControlCenterPage() {
     }
   }, []);
 
-  // Authoritative server-side verification with Owner Bypass
+  // Grant admin UI access only after server-side session verification.
   useEffect(() => {
-    async function verify() {
-      // 1. Always attempt to retrieve active Supabase Auth session token
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        if (token) {
-          setAuthToken(token);
-        }
-      } catch (e) {}
+    let cancelled = false;
 
+    async function verify() {
       if (isAuthLoading) return;
 
+      setIsAdmin(false);
+      setAdminUser(null);
+      setAdminProfile(null);
+
       if (!user) {
-        setIsAdmin(false);
+        setAuthToken(undefined);
         return;
       }
 
       try {
-        const email = (user.email || '').trim().toLowerCase();
-        const isOwner = email === 'goyalmayank142@gmail.com' || user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' || user.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
-        if (isOwner) {
-          setIsAdmin(true);
-          setAdminUser({ id: user.id, email: user.email });
-          setAdminProfile({ ...(profile || {}), role: 'admin' });
-          try {
-            localStorage.setItem('linkora_admin_session', 'true');
-            document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
-            document.cookie = 'linkora_user_email=goyalmayank142@gmail.com; path=/; max-age=31536000; SameSite=Lax';
-          } catch (e) {}
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+
+        if (cancelled) return;
+
+        if (!token) {
+          setAuthToken(undefined);
+          return;
         }
 
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        if (token) setAuthToken(token);
+        setAuthToken(token);
 
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/admin/verify', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
 
-        const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-        if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
+        const result = await res.json();
 
-        const res = await fetch('/api/admin/verify', { headers });
-        const data = await res.json();
+        if (cancelled) return;
 
-        if (res.ok && data.authorized) {
+        if (res.ok && result.authorized === true) {
           setIsAdmin(true);
-          setAdminUser(data.user);
-          setAdminProfile(data.profile);
-        } else if (isOwner) {
-          setIsAdmin(true);
-          setAdminUser({ id: user.id, email: user.email });
+          setAdminUser(result.user);
+          setAdminProfile(result.profile);
         } else {
           setIsAdmin(false);
+          setAdminUser(null);
+          setAdminProfile(null);
         }
-      } catch (err) {
-        console.warn('Admin verification check note:', err);
-        const email = (user?.email || '').trim().toLowerCase();
-        if (email === 'goyalmayank142@gmail.com') {
-          setIsAdmin(true);
-        } else {
+      } catch {
+        if (!cancelled) {
           setIsAdmin(false);
+          setAdminUser(null);
+          setAdminProfile(null);
         }
       }
     }
 
     verify();
-  }, [user, isAuthLoading, profile]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isAuthLoading]);
 
   // Load Overview Data when admin verified
   useEffect(() => {
@@ -148,8 +141,7 @@ export default function AdminControlCenterPage() {
       try {
         const headers: Record<string, string> = {};
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-        const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-        if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
+
 
         const res = await fetch('/api/admin/overview', { headers });
         const data = await res.json();
@@ -167,36 +159,9 @@ export default function AdminControlCenterPage() {
     loadOverview();
   }, [isAdmin, authToken]);
 
-  const handleUnlockWithPasscode = async (e: React.FormEvent) => {
+  const handleUnlockWithPasscode = (e: React.FormEvent) => {
     e.preventDefault();
-    setPasscodeError('');
-
-    if (!directPasscode.trim()) {
-      setPasscodeError('Please enter the administrative passcode.');
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/admin/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: directPasscode.trim() }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.authorized) {
-        setIsAdmin(true);
-        setAdminUser(data.user);
-        setAdminProfile(data.profile);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('linkora_admin_passcode', directPasscode.trim());
-        }
-      } else {
-        setPasscodeError(data.error || 'Invalid administrative passcode.');
-      }
-    } catch (err) {
-      setPasscodeError('Verification request failed. Please check your connection.');
-    }
+    setPasscodeError('Passcode sign-in is disabled. Sign in with your authorized administrator account.');
   };
 
   // Loading state
@@ -219,46 +184,25 @@ export default function AdminControlCenterPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-black text-white tracking-tight">Admin Control Center</h1>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Private platform governance suite. Sign in with your administrator account or enter the emergency founder passcode.
+            Private platform governance suite. Sign in with your authorized administrator account.
           </p>
         </div>
 
-        {/* Founder Authorization - Only for verified signed-in owner */}
-        {user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53' || user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ? (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-500/30 text-center space-y-2.5 shadow-elevated">
-            <p className="text-xs font-semibold text-amber-300">
-              Verified Platform Owner: {user.email}
-            </p>
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              className="w-full bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-black shadow-elevated border-none py-3 text-sm"
-              onClick={() => {
-                loginAsOwner();
-                setIsAdmin(true);
-                setAdminUser(user);
-                setAdminProfile({ role: 'admin', display_name: 'Mayank Goyal (Owner)' });
-              }}
-            >
-              Enter Admin Control Center
-            </Button>
+        {user ? (
+          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-2">
+            <p className="text-sm text-slate-200">Administrator access has not been verified for this session.</p>
+            <p className="text-xs text-slate-400">Sign in with your authorized platform-owner account and try again.</p>
           </div>
         ) : (
-          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
-            <p className="text-xs text-slate-400">
-              Administrative access is strictly restricted to platform owners.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full text-xs font-bold border-slate-700 hover:bg-white/5 text-slate-200"
-              onClick={() => openAuthModal('login')}
-            >
-              Sign In with Google
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full text-xs font-bold border-slate-700 hover:bg-white/5 text-slate-200"
+            onClick={() => openAuthModal('login')}
+          >
+            Sign In with Google
+          </Button>
         )}
 
         {/* Private Master Passcode Verification */}

@@ -197,7 +197,7 @@ export default function HomePage() {
             const { data: sRows } = await supabase
               .from('platform_settings')
               .select('key, value')
-              .in('key', ['deleted_projects', 'linkedin_college_verifications']);
+              .in('key', ['deleted_projects', 'linkedin_college_verifications', 'site_master_control_config']);
 
             if (Array.isArray(sRows)) {
               for (const row of sRows) {
@@ -205,7 +205,16 @@ export default function HomePage() {
                   const raw = row.value;
                   const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
                   const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
-                  deletedSet = new Set([...ids, ...titles].map((s: string) => (s || '').trim().toLowerCase()));
+                  [...ids, ...titles].forEach((s: string) => {
+                    if (s) deletedSet.add(s.trim().toLowerCase());
+                  });
+                } else if (row.key === 'site_master_control_config' && row.value?.deletedProjects) {
+                  const raw = row.value.deletedProjects;
+                  const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
+                  const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
+                  [...ids, ...titles].forEach((s: string) => {
+                    if (s) deletedSet.add(s.trim().toLowerCase());
+                  });
                 } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
                   row.value.forEach((v: any) => {
                     if (v.userId) verifiedUserSet.add(v.userId);

@@ -15,7 +15,6 @@ export function GlobalHotPatchInjector() {
 
     // Clean any Claude / ChatGPT markdown blocks or wrapping <style>/<script> tags
     const cleanCss = cleanHotPatchCode(patch.customCss || '', 'css');
-    const cleanJs = cleanHotPatchCode(patch.customJs || '', 'js');
 
     // 1. Apply or remove Custom CSS
     let styleTag = document.getElementById('linkora-live-hotpatch-css') as HTMLStyleElement | null;
@@ -33,48 +32,8 @@ export function GlobalHotPatchInjector() {
       styleTag.remove();
     }
 
-    // 2. Execute Custom JS safely in sandboxed closure with SafeGuard filter
-    if (patch.enabled && cleanJs) {
-      // Prohibit critical security hazards from executing in the browser
-      const hasCookieExploit = /document\.cookie/i.test(cleanJs);
-      const hasTokenTheft =
-        /localStorage\s*\[\s*['"`]sb-/i.test(cleanJs) ||
-        /sessionStorage\s*\[\s*['"`]sb-/i.test(cleanJs);
-      const hasBeacon = /navigator\.sendBeacon/i.test(cleanJs);
+    // Security: never execute remotely supplied JavaScript in the public page.
 
-      if (hasCookieExploit || hasTokenTheft || hasBeacon) {
-        console.warn('🛡️ [Linkora SafeGuard] Blocked untrusted script attempting cookie or token access.');
-        return;
-      }
-
-      const executeScript = () => {
-        try {
-          const runner = new Function(
-            'window',
-            'document',
-            `
-            "use strict";
-            try {
-              ${cleanJs}
-            } catch (runtimeErr) {
-              console.warn("[Linkora SafeGuard] Hot-patch runtime error handled safely:", runtimeErr);
-            }
-          `
-          );
-          runner(window, document);
-        } catch (jsErr) {
-          console.warn('Hotpatch script compilation error:', jsErr);
-        }
-      };
-
-      // Run immediately
-      executeScript();
-
-      // Also run after a short micro-delay to catch dynamically mounted React components
-      if (typeof window !== 'undefined') {
-        setTimeout(executeScript, 120);
-      }
-    }
   };
 
   // Re-apply styles and scripts on route transitions (SPA navigation)
@@ -85,22 +44,16 @@ export function GlobalHotPatchInjector() {
   }, [pathname]);
 
   useEffect(() => {
-    // 1. Load cached hotpatch from localStorage for instant 0ms apply
+    // Public display settings are fetched from the public endpoint.
+    // Do not trust cached admin configuration in the public page.
     try {
-      const cached = localStorage.getItem('linkora_hotpatch_v1');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed) {
-          applyPatch(parsed);
-          setHotpatch(parsed);
-        }
-      }
+      localStorage.removeItem('linkora_hotpatch_v1');
     } catch (e) {}
 
     // 2. Fetch fresh patch from server
     const fetchPatch = async () => {
       try {
-        const res = await fetch(`/api/admin/hotpatch?_t=${Date.now()}`);
+        const res = await fetch(`/api/public/hotpatch?_t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.hotpatch) {
@@ -125,22 +78,8 @@ export function GlobalHotPatchInjector() {
     };
     window.addEventListener('linkora_hotpatch_updated', handleUpdate);
 
-    // 4. Listen for storage updates from OTHER browser tabs
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'linkora_hotpatch_v1' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          executedJsRef.current = '';
-          applyPatch(parsed);
-          setHotpatch(parsed);
-        } catch (err) {}
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-
     return () => {
       window.removeEventListener('linkora_hotpatch_updated', handleUpdate);
-      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 

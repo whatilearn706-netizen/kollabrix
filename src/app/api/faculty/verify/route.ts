@@ -3,6 +3,7 @@ import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { parseFacultySettings } from '@/lib/admin/facultyPasscodes';
+import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 
@@ -79,14 +80,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Fetch passcodes from platform_settings
-    const { data: settingData } = await defaultClient
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'faculty_access_passcodes')
-      .maybeSingle();
+    // 2. Fetch passcodes from master control or platform_settings
+    let rawSettings: any = null;
+    try {
+      const master = await getMasterControlRecord();
+      if (master?.facultySettings) {
+        rawSettings = master.facultySettings;
+      }
+    } catch {}
 
-    const parsed = parseFacultySettings(settingData?.value);
+    if (!rawSettings) {
+      const { data: settingData } = await defaultClient
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'faculty_access_passcodes')
+        .maybeSingle();
+      rawSettings = settingData?.value;
+    }
+
+    const parsed = parseFacultySettings(rawSettings);
     const passcodesList = parsed.passcodes;
     let revokedUserIds = parsed.revokedUserIds;
 
@@ -164,17 +176,19 @@ export async function POST(request: NextRequest) {
       return p;
     });
 
+    const facultyVal = { passcodes: updatedPasscodes, revokedUserIds, verifiedUserIds };
     try {
+      await updateMasterControlSubkey('facultySettings', facultyVal);
       await defaultClient
         .from('platform_settings')
         .upsert({
           key: 'faculty_access_passcodes',
-          value: { passcodes: updatedPasscodes, revokedUserIds, verifiedUserIds },
+          value: facultyVal,
           updated_at: new Date().toISOString(),
           updated_by: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
         });
     } catch (err) {
-      console.warn('Could not update platform_settings after verification:', err);
+      console.warn('Could not update faculty settings after verification:', err);
     }
 
     return NextResponse.json({

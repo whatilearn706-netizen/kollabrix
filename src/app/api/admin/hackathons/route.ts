@@ -3,6 +3,7 @@ import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons, DeletedHackathonsData } from '@/lib/admin/hackathonSettings';
+import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 
@@ -18,15 +19,24 @@ export async function GET(request: NextRequest) {
 
   if (isSupabaseConfigured()) {
     try {
-      // 1. Fetch deleted hackathons tombstone setting
-      const { data: settingRow } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'deleted_hackathons')
-        .maybeSingle();
+      // 1. Fetch deleted hackathons tombstone setting from master storage or platform_settings
+      try {
+        const master = await getMasterControlRecord();
+        if (master?.deletedHackathons) {
+          deletedData = parseDeletedHackathons(master.deletedHackathons);
+        }
+      } catch {}
 
-      if (settingRow?.value) {
-        deletedData = parseDeletedHackathons(settingRow.value);
+      if (!deletedData.deletedIds || deletedData.deletedIds.length === 0) {
+        const { data: settingRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_hackathons')
+          .maybeSingle();
+
+        if (settingRow?.value) {
+          deletedData = parseDeletedHackathons(settingRow.value);
+        }
       }
 
       // 2. Fetch database hackathons
@@ -176,17 +186,26 @@ export async function DELETE(request: NextRequest) {
       await client.from('hackathons').update({ status: 'Archived', is_join_active: false }).eq('id', hackathonId);
     } catch {}
 
-    // 4. Authoritative Platform Tombstone: Record ID, Join Code, and Title in platform_settings['deleted_hackathons']
+    // 4. Authoritative Platform Tombstone: Record ID, Join Code, and Title in master storage & platform_settings
     let currentDeleted: DeletedHackathonsData = { deletedIds: [], deletedTitles: [], deletedAt: {} };
     try {
-      const { data: settingRow } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'deleted_hackathons')
-        .maybeSingle();
+      try {
+        const master = await getMasterControlRecord();
+        if (master?.deletedHackathons) {
+          currentDeleted = parseDeletedHackathons(master.deletedHackathons);
+        }
+      } catch {}
 
-      if (settingRow?.value) {
-        currentDeleted = parseDeletedHackathons(settingRow.value);
+      if (!currentDeleted.deletedIds || currentDeleted.deletedIds.length === 0) {
+        const { data: settingRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_hackathons')
+          .maybeSingle();
+
+        if (settingRow?.value) {
+          currentDeleted = parseDeletedHackathons(settingRow.value);
+        }
       }
 
       const idsToBlock = [hackathonId, hackathonId.toLowerCase()];
@@ -210,21 +229,27 @@ export async function DELETE(request: NextRequest) {
       const newDeletedAt = { ...(currentDeleted.deletedAt || {}) };
       newDeletedAt[hackathonId] = new Date().toISOString();
 
-      await client.from('platform_settings').upsert({
-        key: 'deleted_hackathons',
-        value: {
-          deletedIds: newDeletedIds,
-          deletedTitles: newDeletedTitles,
-          deletedAt: newDeletedAt,
-        },
-        description: 'Authoritative registry of deleted hackathons suppressed site-wide',
-        updated_at: new Date().toISOString(),
-      });
+      const tombstoneVal = {
+        deletedIds: newDeletedIds,
+        deletedTitles: newDeletedTitles,
+        deletedAt: newDeletedAt,
+      };
+
+      await updateMasterControlSubkey('deletedHackathons', tombstoneVal);
+
+      try {
+        await client.from('platform_settings').upsert({
+          key: 'deleted_hackathons',
+          value: tombstoneVal,
+          description: 'Authoritative registry of deleted hackathons suppressed site-wide',
+          updated_at: new Date().toISOString(),
+        });
+      } catch {}
 
       currentDeleted.deletedIds = newDeletedIds;
       currentDeleted.deletedTitles = newDeletedTitles;
     } catch (settingErr) {
-      console.warn('Could not update deleted_hackathons platform setting:', settingErr);
+      console.warn('Could not update deleted_hackathons setting:', settingErr);
     }
 
     // 5. Record tamper-resistant admin audit log
@@ -269,26 +294,43 @@ export async function POST(request: NextRequest) {
     if (action === 'restore' && hackathonId) {
       const client = auth.dbClient;
 
-      // Read current deleted_hackathons
-      const { data: settingRow } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'deleted_hackathons')
-        .maybeSingle();
+      // Read current deleted_hackathons from master storage or platform_settings
+      let currentDeleted: DeletedHackathonsData = { deletedIds: [], deletedTitles: [], deletedAt: {} };
+      try {
+        const master = await getMasterControlRecord();
+        if (master?.deletedHackathons) {
+          currentDeleted = parseDeletedHackathons(master.deletedHackathons);
+        }
+      } catch {}
 
-      const currentDeleted = parseDeletedHackathons(settingRow?.value);
+      if (!currentDeleted.deletedIds || currentDeleted.deletedIds.length === 0) {
+        const { data: settingRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_hackathons')
+          .maybeSingle();
+
+        currentDeleted = parseDeletedHackathons(settingRow?.value);
+      }
+
       const updatedIds = currentDeleted.deletedIds.filter(
         (id) => id.toLowerCase() !== hackathonId.toLowerCase()
       );
 
-      await client.from('platform_settings').upsert({
-        key: 'deleted_hackathons',
-        value: {
-          deletedIds: updatedIds,
-          deletedAt: currentDeleted.deletedAt || {},
-        },
-        updated_at: new Date().toISOString(),
-      });
+      const restoreVal = {
+        deletedIds: updatedIds,
+        deletedAt: currentDeleted.deletedAt || {},
+      };
+
+      await updateMasterControlSubkey('deletedHackathons', restoreVal);
+
+      try {
+        await client.from('platform_settings').upsert({
+          key: 'deleted_hackathons',
+          value: restoreVal,
+          updated_at: new Date().toISOString(),
+        });
+      } catch {}
 
       return NextResponse.json({
         success: true,

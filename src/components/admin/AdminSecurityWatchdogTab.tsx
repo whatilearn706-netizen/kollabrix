@@ -51,16 +51,40 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
   const [emergencyLink, setEmergencyLink] = useState('');
 
   useEffect(() => {
+    // 1. Initial instant load from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const savedToken = localStorage.getItem('teamforge_telegram_token');
+        const savedChatId = localStorage.getItem('teamforge_telegram_chat_id');
+        const savedPhone = localStorage.getItem('teamforge_whatsapp_phone');
+        if (savedToken) setTelegramBotToken(savedToken);
+        if (savedChatId) setTelegramChatId(savedChatId);
+        if (savedPhone) setPhone(savedPhone);
+      } catch {}
+    }
+
     async function loadSecurity() {
       try {
-        const res = await fetch('/api/admin/security');
+        const res = await fetch('/api/admin/security', {
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+          cache: 'no-store',
+        });
         const data = await res.json();
         if (data.success) {
-          if (data.config?.whatsappPhone) setPhone(data.config.whatsappPhone);
+          if (data.config?.whatsappPhone) {
+            setPhone(data.config.whatsappPhone);
+            try { localStorage.setItem('teamforge_whatsapp_phone', data.config.whatsappPhone); } catch {}
+          }
           if (data.config?.whatsappApiKey) setWhatsappApiKey(data.config.whatsappApiKey);
           if (typeof data.config?.alertsEnabled === 'boolean') setAlertsEnabled(data.config.alertsEnabled);
-          if (data.config?.telegramBotToken) setTelegramBotToken(data.config.telegramBotToken);
-          if (data.config?.telegramChatId) setTelegramChatId(data.config.telegramChatId);
+          if (data.config?.telegramBotToken) {
+            setTelegramBotToken(data.config.telegramBotToken);
+            try { localStorage.setItem('teamforge_telegram_token', data.config.telegramBotToken); } catch {}
+          }
+          if (data.config?.telegramChatId) {
+            setTelegramChatId(data.config.telegramChatId);
+            try { localStorage.setItem('teamforge_telegram_chat_id', data.config.telegramChatId); } catch {}
+          }
           if (typeof data.config?.telegramAlertsEnabled === 'boolean') setTelegramAlertsEnabled(data.config.telegramAlertsEnabled);
           if (Array.isArray(data.events)) setEvents(data.events);
         }
@@ -73,19 +97,23 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
     loadSecurity();
 
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora.in';
-    setEmergencyLink(`${origin}/api/admin/emergency-maintenance?key=linkora-sec-emergency-2026&action=activate`);
-  }, []);
+    setEmergencyLink(`${origin}/control-center-7x9`);
+  }, [authToken]);
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
+      try {
+        localStorage.setItem('teamforge_telegram_token', telegramBotToken.trim());
+        localStorage.setItem('teamforge_telegram_chat_id', telegramChatId.trim());
+        localStorage.setItem('teamforge_whatsapp_phone', phone.trim());
+      } catch {}
+
       const res = await fetch('/api/admin/security', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
@@ -116,12 +144,15 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
     setIsSavingTelegram(true);
     setTelegramSaveSuccess(false);
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
+      try {
+        localStorage.setItem('teamforge_telegram_token', telegramBotToken.trim());
+        localStorage.setItem('teamforge_telegram_chat_id', telegramChatId.trim());
+      } catch {}
+
       const res = await fetch('/api/admin/security', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
@@ -153,13 +184,11 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
     setWhatsappAutoSuccess(false);
     setWhatsappAutoError('');
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora.in';
       const res = await fetch('/api/admin/security', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
@@ -188,13 +217,11 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
     setTelegramTestSuccess(false);
     setTelegramTestError('');
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora.in';
       const res = await fetch('/api/admin/security', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
@@ -220,13 +247,11 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
 
   const handleTestWhatsAppAlert = async () => {
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
       const res = await fetch('/api/admin/security', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({

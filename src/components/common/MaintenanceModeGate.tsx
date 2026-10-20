@@ -11,7 +11,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 
 export function MaintenanceModeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
 
   const [maintenance, setMaintenance] = useState<MaintenanceModeConfig>(DEFAULT_MASTER_CONTROL_CONFIG.maintenance);
   const [passcodeAttempt, setPasscodeAttempt] = useState('');
@@ -70,12 +70,41 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  // Handler to turn off maintenance mode and restore public access
+  // Restore public access only after the server authorizes the change.
   const handleTurnOffMaintenance = async () => {
+    if (
+      !session?.access_token ||
+      profile?.is_suspended ||
+      (profile?.role !== 'admin' &&
+        user?.id !== 'c86ce05f-24de-4a1a-a45f-944d4180b508')
+    ) {
+      setErrorMsg('Please sign in with an authorized administrator account.');
+      return;
+    }
+
     setIsDeactivating(true);
+    setErrorMsg('');
+
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || '' : '';
-      const updatedM: MaintenanceModeConfig = { ...maintenance, mode: 'public' };
+      const updatedM: MaintenanceModeConfig = {
+        ...maintenance,
+        mode: 'public',
+      };
+
+      const res = await fetch('/api/admin/master-control', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ config: { maintenance: updatedM } }),
+      });
+
+      if (!res.ok) {
+        setErrorMsg('The server rejected this change. Check administrator access and try again.');
+        return;
+      }
+
       setMaintenance(updatedM);
       setIsPreviewingAsVisitor(false);
 
@@ -86,18 +115,11 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
         localStorage.setItem('linkora_master_control_v1', JSON.stringify(newFull));
         document.cookie = `linkora_master_control_config=${encodeURIComponent(JSON.stringify(newFull))}; path=/; max-age=31536000; SameSite=Lax`;
         window.dispatchEvent(new Event('linkora_master_control_updated'));
-      } catch (e) {}
-
-      await fetch('/api/admin/master-control', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
-        },
-        body: JSON.stringify({ config: { maintenance: updatedM } }),
-      });
-    } catch (e) {
-      console.warn('Turn off maintenance error:', e);
+      } catch {
+        // Server update succeeded; refreshing the local cache is best-effort.
+      }
+    } catch {
+      setErrorMsg('Could not update maintenance mode. Please try again.');
     } finally {
       setIsDeactivating(false);
     }

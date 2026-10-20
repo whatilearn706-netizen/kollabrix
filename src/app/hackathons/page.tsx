@@ -100,16 +100,23 @@ export default function HackathonsPage() {
       // 2. Dual-Layer direct query from platform_settings for instant fallback
       if (isSupabaseConfigured()) {
         try {
-          const { data: settingRow } = await supabase
+          const { data: settingRows } = await supabase
             .from('platform_settings')
-            .select('value')
-            .eq('key', 'deleted_hackathons')
-            .maybeSingle();
+            .select('key, value')
+            .in('key', ['deleted_hackathons', 'site_master_control_config']);
 
-          if (settingRow?.value) {
-            const parsed = parseDeletedHackathons(settingRow.value);
-            deletedIdsList.push(...parsed.deletedIds);
-            if (parsed.deletedTitles) deletedTitlesList.push(...parsed.deletedTitles);
+          if (Array.isArray(settingRows)) {
+            for (const row of settingRows) {
+              if (row.key === 'deleted_hackathons' && row.value) {
+                const parsed = parseDeletedHackathons(row.value);
+                deletedIdsList.push(...parsed.deletedIds);
+                if (parsed.deletedTitles) deletedTitlesList.push(...parsed.deletedTitles);
+              } else if (row.key === 'site_master_control_config' && row.value?.deletedHackathons) {
+                const parsed = parseDeletedHackathons(row.value.deletedHackathons);
+                deletedIdsList.push(...parsed.deletedIds);
+                if (parsed.deletedTitles) deletedTitlesList.push(...parsed.deletedTitles);
+              }
+            }
           }
         } catch (dbErr) {
           console.warn('Direct tombstone check notice:', dbErr);

@@ -66,106 +66,14 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function POST(request: NextRequest) {
-  const forwarded = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown-client';
-  const ip = forwarded.split(',')[0].trim();
-
-  const rate = checkRateLimit(ip);
-  if (!rate.allowed) {
-    sendTelegramSecurityAlert({
-      title: '⛔ Blocked Intruder Probing Admin Portal',
-      description: `IP ${ip} attempted admin access during an active 15-minute security lockout.`,
-      ip,
-      origin: request.nextUrl.origin,
-    }).catch(() => {});
-
-    return NextResponse.json(
-      {
-        authorized: false,
-        error: `⛔ Security lockout active. Too many failed attempts. Please wait ${rate.waitMinutes} minutes before retrying.`,
-        locked: true,
-      },
-      { status: 429 }
-    );
-  }
-
-  try {
-    const body = await request.json().catch(() => ({}));
-    const enteredPasscode = (body.passcode || '').trim();
-
-    const serverSecret = (process.env.ADMIN_PASSCODE || process.env.ADMIN_SECRET_KEY || '').trim();
-
-    if (!serverSecret) {
-      return NextResponse.json(
-        {
-          authorized: false,
-          error: 'Passcode login is not configured on this production environment. Please sign in with your verified founder Google account (goyalmayank142@gmail.com).',
-        },
-        { status: 403 }
-      );
-    }
-
-    if (!enteredPasscode || enteredPasscode !== serverSecret) {
-      const fail = recordFailure(ip);
-
-      const alertTitle = fail.locked ? '🚨 High Alert: Admin Security Lockout Triggered' : '⚠️ Failed Admin Passcode Attempt';
-      const alertDesc = fail.locked
-        ? `IP ${ip} entered 5 incorrect passcodes and has been locked out for 15 minutes.`
-        : `An incorrect admin passcode was entered from IP ${ip}. Remaining attempts: ${fail.remaining}.`;
-
-      sendTelegramSecurityAlert({
-        title: alertTitle,
-        description: alertDesc,
-        ip,
-        origin: request.nextUrl.origin,
-      }).catch(() => {});
-
-      sendAutomatedWhatsAppAlert({
-        title: alertTitle,
-        description: alertDesc,
-        ip,
-        origin: request.nextUrl.origin,
-      }).catch(() => {});
-
-      if (fail.locked) {
-        return NextResponse.json(
-          {
-            authorized: false,
-            error: '⛔ Too many incorrect attempts. Security lockout active for 15 minutes.',
-            locked: true,
-          },
-          { status: 429 }
-        );
-      }
-      return NextResponse.json(
-        {
-          authorized: false,
-          error: `Invalid administrator passcode. (${fail.remaining} attempts remaining before 15-min lockout)`,
-          remaining: fail.remaining,
-        },
-        { status: 401 }
-      );
-    }
-
-    // Success! Clear failures
-    clearFailures(ip);
-
-    return NextResponse.json({
-      authorized: true,
-      user: { id: 'c86ce05f-24de-4a1a-a45f-944d4180b508', email: 'goyalmayank142@gmail.com' },
-      profile: {
-        user_id: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
-        username: 'mayank_admin',
-        display_name: 'Mayank Goyal (Owner)',
-        role: 'admin',
-        status: 'active',
-        is_suspended: false,
-      },
-    });
-  } catch (err: unknown) {
-    return NextResponse.json(
-      { authorized: false, error: 'Verification failed.' },
-      { status: 500 }
-    );
-  }
+export async function POST(_request: NextRequest) {
+  // Passcodes must never grant administrator identity.
+  // Use GET with a real Supabase Bearer token to verify administrator access.
+  return NextResponse.json(
+    {
+      authorized: false,
+      error: 'Passcode authentication is disabled. Sign in with your authorized account and verify your session.',
+    },
+    { status: 403 }
+  );
 }

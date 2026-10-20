@@ -186,11 +186,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         document.cookie = `linkora_user_id=${u.id}; path=/; max-age=31536000; SameSite=Lax`;
         document.cookie = `linkora_user_email=${encodeURIComponent(u.email || '')}; path=/; max-age=31536000; SameSite=Lax`;
 
-        const email = (u.email || '').toLowerCase();
-        if (email === 'goyalmayank142@gmail.com' || u.id === '9343b52f-f7e8-4ed8-a8a1-476829811b53' || p?.role === 'admin') {
-          localStorage.setItem('linkora_admin_session', 'true');
-          document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
-        }
+        // Admin access must be verified by the server, never by a browser-controlled marker.
+        localStorage.removeItem('linkora_admin_session');
+        document.cookie = 'linkora_admin_session=; path=/; max-age=0; SameSite=Lax';
       } else {
         localStorage.removeItem('linkora_auth_user');
         localStorage.removeItem('linkora_auth_user_id');
@@ -258,17 +256,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data) {
-        const email = (currentUser?.email || '').trim().toLowerCase();
-        const isOwner =
-          email === 'goyalmayank142@gmail.com' ||
-          userId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-          userId === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
-
-        if (isOwner) {
-          data.role = 'admin';
-          data.is_suspended = false;
-          data.status = 'active';
-        } else if (data.is_suspended === true || data.status === 'suspended') {
+        // Enforce suspension for every account, including the platform owner.
+        if (data.is_suspended === true || data.status === 'suspended') {
           console.warn('Suspended user detected during profile fetch:', userId);
           await performForcedSignOut(data.suspension_reason || 'This account has been suspended by administration.');
           return null;
@@ -304,14 +293,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           currentUser.user_metadata?.picture ||
           null;
 
-        const isOwner = email.toLowerCase() === 'goyalmayank142@gmail.com' || userId === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
-
         const newProfile: Partial<Profile> = {
           user_id: userId,
           username: initialUsername,
           display_name: initialDisplayName,
           avatar_url: initialAvatar,
-          role: isOwner ? 'admin' : 'student',
+          role: 'student',
           bio: 'College builder excited to collaborate on Linkora projects.',
           skills: [],
           interests: [],
@@ -599,23 +586,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchProfile, performForcedSignOut, user?.id, user?.email]);
 
-  // Instant 1-Click Founder Login (Permanent)
-  const loginAsOwner = useCallback((): boolean => {
-    setUser(DEFAULT_OWNER_USER);
-    setProfile(DEFAULT_OWNER_PROFILE);
-    setIsLoading(false);
-
-    try {
-      localStorage.removeItem('linkora_explicit_signout');
-      localStorage.setItem('linkora_auth_user', JSON.stringify(DEFAULT_OWNER_USER));
-      localStorage.setItem('linkora_auth_profile', JSON.stringify(DEFAULT_OWNER_PROFILE));
-      document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
-      document.cookie = 'linkora_user_email=goyalmayank142@gmail.com; path=/; max-age=31536000; SameSite=Lax';
-      window.dispatchEvent(new Event('linkora_auth_updated'));
-    } catch (e) {}
-
-    return true;
-  }, []);
+  // Client-side owner impersonation is disabled.
+  const loginAsOwner = useCallback((): boolean => false, []);
 
   // Passcode login delegator (Actual verification done strictly server-side)
   const loginWithAdminPasscode = (_passcode: string): boolean => {

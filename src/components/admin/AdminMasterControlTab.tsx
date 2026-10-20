@@ -155,8 +155,6 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
       try {
         const headers: Record<string, string> = {};
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-        const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-        if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
         const res = await fetch('/api/admin/master-control', { headers });
         const data = await res.json();
@@ -207,8 +205,6 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
         'Content-Type': 'application/json',
       };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/admin/master-control', {
         method: 'POST',

@@ -3,6 +3,7 @@ import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { parseDeletedContent, DeletedContentData } from '@/lib/admin/contentSettings';
+import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 
@@ -18,15 +19,24 @@ export async function GET(request: NextRequest) {
 
   if (isSupabaseConfigured()) {
     try {
-      // 1. Fetch deleted projects tombstone setting
-      const { data: settingRow } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'deleted_projects')
-        .maybeSingle();
+      // 1. Fetch deleted projects tombstone setting from master storage or platform_settings
+      try {
+        const master = await getMasterControlRecord();
+        if (master?.deletedProjects) {
+          deletedData = parseDeletedContent(master.deletedProjects);
+        }
+      } catch {}
 
-      if (settingRow?.value) {
-        deletedData = parseDeletedContent(settingRow.value);
+      if (!deletedData.deletedIds || deletedData.deletedIds.length === 0) {
+        const { data: settingRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_projects')
+          .maybeSingle();
+
+        if (settingRow?.value) {
+          deletedData = parseDeletedContent(settingRow.value);
+        }
       }
 
       // 2. Fetch database projects with owner info and counts
@@ -179,18 +189,27 @@ export async function DELETE(request: NextRequest) {
       } catch {}
     }
 
-    // 3. Platform Tombstone: Record in platform_settings['deleted_projects']
+    // 3. Platform Tombstone: Record in master storage & platform_settings['deleted_projects']
     let currentDeleted: DeletedContentData = { deletedIds: [], deletedTitles: [], deletedAt: {} };
     if (isSupabaseConfigured()) {
       try {
-        const { data: settingRow } = await client
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'deleted_projects')
-          .maybeSingle();
+        try {
+          const master = await getMasterControlRecord();
+          if (master?.deletedProjects) {
+            currentDeleted = parseDeletedContent(master.deletedProjects);
+          }
+        } catch {}
 
-        if (settingRow?.value) {
-          currentDeleted = parseDeletedContent(settingRow.value);
+        if (!currentDeleted.deletedIds || currentDeleted.deletedIds.length === 0) {
+          const { data: settingRow } = await client
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'deleted_projects')
+            .maybeSingle();
+
+          if (settingRow?.value) {
+            currentDeleted = parseDeletedContent(settingRow.value);
+          }
         }
 
         const idsToBlock = [projectId, projectId.toLowerCase()];
@@ -205,15 +224,21 @@ export async function DELETE(request: NextRequest) {
         const newDeletedAt = { ...(currentDeleted.deletedAt || {}) };
         newDeletedAt[projectId] = new Date().toISOString();
 
-        await client.from('platform_settings').upsert({
-          key: 'deleted_projects',
-          value: {
-            deletedIds: newDeletedIds,
-            deletedTitles: newDeletedTitles,
-            deletedAt: newDeletedAt,
-          },
-          updated_at: new Date().toISOString(),
-        });
+        const tombstoneVal = {
+          deletedIds: newDeletedIds,
+          deletedTitles: newDeletedTitles,
+          deletedAt: newDeletedAt,
+        };
+
+        await updateMasterControlSubkey('deletedProjects', tombstoneVal);
+
+        try {
+          await client.from('platform_settings').upsert({
+            key: 'deleted_projects',
+            value: tombstoneVal,
+            updated_at: new Date().toISOString(),
+          });
+        } catch {}
       } catch (err) {
         console.warn('Tombstone save notice for deleted project:', err);
       }

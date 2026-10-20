@@ -71,6 +71,14 @@ function getSupabaseClient() {
 // GET: Fetch live hot-patch config for client injector & admin desk
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyAdminSession(request);
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { success: false, error: auth.error || 'Unauthorized' },
+        { status: auth.status || 403, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
     let hotpatch = { ...memoryHotPatch };
 
     const client = getSupabaseClient();

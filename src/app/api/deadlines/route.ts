@@ -1,43 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { CampusDeadlineItem, DEFAULT_CAMPUS_DEADLINES } from '@/types/communityFeatures';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
+import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-const DEADLINES_KEY = 'linkora_deadlines_v1';
-
-function getSupabaseClient() {
-  if (!isSupabaseConfigured()) return null;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseServiceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  if (!supabaseUrl || !supabaseServiceKey) return null;
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-}
-
 // GET: Public fetch of collegiate deadlines
 export async function GET() {
   try {
-    const client = getSupabaseClient();
-    let deadlines: CampusDeadlineItem[] = [...DEFAULT_CAMPUS_DEADLINES];
-
-    if (client) {
-      const { data } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', DEADLINES_KEY)
-        .maybeSingle();
-
-      if (Array.isArray(data?.value) && data.value.length > 0) {
-        deadlines = data.value;
-      }
-    }
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
+    let deadlines: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
+      ? rawDeadlines
+      : [...DEFAULT_CAMPUS_DEADLINES];
 
     // Sort by deadline date ascending (earliest expiring first)
     deadlines.sort(
@@ -75,21 +51,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title and deadline date are required' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
-    if (!client) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
-    }
-
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', DEADLINES_KEY)
-      .maybeSingle();
-
-    let currentList: CampusDeadlineItem[] =
-      Array.isArray(existingRow?.value) && existingRow.value.length > 0
-        ? existingRow.value
-        : [...DEFAULT_CAMPUS_DEADLINES];
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
+    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
+      ? [...rawDeadlines]
+      : [...DEFAULT_CAMPUS_DEADLINES];
 
     const newDeadline: CampusDeadlineItem = {
       id: `dl-${Date.now()}`,
@@ -110,11 +75,10 @@ export async function POST(request: NextRequest) {
       (a, b) => new Date(a.deadlineDate).getTime() - new Date(b.deadlineDate).getTime()
     );
 
-    await client.from('platform_settings').upsert({
-      key: DEADLINES_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    const result = await updateMasterControlSubkey('deadlines', currentList);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save to master database');
+    }
 
     return NextResponse.json({
       success: true,
@@ -142,21 +106,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Deadline ID required' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
-    if (!client) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
-    }
-
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', DEADLINES_KEY)
-      .maybeSingle();
-
-    let currentList: CampusDeadlineItem[] =
-      Array.isArray(existingRow?.value) && existingRow.value.length > 0
-        ? existingRow.value
-        : [...DEFAULT_CAMPUS_DEADLINES];
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
+    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
+      ? [...rawDeadlines]
+      : [...DEFAULT_CAMPUS_DEADLINES];
 
     const idx = currentList.findIndex((d) => d.id === id);
     if (idx === -1) {
@@ -168,11 +121,10 @@ export async function PATCH(request: NextRequest) {
       (a, b) => new Date(a.deadlineDate).getTime() - new Date(b.deadlineDate).getTime()
     );
 
-    await client.from('platform_settings').upsert({
-      key: DEADLINES_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    const result = await updateMasterControlSubkey('deadlines', currentList);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save to master database');
+    }
 
     return NextResponse.json({
       success: true,
@@ -205,29 +157,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Deadline ID required' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
-    if (!client) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
-    }
-
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', DEADLINES_KEY)
-      .maybeSingle();
-
-    let currentList: CampusDeadlineItem[] =
-      Array.isArray(existingRow?.value) && existingRow.value.length > 0
-        ? existingRow.value
-        : [...DEFAULT_CAMPUS_DEADLINES];
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
+    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
+      ? [...rawDeadlines]
+      : [...DEFAULT_CAMPUS_DEADLINES];
 
     currentList = currentList.filter((d) => d.id !== id);
 
-    await client.from('platform_settings').upsert({
-      key: DEADLINES_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    const result = await updateMasterControlSubkey('deadlines', currentList);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to delete from master database');
+    }
 
     return NextResponse.json({
       success: true,

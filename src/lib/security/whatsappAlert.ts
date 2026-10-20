@@ -6,7 +6,6 @@ export async function sendAutomatedWhatsAppAlert({
   ip,
   timestamp,
   origin = 'https://linkora.in',
-  emergencyKey = 'linkora-sec-emergency-2026',
 }: {
   phone?: string;
   apiKey?: string;
@@ -15,7 +14,6 @@ export async function sendAutomatedWhatsAppAlert({
   ip?: string;
   timestamp?: string;
   origin?: string;
-  emergencyKey?: string;
 }) {
   const targetPhone = (phone || process.env.WHATSAPP_PHONE || '').replace(/[^0-9+]/g, '');
   const key = apiKey || process.env.WHATSAPP_CALLMEBOT_APIKEY || '';
@@ -30,8 +28,6 @@ export async function sendAutomatedWhatsAppAlert({
   // Ensure phone has leading +
   const formattedPhone = targetPhone.startsWith('+') ? targetPhone : `+${targetPhone}`;
   const time = timestamp || new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' });
-  const emergencyLink = `${origin}/api/admin/emergency-maintenance?key=${emergencyKey}&action=activate`;
-  const restoreLink = `${origin}/api/admin/emergency-maintenance?key=${emergencyKey}&action=deactivate`;
   const auditLink = `${origin}/control-center-7x9?tab=audit`;
 
   const messageText = 
@@ -47,12 +43,8 @@ ${description ? `📝 *Details*: ${description}\n` : ''}📍 *Source IP*: ${ip |
 1. Review Audit Logs:
 ${auditLink}
 
-2. Put site on instant maintenance if under attack:
-🔴 *1-Tap Instant Maintenance*:
-${emergencyLink}
-
-🟢 *Restore Website Later*:
-${restoreLink}`;
+2. Open the authorized admin dashboard to review and manage maintenance:
+${origin}/control-center-7x9`;
 
   try {
     const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(formattedPhone)}&text=${encodeURIComponent(messageText)}&apikey=${encodeURIComponent(key)}`;

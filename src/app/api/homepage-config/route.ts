@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { getMasterControlRecord } from '@/lib/admin/masterConfigStorage';
 import {
   DEFAULT_HOMEPAGE_INTENT_CONFIG,
   DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
@@ -26,7 +27,36 @@ export async function GET(request: NextRequest) {
     let intentConfig: HomepageIntentConfig = DEFAULT_HOMEPAGE_INTENT_CONFIG;
     let showcaseConfig: HomepageShowcaseConfig = DEFAULT_HOMEPAGE_SHOWCASE_CONFIG;
 
-    if (isSupabaseConfigured()) {
+    // 1. Authoritative Master Control Storage
+    try {
+      const master = await getMasterControlRecord();
+      if (master?.homepageIntent) {
+        intentConfig = {
+          ...DEFAULT_HOMEPAGE_INTENT_CONFIG,
+          ...master.homepageIntent,
+          candidates: Array.isArray(master.homepageIntent.candidates)
+            ? master.homepageIntent.candidates
+            : DEFAULT_HOMEPAGE_INTENT_CONFIG.candidates,
+          projectSlots: Array.isArray(master.homepageIntent.projectSlots)
+            ? master.homepageIntent.projectSlots
+            : DEFAULT_HOMEPAGE_INTENT_CONFIG.projectSlots,
+        };
+      }
+      if (master?.homepageShowcase) {
+        showcaseConfig = {
+          ...DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
+          ...master.homepageShowcase,
+          selectedProjectIds: Array.isArray(master.homepageShowcase.selectedProjectIds)
+            ? master.homepageShowcase.selectedProjectIds
+            : DEFAULT_HOMEPAGE_SHOWCASE_CONFIG.selectedProjectIds,
+        };
+      }
+    } catch (masterErr) {
+      console.warn('Could not read homepage config from masterControlRecord:', masterErr);
+    }
+
+    // 2. Fallback to platform_settings separate rows if master was empty
+    if (isSupabaseConfigured() && (!intentConfig.candidates?.length && !showcaseConfig.selectedProjectIds?.length)) {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
         const supabaseKey =

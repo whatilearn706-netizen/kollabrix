@@ -1,52 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFeatures';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
+import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-const SPARK_TEMPLATES_KEY = 'linkora_spark_templates_v1';
-
-function getSupabaseClient() {
-  if (!isSupabaseConfigured()) return null;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseServiceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  if (!supabaseUrl || !supabaseServiceKey) return null;
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-}
-
-// GET: Public fetch of curated spark templates
-export async function GET() {
+// GET: Returns curated blueprints. Admin sees all blueprints; normal users match dynamically via /api/ai/spark
+export async function GET(request: NextRequest) {
   try {
-    const client = getSupabaseClient();
-    let templates: SparkTemplateItem[] = [...DEFAULT_SPARK_TEMPLATES];
+    const rawTemplates = await getMasterControlSubkey<SparkTemplateItem[]>('sparkTemplates', DEFAULT_SPARK_TEMPLATES);
+    const templates: SparkTemplateItem[] = Array.isArray(rawTemplates) && rawTemplates.length > 0
+      ? rawTemplates
+      : [...DEFAULT_SPARK_TEMPLATES];
 
-    if (client) {
-      const { data } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', SPARK_TEMPLATES_KEY)
-        .maybeSingle();
-
-      if (Array.isArray(data?.value) && data.value.length > 0) {
-        templates = data.value;
-      }
+    const auth = await verifyAdminSession(request);
+    // If admin is authenticated, return the full editable blueprint repository
+    if (auth.authorized) {
+      return NextResponse.json({
+        success: true,
+        templates,
+        totalTemplates: templates.length,
+        isAdmin: true,
+      });
     }
 
+    // For normal users, keep the curated blueprints hidden from public listing so they are matched dynamically via AI Spark
     return NextResponse.json({
       success: true,
-      templates,
+      templates: [], // Hidden from public scrape
       totalTemplates: templates.length,
+      isAdmin: false,
+      message: 'Curated blueprints are matched dynamically via /api/ai/spark',
     });
   } catch (err: any) {
     return NextResponse.json(
-      { templates: DEFAULT_SPARK_TEMPLATES, error: err.message },
+      { templates: [], error: err.message },
       { status: 200 }
     );
   }
@@ -67,21 +57,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title and prompt are required' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
-    if (!client) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
-    }
-
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', SPARK_TEMPLATES_KEY)
-      .maybeSingle();
-
-    let currentList: SparkTemplateItem[] =
-      Array.isArray(existingRow?.value) && existingRow.value.length > 0
-        ? existingRow.value
-        : [...DEFAULT_SPARK_TEMPLATES];
+    const rawTemplates = await getMasterControlSubkey<SparkTemplateItem[]>('sparkTemplates', DEFAULT_SPARK_TEMPLATES);
+    const currentList: SparkTemplateItem[] = Array.isArray(rawTemplates) && rawTemplates.length > 0
+      ? [...rawTemplates]
+      : [...DEFAULT_SPARK_TEMPLATES];
 
     const newTemplate: SparkTemplateItem = {
       id: `spark-${Date.now()}`,
@@ -105,20 +84,19 @@ export async function POST(request: NextRequest) {
 
     currentList.unshift(newTemplate);
 
-    await client.from('platform_settings').upsert({
-      key: SPARK_TEMPLATES_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    const result = await updateMasterControlSubkey('sparkTemplates', currentList);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save to master database');
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Spark template added successfully',
+      message: 'Spark blueprint added successfully',
       template: newTemplate,
       templates: currentList,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to add spark template' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to add spark blueprint' }, { status: 500 });
   }
 }
 
@@ -137,21 +115,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Template ID required' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
-    if (!client) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
-    }
-
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', SPARK_TEMPLATES_KEY)
-      .maybeSingle();
-
-    let currentList: SparkTemplateItem[] =
-      Array.isArray(existingRow?.value) && existingRow.value.length > 0
-        ? existingRow.value
-        : [...DEFAULT_SPARK_TEMPLATES];
+    const rawTemplates = await getMasterControlSubkey<SparkTemplateItem[]>('sparkTemplates', DEFAULT_SPARK_TEMPLATES);
+    const currentList: SparkTemplateItem[] = Array.isArray(rawTemplates) && rawTemplates.length > 0
+      ? [...rawTemplates]
+      : [...DEFAULT_SPARK_TEMPLATES];
 
     const idx = currentList.findIndex((t) => t.id === id);
     if (idx === -1) {
@@ -160,19 +127,18 @@ export async function PATCH(request: NextRequest) {
 
     currentList[idx] = { ...currentList[idx], ...updates };
 
-    await client.from('platform_settings').upsert({
-      key: SPARK_TEMPLATES_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    const result = await updateMasterControlSubkey('sparkTemplates', currentList);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save to master database');
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Template updated successfully',
+      message: 'Spark blueprint updated successfully',
       templates: currentList,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to update template' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to update spark blueprint' }, { status: 500 });
   }
 }
 
@@ -197,36 +163,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Template ID required' }, { status: 400 });
     }
 
-    const client = getSupabaseClient();
-    if (!client) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
-    }
-
-    const { data: existingRow } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', SPARK_TEMPLATES_KEY)
-      .maybeSingle();
-
-    let currentList: SparkTemplateItem[] =
-      Array.isArray(existingRow?.value) && existingRow.value.length > 0
-        ? existingRow.value
-        : [...DEFAULT_SPARK_TEMPLATES];
+    const rawTemplates = await getMasterControlSubkey<SparkTemplateItem[]>('sparkTemplates', DEFAULT_SPARK_TEMPLATES);
+    let currentList: SparkTemplateItem[] = Array.isArray(rawTemplates) && rawTemplates.length > 0
+      ? [...rawTemplates]
+      : [...DEFAULT_SPARK_TEMPLATES];
 
     currentList = currentList.filter((t) => t.id !== id);
 
-    await client.from('platform_settings').upsert({
-      key: SPARK_TEMPLATES_KEY,
-      value: currentList,
-      updated_at: new Date().toISOString(),
-    });
+    const result = await updateMasterControlSubkey('sparkTemplates', currentList);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to delete from master database');
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Template deleted successfully',
+      message: 'Spark blueprint removed successfully',
       templates: currentList,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to delete template' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to delete spark blueprint' }, { status: 500 });
   }
 }

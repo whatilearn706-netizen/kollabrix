@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { sendTelegramSecurityAlert } from '@/lib/security/telegramAlert';
 import { sendAutomatedWhatsAppAlert } from '@/lib/security/whatsappAlert';
+import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
+
+const CONFIG_KEY = 'security_watchdog_v1';
+const EVENTS_KEY = 'security_events_v1';
+const MAX_EVENTS = 50;
+const MAX_FIELD_LENGTH = 500;
 
 const DEFAULT_SECURITY_CONFIG = {
   whatsappPhone: process.env.WHATSAPP_PHONE || '',
@@ -23,284 +29,583 @@ const DEFAULT_SECURITY_CONFIG = {
     xssInjectionPayload: true,
     dbTampering: true,
   },
-  emergencyKey: process.env.EMERGENCY_MAINTENANCE_KEY || 'linkora-sec-emergency-2026',
+  // No hardcoded emergency-key fallback.
+  emergencyKey: process.env.EMERGENCY_MAINTENANCE_KEY || '',
 };
 
-// In-memory fallback
-let memorySecurityConfig = { ...DEFAULT_SECURITY_CONFIG };
-let memorySecurityEvents: any[] = [
-  {
-    id: 'evt-init-1',
-    type: 'guard_active',
-    severity: 'info',
-    title: 'Vercel Serverless & Supabase RLS Active',
-    description: 'Kernel-level row isolation and immutable Git containerization guarding live site.',
-    ip: '127.0.0.1',
-    timestamp: new Date().toISOString(),
-    status: 'neutralized',
-  },
-];
+type SecurityConfig = typeof DEFAULT_SECURITY_CONFIG;
+
+type SecurityEvent = {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  description: string;
+  ip: string;
+  timestamp: string;
+  status: string;
+};
+
+function jsonError(message: string, status: number) {
+  return NextResponse.json(
+    { success: false, error: message },
+    {
+      status,
+      headers: { 'Cache-Control': 'no-store' },
+    }
+  );
+}
 
 function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  if (!supabaseUrl || !supabaseServiceKey) return null;
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) return null;
+
+  return createSupabaseClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
   });
+}
+
+function safeConfig(config: SecurityConfig) {
+  const {
+    whatsappApiKey,
+    emergencyKey,
+    ...adminExposedConfig
+  } = config;
+
+  return {
+    ...adminExposedConfig,
+    telegramBotToken: config.telegramBotToken || '',
+    telegramChatId: config.telegramChatId || '',
+    telegramBotConfigured: Boolean(config.telegramBotToken),
+    telegramChatConfigured: Boolean(config.telegramChatId),
+    whatsappApiKeyConfigured: Boolean(whatsappApiKey),
+    emergencyKeyConfigured: Boolean(emergencyKey),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+}
+
+function cleanText(value: unknown, maxLength = MAX_FIELD_LENGTH): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().slice(0, maxLength);
+}
+
+function validBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
+}
+
+function validSeverity(value: unknown): value is string {
+  return (
+    value === 'info' ||
+    value === 'low' ||
+    value === 'medium' ||
+    value === 'high' ||
+    value === 'critical'
+  );
+}
+
+function safeOrigin(request: NextRequest, suppliedOrigin?: unknown) {
+  const allowedOrigins = new Set<string>();
+
+  for (const value of [
+    process.env.NEXT_PUBLIC_APP_URL,
+    'https://linkora-edu.vercel.app',
+    'https://linkora.in',
+  ]) {
+    if (!value) continue;
+
+    try {
+      allowedOrigins.add(new URL(value).origin);
+    } catch {
+      // Ignore malformed environment values.
+    }
+  }
+
+  const requestOrigin = request.nextUrl.origin;
+
+  try {
+    const requested = new URL(
+      typeof suppliedOrigin === 'string' ? suppliedOrigin : requestOrigin
+    );
+
+    if (
+      requested.protocol === 'https:' &&
+      allowedOrigins.has(requested.origin)
+    ) {
+      return requested.origin;
+    }
+  } catch {
+    // Use the configured fallback below.
+  }
+
+  if (allowedOrigins.has(requestOrigin)) return requestOrigin;
+
+  return process.env.NEXT_PUBLIC_APP_URL
+    ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
+    : 'https://linkora-edu.vercel.app';
+}
+
+async function readSettings() {
+  const client = getSupabaseClient();
+
+  if (!client) {
+    throw new Error('Security settings database is unavailable.');
+  }
+
+  const { data, error } = await client
+    .from('platform_settings')
+    .select('key, value')
+    .in('key', [CONFIG_KEY, EVENTS_KEY]);
+
+  if (error) {
+    console.error('Security settings read failed:', error.message);
+    throw new Error('Could not read security settings from the database.');
+  }
+
+  let config: SecurityConfig = { ...DEFAULT_SECURITY_CONFIG };
+  let events: SecurityEvent[] = [];
+
+  for (const row of data || []) {
+    if (row.key === CONFIG_KEY && isRecord(row.value)) {
+      config = {
+        ...config,
+        ...(row.value as Partial<SecurityConfig>),
+        alertTypes: {
+          ...DEFAULT_SECURITY_CONFIG.alertTypes,
+          ...(isRecord(row.value.alertTypes)
+            ? row.value.alertTypes
+            : {}),
+        },
+      };
+    }
+
+    if (row.key === EVENTS_KEY && Array.isArray(row.value)) {
+      events = row.value.slice(0, MAX_EVENTS) as SecurityEvent[];
+    }
+  }
+
+  // Also read from master control record to ensure persistence across environments
+  try {
+    const master = await getMasterControlRecord();
+    if (master && master.security && isRecord(master.security)) {
+      config = {
+        ...config,
+        ...(master.security as Partial<SecurityConfig>),
+        alertTypes: {
+          ...DEFAULT_SECURITY_CONFIG.alertTypes,
+          ...(isRecord((master.security as any).alertTypes)
+            ? (master.security as any).alertTypes
+            : {}),
+        },
+      };
+    }
+  } catch (e) {}
+
+  return { client, config, events };
+}
+
+async function persistSetting(
+  client: NonNullable<ReturnType<typeof getSupabaseClient>>,
+  key: string,
+  value: unknown
+) {
+  // 1. Authoritative persistence in site_master_control_config
+  await updateMasterControlSubkey(key === CONFIG_KEY ? 'security' : key, value);
+
+  // 2. Also attempt dedicated row upsert if permissions allow
+  try {
+    await client.from('platform_settings').upsert(
+      {
+        key,
+        value,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'key' }
+    );
+  } catch (e) {}
+}
+
+function validateConfigUpdates(input: unknown) {
+  if (!isRecord(input)) {
+    throw new Error('Invalid security settings.');
+  }
+
+  const updates: Record<string, unknown> = {};
+
+  const stringFields = [
+    'whatsappPhone',
+    'whatsappApiKey',
+    'telegramBotToken',
+    'telegramChatId',
+  ] as const;
+
+  for (const key of stringFields) {
+    if (!Object.prototype.hasOwnProperty.call(input, key)) continue;
+
+    const value = input[key];
+
+    // Blank secret fields mean retain the existing credential.
+    if (
+      ['whatsappApiKey', 'telegramBotToken', 'telegramChatId'].includes(key) &&
+      (typeof value !== 'string' || value.trim() === '')
+    ) {
+      continue;
+    }
+
+    if (typeof value !== 'string' || value.length > 1000) {
+      throw new Error(`Invalid value for ${key}.`);
+    }
+
+    updates[key] = value.trim();
+  }
+
+  for (const key of [
+    'telegramAlertsEnabled',
+    'alertsEnabled',
+    'autoMaintenanceOnHighThreat',
+  ] as const) {
+    if (!Object.prototype.hasOwnProperty.call(input, key)) continue;
+
+    if (!validBoolean(input[key])) {
+      throw new Error(`Invalid value for ${key}.`);
+    }
+
+    updates[key] = input[key];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'alertTypes')) {
+    if (!isRecord(input.alertTypes)) {
+      throw new Error('Invalid alert preferences.');
+    }
+
+    const allowedAlertTypes = [
+      'unauthorizedAdminLogin',
+      'rapidRequestSpikes',
+      'xssInjectionPayload',
+      'dbTampering',
+    ] as const;
+
+    const alertTypes: Record<string, boolean> = {};
+
+    for (const key of allowedAlertTypes) {
+      if (!Object.prototype.hasOwnProperty.call(input.alertTypes, key)) {
+        continue;
+      }
+
+      if (!validBoolean(input.alertTypes[key])) {
+        throw new Error(`Invalid alert preference: ${key}.`);
+      }
+
+      alertTypes[key] = input.alertTypes[key];
+    }
+
+    updates.alertTypes = alertTypes;
+  }
+
+  return updates;
 }
 
 export async function GET(request: NextRequest) {
   try {
-    let config = { ...memorySecurityConfig };
-    let events = [...memorySecurityEvents];
+    const auth = await verifyAdminSession(request);
 
-    const client = getSupabaseClient();
-    if (client) {
-      try {
-        const { data } = await client
-          .from('platform_settings')
-          .select('key, value')
-          .in('key', ['security_watchdog_v1', 'security_events_v1']);
-
-        if (Array.isArray(data)) {
-          for (const row of data) {
-            if (row.key === 'security_watchdog_v1' && row.value) {
-              config = { ...config, ...row.value };
-              memorySecurityConfig = config;
-            } else if (row.key === 'security_events_v1' && Array.isArray(row.value)) {
-              events = row.value;
-              memorySecurityEvents = events;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Could not read security config from platform_settings:', err);
-      }
+    if (!auth.authorized) {
+      return jsonError('Unauthorized.', 403);
     }
 
-    return NextResponse.json({
-      success: true,
-      config,
-      events: events.slice(0, 30),
-    });
-  } catch (error: any) {
+    const { config, events } = await readSettings();
+
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch security settings' },
-      { status: 500 }
+      {
+        success: true,
+        config: safeConfig(config),
+        events,
+      },
+      {
+        headers: { 'Cache-Control': 'no-store, private' },
+      }
+    );
+  } catch (error) {
+    console.error(
+      'Security settings GET failed:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+
+    return jsonError(
+      error instanceof Error
+        ? error.message
+        : 'Failed to load security settings.',
+      503
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { action, config, event } = body;
+    const auth = await verifyAdminSession(request);
 
-    const client = getSupabaseClient();
-
-    // Admin actions require verified administrative authorization
-    if (
-      action === 'save_config' ||
-      action === 'generate_whatsapp_alert' ||
-      action === 'send_telegram_test' ||
-      action === 'send_whatsapp_automated_test'
-    ) {
-      const auth = await verifyAdminSession(request);
-      if (!auth.authorized) {
-        return NextResponse.json({ success: false, error: auth.error || 'Unauthorized: Admin authentication required.' }, { status: 403 });
-      }
+    if (!auth.authorized) {
+      return jsonError('Unauthorized.', 403);
     }
 
-    // 1. SAVE CONFIG
-    if (action === 'save_config' && config) {
-      memorySecurityConfig = { ...memorySecurityConfig, ...config };
+    const body: unknown = await request.json();
 
-      if (client) {
+    if (!isRecord(body)) {
+      return jsonError('Invalid request body.', 400);
+    }
+
+    const action = cleanText(body.action, 80);
+    const { client, config: currentConfig, events } = await readSettings();
+
+    // 1. Save settings without accepting arbitrary config properties.
+    if (action === 'save_config') {
+      const updates = validateConfigUpdates(body.config);
+
+      const nextConfig = {
+        ...currentConfig,
+        ...updates,
+        alertTypes: {
+          ...currentConfig.alertTypes,
+          ...(isRecord(updates.alertTypes) ? updates.alertTypes : {}),
+        },
+      } as SecurityConfig;
+
+      await persistSetting(client, CONFIG_KEY, nextConfig);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Security settings saved.',
+        config: safeConfig(nextConfig),
+      });
+    }
+
+    // 2. Log a validated security event.
+    if (action === 'log_event') {
+      if (!isRecord(body.event)) {
+        return jsonError('A valid event is required.', 400);
+      }
+
+      const input = body.event;
+      const title = cleanText(input.title, 160);
+      const description = cleanText(input.description, 500);
+      const type = cleanText(input.type, 80);
+
+      if (!title || !type) {
+        return jsonError('Event title and type are required.', 400);
+      }
+
+      const severity = validSeverity(input.severity)
+        ? input.severity
+        : 'medium';
+
+      const newEvent: SecurityEvent = {
+        id: `sec-${crypto.randomUUID()}`,
+        type,
+        severity,
+        title,
+        description,
+        // Do not trust a client-supplied IP address.
+        ip: 'Server-recorded',
+        timestamp: new Date().toISOString(),
+        status: 'recorded',
+      };
+
+      const nextEvents = [newEvent, ...events].slice(0, MAX_EVENTS);
+
+      await persistSetting(client, EVENTS_KEY, nextEvents);
+
+      // Alert delivery is best-effort. Event persistence is confirmed first.
+      const origin = safeOrigin(request, body.origin);
+
+      if (
+        currentConfig.telegramAlertsEnabled &&
+        currentConfig.telegramBotToken &&
+        currentConfig.telegramChatId
+      ) {
         try {
-          await client.from('platform_settings').upsert({
-            key: 'security_watchdog_v1',
-            value: memorySecurityConfig,
-            updated_at: new Date().toISOString(),
+          const result = await sendTelegramSecurityAlert({
+            botToken: currentConfig.telegramBotToken,
+            chatId: currentConfig.telegramChatId,
+            title: newEvent.title,
+            description: newEvent.description,
+            ip: newEvent.ip,
+            origin,
+            // Prevent the helper's old hardcoded key fallback.
           });
-        } catch (dbErr) {
-          console.warn('Could not save security config to Supabase:', dbErr);
+
+          if (!result.success) {
+            console.error('Telegram alert delivery failed.');
+          }
+        } catch (error) {
+          console.error('Telegram alert delivery failed:', error);
+        }
+      }
+
+      if (
+        currentConfig.alertsEnabled &&
+        currentConfig.whatsappPhone &&
+        currentConfig.whatsappApiKey
+      ) {
+        try {
+          const result = await sendAutomatedWhatsAppAlert({
+            phone: currentConfig.whatsappPhone,
+            apiKey: currentConfig.whatsappApiKey,
+            title: newEvent.title,
+            description: newEvent.description,
+            ip: newEvent.ip,
+            origin,
+          });
+
+          if (!result.success) {
+            console.error('WhatsApp alert delivery failed.');
+          }
+        } catch (error) {
+          console.error('WhatsApp alert delivery failed:', error);
         }
       }
 
       return NextResponse.json({
         success: true,
-        message: 'Security Watchdog, WhatsApp & Telegram alert preferences saved successfully!',
-        config: memorySecurityConfig,
+        event: newEvent,
+        message: 'Security event recorded.',
       });
     }
 
-    // 2. LOG NEW SUSPICIOUS EVENT
-    if (action === 'log_event' && event) {
-      const newEvt = {
-        id: `sec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        type: event.type || 'suspicious_activity',
-        severity: event.severity || 'medium',
-        title: event.title || 'Suspicious Activity Detected',
-        description: event.description || 'An unusual pattern was blocked by the security layer.',
-        ip: event.ip || 'Client Edge',
-        timestamp: new Date().toISOString(),
-        status: 'blocked',
-      };
-
-      memorySecurityEvents.unshift(newEvt);
-
-      if (client) {
-        try {
-          await client.from('platform_settings').upsert({
-            key: 'security_events_v1',
-            value: memorySecurityEvents.slice(0, 50),
-            updated_at: new Date().toISOString(),
-          });
-        } catch (dbErr) {
-          console.warn('Could not save security event to Supabase:', dbErr);
-        }
-      }
-
-      // Auto-dispatch Telegram alert if configured
-      if (
-        memorySecurityConfig.telegramAlertsEnabled !== false &&
-        (memorySecurityConfig.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN) &&
-        (memorySecurityConfig.telegramChatId || process.env.TELEGRAM_CHAT_ID)
-      ) {
-        sendTelegramSecurityAlert({
-          botToken: memorySecurityConfig.telegramBotToken,
-          chatId: memorySecurityConfig.telegramChatId,
-          title: newEvt.title,
-          description: newEvt.description,
-          ip: newEvt.ip,
-          origin: request.nextUrl.origin,
-          emergencyKey: memorySecurityConfig.emergencyKey,
-        }).catch((err) => console.warn('Automatic Telegram alert failed:', err));
-      }
-
-      // Auto-dispatch WhatsApp alert via CallMeBot if configured
-      if (
-        memorySecurityConfig.alertsEnabled !== false &&
-        (memorySecurityConfig.whatsappPhone || process.env.WHATSAPP_PHONE) &&
-        (memorySecurityConfig.whatsappApiKey || process.env.WHATSAPP_CALLMEBOT_APIKEY)
-      ) {
-        sendAutomatedWhatsAppAlert({
-          phone: memorySecurityConfig.whatsappPhone,
-          apiKey: memorySecurityConfig.whatsappApiKey,
-          title: newEvt.title,
-          description: newEvt.description,
-          ip: newEvt.ip,
-          origin: request.nextUrl.origin,
-          emergencyKey: memorySecurityConfig.emergencyKey,
-        }).catch((err) => console.warn('Automatic WhatsApp alert failed:', err));
-      }
-
-      return NextResponse.json({ success: true, event: newEvt });
-    }
-
-    // 3. GENERATE WHATSAPP ALERT TEMPLATE
+    // 3. Generate a WhatsApp message for the admin to send manually.
     if (action === 'generate_whatsapp_alert') {
-      const origin = body.origin || 'https://linkora-link.online';
-      const cleanPhone = (memorySecurityConfig.whatsappPhone || body.phone || '').replace(/[^0-9]/g, '');
-      const eventDetails = body.eventDetails || {
-        title: 'Suspicious Admin Login Attempt Blocked',
-        ip: '103.14.24.89 (New Delhi, India)',
-        timestamp: new Date().toLocaleTimeString(),
-      };
+      const origin = safeOrigin(request, body.origin);
 
-      const emergencyLink = `${origin}/api/admin/emergency-maintenance?key=${memorySecurityConfig.emergencyKey}&action=activate`;
-      const restoreLink = `${origin}/api/admin/emergency-maintenance?key=${memorySecurityConfig.emergencyKey}&action=deactivate`;
+      const phone = cleanText(
+        currentConfig.whatsappPhone || body.phone,
+        40
+      ).replace(/[^0-9]/g, '');
 
-      const messageText = `🚨 *LINKORA SECURITY WATCHDOG ALERT*\n\n` +
-        `⚠️ *Event*: ${eventDetails.title}\n` +
-        `📍 *Source IP*: ${eventDetails.ip}\n` +
-        `🕒 *Time*: ${eventDetails.timestamp}\n\n` +
-        `🛡️ *Platform Status*: Threat neutralized by Edge Firewall & Serverless Sandbox.\n\n` +
-        `💡 *What To Do / Recommended Solution*:\n` +
-        `1. Review live Audit Logs: ${origin}/control-center-7x9?tab=audit\n` +
-        `2. If anything feels broken or under attack, put the site on instant maintenance:\n\n` +
-        `👉 *1-Tap Instant Maintenance Kill-Switch*:\n${emergencyLink}\n\n` +
-        `*(To restore website later: ${restoreLink})*`;
+      const eventDetails = isRecord(body.eventDetails)
+        ? body.eventDetails
+        : {};
 
-      const whatsappUrl = cleanPhone
-        ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(messageText)}`
+      const title = cleanText(
+        eventDetails.title || 'Security event requiring review',
+        160
+      );
+
+      const ip = cleanText(eventDetails.ip || 'Not provided', 80);
+      const timestamp = new Date().toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+      });
+
+      const messageText =
+        `LINKORA SECURITY ALERT\n\n` +
+        `Event: ${title}\n` +
+        `Source: ${ip}\n` +
+        `Time: ${timestamp} IST\n\n` +
+        `Please sign in to Linkora and review the security dashboard.\n` +
+        `${origin}/control-center-7x9`;
+
+      const whatsappUrl = phone
+        ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(messageText)}`
         : `https://api.whatsapp.com/send?text=${encodeURIComponent(messageText)}`;
 
       return NextResponse.json({
         success: true,
         messageText,
         whatsappUrl,
-        emergencyLink,
       });
     }
 
-    // 4. SEND INSTANT TEST TELEGRAM ALERT
+    // 4. Send a Telegram test using entered credentials or saved credentials.
     if (action === 'send_telegram_test') {
-      const origin = body.origin || request.nextUrl.origin || 'https://linkora.in';
-      const botToken = body.botToken || memorySecurityConfig.telegramBotToken;
-      const chatId = body.chatId || memorySecurityConfig.telegramChatId;
+      const botToken =
+        cleanText(body.botToken, 500) || currentConfig.telegramBotToken;
+
+      const chatId =
+        cleanText(body.chatId, 100) || currentConfig.telegramChatId;
 
       if (!botToken || !chatId) {
-        return NextResponse.json({
-          success: false,
-          error: 'Please enter both your Telegram Bot Token and Telegram Chat ID first.',
-        }, { status: 400 });
+        return jsonError(
+          'Configure the Telegram bot token and chat ID first.',
+          400
+        );
       }
 
-      const res = await sendTelegramSecurityAlert({
+      const result = await sendTelegramSecurityAlert({
         botToken,
         chatId,
-        title: 'Security Watchdog Test Alert (Verification)',
-        description: 'Telegram automated security dispatch is operational! Any critical suspicious activity will automatically buzz your phone with 1-tap maintenance controls.',
-        ip: '103.14.24.89 (Simulated Test)',
-        origin,
-        emergencyKey: memorySecurityConfig.emergencyKey,
+        title: 'Linkora Security Watchdog Test',
+        description:
+          'This is a test notification. Review your security dashboard to verify the alert configuration.',
+        ip: 'Test notification',
+        origin: safeOrigin(request, body.origin),
       });
 
       return NextResponse.json({
-        success: res.success,
-        result: res,
-        error: res.success ? undefined : (res as any).error || (res as any).reason || 'Failed to dispatch Telegram message. Check your bot token and chat ID.',
+        success: result.success,
+        error: result.success
+          ? undefined
+          : 'Telegram delivery failed. Verify the bot token, chat ID, and that the bot can message you.',
       });
     }
 
-    // 5. SEND INSTANT TEST AUTOMATED WHATSAPP ALERT (VIA CALLMEBOT)
+    // 5. Send a WhatsApp test using entered credentials or saved credentials.
     if (action === 'send_whatsapp_automated_test') {
-      const origin = body.origin || request.nextUrl.origin || 'https://linkora.in';
-      const phone = body.phone || memorySecurityConfig.whatsappPhone || process.env.WHATSAPP_PHONE;
-      const apiKey = body.apiKey || memorySecurityConfig.whatsappApiKey || process.env.WHATSAPP_CALLMEBOT_APIKEY;
+      const phone =
+        cleanText(body.phone, 40) || currentConfig.whatsappPhone;
+
+      const apiKey =
+        cleanText(body.apiKey, 500) || currentConfig.whatsappApiKey;
 
       if (!phone || !apiKey) {
-        return NextResponse.json({
-          success: false,
-          error: 'Please enter both your WhatsApp Phone number and CallMeBot API Key first.',
-        }, { status: 400 });
+        return jsonError(
+          'Configure the WhatsApp phone number and API key first.',
+          400
+        );
       }
 
-      const res = await sendAutomatedWhatsAppAlert({
+      const result = await sendAutomatedWhatsAppAlert({
         phone,
         apiKey,
-        title: 'Security Watchdog WhatsApp Verification Test',
-        description: 'WhatsApp automated background dispatch is operational! Any critical threats will now automatically buzz your phone with 1-tap maintenance controls.',
-        ip: '103.14.24.89 (Simulated Test)',
-        origin,
-        emergencyKey: memorySecurityConfig.emergencyKey,
+        title: 'Linkora Security Watchdog Test',
+        description:
+          'This is a test notification. Review your security dashboard to verify the alert configuration.',
+        ip: 'Test notification',
+        origin: safeOrigin(request, body.origin),
       });
 
       return NextResponse.json({
-        success: res.success,
-        result: res,
-        error: res.success ? undefined : (res as any).error || (res as any).reason || (res as any).response || 'Failed to dispatch WhatsApp message. Please verify your phone number and CallMeBot API key.',
+        success: result.success,
+        error: result.success
+          ? undefined
+          : 'WhatsApp delivery failed. Verify the phone number, API key, and provider configuration.',
       });
     }
 
-    return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Security action failed' },
-      { status: 500 }
+    return jsonError('Unknown action.', 400);
+  } catch (error) {
+    console.error(
+      'Security API request failed:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+
+    return jsonError(
+      error instanceof Error
+        ? error.message
+        : 'The security request failed.',
+      500
     );
   }
 }

@@ -48,7 +48,9 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/icpc?includeEmpty=true&_t=${Date.now()}`);
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(`/api/icpc?includeEmpty=true&_t=${Date.now()}`, { headers });
       const data = await res.json();
       if (data.success && Array.isArray(data.contests)) {
         setContests(data.contests);
@@ -72,15 +74,17 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [authToken]);
 
   const handleToggleLive = async () => {
     setIsTogglingLive(true);
     const newStatus = !isArenaLive;
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch('/api/icpc', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ isArenaLive: newStatus }),
       });
       const data = await res.json();
@@ -106,8 +110,11 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     if (!deleteTargetProblem) return;
     setIsDeleting(true);
     try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch(`/api/icpc?problemId=${deleteTargetProblem.problem.id}&contestId=${deleteTargetProblem.contestId}`, {
         method: 'DELETE',
+        headers,
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -141,8 +148,11 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     if (!deleteTargetContest) return;
     setIsDeleting(true);
     try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch(`/api/icpc?contestId=${deleteTargetContest.id}`, {
         method: 'DELETE',
+        headers,
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -165,8 +175,11 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const handleClearAll = async () => {
     setIsDeleting(true);
     try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch('/api/icpc?clearAll=true', {
         method: 'DELETE',
+        headers,
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -189,8 +202,11 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const handleResetDefaults = async () => {
     setIsDeleting(true);
     try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch('/api/icpc?resetDefaults=true', {
         method: 'DELETE',
+        headers,
       });
       const data = await res.json();
       if (res.ok && data.success) {

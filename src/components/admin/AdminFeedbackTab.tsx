@@ -43,8 +43,6 @@ export function AdminFeedbackTab({ authToken }: AdminFeedbackTabProps) {
     try {
       const headers: Record<string, string> = {};
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/admin/feedback', { headers });
       const data = await res.json();
@@ -67,8 +65,6 @@ export function AdminFeedbackTab({ authToken }: AdminFeedbackTabProps) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/admin/feedback', {
         method: 'PATCH',
@@ -94,8 +90,6 @@ export function AdminFeedbackTab({ authToken }: AdminFeedbackTabProps) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/admin/feedback', {
         method: 'DELETE',

@@ -68,8 +68,6 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/leaderboard', {
         method: 'POST',
@@ -108,8 +106,6 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch(`/api/leaderboard?id=${id}`, {
         method: 'DELETE',
@@ -133,8 +129,6 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') : null;
-      if (savedPasscode) headers['x-admin-passcode'] = savedPasscode;
 
       const res = await fetch('/api/leaderboard', {
         method: 'PATCH',

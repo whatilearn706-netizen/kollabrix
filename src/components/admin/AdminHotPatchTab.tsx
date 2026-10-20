@@ -61,12 +61,11 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
     // 2. Authoritative server & database sync
     async function loadHotpatch() {
       try {
-        const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || 'admin7x9' : 'admin7x9';
         const res = await fetch(`/api/admin/hotpatch?_t=${Date.now()}`, {
           headers: {
-            'x-admin-passcode': savedPasscode,
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
+          cache: 'no-store',
         });
         const data = await res.json();
         if (data.success && data.hotpatch) {
@@ -140,12 +139,10 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
     setSaveError('');
 
     try {
-      const savedPasscode = typeof window !== 'undefined' ? localStorage.getItem('linkora_admin_passcode') || 'admin7x9' : 'admin7x9';
       const res = await fetch('/api/admin/hotpatch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-passcode': savedPasscode,
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({

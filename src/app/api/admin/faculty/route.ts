@@ -2,10 +2,50 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { FacultyPasscode, parseFacultySettings } from '@/lib/admin/facultyPasscodes';
+import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 
 const SETTINGS_KEY = 'faculty_access_passcodes';
+
+async function loadFacultySettings(client: any) {
+  try {
+    const master = await getMasterControlRecord();
+    if (master?.facultySettings) {
+      return parseFacultySettings(master.facultySettings);
+    }
+  } catch (e) {
+    console.warn('Error reading facultySettings from master config:', e);
+  }
+
+  try {
+    const { data: settingData } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', SETTINGS_KEY)
+      .maybeSingle();
+    return parseFacultySettings(settingData?.value);
+  } catch {
+    return parseFacultySettings(null);
+  }
+}
+
+async function saveFacultySettings(client: any, val: any, updatedBy: string) {
+  await updateMasterControlSubkey('facultySettings', val);
+  try {
+    await client
+      .from('platform_settings')
+      .upsert({
+        key: SETTINGS_KEY,
+        value: val,
+        description: 'Registry of active institutional faculty access passcodes and revoked access list.',
+        updated_at: new Date().toISOString(),
+        updated_by: updatedBy,
+      });
+  } catch (err) {
+    console.warn('Direct platform_settings upsert warning for faculty settings:', err);
+  }
+}
 
 export async function GET(request: NextRequest) {
   const auth = await verifyAdminSession(request);
@@ -20,14 +60,8 @@ export async function GET(request: NextRequest) {
 
   if (isSupabaseConfigured()) {
     try {
-      // 1. Fetch faculty settings from platform_settings
-      const { data: settingData } = await client
-        .from('platform_settings')
-        .select('value')
-        .eq('key', SETTINGS_KEY)
-        .maybeSingle();
-
-      const parsed = parseFacultySettings(settingData?.value);
+      // 1. Fetch faculty settings
+      const parsed = await loadFacultySettings(client);
       passcodes = parsed.passcodes;
       const revokedIds = parsed.revokedUserIds || [];
 
@@ -93,13 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Load current faculty settings
-    const { data: settingData } = await client
-      .from('platform_settings')
-      .select('value')
-      .eq('key', SETTINGS_KEY)
-      .maybeSingle();
-
-    const parsed = parseFacultySettings(settingData?.value);
+    const parsed = await loadFacultySettings(client);
     let currentPasscodes = parsed.passcodes;
     let revokedUserIds = parsed.revokedUserIds;
 
@@ -134,17 +162,7 @@ export async function POST(request: NextRequest) {
 
       currentPasscodes = [newPasscode, ...currentPasscodes];
 
-      const { error: saveErr } = await client
-        .from('platform_settings')
-        .upsert({
-          key: SETTINGS_KEY,
-          value: { passcodes: currentPasscodes, revokedUserIds },
-          description: 'Registry of active institutional faculty access passcodes and revoked access list.',
-          updated_at: new Date().toISOString(),
-          updated_by: safeUpdatedBy,
-        });
-
-      if (saveErr) throw new Error(saveErr.message);
+      await saveFacultySettings(client, { passcodes: currentPasscodes, revokedUserIds }, safeUpdatedBy);
 
       try {
         await recordAdminAuditLog({
@@ -186,16 +204,7 @@ export async function POST(request: NextRequest) {
         return p;
       });
 
-      const { error: saveErr } = await client
-        .from('platform_settings')
-        .upsert({
-          key: SETTINGS_KEY,
-          value: { passcodes: currentPasscodes, revokedUserIds },
-          updated_at: new Date().toISOString(),
-          updated_by: safeUpdatedBy,
-        });
-
-      if (saveErr) throw new Error(saveErr.message);
+      await saveFacultySettings(client, { passcodes: currentPasscodes, revokedUserIds }, safeUpdatedBy);
 
       try {
         await recordAdminAuditLog({
@@ -226,16 +235,7 @@ export async function POST(request: NextRequest) {
       const deletedItem = currentPasscodes.find((p) => p.id === passcodeId);
       currentPasscodes = currentPasscodes.filter((p) => p.id !== passcodeId);
 
-      const { error: saveErr } = await client
-        .from('platform_settings')
-        .upsert({
-          key: SETTINGS_KEY,
-          value: { passcodes: currentPasscodes, revokedUserIds },
-          updated_at: new Date().toISOString(),
-          updated_by: safeUpdatedBy,
-        });
-
-      if (saveErr) throw new Error(saveErr.message);
+      await saveFacultySettings(client, { passcodes: currentPasscodes, revokedUserIds }, safeUpdatedBy);
 
       try {
         await recordAdminAuditLog({
@@ -268,19 +268,7 @@ export async function POST(request: NextRequest) {
         revokedUserIds = [...revokedUserIds, targetUserId];
       }
 
-      const { error: saveErr } = await client
-        .from('platform_settings')
-        .upsert({
-          key: SETTINGS_KEY,
-          value: { passcodes: currentPasscodes, revokedUserIds },
-          description: 'Registry of active institutional faculty access passcodes and revoked access list.',
-          updated_at: new Date().toISOString(),
-          updated_by: auth.user?.id,
-        });
-
-      if (saveErr) {
-        console.warn('Could not save revokedUserIds to platform_settings:', saveErr);
-      }
+      await saveFacultySettings(client, { passcodes: currentPasscodes, revokedUserIds }, safeUpdatedBy);
 
       // 2. Demote role to 'student' in public.profiles
       try {
@@ -332,14 +320,7 @@ export async function POST(request: NextRequest) {
       // Remove from revokedUserIds
       revokedUserIds = revokedUserIds.filter((id) => id !== targetUserId);
 
-      await client
-        .from('platform_settings')
-        .upsert({
-          key: SETTINGS_KEY,
-          value: { passcodes: currentPasscodes, revokedUserIds },
-          updated_at: new Date().toISOString(),
-          updated_by: safeUpdatedBy,
-        });
+      await saveFacultySettings(client, { passcodes: currentPasscodes, revokedUserIds }, safeUpdatedBy);
 
       // Restore role in profiles
       try {

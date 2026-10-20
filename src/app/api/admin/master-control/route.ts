@@ -7,6 +7,7 @@ import {
   DEFAULT_MASTER_CONTROL_CONFIG,
   MasterControlConfig,
 } from '@/types/masterControl';
+import { updateFullMasterControl } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -213,20 +214,15 @@ export async function POST(request: NextRequest) {
         : (auth.dbClient || defaultClient);
 
       try {
-        const { error: upsertErr } = await client.from('platform_settings').upsert({
-          key: MASTER_KEY,
-          value: config,
-          updated_at: new Date().toISOString(),
-        });
-
-        if (upsertErr) {
-          console.warn('Could not write master control to platform_settings DB:', upsertErr);
-          dbError = upsertErr.message;
+        const updateResult = await updateFullMasterControl(config);
+        if (!updateResult.success) {
+          console.warn('Could not write master control to platform_settings DB:', updateResult.error);
+          dbError = updateResult.error || 'Update failed';
         } else {
           savedToDb = true;
         }
       } catch (err: any) {
-        console.warn('Exception during master control DB upsert:', err);
+        console.warn('Exception during master control DB update:', err);
         dbError = err.message || 'Database connection error';
       }
 
