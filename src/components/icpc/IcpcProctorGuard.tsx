@@ -18,6 +18,7 @@ import {
   Camera,
   Layers,
   ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -58,6 +59,7 @@ export function IcpcProctorGuard({
   const [isFullscreenActive, setIsFullscreenActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [warningCount, setWarningCount] = useState(0);
+  const [isCameraMirrored, setIsCameraMirrored] = useState(false);
   const [activeWarning, setActiveWarning] = useState<{
     type: ProctorViolationType;
     message: string;
@@ -75,10 +77,11 @@ export function IcpcProctorGuard({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const proctorIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const warningCountRef = useRef(0);
 
   // 2-Second Persistence Timers
   const fullscreenExitTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const tabBlurTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const focusLostStartTimeRef = useRef<number | null>(null);
   const phoneDetectionStartTimeRef = useRef<number | null>(null);
   const gazeDeviationStartTimeRef = useRef<number | null>(null);
   const recentViolationsRef = useRef<Record<string, number>>({});
@@ -96,7 +99,7 @@ export function IcpcProctorGuard({
       osc.frequency.setValueAtTime(intensity === 'critical' ? 880 : 587.33, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(intensity === 'critical' ? 440 : 880, ctx.currentTime + 0.3);
 
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
 
       osc.connect(gain);
@@ -109,14 +112,15 @@ export function IcpcProctorGuard({
   // Dispatch incident to API & local callback
   const triggerViolation = useCallback(
     async (type: ProctorViolationType, message: string, details: string, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
-      // Cooldown debounce per violation type: max 1 alert per 4 seconds of same type
+      // Cooldown debounce per violation type: max 1 alert per 3.5 seconds of same type
       const now = Date.now();
       const lastTrigger = recentViolationsRef.current[type] || 0;
-      if (now - lastTrigger < 4000) return;
+      if (now - lastTrigger < 3500) return;
       recentViolationsRef.current[type] = now;
 
       playAlertSound(severity === 'critical' ? 'critical' : 'warning');
-      const nextCount = warningCount + 1;
+      warningCountRef.current += 1;
+      const nextCount = warningCountRef.current;
       setWarningCount(nextCount);
 
       const incidentData = {
@@ -157,7 +161,7 @@ export function IcpcProctorGuard({
         console.warn('Failed to report proctor violation:', err);
       }
     },
-    [warningCount, studentId, studentName, studentEmail, college, contestId, contestTitle, problemId, problemTitle, onSecurityIncident, playAlertSound]
+    [studentId, studentName, studentEmail, college, contestId, contestTitle, problemId, problemTitle, onSecurityIncident, playAlertSound]
   );
 
   // Request Wide-Angle Webcam Stream with Reliable Fallback
@@ -215,7 +219,12 @@ export function IcpcProctorGuard({
   const requestArenaFullscreen = useCallback(async () => {
     try {
       if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if ((el as any).webkitRequestFullscreen) {
+          await (el as any).webkitRequestFullscreen();
+        }
       }
       setIsFullscreenActive(true);
       return true;
@@ -225,20 +234,90 @@ export function IcpcProctorGuard({
     }
   }, []);
 
-  // Full-Screen and Tab Visibility Event Listeners (with 2-Second Rule)
+  // ── HIGH-FREQUENCY FOCUS, SIRI, RAYCAST, & DESKTOP GESTURE MONITOR ──
+  // Polls document.hasFocus() & document.hidden every 150ms.
+  // Catches Siri overlay, Raycast, Spotlight, and macOS 4-finger Spaces gestures.
   useEffect(() => {
     if (!isActive) return;
 
-    // Check initial full screen status
+    const checkFocusAndVisibility = () => {
+      const hasFocus = typeof document !== 'undefined' ? document.hasFocus() : true;
+      const isVisible = typeof document !== 'undefined' ? !document.hidden : true;
+      const isCompliant = hasFocus && isVisible;
+
+      if (!isCompliant) {
+        if (!focusLostStartTimeRef.current) {
+          focusLostStartTimeRef.current = Date.now();
+        } else {
+          const elapsed = Date.now() - focusLostStartTimeRef.current;
+          if (elapsed >= 2000) {
+            triggerViolation(
+              'TAB_SWITCH',
+              'Siri / External Application / Desktop Switch Detected',
+              `Contest window lost focus or was moved off-screen for ${(elapsed / 1000).toFixed(1)}s (voice assistant, desktop swipe, or external window active). Screen switching is strictly prohibited.`,
+              'critical'
+            );
+          }
+        }
+      } else {
+        // Returned to compliant state (e.g. swiped 4 fingers back or closed Siri)
+        if (focusLostStartTimeRef.current) {
+          const awayDuration = Date.now() - focusLostStartTimeRef.current;
+          focusLostStartTimeRef.current = null;
+          if (awayDuration >= 2000) {
+            // Student was away for >= 2 seconds before returning
+            triggerViolation(
+              'TAB_SWITCH',
+              'Desktop / External Window Switch Detected',
+              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s (via gesture or external app). Screen switching is prohibited.`,
+              'critical'
+            );
+          }
+        }
+      }
+    };
+
+    const poller = setInterval(checkFocusAndVisibility, 150);
+
+    const handleWindowBlur = () => {
+      if (!focusLostStartTimeRef.current) {
+        focusLostStartTimeRef.current = Date.now();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      checkFocusAndVisibility();
+    };
+
+    const handleVisibilityChange = () => {
+      checkFocusAndVisibility();
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleWindowBlur);
+
+    return () => {
+      clearInterval(poller);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleWindowBlur);
+    };
+  }, [isActive, triggerViolation]);
+
+  // Full-Screen Change Event Listener (with 2-Second Rule)
+  useEffect(() => {
+    if (!isActive) return;
+
     setIsFullscreenActive(Boolean(document.fullscreenElement));
 
-    // Fullscreen change handler
     const handleFullscreenChange = () => {
       const isNowFullscreen = Boolean(document.fullscreenElement);
       setIsFullscreenActive(isNowFullscreen);
 
       if (!isNowFullscreen) {
-        // Start 2-second countdown before firing violation
         if (fullscreenExitTimerRef.current) clearTimeout(fullscreenExitTimerRef.current);
         fullscreenExitTimerRef.current = setTimeout(() => {
           if (!document.fullscreenElement) {
@@ -258,63 +337,17 @@ export function IcpcProctorGuard({
       }
     };
 
-    // Tab visibility & Window blur handler
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        if (tabBlurTimerRef.current) clearTimeout(tabBlurTimerRef.current);
-        tabBlurTimerRef.current = setTimeout(() => {
-          if (document.hidden) {
-            triggerViolation(
-              'TAB_SWITCH',
-              'Tab / Window Switch Detected',
-              'Contestant navigated away from the contest tab for more than 2 seconds.',
-              'critical'
-            );
-          }
-        }, 2000);
-      } else {
-        if (tabBlurTimerRef.current) {
-          clearTimeout(tabBlurTimerRef.current);
-          tabBlurTimerRef.current = null;
-        }
-      }
-    };
-
-    const handleWindowBlur = () => {
-      if (tabBlurTimerRef.current) clearTimeout(tabBlurTimerRef.current);
-      tabBlurTimerRef.current = setTimeout(() => {
-        triggerViolation(
-          'TAB_SWITCH',
-          'Application Focus Lost',
-          'Contest window lost focus for more than 2 seconds (possible external window or application active).',
-          'high'
-        );
-      }, 2000);
-    };
-
-    const handleWindowFocus = () => {
-      if (tabBlurTimerRef.current) {
-        clearTimeout(tabBlurTimerRef.current);
-        tabBlurTimerRef.current = null;
-      }
-    };
-
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       if (fullscreenExitTimerRef.current) clearTimeout(fullscreenExitTimerRef.current);
-      if (tabBlurTimerRef.current) clearTimeout(tabBlurTimerRef.current);
     };
   }, [isActive, triggerViolation]);
 
-  // Real-time Vision Frame Processing (Phone & Eye/Gaze Tracking)
+  // ── REAL-TIME VISION FRAME PROCESSING (Phone & Eye/Gaze Tracking) ──
   useEffect(() => {
     if (!isActive || !hasCameraPermission) return;
 
@@ -333,13 +366,14 @@ export function IcpcProctorGuard({
       const { data, width, height } = frameData;
 
       // ── 1. Face & Gaze Tracking Algorithm ──
-      // Calculate center of mass for skin/face luminance
       let skinPixelCount = 0;
       let sumX = 0;
       let sumY = 0;
+      let leftSkinCount = 0;
+      let rightSkinCount = 0;
 
-      // Sample every 4th pixel for speed (60fps capability)
-      for (let i = 0; i < data.length; i += 16) {
+      // Sample every 3rd pixel for speed & accurate face geometry
+      for (let i = 0; i < data.length; i += 12) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
@@ -347,12 +381,12 @@ export function IcpcProctorGuard({
         // Skin-tone heuristic in RGB space
         const isSkin =
           r > 60 &&
-          g > 40 &&
+          g > 35 &&
           b > 20 &&
           r > g &&
           r > b &&
-          r - g > 15 &&
-          Math.abs(r - g) > 15;
+          r - g > 12 &&
+          Math.abs(r - g) > 12;
 
         if (isSkin) {
           const pixelIdx = i / 4;
@@ -361,13 +395,19 @@ export function IcpcProctorGuard({
           sumX += px;
           sumY += py;
           skinPixelCount++;
+
+          if (px < width / 2) {
+            leftSkinCount++;
+          } else {
+            rightSkinCount++;
+          }
         }
       }
 
       const now = Date.now();
 
-      if (skinPixelCount < 400) {
-        // Face not clearly visible
+      if (skinPixelCount < 250) {
+        // Face missing or obstructed
         setGazeStatus('missing');
         if (!gazeDeviationStartTimeRef.current) {
           gazeDeviationStartTimeRef.current = now;
@@ -375,7 +415,7 @@ export function IcpcProctorGuard({
           triggerViolation(
             'FACE_MISSING',
             'Face Not Detected in Frame',
-            'Contestant face not visible in camera feed for > 2 seconds. Keep your face centered in the wide-angle camera.',
+            'Contestant face not visible in camera proctor feed for > 2 seconds. Keep your face centered in the wide-angle camera.',
             'medium'
           );
         }
@@ -383,21 +423,24 @@ export function IcpcProctorGuard({
         const avgX = sumX / skinPixelCount / width; // normalized 0..1
         const avgY = sumY / skinPixelCount / height; // normalized 0..1
 
-        // Normal zone: center x within 0.28 to 0.72, y within 0.15 to 0.70
-        // (Allows looking slightly down at laptop keyboard)
+        // Face profile asymmetry: turning head left or right shifts visible skin ratio
+        const totalSkin = leftSkinCount + rightSkinCount;
+        const leftRatio = totalSkin > 0 ? leftSkinCount / totalSkin : 0.5;
+
         let isGazeDeviated = false;
         let deviationReason = '';
 
-        if (avgX < 0.25) {
+        // Calibrated sensitivity for lateral gaze/head deviation (left or right)
+        if (avgX < 0.38 || leftRatio > 0.72) {
           setGazeStatus('away_left');
           isGazeDeviated = true;
-          deviationReason = 'Contestant turned head significantly to the left away from monitor.';
-        } else if (avgX > 0.75) {
+          deviationReason = 'Contestant turned head or gaze significantly to the left away from monitor.';
+        } else if (avgX > 0.62 || leftRatio < 0.28) {
           setGazeStatus('away_right');
           isGazeDeviated = true;
-          deviationReason = 'Contestant turned head significantly to the right away from monitor.';
-        } else if (avgY > 0.78) {
-          // Looking excessively downward into lap/under desk (where phone is held)
+          deviationReason = 'Contestant turned head or gaze significantly to the right away from monitor.';
+        } else if (avgY > 0.62) {
+          // Looking excessively downward into lap/desk area where phone is held
           setGazeStatus('down_excessive');
           isGazeDeviated = true;
           deviationReason = 'Contestant looking excessively downward away from the screen into desk/lap area.';
@@ -412,8 +455,8 @@ export function IcpcProctorGuard({
           } else if (now - gazeDeviationStartTimeRef.current >= 2000) {
             triggerViolation(
               'GAZE_DEVIATION',
-              'Suspicious Gaze / Head Pose Detected',
-              `${deviationReason} Looking away for > 2 seconds is flagged.`,
+              'Suspicious Gaze / Looking Away Detected',
+              `${deviationReason} Looking away from contest arena for > 2 seconds is flagged.`,
               'medium'
             );
           }
@@ -421,42 +464,84 @@ export function IcpcProctorGuard({
       }
 
       // ── 2. Smartphone & Mobile Device Detection Algorithm ──
-      // Phones held in hands emit bright screen glow with high contrast rectangular aspect ratios (~1.8-2.2).
-      // Check the lower 50% of the frame (desk/hands zone) for phone-shaped high-contrast rectangles.
+      // Checks the lower 65% of the frame (desk/hands zone) for:
+      // a) Illuminated smartphone screens (bright non-skin rectangular cluster)
+      // b) High-contrast rectangular edge bounding box (aspect ratio ~1.3-2.6)
+      // c) Dark slab mobile phone bodies held in hands
       let phoneCandidateFound = false;
-      const lowerYStart = Math.floor(height * 0.45);
-      let highContrastEdgeCount = 0;
-      let verticalLineSegments = 0;
+      const lowerYStart = Math.floor(height * 0.35);
+      let highContrastEdges = 0;
+      let illuminatedScreenPixels = 0;
+      let darkSlabPixels = 0;
+      let minX = width;
+      let maxX = 0;
+      let minY = height;
+      let maxY = 0;
 
-      for (let y = lowerYStart; y < height - 2; y += 4) {
-        for (let x = 10; x < width - 10; x += 4) {
+      for (let y = lowerYStart; y < height - 2; y += 3) {
+        for (let x = 8; x < width - 8; x += 3) {
           const idx = (y * width + x) * 4;
           const r1 = data[idx];
           const g1 = data[idx + 1];
           const b1 = data[idx + 2];
           const lum1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1;
 
-          // Check right neighbor
-          const r2 = data[idx + 4];
-          const g2 = data[idx + 5];
-          const b2 = data[idx + 6];
-          const lum2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
+          // Check skin tone
+          const isSkin =
+            r1 > 60 &&
+            g1 > 35 &&
+            b1 > 20 &&
+            r1 > g1 &&
+            r1 > b1 &&
+            r1 - g1 > 12;
 
-          const diffX = Math.abs(lum1 - lum2);
-          if (diffX > 65) {
-            highContrastEdgeCount++;
-            // Check vertical continuity
-            const nextRowIdx = ((y + 2) * width + x) * 4;
-            const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
-            if (Math.abs(lumDown - lum1) < 20) {
-              verticalLineSegments++;
-            }
+          // Check right neighbor gradient
+          const r2 = data[idx + 12];
+          const g2 = data[idx + 13];
+          const b2 = data[idx + 14];
+          const lum2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2;
+          const gradX = Math.abs(lum1 - lum2);
+
+          // Check down neighbor gradient
+          const nextRowIdx = ((y + 3) * width + x) * 4;
+          const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
+          const gradY = Math.abs(lum1 - lumDown);
+
+          if (gradX > 35 || gradY > 35) {
+            highContrastEdges++;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+
+          // Illuminated phone screen (bright, cool/white tint, non-skin)
+          if (!isSkin && lum1 > 165 && Math.abs(r1 - b1) < 40) {
+            illuminatedScreenPixels++;
+          }
+
+          // Dark phone slab (low luminance, non-skin)
+          if (!isSkin && lum1 < 45) {
+            darkSlabPixels++;
           }
         }
       }
 
-      // Phone threshold in lower frame
-      if (highContrastEdgeCount > 180 && verticalLineSegments > 60) {
+      const clusterWidth = Math.max(0, maxX - minX);
+      const clusterHeight = Math.max(0, maxY - minY);
+      const aspectRatio = clusterHeight > 0 && clusterWidth > 0 
+        ? Math.max(clusterHeight / clusterWidth, clusterWidth / clusterHeight) 
+        : 1;
+
+      // Phone detected if:
+      // 1) Distinct rectangular edge cluster matching mobile phone dimensions
+      // 2) OR illuminated screen pixel cluster in desk/hands zone
+      // 3) OR dark phone slab held in frame with edges
+      if (
+        (highContrastEdges >= 35 && aspectRatio >= 1.25 && aspectRatio <= 2.8 && clusterHeight >= 25) ||
+        (illuminatedScreenPixels >= 25 && highContrastEdges >= 20) ||
+        (darkSlabPixels >= 45 && highContrastEdges >= 25)
+      ) {
         phoneCandidateFound = true;
       }
 
@@ -465,7 +550,7 @@ export function IcpcProctorGuard({
         if (!phoneDetectionStartTimeRef.current) {
           phoneDetectionStartTimeRef.current = now;
         } else if (now - phoneDetectionStartTimeRef.current >= 2000) {
-          // Detected for more than 2 full seconds!
+          // Detected continuously for >= 2 full seconds!
           triggerViolation(
             'PHONE_DETECTED',
             'Mobile Phone Detected in Camera Feed',
@@ -477,7 +562,7 @@ export function IcpcProctorGuard({
         setPhoneStatus('clear');
         phoneDetectionStartTimeRef.current = null;
       }
-    }, 400);
+    }, 300);
 
     return () => {
       if (proctorIntervalRef.current) {
@@ -520,7 +605,7 @@ export function IcpcProctorGuard({
               <span className="font-mono font-bold text-white text-[11px]">AI Proctor Guard</span>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span
                 className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
                   warningCount === 0
@@ -532,6 +617,18 @@ export function IcpcProctorGuard({
               >
                 {warningCount} Warnings
               </span>
+
+              {/* Mirror / Non-Mirror Orientation Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setIsCameraMirrored((prev) => !prev)}
+                className="text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Toggle between non-mirrored and mirrored camera orientation"
+              >
+                <RefreshCw className="w-2.5 h-2.5" />
+                <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsPipMinimized(!isPipMinimized)}
@@ -556,7 +653,10 @@ export function IcpcProctorGuard({
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover mirror"
+                style={{
+                  transform: isCameraMirrored ? 'scaleX(-1)' : 'scaleX(1)',
+                }}
+                className="w-full h-full object-cover transition-transform duration-200"
               />
 
               {!hasCameraPermission && (
@@ -587,22 +687,28 @@ export function IcpcProctorGuard({
                     }`}
                   >
                     <Smartphone className="w-2.5 h-2.5" />
-                    {phoneStatus === 'suspect' ? 'PHONE SUSPECT' : 'Phone Clear'}
+                    {phoneStatus === 'suspect' ? 'PHONE DETECTED (SUSPECT)' : 'Phone Clear'}
                   </span>
 
                   <span
                     className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
                       gazeStatus === 'normal'
                         ? 'bg-charcoal-950/80 text-emerald-300'
-                        : 'bg-amber-500/80 text-black'
+                        : gazeStatus === 'missing'
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-amber-500 text-black font-extrabold'
                     }`}
                   >
                     <Eye className="w-2.5 h-2.5" />
                     {gazeStatus === 'normal'
-                      ? 'Focus: Screen'
+                      ? 'Focus: Center'
+                      : gazeStatus === 'away_left'
+                      ? 'Gaze: Looking Left'
+                      : gazeStatus === 'away_right'
+                      ? 'Gaze: Looking Right'
                       : gazeStatus === 'down_excessive'
-                      ? 'Gaze: Down'
-                      : 'Gaze: Away'}
+                      ? 'Gaze: Looking Down'
+                      : 'Face: Missing'}
                   </span>
                 </div>
               )}
@@ -670,6 +776,7 @@ export function IcpcProctorGuard({
                 size="sm"
                 className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold"
                 onClick={async () => {
+                  focusLostStartTimeRef.current = null;
                   await requestArenaFullscreen();
                   setActiveWarning(null);
                 }}
