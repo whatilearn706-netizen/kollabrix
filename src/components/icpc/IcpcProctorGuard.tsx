@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { ProctorIncident, ProctorViolationType } from '@/types/icpc';
+import { supabase } from '@/lib/supabase/client';
 
 const MAX_WARNINGS = 10;
 
@@ -289,6 +290,9 @@ export function IcpcProctorGuard({
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           displaySurface: 'monitor',
+          frameRate: { ideal: 30, max: 60 },
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 },
         } as any,
         audio: false,
       });
@@ -440,129 +444,140 @@ export function IcpcProctorGuard({
     playAlertSound,
   ]);
 
-  // ── WEBRTC 60FPS FLUID LIVE SCREEN BROADCASTER TO ADMIN ──
+  // ── WEBRTC 60FPS REAL-TIME SCREEN BROADCASTER (VIA SUPABASE REALTIME WEBSOCKETS) ──
   useEffect(() => {
     if (!isActive || showEntranceModal || isTerminated || !hasScreenPermission) return;
     const stream = screenStreamRef.current;
     if (!stream) return;
 
     let pc: RTCPeerConnection | null = null;
-    let pollInterval: NodeJS.Timeout | null = null;
-    let isCreatingOffer = false;
-    const seenCandidates = new Set<string>();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const pendingCandidates: RTCIceCandidateInit[] = [];
 
-    const setupPeerConnection = async () => {
+    const flushPendingCandidates = async (peerConn: RTCPeerConnection) => {
+      while (pendingCandidates.length > 0) {
+        const cand = pendingCandidates.shift();
+        if (cand) {
+          try {
+            await peerConn.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {}
+        }
+      }
+    };
+
+    const startBroadcasting = async (activeChannel: ReturnType<typeof supabase.channel>) => {
       try {
         if (pc) {
           pc.close();
+          pc = null;
         }
-        seenCandidates.clear();
+        pendingCandidates.length = 0;
 
-        pc = new RTCPeerConnection({
+        const peerConn = new RTCPeerConnection({
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
           ],
         });
+        pc = peerConn;
 
         // Add display video tracks to connection
         stream.getTracks().forEach((track) => {
-          pc?.addTrack(track, stream);
+          peerConn.addTrack(track, stream);
         });
 
-        // Send local candidates
-        pc.onicecandidate = (event) => {
+        // Optimize encoding for 60 FPS fluid streaming & cap at 2.5 Mbps
+        const sender = peerConn.getSenders().find((s) => s.track?.kind === 'video');
+        if (sender) {
+          const params = sender.getParameters();
+          if (!params.encodings || params.encodings.length === 0) {
+            params.encodings = [{}];
+          }
+          params.encodings[0].maxBitrate = 2_500_000; // 2.5 Mbps cap: ultra-sharp text with zero lag
+          params.encodings[0].maxFramerate = 60;
+          sender.setParameters(params).catch(() => {});
+        }
+
+        // Send local candidates immediately over WebSocket
+        peerConn.onicecandidate = (event) => {
           if (event.candidate) {
-            fetch('/api/icpc/proctor/webrtc', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'candidate',
-                studentId,
-                role: 'student',
-                candidate: event.candidate,
-              }),
+            activeChannel.send({
+              type: 'broadcast',
+              event: 'webrtc-candidate',
+              payload: { role: 'student', candidate: event.candidate },
             }).catch(() => {});
           }
         };
 
         // Create and publish SDP offer
-        isCreatingOffer = true;
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-
-        await fetch('/api/icpc/proctor/webrtc', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'offer',
-            studentId,
-            sdp: offer,
-          }),
+        const offer = await peerConn.createOffer({
+          offerToReceiveVideo: false,
+          offerToReceiveAudio: false,
         });
-        isCreatingOffer = false;
+        await peerConn.setLocalDescription(offer);
+
+        // Broadcast offer over WebSocket instantly (< 20ms)
+        activeChannel.send({
+          type: 'broadcast',
+          event: 'webrtc-offer',
+          payload: { sdp: offer, studentId },
+        }).catch(() => {});
       } catch (err) {
         console.warn('WebRTC broadcaster setup error:', err);
-        isCreatingOffer = false;
       }
     };
 
-    setupPeerConnection();
+    // Connect to student's dedicated Supabase Realtime channel
+    channel = supabase.channel(`icpc-proctor-${studentId}`, {
+      config: { broadcast: { self: false } },
+    });
 
-    // Signaling poller for Admin SDP Answer & ICE candidates
-    pollInterval = setInterval(async () => {
-      if (!pc || isCreatingOffer) return;
-
-      try {
-        // Check for Admin SDP Answer or Admin re-offer request
-        const res = await fetch('/api/icpc/proctor/webrtc', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'get_answer',
-            studentId,
-          }),
-        });
-        const data = await res.json();
-
-        if (data.needsOffer) {
-          await setupPeerConnection();
-          return;
-        }
-
-        if (data.answer && pc.signalingState === 'have-local-offer') {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-        }
-
-        // Fetch ICE candidates from admin
-        if (pc.remoteDescription) {
-          const candRes = await fetch('/api/icpc/proctor/webrtc', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'get_candidates',
-              studentId,
-              role: 'student',
-            }),
-          });
-          const candData = await candRes.json();
-          if (Array.isArray(candData.candidates)) {
-            for (const cand of candData.candidates) {
-              const key = cand.candidate || JSON.stringify(cand);
-              if (!seenCandidates.has(key)) {
-                seenCandidates.add(key);
-                pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-              }
-            }
-          }
-        }
-      } catch (e) {
-        // Silently tolerate temporary network glitch
+    // 1. Admin requests fresh stream upon opening theater mode
+    channel.on('broadcast', { event: 'webrtc-request-stream' }, () => {
+      if (channel) {
+        startBroadcasting(channel);
       }
-    }, 1500);
+    });
+
+    // 2. Admin sends SDP Answer back
+    channel.on('broadcast', { event: 'webrtc-answer' }, async (msg: any) => {
+      const sdp = msg?.payload?.sdp;
+      if (sdp && pc && pc.signalingState === 'have-local-offer') {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          await flushPendingCandidates(pc);
+        } catch (e) {
+          console.warn('Error setting remote description on student:', e);
+        }
+      }
+    });
+
+    // 3. Admin sends ICE candidates
+    channel.on('broadcast', { event: 'webrtc-candidate' }, async (msg: any) => {
+      const { role, candidate } = msg?.payload || {};
+      if (role === 'admin' && candidate) {
+        if (pc && pc.remoteDescription) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {}
+        } else {
+          pendingCandidates.push(candidate);
+        }
+      }
+    });
+
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED' && channel) {
+        // Also proactively publish offer so if admin is already watching, it connects immediately
+        startBroadcasting(channel);
+      }
+    });
 
     return () => {
-      if (pollInterval) clearInterval(pollInterval);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       if (pc) {
         pc.close();
       }

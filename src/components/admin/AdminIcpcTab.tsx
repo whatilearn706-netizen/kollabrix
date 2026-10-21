@@ -42,6 +42,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
 import { IcpcContest, IcpcProblem, ProctorIncident, ProctorLiveStats, ProctorViolationType, ActiveProctorSession } from '@/types/icpc';
+import { supabase } from '@/lib/supabase/client';
 
 interface AdminIcpcTabProps {
   authToken?: string;
@@ -474,7 +475,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     }
   }, [activeSessions]);
 
-  // ── WEBRTC CONSUMER FOR 60FPS LIVE THEATER MODE ──
+  // ── WEBRTC 60FPS LIVE THEATER CONSUMER (VIA SUPABASE REALTIME WEBSOCKETS) ──
   useEffect(() => {
     if (!theaterSession) {
       if (theaterPcRef.current) {
@@ -488,29 +489,45 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
 
     const studentId = theaterSession.studentId;
     let isMounted = true;
-    let pollTimer: NodeJS.Timeout | null = null;
-    const seenCandidates = new Set<string>();
+    let pc: RTCPeerConnection | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let timeoutTimer: NodeJS.Timeout | null = null;
+    const pendingCandidates: RTCIceCandidateInit[] = [];
 
     setIsWebRtcConnecting(true);
     setIsWebRtcConnected(false);
     setWebRtcError(null);
 
-    const initWebRtcConsumer = async () => {
+    const flushPendingCandidates = async (peerConn: RTCPeerConnection) => {
+      while (pendingCandidates.length > 0) {
+        const cand = pendingCandidates.shift();
+        if (cand) {
+          try {
+            await peerConn.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {}
+        }
+      }
+    };
+
+    const setupConsumer = () => {
       try {
         if (theaterPcRef.current) {
           theaterPcRef.current.close();
           theaterPcRef.current = null;
         }
 
-        const pc = new RTCPeerConnection({
+        const peerConn = new RTCPeerConnection({
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
           ],
         });
-        theaterPcRef.current = pc;
+        pc = peerConn;
+        theaterPcRef.current = peerConn;
 
-        pc.ontrack = (event) => {
+        // When student's 60 FPS video track arrives
+        peerConn.ontrack = (event) => {
           if (!isMounted) return;
           if (theaterVideoRef.current && event.streams[0]) {
             theaterVideoRef.current.srcObject = event.streams[0];
@@ -520,111 +537,93 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           }
         };
 
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            fetch('/api/icpc/proctor/webrtc', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'candidate',
-                studentId,
-                role: 'admin',
-                candidate: event.candidate,
-              }),
+        // Send admin ICE candidates to student over WebSocket
+        peerConn.onicecandidate = (event) => {
+          if (event.candidate && channel) {
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc-candidate',
+              payload: { role: 'admin', candidate: event.candidate },
             }).catch(() => {});
           }
         };
 
-        // 1. Tell student broadcaster to produce a fresh offer for this viewer
-        await fetch('/api/icpc/proctor/webrtc', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'request_offer',
-            studentId,
-          }),
+        // Connect to student's Supabase Realtime channel
+        channel = supabase.channel(`icpc-proctor-${studentId}`, {
+          config: { broadcast: { self: false } },
         });
 
-        // 2. Poll for the student's SDP offer & ICE candidates
-        let attempts = 0;
-        let offerHandled = false;
-
-        pollTimer = setInterval(async () => {
-          if (!isMounted || !theaterPcRef.current) return;
-          attempts++;
+        // Listen for student's SDP Offer
+        channel.on('broadcast', { event: 'webrtc-offer' }, async (msg: any) => {
+          const sdp = msg?.payload?.sdp;
+          if (!sdp || !isMounted || !pc) return;
 
           try {
-            if (!offerHandled) {
-              const res = await fetch('/api/icpc/proctor/webrtc', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'get_offer', studentId }),
-              });
-              const data = await res.json();
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            await flushPendingCandidates(pc);
 
-              if (data.offer && pc.signalingState === 'stable') {
-                offerHandled = true;
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
 
-                await fetch('/api/icpc/proctor/webrtc', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    action: 'answer',
-                    studentId,
-                    sdp: answer,
-                  }),
-                });
-              }
+            channel?.send({
+              type: 'broadcast',
+              event: 'webrtc-answer',
+              payload: { sdp: answer },
+            }).catch(() => {});
+          } catch (err) {
+            console.warn('Error handling student offer:', err);
+          }
+        });
+
+        // Listen for student's ICE candidates
+        channel.on('broadcast', { event: 'webrtc-candidate' }, async (msg: any) => {
+          const { role, candidate } = msg?.payload || {};
+          if (role === 'student' && candidate) {
+            if (pc && pc.remoteDescription) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (e) {}
             } else {
-              // Retrieve ICE candidates sent by student
-              const cRes = await fetch('/api/icpc/proctor/webrtc', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  action: 'get_candidates',
-                  studentId,
-                  role: 'admin',
-                }),
-              });
-              const cData = await cRes.json();
-              if (Array.isArray(cData.candidates)) {
-                for (const cand of cData.candidates) {
-                  const key = cand.candidate || JSON.stringify(cand);
-                  if (!seenCandidates.has(key)) {
-                    seenCandidates.add(key);
-                    pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-                  }
-                }
-              }
+              pendingCandidates.push(candidate);
             }
-          } catch (e) {
-            // Silently tolerate temporary polling hitch
           }
+        });
 
-          if (attempts > 25 && !offerHandled) {
-            if (isMounted) {
-              setIsWebRtcConnecting(false);
-              setWebRtcError('Waiting for student stream...');
-            }
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED' && channel && isMounted) {
+            // Signal the student to send their 60 FPS screen stream
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc-request-stream',
+              payload: { requestedAt: Date.now() },
+            }).catch(() => {});
           }
-        }, 1000);
+        });
+
+        // Timeout fallback
+        timeoutTimer = setTimeout(() => {
+          if (isMounted && !isWebRtcConnected) {
+            setIsWebRtcConnecting(false);
+            setWebRtcError('Ultra-fast 2s snapshot fallback active while establishing direct P2P stream.');
+          }
+        }, 6000);
+
       } catch (err: any) {
         if (isMounted) {
-          console.warn('Theater WebRTC consumer error:', err);
           setIsWebRtcConnecting(false);
-          setWebRtcError(err.message || 'Failed to connect stream');
+          setWebRtcError(err.message || 'Failed to initialize WebRTC consumer');
         }
       }
     };
 
-    initWebRtcConsumer();
+    setupConsumer();
 
     return () => {
       isMounted = false;
-      if (pollTimer) clearInterval(pollTimer);
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       if (theaterPcRef.current) {
         theaterPcRef.current.close();
         theaterPcRef.current = null;
