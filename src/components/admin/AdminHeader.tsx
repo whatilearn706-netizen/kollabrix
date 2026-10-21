@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -35,6 +36,7 @@ export type AdminTab =
   | 'overview'
   | 'master'
   | 'id_verifications'
+  | 'resources'
   | 'feedback'
   | 'leaderboard'
   | 'deadlines'
@@ -76,6 +78,7 @@ export function AdminHeader({
   const tabs: { id: AdminTab; label: string; icon: any; category: TabCategory }[] = [
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
     { id: 'id_verifications', label: '🎓 Student ID Verifications', icon: GraduationCap, category: 'campus' },
+    { id: 'resources', label: '📚 Learning Resources Hub', icon: BookOpen, category: 'campus' },
     { id: 'hotpatch', label: '🤖 AI Hot-Patch & Code Desk', icon: Code2, category: 'code' },
     { id: 'spark', label: '✨ AI Spark Templates', icon: Sparkles, category: 'code' },
     { id: 'deadlines', label: '⏳ Deadlines Radar', icon: Clock, category: 'campus' },

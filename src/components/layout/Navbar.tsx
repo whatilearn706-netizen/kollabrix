@@ -215,6 +215,31 @@ export function Navbar() {
               </Link>
             );
           })}
+
+          {/* Glowing Collegiate Resources Button */}
+          <Link
+            href="/resources"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={clsx(
+              'relative group/res ml-1 px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 inline-flex items-center gap-1.5 border cursor-pointer shrink-0',
+              isNavbarDark
+                ? 'bg-gradient-to-r from-violet-600/30 via-indigo-600/30 to-cyan-500/30 text-white border-violet-500/50 hover:border-cyan-400 shadow-[0_0_16px_rgba(139,92,246,0.45)] hover:shadow-[0_0_24px_rgba(6,182,212,0.7)] hover:scale-105'
+                : 'bg-gradient-to-r from-violet-50 via-indigo-50/80 to-cyan-50 text-violet-900 border-violet-300 hover:border-violet-500 shadow-[0_0_14px_rgba(139,92,246,0.35)] hover:shadow-[0_0_22px_rgba(139,92,246,0.55)] hover:scale-105'
+            )}
+            title="Collegiate Learning Hub & Roadmaps (Opens in new tab)"
+          >
+            {/* Outer pulsing glow ring */}
+            <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-violet-500 via-pink-500 to-cyan-400 opacity-60 blur-[3px] group-hover/res:opacity-95 animate-pulse pointer-events-none transition-opacity" />
+
+            <span className="relative z-10 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-violet-600 dark:text-cyan-300 group-hover/res:rotate-[-8deg] transition-transform" />
+              <span className="font-extrabold tracking-tight">Resources</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono uppercase tracking-wider bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black shadow-xs">
+                Hub
+              </span>
+            </span>
+          </Link>
         </nav>
 
         {/* Desktop Right Actions */}
@@ -469,6 +494,17 @@ export function Navbar() {
               <Users className="w-4 h-4 text-pink-500" />
               <span>Find Teammates</span>
             </Link>
+
+            <a
+              href="/resources"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-colors shadow-2xs"
+            >
+              <BookOpen className="w-4 h-4 text-violet-600 dark:text-cyan-400" />
+              <span>Learning Resources Hub ↗</span>
+            </a>
 
             <Link
               href="/hackathons"

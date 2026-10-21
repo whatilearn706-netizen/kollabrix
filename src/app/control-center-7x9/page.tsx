@@ -41,6 +41,7 @@ import { AdminFeedbackTab } from '@/components/admin/AdminFeedbackTab';
 import { AdminLeaderboardTab } from '@/components/admin/AdminLeaderboardTab';
 import { AdminDeadlinesTab } from '@/components/admin/AdminDeadlinesTab';
 import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
+import { AdminResourcesTab } from '@/components/admin/AdminResourcesTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
@@ -427,6 +428,12 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
             authToken={authToken}
             defaultSubTab="id_verifications"
           />
+        </div>
+      )}
+
+      {visitedTabs.has('resources') && (
+        <div className={currentTab === 'resources' ? 'block' : 'hidden'}>
+          <AdminResourcesTab authToken={authToken} />
         </div>
       )}
 

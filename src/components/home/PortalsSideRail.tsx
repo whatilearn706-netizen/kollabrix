@@ -15,6 +15,7 @@ import {
   Terminal,
   Clock,
   MessageSquare,
+  BookOpen,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
@@ -32,6 +33,7 @@ interface PortalItem {
   description: string;
   ctaText: string;
   ctaClass: string;
+  openInNewTab?: boolean;
 }
 
 const PORTAL_ITEMS: PortalItem[] = [
@@ -139,6 +141,22 @@ const PORTAL_ITEMS: PortalItem[] = [
     description: 'Collegiate speedruns, ACM rounds & algorithmic ranks.',
     ctaText: 'Enter ICPC',
     ctaClass: 'text-cyan-300',
+  },
+  {
+    id: 'resources',
+    title: 'Resources Hub',
+    href: '/resources',
+    icon: BookOpen,
+    themeColor: 'violet',
+    iconBgClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
+    borderClass: 'border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.25)]',
+    badge: 'LEARNING // ROADMAPS',
+    badgeBgClass: 'bg-violet-500/25 border-violet-400/50',
+    badgeTextClass: 'text-violet-200',
+    description: 'Curated beginner and active learner roadmaps with YouTube tutorials.',
+    ctaText: 'Open Resources',
+    ctaClass: 'text-violet-300',
+    openInNewTab: true,
   },
   {
     id: 'faculty',
@@ -289,9 +307,11 @@ export function PortalsSideRail() {
                   <Link
                     key={item.id}
                     href={item.href}
+                    target={item.openInNewTab ? '_blank' : undefined}
+                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                     className="snap-start w-full h-[38px] flex items-center gap-2 px-1.5 text-left cursor-pointer transition-all duration-200 group rounded-lg hover:bg-slate-500/10 dark:hover:bg-white/10 active:scale-[0.98]"
                     style={{ animationDelay: `${idx * 0.08}s` }}
-                    title={`Open ${item.title}`}
+                    title={`Open ${item.title}${item.openInNewTab ? ' (Opens in new tab)' : ''}`}
                   >
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border transition-all duration-200 ${item.iconBgClass} group-hover:scale-110`}>
                       <Icon className="w-3.5 h-3.5" />
@@ -498,6 +518,17 @@ export function PortalsSideRail() {
                 >
                   <Terminal className="w-2.5 h-2.5" />
                   <span>ICPC</span>
+                </Link>
+                <Link
+                  href="/resources"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleLinkClick('/resources')}
+                  className="px-2 py-1 rounded-lg text-[9px] font-bold text-violet-300 hover:bg-white/10 flex items-center gap-1 transition-all"
+                  title="Collegiate Learning Resources Hub"
+                >
+                  <BookOpen className="w-2.5 h-2.5 text-cyan-300" />
+                  <span>Resources</span>
                 </Link>
                 <Link
                   href="/teacher/dashboard"
