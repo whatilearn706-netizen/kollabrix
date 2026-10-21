@@ -294,11 +294,24 @@ export async function POST(request: NextRequest) {
     if (action === 'caution') {
       const { studentId, message = 'Proctor Warning: Academic integrity caution issued by faculty proctor.' } = body;
       const activeMap = await loadActiveSessions();
-      if (activeMap[studentId]) {
+      if (!activeMap[studentId]) {
+        activeMap[studentId] = {
+          id: studentId,
+          studentId,
+          studentName: studentId,
+          contestId: 'icpc-arena',
+          contestTitle: 'ICPC Contest',
+          warningCount: 0,
+          status: 'cautioned',
+          startedNotified: true,
+          lastHeartbeat: new Date().toISOString(),
+          cautionMessage: message,
+        };
+      } else {
         activeMap[studentId].status = 'cautioned';
         activeMap[studentId].cautionMessage = message;
-        await saveActiveSessions(activeMap);
       }
+      await saveActiveSessions(activeMap);
       return NextResponse.json({ success: true, message: 'Caution alert successfully sent to student.' });
     }
 
@@ -310,8 +323,20 @@ export async function POST(request: NextRequest) {
 
       if (target) {
         target.status = 'demolished';
-        await saveActiveSessions(activeMap);
+      } else {
+        activeMap[studentId] = {
+          id: studentId,
+          studentId,
+          studentName: studentId,
+          contestId: 'icpc-arena',
+          contestTitle: 'ICPC Contest',
+          warningCount: 10,
+          status: 'demolished',
+          startedNotified: true,
+          lastHeartbeat: new Date().toISOString(),
+        };
       }
+      await saveActiveSessions(activeMap);
 
       const newIncident: ProctorIncident = {
         id: `proc-demolish-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

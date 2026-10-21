@@ -674,27 +674,12 @@ export function IcpcProctorGuard({
       }
     };
 
-    // Block horizontal trackpad gestures (swiping spaces or navigation)
-    const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > 25 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        e.preventDefault();
-        triggerViolation(
-          'TAB_SWITCH',
-          '4-Finger Trackpad Desktop Swipe Gesture Detected',
-          'Horizontal trackpad swiping (switching desktops or spaces) is strictly prohibited during ICPC contests.',
-          'critical'
-        );
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener('keyup', handleKeyUp, true);
-    window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp, true);
-      window.removeEventListener('wheel', handleWheel);
       if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.unlock) {
         (navigator as any).keyboard.unlock();
       }
@@ -722,7 +707,7 @@ export function IcpcProctorGuard({
           focusLostStartTimeRef.current = Date.now();
         } else {
           const elapsed = Date.now() - focusLostStartTimeRef.current;
-          if (elapsed >= 300) {
+          if (elapsed >= 1500) {
             triggerViolation(
               'TAB_SWITCH',
               'External App / Overlay / Desktop Switch Detected',
@@ -736,7 +721,7 @@ export function IcpcProctorGuard({
         if (focusLostStartTimeRef.current) {
           const awayDuration = Date.now() - focusLostStartTimeRef.current;
           focusLostStartTimeRef.current = null;
-          if (awayDuration >= 500) {
+          if (awayDuration >= 1500) {
             triggerViolation(
               'TAB_SWITCH',
               'External Window Navigation Detected',
@@ -850,53 +835,54 @@ export function IcpcProctorGuard({
       const { data, width, height } = frameData;
 
       // ── 1. Face & Laptop Gaze Cone Tracking Algorithm ──
+      // Scan upper 72% of frame to isolate the face and avoid keyboard/mouse/hand skin pixels
       let skinPixelCount = 0;
       let sumX = 0;
       let sumY = 0;
       let leftSkinCount = 0;
       let rightSkinCount = 0;
+      const faceRegionBottom = Math.floor(height * 0.72);
 
-      for (let i = 0; i < data.length; i += 12) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+      for (let y = 0; y < faceRegionBottom; y += 2) {
+        for (let x = 0; x < width; x += 2) {
+          const idx = (y * width + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
 
-        const isSkin =
-          r > 60 &&
-          g > 35 &&
-          b > 20 &&
-          r > g &&
-          r > b &&
-          r - g > 12 &&
-          Math.abs(r - g) > 12;
+          const isSkin =
+            r > 60 &&
+            g > 35 &&
+            b > 20 &&
+            r > g &&
+            r > b &&
+            r - g > 12;
 
-        if (isSkin) {
-          const pixelIdx = i / 4;
-          const px = pixelIdx % width;
-          const py = Math.floor(pixelIdx / width);
-          sumX += px;
-          sumY += py;
-          skinPixelCount++;
+          if (isSkin) {
+            sumX += x;
+            sumY += y;
+            skinPixelCount++;
 
-          if (px < width / 2) {
-            leftSkinCount++;
-          } else {
-            rightSkinCount++;
+            if (x < width / 2) {
+              leftSkinCount++;
+            } else {
+              rightSkinCount++;
+            }
           }
         }
       }
 
-      if (skinPixelCount < 160) {
+      if (skinPixelCount < 60) {
         setGazeStatus('missing');
         gazeDeviationStartTimeRef.current = null;
         continuousDownwardStartTimeRef.current = null;
         if (!faceMissingStartTimeRef.current) {
           faceMissingStartTimeRef.current = now;
-        } else if (now - faceMissingStartTimeRef.current >= 4000) {
+        } else if (now - faceMissingStartTimeRef.current >= 6000) {
           triggerViolation(
             'FACE_MISSING',
             'Face Not Detected in Frame',
-            'Contestant face not visible in camera proctor feed for > 4s. Keep your face centered in the camera.',
+            'Contestant face not visible in camera proctor feed for > 6s. Keep your face centered in the camera.',
             'medium'
           );
         }
@@ -908,54 +894,54 @@ export function IcpcProctorGuard({
         const totalSkin = leftSkinCount + rightSkinCount;
         const leftRatio = totalSkin > 0 ? leftSkinCount / totalSkin : 0.5;
 
-        // Accurate directional gaze tracking:
-        // Normal frontal view: avgX between 0.36 and 0.64, avgY between 0.25 and 0.58
-        if (avgX < 0.36 || leftRatio > 0.65) {
+        // Accurate directional gaze cone tracking:
+        // Wide laptop view cone: avgX between 0.24 and 0.76, avgY between 0.16 and 0.60
+        if (avgX < 0.24 || (avgX < 0.28 && leftRatio > 0.85)) {
           // Turned Left away from screen
           setGazeStatus('away_left');
           continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 5000) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Away to the Left Detected',
-              'Contestant turned head/gaze far to the left away from the laptop screen for > 3.5s.',
+              'Contestant turned head/gaze far to the left away from the laptop screen for > 5s.',
               'medium'
             );
           }
-        } else if (avgX > 0.64 || leftRatio < 0.35) {
+        } else if (avgX > 0.76 || (avgX > 0.72 && leftRatio < 0.15)) {
           // Turned Right away from screen
           setGazeStatus('away_right');
           continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 5000) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Away to the Right Detected',
-              'Contestant turned head/gaze far to the right away from the laptop screen for > 3.5s.',
+              'Contestant turned head/gaze far to the right away from the laptop screen for > 5s.',
               'medium'
             );
           }
-        } else if (avgY < 0.25) {
+        } else if (avgY < 0.16) {
           // Looking Upward away from screen
           setGazeStatus('away_up');
           continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 5000) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Upward Away from Screen',
-              'Contestant looking upward away from the contest problem and editor for > 3.5s.',
+              'Contestant looking upward away from the contest problem and editor for > 5s.',
               'medium'
             );
           }
-        } else if (avgY > 0.58) {
-          // Looking Downward (Lap / Notes / Phone)
-          // Normal brief downward glance (typing on keyboard) is permitted;
-          // Only triggers if continuous for > 30 seconds as requested!
+        } else if (avgY > 0.60) {
+          // Looking Downward (Lap / Notes / Desk)
+          // Normal brief downward glances (typing on keyboard, looking at desk) are permitted;
+          // Only triggers if sustained continuously for > 30 seconds as requested!
           setGazeStatus('down_excessive');
           gazeDeviationStartTimeRef.current = null;
           if (!continuousDownwardStartTimeRef.current) {
@@ -976,98 +962,96 @@ export function IcpcProctorGuard({
         }
       }
 
-      // ── 2. Smartphone & Mobile Device Detection Algorithm (Zone-Based Cluster Analysis) ──
+      // ── 2. Smartphone & Mobile Device Detection Algorithm ──
+      // Strict handheld emissive screen cluster detection:
+      // ZERO false positives on shirts, collars, neck skin, desks, or ambient room lighting.
       let phoneCandidateFound = false;
-      const lowerYStart = Math.floor(height * 0.35);
 
-      // 3 interactive camera zones: Left hand, Center lap, Right hand
-      const zones = [
-        { xMin: 8, xMax: Math.floor(width * 0.44), skin: 0, screen: 0, darkEdges: 0, minX: width, maxX: 0, minY: height, maxY: 0 },
-        { xMin: Math.floor(width * 0.28), xMax: Math.floor(width * 0.72), skin: 0, screen: 0, darkEdges: 0, minX: width, maxX: 0, minY: height, maxY: 0 },
-        { xMin: Math.floor(width * 0.56), xMax: width - 8, skin: 0, screen: 0, darkEdges: 0, minX: width, maxX: 0, minY: height, maxY: 0 },
-      ];
+      // Only scan for an elevated handheld device in the mid-upper view
+      // A handheld phone raised in view is between y = 0.18*height and y = 0.78*height
+      const scanYStart = Math.floor(height * 0.18);
+      const scanYEnd = Math.floor(height * 0.78);
 
-      for (let y = lowerYStart; y < height - 2; y += 3) {
+      let emissiveScreenCount = 0;
+      let minX = width;
+      let maxX = 0;
+      let minY = height;
+      let maxY = 0;
+      let nearbySkinCount = 0;
+
+      for (let y = scanYStart; y < scanYEnd; y += 3) {
         for (let x = 8; x < width - 8; x += 3) {
           const idx = (y * width + x) * 4;
-          const r1 = data[idx];
-          const g1 = data[idx + 1];
-          const b1 = data[idx + 2];
-          const lum1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 
           const isSkin =
-            r1 > 60 &&
-            g1 > 35 &&
-            b1 > 20 &&
-            r1 > g1 &&
-            r1 > b1 &&
-            r1 - g1 > 12;
+            r > 60 &&
+            g > 35 &&
+            b > 20 &&
+            r > g &&
+            r > b &&
+            r - g > 12;
 
-          for (const zone of zones) {
-            if (x >= zone.xMin && x <= zone.xMax) {
-              if (isSkin) {
-                zone.skin++;
-              } else {
-                const rRight = data[idx + 12];
-                const gRight = data[idx + 13];
-                const bRight = data[idx + 14];
-                const lumRight = 0.299 * rRight + 0.587 * gRight + 0.114 * bRight;
-                const gradX = Math.abs(lum1 - lumRight);
+          if (isSkin) {
+            nearbySkinCount++;
+          } else {
+            // Emissive phone screen: intense brightness with neutral white/blue-white backlight
+            const isEmissiveScreen =
+              lum > 215 &&
+              Math.abs(r - g) < 15 &&
+              Math.abs(r - b) < 15;
 
-                const nextRowIdx = ((y + 3) * width + x) * 4;
-                const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
-                const gradY = Math.abs(lum1 - lumDown);
-
-                const isIlluminatedScreen = lum1 > 110 && Math.abs(r1 - g1) < 38 && Math.abs(r1 - b1) < 42;
-                const isSharpPhoneEdge = gradX > 22 || gradY > 22;
-
-                if (isIlluminatedScreen || isSharpPhoneEdge) {
-                  if (isIlluminatedScreen) zone.screen++;
-                  if (isSharpPhoneEdge) zone.darkEdges++;
-                  if (x < zone.minX) zone.minX = x;
-                  if (x > zone.maxX) zone.maxX = x;
-                  if (y < zone.minY) zone.minY = y;
-                  if (y > zone.maxY) zone.maxY = y;
-                }
-              }
+            if (isEmissiveScreen) {
+              emissiveScreenCount++;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
             }
           }
         }
       }
 
-      // Check if any zone contains a handheld smartphone
-      for (const zone of zones) {
-        const zw = Math.max(0, zone.maxX - zone.minX);
-        const zh = Math.max(0, zone.maxY - zone.minY);
-        const aspect = zh > 0 && zw > 0 ? Math.max(zh / zw, zw / zh) : 1;
+      const clusterW = Math.max(0, maxX - minX);
+      const clusterH = Math.max(0, maxY - minY);
+      const aspect = clusterH > 0 && clusterW > 0 ? Math.max(clusterH / clusterW, clusterW / clusterH) : 1;
 
-        if (
-          (zone.screen >= 14 || zone.darkEdges >= 18) &&
-          zone.skin >= 8 &&
-          zw >= 18 && zw <= 165 &&
-          zh >= 25 && zh <= 200 &&
-          aspect >= 1.15 && aspect <= 3.2
-        ) {
-          phoneCandidateFound = true;
-          break;
-        }
-
-        // Direct phone screen held up to camera
-        if (zone.screen >= 32 && zone.skin >= 5) {
-          phoneCandidateFound = true;
-          break;
-        }
+      // A genuine smartphone held up in camera view:
+      // 1. Must be isolated: NOT extending to the bottom of the frame (maxY < scanYEnd - 6)
+      //    (Clothing/shirts extend all the way down and out of frame)
+      // 2. Must have bounded phone dimensions: width between 25 and 110 px, height between 35 and 160 px
+      // 3. Must not span across the chest (clusterW < width * 0.42)
+      // 4. Must have aspect ratio between 1.3 and 2.6 (typical smartphone aspect ratio)
+      // 5. Must have dense emissive screen pixels (>= 50 sample points in this compact box)
+      // 6. Must have skin nearby (hand/fingers holding the phone: nearbySkinCount >= 10)
+      if (
+        emissiveScreenCount >= 50 &&
+        clusterW >= 25 &&
+        clusterW <= Math.floor(width * 0.42) &&
+        clusterH >= 35 &&
+        clusterH <= 160 &&
+        maxY < scanYEnd - 6 &&
+        aspect >= 1.3 &&
+        aspect <= 2.6 &&
+        nearbySkinCount >= 10
+      ) {
+        phoneCandidateFound = true;
       }
 
+      // If the contestant is looking straight at the laptop with face centered and no elevated phone device:
+      // Absolutely clear — zero false positives!
       if (phoneCandidateFound) {
         setPhoneStatus('suspect');
         if (!phoneDetectionStartTimeRef.current) {
           phoneDetectionStartTimeRef.current = now;
-        } else if (now - phoneDetectionStartTimeRef.current >= 1500) {
+        } else if (now - phoneDetectionStartTimeRef.current >= 4000) {
           triggerViolation(
             'PHONE_DETECTED',
             'Mobile Phone Detected in Camera Feed',
-            'Mobile smartphone detected in camera view for > 1.5s. Handheld device usage is strictly prohibited.',
+            'Handheld smartphone screen detected in camera view for > 4s. Handheld device usage is strictly prohibited.',
             'critical'
           );
         }

@@ -338,19 +338,25 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   // Instant Real-Time WebSocket Command Broadcaster
   const sendRealtimeProctorCommand = useCallback((studentId: string, event: 'admin-caution' | 'admin-demolish', payload: any) => {
     try {
-      const ch = supabase.channel(`icpc-proctor-${studentId}`, { config: { broadcast: { self: false } } });
-      ch.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          ch.send({
-            type: 'broadcast',
-            event,
-            payload,
-          }).catch(() => {});
-          setTimeout(() => {
-            try { supabase.removeChannel(ch); } catch (e) {}
-          }, 1500);
-        }
-      });
+      const channelName = `icpc-proctor-${studentId}`;
+      const ch = supabase.channel(channelName, { config: { broadcast: { self: false } } });
+      const doSend = () => {
+        ch.send({
+          type: 'broadcast',
+          event,
+          payload,
+        }).catch(() => {});
+      };
+
+      if ((ch as any).state === 'joined') {
+        doSend();
+      } else {
+        ch.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            doSend();
+          }
+        });
+      }
     } catch (err) {
       console.warn('Realtime proctor command failed:', err);
     }
