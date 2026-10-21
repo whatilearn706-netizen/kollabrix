@@ -427,7 +427,8 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
       {/* Profile Completeness Checklist */}
       <ProfileCompleteness profile={previewProfile} />
 
@@ -898,28 +899,29 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           {isOnboarding ? 'Complete Setup & Explore Projects' : 'Save Profile'}
         </Button>
       </div>
-
-      {/* College Student ID Verification Modal */}
-      <CollegeIdVerificationModal
-        isOpen={isIdModalOpen}
-        onClose={() => setIsIdModalOpen(false)}
-        collegeName={college}
-        userId={user?.id || initialProfile?.user_id}
-        username={user?.user_metadata?.username || initialProfile?.username || username}
-        email={user?.email || ''}
-        onCollegeNameChange={(name) => setCollege(name)}
-        onSubmitted={(request) => {
-          setVerificationStatus('pending');
-          if (request?.collegeName) {
-            setCollege(request.collegeName);
-          }
-        }}
-        onVerified={(verifiedCollege) => {
-          setCollege(verifiedCollege);
-          setIsCollegeVerified(true);
-          setVerificationStatus('approved');
-        }}
-      />
     </form>
+
+    {/* College Student ID Verification Modal - Rendered outside the form to prevent nested form collision */}
+    <CollegeIdVerificationModal
+      isOpen={isIdModalOpen}
+      onClose={() => setIsIdModalOpen(false)}
+      collegeName={college}
+      userId={user?.id || initialProfile?.user_id}
+      username={user?.user_metadata?.username || initialProfile?.username || username}
+      email={user?.email || ''}
+      onCollegeNameChange={(name) => setCollege(name)}
+      onSubmitted={(request) => {
+        setVerificationStatus('pending');
+        if (request?.collegeName) {
+          setCollege(request.collegeName);
+        }
+      }}
+      onVerified={(verifiedCollege) => {
+        setCollege(verifiedCollege);
+        setIsCollegeVerified(true);
+        setVerificationStatus('approved');
+      }}
+    />
+  </>
   );
 }
