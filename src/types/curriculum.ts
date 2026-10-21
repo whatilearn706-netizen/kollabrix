@@ -66,4 +66,5 @@ export interface LanguageCurriculum {
   prerequisites: string[];
   outcomes: string[];
   steps: LearningStep[];
+  isLive?: boolean;
 }

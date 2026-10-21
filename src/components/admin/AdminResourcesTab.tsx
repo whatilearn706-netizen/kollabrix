@@ -21,6 +21,10 @@ import {
   Code2,
   Lightbulb,
   ListVideo,
+  Eye,
+  EyeOff,
+  Radio,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -64,6 +68,22 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
   const [newStepVideoUrl, setNewStepVideoUrl] = useState('');
   const [newStepInstructor, setNewStepInstructor] = useState('Campus Mentor');
   const [newStepDuration, setNewStepDuration] = useState('35m');
+
+  // Add Skill Modal state
+  const [isAddSkillModalOpen, setIsAddSkillModalOpen] = useState(false);
+  const [newSkillTitle, setNewSkillTitle] = useState('');
+  const [newSkillTrack, setNewSkillTrack] = useState<'beginner' | 'learning'>('beginner');
+  const [newSkillIcon, setNewSkillIcon] = useState('⚡');
+  const [newSkillTagline, setNewSkillTagline] = useState('');
+  const [newSkillDescription, setNewSkillDescription] = useState('');
+  const [newSkillCompilerLang, setNewSkillCompilerLang] = useState<'java' | 'cpp' | 'python' | 'javascript'>('python');
+  const [newSkillCompilerName, setNewSkillCompilerName] = useState('CPython 3.12 (Python)');
+  const [newSkillIsLive, setNewSkillIsLive] = useState(true);
+  const [newSkillStepTitle, setNewSkillStepTitle] = useState('Step 1: Introduction & First Code');
+  const [newSkillStepTime, setNewSkillStepTime] = useState('2 Hours');
+  const [newSkillVideoTitle, setNewSkillVideoTitle] = useState('');
+  const [newSkillVideoUrl, setNewSkillVideoUrl] = useState('');
+  const [newSkillInstructor, setNewSkillInstructor] = useState('Campus Tech Mentor');
 
   // Study Material form state
   const [studyOverview, setStudyOverview] = useState('');
@@ -418,6 +438,149 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
     }
   };
 
+  // 8. TOGGLE LIVE / DRAFT STATUS
+  const handleToggleLive = async (targetCurrId?: string) => {
+    const idToToggle = targetCurrId || currentCurriculum.id;
+    const curr = curriculaMap[idToToggle];
+    if (!curr) return;
+    const currentStatus = curr.isLive !== false;
+    const nextStatus = !currentStatus;
+
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/curriculum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggle_live',
+          curriculumId: idToToggle,
+          isLive: nextStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.curricula) {
+        setCurriculaMap(data.curricula);
+        setStatusMessage({
+          type: 'success',
+          text: `"${curr.title}" is now ${nextStatus ? 'LIVE on the student learning hub! 🟢' : 'set to DRAFT (Not Live). Hidden from students. 🟡'}`,
+        });
+      } else {
+        alert(data.error || 'Failed to toggle status');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Network error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 9. DELETE SKILL / CURRICULUM
+  const handleDeleteSkill = async (targetCurrId?: string) => {
+    const idToDelete = targetCurrId || currentCurriculum.id;
+    const curr = curriculaMap[idToDelete];
+    if (!curr) return;
+    if (Object.keys(curriculaMap).length <= 1) {
+      alert('Cannot delete the last remaining skill course.');
+      return;
+    }
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete the skill "${curr.title}" (${curr.track.toUpperCase()})?\n\nThis will remove all its ${curr.steps.length} steps, videos, practice questions, and study materials.`
+      )
+    ) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/curriculum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_curriculum',
+          curriculumId: idToDelete,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.curricula) {
+        setCurriculaMap(data.curricula);
+        const remainingKeys = Object.keys(data.curricula);
+        setSelectedCurriculumId(remainingKeys[0]);
+        setSelectedStepNumber(1);
+        setStatusMessage({
+          type: 'success',
+          text: `Deleted skill "${curr.title}" successfully!`,
+        });
+      } else {
+        alert(data.error || 'Failed to delete skill');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Delete failed');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 10. ADD NEW SKILL / CURRICULUM
+  const handleAddSkill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSkillTitle.trim()) {
+      alert('Skill title is required');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const ytId = extractYouTubeId(newSkillVideoUrl);
+      const res = await fetch('/api/curriculum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_curriculum',
+          newCurriculum: {
+            title: newSkillTitle.trim(),
+            track: newSkillTrack,
+            language: newSkillTitle.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+            icon: newSkillIcon.trim() || '💻',
+            tagline: newSkillTagline.trim() || 'Master practical skills with hands-on labs and step lectures',
+            description: newSkillDescription.trim() || `Comprehensive collegiate curriculum for ${newSkillTitle}.`,
+            compilerLanguage: newSkillCompilerLang,
+            compilerDisplayName: newSkillCompilerName.trim() || 'Standard Runtime',
+            isLive: newSkillIsLive,
+            initialStepTitle: newSkillStepTitle.trim() || 'Step 1: Introduction & Environment Setup',
+            initialStepTime: newSkillStepTime.trim() || '2 Hours',
+            initialVideoTitle: newSkillVideoTitle.trim() || `${newSkillTitle} Orientation & First Code`,
+            initialVideoUrl: newSkillVideoUrl.trim(),
+            initialYoutubeId: ytId,
+            initialInstructor: newSkillInstructor.trim() || 'Campus Tech Mentor',
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.curricula && data.createdId) {
+        setCurriculaMap(data.curricula);
+        setSelectedCurriculumId(data.createdId);
+        setSelectedStepNumber(1);
+        setIsAddSkillModalOpen(false);
+        // Reset form
+        setNewSkillTitle('');
+        setNewSkillTagline('');
+        setNewSkillDescription('');
+        setNewSkillVideoUrl('');
+        setNewSkillVideoTitle('');
+        setStatusMessage({
+          type: 'success',
+          text: `Added new skill "${newSkillTitle}" (${newSkillIsLive ? 'LIVE' : 'DRAFT'}) successfully!`,
+        });
+      } else {
+        alert(data.error || 'Failed to add skill');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Network error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const stepVideos: TopicVideo[] = (currentStep?.videos && currentStep.videos.length > 0)
     ? currentStep.videos
     : currentStep?.video
@@ -484,9 +647,103 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
 
       {/* Language & Step Selectors */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
+        {/* Top Skill Overview & Action Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/80">
+              {currentCurriculum.icon}
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">{currentCurriculum.title}</h3>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${currentCurriculum.badgeBg}`}>
+                  {currentCurriculum.track.toUpperCase()}
+                </span>
+                {/* LIVE / DRAFT STATUS BADGE */}
+                {currentCurriculum.isLive !== false ? (
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    LIVE ON HUB
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    DRAFT (NOT LIVE)
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5 font-mono">
+                Compiler: {currentCurriculum.compilerDisplayName} • {currentCurriculum.steps.length} Steps
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Toggle Live / Not Live button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleToggleLive()}
+              disabled={isSaving}
+              className={`text-xs flex items-center gap-1.5 ${
+                currentCurriculum.isLive !== false
+                  ? 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
+                  : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+              }`}
+            >
+              {currentCurriculum.isLive !== false ? (
+                <>
+                  <EyeOff className="w-3.5 h-3.5" />
+                  Make Draft (Not Live)
+                </>
+              ) : (
+                <>
+                  <Eye className="w-3.5 h-3.5" />
+                  Publish Live to Students
+                </>
+              )}
+            </Button>
+
+            {/* + Add New Skill Button */}
+            <Button
+              size="sm"
+              onClick={() => setIsAddSkillModalOpen(true)}
+              className="text-xs bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              Add New Skill
+            </Button>
+
+            {/* Delete Skill Button */}
+            {Object.keys(curriculaMap).length > 1 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleDeleteSkill()}
+                disabled={isSaving}
+                className="text-xs border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                title="Delete this skill and all its steps"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                Delete Skill
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Informational banner when in Draft */}
+        {currentCurriculum.isLive === false && (
+          <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>
+              <strong>Draft Mode:</strong> This skill is currently hidden from students on the learning hub. You can safely add steps, lectures, practice questions, and notes. When ready, click <strong>Publish Live to Students</strong>.
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-slate-400 font-mono mb-1.5 block">Select Curriculum Course:</label>
+            <label className="text-xs text-slate-400 font-mono mb-1.5 block">Select Skill / Curriculum:</label>
             <select
               value={selectedCurriculumId}
               onChange={(e) => {
@@ -497,7 +754,7 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
             >
               {Object.values(curriculaMap).map((curr) => (
                 <option key={curr.id} value={curr.id}>
-                  {curr.icon} {curr.title} ({curr.track.toUpperCase()})
+                  {curr.icon} {curr.title} ({curr.track.toUpperCase()}) {curr.isLive === false ? '• [DRAFT]' : ''}
                 </option>
               ))}
             </select>
@@ -1105,6 +1362,179 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
               className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium"
             >
               Add Step {currentCurriculum.steps.length + 1}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 4: ADD NEW SKILL / CURRICULUM */}
+      <Modal
+        isOpen={isAddSkillModalOpen}
+        onClose={() => setIsAddSkillModalOpen(false)}
+        title="Add New Collegiate Skill / Language Curriculum"
+        maxWidth="2xl"
+      >
+        <form onSubmit={handleAddSkill} className="space-y-4">
+          <div className="p-3 bg-indigo-950/40 rounded-xl border border-indigo-500/30 text-xs text-indigo-300 font-mono">
+            Create a custom skill curriculum. You can publish it <strong>LIVE</strong> immediately or keep it as a <strong>DRAFT</strong> while you organize videos, practice questions, and notes.
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="text-xs text-slate-400 font-mono block mb-1">Skill / Language Title:</label>
+              <Input
+                required
+                value={newSkillTitle}
+                onChange={(e) => setNewSkillTitle(e.target.value)}
+                placeholder="e.g. Rust Systems Programming"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 font-mono block mb-1">Track Level:</label>
+              <select
+                value={newSkillTrack}
+                onChange={(e) => setNewSkillTrack(e.target.value as 'beginner' | 'learning')}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="beginner">🐣 Beginner Track</option>
+                <option value="learning">🚀 Active Learner Track</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 font-mono block mb-1">Icon (Emoji):</label>
+              <Input
+                value={newSkillIcon}
+                onChange={(e) => setNewSkillIcon(e.target.value)}
+                placeholder="e.g. 🦀 or 🐹 or 📱"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 font-mono block mb-1">Compiler Sandbox Engine:</label>
+              <select
+                value={newSkillCompilerLang}
+                onChange={(e) => setNewSkillCompilerLang(e.target.value as any)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="python">Python (CPython 3.12)</option>
+                <option value="cpp">C++ (GCC 13 / C++20)</option>
+                <option value="java">Java (OpenJDK 21)</option>
+                <option value="javascript">JavaScript / Node.js 20</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 font-mono block mb-1">Compiler Display Name:</label>
+              <Input
+                value={newSkillCompilerName}
+                onChange={(e) => setNewSkillCompilerName(e.target.value)}
+                placeholder="e.g. Rust 1.76 (GCC Engine)"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 font-mono block mb-1">Punchy Tagline:</label>
+            <Input
+              value={newSkillTagline}
+              onChange={(e) => setNewSkillTagline(e.target.value)}
+              placeholder="e.g. Memory safety without garbage collection & high throughput concurrency"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 font-mono block mb-1">Course Description:</label>
+            <Textarea
+              rows={2}
+              value={newSkillDescription}
+              onChange={(e) => setNewSkillDescription(e.target.value)}
+              placeholder="Detailed description of what students will achieve in this course..."
+            />
+          </div>
+
+          {/* Initial Step 1 Details */}
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+            <div className="text-xs font-mono text-indigo-400 font-semibold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Initial Step 1 Configuration (You can add more steps anytime)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">Step 1 Title:</label>
+                <Input
+                  value={newSkillStepTitle}
+                  onChange={(e) => setNewSkillStepTitle(e.target.value)}
+                  placeholder="e.g. Step 1: Toolchain Setup & First Program"
+                  className="text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">Estimated Duration:</label>
+                <Input
+                  value={newSkillStepTime}
+                  onChange={(e) => setNewSkillStepTime(e.target.value)}
+                  placeholder="e.g. 2 Hours"
+                  className="text-xs"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">Primary Video Lecture Title:</label>
+                <Input
+                  value={newSkillVideoTitle}
+                  onChange={(e) => setNewSkillVideoTitle(e.target.value)}
+                  placeholder="e.g. Full Rust Beginners Crash Course"
+                  className="text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">YouTube URL or Video ID:</label>
+                <Input
+                  value={newSkillVideoUrl}
+                  onChange={(e) => setNewSkillVideoUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Publish Status Toggle */}
+          <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold text-white">Publish Status</div>
+              <div className="text-[11px] text-slate-400">
+                {newSkillIsLive
+                  ? 'Skill will be immediately LIVE and visible to students.'
+                  : 'Skill will be saved as DRAFT (Not Live). Hidden from students until published.'}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={newSkillIsLive}
+                onChange={(e) => setNewSkillIsLive(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className={`text-xs font-mono font-bold ${newSkillIsLive ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {newSkillIsLive ? 'Publish Live 🟢' : 'Draft Only 🟡'}
+              </span>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button variant="outline" type="button" onClick={() => setIsAddSkillModalOpen(false)} size="sm">
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+              size="sm"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium"
+            >
+              Create Skill Curriculum
             </Button>
           </div>
         </form>

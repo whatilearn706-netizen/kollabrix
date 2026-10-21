@@ -1,4 +1,4 @@
-export type ResourceLanguage = 'java' | 'cpp' | 'python' | 'web_dev' | 'dsa' | 'app_dev';
+export type ResourceLanguage = 'java' | 'cpp' | 'python' | 'web_dev' | 'dsa' | 'app_dev' | string;
 
 export type ResourceTrack = 'beginner' | 'learning' | 'both';
 

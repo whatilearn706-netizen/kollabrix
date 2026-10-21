@@ -72,6 +72,160 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, curricula: memoryCurricula });
     }
 
+    // Action: Create brand new Curriculum / Skill
+    if (action === 'create_curriculum' && body.newCurriculum) {
+      const c = body.newCurriculum;
+      const baseId = c.id || `${c.language || 'skill'}-${c.track || 'beginner'}`;
+      let newId = baseId.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+      if (memoryCurricula[newId]) {
+        newId = `${newId}-${Date.now().toString().slice(-4)}`;
+      }
+
+      const initialStepTitle = c.initialStepTitle?.trim() || 'Step 1: Syntax & Environment Setup';
+      const newCurriculumObj: LanguageCurriculum = {
+        id: newId,
+        language: c.language || 'custom',
+        track: c.track || 'beginner',
+        title: c.title || 'New Skill Curriculum',
+        tagline: c.tagline || 'Master core programming fundamentals and practical coding',
+        icon: c.icon || '💻',
+        color: c.color || 'text-indigo-400',
+        badgeBg: c.badgeBg || 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+        borderColor: c.borderColor || 'border-indigo-500/30 hover:border-indigo-500',
+        description: c.description || 'Comprehensive step-by-step collegiate skill pathway.',
+        compilerLanguage: c.compilerLanguage || 'python',
+        compilerDisplayName: c.compilerDisplayName || 'CPython 3.12 (Python)',
+        stepsCount: 1,
+        estimatedTotalHours: c.estimatedTotalHours || '8 Hours',
+        prerequisites: c.prerequisites && c.prerequisites.length > 0 ? c.prerequisites : ['Basic computer knowledge'],
+        outcomes: c.outcomes && c.outcomes.length > 0 ? c.outcomes : ['Build real applications and pass technical interviews'],
+        isLive: typeof c.isLive === 'boolean' ? c.isLive : true,
+        steps: [
+          {
+            stepNumber: 1,
+            title: initialStepTitle,
+            topic: c.initialStepTopic || 'Fundamentals & Setup',
+            estimatedTime: c.initialStepTime || '2 Hours',
+            summary: c.initialStepSummary || `In this first step, learners master ${initialStepTitle}.`,
+            studyMaterial: {
+              overview: `Welcome to ${c.title || 'this course'}! In this step, you will set up your workspace and write your first program.`,
+              keyPoints: [
+                'Understand system runtime and compilation lifecycle',
+                'Learn standard naming conventions, syntax structure, and data types',
+                'Execute interactive code and solve hands-on practice problems',
+              ],
+              codeExamples: [
+                {
+                  title: 'Hello World Starter',
+                  code: c.compilerStarterCode || '// Start writing code here\nconsole.log("Hello from Linkora!");',
+                  explanation: 'Initial starter code demonstrating standard program execution.',
+                },
+              ],
+              cheatsheet: ['Always test edge cases and verify runtime output.'],
+              officialDocUrl: c.docUrl || '',
+            },
+            video: {
+              id: `v-${Date.now()}`,
+              title: c.initialVideoTitle || `${initialStepTitle} Masterclass`,
+              instructor: c.initialInstructor || 'Campus Tech Mentor',
+              youtubeId: c.initialYoutubeId || '',
+              videoUrl: c.initialVideoUrl || '',
+              duration: c.initialVideoDuration || '35m',
+              notes: 'Follow along with the guided video tutorial.',
+            },
+            videos: [
+              {
+                id: `v-${Date.now()}`,
+                title: c.initialVideoTitle || `${initialStepTitle} Masterclass`,
+                instructor: c.initialInstructor || 'Campus Tech Mentor',
+                youtubeId: c.initialYoutubeId || '',
+                videoUrl: c.initialVideoUrl || '',
+                duration: c.initialVideoDuration || '35m',
+                notes: 'Follow along with the guided video tutorial.',
+              },
+            ],
+            practiceQuestions: [
+              {
+                id: `q-${newId}-1`,
+                title: 'First Output Verification',
+                difficulty: 'Easy',
+                description: `Write a program that outputs "Linkora Skill Master: ${c.title || 'Ready'}".`,
+                starterCode: c.compilerStarterCode || '// Write code here\n',
+                expectedOutput: `Linkora Skill Master: ${c.title || 'Ready'}`,
+                hints: ['Print the exact verification message.'],
+              },
+            ],
+            compilerStarterCode: c.compilerStarterCode || '// Linkora Coding Sandbox\n',
+          },
+        ],
+      };
+
+      memoryCurricula[newId] = newCurriculumObj;
+
+      if (sClient) {
+        await sClient.from('platform_settings').upsert({
+          key: 'campus_curricula_registry',
+          value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        curriculum: newCurriculumObj,
+        curricula: memoryCurricula,
+        createdId: newId,
+      });
+    }
+
+    // Action: Delete Curriculum / Skill
+    if (action === 'delete_curriculum' && curriculumId) {
+      if (!memoryCurricula[curriculumId]) {
+        return NextResponse.json({ success: false, error: 'Curriculum not found' }, { status: 404 });
+      }
+      delete memoryCurricula[curriculumId];
+
+      if (sClient) {
+        await sClient.from('platform_settings').upsert({
+          key: 'campus_curricula_registry',
+          value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        curricula: memoryCurricula,
+        deletedId: curriculumId,
+      });
+    }
+
+    // Action: Toggle Live / Draft Status
+    if (action === 'toggle_live' && curriculumId) {
+      if (!memoryCurricula[curriculumId]) {
+        return NextResponse.json({ success: false, error: 'Curriculum not found' }, { status: 404 });
+      }
+      const targetCurr = { ...memoryCurricula[curriculumId] };
+      const currentLive = targetCurr.isLive !== false; // default true if undefined
+      targetCurr.isLive = typeof body.isLive === 'boolean' ? body.isLive : !currentLive;
+      memoryCurricula[curriculumId] = targetCurr;
+
+      if (sClient) {
+        await sClient.from('platform_settings').upsert({
+          key: 'campus_curricula_registry',
+          value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        isLive: targetCurr.isLive,
+        curriculum: targetCurr,
+        curricula: memoryCurricula,
+      });
+    }
+
     if (!curriculumId || !memoryCurricula[curriculumId]) {
       return NextResponse.json({ success: false, error: 'Curriculum not found' }, { status: 404 });
     }
