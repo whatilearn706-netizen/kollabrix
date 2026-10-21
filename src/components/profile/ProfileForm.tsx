@@ -24,9 +24,11 @@ import {
   KeyRound,
   ShieldCheck,
   Linkedin,
+  Lock,
+  Clock,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
-import { LinkedInCollegeVerificationModal } from '@/components/profile/LinkedInCollegeVerificationModal';
+import { CollegeIdVerificationModal } from '@/components/profile/CollegeIdVerificationModal';
 
 export interface ProfileFormProps {
   initialProfile?: Profile | null;
@@ -78,7 +80,8 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   const [isCollegeVerified, setIsCollegeVerified] = useState<boolean>(
     Boolean(initialProfile?.college_verified)
   );
-  const [isLinkedInModalOpen, setIsLinkedInModalOpen] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [isIdModalOpen, setIsIdModalOpen] = useState(false);
 
   const [facultyCode, setFacultyCode] = useState('');
   const [isVerifyingFaculty, setIsVerifyingFaculty] = useState(false);
@@ -97,12 +100,44 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       const verifiedCollege = localStorage.getItem('linkora_verified_college_name');
       if (isVerifiedLocally && college && verifiedCollege && college.toLowerCase() === verifiedCollege.toLowerCase()) {
         setIsCollegeVerified(true);
+        setVerificationStatus('approved');
       }
       const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
       if (savedLinkedin && !linkedinUrl) {
         setLinkedinUrl(savedLinkedin);
       }
     } catch (e) {}
+
+    // Check remote student ID verification status via API
+    const checkVerificationApi = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/verify/college-id', { headers });
+        const data = await res.json();
+        if (data.success) {
+          if (data.isVerified) {
+            setIsCollegeVerified(true);
+            setVerificationStatus('approved');
+            if (data.verifiedCollege) {
+              setCollege(data.verifiedCollege);
+            }
+          } else if (data.myRequest) {
+            setVerificationStatus(data.myRequest.status);
+            if (data.myRequest.status === 'approved') {
+              setIsCollegeVerified(true);
+              if (data.myRequest.collegeName) setCollege(data.myRequest.collegeName);
+            } else if (data.myRequest.collegeName && !college) {
+              setCollege(data.myRequest.collegeName);
+            }
+          }
+        }
+      } catch (e) {}
+    };
+    checkVerificationApi();
 
     // Check remote platform_settings universal registry
     if (initialProfile?.user_id) {
@@ -120,7 +155,10 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                 item.userId === initialProfile.user_id ||
                 item.username?.toLowerCase() === initialProfile.username?.toLowerCase()
             );
-            if (isReg) setIsCollegeVerified(true);
+            if (isReg) {
+              setIsCollegeVerified(true);
+              setVerificationStatus('approved');
+            }
           }
         })
         .catch(() => {});
@@ -131,12 +169,14 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
         if (isVerifiedLocally) {
           setIsCollegeVerified(true);
+          setVerificationStatus('approved');
           const savedCollege = localStorage.getItem('linkora_verified_college_name');
           if (savedCollege) setCollege(savedCollege);
           const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
           if (savedLinkedin) setLinkedinUrl(savedLinkedin);
         }
       } catch (e) {}
+      checkVerificationApi();
     };
 
     window.addEventListener('linkora_college_updated', handleUpdate);
@@ -436,15 +476,20 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           <div>
             <h2 className="text-base font-semibold text-white">College & Academic Details</h2>
             <p className="text-xs text-slate-400">
-              Helps match you with campus peers or multi-institution cohorts.
+              Helps match you with campus peers, ICPC teammates, or multi-institution cohorts.
             </p>
           </div>
-          {isCollegeVerified && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0A66C2]/15 text-[#70B5F9] border border-[#0A66C2]/30 shadow-xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#70B5F9]" />
-              LinkedIn Verified
+          {isCollegeVerified ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              Verified Collegiate
             </span>
-          )}
+          ) : verificationStatus === 'pending' ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-xs">
+              <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              ID Under Review
+            </span>
+          ) : null}
         </div>
 
         <div>
@@ -453,49 +498,89 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               College / University Name
             </label>
             {isCollegeVerified ? (
-              <span className="text-xs text-[#70B5F9] font-medium flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#70B5F9]" />
-                Verified Affiliation
+              <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                Verified & Locked
+              </span>
+            ) : verificationStatus === 'pending' ? (
+              <span className="text-xs text-amber-300 font-medium flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                Verification Pending
               </span>
             ) : (
               <button
                 type="button"
-                onClick={() => setIsLinkedInModalOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#70B5F9] hover:text-[#0A66C2] transition-colors"
+                onClick={() => setIsIdModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
               >
-                <Linkedin className="w-3.5 h-3.5" />
-                <span>Verify with LinkedIn</span>
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Verify with Student ID</span>
               </button>
             )}
           </div>
-          <Input
-            value={college}
-            onChange={(e) => {
-              setCollege(e.target.value);
-              const savedVerified = typeof window !== 'undefined' ? localStorage.getItem('linkora_verified_college_name') : null;
-              if (savedVerified && e.target.value.trim().toLowerCase() !== savedVerified.toLowerCase()) {
-                setIsCollegeVerified(false);
-              }
-            }}
-            placeholder="e.g. University of Engineering & Applied Sciences"
-          />
-          {!isCollegeVerified && (
-            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-[#0A66C2]/10 border border-[#0A66C2]/25">
-              <div className="flex items-center gap-2 text-xs text-slate-300">
-                <Linkedin className="w-4 h-4 text-[#70B5F9] shrink-0" />
+          <div className="relative">
+            <Input
+              value={college}
+              disabled={isCollegeVerified || verificationStatus === 'pending'}
+              onChange={(e) => {
+                setCollege(e.target.value);
+                const savedVerified = typeof window !== 'undefined' ? localStorage.getItem('linkora_verified_college_name') : null;
+                if (savedVerified && e.target.value.trim().toLowerCase() !== savedVerified.toLowerCase()) {
+                  setIsCollegeVerified(false);
+                }
+              }}
+              placeholder="e.g. Indian Institute of Technology Delhi"
+              className={isCollegeVerified ? 'pr-9 bg-slate-900/60 border-emerald-500/40 text-slate-200 cursor-not-allowed' : ''}
+            />
+            {isCollegeVerified && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400" title="Locked: College affiliation verified by faculty/admin">
+                <Lock className="w-4 h-4" />
+              </div>
+            )}
+          </div>
+
+          {isCollegeVerified ? (
+            <div className="mt-2.5 flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                Your collegiate affiliation is officially verified via Student ID card. It is locked across all hackathons, ICPC rosters, and public profiles.
+              </span>
+            </div>
+          ) : verificationStatus === 'pending' ? (
+            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+              <div className="flex items-center gap-2 text-xs text-amber-200">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
                 <span>
-                  Verify your college name with LinkedIn to display a verified checkmark badge across projects.
+                  Your Student ID card submission is under admin review. Once approved, your verified badge will activate automatically.
                 </span>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setIsLinkedInModalOpen(true)}
-                className="shrink-0 text-xs border-[#0A66C2]/40 text-[#70B5F9] hover:bg-[#0A66C2]/20"
-                leftIcon={<Linkedin className="w-3.5 h-3.5 text-[#70B5F9]" />}
+                onClick={() => setIsIdModalOpen(true)}
+                className="shrink-0 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
               >
-                Verify College
+                Inspect ID Status
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  Upload your College Student ID card to prevent scam profiles and unlock the official <strong className="text-emerald-400 font-semibold">🎓 Verified Collegiate</strong> badge.
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsIdModalOpen(true)}
+                className="shrink-0 text-xs border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20"
+                leftIcon={<ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+              >
+                Verify Student ID
               </Button>
             </div>
           )}
@@ -763,17 +848,17 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         </Button>
       </div>
 
-      {/* LinkedIn College Verification Modal */}
-      <LinkedInCollegeVerificationModal
-        isOpen={isLinkedInModalOpen}
-        onClose={() => setIsLinkedInModalOpen(false)}
+      {/* College Student ID Verification Modal */}
+      <CollegeIdVerificationModal
+        isOpen={isIdModalOpen}
+        onClose={() => setIsIdModalOpen(false)}
         collegeName={college}
         userId={user?.id}
         onCollegeNameChange={(name) => setCollege(name)}
-        onVerified={(verifiedCollege, verifiedLinkedin) => {
+        onVerified={(verifiedCollege) => {
           setCollege(verifiedCollege);
-          if (verifiedLinkedin) setLinkedinUrl(verifiedLinkedin);
           setIsCollegeVerified(true);
+          setVerificationStatus('approved');
         }}
       />
     </form>

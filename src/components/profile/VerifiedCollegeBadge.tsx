@@ -157,16 +157,16 @@ export function VerifiedCollegeBadge({
       <span className="truncate">{college}</span>
       {localVerified ? (
         <span
-          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#0A66C2]/15 text-[#0A66C2] dark:text-[#70B5F9] border border-[#0A66C2]/30 shadow-2xs shrink-0 select-none cursor-default"
-          title="Verified College Affiliation via LinkedIn Education"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs shrink-0 select-none cursor-default"
+          title="Official College Affiliation Verified via Student ID Card"
         >
-          <CheckCircle2 className="w-2.5 h-2.5 text-[#0A66C2] dark:text-[#70B5F9] stroke-[2.5]" />
-          <span>Verified</span>
+          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <span>Verified Collegiate</span>
         </span>
       ) : showUnverified ? (
         <span
           className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default"
-          title="Not Verified via LinkedIn Education"
+          title="College Affiliation Not Yet Verified"
         >
           <span>Not Verified</span>
         </span>
