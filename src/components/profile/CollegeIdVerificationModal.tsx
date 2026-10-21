@@ -73,10 +73,15 @@ export function CollegeIdVerificationModal({
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
         const currentUid = userId || sessionData?.session?.user?.id;
+        const currentEmail = sessionData?.session?.user?.email;
+        const currentUname = currentEmail?.split('@')[0] || '';
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const url = currentUid ? `/api/verify/college-id?userId=${encodeURIComponent(currentUid)}` : '/api/verify/college-id';
+        const params = new URLSearchParams();
+        if (currentUid) params.set('userId', currentUid);
+        if (currentUname) params.set('username', currentUname);
+        const url = params.toString() ? `/api/verify/college-id?${params.toString()}` : '/api/verify/college-id';
         const res = await fetch(url, { headers });
         const data = await res.json();
 
@@ -206,6 +211,8 @@ export function CollegeIdVerificationModal({
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const currentUid = userId || sessionData?.session?.user?.id;
+      const currentEmail = sessionData?.session?.user?.email;
+      const currentUname = currentEmail?.split('@')[0] || '';
       const res = await fetch('/api/verify/college-id', {
         method: 'POST',
         headers,
@@ -214,6 +221,7 @@ export function CollegeIdVerificationModal({
           studentRollNumber: cleanRoll,
           idCardImage: idCardPreview,
           userId: currentUid,
+          username: currentUname,
         }),
       });
 

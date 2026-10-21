@@ -107,7 +107,11 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         const currentUid = initialProfile?.user_id || sessionData?.session?.user?.id;
-        const url = currentUid ? `/api/verify/college-id?userId=${encodeURIComponent(currentUid)}` : '/api/verify/college-id';
+        const currentUname = initialProfile?.username || sessionData?.session?.user?.email?.split('@')[0];
+        const params = new URLSearchParams();
+        if (currentUid) params.set('userId', currentUid);
+        if (currentUname) params.set('username', currentUname);
+        const url = params.toString() ? `/api/verify/college-id?${params.toString()}` : '/api/verify/college-id';
         const res = await fetch(url, { headers });
         const data = await res.json();
         if (!isMounted || !data.success) return;

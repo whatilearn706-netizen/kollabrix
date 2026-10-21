@@ -239,22 +239,33 @@ export async function GET(request: NextRequest) {
 
     // Regular Student: Return their personal verification request status
     const targetUserId = authUser?.id || searchParams.get('userId');
-    if (!targetUserId) {
+    const targetUsername = authUser?.email?.split('@')[0] || searchParams.get('username');
+
+    let myRequest = null;
+    if (targetUserId) {
+      myRequest = allRequests.find((r) => r.userId === targetUserId) || null;
+    }
+    if (!myRequest && targetUsername) {
+      const cleanU = targetUsername.toLowerCase().trim();
+      myRequest = allRequests.find((r) => r.username?.toLowerCase().trim() === cleanU) || null;
+    }
+
+    if (!targetUserId && !targetUsername && !myRequest) {
       return NextResponse.json({ success: true, myRequest: null, isVerified: false });
     }
 
-    const myRequest = allRequests.find((r) => r.userId === targetUserId) || null;
-
     // Also check profiles table for college name
     let profileCollege: string | null = null;
-    try {
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('college')
-        .eq('user_id', targetUserId)
-        .maybeSingle();
-      profileCollege = profile?.college || null;
-    } catch (e) {}
+    if (targetUserId) {
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('college')
+          .eq('user_id', targetUserId)
+          .maybeSingle();
+        profileCollege = profile?.college || null;
+      } catch (e) {}
+    }
 
     const isVerified = myRequest?.status === 'approved';
 
@@ -286,25 +297,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { collegeName, studentRollNumber, idCardImage, userId: bodyUserId } = body;
+    const { collegeName, studentRollNumber, idCardImage, userId: bodyUserId, username: bodyUsername } = body;
 
-    let effectiveUserId = authUser?.id;
-    let username = authUser?.email?.split('@')[0] || 'student';
-    let displayName = username;
+    let effectiveUserId = authUser?.id || bodyUserId;
     let email = authUser?.email || '';
+    let username = authUser?.email?.split('@')[0] || bodyUsername || 'student';
+    let displayName = username;
 
-    if (!effectiveUserId && bodyUserId) {
+    if (effectiveUserId) {
       try {
         const { data: p } = await supabaseAdmin
           .from('profiles')
           .select('user_id, username, display_name')
-          .eq('user_id', bodyUserId)
+          .eq('user_id', effectiveUserId)
           .maybeSingle();
 
         if (p) {
-          effectiveUserId = p.user_id;
-          username = p.username || 'student';
-          displayName = p.display_name || username;
+          if (p.username) username = p.username;
+          if (p.display_name) displayName = p.display_name;
         }
       } catch (e) {}
     }
@@ -329,22 +339,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Please upload a clear photograph of your physical or digital College ID Card.' }, { status: 400 });
     }
 
-    // Fetch user profile for username & display name if not yet found
-    if (username === 'student') {
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('username, display_name')
-        .eq('user_id', effectiveUserId)
-        .maybeSingle();
-
-      if (profile?.username) username = profile.username;
-      if (profile?.display_name) displayName = profile.display_name;
-    }
-
     const currentRequests = await loadAllIdVerifications();
 
-    // Check if user has already uploaded
-    const existingIndex = currentRequests.findIndex((r) => r.userId === effectiveUserId);
+    // Check if user has already uploaded (by userId or username)
+    const existingIndex = currentRequests.findIndex(
+      (r) =>
+        r.userId === effectiveUserId ||
+        (username && username !== 'student' && r.username?.toLowerCase() === username.toLowerCase())
+    );
     const existing = existingIndex >= 0 ? currentRequests[existingIndex] : null;
 
     if (existing && existing.status === 'pending') {
