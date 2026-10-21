@@ -57,12 +57,19 @@ export function CollegeIdVerificationModal({
   const [isReuploading, setIsReuploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const userHasTypedCollegeRef = useRef(false);
 
+  // Initialize enteredCollege once on modal open, and NEVER overwrite while the user types/backspaces
   useEffect(() => {
-    if (collegeName && !enteredCollege) {
-      setEnteredCollege(collegeName);
+    if (isOpen) {
+      userHasTypedCollegeRef.current = false;
+      if (collegeName && !enteredCollege) {
+        setEnteredCollege(collegeName);
+      }
+    } else {
+      userHasTypedCollegeRef.current = false;
     }
-  }, [collegeName, enteredCollege]);
+  }, [isOpen]);
 
   // Load existing verification status
   useEffect(() => {
@@ -92,8 +99,12 @@ export function CollegeIdVerificationModal({
         if (isMounted && data.success) {
           if (data.myRequest) {
             setExistingRequest(data.myRequest);
-            setEnteredCollege(data.myRequest.collegeName || enteredCollege);
-            setRollNumber(data.myRequest.studentRollNumber || '');
+            if (!userHasTypedCollegeRef.current && !enteredCollege) {
+              setEnteredCollege(data.myRequest.collegeName || '');
+            }
+            if (!rollNumber) {
+              setRollNumber(data.myRequest.studentRollNumber || '');
+            }
             setIdCardPreview(data.myRequest.idCardImage || null);
             try {
               localStorage.setItem('linkora_student_id_status', JSON.stringify(data.myRequest));
@@ -118,8 +129,12 @@ export function CollegeIdVerificationModal({
             );
             if (found) {
               setExistingRequest(found);
-              setEnteredCollege(found.collegeName || enteredCollege);
-              setRollNumber(found.studentRollNumber || '');
+              if (!userHasTypedCollegeRef.current && !enteredCollege) {
+                setEnteredCollege(found.collegeName || '');
+              }
+              if (!rollNumber) {
+                setRollNumber(found.studentRollNumber || '');
+              }
               setIdCardPreview(found.idCardImage || null);
             }
           }
@@ -133,7 +148,9 @@ export function CollegeIdVerificationModal({
             const parsed = JSON.parse(cached);
             if (isMounted && parsed) {
               setExistingRequest(parsed);
-              if (parsed.collegeName) setEnteredCollege(parsed.collegeName);
+              if (!userHasTypedCollegeRef.current && parsed.collegeName && !enteredCollege) {
+                setEnteredCollege(parsed.collegeName);
+              }
             }
           }
         } catch (e) {}
@@ -524,7 +541,10 @@ export function CollegeIdVerificationModal({
                     type="text"
                     required
                     value={enteredCollege}
-                    onChange={(e) => setEnteredCollege(e.target.value)}
+                    onChange={(e) => {
+                      userHasTypedCollegeRef.current = true;
+                      setEnteredCollege(e.target.value);
+                    }}
                     placeholder="e.g. Indian Institute of Technology Bombay"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
                   />
