@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         compiler,
         code: processedCode,
         stdin,
-        'compiler-option-raw': language === 'cpp' ? '-std=c++20 -O2' : undefined,
+        'compiler-option-raw': language === 'cpp' ? '-std=c++20' : undefined,
       }),
       signal: AbortSignal.timeout(15000),
     });
