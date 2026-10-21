@@ -128,7 +128,33 @@ export default function ResourcesPage() {
         <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-[130px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+        {/* Dedicated Standalone Resources Hub Header (Clean & Focused) */}
+        <header className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-sm shadow-md shadow-indigo-600/30">
+              🚀
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-black tracking-tight text-white group-hover:text-indigo-300 transition-colors">
+                Linkora
+              </span>
+              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-bold">
+                Resources Hub
+              </span>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="text-xs font-mono text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 shadow-sm"
+            >
+              <span>← Back to Campus</span>
+            </Link>
+          </div>
+        </header>
+
         {/* VIEW 1: Active Step Learning Workspace */}
         {activeCurriculum ? (
           <StepLearningWorkspace

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Sparkles, X, ArrowRight, Megaphone } from 'lucide-react';
 import { BroadcastBannerConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/masterControl';
 
@@ -39,6 +40,11 @@ const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: s
 };
 
 export function GlobalBroadcastBanner() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/resources')) {
+    return null;
+  }
+
   const [banner, setBanner] = useState<BroadcastBannerConfig>(DEFAULT_MASTER_CONTROL_CONFIG.banner);
   const [isDismissed, setIsDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);

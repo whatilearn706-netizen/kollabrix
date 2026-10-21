@@ -50,6 +50,12 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 export function Navbar() {
   const rawPathname = usePathname();
   const pathname = rawPathname || '';
+
+  // Dedicated Resource Hub runs in its own focused workspace without global navbar
+  if (pathname.startsWith('/resources')) {
+    return null;
+  }
+
   const router = useRouter();
   const { user, profile, signOut, openAuthModal } = useAuth();
   const { theme, isDark, toggleTheme } = useSiteTheme();

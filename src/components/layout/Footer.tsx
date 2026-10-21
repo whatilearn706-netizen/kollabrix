@@ -2,11 +2,17 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Shield, Sparkles, Terminal, Code2, Users, Trophy } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/resources')) {
+    return null;
+  }
+
   const { theme, isDark } = useSiteTheme();
 
   return (
