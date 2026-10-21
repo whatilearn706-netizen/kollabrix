@@ -83,6 +83,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     Boolean(initialProfile?.college_verified)
   );
   const [verificationStatus, setVerificationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
+  const [submittedRequest, setSubmittedRequest] = useState<any | null>(null);
   const [isIdModalOpen, setIsIdModalOpen] = useState(false);
   const hasUserEditedCollegeRef = useRef(false);
 
@@ -148,6 +149,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           setIsCollegeVerified(false);
           if (data.myRequest) {
             setVerificationStatus(data.myRequest.status);
+            setSubmittedRequest(data.myRequest);
             if (!hasUserEditedCollegeRef.current && data.myRequest.collegeName && !college) {
               setCollege(data.myRequest.collegeName);
             }
@@ -170,6 +172,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               );
               if (matched) {
                 setVerificationStatus(matched.status);
+                setSubmittedRequest(matched);
                 if (!hasUserEditedCollegeRef.current && matched.collegeName && !college) {
                   setCollege(matched.collegeName);
                 }
@@ -177,6 +180,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               }
             }
             setVerificationStatus('none');
+            setSubmittedRequest(null);
           }
           // Clean up any stale legacy test flags from user's browser
           try {
@@ -912,10 +916,13 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       onCollegeNameChange={(name) => setCollege(name)}
       onSubmitted={(request) => {
         setVerificationStatus('pending');
+        setSubmittedRequest(request);
         if (request?.collegeName) {
           setCollege(request.collegeName);
         }
       }}
+      existingVerification={submittedRequest}
+      initialVerificationStatus={verificationStatus}
       onVerified={(verifiedCollege) => {
         setCollege(verifiedCollege);
         setIsCollegeVerified(true);

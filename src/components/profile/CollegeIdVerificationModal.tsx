@@ -29,6 +29,8 @@ interface CollegeIdVerificationModalProps {
   userId?: string;
   username?: string;
   email?: string;
+  existingVerification?: StudentIdVerification | null;
+  initialVerificationStatus?: 'none' | 'pending' | 'approved' | 'rejected';
 }
 
 export function CollegeIdVerificationModal({
@@ -41,23 +43,51 @@ export function CollegeIdVerificationModal({
   userId,
   username,
   email,
+  existingVerification,
+  initialVerificationStatus,
 }: CollegeIdVerificationModalProps) {
   const [enteredCollege, setEnteredCollege] = useState(collegeName || '');
   const [rollNumber, setRollNumber] = useState('');
   const [idCardPreview, setIdCardPreview] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(() => !existingVerification);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Remote verification status
-  const [existingRequest, setExistingRequest] = useState<StudentIdVerification | null>(null);
+  // Remote verification status - seed immediately from props or localStorage
+  const [existingRequest, setExistingRequest] = useState<StudentIdVerification | null>(() => {
+    if (existingVerification) return existingVerification;
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkora_student_id_status');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return null;
+  });
   const [isVerified, setIsVerified] = useState(false);
   const [isReuploading, setIsReuploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const userHasTypedCollegeRef = useRef(false);
+
+  // Sync existingVerification prop immediately
+  useEffect(() => {
+    if (existingVerification) {
+      setExistingRequest(existingVerification);
+      if (!userHasTypedCollegeRef.current && existingVerification.collegeName) {
+        setEnteredCollege(existingVerification.collegeName);
+      }
+      if (existingVerification.studentRollNumber && !rollNumber) {
+        setRollNumber(existingVerification.studentRollNumber);
+      }
+      if (existingVerification.idCardImage) {
+        setIdCardPreview(existingVerification.idCardImage);
+      }
+      setIsLoadingStatus(false);
+    }
+  }, [existingVerification]);
 
   // Initialize enteredCollege once on modal open, and NEVER overwrite while the user types/backspaces
   useEffect(() => {

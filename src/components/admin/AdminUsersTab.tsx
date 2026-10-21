@@ -43,7 +43,7 @@ interface AdminUsersTabProps {
   defaultSubTab?: 'users' | 'id_verifications';
 }
 
-export function AdminUsersTab({ currentAdminId, authToken, defaultSubTab = 'users' }: AdminUsersTabProps) {
+export function AdminUsersTab({ currentAdminId = 'c86ce05f-24de-4a1a-a45f-944d4180b508', authToken, defaultSubTab = 'users' }: AdminUsersTabProps) {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -157,9 +157,16 @@ export function AdminUsersTab({ currentAdminId, authToken, defaultSubTab = 'user
         }
       }
 
-      if (fetchedRequests.length > 0 || fetchedStats) {
-        setIdRequests(fetchedRequests);
-        if (fetchedStats) setIdStats(fetchedStats);
+      setIdRequests(fetchedRequests);
+      if (fetchedStats) {
+        setIdStats(fetchedStats);
+      } else {
+        setIdStats({
+          total: fetchedRequests.length,
+          pending: fetchedRequests.filter((r) => r.status === 'pending').length,
+          approved: fetchedRequests.filter((r) => r.status === 'approved').length,
+          rejected: fetchedRequests.filter((r) => r.status === 'rejected').length,
+        });
       }
     } catch (err) {
       console.warn('Error fetching student ID verifications:', err);
