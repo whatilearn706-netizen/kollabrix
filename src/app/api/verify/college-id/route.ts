@@ -126,18 +126,24 @@ export async function GET(request: NextRequest) {
 
     const myRequest = allRequests.find((r) => r.userId === authUser.id) || null;
 
-    // Also check profiles table for verified status
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('college, college_verified, college_verified_at')
-      .eq('user_id', authUser.id)
-      .maybeSingle();
+    // Also check profiles table for college name
+    let profileCollege: string | null = null;
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('college')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+      profileCollege = profile?.college || null;
+    } catch (e) {}
+
+    const isVerified = myRequest?.status === 'approved';
 
     return NextResponse.json({
       success: true,
       myRequest,
-      isVerified: Boolean(profile?.college_verified || myRequest?.status === 'approved'),
-      verifiedCollege: profile?.college || myRequest?.collegeName || null,
+      isVerified,
+      verifiedCollege: isVerified ? (myRequest?.collegeName || profileCollege) : null,
     });
   } catch (err: any) {
     console.warn('Error reading college verification status:', err);
@@ -278,13 +284,11 @@ export async function PATCH(request: NextRequest) {
           .from('profiles')
           .update({
             college: target.collegeName,
-            college_verified: true,
-            college_verified_at: now,
             updated_at: now,
           })
           .eq('user_id', target.userId);
       } catch (e) {
-        console.warn('Could not update profile college_verified column:', e);
+        console.warn('Could not update profile college column:', e);
       }
 
       // 2. Add to universal verified registry (so all badges reflect immediately)
@@ -320,19 +324,15 @@ export async function PATCH(request: NextRequest) {
       target.reviewedBy = adminEmail;
       target.rejectionReason = (rejectionReason || '').trim() || 'College ID card was unreadable or details did not match.';
 
-      // 1. Update profiles table to revoke verification
+      // 1. Update profiles table to refresh timestamp
       try {
         await supabaseAdmin
           .from('profiles')
           .update({
-            college_verified: false,
-            college_verified_at: null,
             updated_at: now,
           })
           .eq('user_id', target.userId);
-      } catch (e) {
-        console.warn('Could not update profile college_verified column:', e);
-      }
+      } catch (e) {}
 
       // 2. Remove from universal verified registry
       try {

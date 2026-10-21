@@ -98,23 +98,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   React.useEffect(() => {
     let isMounted = true;
 
-    try {
-      const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
-      const verifiedCollege = localStorage.getItem('linkora_verified_college_name');
-      if (isVerifiedLocally && verifiedCollege) {
-        setIsCollegeVerified(true);
-        setVerificationStatus('approved');
-        if (!hasUserEditedCollegeRef.current && !college) {
-          setCollege(verifiedCollege);
-        }
-      }
-      const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
-      if (savedLinkedin && !linkedinUrl) {
-        setLinkedinUrl(savedLinkedin);
-      }
-    } catch (e) {}
-
-    // Check remote student ID verification status via API once on mount
+    // Check authoritative student ID verification status via API once on mount
     const checkVerificationApi = async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -132,60 +116,32 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           if (!hasUserEditedCollegeRef.current && data.verifiedCollege) {
             setCollege(data.verifiedCollege);
           }
-        } else if (data.myRequest) {
-          setVerificationStatus(data.myRequest.status);
-          if (data.myRequest.status === 'approved') {
-            setIsCollegeVerified(true);
-            if (!hasUserEditedCollegeRef.current && data.myRequest.collegeName) {
+        } else {
+          setIsCollegeVerified(false);
+          if (data.myRequest) {
+            setVerificationStatus(data.myRequest.status);
+            if (!hasUserEditedCollegeRef.current && data.myRequest.collegeName && !college) {
               setCollege(data.myRequest.collegeName);
             }
-          } else if (data.myRequest.collegeName && !hasUserEditedCollegeRef.current && !college) {
-            setCollege(data.myRequest.collegeName);
+          } else {
+            setVerificationStatus('none');
           }
+          // Clean up any stale legacy test flags from user's browser
+          try {
+            localStorage.removeItem('linkora_college_verified');
+            localStorage.removeItem('linkora_verified_college_name');
+            localStorage.removeItem('linkora_verified_registry_cache');
+          } catch (e) {}
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Error fetching verification status:', e);
+      }
     };
-    checkVerificationApi();
 
-    // Check remote platform_settings universal registry
-    if (initialProfile?.user_id) {
-      Promise.resolve(
-        supabase
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'linkedin_college_verifications')
-          .maybeSingle()
-      )
-        .then(({ data }) => {
-          if (!isMounted) return;
-          if (Array.isArray(data?.value)) {
-            const isReg = data.value.some(
-              (item: any) =>
-                item.userId === initialProfile.user_id ||
-                item.username?.toLowerCase() === initialProfile.username?.toLowerCase()
-            );
-            if (isReg) {
-              setIsCollegeVerified(true);
-              setVerificationStatus('approved');
-            }
-          }
-        })
-        .catch(() => {});
-    }
+    checkVerificationApi();
 
     const handleUpdate = () => {
       if (!isMounted) return;
-      try {
-        const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
-        if (isVerifiedLocally) {
-          setIsCollegeVerified(true);
-          setVerificationStatus('approved');
-          const savedCollege = localStorage.getItem('linkora_verified_college_name');
-          if (savedCollege) setCollege(savedCollege);
-          const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
-          if (savedLinkedin) setLinkedinUrl(savedLinkedin);
-        }
-      } catch (e) {}
       checkVerificationApi();
     };
 
