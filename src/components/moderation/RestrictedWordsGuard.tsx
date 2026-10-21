@@ -115,8 +115,8 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
     };
     window.addEventListener('storage', handleStorage);
 
-    // Periodic background sync every 15 seconds
-    const intervalId = setInterval(fetchWords, 15000);
+    // Periodic background sync every 60 seconds
+    const intervalId = setInterval(fetchWords, 60000);
 
     return () => {
       cancelled = true;

@@ -98,7 +98,7 @@ export function CollegeIdVerificationModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, enteredCollege]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

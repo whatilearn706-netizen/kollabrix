@@ -31,12 +31,13 @@ function checkSetMatch(
 
 export async function fetchVerifiedRegistry(force = false): Promise<Set<string>> {
   if (!force && globalVerifiedSet) return globalVerifiedSet;
-  if (!force && fetchPromise) return fetchPromise;
+  if (fetchPromise) return fetchPromise;
 
   fetchPromise = (async () => {
     const set = new Set<string>();
 
     // 1. Direct query to Supabase platform_settings (real-time database)
+    let directSuccess = false;
     try {
       const { data } = await supabase
         .from('platform_settings')
@@ -49,28 +50,31 @@ export async function fetchVerifiedRegistry(force = false): Promise<Set<string>>
           if (item.userId) set.add(`uid:${item.userId}`);
           if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
         }
+        directSuccess = true;
       }
     } catch (e) {
       // ignore
     }
 
-    // 2. Fetch from API endpoint with no-store
-    try {
-      const res = await fetch('/api/verify/linkedin-college', {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.verifications)) {
-          for (const item of data.verifications) {
-            if (item.userId) set.add(`uid:${item.userId}`);
-            if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
+    // 2. Fallback to API endpoint only if direct query failed
+    if (!directSuccess) {
+      try {
+        const res = await fetch('/api/verify/linkedin-college', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.verifications)) {
+            for (const item of data.verifications) {
+              if (item.userId) set.add(`uid:${item.userId}`);
+              if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
+            }
           }
         }
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
     }
 
     if (typeof window !== 'undefined') {

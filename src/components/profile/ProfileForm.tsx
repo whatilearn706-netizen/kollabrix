@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
@@ -82,6 +82,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   );
   const [verificationStatus, setVerificationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
   const [isIdModalOpen, setIsIdModalOpen] = useState(false);
+  const hasUserEditedCollegeRef = useRef(false);
 
   const [facultyCode, setFacultyCode] = useState('');
   const [isVerifyingFaculty, setIsVerifyingFaculty] = useState(false);
@@ -95,12 +96,17 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   const [success, setSuccess] = useState<string | null>(null);
 
   React.useEffect(() => {
+    let isMounted = true;
+
     try {
       const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
       const verifiedCollege = localStorage.getItem('linkora_verified_college_name');
-      if (isVerifiedLocally && college && verifiedCollege && college.toLowerCase() === verifiedCollege.toLowerCase()) {
+      if (isVerifiedLocally && verifiedCollege) {
         setIsCollegeVerified(true);
         setVerificationStatus('approved');
+        if (!hasUserEditedCollegeRef.current && !college) {
+          setCollege(verifiedCollege);
+        }
       }
       const savedLinkedin = localStorage.getItem('linkora_verified_linkedin_url');
       if (savedLinkedin && !linkedinUrl) {
@@ -108,7 +114,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       }
     } catch (e) {}
 
-    // Check remote student ID verification status via API
+    // Check remote student ID verification status via API once on mount
     const checkVerificationApi = async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -118,21 +124,23 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
 
         const res = await fetch('/api/verify/college-id', { headers });
         const data = await res.json();
-        if (data.success) {
-          if (data.isVerified) {
+        if (!isMounted || !data.success) return;
+
+        if (data.isVerified) {
+          setIsCollegeVerified(true);
+          setVerificationStatus('approved');
+          if (!hasUserEditedCollegeRef.current && data.verifiedCollege) {
+            setCollege(data.verifiedCollege);
+          }
+        } else if (data.myRequest) {
+          setVerificationStatus(data.myRequest.status);
+          if (data.myRequest.status === 'approved') {
             setIsCollegeVerified(true);
-            setVerificationStatus('approved');
-            if (data.verifiedCollege) {
-              setCollege(data.verifiedCollege);
-            }
-          } else if (data.myRequest) {
-            setVerificationStatus(data.myRequest.status);
-            if (data.myRequest.status === 'approved') {
-              setIsCollegeVerified(true);
-              if (data.myRequest.collegeName) setCollege(data.myRequest.collegeName);
-            } else if (data.myRequest.collegeName && !college) {
+            if (!hasUserEditedCollegeRef.current && data.myRequest.collegeName) {
               setCollege(data.myRequest.collegeName);
             }
+          } else if (data.myRequest.collegeName && !hasUserEditedCollegeRef.current && !college) {
+            setCollege(data.myRequest.collegeName);
           }
         }
       } catch (e) {}
@@ -149,6 +157,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           .maybeSingle()
       )
         .then(({ data }) => {
+          if (!isMounted) return;
           if (Array.isArray(data?.value)) {
             const isReg = data.value.some(
               (item: any) =>
@@ -165,6 +174,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     }
 
     const handleUpdate = () => {
+      if (!isMounted) return;
       try {
         const isVerifiedLocally = localStorage.getItem('linkora_college_verified') === 'true';
         if (isVerifiedLocally) {
@@ -180,8 +190,11 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
     };
 
     window.addEventListener('linkora_college_updated', handleUpdate);
-    return () => window.removeEventListener('linkora_college_updated', handleUpdate);
-  }, [college, linkedinUrl, initialProfile]);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('linkora_college_updated', handleUpdate);
+    };
+  }, [initialProfile?.user_id]);
 
   const handleVerifyFacultyCode = async () => {
     setFacultyVerifyMsg(null);
@@ -523,11 +536,8 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               value={college}
               disabled={isCollegeVerified || verificationStatus === 'pending'}
               onChange={(e) => {
+                hasUserEditedCollegeRef.current = true;
                 setCollege(e.target.value);
-                const savedVerified = typeof window !== 'undefined' ? localStorage.getItem('linkora_verified_college_name') : null;
-                if (savedVerified && e.target.value.trim().toLowerCase() !== savedVerified.toLowerCase()) {
-                  setIsCollegeVerified(false);
-                }
               }}
               placeholder="e.g. Indian Institute of Technology Delhi"
               className={isCollegeVerified ? 'pr-9 bg-slate-900/60 border-emerald-500/40 text-slate-200 cursor-not-allowed' : ''}

@@ -539,7 +539,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
-    const suspensionInterval = setInterval(checkSuspensionRealtime, 3000);
+    const suspensionInterval = setInterval(checkSuspensionRealtime, 60000);
     window.addEventListener('focus', checkSuspensionRealtime);
     window.addEventListener('visibilitychange', checkSuspensionRealtime);
 
