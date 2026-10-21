@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ShieldAlert,
   ShieldCheck,
+  AlertOctagon,
   Video,
   VideoOff,
   Maximize2,
@@ -277,6 +278,7 @@ export function IcpcProctorGuard({
   }, []);
 
   // Request Entire Screen Share Stream
+  // Request Entire Screen Share Stream (Strictly Monitor Only)
   const initScreenShare = useCallback(async () => {
     setScreenError(null);
     try {
@@ -297,21 +299,49 @@ export function IcpcProctorGuard({
           height: { ideal: 1080, max: 1080 },
         } as any,
         audio: false,
-      });
+        // Chromium parameters to enforce monitor / entire screen capture
+        surfaceSwitching: 'exclude',
+        selfBrowserSurface: 'exclude',
+        systemAudio: 'exclude',
+        monitorTypeSurfaces: 'include',
+      } as any);
 
       const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.onended = () => {
-          setHasScreenPermission(false);
-          triggerViolation(
-            'SCREEN_SHARE_STOPPED',
-            'Screen Sharing Was Terminated',
-            'Mandatory screen sharing was stopped during the active contest. The contest arena has been disqualified and session terminated.',
-            'critical'
-          );
-          setIsTerminated(true);
-        };
+      if (!videoTrack) {
+        setScreenError('No video track received from screen share.');
+        return false;
       }
+
+      // Check displaySurface: STRICTLY ENFORCE ENTIRE SCREEN ('monitor')!
+      // If user selected 'browser' (Tab) or 'window', reject it immediately.
+      const settings = videoTrack.getSettings ? videoTrack.getSettings() : ({} as any);
+      const displaySurface = settings.displaySurface;
+      const trackLabel = (videoTrack.label || '').toLowerCase();
+      const isTabOrWindow =
+        (displaySurface && displaySurface !== 'monitor') ||
+        trackLabel.includes('web-contents') ||
+        trackLabel.startsWith('tab:') ||
+        trackLabel.startsWith('window:');
+
+      if (isTabOrWindow) {
+        stream.getTracks().forEach((t) => t.stop());
+        setHasScreenPermission(false);
+        setScreenError(
+          'ENTIRE SCREEN REQUIRED: You selected a single Tab or Window instead of "Entire Screen". You must share your entire screen/monitor so background apps, Siri, and external overlays are visible to the proctor. Please click Start Screen Share again and select the "Entire Screen" tab.'
+        );
+        return false;
+      }
+
+      videoTrack.onended = () => {
+        setHasScreenPermission(false);
+        triggerViolation(
+          'SCREEN_SHARE_STOPPED',
+          'Screen Sharing Was Terminated',
+          'Mandatory entire screen sharing was stopped during the active contest. The contest arena has been disqualified and session terminated.',
+          'critical'
+        );
+        setIsTerminated(true);
+      };
 
       screenStreamRef.current = stream;
       if (screenVideoRef.current) {
@@ -829,6 +859,32 @@ export function IcpcProctorGuard({
       if (!video || video.readyState < 2 || !ctx) return;
 
       const now = Date.now();
+
+      // ── Runtime Entire Screen Sharing Integrity Check ──
+      if (hasScreenPermission && screenStreamRef.current) {
+        const sTrack = screenStreamRef.current.getVideoTracks()[0];
+        if (sTrack) {
+          const sSettings = sTrack.getSettings ? sTrack.getSettings() : ({} as any);
+          const sSurface = sSettings.displaySurface;
+          const sLabel = (sTrack.label || '').toLowerCase();
+          const isNotEntireScreen =
+            (sSurface && sSurface !== 'monitor') ||
+            sLabel.includes('web-contents') ||
+            sLabel.startsWith('tab:') ||
+            sLabel.startsWith('window:');
+
+          if (isNotEntireScreen) {
+            triggerViolation(
+              'SCREEN_SHARE_STOPPED',
+              'Entire Screen Sharing Violated',
+              'Contestant switched screen share from Entire Screen to a single tab or window. Entire screen sharing is strictly mandatory.',
+              'critical'
+            );
+            setIsTerminated(true);
+            return;
+          }
+        }
+      }
 
       ctx.drawImage(video, 0, 0, 320, 240);
       const frameData = ctx.getImageData(0, 0, 320, 240);
@@ -1394,19 +1450,24 @@ export function IcpcProctorGuard({
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-slate-300 font-bold flex items-center gap-1.5">
                     <Monitor className="w-4 h-4 text-emerald-400" />
-                    <span>2. Entire Screen Share:</span>
+                    <span>2. Entire Screen Share (Full Monitor Required):</span>
                   </span>
                   <span className={hasScreenPermission ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-                    {hasScreenPermission ? '✓ Screen Sharing Active' : '⚠ Action Required'}
+                    {hasScreenPermission ? '✓ Entire Screen Active' : '⚠ Action Required'}
                   </span>
                 </div>
 
                 {!hasScreenPermission ? (
                   <div className="p-3.5 rounded-xl bg-charcoal-900/80 border border-charcoal-750 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="space-y-0.5 text-left">
-                      <p className="text-xs font-bold text-white">Share Entire Screen</p>
-                      <p className="text-[11px] text-slate-400">
-                        Choose <strong className="text-cyan-300">&quot;Entire Screen&quot;</strong> when prompted so your full monitor is monitored.
+                    <div className="space-y-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-white">Share Entire Screen</p>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 font-mono font-bold border border-amber-500/30">
+                          Strict: Full Display Only
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        When the browser dialog appears, click the <strong className="text-cyan-300">&quot;Entire Screen&quot;</strong> tab and select your display. Single tabs or individual windows are strictly prohibited so Siri and external apps can be proctored.
                       </p>
                     </div>
                     <Button
@@ -1420,10 +1481,10 @@ export function IcpcProctorGuard({
                     </Button>
                   </div>
                 ) : (
-                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>Entire monitor sharing verified and connected</span>
+                      <span>Entire monitor sharing verified (Siri and desktop overlays are actively proctored)</span>
                     </span>
                     <button
                       type="button"
@@ -1436,9 +1497,13 @@ export function IcpcProctorGuard({
                 )}
 
                 {screenError && (
-                  <p className="text-[11px] font-mono text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">
-                    ⚠ {screenError}
-                  </p>
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[11px] font-mono text-rose-300 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-rose-200">
+                      <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Screen Share Rejected:</span>
+                    </div>
+                    <p className="leading-relaxed">{screenError}</p>
+                  </div>
                 )}
               </div>
             </div>
