@@ -188,27 +188,27 @@ export default function CollegeAnalyticsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-charcoal-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-charcoal-800 pb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-indigo-400 uppercase tracking-wider mb-2">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2">
             <BarChart3 className="w-4 h-4" />
             <span>Campus Institutional Analytics</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             College Adoption & Project Metrics
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-2xl">
+          <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
             Live aggregated metrics on student collaboration, task throughput, faculty challenge adoption, and departmental capstone health.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Time Filter */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 text-xs">
             <button
               onClick={() => setTimeFilter('30d')}
               className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                timeFilter === '30d' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                timeFilter === '30d' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Last 30 Days
@@ -216,7 +216,7 @@ export default function CollegeAnalyticsPage() {
             <button
               onClick={() => setTimeFilter('90d')}
               className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                timeFilter === '90d' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                timeFilter === '90d' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Last 90 Days
@@ -224,7 +224,7 @@ export default function CollegeAnalyticsPage() {
             <button
               onClick={() => setTimeFilter('all')}
               className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                timeFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                timeFilter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               All Time
@@ -245,7 +245,7 @@ export default function CollegeAnalyticsPage() {
       {isLoading || !analytics ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-charcoal-900 border border-charcoal-800" />
+            <div key={i} className="h-28 rounded-2xl bg-slate-100 dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800" />
           ))}
         </div>
       ) : (
@@ -253,93 +253,93 @@ export default function CollegeAnalyticsPage() {
           {/* Top Metric KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Projects */}
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-5 space-y-2 shadow-subtle">
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 p-5 space-y-2 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                   Total Projects
                 </span>
-                <div className="w-8 h-8 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/15 text-brand-500 dark:text-brand-400 flex items-center justify-center">
                   <FolderGit2 className="w-4 h-4" />
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-white">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   {analytics.total_projects}
                 </span>
-                <span className="text-xs text-brand-400">
+                <span className="text-xs text-brand-600 dark:text-brand-400 font-medium">
                   {analytics.recruiting_projects} recruiting
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {analytics.in_progress_projects} in progress • {analytics.completed_projects} completed
               </p>
             </div>
 
             {/* Participating Students */}
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-5 space-y-2 shadow-subtle">
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 p-5 space-y-2 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                   Active Builders
                 </span>
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-white">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   {analytics.active_students}
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   of {analytics.total_students} registered
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Deduplicated students actively in project teams
               </p>
             </div>
 
             {/* Tasks & Completion */}
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-5 space-y-2 shadow-subtle">
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 p-5 space-y-2 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                   Task Throughput
                 </span>
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-white">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   {analytics.completed_tasks}
                 </span>
-                <span className="text-xs text-emerald-400 font-bold">
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
                   {analytics.task_completion_rate}% done
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Out of {analytics.total_tasks} total Kanban tasks created
               </p>
             </div>
 
             {/* Faculty Challenges Linked */}
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-5 space-y-2 shadow-subtle">
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 p-5 space-y-2 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                   Faculty Challenges
                 </span>
-                <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center">
                   <BookOpen className="w-4 h-4" />
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-white">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   {analytics.linked_problem_projects}
                 </span>
-                <span className="text-xs text-amber-400 font-semibold">
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
                   Adopted by Teams
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {analytics.published_problem_statements} published problem statements
               </p>
             </div>
@@ -348,13 +348,13 @@ export default function CollegeAnalyticsPage() {
           {/* Detailed Category & Milestone Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Category Breakdown */}
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-charcoal-800 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-brand-400" />
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-charcoal-800 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-brand-500 dark:text-brand-400" />
                   <span>Projects by Technical Domain</span>
                 </h3>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {analytics.total_projects} total
                 </span>
               </div>
@@ -368,12 +368,12 @@ export default function CollegeAnalyticsPage() {
                   return (
                     <div key={cat} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-200 font-medium">{cat}</span>
-                        <span className="text-slate-400 font-mono">
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">{cat}</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-mono">
                           {count} ({percent}%)
                         </span>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-charcoal-800 overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-charcoal-800 overflow-hidden">
                         <div
                           style={{ width: `${percent}%` }}
                           className="h-full bg-gradient-to-r from-brand-500 to-indigo-500 rounded-full"
@@ -386,54 +386,54 @@ export default function CollegeAnalyticsPage() {
             </div>
 
             {/* Milestones & Difficulty Health */}
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-6 space-y-5">
-              <div className="flex items-center justify-between border-b border-charcoal-800 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Milestone className="w-4 h-4 text-indigo-400" />
+            <div className="rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-750 p-6 space-y-5 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-charcoal-800 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Milestone className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                   <span>Capstone Milestone Progress</span>
                 </h3>
-                <span className="text-xs text-emerald-400 font-mono font-bold">
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
                   {analytics.milestone_completion_rate}% Completed
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-xl bg-charcoal-850/80 border border-charcoal-750 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400 block">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-charcoal-850/80 border border-slate-200 dark:border-charcoal-750 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-slate-400 block font-semibold">
                     Completed Milestones
                   </span>
-                  <span className="text-2xl font-extrabold text-emerald-400">
+                  <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
                     {analytics.completed_milestones}
                   </span>
-                  <p className="text-[11px] text-slate-400">Verified by team leads</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Verified by team leads</p>
                 </div>
 
-                <div className="p-4 rounded-xl bg-charcoal-850/80 border border-charcoal-750 space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-slate-400 block">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-charcoal-850/80 border border-slate-200 dark:border-charcoal-750 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-slate-400 block font-semibold">
                     Pending Milestones
                   </span>
-                  <span className="text-2xl font-extrabold text-white">
+                  <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
                     {analytics.total_milestones - analytics.completed_milestones}
                   </span>
-                  <p className="text-[11px] text-slate-400">In progress / upcoming</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">In progress / upcoming</p>
                 </div>
               </div>
 
               {/* Difficulty Breakdown */}
               <div className="pt-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold block mb-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold block mb-2">
                   Project Difficulty Distribution:
                 </span>
                 <div className="flex gap-2">
                   {Object.entries(analytics.difficulty_distribution || {}).map(([diff, cnt]) => (
                     <div
                       key={diff}
-                      className="flex-1 p-2.5 rounded-xl bg-charcoal-850 border border-charcoal-750 text-center space-y-0.5"
+                      className="flex-1 p-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-850 border border-slate-200 dark:border-charcoal-750 text-center space-y-0.5"
                     >
-                      <span className="text-[10px] text-slate-400 uppercase font-mono block">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-mono block font-medium">
                         {diff}
                       </span>
-                      <strong className="text-base text-white">{cnt}</strong>
+                      <strong className="text-base text-slate-900 dark:text-white">{cnt}</strong>
                     </div>
                   ))}
                 </div>

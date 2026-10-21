@@ -57,7 +57,7 @@ export function HackathonCard({
       {/* Top glowing accent gradient bar on hover */}
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
 
-      {hackathon.banner_url && (
+      {hackathon.banner_url ? (
         <div className="-mx-6 -mt-6 mb-1 h-32 overflow-hidden relative border-b border-white/10">
           <img
             src={hackathon.banner_url}
@@ -65,6 +65,24 @@ export function HackathonCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        </div>
+      ) : (
+        <div className="-mx-6 -mt-6 mb-1 h-32 overflow-hidden relative border-b border-slate-200/50 dark:border-white/10 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/25 via-indigo-600/10 to-transparent" />
+          <div className="flex items-center gap-2.5 z-10 opacity-80 group-hover:scale-105 transition-transform duration-300">
+            <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 shadow-sm">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[11px] font-mono font-bold tracking-widest text-amber-300/90 uppercase block">
+                {hackathon.mode} Sprint
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {hackathon.organizer || 'Linkora Campus'}
+              </span>
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
         </div>
       )}
 
