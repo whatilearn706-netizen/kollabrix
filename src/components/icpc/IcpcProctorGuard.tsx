@@ -423,7 +423,7 @@ export function IcpcProctorGuard({
     };
 
     sendHeartbeat();
-    const heartbeatTimer = setInterval(sendHeartbeat, 8000);
+    const heartbeatTimer = setInterval(sendHeartbeat, 2500);
     return () => clearInterval(heartbeatTimer);
   }, [
     isActive,
@@ -439,6 +439,135 @@ export function IcpcProctorGuard({
     captureScreenSnapshot,
     playAlertSound,
   ]);
+
+  // ── WEBRTC 60FPS FLUID LIVE SCREEN BROADCASTER TO ADMIN ──
+  useEffect(() => {
+    if (!isActive || showEntranceModal || isTerminated || !hasScreenPermission) return;
+    const stream = screenStreamRef.current;
+    if (!stream) return;
+
+    let pc: RTCPeerConnection | null = null;
+    let pollInterval: NodeJS.Timeout | null = null;
+    let isCreatingOffer = false;
+    const seenCandidates = new Set<string>();
+
+    const setupPeerConnection = async () => {
+      try {
+        if (pc) {
+          pc.close();
+        }
+        seenCandidates.clear();
+
+        pc = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+          ],
+        });
+
+        // Add display video tracks to connection
+        stream.getTracks().forEach((track) => {
+          pc?.addTrack(track, stream);
+        });
+
+        // Send local candidates
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            fetch('/api/icpc/proctor/webrtc', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'candidate',
+                studentId,
+                role: 'student',
+                candidate: event.candidate,
+              }),
+            }).catch(() => {});
+          }
+        };
+
+        // Create and publish SDP offer
+        isCreatingOffer = true;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        await fetch('/api/icpc/proctor/webrtc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'offer',
+            studentId,
+            sdp: offer,
+          }),
+        });
+        isCreatingOffer = false;
+      } catch (err) {
+        console.warn('WebRTC broadcaster setup error:', err);
+        isCreatingOffer = false;
+      }
+    };
+
+    setupPeerConnection();
+
+    // Signaling poller for Admin SDP Answer & ICE candidates
+    pollInterval = setInterval(async () => {
+      if (!pc || isCreatingOffer) return;
+
+      try {
+        // Check for Admin SDP Answer or Admin re-offer request
+        const res = await fetch('/api/icpc/proctor/webrtc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'get_answer',
+            studentId,
+          }),
+        });
+        const data = await res.json();
+
+        if (data.needsOffer) {
+          await setupPeerConnection();
+          return;
+        }
+
+        if (data.answer && pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+
+        // Fetch ICE candidates from admin
+        if (pc.remoteDescription) {
+          const candRes = await fetch('/api/icpc/proctor/webrtc', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'get_candidates',
+              studentId,
+              role: 'student',
+            }),
+          });
+          const candData = await candRes.json();
+          if (Array.isArray(candData.candidates)) {
+            for (const cand of candData.candidates) {
+              const key = cand.candidate || JSON.stringify(cand);
+              if (!seenCandidates.has(key)) {
+                seenCandidates.add(key);
+                pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Silently tolerate temporary network glitch
+      }
+    }, 1500);
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+      if (pc) {
+        pc.close();
+      }
+    };
+  }, [isActive, showEntranceModal, isTerminated, hasScreenPermission, studentId]);
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
   useEffect(() => {

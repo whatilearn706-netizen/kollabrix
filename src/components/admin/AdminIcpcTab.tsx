@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Terminal,
@@ -33,6 +33,10 @@ import {
   Video,
   Send,
   AlertOctagon,
+  Bell,
+  Play,
+  Settings,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -88,6 +92,28 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const [demolishReasonText, setDemolishReasonText] = useState<string>('Academic integrity violation detected by proctor. Session forcefully terminated.');
   const [isDemolishing, setIsDemolishing] = useState<boolean>(false);
   const [expandedScreenImage, setExpandedScreenImage] = useState<{ src: string; title: string } | null>(null);
+
+  // Telegram Alert Settings State
+  const [telegramConfig, setTelegramConfig] = useState<{
+    configured: boolean;
+    botTokenMasked: string;
+    chatIdMasked: string;
+    botToken?: string;
+    chatId?: string;
+  } | null>(null);
+  const [showTelegramModal, setShowTelegramModal] = useState<boolean>(false);
+  const [telegramBotInput, setTelegramBotInput] = useState<string>('');
+  const [telegramChatInput, setTelegramChatInput] = useState<string>('');
+  const [isSavingTelegram, setIsSavingTelegram] = useState<boolean>(false);
+  const [isTestingTelegram, setIsTestingTelegram] = useState<boolean>(false);
+
+  // WebRTC 60FPS Live Proctor Theater State
+  const [theaterSession, setTheaterSession] = useState<ActiveProctorSession | null>(null);
+  const [isWebRtcConnected, setIsWebRtcConnected] = useState<boolean>(false);
+  const [isWebRtcConnecting, setIsWebRtcConnecting] = useState<boolean>(false);
+  const [webRtcError, setWebRtcError] = useState<string | null>(null);
+  const theaterVideoRef = useRef<HTMLVideoElement | null>(null);
+  const theaterPcRef = useRef<RTCPeerConnection | null>(null);
 
   // Suspension Modal State
   const [suspendingIncident, setSuspendingIncident] = useState<ProctorIncident | null>(null);
@@ -287,6 +313,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         setProctorIncidents(data.incidents || []);
         if (data.stats) setProctorStats(data.stats);
         if (Array.isArray(data.activeSessions)) setActiveSessions(data.activeSessions);
+        if (data.telegramConfig) setTelegramConfig(data.telegramConfig);
         if (typeof data.proctorMeetingUrl === 'string') {
           setProctorMeetingUrl(data.proctorMeetingUrl);
           setMeetingUrlInput((prev) => prev || data.proctorMeetingUrl);
@@ -383,12 +410,234 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     }
   };
 
+  const handleSaveTelegramConfig = async () => {
+    setIsSavingTelegram(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'save_telegram_config',
+          botToken: telegramBotInput.trim(),
+          chatId: telegramChatInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({ type: 'success', text: 'Telegram configuration saved successfully!' });
+        setShowTelegramModal(false);
+        await loadProctorData();
+      } else {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to save Telegram settings.' });
+      }
+    } catch (e: any) {
+      setStatusMessage({ type: 'error', text: e.message || 'Error saving Telegram settings.' });
+    } finally {
+      setIsSavingTelegram(false);
+    }
+  };
+
+  const handleTestTelegramAlert = async () => {
+    setIsTestingTelegram(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'telegram_test',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({ type: 'success', text: '🔔 Telegram test alert sent! Check your Telegram chat.' });
+      } else {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to send test alert.' });
+      }
+    } catch (e: any) {
+      setStatusMessage({ type: 'error', text: e.message || 'Error delivering test alert.' });
+    } finally {
+      setIsTestingTelegram(false);
+    }
+  };
+
+  // Sync theaterSession with latest activeSessions state
+  useEffect(() => {
+    if (theaterSession) {
+      const fresh = activeSessions.find((s) => s.studentId === theaterSession.studentId);
+      if (fresh) {
+        setTheaterSession(fresh);
+      }
+    }
+  }, [activeSessions]);
+
+  // ── WEBRTC CONSUMER FOR 60FPS LIVE THEATER MODE ──
+  useEffect(() => {
+    if (!theaterSession) {
+      if (theaterPcRef.current) {
+        theaterPcRef.current.close();
+        theaterPcRef.current = null;
+      }
+      setIsWebRtcConnected(false);
+      setIsWebRtcConnecting(false);
+      return;
+    }
+
+    const studentId = theaterSession.studentId;
+    let isMounted = true;
+    let pollTimer: NodeJS.Timeout | null = null;
+    const seenCandidates = new Set<string>();
+
+    setIsWebRtcConnecting(true);
+    setIsWebRtcConnected(false);
+    setWebRtcError(null);
+
+    const initWebRtcConsumer = async () => {
+      try {
+        if (theaterPcRef.current) {
+          theaterPcRef.current.close();
+          theaterPcRef.current = null;
+        }
+
+        const pc = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+          ],
+        });
+        theaterPcRef.current = pc;
+
+        pc.ontrack = (event) => {
+          if (!isMounted) return;
+          if (theaterVideoRef.current && event.streams[0]) {
+            theaterVideoRef.current.srcObject = event.streams[0];
+            theaterVideoRef.current.play().catch(() => {});
+            setIsWebRtcConnected(true);
+            setIsWebRtcConnecting(false);
+          }
+        };
+
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            fetch('/api/icpc/proctor/webrtc', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'candidate',
+                studentId,
+                role: 'admin',
+                candidate: event.candidate,
+              }),
+            }).catch(() => {});
+          }
+        };
+
+        // 1. Tell student broadcaster to produce a fresh offer for this viewer
+        await fetch('/api/icpc/proctor/webrtc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'request_offer',
+            studentId,
+          }),
+        });
+
+        // 2. Poll for the student's SDP offer & ICE candidates
+        let attempts = 0;
+        let offerHandled = false;
+
+        pollTimer = setInterval(async () => {
+          if (!isMounted || !theaterPcRef.current) return;
+          attempts++;
+
+          try {
+            if (!offerHandled) {
+              const res = await fetch('/api/icpc/proctor/webrtc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_offer', studentId }),
+              });
+              const data = await res.json();
+
+              if (data.offer && pc.signalingState === 'stable') {
+                offerHandled = true;
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+
+                await fetch('/api/icpc/proctor/webrtc', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'answer',
+                    studentId,
+                    sdp: answer,
+                  }),
+                });
+              }
+            } else {
+              // Retrieve ICE candidates sent by student
+              const cRes = await fetch('/api/icpc/proctor/webrtc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'get_candidates',
+                  studentId,
+                  role: 'admin',
+                }),
+              });
+              const cData = await cRes.json();
+              if (Array.isArray(cData.candidates)) {
+                for (const cand of cData.candidates) {
+                  const key = cand.candidate || JSON.stringify(cand);
+                  if (!seenCandidates.has(key)) {
+                    seenCandidates.add(key);
+                    pc.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Silently tolerate temporary polling hitch
+          }
+
+          if (attempts > 25 && !offerHandled) {
+            if (isMounted) {
+              setIsWebRtcConnecting(false);
+              setWebRtcError('Waiting for student stream...');
+            }
+          }
+        }, 1000);
+      } catch (err: any) {
+        if (isMounted) {
+          console.warn('Theater WebRTC consumer error:', err);
+          setIsWebRtcConnecting(false);
+          setWebRtcError(err.message || 'Failed to connect stream');
+        }
+      }
+    };
+
+    initWebRtcConsumer();
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearInterval(pollTimer);
+      if (theaterPcRef.current) {
+        theaterPcRef.current.close();
+        theaterPcRef.current = null;
+      }
+    };
+  }, [theaterSession]);
+
   useEffect(() => {
     loadProctorData();
     if (!autoRefreshProctor) return;
     const interval = setInterval(() => {
       loadProctorData();
-    }, 5000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [loadProctorData, autoRefreshProctor]);
 
@@ -968,8 +1217,75 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           {/* SUB-VIEW 1: LIVE CONTESTANT MONITORS GRID */}
           {proctorSubView === 'live_monitors' && (
             <div className="space-y-4">
+              {/* Telegram Instant Contestant Notification Card */}
+              <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      telegramConfig?.configured
+                        ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                        : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
+                    }`}
+                  >
+                    <Bell className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs font-bold text-white">Telegram Instant Proctor Alerts</h4>
+                      <span
+                        className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
+                          telegramConfig?.configured
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        }`}
+                      >
+                        {telegramConfig?.configured ? '🟢 Phone Alerts Connected' : '⚠️ Action Required'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+                      {telegramConfig?.configured
+                        ? `Your phone receives instant push alerts whenever any student enters the contest arena, with 1-click live inspection.`
+                        : 'Connect your Telegram bot so you receive immediate phone notifications as soon as any student enters the arena.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {telegramConfig?.configured && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleTestTelegramAlert}
+                      isLoading={isTestingTelegram}
+                      className="text-[11px] font-mono h-8 border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
+                      leftIcon={<Send className="w-3 h-3" />}
+                    >
+                      Test Phone Ping
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant={telegramConfig?.configured ? 'outline' : 'primary'}
+                    onClick={() => {
+                      setTelegramBotInput(telegramConfig?.botToken || '');
+                      setTelegramChatInput(telegramConfig?.chatId || '');
+                      setShowTelegramModal(true);
+                    }}
+                    className={`text-[11px] font-bold h-8 cursor-pointer ${
+                      telegramConfig?.configured
+                        ? 'border-charcoal-700 text-slate-300 hover:text-white'
+                        : 'bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold'
+                    }`}
+                    leftIcon={<Settings className="w-3 h-3" />}
+                  >
+                    {telegramConfig?.configured ? 'Configure Bot' : 'Connect Telegram'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Monitors Grid Header */}
               <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                <span>Real-Time Monitor Feeds (Auto-synced every 5 seconds):</span>
+                <span>Real-Time Monitor Feeds (Tap any contestant to watch 60 FPS live video):</span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>{activeSessions.length} Active Screen Shares</span>
@@ -983,7 +1299,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                   </div>
                   <h4 className="text-sm font-bold text-white">No Active Contestant Screens Right Now</h4>
                   <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                    When contestants enter the ICPC contest arena and share their screen, their monitor captures will stream live here. You will be able to issue warnings (Caution) or demolish sessions in real-time.
+                    When contestants enter the ICPC contest arena and share their screen, their monitor captures will stream live here. You will receive an instant Telegram ping and will be able to watch their live screen at 60 FPS with 1-click Caution and Demolish controls.
                   </p>
                 </div>
               ) : (
@@ -991,12 +1307,17 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                   {activeSessions.map((session) => (
                     <div
                       key={session.studentId}
-                      className="rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between overflow-hidden shadow-xl"
+                      className="rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-cyan-500/50 transition-all flex flex-col justify-between overflow-hidden shadow-xl group"
                     >
                       {/* Card Header */}
-                      <div className="p-3.5 border-b border-charcoal-800 space-y-1">
+                      <div
+                        className="p-3.5 border-b border-charcoal-800 space-y-1 cursor-pointer hover:bg-charcoal-850 transition-colors"
+                        onClick={() => setTheaterSession(session)}
+                      >
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-xs font-bold text-white truncate">{session.studentName}</h4>
+                          <h4 className="text-xs font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
+                            {session.studentName}
+                          </h4>
                           <span
                             className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
                               session.status === 'demolished'
@@ -1023,73 +1344,81 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                         )}
                       </div>
 
-                      {/* Monitor Snapshot Feed */}
-                      <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden group">
+                      {/* Monitor Snapshot Feed & Direct 60FPS Tap Trigger */}
+                      <div
+                        className="relative aspect-video bg-black flex items-center justify-center overflow-hidden cursor-pointer"
+                        onClick={() => setTheaterSession(session)}
+                      >
                         {session.screenSnapshot ? (
                           <>
                             <img
                               src={session.screenSnapshot}
                               alt={`${session.studentName} monitor`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 cursor-pointer"
-                              onClick={() =>
-                                setExpandedScreenImage({
-                                  src: session.screenSnapshot!,
-                                  title: `${session.studentName} — Live Screen Capture`,
-                                })
-                              }
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                             />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedScreenImage({
-                                  src: session.screenSnapshot!,
-                                  title: `${session.studentName} — Live Screen Capture`,
-                                })
-                              }
-                              className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 backdrop-blur text-[10px] font-mono text-slate-300 hover:text-white border border-charcoal-700 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                            >
-                              <Maximize2 className="w-3 h-3" />
-                              <span>Zoom Screen</span>
-                            </button>
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <span className="px-3 py-1.5 rounded-xl bg-cyan-500 text-black text-xs font-bold flex items-center gap-1.5 shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform">
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                <span>Watch Live 60FPS</span>
+                              </span>
+                            </div>
+                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 backdrop-blur text-[9px] font-mono text-emerald-400 border border-charcoal-700 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>Live Feed</span>
+                            </div>
                           </>
                         ) : (
                           <div className="flex flex-col items-center gap-1 text-slate-500 text-xs font-mono p-4 text-center">
                             <Monitor className="w-6 h-6 animate-pulse text-cyan-400" />
                             <span>Monitor Connected</span>
-                            <span className="text-[10px] text-slate-600">Capturing initial frame...</span>
+                            <span className="text-[10px] text-slate-600">Click to connect WebRTC stream...</span>
                           </div>
                         )}
                       </div>
 
                       {/* Card Action Controls */}
-                      <div className="p-3 bg-charcoal-950/70 border-t border-charcoal-800 flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setCautionTargetSession(session);
-                            setCautionMessageText('Keep your eyes strictly focused on the contest problem and editor.');
-                          }}
-                          disabled={session.status === 'demolished'}
-                          className="flex-1 border-amber-500/40 text-amber-300 hover:bg-amber-500/15 text-[11px] font-bold h-8 cursor-pointer"
-                          leftIcon={<AlertTriangle className="w-3 h-3 text-amber-400" />}
-                        >
-                          Give Caution
-                        </Button>
-
+                      <div className="p-3 bg-charcoal-950/70 border-t border-charcoal-800 space-y-2">
                         <Button
                           size="sm"
                           variant="primary"
-                          onClick={() => {
-                            setDemolishTargetSession(session);
-                            setDemolishReasonText('Academic integrity violation detected by proctor. Session forcefully terminated.');
-                          }}
-                          disabled={session.status === 'demolished'}
-                          className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold h-8 cursor-pointer"
-                          leftIcon={<AlertOctagon className="w-3 h-3 text-white" />}
+                          onClick={() => setTheaterSession(session)}
+                          className="w-full bg-cyan-500 hover:bg-cyan-400 text-black text-[11px] font-extrabold h-8 cursor-pointer"
+                          leftIcon={<Play className="w-3.5 h-3.5 fill-current" />}
                         >
-                          Demolish
+                          📺 Watch Live 60FPS
                         </Button>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCautionTargetSession(session);
+                              setCautionMessageText('Keep your eyes strictly focused on the contest problem and editor.');
+                            }}
+                            disabled={session.status === 'demolished'}
+                            className="flex-1 border-amber-500/40 text-amber-300 hover:bg-amber-500/15 text-[11px] font-bold h-7 cursor-pointer"
+                            leftIcon={<AlertTriangle className="w-3 h-3 text-amber-400" />}
+                          >
+                            Caution
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDemolishTargetSession(session);
+                              setDemolishReasonText('Academic integrity violation detected by proctor. Session forcefully terminated.');
+                            }}
+                            disabled={session.status === 'demolished'}
+                            className="flex-1 border-rose-500/40 text-rose-300 hover:bg-rose-500/15 text-[11px] font-bold h-7 cursor-pointer"
+                            leftIcon={<AlertOctagon className="w-3 h-3 text-rose-400" />}
+                          >
+                            Demolish
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1673,6 +2002,242 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               className="text-xs font-mono"
             >
               Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 60FPS WebRTC Live Proctor Theater Modal */}
+      <Modal
+        isOpen={Boolean(theaterSession)}
+        onClose={() => setTheaterSession(null)}
+        title={
+          theaterSession
+            ? `📺 Live Screen Stream • ${theaterSession.studentName} (${theaterSession.college || theaterSession.studentId})`
+            : 'Live Contestant Screen'
+        }
+        maxWidth="5xl"
+      >
+        <div className="space-y-4">
+          {/* Top Status & Warning Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-charcoal-900 border border-charcoal-750">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span
+                className={`text-[10px] font-mono px-2.5 py-1 rounded-full font-bold uppercase flex items-center gap-1.5 ${
+                  isWebRtcConnected
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : isWebRtcConnecting
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isWebRtcConnected ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'
+                  }`}
+                />
+                <span>
+                  {isWebRtcConnected
+                    ? '🟢 60 FPS WebRTC Stream Active (Zero Latency)'
+                    : isWebRtcConnecting
+                    ? '🟡 Establishing WebRTC P2P Stream...'
+                    : '⚠️ Stream Fallback Active'}
+                </span>
+              </span>
+
+              <span className="text-xs text-slate-300 font-mono">
+                {theaterSession?.contestTitle}
+                {theaterSession?.problemTitle ? ` • ${theaterSession.problemTitle}` : ''}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                  (theaterSession?.warningCount || 0) > 0
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                    : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                }`}
+              >
+                ⚠️ {theaterSession?.warningCount || 0} / 10 Warnings
+              </span>
+
+              <span
+                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border uppercase ${
+                  theaterSession?.status === 'demolished'
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                }`}
+              >
+                {theaterSession?.status === 'demolished' ? '🛑 Demolished' : '🟢 Active'}
+              </span>
+            </div>
+          </div>
+
+          {/* 60FPS Video Canvas Container */}
+          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-charcoal-750 flex items-center justify-center shadow-2xl">
+            {/* Fluid WebRTC Video Element */}
+            <video
+              ref={theaterVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-contain ${isWebRtcConnected ? 'block' : 'hidden'}`}
+            />
+
+            {/* Instant Fallback Snapshot while WebRTC Handshake completes */}
+            {!isWebRtcConnected && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
+                {theaterSession?.screenSnapshot ? (
+                  <img
+                    src={theaterSession.screenSnapshot}
+                    alt="Screen Snapshot Preview"
+                    className="w-full h-full object-contain opacity-60"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-3 p-6 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                    <RefreshCw className="w-6 h-6 animate-spin text-cyan-400" />
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-bold text-white">Connecting Real-Time WebRTC Video</h5>
+                    <p className="text-xs text-slate-400 font-mono mt-1">
+                      Establishing direct peer-to-peer 60 FPS display stream with student browser...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Real-time streaming badge */}
+            <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[10px] font-mono text-white pointer-events-none">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              <span className="font-bold">LIVE SCREEN</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-emerald-400">{isWebRtcConnected ? '60 FPS Ultra-Fluid' : 'Connecting...'}</span>
+            </div>
+          </div>
+
+          {/* Action Bar: 1-Click Caution & Demolish */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-charcoal-800">
+            <div className="text-xs font-mono text-slate-400">
+              Contestant: <strong className="text-white">{theaterSession?.studentName}</strong> • {theaterSession?.college || 'Collegiate Arena'}
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (theaterSession) {
+                    setCautionTargetSession(theaterSession);
+                    setCautionMessageText('Keep your eyes strictly focused on the contest problem and editor.');
+                  }
+                }}
+                disabled={theaterSession?.status === 'demolished'}
+                className="border-amber-500/40 text-amber-300 hover:bg-amber-500/15 text-xs font-bold h-9 cursor-pointer"
+                leftIcon={<AlertTriangle className="w-4 h-4 text-amber-400" />}
+              >
+                ⚠️ Issue Caution Alert
+              </Button>
+
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  if (theaterSession) {
+                    setDemolishTargetSession(theaterSession);
+                    setDemolishReasonText('Academic integrity violation detected by proctor. Session forcefully terminated.');
+                  }
+                }}
+                disabled={theaterSession?.status === 'demolished'}
+                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold h-9 cursor-pointer"
+                leftIcon={<AlertOctagon className="w-4 h-4 text-white" />}
+              >
+                🛑 Demolish Contest
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setTheaterSession(null)}
+                className="text-slate-400 hover:text-white text-xs h-9 cursor-pointer"
+              >
+                Close Stream
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Telegram Alerts Setup & Test Modal */}
+      <Modal
+        isOpen={showTelegramModal}
+        onClose={() => setShowTelegramModal(false)}
+        title="Telegram Instant Proctor Alerts Setup"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 text-slate-300 text-xs leading-relaxed space-y-2">
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <Bell className="w-4 h-4 text-cyan-400" />
+              <span>Real-Time Telegram Contestant Notifications</span>
+            </div>
+            <p>
+              When configured, your Telegram app will ping immediately whenever any student enters the ICPC contest arena, with a direct 1-click button to inspect their 60 FPS live screen.
+            </p>
+            <div className="text-[11px] text-cyan-200/90 space-y-1 pt-1 border-t border-cyan-500/20 font-mono">
+              <div>1. Create a bot in Telegram via <strong>@BotFather</strong> and get your <strong>Bot Token</strong>.</div>
+              <div>2. Start your bot, then message <strong>@userinfobot</strong> to get your numerical <strong>Chat ID</strong>.</div>
+              <div>3. Paste both below, click <strong>Save</strong>, and tap <strong>Test Phone Ping</strong>!</div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Telegram Bot API Token
+              </label>
+              <input
+                type="text"
+                value={telegramBotInput}
+                onChange={(e) => setTelegramBotInput(e.target.value)}
+                placeholder="e.g. 7123456789:AAHk..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Telegram Target Chat ID (Your User ID or Group ID)
+              </label>
+              <input
+                type="text"
+                value={telegramChatInput}
+                onChange={(e) => setTelegramChatInput(e.target.value)}
+                placeholder="e.g. 123456789 or -100123456789"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowTelegramModal(false)}
+              disabled={isSavingTelegram}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleSaveTelegramConfig}
+              isLoading={isSavingTelegram}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs"
+            >
+              Save Telegram Settings
             </Button>
           </div>
         </div>

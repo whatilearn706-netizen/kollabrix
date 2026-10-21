@@ -122,4 +122,5 @@ export interface ActiveProctorSession {
   lastHeartbeat: string;
   status: 'active' | 'cautioned' | 'demolished';
   cautionMessage?: string;
+  startedNotified?: boolean;
 }

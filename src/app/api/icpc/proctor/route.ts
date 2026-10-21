@@ -3,6 +3,7 @@ import { ProctorIncident, ProctorLiveStats, ProctorViolationType, ActiveProctorS
 import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { sendTelegramIcpcAlert } from '@/lib/security/telegramAlert';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,6 +11,28 @@ export const runtime = 'nodejs';
 
 let memoryIncidents: ProctorIncident[] = [];
 let memoryActiveSessions: Record<string, ActiveProctorSession> = {};
+
+async function getTelegramConfig(): Promise<{ botToken: string; chatId: string; configured: boolean }> {
+  try {
+    const icpcTg = await getMasterControlSubkey<{ botToken?: string; chatId?: string }>('icpc_telegram_config', {});
+    if (icpcTg?.botToken && icpcTg?.chatId) {
+      return { botToken: icpcTg.botToken.trim(), chatId: icpcTg.chatId.trim(), configured: true };
+    }
+    const watchdog = await getMasterControlSubkey<{ telegramBotToken?: string; telegramChatId?: string }>('security_watchdog_v1', {});
+    if (watchdog?.telegramBotToken && watchdog?.telegramChatId) {
+      return { botToken: watchdog.telegramBotToken.trim(), chatId: watchdog.telegramChatId.trim(), configured: true };
+    }
+  } catch (err) {
+    console.warn('Error reading telegram config:', err);
+  }
+  const envToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
+  const envChat = process.env.TELEGRAM_CHAT_ID?.trim() || '';
+  return {
+    botToken: envToken,
+    chatId: envChat,
+    configured: Boolean(envToken && envChat),
+  };
+}
 
 async function loadProctorIncidents(): Promise<ProctorIncident[]> {
   try {
@@ -96,12 +119,22 @@ export async function GET(request: NextRequest) {
       flaggedStudentsCount: new Set(incidents.map((i) => i.studentId || i.studentName)).size,
     };
 
+    const tgConfig = await getTelegramConfig();
+    const telegramStatus = {
+      configured: tgConfig.configured,
+      botTokenMasked: tgConfig.botToken ? `${tgConfig.botToken.slice(0, 6)}...${tgConfig.botToken.slice(-4)}` : '',
+      chatIdMasked: tgConfig.chatId ? `${tgConfig.chatId.slice(0, 3)}***${tgConfig.chatId.slice(-2)}` : '',
+      botToken: tgConfig.botToken,
+      chatId: tgConfig.chatId,
+    };
+
     return NextResponse.json({
       success: true,
       incidents,
       stats,
       activeSessions: activeSessionsList,
       proctorMeetingUrl: meetingUrl,
+      telegramConfig: telegramStatus,
       count: incidents.length,
     });
   } catch (error: any) {
@@ -127,6 +160,55 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = body;
 
+    // 0a. Admin action: Save Telegram Configuration
+    if (action === 'save_telegram_config') {
+      const auth = await verifyAdminSession(request);
+      if (!auth.authorized) {
+        return NextResponse.json({ error: 'Unauthorized: Admin authentication required.' }, { status: 401 });
+      }
+      const { botToken = '', chatId = '' } = body;
+      await updateMasterControlSubkey('icpc_telegram_config', {
+        botToken: typeof botToken === 'string' ? botToken.trim() : '',
+        chatId: typeof chatId === 'string' ? chatId.trim() : '',
+      });
+      return NextResponse.json({ success: true, message: 'Telegram alert configuration saved successfully.' });
+    }
+
+    // 0b. Admin action: Test Telegram Alert
+    if (action === 'telegram_test') {
+      const auth = await verifyAdminSession(request);
+      if (!auth.authorized) {
+        return NextResponse.json({ error: 'Unauthorized: Admin authentication required.' }, { status: 401 });
+      }
+      const tg = await getTelegramConfig();
+      if (!tg.configured) {
+        return NextResponse.json({
+          success: false,
+          error: 'Telegram is not configured. Please enter a valid Telegram Bot Token and Chat ID.',
+        }, { status: 400 });
+      }
+
+      const testResult = await sendTelegramIcpcAlert({
+        studentName: 'Admin Diagnostic Test',
+        studentId: 'admin-test',
+        contestTitle: 'ICPC Arena Proctor System Verification',
+        college: 'Linkora System Watchdog',
+        event: 'started',
+        details: '🔔 Real-Time Proctor Alert Test: Telegram connection is ACTIVE. You will receive live contestant notifications here with 1-click live screen inspection links!',
+        botToken: tg.botToken,
+        chatId: tg.chatId,
+      });
+
+      if (!testResult.success) {
+        return NextResponse.json({
+          success: false,
+          error: testResult.reason || (testResult as any).error || 'Telegram API failed to deliver message.',
+        }, { status: 400 });
+      }
+
+      return NextResponse.json({ success: true, message: 'Telegram test message successfully sent! Check your Telegram app.' });
+    }
+
     // 1. Heartbeat from student client
     if (action === 'heartbeat') {
       const {
@@ -142,6 +224,8 @@ export async function POST(request: NextRequest) {
       } = body;
 
       const activeMap = await loadActiveSessions();
+      const isFirstEntry = !activeMap[studentId] || !activeMap[studentId].startedNotified;
+
       const existing = activeMap[studentId] || {
         id: studentId,
         studentId,
@@ -153,6 +237,7 @@ export async function POST(request: NextRequest) {
         problemTitle,
         warningCount: 0,
         status: 'active',
+        startedNotified: false,
         lastHeartbeat: new Date().toISOString(),
       };
 
@@ -174,6 +259,25 @@ export async function POST(request: NextRequest) {
       existing.lastHeartbeat = new Date().toISOString();
       if (typeof screenSnapshot === 'string' && screenSnapshot.startsWith('data:image/')) {
         existing.screenSnapshot = screenSnapshot;
+      }
+
+      // Send instant Telegram alert to admin when a contestant enters the arena
+      if (isFirstEntry) {
+        existing.startedNotified = true;
+        getTelegramConfig().then((tg) => {
+          if (tg.configured) {
+            sendTelegramIcpcAlert({
+              studentName: existing.studentName,
+              studentId: existing.studentId,
+              contestTitle: existing.contestTitle,
+              college: existing.college,
+              problemTitle: existing.problemTitle,
+              event: 'started',
+              botToken: tg.botToken,
+              chatId: tg.chatId,
+            }).catch((e) => console.warn('Failed to send entry Telegram alert:', e));
+          }
+        }).catch(() => {});
       }
 
       activeMap[studentId] = existing;
@@ -229,6 +333,22 @@ export async function POST(request: NextRequest) {
       const currentIncidents = await loadProctorIncidents();
       await saveProctorIncidents([newIncident, ...currentIncidents]);
 
+      // Trigger Telegram demolish alert
+      getTelegramConfig().then((tg) => {
+        if (tg.configured) {
+          sendTelegramIcpcAlert({
+            studentName: target?.studentName || studentId,
+            studentId,
+            contestTitle: target?.contestTitle || 'ICPC Contest',
+            college: target?.college,
+            event: 'demolished',
+            details: reason,
+            botToken: tg.botToken,
+            chatId: tg.chatId,
+          }).catch((e) => console.warn('Failed to send demolish Telegram alert:', e));
+        }
+      }).catch(() => {});
+
       return NextResponse.json({
         success: true,
         message: 'Contestant session demolished and disqualified.',
@@ -281,6 +401,25 @@ export async function POST(request: NextRequest) {
     const currentIncidents = await loadProctorIncidents();
     const updated = [newIncident, ...currentIncidents];
     await saveProctorIncidents(updated);
+
+    // Notify admin on Telegram for phone detection or critical violations
+    if (violationType === 'PHONE_DETECTED' || severity === 'critical') {
+      getTelegramConfig().then((tg) => {
+        if (tg.configured) {
+          sendTelegramIcpcAlert({
+            studentName,
+            studentId,
+            contestTitle,
+            college,
+            problemTitle,
+            event: 'violation',
+            details: `${violationType}: ${details}`,
+            botToken: tg.botToken,
+            chatId: tg.chatId,
+          }).catch((e) => console.warn('Telegram violation alert failed:', e));
+        }
+      }).catch(() => {});
+    }
 
     // Update active map with the violation info
     const activeMap = await loadActiveSessions();
