@@ -1205,94 +1205,290 @@ export default function HackathonWorkspacePage() {
         </div>
       </div>
 
-      {/* Workspace Tabs Navigation - Complete Workspace Suite */}
-      <div className="flex items-center gap-1.5 border-b border-charcoal-800 pb-2 overflow-x-auto scrollbar-none text-xs">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Megaphone className={`w-3.5 h-3.5 ${activeTab === 'overview' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Overview & Notices</span>
-          {announcements.length > 0 && (
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                activeTab === 'overview' ? 'bg-amber-500 text-black font-bold' : 'bg-charcoal-800 text-slate-400'
-              }`}
-            >
-              {announcements.length}
-            </span>
-          )}
-        </button>
+      {/* ========================================================================= */}
+      {/* WORKSPACE MAIN BODY: LEFT VERTICAL SIDEBAR TABS + RIGHT ACTIVE CONTENT */}
+      {/* ========================================================================= */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left Column: Vertical Navigation Sidebar */}
+        <aside className="w-full lg:w-72 xl:w-80 shrink-0 lg:sticky lg:top-24 space-y-3">
+          <div className="rounded-2xl border border-charcoal-800/90 bg-charcoal-900/80 backdrop-blur-md p-2.5 sm:p-3 shadow-card space-y-2">
+            <div className="px-3 py-2 flex items-center justify-between border-b border-charcoal-800/70">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-xs shadow-amber-400/50" />
+                Workshop Navigation
+              </span>
+              <span className="text-[10px] font-mono text-slate-500 bg-charcoal-950/70 px-2 py-0.5 rounded border border-charcoal-800">
+                Tabs
+              </span>
+            </div>
 
-        <button
-          onClick={() => setActiveTab('challenges')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'challenges'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Code2 className={`w-3.5 h-3.5 ${activeTab === 'challenges' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Problem Statements</span>
-          {challenges.length > 0 && (
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                activeTab === 'challenges' ? 'bg-amber-500 text-black font-bold' : 'bg-charcoal-800 text-slate-400'
-              }`}
-            >
-              {challenges.length}
-            </span>
-          )}
-        </button>
+            {/* Vertical Tab Items */}
+            <nav className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible scrollbar-none pb-1 lg:pb-0" aria-label="Workspace tabs">
+              {/* Tab 1: Overview & Notices */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className={`w-auto lg:w-full text-left px-3 sm:px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer shrink-0 lg:shrink whitespace-nowrap lg:whitespace-normal relative ${
+                  activeTab === 'overview'
+                    ? 'bg-amber-500/15 text-amber-200 border border-amber-500/40 shadow-xs shadow-amber-500/10 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850/80 border border-transparent'
+                }`}
+              >
+                {activeTab === 'overview' && (
+                  <span className="hidden lg:block absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-amber-400" />
+                )}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                      activeTab === 'overview'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-charcoal-800/80 text-slate-400 group-hover:text-slate-200 group-hover:bg-charcoal-750'
+                    }`}
+                  >
+                    <Megaphone className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate leading-tight">
+                      Overview & Notices
+                    </div>
+                    <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                      Schedule, rules & notices
+                    </div>
+                  </div>
+                </div>
 
-        <button
-          onClick={() => setActiveTab('team')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'team'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Users className={`w-3.5 h-3.5 ${activeTab === 'team' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>My Squad {myTeam ? `(${myTeam.team_name})` : '(Register)'}</span>
-        </button>
+                {announcements.length > 0 && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ${
+                      activeTab === 'overview'
+                        ? 'bg-amber-500 text-black font-bold'
+                        : 'bg-charcoal-800 text-slate-400 border border-charcoal-700'
+                    }`}
+                  >
+                    {announcements.length}
+                  </span>
+                )}
+              </button>
 
-        <button
-          onClick={() => setActiveTab('submission')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'submission'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <CheckCircle2 className={`w-3.5 h-3.5 ${activeTab === 'submission' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Deliverables {mySubmission?.status === 'submitted' ? '✅' : ''}</span>
-        </button>
+              {/* Tab 2: Problem Statements */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('challenges')}
+                className={`w-auto lg:w-full text-left px-3 sm:px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer shrink-0 lg:shrink whitespace-nowrap lg:whitespace-normal relative ${
+                  activeTab === 'challenges'
+                    ? 'bg-amber-500/15 text-amber-200 border border-amber-500/40 shadow-xs shadow-amber-500/10 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850/80 border border-transparent'
+                }`}
+              >
+                {activeTab === 'challenges' && (
+                  <span className="hidden lg:block absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-amber-400" />
+                )}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                      activeTab === 'challenges'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-charcoal-800/80 text-slate-400 group-hover:text-slate-200 group-hover:bg-charcoal-750'
+                    }`}
+                  >
+                    <Code2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate leading-tight">
+                      Problem Statements
+                    </div>
+                    <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                      Challenges & tracks
+                    </div>
+                  </div>
+                </div>
 
-        <button
-          onClick={() => setActiveTab('judging')}
-          className={`px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'judging'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850 border border-transparent'
-          }`}
-        >
-          <Trophy className={`w-3.5 h-3.5 ${activeTab === 'judging' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>{isJudge ? `Jury Scoring (${allSubmissions.length})` : 'Leaderboard'}</span>
-        </button>
-      </div>
+                {challenges.length > 0 && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ${
+                      activeTab === 'challenges'
+                        ? 'bg-amber-500 text-black font-bold'
+                        : 'bg-charcoal-800 text-slate-400 border border-charcoal-700'
+                    }`}
+                  >
+                    {challenges.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Tab 3: My Squad */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('team')}
+                className={`w-auto lg:w-full text-left px-3 sm:px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer shrink-0 lg:shrink whitespace-nowrap lg:whitespace-normal relative ${
+                  activeTab === 'team'
+                    ? 'bg-amber-500/15 text-amber-200 border border-amber-500/40 shadow-xs shadow-amber-500/10 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850/80 border border-transparent'
+                }`}
+              >
+                {activeTab === 'team' && (
+                  <span className="hidden lg:block absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-amber-400" />
+                )}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                      activeTab === 'team'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-charcoal-800/80 text-slate-400 group-hover:text-slate-200 group-hover:bg-charcoal-750'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate leading-tight">
+                      My Squad {myTeam ? `(${myTeam.team_name})` : '(Register)'}
+                    </div>
+                    <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                      {myTeam ? `${myTeam.members?.length || 1} team members` : 'Form or join squad'}
+                    </div>
+                  </div>
+                </div>
+
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ${
+                    myTeam
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold'
+                      : 'bg-charcoal-800 text-slate-400 border border-charcoal-700'
+                  }`}
+                >
+                  {myTeam ? 'Formed' : 'Join'}
+                </span>
+              </button>
+
+              {/* Tab 4: Deliverables */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('submission')}
+                className={`w-auto lg:w-full text-left px-3 sm:px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer shrink-0 lg:shrink whitespace-nowrap lg:whitespace-normal relative ${
+                  activeTab === 'submission'
+                    ? 'bg-amber-500/15 text-amber-200 border border-amber-500/40 shadow-xs shadow-amber-500/10 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850/80 border border-transparent'
+                }`}
+              >
+                {activeTab === 'submission' && (
+                  <span className="hidden lg:block absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-amber-400" />
+                )}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                      activeTab === 'submission'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-charcoal-800/80 text-slate-400 group-hover:text-slate-200 group-hover:bg-charcoal-750'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate leading-tight">
+                      Deliverables {mySubmission?.status === 'submitted' ? '✅' : ''}
+                    </div>
+                    <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                      Repo links & final demo
+                    </div>
+                  </div>
+                </div>
+
+                {mySubmission?.status === 'submitted' ? (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                    Submitted
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono text-slate-400 bg-charcoal-800 border border-charcoal-700 shrink-0">
+                    Draft
+                  </span>
+                )}
+              </button>
+
+              {/* Tab 5: Jury Scoring / Leaderboard */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('judging')}
+                className={`w-auto lg:w-full text-left px-3 sm:px-3.5 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 group cursor-pointer shrink-0 lg:shrink whitespace-nowrap lg:whitespace-normal relative ${
+                  activeTab === 'judging'
+                    ? 'bg-amber-500/15 text-amber-200 border border-amber-500/40 shadow-xs shadow-amber-500/10 font-semibold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-850/80 border border-transparent'
+                }`}
+              >
+                {activeTab === 'judging' && (
+                  <span className="hidden lg:block absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-amber-400" />
+                )}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                      activeTab === 'judging'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-charcoal-800/80 text-slate-400 group-hover:text-slate-200 group-hover:bg-charcoal-750'
+                    }`}
+                  >
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate leading-tight">
+                      {isJudge ? `Jury Scoring (${allSubmissions.length})` : 'Leaderboard'}
+                    </div>
+                    <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
+                      {isJudge ? 'Evaluation rubrics' : 'Rankings & scores'}
+                    </div>
+                  </div>
+                </div>
+
+                {isJudge && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ${
+                      activeTab === 'judging'
+                        ? 'bg-amber-500 text-black font-bold'
+                        : 'bg-charcoal-800 text-slate-400 border border-charcoal-700'
+                    }`}
+                  >
+                    {allSubmissions.length}
+                  </span>
+                )}
+              </button>
+            </nav>
+
+            {/* Quick Helper Info in Sidebar for Desktop */}
+            <div className="hidden lg:block pt-3 border-t border-charcoal-800/70 mt-2">
+              <div className="p-3 rounded-xl bg-charcoal-950/70 border border-charcoal-800 space-y-2 text-xs">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 font-medium">Sprint Status</span>
+                  {isClosed ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">
+                      Archived
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Workshop
+                    </span>
+                  )}
+                </div>
+
+                {myTeam && (
+                  <div className="pt-2 border-t border-charcoal-800/60 text-[11px] text-slate-300 flex items-center justify-between">
+                    <span className="text-slate-400">Team:</span>
+                    <span className="font-semibold text-white truncate max-w-[130px]">{myTeam.team_name}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Right Main Content Panel */}
+        <main className="flex-1 min-w-0 w-full">
 
       {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & ANNOUNCEMENTS */}
       {/* ========================================================================= */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Main Column: Announcements & Schedule */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             {/* Announcements Header */}
             <div className="p-5 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 space-y-4">
               <div className="flex items-center justify-between">
@@ -2503,6 +2699,8 @@ export default function HackathonWorkspacePage() {
           )}
         </div>
       )}
+        </main>
+      </div>
 
       {/* Modals */}
       <AddChallengeModal
