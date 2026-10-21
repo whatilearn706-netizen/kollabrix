@@ -27,12 +27,14 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  GraduationCap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
   | 'master'
+  | 'id_verifications'
   | 'feedback'
   | 'leaderboard'
   | 'deadlines'
@@ -73,6 +75,7 @@ export function AdminHeader({
 
   const tabs: { id: AdminTab; label: string; icon: any; category: TabCategory }[] = [
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
+    { id: 'id_verifications', label: '🎓 Student ID Verifications', icon: GraduationCap, category: 'campus' },
     { id: 'hotpatch', label: '🤖 AI Hot-Patch & Code Desk', icon: Code2, category: 'code' },
     { id: 'spark', label: '✨ AI Spark Templates', icon: Sparkles, category: 'code' },
     { id: 'deadlines', label: '⏳ Deadlines Radar', icon: Clock, category: 'campus' },
@@ -96,7 +99,7 @@ export function AdminHeader({
   ];
 
   const categories: { id: TabCategory; label: string }[] = [
-    { id: 'all', label: '⚡ All Tabs (21)' },
+    { id: 'all', label: '⚡ All Tabs (22)' },
     { id: 'master', label: '👑 Master & Live' },
     { id: 'code', label: '🤖 Code & HotPatch' },
     { id: 'campus', label: '🏆 Campus & Contests' },

@@ -456,7 +456,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           ) : verificationStatus === 'pending' ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-xs">
               <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              ID Under Review
+              Wait for Verified
             </span>
           ) : null}
         </div>
@@ -473,8 +473,8 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               </span>
             ) : verificationStatus === 'pending' ? (
               <span className="text-xs text-amber-300 font-medium flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
-                Verification Pending
+                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                Wait for Verified
               </span>
             ) : (
               <button
@@ -513,11 +513,11 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               </span>
             </div>
           ) : verificationStatus === 'pending' ? (
-            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
               <div className="flex items-center gap-2 text-xs text-amber-200">
                 <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
                 <span>
-                  Your Student ID card submission is under admin review. Once approved, your verified badge will activate automatically.
+                  Student ID card submitted. <strong className="text-amber-300 font-bold">Wait for Verified</strong> — our university administrator is reviewing your card.
                 </span>
               </div>
               <Button
@@ -527,7 +527,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                 onClick={() => setIsIdModalOpen(true)}
                 className="shrink-0 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
               >
-                Inspect ID Status
+                Wait for Verified
               </Button>
             </div>
           ) : (

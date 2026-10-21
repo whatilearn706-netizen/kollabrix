@@ -318,15 +318,15 @@ export function CollegeIdVerificationModal({
               </div>
             )}
 
-            {/* ── STATE 2: PENDING REVIEW ── */}
-            {status === 'pending' && !isReuploading && (
+            {/* ── STATE 2: PENDING REVIEW (WAIT FOR VERIFIED - RE-UPLOAD LOCKED) ── */}
+            {status === 'pending' && (
               <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-4 text-center">
                 <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto animate-pulse">
                   <Clock className="w-8 h-8" />
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                    Under Review by Admin
+                    Wait for Verified
                   </span>
                   <h3 className="text-base font-bold text-white">
                     {existingRequest?.collegeName || enteredCollege}
@@ -337,7 +337,7 @@ export function CollegeIdVerificationModal({
                     </p>
                   )}
                   <p className="text-xs text-amber-200/90 leading-relaxed pt-1">
-                    Your Student ID card has been submitted. Our university verification team will review your card and activate your verified badge.
+                    Your Student ID card has been securely submitted. Please <strong className="text-amber-300 font-semibold">Wait for Verified</strong> from an administrator. Re-uploading is locked to protect university verification integrity.
                   </p>
                 </div>
 
@@ -352,24 +352,15 @@ export function CollegeIdVerificationModal({
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 pt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsReuploading(true)}
-                    className="flex-1 text-xs border-charcoal-700 text-slate-300 hover:text-white cursor-pointer"
-                  >
-                    Upload Different Photo
-                  </Button>
+                <div className="pt-1">
                   <Button
                     type="button"
                     variant="primary"
                     size="sm"
                     onClick={onClose}
-                    className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs cursor-pointer"
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs cursor-pointer"
                   >
-                    Got It
+                    Close (Wait for Verified)
                   </Button>
                 </div>
               </div>

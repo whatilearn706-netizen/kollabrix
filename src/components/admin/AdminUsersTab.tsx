@@ -40,9 +40,10 @@ import { supabase } from '@/lib/supabase/client';
 interface AdminUsersTabProps {
   currentAdminId?: string;
   authToken?: string;
+  defaultSubTab?: 'users' | 'id_verifications';
 }
 
-export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps) {
+export function AdminUsersTab({ currentAdminId, authToken, defaultSubTab = 'users' }: AdminUsersTabProps) {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -72,7 +73,13 @@ export function AdminUsersTab({ currentAdminId, authToken }: AdminUsersTabProps)
   );
 
   // Active Sub-tab View: 'users' (All Directory) vs 'id_verifications' (Student ID Queue)
-  const [activeSubTab, setActiveSubTab] = useState<'users' | 'id_verifications'>('users');
+  const [activeSubTab, setActiveSubTab] = useState<'users' | 'id_verifications'>(defaultSubTab);
+
+  useEffect(() => {
+    if (defaultSubTab) {
+      setActiveSubTab(defaultSubTab);
+    }
+  }, [defaultSubTab]);
 
   // Student ID Verification Queue State
   const [idRequests, setIdRequests] = useState<StudentIdVerification[]>([]);

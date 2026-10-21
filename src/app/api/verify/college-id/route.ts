@@ -54,7 +54,7 @@ async function sendTelegramVerificationAlert(verification: StudentIdVerification
 🕒 *Submitted:* ${time} IST
 
 👉 *Review & Approve in Admin Control Center:*
-https://linkora-link.online/control-center-7x9?tab=users`;
+https://linkora-link.online/control-center-7x9?tab=id_verifications`;
 
     await fetch(`https://api.telegram.org/bot${tg.botToken}/sendMessage`, {
       method: 'POST',
@@ -69,6 +69,52 @@ https://linkora-link.online/control-center-7x9?tab=users`;
   } catch (err) {
     console.warn('Failed to send telegram verification alert:', err);
   }
+}
+
+// Authoritative dual storage reader (dedicated platform_settings row + master subkey backup)
+async function loadAllIdVerifications(): Promise<StudentIdVerification[]> {
+  const supabase = getSupabaseAdmin();
+  try {
+    const { data: dedicated } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'student_id_verifications')
+      .maybeSingle();
+
+    if (Array.isArray(dedicated?.value) && dedicated.value.length > 0) {
+      return dedicated.value;
+    }
+  } catch (e) {}
+
+  try {
+    const subkeyData = await getMasterControlSubkey<StudentIdVerification[]>('student_id_verifications', []);
+    if (Array.isArray(subkeyData) && subkeyData.length > 0) {
+      return subkeyData;
+    }
+  } catch (e) {}
+
+  return [];
+}
+
+// Authoritative dual storage writer
+async function saveAllIdVerifications(requests: StudentIdVerification[]): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const now = new Date().toISOString();
+
+  try {
+    await supabase.from('platform_settings').upsert({
+      key: 'student_id_verifications',
+      value: requests,
+      description: 'Authoritative student college ID card verification submissions queue.',
+      updated_at: now,
+    });
+  } catch (e) {
+    console.warn('Error saving to dedicated student_id_verifications row:', e);
+  }
+
+  try {
+    await updateMasterControlSubkey('student_id_verifications', requests);
+  } catch (e) {}
 }
 
 // ── GET: Read current user's request OR all requests for Admin Queue ──
@@ -87,7 +133,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const isAdminView = searchParams.get('admin') === 'true';
 
-    const allRequests = await getMasterControlSubkey<StudentIdVerification[]>('student_id_verifications', []);
+    const allRequests = await loadAllIdVerifications();
 
     // If Admin requested full queue
     if (isAdminView) {
@@ -198,10 +244,25 @@ export async function POST(request: NextRequest) {
     const username = profile?.username || authUser.email?.split('@')[0] || 'student';
     const displayName = profile?.display_name || username;
 
-    const currentRequests = await getMasterControlSubkey<StudentIdVerification[]>('student_id_verifications', []);
+    const currentRequests = await loadAllIdVerifications();
 
-    // Create or update request for this user
+    // Check if user has already uploaded
     const existingIndex = currentRequests.findIndex((r) => r.userId === authUser.id);
+    const existing = existingIndex >= 0 ? currentRequests[existingIndex] : null;
+
+    if (existing && existing.status === 'pending') {
+      return NextResponse.json({
+        success: false,
+        error: 'You have already submitted your Student ID card. Your submission is currently waiting for verification by an administrator. Re-uploading is not permitted.',
+      }, { status: 400 });
+    }
+
+    if (existing && existing.status === 'approved') {
+      return NextResponse.json({
+        success: false,
+        error: 'Your collegiate affiliation has already been officially verified and locked. Re-uploading is not permitted.',
+      }, { status: 400 });
+    }
 
     const newRequest: StudentIdVerification = {
       id: existingIndex >= 0 ? currentRequests[existingIndex].id : `sid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -224,7 +285,7 @@ export async function POST(request: NextRequest) {
       updatedList = [newRequest, ...currentRequests];
     }
 
-    await updateMasterControlSubkey('student_id_verifications', updatedList);
+    await saveAllIdVerifications(updatedList);
 
     // Send instant Telegram ping to Admin
     sendTelegramVerificationAlert(newRequest).catch(() => {});
@@ -262,7 +323,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'requestId and action ("approve" | "reject") are required.' }, { status: 400 });
     }
 
-    const currentRequests = await getMasterControlSubkey<StudentIdVerification[]>('student_id_verifications', []);
+    const currentRequests = await loadAllIdVerifications();
     const targetIndex = currentRequests.findIndex((r) => r.id === requestId);
 
     if (targetIndex < 0) {
@@ -360,7 +421,7 @@ export async function PATCH(request: NextRequest) {
 
     const updatedList = [...currentRequests];
     updatedList[targetIndex] = target;
-    await updateMasterControlSubkey('student_id_verifications', updatedList);
+    await saveAllIdVerifications(updatedList);
 
     return NextResponse.json({
       success: true,
