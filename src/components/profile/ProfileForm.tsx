@@ -821,6 +821,12 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         collegeName={college}
         userId={user?.id}
         onCollegeNameChange={(name) => setCollege(name)}
+        onSubmitted={(request) => {
+          setVerificationStatus('pending');
+          if (request?.collegeName) {
+            setCollege(request.collegeName);
+          }
+        }}
         onVerified={(verifiedCollege) => {
           setCollege(verifiedCollege);
           setIsCollegeVerified(true);

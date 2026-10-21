@@ -24,6 +24,7 @@ interface CollegeIdVerificationModalProps {
   onClose: () => void;
   collegeName: string;
   onCollegeNameChange?: (name: string) => void;
+  onSubmitted?: (request: StudentIdVerification) => void;
   onVerified?: (verifiedCollege: string) => void;
   userId?: string;
 }
@@ -33,6 +34,7 @@ export function CollegeIdVerificationModal({
   onClose,
   collegeName,
   onCollegeNameChange,
+  onSubmitted,
   onVerified,
   userId,
 }: CollegeIdVerificationModalProps) {
@@ -223,6 +225,10 @@ export function CollegeIdVerificationModal({
 
       if (onCollegeNameChange) {
         onCollegeNameChange(cleanCollege);
+      }
+
+      if (onSubmitted) {
+        onSubmitted(data.request);
       }
 
       if (typeof window !== 'undefined') {

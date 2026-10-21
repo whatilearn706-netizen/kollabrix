@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { StudentIdVerification, StudentIdVerificationStats } from '@/types/verification';
+import { verifyAdminSession } from '@/lib/admin/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -81,14 +82,14 @@ async function loadAllIdVerifications(): Promise<StudentIdVerification[]> {
       .eq('key', 'student_id_verifications')
       .maybeSingle();
 
-    if (Array.isArray(dedicated?.value) && dedicated.value.length > 0) {
+    if (Array.isArray(dedicated?.value)) {
       return dedicated.value;
     }
   } catch (e) {}
 
   try {
     const subkeyData = await getMasterControlSubkey<StudentIdVerification[]>('student_id_verifications', []);
-    if (Array.isArray(subkeyData) && subkeyData.length > 0) {
+    if (Array.isArray(subkeyData)) {
       return subkeyData;
     }
   } catch (e) {}
@@ -102,12 +103,15 @@ async function saveAllIdVerifications(requests: StudentIdVerification[]): Promis
   const now = new Date().toISOString();
 
   try {
-    await supabase.from('platform_settings').upsert({
+    const { error: upsertErr } = await supabase.from('platform_settings').upsert({
       key: 'student_id_verifications',
       value: requests,
       description: 'Authoritative student college ID card verification submissions queue.',
       updated_at: now,
     });
+    if (upsertErr) {
+      console.warn('Upsert student_id_verifications error:', upsertErr);
+    }
   } catch (e) {
     console.warn('Error saving to dedicated student_id_verifications row:', e);
   }
@@ -115,6 +119,71 @@ async function saveAllIdVerifications(requests: StudentIdVerification[]): Promis
   try {
     await updateMasterControlSubkey('student_id_verifications', requests);
   } catch (e) {}
+}
+
+// Helper: Authorize administrator access strictly & authoritatively
+async function checkAdminAuthorization(
+  request: NextRequest,
+  token: string | null
+): Promise<{ isAuthorized: boolean; email?: string; userId?: string }> {
+  // Method 1: Standard verifyAdminSession
+  try {
+    const adminSession = await verifyAdminSession(request);
+    if (adminSession.authorized) {
+      return {
+        isAuthorized: true,
+        email: adminSession.user?.email || adminSession.profile?.username,
+        userId: adminSession.user?.id || adminSession.profile?.user_id,
+      };
+    }
+  } catch (e) {}
+
+  // Method 2: Inspect bearer token directly against owner credentials and profiles.role
+  if (token) {
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      const { data } = await supabaseAdmin.auth.getUser(token);
+      const user = data?.user;
+      if (user) {
+        const isOwner =
+          user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+          user.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+
+        if (isOwner) {
+          return {
+            isAuthorized: true,
+            email: user.email || 'goyalmayank142@gmail.com',
+            userId: user.id,
+          };
+        }
+
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('role, user_id, username')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profile?.role === 'admin' || profile?.role === 'moderator') {
+          return {
+            isAuthorized: true,
+            email: user.email || profile.username,
+            userId: user.id,
+          };
+        }
+
+        const metaRole = user.user_metadata?.role || user.app_metadata?.role;
+        if (metaRole === 'admin' || metaRole === 'moderator') {
+          return {
+            isAuthorized: true,
+            email: user.email,
+            userId: user.id,
+          };
+        }
+      }
+    } catch (e) {}
+  }
+
+  return { isAuthorized: false };
 }
 
 // ── GET: Read current user's request OR all requests for Admin Queue ──
@@ -137,10 +206,13 @@ export async function GET(request: NextRequest) {
 
     // If Admin requested full queue
     if (isAdminView) {
-      // Check admin privileges
-      const isOwner = authUser && authUser.email?.toLowerCase() === 'goyalmayank142@gmail.com';
-      const role = authUser?.user_metadata?.role || authUser?.app_metadata?.role;
-      const hasAdminRole = role === 'admin' || role === 'moderator' || isOwner;
+      const adminAuth = await checkAdminAuthorization(request, token);
+      if (!adminAuth.isAuthorized) {
+        return NextResponse.json(
+          { success: false, error: 'Unauthorized. Admin privileges required to view verification queue.' },
+          { status: 403 }
+        );
+      }
 
       // Calculate stats
       const stats: StudentIdVerificationStats = {
@@ -161,7 +233,7 @@ export async function GET(request: NextRequest) {
         success: true,
         requests: sorted,
         stats,
-        isAdmin: hasAdminRole,
+        isAdmin: true,
       });
     }
 
@@ -308,13 +380,15 @@ export async function PATCH(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-    let adminEmail = 'faculty-admin@linkora.in';
-    if (token) {
-      const { data } = await supabaseAdmin.auth.getUser(token);
-      if (data?.user?.email) {
-        adminEmail = data.user.email;
-      }
+    const adminAuth = await checkAdminAuthorization(request, token);
+    if (!adminAuth.isAuthorized) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized. Administrator privileges required to moderate verifications.' },
+        { status: 403 }
+      );
     }
+
+    const adminEmail = adminAuth.email || 'faculty-admin@linkora.in';
 
     const body = await request.json();
     const { requestId, action, rejectionReason } = body;

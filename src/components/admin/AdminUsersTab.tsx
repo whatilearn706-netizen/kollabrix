@@ -113,6 +113,8 @@ export function AdminUsersTab({ currentAdminId, authToken, defaultSubTab = 'user
       if (res.ok && data.success) {
         setIdRequests(data.requests || []);
         if (data.stats) setIdStats(data.stats);
+      } else if (!res.ok && data?.error) {
+        console.warn('Admin ID verifications fetch error:', data.error);
       }
     } catch (err) {
       console.warn('Error fetching student ID verifications:', err);
@@ -124,6 +126,12 @@ export function AdminUsersTab({ currentAdminId, authToken, defaultSubTab = 'user
   useEffect(() => {
     fetchIdVerifications();
   }, [fetchIdVerifications]);
+
+  useEffect(() => {
+    if (activeSubTab === 'id_verifications') {
+      fetchIdVerifications();
+    }
+  }, [activeSubTab, fetchIdVerifications]);
 
   const handleModerateIdRequest = async (requestId: string, action: 'approve' | 'reject', reason?: string) => {
     setIsSubmitting(true);
