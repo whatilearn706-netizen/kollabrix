@@ -169,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [configured, setConfigured] = useState(() => isSupabaseConfigured());
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'login' | 'signup'>('login');
+  const isSigningOutRef = useRef(false);
 
   // Helper to persist auth data to localStorage and persistent cookies for ALL authenticated accounts
   const persistSessionData = (u: User | null, s: Session | null, p: Profile | null) => {
@@ -351,6 +352,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 1. Initial Session Retrieval from Supabase
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      const isExplicitSignOut =
+        isSigningOutRef.current ||
+        (typeof window !== 'undefined' &&
+          (sessionStorage.getItem('linkora_signing_out') === 'true' ||
+            localStorage.getItem('linkora_explicit_signout') === 'true'));
+
+      if (isExplicitSignOut) {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
       if (currentSession?.user) {
         setSession(currentSession);
         setUser(currentSession.user);
@@ -394,7 +409,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      const isExplicitSignOut =
+        isSigningOutRef.current ||
+        (typeof window !== 'undefined' &&
+          (sessionStorage.getItem('linkora_signing_out') === 'true' ||
+            localStorage.getItem('linkora_explicit_signout') === 'true'));
+
+      // If explicit signout is active and user didn't intentionally trigger a fresh SIGNED_IN event, never restore
+      if (isExplicitSignOut && event !== 'SIGNED_IN') {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
       if (newSession?.user) {
+        isSigningOutRef.current = false;
         try {
           localStorage.removeItem('linkora_explicit_signout');
           sessionStorage.removeItem('linkora_explicit_signout');
@@ -412,41 +443,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // ONLY wipe if user explicitly invoked signOut() in this browser!
       if (event === 'SIGNED_OUT') {
-        const isExplicit =
-          typeof window !== 'undefined' &&
-          (sessionStorage.getItem('linkora_signing_out') === 'true' ||
-           localStorage.getItem('linkora_explicit_signout') === 'true');
-
-        if (isExplicit) {
-          try {
-            sessionStorage.removeItem('linkora_signing_out');
-          } catch (e) {}
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-          persistSessionData(null, null, null);
-        } else {
-          // Supabase SSR background client sent temporary SIGNED_OUT — preserve user from cache!
-          try {
-            const cachedUser = localStorage.getItem('linkora_auth_user');
-            const cachedProfile = localStorage.getItem('linkora_auth_profile');
-            const cachedSession = localStorage.getItem('linkora_auth_session');
-            if (cachedUser) {
-              setUser(JSON.parse(cachedUser));
-              if (cachedProfile) setProfile(JSON.parse(cachedProfile));
-              if (cachedSession) {
-                const parsed = JSON.parse(cachedSession);
-                setSession(parsed);
-                if (parsed?.access_token && parsed?.refresh_token) {
-                  supabase.auth.setSession({
-                    access_token: parsed.access_token,
-                    refresh_token: parsed.refresh_token,
-                  }).catch(() => {});
-                }
-              }
-            }
-          } catch (e) {}
-        }
+        try {
+          sessionStorage.removeItem('linkora_signing_out');
+        } catch (e) {}
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        persistSessionData(null, null, null);
         setIsLoading(false);
         return;
       }
@@ -459,7 +462,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window === 'undefined') return;
       try {
         // Only wipe state if an explicit sign-out occurred in another tab
-        if (localStorage.getItem('linkora_explicit_signout') === 'true') {
+        if (
+          isSigningOutRef.current ||
+          localStorage.getItem('linkora_explicit_signout') === 'true' ||
+          sessionStorage.getItem('linkora_signing_out') === 'true'
+        ) {
           setUser(null);
           setProfile(null);
           setSession(null);
@@ -596,29 +603,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      isSigningOutRef.current = true;
       if (typeof window !== 'undefined') {
-        localStorage.setItem('linkora_explicit_signout', 'true');
         sessionStorage.setItem('linkora_signing_out', 'true');
+        localStorage.setItem('linkora_explicit_signout', 'true');
       }
+
+      // 1. Immediately zero-out React state for instant UI update (0ms transition)
       setUser(null);
       setSession(null);
       setProfile(null);
+      setIsLoading(false);
+
+      // 2. Wipe Linkora storage & credentials
       persistSessionData(null, null, null);
-      try {
-        localStorage.removeItem('linkora_admin_session');
-        const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-        document.cookie = 'linkora_admin_session=' + expCookie;
-        document.cookie = 'linkora_user_session=' + expCookie;
-        document.cookie = 'linkora_user_email=' + expCookie;
-        document.cookie = 'linkora_user_id=' + expCookie;
-        sessionStorage.removeItem('linkora_maintenance_unlocked');
-        window.dispatchEvent(new Event('linkora_auth_updated'));
-      } catch (e) {}
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('linkora_admin_session');
+          localStorage.removeItem('linkora_admin_passcode');
+          localStorage.removeItem('linkora_student_id_status');
+          localStorage.removeItem('linkora_auth_user');
+          localStorage.removeItem('linkora_auth_user_id');
+          localStorage.removeItem('linkora_auth_user_email');
+          localStorage.removeItem('linkora_auth_session');
+          localStorage.removeItem('linkora_auth_profile');
+          sessionStorage.removeItem('linkora_admin_verified');
+          sessionStorage.removeItem('linkora_maintenance_unlocked');
+
+          // Purge all Supabase and Linkora keys in localStorage
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('sb-') || key.startsWith('linkora_auth_'))) {
+              localStorage.removeItem(key);
+            }
+          }
+
+          // Expire Linkora session cookies across paths
+          const cookieNames = [
+            'linkora_admin_session',
+            'linkora_user_session',
+            'linkora_user_email',
+            'linkora_user_id',
+          ];
+          cookieNames.forEach((name) => {
+            document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+            document.cookie = `${name}=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+          });
+
+          // Purge all Supabase auth cookies (sb-*)
+          document.cookie.split(';').forEach((cookie) => {
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            if (name.startsWith('sb-') || name.startsWith('linkora_')) {
+              document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+              document.cookie = `${name}=; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+            }
+          });
+
+          window.dispatchEvent(new Event('linkora_auth_updated'));
+        } catch (e) {}
+      }
+
+      // 3. Inform Supabase Auth client to revoke both local cache and remote session
       if (configured) {
-        await supabase.auth.signOut().catch(() => {});
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch (e) {}
+        try {
+          await supabase.auth.signOut({ scope: 'global' });
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Sign out error:', err);
+    } finally {
+      // 4. If current route requires authentication, redirect cleanly to homepage
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (
+          path.startsWith('/control-center-7x9') ||
+          path.startsWith('/profile/setup') ||
+          path.startsWith('/settings') ||
+          path.startsWith('/my-') ||
+          path.startsWith('/projects/new')
+        ) {
+          window.location.href = '/';
+        }
+      }
     }
   };
 

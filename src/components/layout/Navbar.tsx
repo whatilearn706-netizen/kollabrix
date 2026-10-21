@@ -386,11 +386,14 @@ export function Navbar() {
                     </Link>
 
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setUserDropdownOpen(false);
-                        signOut();
+                        await signOut();
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Sign Out</span>
@@ -541,7 +544,6 @@ export function Navbar() {
             {/* Authenticated-only navigation links */}
             {user && (
               <>
-
                 <Link
                   href="/my-projects"
                   onClick={() => setMobileMenuOpen(false)}
@@ -550,6 +552,31 @@ export function Navbar() {
                   <Briefcase className="w-4 h-4 text-indigo-500" />
                   <span>Project Workspace</span>
                 </Link>
+
+                {username && (
+                  <Link
+                    href={`/profile/${username}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <User className="w-4 h-4 text-indigo-500" />
+                    <span>Public Portfolio</span>
+                  </Link>
+                )}
+
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMobileMenuOpen(false);
+                    await signOut();
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-red-500" />
+                  <span>Sign Out</span>
+                </button>
               </>
             )}
           </div>
