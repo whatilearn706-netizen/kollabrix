@@ -54,6 +54,17 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Partial<PracticeQuestion> | null>(null);
 
+  // Add Step Modal state
+  const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
+  const [newStepTitle, setNewStepTitle] = useState('');
+  const [newStepTopic, setNewStepTopic] = useState('');
+  const [newStepTime, setNewStepTime] = useState('2 Hours');
+  const [newStepSummary, setNewStepSummary] = useState('');
+  const [newStepVideoTitle, setNewStepVideoTitle] = useState('');
+  const [newStepVideoUrl, setNewStepVideoUrl] = useState('');
+  const [newStepInstructor, setNewStepInstructor] = useState('Campus Mentor');
+  const [newStepDuration, setNewStepDuration] = useState('35m');
+
   // Study Material form state
   const [studyOverview, setStudyOverview] = useState('');
   const [studyKeyPoints, setStudyKeyPoints] = useState<string[]>([]);
@@ -296,6 +307,95 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
     }
   };
 
+  // 6. ADD NEW STEP (e.g. Step 6)
+  const handleAddStep = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStepTitle.trim()) {
+      alert('Step title is required');
+      return;
+    }
+    setIsSaving(true);
+    const ytId = extractYouTubeId(newStepVideoUrl);
+    try {
+      const res = await fetch('/api/curriculum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_step',
+          curriculumId: currentCurriculum.id,
+          newStep: {
+            title: newStepTitle.trim(),
+            topic: newStepTopic.trim() || newStepTitle.trim(),
+            estimatedTime: newStepTime || '2 Hours',
+            summary: newStepSummary || `In this step, students learn ${newStepTitle}.`,
+            video: {
+              id: `v-${Date.now()}`,
+              title: newStepVideoTitle || `${newStepTitle} Full Lecture`,
+              instructor: newStepInstructor || 'Campus Mentor',
+              duration: newStepDuration || '35m',
+              videoUrl: newStepVideoUrl,
+              youtubeId: ytId,
+            },
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.curricula) {
+        setCurriculaMap(data.curricula);
+        setIsAddStepModalOpen(false);
+        setNewStepTitle('');
+        setNewStepTopic('');
+        setNewStepSummary('');
+        setNewStepVideoTitle('');
+        setNewStepVideoUrl('');
+        if (data.newStepNumber) {
+          setSelectedStepNumber(data.newStepNumber);
+        }
+        setStatusMessage({ type: 'success', text: `Added Step ${data.newStepNumber || ''} successfully!` });
+      } else {
+        alert(data.error || 'Failed to add step');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Add step error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 7. DELETE STEP
+  const handleDeleteStep = async (stepNum: number, stepTitle: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete Step ${stepNum}: "${stepTitle}"? All remaining steps will be automatically renumbered sequentially.`
+      )
+    )
+      return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/curriculum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_step',
+          curriculumId: currentCurriculum.id,
+          stepNumber: stepNum,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.curricula) {
+        setCurriculaMap(data.curricula);
+        setSelectedStepNumber(1);
+        setStatusMessage({ type: 'success', text: `Deleted Step ${stepNum} successfully!` });
+      } else {
+        alert(data.error || 'Failed to delete step');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Delete error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Reset to verified defaults
   const handleResetDefaults = async () => {
     if (!confirm('Reset all curricula, steps, videos, and questions to original verified collegiate defaults?')) return;
@@ -404,7 +504,28 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 font-mono mb-1.5 block">Select Topic Step:</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-slate-400 font-mono block">Select Topic Step:</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setIsAddStepModalOpen(true)}
+                  className="text-[11px] py-1 px-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg flex items-center gap-1 shadow-md shadow-emerald-600/20"
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Add Step {currentCurriculum.steps.length + 1}
+                </Button>
+                {currentCurriculum.steps.length > 1 && (
+                  <button
+                    onClick={() => handleDeleteStep(currentStep.stepNumber, currentStep.title)}
+                    className="p-1 rounded bg-slate-800 text-rose-400 hover:text-rose-300 hover:bg-slate-700 transition-colors"
+                    title={`Delete Step ${currentStep.stepNumber}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
             <select
               value={selectedStepNumber}
               onChange={(e) => setSelectedStepNumber(Number(e.target.value))}
@@ -870,6 +991,120 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
             </Button>
             <Button type="submit" disabled={isSaving} size="sm" className="bg-amber-600 hover:bg-amber-500">
               Save Practice Question
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 3: ADD NEW STEP (e.g. Step 6) */}
+      <Modal
+        isOpen={isAddStepModalOpen}
+        onClose={() => setIsAddStepModalOpen(false)}
+        title={`Add Step ${currentCurriculum.steps.length + 1} to ${currentCurriculum.title}`}
+        maxWidth="2xl"
+      >
+        <form onSubmit={handleAddStep} className="space-y-4">
+          <div className="p-3 bg-emerald-950/40 rounded-xl border border-emerald-500/30 text-xs text-emerald-300 font-mono">
+            Adding <strong>Step {currentCurriculum.steps.length + 1}</strong> will immediately expand the course syllabus and be visible to students in the hub.
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="text-xs text-slate-400 font-mono block mb-1">Step Title:</label>
+              <Input
+                required
+                value={newStepTitle}
+                onChange={(e) => setNewStepTitle(e.target.value)}
+                placeholder="e.g. Exception Handling & Collections"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 font-mono block mb-1">Estimated Duration:</label>
+              <Input
+                value={newStepTime}
+                onChange={(e) => setNewStepTime(e.target.value)}
+                placeholder="e.g. 2 Hours"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 font-mono block mb-1">Topic Subtitle / Focus:</label>
+            <Input
+              value={newStepTopic}
+              onChange={(e) => setNewStepTopic(e.target.value)}
+              placeholder="e.g. try-catch, Throw, Custom Exceptions & ArrayList"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 font-mono block mb-1">Step Overview / Summary:</label>
+            <Textarea
+              rows={2}
+              value={newStepSummary}
+              onChange={(e) => setNewStepSummary(e.target.value)}
+              placeholder="Summary of what the student will master in this step..."
+            />
+          </div>
+
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+            <div className="text-xs font-mono text-rose-400 font-semibold flex items-center gap-1.5">
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Primary Video Lecture for Step {currentCurriculum.steps.length + 1}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">Video Title:</label>
+                <Input
+                  value={newStepVideoTitle}
+                  onChange={(e) => setNewStepVideoTitle(e.target.value)}
+                  placeholder="e.g. Java Exceptions Tutorial"
+                  className="text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">Instructor Name:</label>
+                <Input
+                  value={newStepInstructor}
+                  onChange={(e) => setNewStepInstructor(e.target.value)}
+                  placeholder="e.g. Kunal Kushwaha"
+                  className="text-xs"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">YouTube URL or ID:</label>
+                <Input
+                  value={newStepVideoUrl}
+                  onChange={(e) => setNewStepVideoUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="text-xs"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400 font-mono block mb-1">Video Duration:</label>
+                <Input
+                  value={newStepDuration}
+                  onChange={(e) => setNewStepDuration(e.target.value)}
+                  placeholder="e.g. 45m"
+                  className="text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button variant="outline" type="button" onClick={() => setIsAddStepModalOpen(false)} size="sm">
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+              size="sm"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium"
+            >
+              Add Step {currentCurriculum.steps.length + 1}
             </Button>
           </div>
         </form>

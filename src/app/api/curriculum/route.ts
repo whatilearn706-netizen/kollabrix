@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
-import { LanguageCurriculum } from '@/types/curriculum';
+import { LanguageCurriculum, LearningStep } from '@/types/curriculum';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -77,6 +77,92 @@ export async function POST(req: NextRequest) {
     }
 
     const curr = { ...memoryCurricula[curriculumId] };
+
+    // Action: Add new Step (e.g. Step 6)
+    if (action === 'add_step') {
+      const nextNum = curr.steps.length + 1;
+      const stepInput = body.newStep || {};
+      const newStepObj: LearningStep = {
+        stepNumber: nextNum,
+        title: stepInput.title || `Step ${nextNum}: New Advanced Topic`,
+        topic: stepInput.topic || 'Advanced Concepts & Practice',
+        estimatedTime: stepInput.estimatedTime || '2 Hours',
+        summary: stepInput.summary || `Comprehensive deep dive into Step ${nextNum}.`,
+        studyMaterial: stepInput.studyMaterial || {
+          overview: stepInput.summary || `Overview and architecture for Step ${nextNum}.`,
+          keyPoints: ['Core syntax and implementation rules', 'Common errors and interview questions'],
+          codeExamples: [],
+          cheatsheet: [],
+          officialDocUrl: '',
+        },
+        video: stepInput.video || {
+          id: `v-${Date.now()}`,
+          title: stepInput.videoTitle || `${stepInput.title || `Step ${nextNum}`} Lecture`,
+          instructor: stepInput.videoInstructor || 'Campus Mentor',
+          duration: stepInput.videoDuration || '30m',
+          videoUrl: stepInput.videoUrl || '',
+          youtubeId: stepInput.youtubeId || '',
+        },
+        videos: [
+          stepInput.video || {
+            id: `v-${Date.now()}`,
+            title: stepInput.videoTitle || `${stepInput.title || `Step ${nextNum}`} Lecture`,
+            instructor: stepInput.videoInstructor || 'Campus Mentor',
+            duration: stepInput.videoDuration || '30m',
+            videoUrl: stepInput.videoUrl || '',
+            youtubeId: stepInput.youtubeId || '',
+          },
+        ],
+        practiceQuestions: stepInput.practiceQuestions || [],
+        compilerStarterCode: stepInput.compilerStarterCode || curr.steps[0]?.compilerStarterCode || '',
+      };
+
+      curr.steps.push(newStepObj);
+      curr.stepsCount = curr.steps.length;
+      memoryCurricula[curriculumId] = curr;
+
+      if (sClient) {
+        await sClient.from('platform_settings').upsert({
+          key: 'campus_curricula_registry',
+          value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        curriculum: curr,
+        curricula: memoryCurricula,
+        newStepNumber: nextNum,
+      });
+    }
+
+    // Action: Delete Step
+    if (action === 'delete_step' && typeof stepNumber === 'number') {
+      if (curr.steps.length <= 1) {
+        return NextResponse.json({ success: false, error: 'Cannot delete the only step in curriculum.' }, { status: 400 });
+      }
+      curr.steps = curr.steps
+        .filter((s) => s.stepNumber !== stepNumber)
+        .map((s, idx) => ({ ...s, stepNumber: idx + 1 })); // renumber sequentially
+      curr.stepsCount = curr.steps.length;
+      memoryCurricula[curriculumId] = curr;
+
+      if (sClient) {
+        await sClient.from('platform_settings').upsert({
+          key: 'campus_curricula_registry',
+          value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        curriculum: curr,
+        curricula: memoryCurricula,
+      });
+    }
+
     const stepIdx = curr.steps.findIndex((s) => s.stepNumber === stepNumber);
     if (stepIdx === -1) {
       return NextResponse.json({ success: false, error: 'Step not found' }, { status: 404 });

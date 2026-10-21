@@ -52,6 +52,14 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
   // Active video within the current step (for multiple videos per topic)
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
 
+  // Dual-Door Closing & Opening Transition Animation ("Grand Double Door Portal")
+  const [doorTransition, setDoorTransition] = useState<{
+    active: boolean;
+    state: 'closing' | 'closed' | 'opening';
+    targetStepTitle?: string;
+    targetStepNumber?: number;
+  }>({ active: false, state: 'closing' });
+
   // Book page flip animation state
   const [isFlipping, setIsFlipping] = useState<boolean>(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev'>('next');
@@ -122,43 +130,92 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
     } catch {}
   };
 
-  // Trigger book page flip animation and advance to next step
+  // Trigger dual-door closing and opening transition to advance step
   const handleNextStep = () => {
     if (activeStepIndex < curriculum.steps.length - 1) {
+      const nextIdx = activeStepIndex + 1;
+      const targetStep = curriculum.steps[nextIdx];
       if (!completedSteps.includes(currentStep.stepNumber)) {
         toggleStepCompleted(currentStep.stepNumber);
       }
-      setFlipDirection('next');
-      setIsFlipping(true);
+
+      // Step 1: Doors slam shut from both sides
+      setDoorTransition({
+        active: true,
+        state: 'closing',
+        targetStepTitle: targetStep.title,
+        targetStepNumber: targetStep.stepNumber,
+      });
+
+      // Step 2: Once doors meet in center, advance stage behind closed doors
       setTimeout(() => {
-        setActiveStepIndex(activeStepIndex + 1);
-        setIsFlipping(false);
-        window.scrollTo({ top: 120, behavior: 'smooth' });
-      }, 350);
+        setActiveStepIndex(nextIdx);
+        window.scrollTo({ top: 120, behavior: 'instant' });
+        setDoorTransition((prev) => ({ ...prev, state: 'closed' }));
+
+        // Step 3: Doors swing open from both sides, revealing the new stage!
+        setTimeout(() => {
+          setDoorTransition((prev) => ({ ...prev, state: 'opening' }));
+
+          // Step 4: Reset animation state
+          setTimeout(() => {
+            setDoorTransition({ active: false, state: 'closing' });
+          }, 450);
+        }, 120);
+      }, 400);
     }
   };
 
   const handlePrevStep = () => {
     if (activeStepIndex > 0) {
-      setFlipDirection('prev');
-      setIsFlipping(true);
+      const prevIdx = activeStepIndex - 1;
+      const targetStep = curriculum.steps[prevIdx];
+
+      setDoorTransition({
+        active: true,
+        state: 'closing',
+        targetStepTitle: targetStep.title,
+        targetStepNumber: targetStep.stepNumber,
+      });
+
       setTimeout(() => {
-        setActiveStepIndex(activeStepIndex - 1);
-        setIsFlipping(false);
-        window.scrollTo({ top: 120, behavior: 'smooth' });
-      }, 350);
+        setActiveStepIndex(prevIdx);
+        window.scrollTo({ top: 120, behavior: 'instant' });
+        setDoorTransition((prev) => ({ ...prev, state: 'closed' }));
+
+        setTimeout(() => {
+          setDoorTransition((prev) => ({ ...prev, state: 'opening' }));
+          setTimeout(() => {
+            setDoorTransition({ active: false, state: 'closing' });
+          }, 450);
+        }, 120);
+      }, 400);
     }
   };
 
   const handleSelectStep = (idx: number) => {
     if (idx === activeStepIndex) return;
-    setFlipDirection(idx > activeStepIndex ? 'next' : 'prev');
-    setIsFlipping(true);
+    const targetStep = curriculum.steps[idx];
+
+    setDoorTransition({
+      active: true,
+      state: 'closing',
+      targetStepTitle: targetStep.title,
+      targetStepNumber: targetStep.stepNumber,
+    });
+
     setTimeout(() => {
       setActiveStepIndex(idx);
-      setIsFlipping(false);
-      window.scrollTo({ top: 120, behavior: 'smooth' });
-    }, 350);
+      window.scrollTo({ top: 120, behavior: 'instant' });
+      setDoorTransition((prev) => ({ ...prev, state: 'closed' }));
+
+      setTimeout(() => {
+        setDoorTransition((prev) => ({ ...prev, state: 'opening' }));
+        setTimeout(() => {
+          setDoorTransition({ active: false, state: 'closing' });
+        }, 450);
+      }, 120);
+    }, 400);
   };
 
   const handleLoadQuestionToCompiler = (q: PracticeQuestion) => {
@@ -757,6 +814,66 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
           </div>
         )}
       </div>
+
+      {/* GRAND DOUBLE-DOOR CLOSING & OPENING STAGE PORTAL */}
+      {doorTransition.active && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex overflow-hidden">
+          {/* Left Door */}
+          <div
+            className={`w-1/2 h-full bg-slate-950 border-r-2 border-indigo-500 shadow-[10px_0_50px_rgba(99,102,241,0.5)] transition-transform duration-400 ease-in-out flex flex-col justify-center items-end pr-10 relative ${
+              doorTransition.state === 'closing' || doorTransition.state === 'closed'
+                ? 'translate-x-0'
+                : '-translate-x-full'
+            }`}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-indigo-900/30 via-slate-950 to-slate-950 opacity-90" />
+            <div className="relative space-y-6 opacity-30 select-none">
+              <div className="w-56 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-indigo-400 rounded-full" />
+              <div className="w-36 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-indigo-400 rounded-full" />
+              <div className="w-72 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-indigo-400 rounded-full" />
+            </div>
+          </div>
+
+          {/* Right Door */}
+          <div
+            className={`w-1/2 h-full bg-slate-950 border-l-2 border-indigo-500 shadow-[-10px_0_50px_rgba(99,102,241,0.5)] transition-transform duration-400 ease-in-out flex flex-col justify-center items-start pl-10 relative ${
+              doorTransition.state === 'closing' || doorTransition.state === 'closed'
+                ? 'translate-x-0'
+                : 'translate-x-full'
+            }`}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,_var(--tw-gradient-stops))] from-indigo-900/30 via-slate-950 to-slate-950 opacity-90" />
+            <div className="relative space-y-6 opacity-30 select-none">
+              <div className="w-56 h-1 bg-gradient-to-l from-transparent via-indigo-500 to-indigo-400 rounded-full" />
+              <div className="w-36 h-1 bg-gradient-to-l from-transparent via-indigo-500 to-indigo-400 rounded-full" />
+              <div className="w-72 h-1 bg-gradient-to-l from-transparent via-indigo-500 to-indigo-400 rounded-full" />
+            </div>
+          </div>
+
+          {/* Central Emblem / Stage Lock when doors are shut */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
+              doorTransition.state === 'closing' || doorTransition.state === 'closed'
+                ? 'opacity-100 scale-100'
+                : 'opacity-0 scale-90'
+            }`}
+          >
+            <div className="p-8 rounded-3xl bg-slate-900/95 border-2 border-indigo-500 shadow-2xl shadow-indigo-500/50 flex flex-col items-center gap-3 text-center max-w-md mx-4 backdrop-blur-2xl">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/50 flex items-center justify-center text-indigo-400 animate-pulse">
+                <Sparkles className="w-8 h-8 text-indigo-400" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-mono uppercase tracking-widest text-indigo-400 font-bold">
+                  Stage Complete • Unlocking
+                </div>
+                <div className="text-xl font-extrabold text-white">
+                  Step {doorTransition.targetStepNumber}: {doorTransition.targetStepTitle}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
