@@ -535,6 +535,13 @@ export default function HomePage() {
                   {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
                 </p>
 
+                {/* Mobile / Tablet 3D Model Stage (Instantly visible above the fold on mobile!) */}
+                {sectionsConfig.origamiBird !== false && (
+                  <div className="lg:hidden w-full flex items-center justify-center relative min-h-[300px] sm:min-h-[360px] overflow-hidden my-2">
+                    <OrigamiBirdSculpture />
+                  </div>
+                )}
+
                 {/* Unstop-Style Interactive Global Search Console */}
                 {sectionsConfig.heroSearch !== false && <UnstopHeroSearchBar />}
 
@@ -626,9 +633,9 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Linkora Origami Bird (Exactly as originally before additions) */}
+              {/* Right Column: Signature 3D Linkora Origami Bird (Desktop Sticky Scroll Stage) */}
               {sectionsConfig.origamiBird !== false && (
-                <div className="lg:col-span-5 flex items-center justify-center relative min-h-[360px] sm:min-h-[400px] lg:min-h-[440px] overflow-hidden">
+                <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] lg:sticky lg:top-24 overflow-hidden z-10">
                   <OrigamiBirdSculpture />
                 </div>
               )}

@@ -388,40 +388,37 @@ export function OrigamiBirdSculpture() {
         const t = clock.getElapsedTime();
 
         // Smoothly interpolate scroll offset and decay velocity
-        currentScrollY += (targetScrollY - currentScrollY) * 0.08;
-        scrollVelocity *= 0.92;
+        currentScrollY += (targetScrollY - currentScrollY) * 0.1;
+        scrollVelocity *= 0.9;
 
-        // Normalized scroll progress across hero fold (0 to ~800px)
-        const scrollFactor = Math.min(Math.max(currentScrollY / 650, 0), 2.0);
-
-        // Scroll kinematics:
+        // Direct, vivid scroll kinematics (responds immediately to scroll)
         // 1. Panoramic 3D banking turn: rotates bird Y smoothly as user scrolls
-        const scrollRotY = scrollFactor * Math.PI * 0.85;
+        const scrollRotY = currentScrollY * 0.0055;
         // 2. Aerodynamic pitch: bird swoops gracefully along scroll
-        const scrollRotX = Math.sin(scrollFactor * Math.PI * 0.8) * 0.22;
+        const scrollRotX = Math.sin(currentScrollY * 0.004) * 0.32;
         // 3. Banking roll along Z: dynamic tilt according to scroll direction & speed
-        const scrollRotZ = Math.sin(scrollFactor * Math.PI) * 0.28 + scrollVelocity * 0.002;
+        const scrollRotZ = Math.sin(currentScrollY * 0.0035) * 0.3 + scrollVelocity * 0.003;
         // 4. Parallax vertical descent & subtle drift
-        const scrollPosY = -scrollFactor * 0.35;
-        const scrollPosX = Math.sin(scrollFactor * Math.PI) * 0.25;
+        const scrollPosY = -Math.min(currentScrollY * 0.0008, 0.6);
+        const scrollPosX = Math.sin(currentScrollY * 0.003) * 0.25;
 
         // Smooth interpolation to target rotation combining mouse + scroll
-        currentRotX += (targetRotX + scrollRotX - currentRotX) * 0.06;
-        currentRotY += (targetRotY + scrollRotY - currentRotY) * 0.06;
+        currentRotX += (targetRotX + scrollRotX - currentRotX) * 0.08;
+        currentRotY += (targetRotY + scrollRotY - currentRotY) * 0.08;
 
         birdRoot.rotation.x = currentRotX;
         birdRoot.rotation.y = currentRotY;
 
         // Banking roll based on yaw turns + scroll banking
-        birdRoot.rotation.z = 0.15 + (currentRotY + 0.3) * 0.2 + scrollRotZ + Math.sin(t * 0.8) * 0.02;
+        birdRoot.rotation.z = 0.15 + (currentRotY + 0.3) * 0.2 + scrollRotZ + Math.sin(t * 0.8) * 0.03;
 
         // Gentle gliding flight & bobbing levitation + scroll parallax
         birdRoot.position.y = 0.2 + Math.sin(t * 1.8) * 0.08 + scrollPosY;
         birdRoot.position.x = Math.cos(t * 1.2) * 0.05 + scrollPosX;
 
         // Dynamic wing flapping responding to scroll flight velocity
-        const flightFlapSpeed = 2.8 + Math.min(Math.abs(scrollVelocity) * 0.05, 4.0);
-        const flightFlapAmp = 0.1 + Math.min(Math.abs(scrollVelocity) * 0.003, 0.18);
+        const flightFlapSpeed = 2.8 + Math.min(Math.abs(scrollVelocity) * 0.08, 5.0);
+        const flightFlapAmp = 0.1 + Math.min(Math.abs(scrollVelocity) * 0.004, 0.22);
         const wingFlex = Math.sin(t * flightFlapSpeed) * flightFlapAmp;
         leftWingGroup.rotation.z = wingFlex;
         rightWingGroup.rotation.z = -wingFlex * 0.8;
@@ -504,10 +501,13 @@ export function OrigamiBirdSculpture() {
 
       {/* Tactile hint pill */}
       {isCanvasReady && (
-        <div className="absolute bottom-2 right-4 z-20 pointer-events-none animate-fadeIn">
-          <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 shadow-2xs flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>3D Origami • Drag to inspect</span>
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-fadeIn whitespace-nowrap">
+          <span className="text-[11px] font-mono font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 text-white backdrop-blur-md border border-slate-700/80 dark:border-white/20 shadow-xl flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span>3D Origami • Scroll &amp; Drag to Rotate</span>
           </span>
         </div>
       )}
