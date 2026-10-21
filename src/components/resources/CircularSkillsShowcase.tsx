@@ -90,7 +90,7 @@ export function CircularSkillsShowcase({
           {/* ==================================================== */}
           {/* LEFT SIDE: Brand, Minimal Typography & Key Highlights */}
           {/* ==================================================== */}
-          <div className="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-white/10 space-y-8 bg-indigo-950/20 backdrop-blur-[2px]">
+          <div className="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-center space-y-8">
             {/* White Pill Badge matching Image 1 */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-indigo-900 text-xs font-black tracking-wide shadow-md w-fit">
               <span className="text-base">{isBeginner ? '🔑' : '⚡'}</span>
@@ -163,9 +163,9 @@ export function CircularSkillsShowcase({
           {/* ==================================================== */}
           {/* RIGHT SIDE: Minimal, Spacious Skills Showcase */}
           {/* ==================================================== */}
-          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-start relative overflow-hidden bg-slate-950/20 backdrop-blur-[1px]">
-            {/* Header: Clean title + search input */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-5 border-b border-white/10 mb-5">
+          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-start relative overflow-hidden">
+            {/* Header: Clean title + search input without dividing line */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 mb-3">
               <span className="text-xs font-mono font-bold tracking-wider uppercase text-indigo-200">
                 Select Skill / Language ({filteredSkills.length})
               </span>
@@ -183,10 +183,10 @@ export function CircularSkillsShowcase({
               </div>
             </div>
 
-            {/* Scrollable Viewport (Starts cleanly at top, normal natural scroll, no repeat loop) */}
+            {/* Scrollable Viewport without scrollbar line */}
             <div
               ref={scrollRef}
-              className="relative h-[480px] sm:h-[520px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent overscroll-contain"
+              className="relative h-[480px] sm:h-[520px] overflow-y-auto pr-1 overscroll-contain scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               {filteredSkills.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
