@@ -13,6 +13,7 @@ interface VerifiedCollegeBadgeProps {
   showIcon?: boolean;
   showUnverified?: boolean;
   size?: 'xs' | 'sm' | 'md';
+  badgeOnly?: boolean;
 }
 
 // Global in-memory cache shared across all badge instances to avoid duplicate requests
@@ -100,6 +101,7 @@ export function VerifiedCollegeBadge({
   showIcon = false,
   showUnverified = true,
   size = 'sm',
+  badgeOnly = false,
 }: VerifiedCollegeBadgeProps) {
   const [localVerified, setLocalVerified] = useState<boolean>(() => {
     if (isVerified === true) return true;
@@ -153,7 +155,32 @@ export function VerifiedCollegeBadge({
     };
   }, [college, isVerified, userId, username]);
 
-  if (!college) return null;
+  if (!college && !badgeOnly) return null;
+
+  if (badgeOnly) {
+    if (localVerified) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs shrink-0 select-none cursor-default ${className}`}
+          title="Official College Affiliation Verified via Student ID Card"
+        >
+          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <span>Verified Collegiate</span>
+        </span>
+      );
+    }
+    if (showUnverified) {
+      return (
+        <span
+          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default ${className}`}
+          title="College Affiliation Not Yet Verified"
+        >
+          <span>Not Verified</span>
+        </span>
+      );
+    }
+    return null;
+  }
 
   return (
     <span className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>

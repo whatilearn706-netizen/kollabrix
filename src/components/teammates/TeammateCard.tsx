@@ -30,9 +30,9 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
 
   const scoreBadgeColor =
     match_score >= 80
-      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+      ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
       : match_score >= 60
-      ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+      ? 'bg-violet-500/15 text-violet-500 border-violet-500/30'
       : 'bg-slate-500/15 text-slate-400 border-slate-500/30';
 
   return (
@@ -42,15 +42,16 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
         borderColor: theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className="site-card card-hover-lift border p-6 flex flex-col justify-between group relative overflow-hidden shadow-sm"
+      className="site-card card-hover-lift border p-5 sm:p-6 flex flex-col justify-between h-full group relative overflow-hidden shadow-xs hover:shadow-md transition-all duration-200"
     >
       {/* Top glowing accent gradient bar on hover */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-indigo-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
 
-      <div className="space-y-4">
+      {/* Main Body */}
+      <div className="flex-1 flex flex-col space-y-3.5">
         {/* Header: Avatar, Info, Match Score */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <Link href={`/profile/${profile.username}`} className="shrink-0">
               <Avatar
                 name={profile.display_name}
@@ -59,41 +60,26 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                 className="ring-2 ring-slate-100 dark:ring-white/10 group-hover:ring-violet-400 group-hover:scale-105 transition-all duration-200"
               />
             </Link>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <Link
                 href={`/profile/${profile.username}`}
                 style={{ color: teammateNameColor }}
                 className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${
                   isCardDark ? 'text-white site-heading-white' : ''
                 }`}
+                title={profile.display_name}
               >
                 {profile.display_name}
               </Link>
               <p style={{ color: teammateUsernameColor }} className="text-xs font-mono font-bold truncate">
                 @{profile.username}
               </p>
-              {(profile.college || profile.course) && (
-                <div style={{ color: theme.mutedTextColor }} className="flex items-center gap-1.5 text-[11px] mt-1 flex-wrap">
-                  <GraduationCap className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                  {profile.course && <span>{profile.course}</span>}
-                  {profile.course && profile.college && <span>•</span>}
-                  {profile.college && (
-                    <VerifiedCollegeBadge
-                      college={profile.college}
-                      isVerified={profile.college_verified}
-                      userId={profile.user_id}
-                      username={profile.username}
-                      size="xs"
-                    />
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="shrink-0 flex flex-col items-end">
+          <div className="shrink-0">
             <span
-              className={`text-xs font-black px-3 py-1 rounded-full border flex items-center gap-1.5 font-mono shadow-xs transition-transform duration-200 group-hover:scale-105 ${scoreBadgeColor}`}
+              className={`text-xs font-black px-2.5 py-1 rounded-full border flex items-center gap-1 font-mono shadow-2xs transition-transform duration-200 group-hover:scale-105 ${scoreBadgeColor}`}
             >
               <Sparkles className="w-3 h-3 text-current" />
               <span>{match_score}% Match</span>
@@ -101,55 +87,98 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
           </div>
         </div>
 
-        {/* Bio */}
-        {profile.bio && (
-          <p
-            style={{ color: theme.bodyTextColor }}
-            className="text-xs line-clamp-2 leading-relaxed opacity-90"
+        {/* Education & Campus Affiliation Row */}
+        {(profile.college || profile.course) && (
+          <div
+            style={{
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
+              borderColor: theme.borderColor,
+            }}
+            className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl border min-w-0"
           >
-            {profile.bio}
-          </p>
+            <GraduationCap className="w-3.5 h-3.5 text-violet-500 shrink-0 opacity-80" />
+            <span
+              style={{ color: theme.bodyTextColor }}
+              className="truncate font-medium text-[11px] sm:text-xs flex-1 min-w-0"
+              title={`${profile.course ? `${profile.course} • ` : ''}${profile.college || ''}`}
+            >
+              {profile.course ? `${profile.course} • ` : ''}
+              {profile.college || 'Campus Builder'}
+            </span>
+            {profile.college && (
+              <VerifiedCollegeBadge
+                college={profile.college}
+                isVerified={profile.college_verified}
+                userId={profile.user_id}
+                username={profile.username}
+                badgeOnly={true}
+                showUnverified={false}
+              />
+            )}
+          </div>
         )}
 
-        {/* Why this match? (Explainability section) */}
+        {/* Bio (Fixed 2-line height for visual symmetry) */}
+        <p
+          style={{ color: theme.bodyTextColor }}
+          className="text-xs line-clamp-2 min-h-[2.5rem] leading-relaxed opacity-90"
+        >
+          {profile.bio || (
+            <span className="italic opacity-60">
+              Active campus builder open to innovative projects and hackathons.
+            </span>
+          )}
+        </p>
+
+        {/* Match Recommendation Highlight */}
         {reasons && reasons.length > 0 && (
           <div
             style={{
-              backgroundColor: `${theme.brandColor}10`,
+              backgroundColor: `${theme.brandColor}12`,
               borderColor: `${theme.brandColor}25`,
             }}
-            className="p-3.5 rounded-2xl border space-y-1.5 text-xs"
+            className="px-3 py-1.5 rounded-xl border flex items-center justify-between gap-2 text-xs"
+            title={reasons.join(' • ')}
           >
-            <span
-              style={{ color: theme.brandColor }}
-              className="text-[10px] font-mono uppercase tracking-wider font-bold flex items-center gap-1"
-            >
-              <Sparkles className="w-3 h-3" />
-              Why this recommendation:
-            </span>
-            <ul className="space-y-1">
-              {reasons.map((r, idx) => (
-                <li
-                  key={idx}
-                  style={{ color: theme.bodyTextColor }}
-                  className="flex items-start gap-1.5 text-[11px] opacity-90"
-                >
-                  <span style={{ color: theme.brandColor }} className="font-bold mt-0.5">•</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Sparkles
+                style={{ color: theme.brandColor }}
+                className="w-3.5 h-3.5 shrink-0"
+              />
+              <span
+                style={{ color: theme.bodyTextColor }}
+                className="text-[11px] font-medium truncate"
+              >
+                {reasons[0]}
+              </span>
+            </div>
+            {reasons.length > 1 && (
+              <span
+                style={{ color: theme.brandColor }}
+                className="text-[10px] font-bold font-mono shrink-0 px-1.5 py-0.2 rounded-md bg-white/60 dark:bg-black/20"
+              >
+                +{reasons.length - 1}
+              </span>
+            )}
           </div>
         )}
 
         {/* Matching & Highlighted Skills */}
         <div className="space-y-1.5">
-          <span style={{ color: theme.mutedTextColor }} className="text-[10px] uppercase font-mono tracking-wider block font-bold">
-            Skills &amp; Stack:
-          </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div
+            style={{ color: theme.mutedTextColor }}
+            className="flex items-center justify-between text-[10px] uppercase font-mono tracking-wider font-bold"
+          >
+            <span>Skills &amp; Tech Stack</span>
+            {profile.skills && profile.skills.length > 4 && (
+              <span className="text-[10px] font-sans lowercase opacity-75">
+                +{profile.skills.length - 4} more
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5 min-h-[1.75rem] items-center">
             {profile.skills && profile.skills.length > 0 ? (
-              profile.skills.slice(0, 6).map((skill) => {
+              profile.skills.slice(0, 4).map((skill) => {
                 const isMatching = matching_skills.some(
                   (ms) => ms.toLowerCase() === skill.toLowerCase()
                 );
@@ -165,33 +194,36 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                       borderColor: isMatching ? `${theme.accentColor}50` : theme.borderColor,
                       color: isMatching ? theme.accentColor : theme.bodyTextColor,
                     }}
-                    className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold border transition-all duration-150 hover:scale-105 hover:border-violet-400/60 cursor-default"
+                    className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold border transition-all duration-150 hover:scale-105 cursor-default"
                   >
                     {skill}
                   </span>
                 );
               })
             ) : (
-              <span style={{ color: theme.mutedTextColor }} className="text-xs italic">
-                No skills listed yet
-              </span>
-            )}
-            {profile.skills && profile.skills.length > 6 && (
-              <span style={{ color: theme.mutedTextColor }} className="text-[10px] self-center font-medium">
-                +{profile.skills.length - 6} more
+              <span style={{ color: theme.mutedTextColor }} className="text-[11px] italic">
+                Exploring new technologies
               </span>
             )}
           </div>
         </div>
 
         {/* Preferred Roles */}
-        {profile.preferred_roles && profile.preferred_roles.length > 0 && (
-          <div className="space-y-1">
-            <span style={{ color: theme.mutedTextColor }} className="text-[10px] uppercase font-mono tracking-wider block font-bold">
-              Preferred Roles:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {profile.preferred_roles.map((role) => {
+        <div className="space-y-1.5">
+          <div
+            style={{ color: theme.mutedTextColor }}
+            className="flex items-center justify-between text-[10px] uppercase font-mono tracking-wider font-bold"
+          >
+            <span>Preferred Roles</span>
+            {profile.preferred_roles && profile.preferred_roles.length > 3 && (
+              <span className="text-[10px] font-sans lowercase opacity-75">
+                +{profile.preferred_roles.length - 3} more
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5 min-h-[1.75rem] items-center">
+            {profile.preferred_roles && profile.preferred_roles.length > 0 ? (
+              profile.preferred_roles.slice(0, 3).map((role) => {
                 const isMatchingRole = matching_roles.some(
                   (mr) => mr.toLowerCase() === role.toLowerCase()
                 );
@@ -212,13 +244,17 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                     {role}
                   </span>
                 );
-              })}
-            </div>
+              })
+            ) : (
+              <span style={{ color: theme.mutedTextColor }} className="text-[10px] italic">
+                Open to any project role
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Action Footer */}
+      {/* Action Footer (Always pinned to bottom) */}
       <div
         style={{ borderColor: theme.borderColor }}
         className="pt-4 mt-4 border-t flex items-center justify-between gap-2"
@@ -226,15 +262,15 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
         <Link
           href={`/profile/${profile.username}`}
           style={{ color: theme.bodyTextColor }}
-          className="text-xs inline-flex items-center gap-1 font-bold transition-opacity hover:opacity-75"
+          className="text-xs inline-flex items-center gap-1.5 font-bold transition-opacity hover:opacity-75 group/link"
         >
           <span>View Profile</span>
-          <ExternalLink className="w-3.5 h-3.5" />
+          <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform opacity-70" />
         </Link>
 
         {isInvited ? (
-          <span className="text-xs text-emerald-400 flex items-center gap-1 font-bold bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-500/30">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-xs text-emerald-500 flex items-center gap-1.5 font-bold bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 select-none">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             <span>Invited</span>
           </span>
         ) : (
@@ -245,7 +281,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
               backgroundColor: theme.brandColor,
               borderRadius: theme.borderRadius,
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all duration-150 hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all duration-150 hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer shrink-0"
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>Invite to Project</span>

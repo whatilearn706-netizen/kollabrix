@@ -487,13 +487,28 @@ export default function TeammatesPage() {
       )}
 
       {/* Target Matching Context Selector */}
-      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm text-slate-900">
+      <div
+        style={{
+          backgroundColor: theme.surfaceColor,
+          borderColor: theme.borderColor,
+          borderRadius: theme.borderRadius,
+        }}
+        className="site-card p-5 sm:p-6 border space-y-4 shadow-xs"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-violet-600" />
-            <h3 className="text-sm font-bold text-slate-900">Target Project for Recommendations:</h3>
+            <Briefcase className="w-4 h-4 text-violet-500 shrink-0" />
+            <h3
+              style={{ color: theme.headingColor }}
+              className="text-sm font-bold"
+            >
+              Target Project for Recommendations:
+            </h3>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
+          <span
+            style={{ color: theme.mutedTextColor }}
+            className="text-xs font-medium"
+          >
             {activeProject
               ? `Matching students for "${activeProject.title}"`
               : 'Matching peers based on your profile skills & interests'}
@@ -505,10 +520,10 @@ export default function TeammatesPage() {
             <button
               key={p.id}
               onClick={() => setSelectedProjectId(p.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 selectedProjectId === p.id
-                  ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-sm border-transparent'
-                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                  ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs border-transparent'
+                  : 'bg-slate-100 dark:bg-charcoal-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-charcoal-700 hover:bg-slate-200 dark:hover:bg-charcoal-700'
               }`}
             >
               {p.title}
@@ -517,10 +532,10 @@ export default function TeammatesPage() {
 
           <button
             onClick={() => setSelectedProjectId('peer')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
               selectedProjectId === 'peer'
-                ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-sm border-transparent'
-                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs border-transparent'
+                : 'bg-slate-100 dark:bg-charcoal-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-charcoal-700 hover:bg-slate-200 dark:hover:bg-charcoal-700'
             }`}
           >
             General Peer Match (Across Campus)
@@ -528,20 +543,20 @@ export default function TeammatesPage() {
         </div>
 
         {activeProject && (
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-charcoal-800/50 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-700 dark:text-slate-300 flex flex-wrap items-center gap-x-6 gap-y-2">
             <div>
-              <span className="text-slate-500 font-medium">Category:</span>{' '}
-              <strong className="text-slate-900 font-bold">{activeProject.category}</strong>
+              <span className="opacity-70 font-medium">Category:</span>{' '}
+              <strong className="font-bold">{activeProject.category}</strong>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Required Skills:</span>{' '}
-              <span className="text-violet-700 font-mono font-bold">
+              <span className="opacity-70 font-medium">Required Skills:</span>{' '}
+              <span className="text-violet-600 dark:text-violet-400 font-mono font-bold">
                 {activeProject.required_skills?.join(', ') || 'None specified'}
               </span>
             </div>
             <div>
-              <span className="text-slate-500 font-medium">Open Roles:</span>{' '}
-              <span className="text-pink-700 font-semibold">
+              <span className="opacity-70 font-medium">Open Roles:</span>{' '}
+              <span className="text-pink-600 dark:text-pink-400 font-semibold">
                 {activeProject.desired_roles?.join(', ') || 'Any roles'}
               </span>
             </div>
@@ -550,25 +565,41 @@ export default function TeammatesPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm text-slate-900">
+      <div
+        style={{
+          backgroundColor: theme.surfaceColor,
+          borderColor: theme.borderColor,
+          borderRadius: theme.borderRadius,
+        }}
+        className="site-card p-5 sm:p-6 border space-y-4 shadow-xs"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 text-violet-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-violet-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by name, skill, bio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500 transition-colors shadow-xs"
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-800/70 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 transition-colors shadow-2xs"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {/* Skill Filter */}
           <select
             value={selectedSkill}
             onChange={(e) => setSelectedSkill(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-800/70 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
           >
             <option value="All">All Technical Skills</option>
             {availableSkills.map((sk) => (
@@ -582,7 +613,7 @@ export default function TeammatesPage() {
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-800/70 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
           >
             <option value="All">All Preferred Roles</option>
             {availableRoles.map((r) => (
@@ -596,7 +627,7 @@ export default function TeammatesPage() {
           <select
             value={minScore}
             onChange={(e) => setMinScore(Number(e.target.value))}
-            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-800/70 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
           >
             <option value={0}>Any Match Score</option>
             <option value={50}>50%+ Compatibility</option>
@@ -605,10 +636,16 @@ export default function TeammatesPage() {
           </select>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-1 font-medium">
-          <span>
-            Showing <strong className="text-slate-900 font-bold">{filteredMatches.length}</strong> recommended teammate
-            {filteredMatches.length !== 1 ? 's' : ''}
+        <div className="flex items-center justify-between text-xs pt-1 font-medium">
+          <span style={{ color: theme.mutedTextColor }}>
+            Showing{' '}
+            <strong
+              style={{ color: theme.headingColor }}
+              className="font-bold"
+            >
+              {filteredMatches.length}
+            </strong>{' '}
+            recommended teammate{filteredMatches.length !== 1 ? 's' : ''}
           </span>
           {(searchQuery || selectedSkill !== 'All' || selectedRole !== 'All' || minScore > 0) && (
             <button
@@ -618,7 +655,8 @@ export default function TeammatesPage() {
                 setSelectedRole('All');
                 setMinScore(0);
               }}
-              className="text-pink-600 hover:text-pink-700 font-bold"
+              style={{ color: theme.accentColor || '#ec4899' }}
+              className="font-bold hover:underline cursor-pointer"
             >
               Reset Filters
             </button>
@@ -626,48 +664,67 @@ export default function TeammatesPage() {
         </div>
       </div>
 
-      {/* Scrollable Container with Blur-to-Focus Stack */}
-      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
-        {/* Blur Curtains for Upper & Lower Margins */}
-        <div className="scroll-blur-curtain-top" />
-        <div className="scroll-blur-curtain-bottom" />
-
-        {/* Teammates Viewport with Blur-to-Focus Mask */}
-        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, n) => (
-                <TeammateCardSkeleton key={n} />
-              ))}
-            </div>
-          ) : filteredMatches.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredMatches.map((match, idx) => (
-                <div
-                  key={match.profile.user_id}
-                  className="blur-to-focus-card"
-                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                >
-                  <TeammateCard
-                    match={match}
-                    onInvite={handleOpenInvite}
-                    isInvited={invitedUserIds.includes(match.profile.user_id)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-12 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-4 shadow-sm my-6 max-w-lg mx-auto">
-              <div className="w-12 h-12 rounded-2xl bg-pink-50 border border-pink-200 flex items-center justify-center mx-auto text-pink-500">
-                <Users className="w-6 h-6" />
+      {/* Discovery Grid: Direct, Fluid, and Balanced */}
+      <div className="w-full">
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            {Array.from({ length: 6 }).map((_, n) => (
+              <TeammateCardSkeleton key={n} />
+            ))}
+          </div>
+        ) : filteredMatches.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            {filteredMatches.map((match) => (
+              <div key={match.profile.user_id} className="h-full">
+                <TeammateCard
+                  match={match}
+                  onInvite={handleOpenInvite}
+                  isInvited={invitedUserIds.includes(match.profile.user_id)}
+                />
               </div>
-              <h3 className="text-lg font-black text-slate-900">No Matching Students Found</h3>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
-              </p>
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              backgroundColor: theme.surfaceColor,
+              borderColor: theme.borderColor,
+              borderRadius: theme.borderRadius,
+            }}
+            className="p-12 border text-center space-y-4 shadow-xs my-6 max-w-lg mx-auto"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto text-violet-500">
+              <Users className="w-6 h-6" />
             </div>
-          )}
-        </div>
+            <h3
+              style={{ color: theme.headingColor }}
+              className="text-lg font-black"
+            >
+              No Matching Students Found
+            </h3>
+            <p
+              style={{ color: theme.bodyTextColor }}
+              className="text-xs max-w-sm mx-auto opacity-80"
+            >
+              Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
+            </p>
+            {(searchQuery || selectedSkill !== 'All' || selectedRole !== 'All' || minScore > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedSkill('All');
+                  setSelectedRole('All');
+                  setMinScore(0);
+                }}
+                style={{ color: theme.brandColor }}
+                className="text-xs font-bold hover:underline cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Invite Modal */}
