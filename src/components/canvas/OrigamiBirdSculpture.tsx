@@ -351,6 +351,22 @@ export function OrigamiBirdSculpture() {
       window.addEventListener('touchmove', handleTouchMove, { passive: true });
       window.addEventListener('touchend', handleTouchEnd);
 
+      // Scroll-based 3D Kinematics variables
+      let targetScrollY = 0;
+      let currentScrollY = 0;
+      let scrollVelocity = 0;
+      let lastRawScrollY = 0;
+
+      const handleScroll = () => {
+        if (typeof window === 'undefined') return;
+        const rawY = window.scrollY || window.pageYOffset || 0;
+        scrollVelocity = rawY - lastRawScrollY;
+        lastRawScrollY = rawY;
+        targetScrollY = rawY;
+      };
+
+      window.addEventListener('scroll', handleScroll, { passive: true });
+
       // Resize handler keeping the aspect ratio tight and centered
       const handleResize = () => {
         if (!activeContainer || !renderer || !camera) return;
@@ -371,22 +387,42 @@ export function OrigamiBirdSculpture() {
         animationFrameId = requestAnimationFrame(animate);
         const t = clock.getElapsedTime();
 
-        // Smooth interpolation to target rotation
-        currentRotX += (targetRotX - currentRotX) * 0.06;
-        currentRotY += (targetRotY - currentRotY) * 0.06;
+        // Smoothly interpolate scroll offset and decay velocity
+        currentScrollY += (targetScrollY - currentScrollY) * 0.08;
+        scrollVelocity *= 0.92;
+
+        // Normalized scroll progress across hero fold (0 to ~800px)
+        const scrollFactor = Math.min(Math.max(currentScrollY / 650, 0), 2.0);
+
+        // Scroll kinematics:
+        // 1. Panoramic 3D banking turn: rotates bird Y smoothly as user scrolls
+        const scrollRotY = scrollFactor * Math.PI * 0.85;
+        // 2. Aerodynamic pitch: bird swoops gracefully along scroll
+        const scrollRotX = Math.sin(scrollFactor * Math.PI * 0.8) * 0.22;
+        // 3. Banking roll along Z: dynamic tilt according to scroll direction & speed
+        const scrollRotZ = Math.sin(scrollFactor * Math.PI) * 0.28 + scrollVelocity * 0.002;
+        // 4. Parallax vertical descent & subtle drift
+        const scrollPosY = -scrollFactor * 0.35;
+        const scrollPosX = Math.sin(scrollFactor * Math.PI) * 0.25;
+
+        // Smooth interpolation to target rotation combining mouse + scroll
+        currentRotX += (targetRotX + scrollRotX - currentRotX) * 0.06;
+        currentRotY += (targetRotY + scrollRotY - currentRotY) * 0.06;
 
         birdRoot.rotation.x = currentRotX;
         birdRoot.rotation.y = currentRotY;
 
-        // Banking roll based on yaw turns
-        birdRoot.rotation.z = 0.15 + (currentRotY + 0.3) * 0.2 + Math.sin(t * 0.8) * 0.02;
+        // Banking roll based on yaw turns + scroll banking
+        birdRoot.rotation.z = 0.15 + (currentRotY + 0.3) * 0.2 + scrollRotZ + Math.sin(t * 0.8) * 0.02;
 
-        // Gentle gliding flight & bobbing levitation (properly bounded)
-        birdRoot.position.y = 0.2 + Math.sin(t * 1.8) * 0.08;
-        birdRoot.position.x = Math.cos(t * 1.2) * 0.05;
+        // Gentle gliding flight & bobbing levitation + scroll parallax
+        birdRoot.position.y = 0.2 + Math.sin(t * 1.8) * 0.08 + scrollPosY;
+        birdRoot.position.x = Math.cos(t * 1.2) * 0.05 + scrollPosX;
 
-        // Subtle wing flapping / flexing along crease
-        const wingFlex = Math.sin(t * 2.8) * 0.1;
+        // Dynamic wing flapping responding to scroll flight velocity
+        const flightFlapSpeed = 2.8 + Math.min(Math.abs(scrollVelocity) * 0.05, 4.0);
+        const flightFlapAmp = 0.1 + Math.min(Math.abs(scrollVelocity) * 0.003, 0.18);
+        const wingFlex = Math.sin(t * flightFlapSpeed) * flightFlapAmp;
         leftWingGroup.rotation.z = wingFlex;
         rightWingGroup.rotation.z = -wingFlex * 0.8;
 
@@ -403,6 +439,7 @@ export function OrigamiBirdSculpture() {
         activeContainer.removeEventListener('touchstart', handleTouchStart);
         window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
+        window.removeEventListener('scroll', handleScroll);
         window.removeEventListener('resize', handleResize);
 
         if (activeContainer && renderer.domElement && activeContainer.contains(renderer.domElement)) {

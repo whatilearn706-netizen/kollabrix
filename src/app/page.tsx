@@ -140,9 +140,39 @@ export default function HomePage() {
     return DEFAULT_MASTER_CONTROL_CONFIG;
   });
   const [mounted, setMounted] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     setMounted(true);
+
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalScroll > 0) {
+        setScrollProgress(Math.min(Math.max(window.scrollY / totalScroll, 0), 1));
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // High-performance IntersectionObserver for scroll-reveal animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    const revealEls = document.querySelectorAll('.scroll-reveal');
+    revealEls.forEach((el) => observer.observe(el));
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
   }, []);
 
   // Catch incoming OAuth or URL authentication errors
@@ -413,6 +443,12 @@ export default function HomePage() {
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
+      {/* Dynamic Ambient Top Scroll Beam */}
+      <div
+        className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-violet-600 via-indigo-500 to-pink-500 z-50 pointer-events-none origin-left transition-transform duration-75 shadow-[0_0_12px_rgba(139,92,246,0.5)]"
+        style={{ transform: `scaleX(${scrollProgress})` }}
+      />
+
       {/* Real-time Campus Opportunity Ticker (Unstop-Inspired) */}
       {sectionsConfig.campusTicker !== false && <CampusOpportunityTicker />}
 
@@ -606,24 +642,36 @@ export default function HomePage() {
       )}
 
       {/* Collegiate Innovation Portals Radar (Hackathons, Problems & Faculty Portal) */}
-      {sectionsConfig.collegiateRadar !== false && <CollegiatePortalsRadar />}
+      {sectionsConfig.collegiateRadar !== false && (
+        <div className="scroll-reveal">
+          <CollegiatePortalsRadar />
+        </div>
+      )}
 
       {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
       {sectionsConfig.domainGrid !== false && (
-        <UnstopDomainGrid
-          title={sectionsConfig.domainGridTitle}
-          subtitle={sectionsConfig.domainGridSubtitle}
-        />
+        <div className="scroll-reveal scroll-reveal-delay-1">
+          <UnstopDomainGrid
+            title={sectionsConfig.domainGridTitle}
+            subtitle={sectionsConfig.domainGridSubtitle}
+          />
+        </div>
       )}
 
       {/* Opportunity Category Navigation Rail (Unstop-Inspired) */}
-      {sectionsConfig.categoryRails !== false && <OpportunityCategoryBar />}
+      {sectionsConfig.categoryRails !== false && (
+        <div className="scroll-reveal scroll-reveal-delay-2">
+          <OpportunityCategoryBar />
+        </div>
+      )}
 
       {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: below_hero */}
       {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
         masterConfig.customSection &&
         (masterConfig.customSection.position || 'below_hero') === 'below_hero' && (
-          <CustomAdminSpotlightSection config={masterConfig.customSection} />
+          <div className="scroll-reveal">
+            <CustomAdminSpotlightSection config={masterConfig.customSection} />
+          </div>
         )}
 
       {/* =========================================================================
@@ -707,7 +755,7 @@ export default function HomePage() {
           SECTION 1: INTENT (INTERACTIVE BUILDER CONSOLE)
          ========================================================================= */}
       {sectionsConfig.intent && (
-        <section className="py-16 md:py-20 relative bg-white border-b border-slate-200/80">
+        <section className="scroll-reveal py-16 md:py-20 relative bg-white border-b border-slate-200/80">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-700 font-bold">
@@ -932,11 +980,13 @@ export default function HomePage() {
           Modules 1, 2, 3: College Leaderboard, AI Dream Team, Live Campus Pulse
          ========================================================================= */}
       {sectionsConfig.campusPulse !== false && (
-        <CampusPulseHub
-          sections={sectionsConfig}
-          projects={featuredProjects}
-          user={user}
-        />
+        <div className="scroll-reveal">
+          <CampusPulseHub
+            sections={sectionsConfig}
+            projects={featuredProjects}
+            user={user}
+          />
+        </div>
       )}
 
       {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: above_showcase */}
