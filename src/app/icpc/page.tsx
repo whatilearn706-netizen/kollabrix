@@ -548,56 +548,65 @@ export default function IcpcCollegiateArenaPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredContests.map((contest) => (
-                <div
-                  key={contest.id}
-                  className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 hover:border-cyan-500/40 transition-all duration-300 p-6 flex flex-col justify-between space-y-5 shadow-elevated group"
-                >
-                  <div className="space-y-4">
-                    {/* Badge Row */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
-                            contest.status === 'live'
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                              : contest.status === 'upcoming'
-                              ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40'
-                              : 'bg-slate-700/40 text-slate-300 border-slate-600'
-                          }`}
-                        >
-                          {contest.status === 'live' ? '🟢 Live Contest' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Practice Mode'}
-                        </span>
-                        {contest.visibility === 'passcode' && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-mono text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                              🔒 Private Room
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyRoomLink(contest);
-                              }}
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-[10px] font-mono font-bold text-amber-300 transition-colors cursor-pointer shadow-xs"
-                              title="Copy Direct Classroom Invite Link"
-                            >
-                              {copiedContestId === contest.id ? (
-                                <>
-                                  <Check className="w-3 h-3 text-emerald-400" />
-                                  <span className="text-emerald-300">Link Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  <span>Copy Room Link</span>
-                                </>
+            <div className="relative rounded-3xl border border-charcoal-800 bg-charcoal-950/40 p-2 sm:p-4 shadow-xs overflow-hidden">
+              {/* Blur Curtains for Upper & Lower Margins */}
+              <div className="scroll-blur-curtain-top" />
+              <div className="scroll-blur-curtain-bottom" />
+
+              {/* Contests Viewport with Blur-to-Focus Mask */}
+              <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {filteredContests.map((contest, idx) => (
+                    <div
+                      key={contest.id}
+                      className="blur-to-focus-card h-full"
+                      style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                    >
+                      <div className="h-full rounded-3xl bg-charcoal-900/90 border border-charcoal-750 hover:border-cyan-500/40 transition-all duration-300 p-6 flex flex-col justify-between space-y-5 shadow-elevated group">
+                        <div className="space-y-4">
+                          {/* Badge Row */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
+                                  contest.status === 'live'
+                                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                                    : contest.status === 'upcoming'
+                                    ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40'
+                                    : 'bg-slate-700/40 text-slate-300 border-slate-600'
+                                }`}
+                              >
+                                {contest.status === 'live' ? '🟢 Live Contest' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Practice Mode'}
+                              </span>
+                              {contest.visibility === 'passcode' && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-mono text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                                    🔒 Private Room
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyRoomLink(contest);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-[10px] font-mono font-bold text-amber-300 transition-colors cursor-pointer shadow-xs"
+                                    title="Copy Direct Classroom Invite Link"
+                                  >
+                                    {copiedContestId === contest.id ? (
+                                      <>
+                                        <Check className="w-3 h-3 text-emerald-400" />
+                                        <span className="text-emerald-300">Link Copied!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Copy Room Link</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
                               )}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                            </div>
 
                       <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
                         <Users className="w-3.5 h-3.5 text-cyan-400" />
@@ -716,9 +725,12 @@ export default function IcpcCollegiateArenaPage() {
                     </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
         </section>
 
         {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}
