@@ -187,58 +187,72 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         )}
       </div>
 
-      {/* Card Footer */}
+      {/* Card Footer - Organized, Spacious & Glitch-Free */}
       <div
         style={{ borderColor: theme.borderColor }}
-        className="mt-5 pt-3.5 border-t flex items-center justify-between gap-3 text-xs"
+        className="mt-5 pt-3.5 border-t space-y-3"
       >
-        {/* Creator Info */}
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Creator Info & Verified College Affiliation */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
           {creatorUsername ? (
             <Link
               href={`/profile/${creatorUsername}`}
-              className="flex items-center gap-2 transition-opacity truncate group/creator hover:opacity-80"
+              className="flex items-center gap-2.5 min-w-0 transition-opacity hover:opacity-85 group/creator"
             >
               <Avatar name={creatorName} src={creatorAvatar} size="sm" />
-              <div className="truncate">
-                <span style={{ color: cardHeadingColor }} className={`font-bold truncate block ${isCardDark ? 'text-white site-heading-white' : ''}`}>
-                  {creatorName}
-                </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    style={{ color: cardHeadingColor }}
+                    className={`font-bold text-xs truncate ${isCardDark ? 'text-white site-heading-white' : ''}`}
+                  >
+                    {creatorName}
+                  </span>
+                  <VerifiedCollegeBadge
+                    college={project.owner?.college}
+                    isVerified={project.owner?.college_verified}
+                    userId={project.owner?.user_id || project.owner_id}
+                    username={creatorUsername}
+                    size="xs"
+                    badgeOnly={true}
+                    showUnverified={false}
+                  />
+                </div>
                 {project.owner?.college && (
-                  <span style={{ color: isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#64748b') }} className="text-[10px] truncate block">
-                    <VerifiedCollegeBadge
-                      college={project.owner.college}
-                      isVerified={project.owner.college_verified}
-                      userId={project.owner?.user_id || project.owner_id}
-                      username={creatorUsername}
-                      size="xs"
-                    />
+                  <span
+                    style={{ color: isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#64748b') }}
+                    className="text-[10px] truncate block opacity-75 font-medium"
+                  >
+                    {project.owner.college}
                   </span>
                 )}
               </div>
             </Link>
           ) : (
-            <div className="flex items-center gap-2 truncate">
+            <div className="flex items-center gap-2.5 truncate">
               <Avatar name={creatorName} src={creatorAvatar} size="sm" />
-              <span style={{ color: cardHeadingColor }} className={`font-bold truncate ${isCardDark ? 'text-white site-heading-white' : ''}`}>
+              <span
+                style={{ color: cardHeadingColor }}
+                className={`font-bold text-xs truncate ${isCardDark ? 'text-white site-heading-white' : ''}`}
+              >
                 {creatorName}
               </span>
             </div>
           )}
         </div>
 
-        {/* Team Capacity & Action CTA Button */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Squad Capacity Status & Action CTA */}
+        <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
           <div
-            className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-mono font-semibold ${
+            className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl font-mono font-semibold whitespace-nowrap ${
               isTeamFull
                 ? 'bg-slate-500/10 text-slate-400'
                 : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
                 ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30 font-bold'
-                : 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
             }`}
           >
-            <Users className="w-3 h-3 text-current" />
+            <Users className="w-3.5 h-3.5 text-current shrink-0" />
             <span>
               {isTeamFull
                 ? 'Full Squad'
@@ -250,11 +264,11 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
 
           <Link
             href={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-2xs group/link active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-xs group/link active:scale-[0.98] shrink-0"
             aria-label={`View details for ${project.title}`}
           >
             <span>{isTeamFull ? 'View' : 'Apply'}</span>
-            <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/link:translate-x-1" />
+            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5" />
           </Link>
         </div>
       </div>

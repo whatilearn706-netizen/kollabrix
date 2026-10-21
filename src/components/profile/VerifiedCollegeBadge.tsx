@@ -161,18 +161,18 @@ export function VerifiedCollegeBadge({
     if (localVerified) {
       return (
         <span
-          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs shrink-0 select-none cursor-default ${className}`}
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs shrink-0 select-none cursor-default whitespace-nowrap ${className}`}
           title="Official College Affiliation Verified via Student ID Card"
         >
           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
-          <span>Verified Collegiate</span>
+          <span>Verified</span>
         </span>
       );
     }
     if (showUnverified) {
       return (
         <span
-          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default ${className}`}
+          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default whitespace-nowrap ${className}`}
           title="College Affiliation Not Yet Verified"
         >
           <span>Not Verified</span>
@@ -183,20 +183,20 @@ export function VerifiedCollegeBadge({
   }
 
   return (
-    <span className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 min-w-0 max-w-full ${className}`}>
       {showIcon && <GraduationCap className="w-3.5 h-3.5 opacity-70 shrink-0" />}
       <span className="truncate">{college}</span>
       {localVerified ? (
         <span
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs shrink-0 select-none cursor-default"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs shrink-0 select-none cursor-default whitespace-nowrap"
           title="Official College Affiliation Verified via Student ID Card"
         >
           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
-          <span>Verified Collegiate</span>
+          <span>Verified</span>
         </span>
       ) : showUnverified ? (
         <span
-          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default"
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shadow-2xs shrink-0 select-none cursor-default whitespace-nowrap"
           title="College Affiliation Not Yet Verified"
         >
           <span>Not Verified</span>
