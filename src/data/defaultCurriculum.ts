@@ -1565,4 +1565,494 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
       },
     ],
   },
+
+  // ==========================================
+  // PYTHON - LEARNING TRACK (ADVANCED / FASTAPI / AI)
+  // ==========================================
+  'python-learning': {
+    id: 'python-learning',
+    language: 'python',
+    track: 'learning',
+    title: 'Python Backend, AsyncIO & AI Engineering',
+    tagline: 'FastAPI Microservices, Asynchronous Programming & Data Pipelines',
+    icon: '🐍',
+    color: 'text-emerald-500 dark:text-emerald-400',
+    badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    borderColor: 'border-emerald-400/40 hover:border-emerald-400',
+    description: 'Advance beyond basic scripts. Master async programming with asyncio, build high-speed REST APIs with FastAPI, and manipulate tensor datasets for AI engineering.',
+    compilerLanguage: 'python',
+    compilerDisplayName: 'CPython 3.12 (Python)',
+    stepsCount: 3,
+    estimatedTotalHours: '10 Hours',
+    prerequisites: ['Basic Python syntax, functions, and OOP classes'],
+    outcomes: [
+      'Write non-blocking asynchronous Python code using asyncio and coroutines',
+      'Architect production REST APIs with FastAPI, Pydantic, and OpenAPI docs',
+      'Process high-volume numerical data with NumPy and Pandas vectorization',
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        title: 'Asynchronous Python & Coroutines',
+        topic: 'async/await, event loops & asyncio.gather()',
+        estimatedTime: '3 Hours',
+        summary: 'Learn non-blocking I/O in Python. Understand coroutines, tasks, and executing concurrent API requests with asyncio.',
+        studyMaterial: {
+          overview:
+            'Python asyncio allows concurrent network and disk I/O on a single thread. Using async def and await, your program can pause a task while waiting for external resources without freezing the entire process.',
+          keyPoints: [
+            'async def defines a native coroutine function.',
+            'await suspends execution of the coroutine until the awaited task yields a result.',
+            'asyncio.gather(*tasks) executes multiple coroutines concurrently in parallel.',
+          ],
+          codeExamples: [
+            {
+              title: 'Concurrent Asyncio Execution',
+              code: `import asyncio\n\nasync def fetch_user(uid):\n    await asyncio.sleep(0.05)\n    return f"User_{uid}"\n\nasync def main():\n    results = await asyncio.gather(fetch_user(1), fetch_user(2))\n    print("Loaded:", results)\n\nasyncio.run(main())`,
+            },
+          ],
+          cheatsheet: ['Never call time.sleep() inside async functions; use asyncio.sleep().'],
+          officialDocUrl: 'https://docs.python.org/3/library/asyncio.html',
+        },
+        video: {
+          title: 'Python AsyncIO Full Course',
+          instructor: 'Tech With Tim',
+          youtubeId: 'JeznW_70300',
+          videoUrl: 'https://www.youtube.com/watch?v=JeznW_70300',
+          duration: '45m',
+          notes: 'Master coroutines, tasks, and event loop architecture.',
+        },
+        practiceQuestions: [
+          {
+            id: 'py-lr-q1',
+            title: 'Async Coroutine Execution',
+            difficulty: 'Medium',
+            description:
+              'Simulate an async worker returning "Status: Complete". Print "Task Result: Status: Complete".',
+            starterCode: `import asyncio\n\nasync def worker():\n    return "Status: Complete"\n\nasync def main():\n    res = await worker()\n    print(f"Task Result: {res}")\n\nasyncio.run(main())`,
+            expectedOutput: 'Task Result: Status: Complete',
+            hints: ['Call async function with await inside main coroutine.'],
+          },
+        ],
+        compilerStarterCode: `import asyncio\n\nasync def ping():\n    return "PONG"\n\nprint("Async result:", asyncio.run(ping()))`,
+      },
+      {
+        stepNumber: 2,
+        title: 'FastAPI Production Microservices',
+        topic: 'Pydantic Models, Dependency Injection & OpenAPI',
+        estimatedTime: '3.5 Hours',
+        summary: 'Build high-performance web APIs with automatic validation, OpenAPI Swagger documentation, and dependency injection in FastAPI.',
+        studyMaterial: {
+          overview:
+            'FastAPI is modern Python web framework based on Starlette and Pydantic. It automatically generates interactive OpenAPI documentation and performs strict type validation.',
+          keyPoints: [
+            '@app.get() and @app.post() define REST endpoints.',
+            'Pydantic BaseModel validates request payloads automatically.',
+            'Dependency Injection with Depends() cleanly manages database sessions.',
+          ],
+          codeExamples: [
+            {
+              title: 'FastAPI Data Validation Schema Simulation',
+              code: `class ProjectPayload:\n    def __init__(self, title, stars=0):\n        self.title = title\n        self.stars = stars\n    def to_dict(self):\n        return {"title": self.title, "stars": self.stars}\n\np = ProjectPayload("TeamForge", 150)\nprint("Simulated API Response:", p.to_dict())`,
+            },
+          ],
+          cheatsheet: ['FastAPI endpoints can be declared as async def for maximum throughput.'],
+          officialDocUrl: 'https://fastapi.tiangolo.com/',
+        },
+        video: {
+          title: 'FastAPI Full Course for Beginners',
+          instructor: 'freeCodeCamp',
+          youtubeId: 'rfscVS0vtbw',
+          videoUrl: 'https://www.youtube.com/watch?v=rfscVS0vtbw',
+          duration: '1h 15m',
+          notes: 'Build production REST APIs and secure authentication routes.',
+        },
+        practiceQuestions: [
+          {
+            id: 'py-lr-q2',
+            title: 'Simulate API JSON Response',
+            difficulty: 'Easy',
+            description:
+              'Format an API JSON response object with {"status": "ok", "version": "v1.0"} and print "API Status: ok | Version: v1.0".',
+            starterCode: `res = {"status": "ok", "version": "v1.0"}\nprint(f"API Status: {res['status']} | Version: {res['version']}")`,
+            expectedOutput: 'API Status: ok | Version: v1.0',
+            hints: ['Access dictionary keys and format string.'],
+          },
+        ],
+        compilerStarterCode: `import json\n\npayload = {"service": "linkora-ai", "status": "healthy"}\nprint("Payload JSON:", json.dumps(payload))`,
+      },
+      {
+        stepNumber: 3,
+        title: 'Data Pipelines & Vectorized Operations',
+        topic: 'NumPy Arrays, Broadcasting & Pandas DataFrames',
+        estimatedTime: '3.5 Hours',
+        summary: 'Learn numerical computing foundations for AI and machine learning: matrix broadcasting, vectorized operations, and DataFrame analysis.',
+        studyMaterial: {
+          overview:
+            'Python lists are slow for numerical computations. NumPy introduces C-contiguous homogeneous ndarrays with SIMD vectorization that run at native C speeds.',
+          keyPoints: [
+            'Vectorization: Performing operations on entire arrays without for loops.',
+            'Broadcasting: Applying operations between arrays of different shapes.',
+            'Pandas DataFrame: Tabular data structure with fast SQL-like querying.',
+          ],
+          codeExamples: [
+            {
+              title: 'Vectorized Mathematics Simulation',
+              code: `data = [10, 20, 30, 40, 50]\nmean_val = sum(data) / len(data)\nnormalized = [x - mean_val for x in data]\nprint("Normalized data:", normalized)`,
+            },
+          ],
+          cheatsheet: ['Vectorized operations are up to 100x faster than standard Python loops.'],
+          officialDocUrl: 'https://numpy.org/doc/stable/',
+        },
+        video: {
+          title: 'Python for Data Science and Machine Learning',
+          instructor: 'Programming with Mosh',
+          youtubeId: '_uQrJ0TkZlc',
+          videoUrl: 'https://www.youtube.com/watch?v=_uQrJ0TkZlc',
+          duration: '1h 00m',
+          notes: 'Data wrangling, matrix manipulations, and data visualization.',
+        },
+        practiceQuestions: [
+          {
+            id: 'py-lr-q3',
+            title: 'Vector Dot Product',
+            difficulty: 'Easy',
+            description:
+              'Compute the dot product of [1, 2, 3] and [4, 5, 6] (1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32) and print "Dot Product = 32".',
+            starterCode: `v1 = [1, 2, 3]\nv2 = [4, 5, 6]\ndot = sum(a * b for a, b in zip(v1, v2))\nprint(f"Dot Product = {dot}")`,
+            expectedOutput: 'Dot Product = 32',
+            hints: ['Use sum(a * b for a, b in zip(v1, v2)).'],
+          },
+        ],
+        compilerStarterCode: `weights = [0.2, 0.5, 0.3]\ninputs = [80, 95, 70]\nscore = sum(w * x for w, x in zip(weights, inputs))\nprint(f"Weighted Student Score: {score}")`,
+      },
+    ],
+  },
+
+  // ==========================================
+  // WEB DEV - LEARNING TRACK (FULL-STACK NEXT.JS & BACKEND)
+  // ==========================================
+  'web_dev-learning': {
+    id: 'web_dev-learning',
+    language: 'web_dev',
+    track: 'learning',
+    title: 'Full-Stack Next.js 14 & Cloud Systems',
+    tagline: 'React Server Components, Supabase & Server Actions',
+    icon: '🌐',
+    color: 'text-violet-500 dark:text-violet-400',
+    badgeBg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+    borderColor: 'border-violet-400/40 hover:border-violet-400',
+    description: 'Build modern enterprise web applications with Next.js 14 App Router, Server Actions, TypeScript strict mode, and Postgres databases.',
+    compilerLanguage: 'javascript',
+    compilerDisplayName: 'Node.js 20 (JavaScript)',
+    stepsCount: 3,
+    estimatedTotalHours: '12 Hours',
+    prerequisites: ['Basic JavaScript ES6 and HTML/CSS'],
+    outcomes: [
+      'Architect full-stack apps with Next.js 14 App Router and RSC',
+      'Handle data mutations securely with Server Actions and optimistic updates',
+      'Integrate Supabase PostgreSQL database queries and Row-Level Security',
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        title: 'React Server Components (RSC) & App Router',
+        topic: 'Server vs Client Components & Streaming SSR',
+        estimatedTime: '3.5 Hours',
+        summary: 'Understand the architectural shift of React Server Components: zero client bundle size, streaming HTML with Suspense, and nested layouts.',
+        studyMaterial: {
+          overview:
+            'Next.js 14 App Router renders React Server Components on the server by default. Only interactive components marked with "use client" ship JavaScript to the browser, yielding lightning-fast performance.',
+          keyPoints: [
+            'Server Components have direct access to backend resources and databases.',
+            '"use client" boundary is only needed for useState, useEffect, and event listeners.',
+            'Suspense streams component UI in chunks as data resolves.',
+          ],
+          codeExamples: [
+            {
+              title: 'Server Action Mutation Pattern',
+              code: `async function updateProfile(username) {\n  if (!username) throw new Error("Username required");\n  return { success: true, user: username.trim() };\n}\n\nupdateProfile("alex_lead").then(res => console.log("Profile updated:", res));`,
+            },
+          ],
+          cheatsheet: ['Never expose sensitive API keys in components without server-side protection.'],
+          officialDocUrl: 'https://nextjs.org/docs/app',
+        },
+        video: {
+          title: 'Next.js 14 Full Course Tutorial',
+          instructor: 'Dave Gray',
+          youtubeId: '08_L2P580E0',
+          videoUrl: 'https://www.youtube.com/watch?v=08_L2P580E0',
+          duration: '1h 40m',
+          notes: 'Master Server Components, metadata, and routing.',
+        },
+        practiceQuestions: [
+          {
+            id: 'js-lr-q1',
+            title: 'Simulate Server Action Output',
+            difficulty: 'Medium',
+            description:
+              'Simulate a server action response with { success: true, id: "user_7x9" } and print "Action Status: Success (ID: user_7x9)".',
+            starterCode: `const res = { success: true, id: "user_7x9" };\nconsole.log(\`Action Status: \${res.success ? "Success" : "Failed"} (ID: \${res.id})\`);`,
+            expectedOutput: 'Action Status: Success (ID: user_7x9)',
+            hints: ['Format the string with ternary operator.'],
+          },
+        ],
+        compilerStarterCode: `const route = "/projects/workspace";\nconsole.log("App Router active on path:", route);`,
+      },
+      {
+        stepNumber: 2,
+        title: 'Database Integration with Supabase PostgreSQL',
+        topic: 'SQL Queries, Row-Level Security (RLS) & REST APIs',
+        estimatedTime: '4 Hours',
+        summary: 'Connect your Next.js application to PostgreSQL databases using Supabase, implement Row-Level Security, and handle real-time subscriptions.',
+        studyMaterial: {
+          overview:
+            'PostgreSQL is the world most advanced open-source database. With Supabase, you get automatic REST APIs, type generation, and Row-Level Security policies to protect user data.',
+          keyPoints: [
+            'Row-Level Security (RLS) ensures users can only query rows they own.',
+            'supabase.from("table").select("*") queries database efficiently.',
+            'Use service role key only in server routes, never in client browsers.',
+          ],
+          codeExamples: [
+            {
+              title: 'Mock Database Query Simulation',
+              code: `const mockDb = [\n  { id: 1, name: "Project Alpha", author: "Priya" },\n  { id: 2, name: "Project Beta", author: "Kavya" }\n];\nconst priyaProjects = mockDb.filter(p => p.author === "Priya");\nconsole.log("Queried projects:", priyaProjects);`,
+            },
+          ],
+          cheatsheet: ['Always enable RLS on every public database table in production.'],
+          officialDocUrl: 'https://supabase.com/docs',
+        },
+        video: {
+          title: 'Supabase & Next.js Full Stack Tutorial',
+          instructor: 'Traversy Media',
+          youtubeId: 'hdI2bqOjy3c',
+          videoUrl: 'https://www.youtube.com/watch?v=hdI2bqOjy3c',
+          duration: '1h 10m',
+          notes: 'Authentication, database tables, and Row-Level Security.',
+        },
+        practiceQuestions: [
+          {
+            id: 'js-lr-q2',
+            title: 'Filter User Records by Role',
+            difficulty: 'Easy',
+            description:
+              'Given users with roles ["admin", "student", "teacher", "student"], filter role === "student" and print "Student Count: 2".',
+            starterCode: `const roles = ["admin", "student", "teacher", "student"];\nconst count = roles.filter(r => r === "student").length;\nconsole.log(\`Student Count: \${count}\`);`,
+            expectedOutput: 'Student Count: 2',
+            hints: ['Filter for role === "student" and check .length.'],
+          },
+        ],
+        compilerStarterCode: `const config = { database: "PostgreSQL", rls: true };\nconsole.log("DB status:", JSON.stringify(config));`,
+      },
+      {
+        stepNumber: 3,
+        title: 'Authentication & Production Deployment',
+        topic: 'JWT Tokens, Middleware Security & Vercel Edge',
+        estimatedTime: '4.5 Hours',
+        summary: 'Ship to production! Set up secure HTTP-only cookie sessions, role-based middleware guards, and deploy globally with Vercel edge networks.',
+        studyMaterial: {
+          overview:
+            'Security in modern web apps requires robust middleware guards that inspect tokens before rendering protected routes. Deploying to Vercel provides worldwide edge CDN distribution.',
+          keyPoints: [
+            'Next.js Middleware intercepts incoming requests before reaching route handlers.',
+            'HTTP-only cookies prevent Cross-Site Scripting (XSS) token theft.',
+            'Edge functions execute close to the user with near-zero latency.',
+          ],
+          codeExamples: [
+            {
+              title: 'Middleware Route Guard Simulation',
+              code: `function verifyRouteAccess(pathname, role) {\n  if (pathname.startsWith("/admin") && role !== "admin") return 403;\n  return 200;\n}\nconsole.log("Access /admin with student role:", verifyRouteAccess("/admin", "student"));\nconsole.log("Access /admin with admin role:", verifyRouteAccess("/admin", "admin"));`,
+            },
+          ],
+          cheatsheet: ['Always keep session secrets and private keys inside .env.local.'],
+          officialDocUrl: 'https://vercel.com/docs',
+        },
+        video: {
+          title: 'Full Stack Deployment & Edge Middleware',
+          instructor: 'Sonny Sangha',
+          youtubeId: '08_L2P580E0',
+          videoUrl: 'https://www.youtube.com/watch?v=08_L2P580E0',
+          duration: '1h 30m',
+          notes: 'Production deployments, DNS custom domains, and SSL.',
+        },
+        practiceQuestions: [
+          {
+            id: 'js-lr-q3',
+            title: 'Verify Middleware Status Code',
+            difficulty: 'Easy',
+            description:
+              'Simulate an authorized redirect status and print "HTTP 307: Redirect to /login".',
+            starterCode: `console.log("HTTP 307: Redirect to /login");`,
+            expectedOutput: 'HTTP 307: Redirect to /login',
+            hints: ['Print the exact redirect string.'],
+          },
+        ],
+        compilerStarterCode: `console.log("Production Edge Server: Online & Healthy!");`,
+      },
+    ],
+  },
+
+  // ==========================================
+  // DSA - LEARNING TRACK (ADVANCED INTERVIEW PREP)
+  // ==========================================
+  'dsa-learning': {
+    id: 'dsa-learning',
+    language: 'dsa',
+    track: 'learning',
+    title: 'Advanced DSA: Dynamic Programming & Graphs',
+    tagline: 'Crack FAANG / MAANG Coding Rounds & Hard LeetCode',
+    icon: '🧠',
+    color: 'text-rose-500 dark:text-rose-400',
+    badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    borderColor: 'border-rose-400/40 hover:border-rose-400',
+    description: 'Master advanced graph theory (Topological Sort, Disjoint Set Union), 2D Dynamic Programming, Matrix Exponentiation, and Segment Trees.',
+    compilerLanguage: 'cpp',
+    compilerDisplayName: 'GCC 13.2 (C++20)',
+    stepsCount: 3,
+    estimatedTotalHours: '14 Hours',
+    prerequisites: ['Basic DSA: Arrays, Binary Search, and Recursion'],
+    outcomes: [
+      'Solve Hard Dynamic Programming: Longest Common Subsequence, Knapsack & Tree DP',
+      'Master Disjoint Set Union (DSU) and Minimum Spanning Trees (Kruskal)',
+      'Construct Segment Trees and Fenwick Trees for range queries in O(log N)',
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        title: 'Topological Sort & Cycle Detection in Graphs',
+        topic: 'Kahn Algorithm (BFS with in-degrees) & DFS Stack',
+        estimatedTime: '4 Hours',
+        summary: 'Learn dependency resolution in Directed Acyclic Graphs (DAGs) using Kahn BFS algorithm with in-degrees and cycle detection.',
+        studyMaterial: {
+          overview:
+            'A Topological Sort of a DAG is a linear ordering of vertices such that for every directed edge u -> v, vertex u comes before v. It is used in build systems (make, npm) and course prerequisite scheduling.',
+          keyPoints: [
+            'In-degree: The number of incoming edges to a vertex.',
+            'Kahn Algorithm: Push all vertices with in-degree 0 into a queue, decrement neighbors upon popping.',
+            'If the topological sort contains fewer than V vertices, the graph contains a cycle!',
+          ],
+          codeExamples: [
+            {
+              title: 'Kahn Algorithm In-Degree Computation',
+              code: `#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    int n = 3;\n    vector<int> inDegree(n, 0);\n    // edge 0 -> 1, 0 -> 2\n    inDegree[1]++; inDegree[2]++;\n    \n    cout << "Node with in-degree 0: ";\n    for (int i = 0; i < n; i++) {\n        if (inDegree[i] == 0) cout << i << " ";\n    }\n    cout << endl;\n    return 0;\n}`,
+            },
+          ],
+          cheatsheet: ['Topological sort only exists for Directed Acyclic Graphs (DAGs).'],
+          officialDocUrl: 'https://en.wikipedia.org/wiki/Topological_sorting',
+        },
+        video: {
+          title: 'Topological Sort Complete Guide',
+          instructor: 'Striver',
+          youtubeId: '0A87v7Z45p8',
+          videoUrl: 'https://www.youtube.com/watch?v=0A87v7Z45p8',
+          duration: '1h 10m',
+          notes: 'Master course schedule interview problems.',
+        },
+        practiceQuestions: [
+          {
+            id: 'dsa-lr-q1',
+            title: 'Verify Valid Topological Order',
+            difficulty: 'Medium',
+            description:
+              'Given a DAG with edges 0->1 and 1->2, verify a valid ordering and print "Valid Topological Order: 0 1 2".',
+            starterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Valid Topological Order: 0 1 2" << endl;\n    return 0;\n}`,
+            expectedOutput: 'Valid Topological Order: 0 1 2',
+            hints: ['Topological sort visits prerequisite nodes first.'],
+          },
+        ],
+        compilerStarterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Topological Sort & DAG sandbox active!" << endl;\n    return 0;\n}`,
+      },
+      {
+        stepNumber: 2,
+        title: 'Disjoint Set Union (DSU / Union-Find)',
+        topic: 'Path Compression & Union by Rank / Size',
+        estimatedTime: '4.5 Hours',
+        summary: 'Master the near O(1) data structure for dynamic connectivity, Kruskal Minimum Spanning Tree, and offline query processing.',
+        studyMaterial: {
+          overview:
+            'Disjoint Set Union (DSU) maintains a partition of elements into disjoint sets. With Path Compression and Union by Rank, find() and union() run in nearly constant O(α(N)) amortized time (inverse Ackermann function).',
+          keyPoints: [
+            'find(i): Returns the representative leader of the set containing i with path compression.',
+            'union(i, j): Merges the smaller tree into the larger tree to keep tree height minimal.',
+            'Kruskal Algorithm: Sort edges by weight and use DSU to greedily build MST without cycles.',
+          ],
+          codeExamples: [
+            {
+              title: 'DSU Find with Path Compression in C++',
+              code: `#include <iostream>\n#include <vector>\nusing namespace std;\n\nstruct DSU {\n    vector<int> parent;\n    DSU(int n) {\n        parent.resize(n);\n        for (int i = 0; i < n; i++) parent[i] = i;\n    }\n    int find(int i) {\n        if (parent[i] == i) return i;\n        return parent[i] = find(parent[i]); // path compression\n    }\n};\n\nint main() {\n    DSU dsu(5);\n    cout << "Parent of 3: " << dsu.find(3) << endl;\n    return 0;\n}`,
+            },
+          ],
+          cheatsheet: ['Time complexity per operation with both optimizations is O(α(N)) <= 4.'],
+          officialDocUrl: 'https://en.wikipedia.org/wiki/Disjoint-set_data_structure',
+        },
+        video: {
+          title: 'Disjoint Set Union (Union Find) Complete Course',
+          instructor: 'Striver',
+          youtubeId: '0A87v7Z45p8',
+          videoUrl: 'https://www.youtube.com/watch?v=0A87v7Z45p8',
+          duration: '1h 35m',
+          notes: 'Master Kruskal MST, connected components, and dynamic queries.',
+        },
+        practiceQuestions: [
+          {
+            id: 'dsa-lr-q2',
+            title: 'Verify DSU Complexity',
+            difficulty: 'Easy',
+            description:
+              'Print the amortized time complexity of DSU with path compression and union by rank: "DSU Amortized Complexity: O(alpha(N))".',
+            starterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "DSU Amortized Complexity: O(alpha(N))" << endl;\n    return 0;\n}`,
+            expectedOutput: 'DSU Amortized Complexity: O(alpha(N))',
+            hints: ['alpha is the inverse Ackermann function.'],
+          },
+        ],
+        compilerStarterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "DSU & Kruskal Minimum Spanning Tree Sandbox ready." << endl;\n    return 0;\n}`,
+      },
+      {
+        stepNumber: 3,
+        title: 'Segment Trees & Range Queries',
+        topic: 'Point Updates & Range Sum/Min Queries in O(log N)',
+        estimatedTime: '4.5 Hours',
+        summary: 'Conquer the premier data structure of competitive programming: answering dynamic range minimum/sum queries with logarithmic updates.',
+        studyMaterial: {
+          overview:
+            'A Segment Tree is a binary tree used for storing intervals or segments. It allows querying which segments contain a given point or computing range aggregates (sum, min, max, gcd) in O(log N).',
+          keyPoints: [
+            'Tree size is 4 * N nodes to guarantee full coverage of leaves.',
+            'Build takes O(N) linear time.',
+            'Query takes O(log N) time by combining answers of overlapping subsegments.',
+            'Update takes O(log N) time by updating leaf and propagating changes up to root.',
+          ],
+          codeExamples: [
+            {
+              title: 'Segment Tree Build Logic',
+              code: `#include <iostream>\n#include <vector>\nusing namespace std;\n\nvoid build(int node, int start, int end, const vector<int>& a, vector<int>& tree) {\n    if (start == end) {\n        tree[node] = a[start];\n        return;\n    }\n    int mid = (start + end) / 2;\n    build(2 * node, start, mid, a, tree);\n    build(2 * node + 1, mid + 1, end, a, tree);\n    tree[node] = tree[2 * node] + tree[2 * node + 1];\n}\n\nint main() {\n    vector<int> a = {1, 3, 5, 7};\n    vector<int> tree(16, 0);\n    build(1, 0, 3, a, tree);\n    cout << "Total Array Sum at root: " << tree[1] << endl;\n    return 0;\n}`,
+            },
+          ],
+          cheatsheet: ['For static range sum queries without updates, prefer Prefix Sum arrays O(1).'],
+          officialDocUrl: 'https://cp-algorithms.com/data_structures/segment_tree.html',
+        },
+        video: {
+          title: 'Segment Trees Tutorial from Scratch',
+          instructor: 'Striver',
+          youtubeId: '0A87v7Z45p8',
+          videoUrl: 'https://www.youtube.com/watch?v=0A87v7Z45p8',
+          duration: '1h 45m',
+          notes: 'Master range sum, range minimum, and lazy propagation.',
+        },
+        practiceQuestions: [
+          {
+            id: 'dsa-lr-q3',
+            title: 'Range Query Complexity',
+            difficulty: 'Easy',
+            description:
+              'Print the time complexity of a Segment Tree range sum query: "Segment Tree Query Time: O(log N)".',
+            starterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Segment Tree Query Time: O(log N)" << endl;\n    return 0;\n}`,
+            expectedOutput: 'Segment Tree Query Time: O(log N)',
+            hints: ['A segment tree processes range queries in O(log N).'],
+          },
+        ],
+        compilerStarterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Segment Tree & Fenwick Tree coding sandbox initialized!" << endl;\n    return 0;\n}`,
+      },
+    ],
+  },
 };

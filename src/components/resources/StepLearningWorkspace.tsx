@@ -283,30 +283,29 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
           </div>
         </div>
 
-        {/* Collapsible Full Course Syllabus / Outline (Prevents Student Panic!) */}
+        {/* Full Syllabus drawer if toggled */}
         {showFullSyllabus && (
           <div className="mt-4 pt-4 border-t border-slate-800 bg-slate-950/80 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-400 font-mono border-b border-slate-800 pb-2">
               <span className="text-indigo-400 font-semibold flex items-center gap-1.5">
                 <Layers className="w-4 h-4" />
-                Complete Course Roadmap ({curriculum.steps.length} Total Steps • {curriculum.estimatedTotalHours})
+                Course Outline ({curriculum.steps.length} Steps • {curriculum.estimatedTotalHours})
               </span>
-              <span>Click any step to jump</span>
+              <span>Overview</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {curriculum.steps.map((st, i) => {
                 const isCur = i === activeStepIndex;
                 const isDone = completedSteps.includes(st.stepNumber);
                 return (
-                  <button
+                  <div
                     key={st.stepNumber}
-                    onClick={() => handleSelectStep(i)}
                     className={`text-left p-3 rounded-xl border transition-all text-xs flex items-start gap-2.5 ${
                       isCur
                         ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
                         : isDone
                         ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'bg-slate-900 border-slate-800 text-slate-400'
                     }`}
                   >
                     <span
@@ -324,50 +323,12 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                       <div className="font-semibold truncate">Step {st.stepNumber}: {st.title}</div>
                       <div className="text-[10px] text-slate-400 font-mono mt-0.5">{st.estimatedTime}</div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
           </div>
         )}
-
-        {/* Stepper Navigation Pills with Page Numbers */}
-        <div className="mt-4 pt-3 border-t border-slate-800/80 overflow-x-auto pb-1 scrollbar-none flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-max">
-            {curriculum.steps.map((step, idx) => {
-              const isActive = idx === activeStepIndex;
-              const isDone = completedSteps.includes(step.stepNumber);
-              return (
-                <button
-                  key={step.stepNumber}
-                  onClick={() => handleSelectStep(idx)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                    isActive
-                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/25 ring-1 ring-indigo-400'
-                      : isDone
-                      ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/30 hover:bg-emerald-900/50'
-                      : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                >
-                  {isDone ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  ) : (
-                    <span className="w-4 h-4 rounded-full bg-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0">
-                      {step.stepNumber}
-                    </span>
-                  )}
-                  <span>
-                    Step {step.stepNumber}: {step.title}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <span className="text-xs font-mono text-slate-500 shrink-0 hidden md:block">
-            📖 Page {currentStep.stepNumber} of {curriculum.steps.length}
-          </span>
-        </div>
       </div>
 
       {/* Book Container with Realistic Page Flip Animation */}
