@@ -16,6 +16,7 @@ import { ProfileCompleteness } from '@/components/profile/ProfileCompleteness';
 import {
   Save,
   AlertCircle,
+  AlertOctagon,
   CheckCircle2,
   User,
   Globe,
@@ -26,6 +27,7 @@ import {
   Linkedin,
   Lock,
   Clock,
+  Upload,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { CollegeIdVerificationModal } from '@/components/profile/CollegeIdVerificationModal';
@@ -98,7 +100,27 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
   React.useEffect(() => {
     let isMounted = true;
 
-    // Check authoritative student ID verification status via API once on mount
+    // Immediately load cached status to eliminate any flash of unverified state
+    try {
+      const cached = localStorage.getItem('linkora_student_id_status');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.status === 'pending') {
+          setVerificationStatus('pending');
+          if (!hasUserEditedCollegeRef.current && parsed.collegeName && !college) {
+            setCollege(parsed.collegeName);
+          }
+        } else if (parsed?.status === 'approved') {
+          setVerificationStatus('approved');
+          setIsCollegeVerified(true);
+          if (!hasUserEditedCollegeRef.current && parsed.collegeName && !college) {
+            setCollege(parsed.collegeName);
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Check authoritative student ID verification status via API
     const checkVerificationApi = async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -129,7 +151,31 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
             if (!hasUserEditedCollegeRef.current && data.myRequest.collegeName && !college) {
               setCollege(data.myRequest.collegeName);
             }
+            try {
+              localStorage.setItem('linkora_student_id_status', JSON.stringify(data.myRequest));
+            } catch (e) {}
           } else {
+            // Direct database fallback if API didn't match
+            const { data: dbData } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'student_id_verifications')
+              .maybeSingle();
+
+            if (Array.isArray(dbData?.value)) {
+              const matched = dbData.value.find(
+                (r: any) =>
+                  (currentUid && r.userId === currentUid) ||
+                  (currentUname && r.username?.toLowerCase() === currentUname.toLowerCase())
+              );
+              if (matched) {
+                setVerificationStatus(matched.status);
+                if (!hasUserEditedCollegeRef.current && matched.collegeName && !college) {
+                  setCollege(matched.collegeName);
+                }
+                return;
+              }
+            }
             setVerificationStatus('none');
           }
           // Clean up any stale legacy test flags from user's browser
@@ -464,6 +510,11 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
               Wait for Verified
             </span>
+          ) : verificationStatus === 'rejected' ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-xs">
+              <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+              Action Needed
+            </span>
           ) : null}
         </div>
 
@@ -482,6 +533,15 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                 <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 Wait for Verified
               </span>
+            ) : verificationStatus === 'rejected' ? (
+              <button
+                type="button"
+                onClick={() => setIsIdModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+              >
+                <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+                <span>Fix ID &amp; Re-Upload</span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -519,12 +579,12 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               </span>
             </div>
           ) : verificationStatus === 'pending' ? (
-            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
-              <div className="flex items-center gap-2 text-xs text-amber-200">
+            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-center gap-2.5 text-xs text-amber-200">
                 <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-                <span>
-                  Student ID card submitted. <strong className="text-amber-300 font-bold">Wait for Verified</strong> — our university administrator is reviewing your card.
-                </span>
+                <div>
+                  <span className="font-bold text-amber-300">Submitted — Wait for Verified:</span> Your Student ID card has been submitted. Please wait for an administrator to verify it. Re-uploading is locked.
+                </div>
               </div>
               <Button
                 type="button"
@@ -533,7 +593,26 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                 onClick={() => setIsIdModalOpen(true)}
                 className="shrink-0 text-xs border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
               >
-                Wait for Verified
+                View Submitted ID
+              </Button>
+            </div>
+          ) : verificationStatus === 'rejected' ? (
+            <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30">
+              <div className="flex items-center gap-2.5 text-xs text-rose-200">
+                <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
+                <div>
+                  <span className="font-bold text-rose-300">Verification Not Approved:</span> Your previous ID card was not approved. Please upload a clear photo with legible name and roll number.
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => setIsIdModalOpen(true)}
+                className="shrink-0 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+                leftIcon={<Upload className="w-3.5 h-3.5" />}
+              >
+                Upload Fresh ID Card
               </Button>
             </div>
           ) : (
@@ -825,7 +904,9 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         isOpen={isIdModalOpen}
         onClose={() => setIsIdModalOpen(false)}
         collegeName={college}
-        userId={user?.id}
+        userId={user?.id || initialProfile?.user_id}
+        username={user?.user_metadata?.username || initialProfile?.username || username}
+        email={user?.email || ''}
         onCollegeNameChange={(name) => setCollege(name)}
         onSubmitted={(request) => {
           setVerificationStatus('pending');

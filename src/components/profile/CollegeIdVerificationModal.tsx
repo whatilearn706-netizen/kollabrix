@@ -27,6 +27,8 @@ interface CollegeIdVerificationModalProps {
   onSubmitted?: (request: StudentIdVerification) => void;
   onVerified?: (verifiedCollege: string) => void;
   userId?: string;
+  username?: string;
+  email?: string;
 }
 
 export function CollegeIdVerificationModal({
@@ -37,6 +39,8 @@ export function CollegeIdVerificationModal({
   onSubmitted,
   onVerified,
   userId,
+  username,
+  email,
 }: CollegeIdVerificationModalProps) {
   const [enteredCollege, setEnteredCollege] = useState(collegeName || '');
   const [rollNumber, setRollNumber] = useState('');
@@ -73,8 +77,8 @@ export function CollegeIdVerificationModal({
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
         const currentUid = userId || sessionData?.session?.user?.id;
-        const currentEmail = sessionData?.session?.user?.email;
-        const currentUname = currentEmail?.split('@')[0] || '';
+        const currentEmail = email || sessionData?.session?.user?.email || '';
+        const currentUname = username || sessionData?.session?.user?.user_metadata?.username || currentEmail?.split('@')[0] || '';
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -91,13 +95,48 @@ export function CollegeIdVerificationModal({
             setEnteredCollege(data.myRequest.collegeName || enteredCollege);
             setRollNumber(data.myRequest.studentRollNumber || '');
             setIdCardPreview(data.myRequest.idCardImage || null);
+            try {
+              localStorage.setItem('linkora_student_id_status', JSON.stringify(data.myRequest));
+            } catch (e) {}
           }
           if (data.isVerified) {
             setIsVerified(true);
           }
+        } else if (isMounted) {
+          // Direct Supabase fallback
+          const { data: dbData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'student_id_verifications')
+            .maybeSingle();
+
+          if (Array.isArray(dbData?.value)) {
+            const found = dbData.value.find(
+              (r: any) =>
+                (currentUid && r.userId === currentUid) ||
+                (currentUname && r.username?.toLowerCase() === currentUname.toLowerCase())
+            );
+            if (found) {
+              setExistingRequest(found);
+              setEnteredCollege(found.collegeName || enteredCollege);
+              setRollNumber(found.studentRollNumber || '');
+              setIdCardPreview(found.idCardImage || null);
+            }
+          }
         }
       } catch (err) {
         console.warn('Failed to load ID verification status:', err);
+        // Fallback to local storage if available
+        try {
+          const cached = localStorage.getItem('linkora_student_id_status');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (isMounted && parsed) {
+              setExistingRequest(parsed);
+              if (parsed.collegeName) setEnteredCollege(parsed.collegeName);
+            }
+          }
+        } catch (e) {}
       } finally {
         if (isMounted) setIsLoadingStatus(false);
       }
@@ -126,7 +165,7 @@ export function CollegeIdVerificationModal({
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_DIM = 1280;
+        const MAX_DIM = 1024;
         let w = img.width;
         let h = img.height;
 
@@ -143,7 +182,7 @@ export function CollegeIdVerificationModal({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, w, h);
-          const compressed = canvas.toDataURL('image/jpeg', 0.8);
+          const compressed = canvas.toDataURL('image/jpeg', 0.75);
           setIdCardPreview(compressed);
           setIsCompressing(false);
         } else {
@@ -211,36 +250,92 @@ export function CollegeIdVerificationModal({
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const currentUid = userId || sessionData?.session?.user?.id;
-      const currentEmail = sessionData?.session?.user?.email;
-      const currentUname = currentEmail?.split('@')[0] || '';
-      const res = await fetch('/api/verify/college-id', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          collegeName: cleanCollege,
-          studentRollNumber: cleanRoll,
-          idCardImage: idCardPreview,
-          userId: currentUid,
-          username: currentUname,
-        }),
-      });
+      const currentEmail = email || sessionData?.session?.user?.email || '';
+      const currentUname = username || sessionData?.session?.user?.user_metadata?.username || currentEmail?.split('@')[0] || '';
 
-      const data = await res.json();
+      let verifiedReq: any = null;
+      let submitError = '';
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to submit verification request.');
+      try {
+        const res = await fetch('/api/verify/college-id', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            collegeName: cleanCollege,
+            studentRollNumber: cleanRoll,
+            idCardImage: idCardPreview,
+            userId: currentUid,
+            username: currentUname,
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.request) {
+          verifiedReq = data.request;
+        } else {
+          submitError = data?.error || 'Failed to submit verification request.';
+        }
+      } catch (networkErr: any) {
+        submitError = networkErr.message || 'Network error.';
       }
 
-      setExistingRequest(data.request);
+      // If server route had an issue, fallback directly to Supabase platform_settings
+      if (!verifiedReq) {
+        try {
+          const directNow = new Date().toISOString();
+          const fallbackReq: StudentIdVerification = {
+            id: `sid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            userId: currentUid || (currentUname ? `uid-${currentUname}` : `uid-${Date.now().toString(36)}`),
+            username: currentUname || 'student',
+            displayName: currentUname || 'Student',
+            email: currentEmail,
+            collegeName: cleanCollege,
+            studentRollNumber: cleanRoll,
+            idCardImage: idCardPreview,
+            status: 'pending',
+            submittedAt: directNow,
+          };
+
+          const { data: curData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'student_id_verifications')
+            .maybeSingle();
+
+          const existingList: StudentIdVerification[] = Array.isArray(curData?.value) ? curData.value : [];
+          const filtered = existingList.filter(
+            (r) =>
+              (fallbackReq.userId && r.userId !== fallbackReq.userId) &&
+              (fallbackReq.username && r.username?.toLowerCase() !== fallbackReq.username.toLowerCase())
+          );
+
+          await supabase.from('platform_settings').upsert({
+            key: 'student_id_verifications',
+            value: [fallbackReq, ...filtered],
+            description: 'Authoritative student college ID card verification submissions queue.',
+            updated_at: directNow,
+          });
+
+          verifiedReq = fallbackReq;
+        } catch (dbErr: any) {
+          throw new Error(submitError || dbErr.message || 'Failed to submit verification request.');
+        }
+      }
+
+      setExistingRequest(verifiedReq);
       setIsReuploading(false);
       setSuccessMsg('Your Student ID card has been submitted! Our admin team will verify it within 24 hours.');
+
+      try {
+        localStorage.setItem('linkora_student_id_status', JSON.stringify(verifiedReq));
+      } catch (e) {}
 
       if (onCollegeNameChange) {
         onCollegeNameChange(cleanCollege);
       }
 
       if (onSubmitted) {
-        onSubmitted(data.request);
+        onSubmitted(verifiedReq);
       }
 
       if (typeof window !== 'undefined') {
