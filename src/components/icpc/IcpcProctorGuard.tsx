@@ -102,6 +102,8 @@ export function IcpcProctorGuard({
   const focusLostStartTimeRef = useRef<number | null>(null);
   const phoneDetectionStartTimeRef = useRef<number | null>(null);
   const gazeDeviationStartTimeRef = useRef<number | null>(null);
+  const continuousDownwardStartTimeRef = useRef<number | null>(null);
+  const faceMissingStartTimeRef = useRef<number | null>(null);
   const recentViolationsRef = useRef<Record<string, number>>({});
 
   // Audio warning sound synthesizer (Web Audio API)
@@ -567,6 +569,20 @@ export function IcpcProctorGuard({
       }
     });
 
+    // 4. Admin sends live caution alert to student screen
+    channel.on('broadcast', { event: 'admin-caution' }, (msg: any) => {
+      const message = msg?.payload?.message || 'Proctor Warning: Academic integrity caution issued by faculty proctor.';
+      setAdminCautionMessage(message);
+      playAlertSound('warning');
+    });
+
+    // 5. Admin forcefully Demolishes contest attempt
+    channel.on('broadcast', { event: 'admin-demolish' }, () => {
+      setIsTerminated(true);
+      setIsDemolishedByAdmin(true);
+      playAlertSound('critical');
+    });
+
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED' && channel) {
         // Also proactively publish offer so if admin is already watching, it connects immediately
@@ -870,74 +886,106 @@ export function IcpcProctorGuard({
         }
       }
 
-      if (skinPixelCount < 180) {
+      if (skinPixelCount < 160) {
         setGazeStatus('missing');
-        if (!gazeDeviationStartTimeRef.current) {
-          gazeDeviationStartTimeRef.current = now;
-        } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
+        gazeDeviationStartTimeRef.current = null;
+        continuousDownwardStartTimeRef.current = null;
+        if (!faceMissingStartTimeRef.current) {
+          faceMissingStartTimeRef.current = now;
+        } else if (now - faceMissingStartTimeRef.current >= 4000) {
           triggerViolation(
             'FACE_MISSING',
             'Face Not Detected in Frame',
-            'Contestant face not visible in camera proctor feed for > 3.5s. Keep your face centered in the camera.',
+            'Contestant face not visible in camera proctor feed for > 4s. Keep your face centered in the camera.',
             'medium'
           );
         }
       } else {
+        faceMissingStartTimeRef.current = null;
         const avgX = sumX / skinPixelCount / width;
         const avgY = sumY / skinPixelCount / height;
 
         const totalSkin = leftSkinCount + rightSkinCount;
         const leftRatio = totalSkin > 0 ? leftSkinCount / totalSkin : 0.5;
 
-        let isGazeDeviated = false;
-        let deviationReason = '';
-
-        // Calibrated cone: wide natural tolerance so looking straight or at problem text never glitches
-        if (avgX < 0.18 || leftRatio > 0.88) {
+        // Accurate directional gaze tracking:
+        // Normal frontal view: avgX between 0.36 and 0.64, avgY between 0.25 and 0.58
+        if (avgX < 0.36 || leftRatio > 0.65) {
+          // Turned Left away from screen
           setGazeStatus('away_left');
-          isGazeDeviated = true;
-          deviationReason = 'Contestant turned head far left away from the laptop.';
-        } else if (avgX > 0.82 || leftRatio < 0.12) {
-          setGazeStatus('away_right');
-          isGazeDeviated = true;
-          deviationReason = 'Contestant turned head far right away from the laptop.';
-        } else if (avgY < 0.15) {
-          setGazeStatus('away_up');
-          isGazeDeviated = true;
-          deviationReason = 'Contestant looking upward away from the laptop screen.';
-        } else if (avgY > 0.72) {
-          setGazeStatus('down_excessive');
-          isGazeDeviated = true;
-          deviationReason = 'Contestant looking excessively downward toward lap area.';
-        } else {
-          setGazeStatus('normal');
-          gazeDeviationStartTimeRef.current = null;
-        }
-
-        if (isGazeDeviated) {
+          continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
           } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
             triggerViolation(
               'GAZE_DEVIATION',
-              'Looking Away from Laptop Screen Detected',
-              `${deviationReason} Looking away from the contest arena for > 3.5s is prohibited.`,
+              'Looking Away to the Left Detected',
+              'Contestant turned head/gaze far to the left away from the laptop screen for > 3.5s.',
               'medium'
             );
           }
+        } else if (avgX > 0.64 || leftRatio < 0.35) {
+          // Turned Right away from screen
+          setGazeStatus('away_right');
+          continuousDownwardStartTimeRef.current = null;
+          if (!gazeDeviationStartTimeRef.current) {
+            gazeDeviationStartTimeRef.current = now;
+          } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
+            triggerViolation(
+              'GAZE_DEVIATION',
+              'Looking Away to the Right Detected',
+              'Contestant turned head/gaze far to the right away from the laptop screen for > 3.5s.',
+              'medium'
+            );
+          }
+        } else if (avgY < 0.25) {
+          // Looking Upward away from screen
+          setGazeStatus('away_up');
+          continuousDownwardStartTimeRef.current = null;
+          if (!gazeDeviationStartTimeRef.current) {
+            gazeDeviationStartTimeRef.current = now;
+          } else if (now - gazeDeviationStartTimeRef.current >= 3500) {
+            triggerViolation(
+              'GAZE_DEVIATION',
+              'Looking Upward Away from Screen',
+              'Contestant looking upward away from the contest problem and editor for > 3.5s.',
+              'medium'
+            );
+          }
+        } else if (avgY > 0.58) {
+          // Looking Downward (Lap / Notes / Phone)
+          // Normal brief downward glance (typing on keyboard) is permitted;
+          // Only triggers if continuous for > 30 seconds as requested!
+          setGazeStatus('down_excessive');
+          gazeDeviationStartTimeRef.current = null;
+          if (!continuousDownwardStartTimeRef.current) {
+            continuousDownwardStartTimeRef.current = now;
+          } else if (now - continuousDownwardStartTimeRef.current >= 30000) {
+            triggerViolation(
+              'GAZE_DEVIATION',
+              'Excessive Continuous Downward Gaze (> 30s)',
+              'Contestant looking continuously downward toward lap/desk for > 30s without looking at screen. Cheating risk.',
+              'medium'
+            );
+          }
+        } else {
+          // Seeing laptop front normally: reset all deviation timers!
+          setGazeStatus('normal');
+          gazeDeviationStartTimeRef.current = null;
+          continuousDownwardStartTimeRef.current = null;
         }
       }
 
-      // ── 2. Smartphone & Mobile Device Detection Algorithm ──
+      // ── 2. Smartphone & Mobile Device Detection Algorithm (Zone-Based Cluster Analysis) ──
       let phoneCandidateFound = false;
       const lowerYStart = Math.floor(height * 0.35);
-      let phoneEdgePoints = 0;
-      let phoneScreenPoints = 0;
-      let handSkinPoints = 0;
-      let minPhoneX = width;
-      let maxPhoneX = 0;
-      let minPhoneY = height;
-      let maxPhoneY = 0;
+
+      // 3 interactive camera zones: Left hand, Center lap, Right hand
+      const zones = [
+        { xMin: 8, xMax: Math.floor(width * 0.44), skin: 0, screen: 0, darkEdges: 0, minX: width, maxX: 0, minY: height, maxY: 0 },
+        { xMin: Math.floor(width * 0.28), xMax: Math.floor(width * 0.72), skin: 0, screen: 0, darkEdges: 0, minX: width, maxX: 0, minY: height, maxY: 0 },
+        { xMin: Math.floor(width * 0.56), xMax: width - 8, skin: 0, screen: 0, darkEdges: 0, minX: width, maxX: 0, minY: height, maxY: 0 },
+      ];
 
       for (let y = lowerYStart; y < height - 2; y += 3) {
         for (let x = 8; x < width - 8; x += 3) {
@@ -955,50 +1003,60 @@ export function IcpcProctorGuard({
             r1 > b1 &&
             r1 - g1 > 12;
 
-          if (isSkin) {
-            handSkinPoints++;
-            continue;
-          }
+          for (const zone of zones) {
+            if (x >= zone.xMin && x <= zone.xMax) {
+              if (isSkin) {
+                zone.skin++;
+              } else {
+                const rRight = data[idx + 12];
+                const gRight = data[idx + 13];
+                const bRight = data[idx + 14];
+                const lumRight = 0.299 * rRight + 0.587 * gRight + 0.114 * bRight;
+                const gradX = Math.abs(lum1 - lumRight);
 
-          const rRight = data[idx + 12];
-          const gRight = data[idx + 13];
-          const bRight = data[idx + 14];
-          const lumRight = 0.299 * rRight + 0.587 * gRight + 0.114 * bRight;
-          const gradX = Math.abs(lum1 - lumRight);
+                const nextRowIdx = ((y + 3) * width + x) * 4;
+                const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
+                const gradY = Math.abs(lum1 - lumDown);
 
-          const nextRowIdx = ((y + 3) * width + x) * 4;
-          const lumDown = 0.299 * data[nextRowIdx] + 0.587 * data[nextRowIdx + 1] + 0.114 * data[nextRowIdx + 2];
-          const gradY = Math.abs(lum1 - lumDown);
+                const isIlluminatedScreen = lum1 > 110 && Math.abs(r1 - g1) < 38 && Math.abs(r1 - b1) < 42;
+                const isSharpPhoneEdge = gradX > 22 || gradY > 22;
 
-          const isIlluminatedScreen = lum1 > 125 && Math.abs(r1 - g1) < 32 && Math.abs(r1 - b1) < 36;
-          const isSharpPhoneEdge = gradX > 25 || gradY > 25;
-
-          if (isIlluminatedScreen || isSharpPhoneEdge) {
-            if (isIlluminatedScreen) phoneScreenPoints++;
-            if (isSharpPhoneEdge) phoneEdgePoints++;
-            if (x < minPhoneX) minPhoneX = x;
-            if (x > maxPhoneX) maxPhoneX = x;
-            if (y < minPhoneY) minPhoneY = y;
-            if (y > maxPhoneY) maxPhoneY = y;
+                if (isIlluminatedScreen || isSharpPhoneEdge) {
+                  if (isIlluminatedScreen) zone.screen++;
+                  if (isSharpPhoneEdge) zone.darkEdges++;
+                  if (x < zone.minX) zone.minX = x;
+                  if (x > zone.maxX) zone.maxX = x;
+                  if (y < zone.minY) zone.minY = y;
+                  if (y > zone.maxY) zone.maxY = y;
+                }
+              }
+            }
           }
         }
       }
 
-      const phoneW = Math.max(0, maxPhoneX - minPhoneX);
-      const phoneH = Math.max(0, maxPhoneY - minPhoneY);
-      const phoneAspect = phoneH > 0 && phoneW > 0 
-        ? Math.max(phoneH / phoneW, phoneW / phoneH) 
-        : 1;
+      // Check if any zone contains a handheld smartphone
+      for (const zone of zones) {
+        const zw = Math.max(0, zone.maxX - zone.minX);
+        const zh = Math.max(0, zone.maxY - zone.minY);
+        const aspect = zh > 0 && zw > 0 ? Math.max(zh / zw, zw / zh) : 1;
 
-      if (
-        phoneW >= 22 && phoneW <= 135 &&
-        phoneH >= 35 && phoneH <= 175 &&
-        phoneW < width * 0.55 &&
-        phoneAspect >= 1.25 && phoneAspect <= 2.8 &&
-        handSkinPoints >= 15 &&
-        (phoneScreenPoints >= 12 || phoneEdgePoints >= 22)
-      ) {
-        phoneCandidateFound = true;
+        if (
+          (zone.screen >= 14 || zone.darkEdges >= 18) &&
+          zone.skin >= 8 &&
+          zw >= 18 && zw <= 165 &&
+          zh >= 25 && zh <= 200 &&
+          aspect >= 1.15 && aspect <= 3.2
+        ) {
+          phoneCandidateFound = true;
+          break;
+        }
+
+        // Direct phone screen held up to camera
+        if (zone.screen >= 32 && zone.skin >= 5) {
+          phoneCandidateFound = true;
+          break;
+        }
       }
 
       if (phoneCandidateFound) {
@@ -1009,7 +1067,7 @@ export function IcpcProctorGuard({
           triggerViolation(
             'PHONE_DETECTED',
             'Mobile Phone Detected in Camera Feed',
-            'Mobile smartphone detected in hands for > 1.5s. Handheld device usage is strictly prohibited.',
+            'Mobile smartphone detected in camera view for > 1.5s. Handheld device usage is strictly prohibited.',
             'critical'
           );
         }

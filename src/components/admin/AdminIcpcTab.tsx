@@ -116,6 +116,14 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const theaterVideoRef = useRef<HTMLVideoElement | null>(null);
   const theaterPcRef = useRef<RTCPeerConnection | null>(null);
 
+  // Theater Inline Action Controls
+  const [theaterCautionActive, setTheaterCautionActive] = useState<boolean>(false);
+  const [theaterDemolishActive, setTheaterDemolishActive] = useState<boolean>(false);
+  const [theaterCautionInput, setTheaterCautionInput] = useState<string>('Keep your eyes strictly focused on the contest problem and editor.');
+  const [theaterDemolishInput, setTheaterDemolishInput] = useState<string>('Academic integrity violation detected by proctor. Session forcefully terminated.');
+  const [isTheaterActionSending, setIsTheaterActionSending] = useState<boolean>(false);
+  const [theaterFeedback, setTheaterFeedback] = useState<{ type: 'caution' | 'demolish'; text: string } | null>(null);
+
   // Suspension Modal State
   const [suspendingIncident, setSuspendingIncident] = useState<ProctorIncident | null>(null);
   const [isSuspending, setIsSuspending] = useState<boolean>(false);
@@ -327,9 +335,33 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     }
   }, [authToken]);
 
+  // Instant Real-Time WebSocket Command Broadcaster
+  const sendRealtimeProctorCommand = useCallback((studentId: string, event: 'admin-caution' | 'admin-demolish', payload: any) => {
+    try {
+      const ch = supabase.channel(`icpc-proctor-${studentId}`, { config: { broadcast: { self: false } } });
+      ch.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          ch.send({
+            type: 'broadcast',
+            event,
+            payload,
+          }).catch(() => {});
+          setTimeout(() => {
+            try { supabase.removeChannel(ch); } catch (e) {}
+          }, 1500);
+        }
+      });
+    } catch (err) {
+      console.warn('Realtime proctor command failed:', err);
+    }
+  }, []);
+
   const handleSendCaution = async () => {
     if (!cautionTargetSession) return;
     setIsSendingCaution(true);
+    const msg = cautionMessageText.trim() || 'Keep your attention focused strictly on the contest problem and editor.';
+    sendRealtimeProctorCommand(cautionTargetSession.studentId, 'admin-caution', { message: msg });
+
     try {
       const res = await fetch('/api/icpc/proctor', {
         method: 'POST',
@@ -337,7 +369,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         body: JSON.stringify({
           action: 'caution',
           studentId: cautionTargetSession.studentId,
-          message: cautionMessageText.trim() || 'Keep your attention focused strictly on the contest problem and editor.',
+          message: msg,
         }),
       });
       const data = await res.json();
@@ -359,6 +391,9 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const handleExecuteDemolish = async () => {
     if (!demolishTargetSession) return;
     setIsDemolishing(true);
+    const reason = demolishReasonText.trim() || 'Session forcefully demolished and contestant disqualified by faculty administrator.';
+    sendRealtimeProctorCommand(demolishTargetSession.studentId, 'admin-demolish', { reason });
+
     try {
       const res = await fetch('/api/icpc/proctor', {
         method: 'POST',
@@ -366,7 +401,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         body: JSON.stringify({
           action: 'demolish',
           studentId: demolishTargetSession.studentId,
-          reason: demolishReasonText.trim() || 'Session forcefully demolished and contestant disqualified by faculty administrator.',
+          reason,
         }),
       });
       const data = await res.json();
@@ -382,6 +417,62 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       setStatusMessage({ type: 'error', text: 'Failed to demolish session.' });
     } finally {
       setIsDemolishing(false);
+    }
+  };
+
+  // Direct In-Theater Mode Caution & Demolish Handlers
+  const executeTheaterCaution = async () => {
+    if (!theaterSession) return;
+    setIsTheaterActionSending(true);
+    const msg = theaterCautionInput.trim() || 'Keep your eyes strictly focused on the contest problem and editor.';
+    sendRealtimeProctorCommand(theaterSession.studentId, 'admin-caution', { message: msg });
+
+    try {
+      await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'caution',
+          studentId: theaterSession.studentId,
+          message: msg,
+        }),
+      });
+      setTheaterFeedback({ type: 'caution', text: '⚠️ Caution Alert delivered instantly to contestant screen!' });
+      setTimeout(() => setTheaterFeedback(null), 4000);
+      setTheaterCautionActive(false);
+      await loadProctorData();
+    } catch (e) {
+      console.warn('Theater caution error:', e);
+    } finally {
+      setIsTheaterActionSending(false);
+    }
+  };
+
+  const executeTheaterDemolish = async () => {
+    if (!theaterSession) return;
+    setIsTheaterActionSending(true);
+    const reason = theaterDemolishInput.trim() || 'Academic integrity violation detected by proctor. Session forcefully terminated.';
+    sendRealtimeProctorCommand(theaterSession.studentId, 'admin-demolish', { reason });
+
+    try {
+      await fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'demolish',
+          studentId: theaterSession.studentId,
+          reason,
+        }),
+      });
+      setTheaterSession((prev) => prev ? { ...prev, status: 'demolished' } : null);
+      setTheaterFeedback({ type: 'demolish', text: '🛑 Contest attempt demolished and student arena locked out!' });
+      setTimeout(() => setTheaterFeedback(null), 5000);
+      setTheaterDemolishActive(false);
+      await loadProctorData();
+    } catch (e) {
+      console.warn('Theater demolish error:', e);
+    } finally {
+      setIsTheaterActionSending(false);
     }
   };
 
@@ -2117,6 +2208,103 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             </div>
           </div>
 
+          {/* Instant Theater Feedback Alert */}
+          {theaterFeedback && (
+            <div
+              className={`p-3 rounded-2xl text-xs font-mono font-bold flex items-center gap-2 animate-in fade-in duration-200 ${
+                theaterFeedback.type === 'caution'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+              }`}
+            >
+              {theaterFeedback.type === 'caution' ? (
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              ) : (
+                <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
+              )}
+              <span>{theaterFeedback.text}</span>
+            </div>
+          )}
+
+          {/* Inline Live Caution Drawer */}
+          {theaterCautionActive && (
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-amber-500/40 space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+              <div className="flex items-center justify-between text-xs text-amber-300 font-bold font-mono">
+                <span className="flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Issue Live Screen Caution Alert to {theaterSession?.studentName}:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTheaterCautionActive(false)}
+                  className="text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="text"
+                  value={theaterCautionInput}
+                  onChange={(e) => setTheaterCautionInput(e.target.value)}
+                  placeholder="Enter custom caution instruction..."
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                />
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={executeTheaterCaution}
+                  isLoading={isTheaterActionSending}
+                  className="bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shrink-0 cursor-pointer h-9"
+                  leftIcon={<Send className="w-3.5 h-3.5" />}
+                >
+                  Deliver Alert Instantly
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Inline Live Demolish Drawer */}
+          {theaterDemolishActive && (
+            <div className="p-4 rounded-2xl bg-charcoal-900 border border-rose-500/40 space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+              <div className="flex items-center justify-between text-xs text-rose-300 font-bold font-mono">
+                <span className="flex items-center gap-1.5">
+                  <AlertOctagon className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Confirm Session Demolition &amp; Disqualification ({theaterSession?.studentName}):</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTheaterDemolishActive(false)}
+                  className="text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[11px] text-rose-200 font-mono">
+                This will immediately terminate the contestant&apos;s arena with an unclosable Disqualification overlay and halt all code submissions.
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="text"
+                  value={theaterDemolishInput}
+                  onChange={(e) => setTheaterDemolishInput(e.target.value)}
+                  placeholder="Reason for disqualification..."
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 font-mono"
+                />
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={executeTheaterDemolish}
+                  isLoading={isTheaterActionSending}
+                  className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 cursor-pointer h-9"
+                  leftIcon={<AlertOctagon className="w-3.5 h-3.5" />}
+                >
+                  Confirm Force Demolish
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Action Bar: 1-Click Caution & Demolish */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-charcoal-800">
             <div className="text-xs font-mono text-slate-400">
@@ -2126,15 +2314,17 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             <div className="flex items-center gap-2.5">
               <Button
                 size="sm"
-                variant="outline"
+                variant={theaterCautionActive ? 'primary' : 'outline'}
                 onClick={() => {
-                  if (theaterSession) {
-                    setCautionTargetSession(theaterSession);
-                    setCautionMessageText('Keep your eyes strictly focused on the contest problem and editor.');
-                  }
+                  setTheaterDemolishActive(false);
+                  setTheaterCautionActive((prev) => !prev);
                 }}
                 disabled={theaterSession?.status === 'demolished'}
-                className="border-amber-500/40 text-amber-300 hover:bg-amber-500/15 text-xs font-bold h-9 cursor-pointer"
+                className={`text-xs font-bold h-9 cursor-pointer ${
+                  theaterCautionActive
+                    ? 'bg-amber-500 text-black font-extrabold'
+                    : 'border-amber-500/40 text-amber-300 hover:bg-amber-500/15'
+                }`}
                 leftIcon={<AlertTriangle className="w-4 h-4 text-amber-400" />}
               >
                 ⚠️ Issue Caution Alert
@@ -2142,16 +2332,18 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
 
               <Button
                 size="sm"
-                variant="primary"
+                variant={theaterDemolishActive ? 'primary' : 'outline'}
                 onClick={() => {
-                  if (theaterSession) {
-                    setDemolishTargetSession(theaterSession);
-                    setDemolishReasonText('Academic integrity violation detected by proctor. Session forcefully terminated.');
-                  }
+                  setTheaterCautionActive(false);
+                  setTheaterDemolishActive((prev) => !prev);
                 }}
                 disabled={theaterSession?.status === 'demolished'}
-                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold h-9 cursor-pointer"
-                leftIcon={<AlertOctagon className="w-4 h-4 text-white" />}
+                className={`text-xs font-bold h-9 cursor-pointer ${
+                  theaterDemolishActive
+                    ? 'bg-rose-600 text-white font-black'
+                    : 'border-rose-500/40 text-rose-300 hover:bg-rose-500/15'
+                }`}
+                leftIcon={<AlertOctagon className="w-4 h-4 text-rose-400" />}
               >
                 🛑 Demolish Contest
               </Button>
@@ -2159,7 +2351,11 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setTheaterSession(null)}
+                onClick={() => {
+                  setTheaterCautionActive(false);
+                  setTheaterDemolishActive(false);
+                  setTheaterSession(null);
+                }}
                 className="text-slate-400 hover:text-white text-xs h-9 cursor-pointer"
               >
                 Close Stream
