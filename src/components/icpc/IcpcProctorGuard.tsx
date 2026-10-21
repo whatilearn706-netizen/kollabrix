@@ -5,6 +5,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   AlertOctagon,
+  GripHorizontal,
+  Move,
   Video,
   VideoOff,
   Maximize2,
@@ -89,6 +91,12 @@ export function IcpcProctorGuard({
   const [phoneStatus, setPhoneStatus] = useState<'clear' | 'suspect'>('clear');
   const [isPipMinimized, setIsPipMinimized] = useState(false);
 
+  // Movable PiP state
+  const [pipPosition, setPipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingPip, setIsDraggingPip] = useState(false);
+  const dragStartRef = useRef<{ mouseX: number; mouseY: number; startX: number; startY: number } | null>(null);
+  const pipContainerRef = useRef<HTMLDivElement>(null);
+
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
@@ -128,6 +136,127 @@ export function IcpcProctorGuard({
       osc.start();
       osc.stop(ctx.currentTime + 0.35);
     } catch (e) {}
+  }, []);
+
+  // ── MOVABLE PIP CAMERA WIDGET CONTROLS ──
+  const cycleCorner = useCallback(() => {
+    const el = pipContainerRef.current;
+    const width = el ? el.offsetWidth : 288;
+    const height = el ? el.offsetHeight : 220;
+    const pad = 16;
+    const corners = [
+      { x: window.innerWidth - width - pad, y: pad }, // Top Right
+      { x: window.innerWidth - width - pad, y: window.innerHeight - height - pad }, // Bottom Right
+      { x: pad, y: window.innerHeight - height - pad }, // Bottom Left
+      { x: pad, y: pad }, // Top Left
+    ];
+    setPipPosition((prev) => {
+      if (!prev) return corners[1]; // default is TR, jump to BR
+      const closestIdx = corners.reduce((bestIdx, c, idx) => {
+        const distCurrent = Math.hypot(c.x - prev.x, c.y - prev.y);
+        const distBest = Math.hypot(corners[bestIdx].x - prev.x, corners[bestIdx].y - prev.y);
+        return distCurrent < distBest ? idx : bestIdx;
+      }, 0);
+      return corners[(closestIdx + 1) % corners.length];
+    });
+  }, []);
+
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
+    const el = pipContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragStartRef.current = {
+      mouseX: clientX,
+      mouseY: clientY,
+      startX: rect.left,
+      startY: rect.top,
+    };
+    setIsDraggingPip(true);
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button, a, input')) return;
+    e.preventDefault();
+    handleDragStart(e.clientX, e.clientY);
+  }, [handleDragStart]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input')) return;
+    if (e.touches.length === 1) {
+      handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, [handleDragStart]);
+
+  useEffect(() => {
+    if (!isDraggingPip) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.mouseX;
+      const dy = e.clientY - dragStartRef.current.mouseY;
+
+      const el = pipContainerRef.current;
+      const width = el ? el.offsetWidth : 288;
+      const height = el ? el.offsetHeight : 220;
+
+      const newX = Math.max(8, Math.min(window.innerWidth - width - 8, dragStartRef.current.startX + dx));
+      const newY = Math.max(8, Math.min(window.innerHeight - height - 8, dragStartRef.current.startY + dy));
+
+      setPipPosition({ x: newX, y: newY });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!dragStartRef.current || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStartRef.current.mouseX;
+      const dy = touch.clientY - dragStartRef.current.mouseY;
+
+      const el = pipContainerRef.current;
+      const width = el ? el.offsetWidth : 288;
+      const height = el ? el.offsetHeight : 220;
+
+      const newX = Math.max(8, Math.min(window.innerWidth - width - 8, dragStartRef.current.startX + dx));
+      const newY = Math.max(8, Math.min(window.innerHeight - height - 8, dragStartRef.current.startY + dy));
+
+      setPipPosition({ x: newX, y: newY });
+    };
+
+    const handleEnd = () => {
+      setIsDraggingPip(false);
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleEnd);
+    };
+  }, [isDraggingPip]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPipPosition((prev) => {
+        if (!prev) return null;
+        const el = pipContainerRef.current;
+        const width = el ? el.offsetWidth : 288;
+        const height = el ? el.offsetHeight : 220;
+        const maxX = Math.max(8, window.innerWidth - width - 8);
+        const maxY = Math.max(8, window.innerHeight - height - 8);
+        return {
+          x: Math.min(prev.x, maxX),
+          y: Math.min(prev.y, maxY),
+        };
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Capture instant screen snapshot from the screen share feed
@@ -1154,31 +1283,58 @@ export function IcpcProctorGuard({
         className="hidden"
       />
 
-      {/* ── PROCTOR PIP FLOATING WIDGET (Active inside Arena) ── */}
+      {/* ── PROCTOR PIP FLOATING WIDGET (Movable / Draggable Anywhere inside Arena) ── */}
       {isActive && !showEntranceModal && !isTerminated && (
         <div
-          className={`fixed z-50 transition-all duration-300 shadow-2xl rounded-2xl border ${
+          ref={pipContainerRef}
+          style={
+            pipPosition
+              ? {
+                  left: `${pipPosition.x}px`,
+                  top: `${pipPosition.y}px`,
+                  right: 'auto',
+                  bottom: 'auto',
+                }
+              : undefined
+          }
+          className={`fixed z-50 shadow-2xl rounded-2xl border ${
+            isDraggingPip ? 'transition-none select-none shadow-cyan-500/30 scale-[1.01]' : 'transition-all duration-200'
+          } ${
             activeWarning
               ? 'border-rose-500 bg-rose-950/90 shadow-rose-500/20'
               : phoneStatus === 'suspect' || gazeStatus !== 'normal'
               ? 'border-amber-500 bg-charcoal-900/95 shadow-amber-500/10'
               : 'border-cyan-500/40 bg-charcoal-900/95'
           } ${
-            isPipMinimized
+            pipPosition
+              ? isPipMinimized
+                ? 'w-60 p-2.5'
+                : 'w-72 p-3'
+              : isPipMinimized
               ? 'bottom-4 right-4 w-60 p-2.5'
               : 'top-4 right-4 w-72 p-3'
           }`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-charcoal-800 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono font-bold text-white text-[11px]">AI Proctor Guard</span>
+          {/* Header & Movable Drag Handle */}
+          <div
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            className="flex items-center justify-between pb-2 border-b border-charcoal-800 text-xs cursor-grab active:cursor-grabbing select-none"
+            title="Click and drag to move camera anywhere on screen"
+          >
+            <div className="flex items-center gap-1.5 shrink-0">
+              <GripHorizontal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="font-mono font-bold text-white text-[11px] truncate">Proctor</span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div
+              className="flex items-center gap-1"
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
               <span
-                className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
                   warningCount === 0
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     : warningCount < 6
@@ -1186,13 +1342,30 @@ export function IcpcProctorGuard({
                     : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
                 }`}
               >
-                {warningCount} / {MAX_WARNINGS} Warnings
+                {warningCount}w
               </span>
+
+              {/* 1-Click Corner Snap / Move Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycleCorner();
+                }}
+                className="text-cyan-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-0.5 cursor-pointer transition-colors"
+                title="Snap camera to next screen corner"
+              >
+                <Move className="w-2.5 h-2.5 text-cyan-400" />
+                <span>Move</span>
+              </button>
 
               {/* Feed Switcher: Camera vs Screen Share */}
               <button
                 type="button"
-                onClick={() => setPipFeedMode((prev) => (prev === 'camera' ? 'screen' : 'camera'))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPipFeedMode((prev) => (prev === 'camera' ? 'screen' : 'camera'));
+                }}
                 className="text-cyan-300 hover:text-white px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-[9px] font-mono border border-cyan-500/40 flex items-center gap-1 cursor-pointer transition-colors"
                 title="Switch PiP preview between camera and screen share"
               >
@@ -1204,7 +1377,7 @@ export function IcpcProctorGuard({
                 ) : (
                   <>
                     <Camera className="w-2.5 h-2.5 text-cyan-400" />
-                    <span>Camera</span>
+                    <span>Cam</span>
                   </>
                 )}
               </button>
@@ -1213,19 +1386,25 @@ export function IcpcProctorGuard({
               {pipFeedMode === 'camera' && (
                 <button
                   type="button"
-                  onClick={() => setIsCameraMirrored((prev) => !prev)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsCameraMirrored((prev) => !prev);
+                  }}
                   className="text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-1 cursor-pointer transition-colors"
                   title="Toggle between non-mirrored and mirrored camera orientation"
                 >
                   <RefreshCw className="w-2.5 h-2.5" />
-                  <span>{isCameraMirrored ? 'Mirrored' : 'Non-Mirror'}</span>
                 </button>
               )}
 
               <button
                 type="button"
-                onClick={() => setIsPipMinimized(!isPipMinimized)}
-                className="text-slate-400 hover:text-white p-1 rounded-md text-[10px] font-mono cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPipMinimized(!isPipMinimized);
+                }}
+                className="text-slate-400 hover:text-white px-1 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono cursor-pointer"
+                title={isPipMinimized ? 'Expand Camera View' : 'Minimize to Mini Bar'}
               >
                 {isPipMinimized ? 'Expand' : 'Mini'}
               </button>
