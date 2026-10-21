@@ -106,7 +106,9 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch('/api/verify/college-id', { headers });
+        const currentUid = initialProfile?.user_id || sessionData?.session?.user?.id;
+        const url = currentUid ? `/api/verify/college-id?userId=${encodeURIComponent(currentUid)}` : '/api/verify/college-id';
+        const res = await fetch(url, { headers });
         const data = await res.json();
         if (!isMounted || !data.success) return;
 

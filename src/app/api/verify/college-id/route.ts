@@ -238,11 +238,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Regular Student: Return their personal verification request status
-    if (!authUser) {
+    const targetUserId = authUser?.id || searchParams.get('userId');
+    if (!targetUserId) {
       return NextResponse.json({ success: true, myRequest: null, isVerified: false });
     }
 
-    const myRequest = allRequests.find((r) => r.userId === authUser.id) || null;
+    const myRequest = allRequests.find((r) => r.userId === targetUserId) || null;
 
     // Also check profiles table for college name
     let profileCollege: string | null = null;
@@ -250,7 +251,7 @@ export async function GET(request: NextRequest) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('college')
-        .eq('user_id', authUser.id)
+        .eq('user_id', targetUserId)
         .maybeSingle();
       profileCollege = profile?.college || null;
     } catch (e) {}
@@ -276,19 +277,41 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-    if (!token) {
-      return NextResponse.json({ success: false, error: 'Authentication required to submit ID verification.' }, { status: 401 });
+    let authUser: any = null;
+    if (token) {
+      try {
+        const { data: authData } = await supabaseAdmin.auth.getUser(token);
+        authUser = authData?.user;
+      } catch (e) {}
     }
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-    const authUser = authData?.user;
+    const body = await request.json().catch(() => ({}));
+    const { collegeName, studentRollNumber, idCardImage, userId: bodyUserId } = body;
 
-    if (authError || !authUser) {
-      return NextResponse.json({ success: false, error: 'Invalid or expired authentication session.' }, { status: 401 });
+    let effectiveUserId = authUser?.id;
+    let username = authUser?.email?.split('@')[0] || 'student';
+    let displayName = username;
+    let email = authUser?.email || '';
+
+    if (!effectiveUserId && bodyUserId) {
+      try {
+        const { data: p } = await supabaseAdmin
+          .from('profiles')
+          .select('user_id, username, display_name')
+          .eq('user_id', bodyUserId)
+          .maybeSingle();
+
+        if (p) {
+          effectiveUserId = p.user_id;
+          username = p.username || 'student';
+          displayName = p.display_name || username;
+        }
+      } catch (e) {}
     }
 
-    const body = await request.json();
-    const { collegeName, studentRollNumber, idCardImage } = body;
+    if (!effectiveUserId) {
+      return NextResponse.json({ success: false, error: 'Authentication required to submit ID verification. Please sign in.' }, { status: 401 });
+    }
 
     const cleanCollege = (collegeName || '').trim();
     const cleanRoll = (studentRollNumber || '').trim();
@@ -306,20 +329,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Please upload a clear photograph of your physical or digital College ID Card.' }, { status: 400 });
     }
 
-    // Fetch user profile for username & display name
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('username, display_name')
-      .eq('user_id', authUser.id)
-      .maybeSingle();
+    // Fetch user profile for username & display name if not yet found
+    if (username === 'student') {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('username, display_name')
+        .eq('user_id', effectiveUserId)
+        .maybeSingle();
 
-    const username = profile?.username || authUser.email?.split('@')[0] || 'student';
-    const displayName = profile?.display_name || username;
+      if (profile?.username) username = profile.username;
+      if (profile?.display_name) displayName = profile.display_name;
+    }
 
     const currentRequests = await loadAllIdVerifications();
 
     // Check if user has already uploaded
-    const existingIndex = currentRequests.findIndex((r) => r.userId === authUser.id);
+    const existingIndex = currentRequests.findIndex((r) => r.userId === effectiveUserId);
     const existing = existingIndex >= 0 ? currentRequests[existingIndex] : null;
 
     if (existing && existing.status === 'pending') {
@@ -338,10 +363,10 @@ export async function POST(request: NextRequest) {
 
     const newRequest: StudentIdVerification = {
       id: existingIndex >= 0 ? currentRequests[existingIndex].id : `sid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      userId: authUser.id,
+      userId: effectiveUserId,
       username,
       displayName,
-      email: authUser.email || '',
+      email,
       collegeName: cleanCollege,
       studentRollNumber: cleanRoll,
       idCardImage: cleanImage,

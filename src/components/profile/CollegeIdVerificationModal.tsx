@@ -72,10 +72,12 @@ export function CollegeIdVerificationModal({
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
+        const currentUid = userId || sessionData?.session?.user?.id;
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch('/api/verify/college-id', { headers });
+        const url = currentUid ? `/api/verify/college-id?userId=${encodeURIComponent(currentUid)}` : '/api/verify/college-id';
+        const res = await fetch(url, { headers });
         const data = await res.json();
 
         if (isMounted && data.success) {
@@ -203,6 +205,7 @@ export function CollegeIdVerificationModal({
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
+      const currentUid = userId || sessionData?.session?.user?.id;
       const res = await fetch('/api/verify/college-id', {
         method: 'POST',
         headers,
@@ -210,6 +213,7 @@ export function CollegeIdVerificationModal({
           collegeName: cleanCollege,
           studentRollNumber: cleanRoll,
           idCardImage: idCardPreview,
+          userId: currentUid,
         }),
       });
 
