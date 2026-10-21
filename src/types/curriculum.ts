@@ -12,31 +12,38 @@ export interface PracticeQuestion {
   solution?: string;
 }
 
+export interface TopicVideo {
+  id?: string;
+  title: string;
+  instructor: string;
+  youtubeId: string;
+  videoUrl: string;
+  duration: string;
+  notes?: string;
+  type?: string;
+}
+
+export interface StudyMaterial {
+  overview: string;
+  keyPoints: string[];
+  codeExamples?: {
+    title: string;
+    code: string;
+    explanation?: string;
+  }[];
+  cheatsheet?: string[];
+  officialDocUrl?: string;
+}
+
 export interface LearningStep {
   stepNumber: number;
   title: string;
   topic: string;
   estimatedTime: string;
   summary: string;
-  studyMaterial: {
-    overview: string;
-    keyPoints: string[];
-    codeExamples?: {
-      title: string;
-      code: string;
-      explanation?: string;
-    }[];
-    cheatsheet?: string[];
-    officialDocUrl?: string;
-  };
-  video: {
-    title: string;
-    instructor: string;
-    youtubeId: string;
-    videoUrl: string;
-    duration: string;
-    notes?: string;
-  };
+  studyMaterial: StudyMaterial;
+  video: TopicVideo;
+  videos?: TopicVideo[];
   practiceQuestions: PracticeQuestion[];
   compilerStarterCode: string;
 }
