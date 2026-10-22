@@ -85,6 +85,44 @@ import {
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
+/**
+ * High-performance 120fps Top Scroll Progress Beam
+ * Updates native DOM transform directly via requestAnimationFrame without triggering React re-renders.
+ */
+function TopScrollProgressBeam() {
+  const beamRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    let ticking = false;
+    const updateProgress = () => {
+      if (beamRef.current) {
+        const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = totalScroll > 0 ? Math.min(Math.max(window.scrollY / totalScroll, 0), 1) : 0;
+        beamRef.current.style.transform = `scaleX(${progress})`;
+      }
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateProgress);
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div
+      ref={beamRef}
+      className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-violet-600 via-indigo-500 to-pink-500 z-50 pointer-events-none origin-left shadow-[0_0_12px_rgba(139,92,246,0.5)]"
+      style={{ transform: 'scaleX(0)' }}
+    />
+  );
+}
+
 export default function HomePage() {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
@@ -140,19 +178,13 @@ export default function HomePage() {
     return DEFAULT_MASTER_CONTROL_CONFIG;
   });
   const [mounted, setMounted] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   useEffect(() => {
     setMounted(true);
-
-    const handleScroll = () => {
-      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalScroll > 0) {
-        setScrollProgress(Math.min(Math.max(window.scrollY / totalScroll, 0), 1));
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    handleResize();
+    window.addEventListener('resize', handleResize, { passive: true });
 
     // High-performance IntersectionObserver for scroll-reveal animations
     const observer = new IntersectionObserver(
@@ -160,17 +192,18 @@ export default function HomePage() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-revealed');
+            observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
     );
 
     const revealEls = document.querySelectorAll('.scroll-reveal');
     revealEls.forEach((el) => observer.observe(el));
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
       observer.disconnect();
     };
   }, []);
@@ -443,11 +476,8 @@ export default function HomePage() {
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
-      {/* Dynamic Ambient Top Scroll Beam */}
-      <div
-        className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-violet-600 via-indigo-500 to-pink-500 z-50 pointer-events-none origin-left transition-transform duration-75 shadow-[0_0_12px_rgba(139,92,246,0.5)]"
-        style={{ transform: `scaleX(${scrollProgress})` }}
-      />
+      {/* Dynamic Ambient Top Scroll Beam (Zero Re-render GPU Accelerated) */}
+      <TopScrollProgressBeam />
 
       {/* Real-time Campus Opportunity Ticker (Unstop-Inspired) */}
       {sectionsConfig.campusTicker !== false && <CampusOpportunityTicker />}
@@ -536,7 +566,7 @@ export default function HomePage() {
                 </p>
 
                 {/* Mobile / Tablet 3D Model Stage (Instantly visible above the fold on mobile!) */}
-                {sectionsConfig.origamiBird !== false && (
+                {sectionsConfig.origamiBird !== false && isDesktop === false && (
                   <div className="lg:hidden w-full flex items-center justify-center relative min-h-[300px] sm:min-h-[360px] overflow-hidden my-2">
                     <OrigamiBirdSculpture />
                   </div>
@@ -634,7 +664,7 @@ export default function HomePage() {
               </div>
 
               {/* Right Column: Signature 3D Linkora Origami Bird (Desktop Sticky Scroll Stage) */}
-              {sectionsConfig.origamiBird !== false && (
+              {sectionsConfig.origamiBird !== false && isDesktop === true && (
                 <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] lg:sticky lg:top-24 overflow-hidden z-10">
                   <OrigamiBirdSculpture />
                 </div>

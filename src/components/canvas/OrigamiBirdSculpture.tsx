@@ -65,7 +65,7 @@ export function OrigamiBirdSculpture() {
         powerPreference: 'high-performance',
       });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.15;
       activeContainer.innerHTML = '';
@@ -380,10 +380,16 @@ export function OrigamiBirdSculpture() {
 
       window.addEventListener('resize', handleResize);
 
-      // Animation Loop
+      // Animation Loop with Visibility Occlusion Culling
       const clock = new THREE.Clock();
+      let isVisible = true;
+      let isRunning = true;
 
       const animate = () => {
+        if (!isVisible) {
+          isRunning = false;
+          return;
+        }
         animationFrameId = requestAnimationFrame(animate);
         const t = clock.getElapsedTime();
 
@@ -426,9 +432,25 @@ export function OrigamiBirdSculpture() {
         renderer.render(scene, camera);
       };
 
+      // Visibility observer: stop WebGL drawing completely when scrolled out of view
+      const visibilityObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            isVisible = entry.isIntersecting;
+            if (isVisible && !isRunning) {
+              isRunning = true;
+              animationFrameId = requestAnimationFrame(animate);
+            }
+          });
+        },
+        { threshold: 0.05 }
+      );
+      visibilityObserver.observe(activeContainer);
+
       animate();
 
       cleanupFn = () => {
+        visibilityObserver.disconnect();
         cancelAnimationFrame(animationFrameId);
         activeContainer.removeEventListener('mousedown', handleMouseDown);
         window.removeEventListener('mousemove', handleMouseMove);
