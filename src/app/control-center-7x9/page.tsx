@@ -14,7 +14,6 @@ import {
   Code2,
   Copy,
   Check,
-  KeyRound,
   ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -64,8 +63,6 @@ export default function AdminControlCenterPage() {
   const [isOverviewLoading, setIsOverviewLoading] = useState(false);
   const [isSetupHelpOpen, setIsSetupHelpOpen] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
-  const [directPasscode, setDirectPasscode] = useState('');
-  const [passcodeError, setPasscodeError] = useState('');
 
   // Track visited tabs so tab transitions are 0ms instant without remounting lag
   useEffect(() => {
@@ -181,11 +178,6 @@ export default function AdminControlCenterPage() {
     loadOverview();
   }, [isAdmin, authToken, currentTab, overviewStats]);
 
-  const handleUnlockWithPasscode = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasscodeError('Passcode sign-in is disabled. Sign in with your authorized administrator account.');
-  };
-
   // Loading state (sleek skeleton without jarring layout shifts)
   if (isAdmin === null || (isAuthLoading && !isAdmin)) {
     return (
@@ -212,61 +204,20 @@ export default function AdminControlCenterPage() {
 
         {user ? (
           <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-2">
-            <p className="text-sm text-slate-200">Administrator access has not been verified for this session.</p>
+            <p className="text-sm text-slate-200">Administrator access has not been verified for this account ({user.email}).</p>
             <p className="text-xs text-slate-400">Sign in with your authorized platform-owner account and try again.</p>
           </div>
         ) : (
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            className="w-full text-xs font-bold border-slate-700 hover:bg-white/5 text-slate-200"
+            variant="primary"
+            size="md"
+            className="w-full text-xs font-bold bg-amber-500 hover:bg-amber-400 text-charcoal-950"
             onClick={() => openAuthModal('login')}
           >
-            Sign In with Google
+            Sign In with Platform Owner Account
           </Button>
         )}
-
-        {/* Private Master Passcode Verification */}
-        <form onSubmit={handleUnlockWithPasscode} className="p-5 rounded-2xl bg-charcoal-900 border border-charcoal-750 text-left space-y-3.5 shadow-elevated">
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
-            <KeyRound className="w-4 h-4" />
-            <span>Master Administrative Key</span>
-          </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            Enter your secret master key for direct platform access:
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              placeholder="Enter passcode..."
-              value={directPasscode}
-              onChange={(e) => setDirectPasscode(e.target.value)}
-              className="flex-1 bg-charcoal-950 border border-charcoal-750 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
-            />
-            <Button type="submit" variant="primary" size="sm" className="bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-bold shrink-0">
-              Unlock Studio
-            </Button>
-          </div>
-          {passcodeError && (
-            <p className="text-[11px] text-rose-400 font-medium">{passcodeError}</p>
-          )}
-        </form>
-
-        <div className="relative flex py-2 items-center">
-          <div className="flex-grow border-t border-charcoal-800" />
-          <span className="flex-shrink mx-3 text-[11px] text-slate-500 uppercase font-mono">Or via Google Account</span>
-          <div className="flex-grow border-t border-charcoal-800" />
-        </div>
-
-        <Button
-          variant="outline"
-          size="md"
-          className="w-full border-charcoal-700 hover:bg-charcoal-800 text-white font-bold text-xs"
-          onClick={() => openAuthModal('login')}
-        >
-          Sign In with Google / Supabase
-        </Button>
       </div>
     );
   }

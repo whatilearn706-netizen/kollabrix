@@ -143,31 +143,6 @@ export function CollegeIdVerificationModal({
           if (data.isVerified) {
             setIsVerified(true);
           }
-        } else if (isMounted) {
-          // Direct Supabase fallback
-          const { data: dbData } = await supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'student_id_verifications')
-            .maybeSingle();
-
-          if (Array.isArray(dbData?.value)) {
-            const found = dbData.value.find(
-              (r: any) =>
-                (currentUid && r.userId === currentUid) ||
-                (currentUname && r.username?.toLowerCase() === currentUname.toLowerCase())
-            );
-            if (found) {
-              setExistingRequest(found);
-              if (!userHasTypedCollegeRef.current && !enteredCollege) {
-                setEnteredCollege(found.collegeName || '');
-              }
-              if (!rollNumber) {
-                setRollNumber(found.studentRollNumber || '');
-              }
-              setIdCardPreview(found.idCardImage || null);
-            }
-          }
         }
       } catch (err) {
         console.warn('Failed to load ID verification status:', err);
@@ -312,32 +287,7 @@ export function CollegeIdVerificationModal({
         submittedAt: directNow,
       };
 
-      // 1. Direct authoritative write to Supabase platform_settings (instant real-time persistence)
-      try {
-        const { data: curData } = await supabase
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'student_id_verifications')
-          .maybeSingle();
-
-        const existingList: StudentIdVerification[] = Array.isArray(curData?.value) ? curData.value : [];
-        const filtered = existingList.filter(
-          (r) =>
-            (submissionRecord.userId && r.userId !== submissionRecord.userId) &&
-            (submissionRecord.username && r.username?.toLowerCase() !== submissionRecord.username.toLowerCase())
-        );
-
-        await supabase.from('platform_settings').upsert({
-          key: 'student_id_verifications',
-          value: [submissionRecord, ...filtered],
-          description: 'Authoritative student college ID card verification submissions queue.',
-          updated_at: directNow,
-        });
-      } catch (dbErr) {
-        console.warn('Direct Supabase write note:', dbErr);
-      }
-
-      // 2. Also call API route to trigger Telegram alert & secondary master storage backup
+      // Authoritative write through secure server API route
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;

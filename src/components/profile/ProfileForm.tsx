@@ -157,28 +157,6 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               localStorage.setItem('linkora_student_id_status', JSON.stringify(data.myRequest));
             } catch (e) {}
           } else {
-            // Direct database fallback if API didn't match
-            const { data: dbData } = await supabase
-              .from('platform_settings')
-              .select('value')
-              .eq('key', 'student_id_verifications')
-              .maybeSingle();
-
-            if (Array.isArray(dbData?.value)) {
-              const matched = dbData.value.find(
-                (r: any) =>
-                  (currentUid && r.userId === currentUid) ||
-                  (currentUname && r.username?.toLowerCase() === currentUname.toLowerCase())
-              );
-              if (matched) {
-                setVerificationStatus(matched.status);
-                setSubmittedRequest(matched);
-                if (!hasUserEditedCollegeRef.current && matched.collegeName && !college) {
-                  setCollege(matched.collegeName);
-                }
-                return;
-              }
-            }
             setVerificationStatus('none');
             setSubmittedRequest(null);
           }
