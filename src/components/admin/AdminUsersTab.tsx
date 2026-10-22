@@ -43,7 +43,7 @@ interface AdminUsersTabProps {
   defaultSubTab?: 'users' | 'id_verifications';
 }
 
-export function AdminUsersTab({ currentAdminId = 'c86ce05f-24de-4a1a-a45f-944d4180b508', authToken, defaultSubTab = 'users' }: AdminUsersTabProps) {
+export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 'users' }: AdminUsersTabProps) {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');

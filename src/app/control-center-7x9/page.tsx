@@ -375,7 +375,7 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       {visitedTabs.has('id_verifications') && (
         <div className={currentTab === 'id_verifications' ? 'block' : 'hidden'}>
           <AdminUsersTab
-            currentAdminId={adminUser?.id || user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508'}
+            currentAdminId={adminUser?.id || user?.id || ''}
             authToken={authToken}
             defaultSubTab="id_verifications"
           />
@@ -390,7 +390,7 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
 
       {visitedTabs.has('users') && (
         <div className={currentTab === 'users' ? 'block' : 'hidden'}>
-          <AdminUsersTab currentAdminId={adminUser?.id || user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508'} authToken={authToken} />
+          <AdminUsersTab currentAdminId={adminUser?.id || user?.id || ''} authToken={authToken} />
         </div>
       )}
 
