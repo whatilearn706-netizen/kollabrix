@@ -163,7 +163,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Primary Navigation */}
-        <nav className="hidden md:flex items-center gap-1.5">
+        <nav className="hidden md:flex items-center gap-1.5" aria-label="Main Navigation">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname.startsWith(link.href);
@@ -189,14 +189,14 @@ export function Navbar() {
                 onMouseEnter={handleWarmup}
                 onTouchStart={handleWarmup}
                 className={clsx(
-                  'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all inline-flex items-center gap-2 border',
+                  'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-150 inline-flex items-center gap-2 border select-none active:scale-[0.96]',
                   isActive
                     ? isNavbarDark
-                      ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                      : 'bg-slate-100 text-slate-900 border-slate-200 shadow-sm'
+                      ? 'bg-white/12 text-white border-white/25 shadow-xs shadow-violet-500/10'
+                      : 'bg-slate-100 text-slate-900 border-slate-200/90 shadow-xs'
                     : isNavbarDark
-                    ? 'text-slate-300 border-transparent hover:text-white hover:bg-white/10'
-                    : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-100'
+                    ? 'text-slate-300 border-transparent hover:text-white hover:bg-white/8 hover:border-white/10'
+                    : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-100 hover:border-slate-200/60'
                 )}
               >
                 <Icon
@@ -204,14 +204,17 @@ export function Navbar() {
                     'w-3.5 h-3.5 transition-colors',
                     isActive
                       ? isNavbarDark
-                        ? 'text-white'
-                        : 'text-slate-900'
+                        ? 'text-violet-400'
+                        : 'text-violet-600'
                       : isNavbarDark
                       ? 'text-slate-400'
                       : 'text-slate-500'
                   )}
                 />
                 <span>{link.label}</span>
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse shrink-0" />
+                )}
               </Link>
             );
           })}
@@ -486,7 +489,7 @@ export function Navbar() {
               onTouchStart={() => prefetchExploreData()}
               onMouseEnter={() => prefetchExploreData()}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
               <Compass className="w-4 h-4 text-violet-500" />
               <span>Explore Projects</span>
@@ -498,9 +501,9 @@ export function Navbar() {
               onTouchStart={() => prefetchTeammatesData()}
               onMouseEnter={() => prefetchTeammatesData()}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
-              <Users className="w-4 h-4 text-pink-500" />
+              <Users className="w-4 h-4 text-emerald-500" />
               <span>Find Teammates</span>
             </Link>
 
@@ -509,7 +512,7 @@ export function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-colors shadow-2xs"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-colors shadow-2xs active:scale-[0.98]"
             >
               <BookOpen className="w-4 h-4 text-violet-600 dark:text-cyan-400" />
               <span>Learning Resources Hub ↗</span>
@@ -521,7 +524,7 @@ export function Navbar() {
               onTouchStart={() => prefetchHackathonsData()}
               onMouseEnter={() => prefetchHackathonsData()}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
               <Trophy className="w-4 h-4 text-amber-500" />
               <span>Hackathons</span>
@@ -531,9 +534,9 @@ export function Navbar() {
               href="/problems"
               prefetch={true}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
-              <Lightbulb className="w-4 h-4 text-amber-500" />
+              <Lightbulb className="w-4 h-4 text-blue-500" />
               <span>Problems</span>
             </Link>
 

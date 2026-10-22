@@ -163,12 +163,12 @@ export function OpportunityCategoryBar() {
                       {cat.name}
                     </span>
                     {cat.badge && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-md bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-md bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 shadow-2xs whitespace-nowrap font-mono tabular-nums">
                         {cat.badge}
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap font-mono tabular-nums">
                     {cat.count}
                   </p>
                 </div>

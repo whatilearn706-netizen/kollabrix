@@ -79,7 +79,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
 
           <div className="shrink-0">
             <span
-              className={`text-xs font-black px-2.5 py-1 rounded-full border flex items-center gap-1 font-mono shadow-2xs transition-transform duration-200 group-hover:scale-105 ${scoreBadgeColor}`}
+              className={`text-xs font-black px-2.5 py-1 rounded-full border flex items-center gap-1 font-mono tabular-nums tracking-tight shadow-2xs transition-transform duration-200 group-hover:scale-105 ${scoreBadgeColor}`}
             >
               <Sparkles className="w-3 h-3 text-current" />
               <span>{match_score}% Match</span>

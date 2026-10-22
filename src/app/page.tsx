@@ -593,21 +593,21 @@ export default function HomePage() {
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   <Link
                     href="/spark"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-amber-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
                     <span><strong className="font-bold text-slate-900 dark:text-white">AI Spark</strong> Studio</span>
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-violet-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
                   >
                     <Trophy className="w-3.5 h-3.5 text-violet-500 fill-violet-500/20" />
                     <span><strong className="font-bold text-slate-900 dark:text-white">National</strong> Leaderboard</span>
                   </Link>
                   <Link
                     href="/deadlines"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl backdrop-blur-md bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:scale-105 transition-transform duration-200 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-rose-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
                   >
                     <Clock className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
                     <span><strong className="font-bold text-slate-900 dark:text-white">Live</strong> Deadlines</span>

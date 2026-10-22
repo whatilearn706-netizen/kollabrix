@@ -115,11 +115,11 @@ export function HackathonCard({
             ) : null}
 
             {isClosed ? (
-              <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-mono font-bold">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-mono font-bold tabular-nums">
                 Registration Closed
               </span>
             ) : isUrgent ? (
-              <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-mono font-bold animate-pulse">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-mono font-bold tabular-nums animate-pulse">
                 Ends in {diffDays} day{diffDays !== 1 ? 's' : ''}!
               </span>
             ) : (
@@ -129,7 +129,7 @@ export function HackathonCard({
                   borderColor: theme.borderColor,
                   color: theme.mutedTextColor,
                 }}
-                className="text-[10px] px-2 py-0.5 rounded border font-mono font-semibold"
+                className="text-[10px] px-2 py-0.5 rounded border font-mono font-semibold tabular-nums"
               >
                 {diffDays} days left to apply
               </span>
@@ -200,8 +200,8 @@ export function HackathonCard({
         {/* Prize Pool and Team Size Badges */}
         <div className="flex items-center justify-between gap-2 pt-1 border-t" style={{ borderColor: theme.borderColor }}>
           {hackathon.prize_pool ? (
-            <div className="flex items-center gap-1.5 text-xs font-black font-mono" style={{ color: theme.brandColor }}>
-              <Trophy className="w-3.5 h-3.5 fill-current shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs font-black font-mono tabular-nums tracking-tight" style={{ color: theme.brandColor }}>
+              <Trophy className="w-3.5 h-3.5 fill-current shrink-0 text-amber-500" />
               <span>{hackathon.prize_pool}</span>
             </div>
           ) : (
@@ -214,7 +214,7 @@ export function HackathonCard({
               borderColor: theme.borderColor,
               color: theme.mutedTextColor,
             }}
-            className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-md border"
+            className="flex items-center gap-1 text-[11px] font-mono tabular-nums px-2 py-0.5 rounded-md border"
           >
             <Users className="w-3 h-3 opacity-70" />
             <span>

@@ -125,7 +125,7 @@ export function CollegiatePortalsRadar() {
                 <div className="pt-5 mt-4 border-t border-slate-100 dark:border-charcoal-800 relative z-10">
                   <Link
                     href={card.href}
-                    className="inline-flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white group-hover:text-brand-500 transition-all active:scale-[0.98]"
                   >
                     <span>{card.actionText}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />

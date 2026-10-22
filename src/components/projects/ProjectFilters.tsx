@@ -112,9 +112,9 @@ export function ProjectFilters({
               key={cat}
               type="button"
               onClick={() => onChange({ ...filters, category: cat, page: 1 })}
-              className={`text-xs px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all font-bold ${
+              className={`text-xs px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-150 font-bold active:scale-[0.97] cursor-pointer ${
                 isSelected
-                  ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white shadow-md shadow-violet-500/25'
+                  ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white shadow-md shadow-violet-500/25 ring-2 ring-violet-500/20'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/90'
               }`}
             >
@@ -179,7 +179,7 @@ export function ProjectFilters({
                       page: 1,
                     })
                   }
-                  className={`text-[11px] font-mono px-2 py-0.5 rounded-md transition-colors ${
+                  className={`text-[11px] font-mono tabular-nums px-2.5 py-0.5 rounded-md transition-all duration-150 active:scale-95 cursor-pointer ${
                     isSelected
                       ? 'bg-violet-600 text-white font-bold shadow-xs'
                       : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'
