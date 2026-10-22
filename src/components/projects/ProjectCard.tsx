@@ -242,29 +242,30 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         </div>
 
         {/* Squad Capacity Status & Action CTA */}
-        <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
+        <div className="pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
           <div
-            className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl font-mono font-semibold whitespace-nowrap ${
+            className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl font-mono font-bold whitespace-nowrap tabular-nums ${
               isTeamFull
-                ? 'bg-slate-500/10 text-slate-400'
+                ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                 : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
-                ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30 font-bold'
+                ? 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 font-bold'
                 : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
             }`}
           >
             <Users className="w-3.5 h-3.5 text-current shrink-0" />
-            <span>
+            <span className="tabular-nums">
+              {`${project.current_team_size || 1}/${project.desired_team_size || 4} Joined`}
               {isTeamFull
-                ? 'Full Squad'
+                ? ' • Full'
                 : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
-                ? '⚡ 1 Spot Left'
-                : `${project.current_team_size || 1}/${project.desired_team_size || 4} Joined`}
+                ? ' • 1 Left'
+                : ''}
             </span>
           </div>
 
           <Link
             href={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-xs group/link active:scale-[0.98] shrink-0"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-xs group/link active:scale-[0.97] shrink-0"
             aria-label={`View details for ${project.title}`}
           >
             <span>{isTeamFull ? 'View' : 'Apply'}</span>

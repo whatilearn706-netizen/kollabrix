@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,12 +12,13 @@
   --site-border: #e2e8f0;
   --site-brand: #6366f1;
   --site-brand-hover: #4f46e5;
-  --site-accent: #ec4899;
+  --site-accent: #f59e0b;
   --site-heading: #0f172a;
   --site-text: #334155;
   --site-text-muted: #64748b;
-  --site-font-heading: 'Inter', sans-serif;
-  --site-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --site-font-heading: 'Space Grotesk', 'Inter', sans-serif;
+  --site-font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --site-font-mono: 'Fira Code', ui-monospace, monospace;
   --site-radius: 16px;
 }
 
@@ -79,6 +82,19 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 *:focus-visible {
   outline: 2px solid #8b5cf6;
   outline-offset: 2px;
+}
+
+/* UI/UX Pro Max: Tabular numbers for glitch-free counters and telemetry */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+}
+
+/* UI/UX Pro Max: Tactile press physics */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 /* Reduced Motion Support */

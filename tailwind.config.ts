@@ -55,6 +55,21 @@ const config: Config = {
           'Cantarell',
           'sans-serif',
         ],
+        heading: [
+          'Space Grotesk',
+          'Inter',
+          '-apple-system',
+          'sans-serif',
+        ],
+        mono: [
+          'Fira Code',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'monospace',
+        ],
       },
       boxShadow: {
         'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.4)',

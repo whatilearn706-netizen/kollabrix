@@ -240,7 +240,7 @@ export function HeroCommandCenter({
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-violet-600" />
                   <span className="text-xs font-mono font-bold text-slate-700">
-                    Capacity: <strong className="text-violet-700">{sampleProject.current_team_size} / {sampleProject.desired_team_size} Joined</strong>
+                    Capacity: <strong className="text-violet-700 tabular-nums">{sampleProject.current_team_size} / {sampleProject.desired_team_size} Joined</strong>
                   </span>
                 </div>
               </div>
