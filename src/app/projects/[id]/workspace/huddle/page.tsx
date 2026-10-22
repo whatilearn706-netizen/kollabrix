@@ -20,7 +20,7 @@ export default function WorkspaceTeamHuddlePage() {
         </div>
         <h3 className="text-base font-bold text-white">Module Paused</h3>
         <p className="text-xs text-slate-400">
-          The Late-Night Team Huddle has been temporarily disabled by the platform administrator.
+          The Late-Night Team Huddle has been temporarily paused.
         </p>
         <Link href={`/projects/${project.id}/workspace`}>
           <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>

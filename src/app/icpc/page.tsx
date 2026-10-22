@@ -50,7 +50,6 @@ export default function IcpcCollegiateArenaPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const [isFacultyNoticeOpen, setIsFacultyNoticeOpen] = useState(false);
-  const [adminBypass, setAdminBypass] = useState(false);
 
   // Student ICPC Streak and Points progress
   const [progress, setProgress] = useState<StudentIcpcProgress>({
@@ -74,19 +73,12 @@ export default function IcpcCollegiateArenaPage() {
   });
   const [submissions, setSubmissions] = useState<ContestSubmission[]>([]);
 
-  const isUserAdmin =
-    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-    profile?.role === 'admin' ||
-    (typeof window !== 'undefined' && localStorage.getItem('linkora_admin_session') === 'true');
-
   const userRole = (profile?.role as string) || '';
   const isFacultyUser =
     userRole === 'teacher' ||
     userRole === 'faculty' ||
     userRole === 'professor' ||
-    userRole === 'coordinator' ||
-    userRole === 'admin' ||
-    isUserAdmin;
+    userRole === 'coordinator';
 
   // Load student progress from localStorage on mount
   useEffect(() => {
@@ -273,8 +265,8 @@ export default function IcpcCollegiateArenaPage() {
     return true;
   });
 
-  // If Arena is OFFLINE and user is not bypassing as admin, show maintenance screen
-  if (!isArenaLive && !adminBypass) {
+  // If Arena is OFFLINE, show maintenance screen
+  if (!isArenaLive) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center select-none">
         <div className="max-w-md w-full p-8 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-2xl space-y-5">
@@ -287,7 +279,7 @@ export default function IcpcCollegiateArenaPage() {
             </span>
             <h1 className="text-2xl font-black text-white">ICPC Arena Temporarily Paused</h1>
             <p className="text-xs text-slate-400 leading-relaxed">
-              The collegiate competitive programming arena is undergoing scheduled maintenance or problem revisions by platform administrators.
+              The collegiate competitive programming arena is undergoing scheduled maintenance or problem revisions.
             </p>
           </div>
 
@@ -297,17 +289,6 @@ export default function IcpcCollegiateArenaPage() {
                 Return to Campus Home
               </Button>
             </Link>
-
-            {isUserAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAdminBypass(true)}
-                className="w-full text-xs font-mono font-bold text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/10"
-              >
-                ⚡ Administrator Preview Bypass
-              </Button>
-            )}
           </div>
         </div>
       </div>
@@ -317,15 +298,6 @@ export default function IcpcCollegiateArenaPage() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
       <main className="flex-1 pb-20">
-        {/* Offline Banner if Admin Bypassed */}
-        {!isArenaLive && adminBypass && (
-          <div className="bg-rose-500/20 border-b border-rose-500/30 px-4 py-2 text-center text-xs font-mono font-bold text-rose-300 flex items-center justify-center gap-2">
-            <span>⚠️ ARENA IS CURRENTLY OFFLINE FOR STUDENTS (You are viewing via Admin Bypass).</span>
-            <Link href="/control-center-7x9?tab=icpc" className="underline hover:text-white">
-              Open Admin Control Center →
-            </Link>
-          </div>
-        )}
 
         {/* Hero Section */}
         <section className="relative pt-12 pb-16 overflow-hidden border-b border-charcoal-800 bg-gradient-to-b from-charcoal-950 via-slate-900 to-charcoal-900">
@@ -1107,7 +1079,7 @@ export default function IcpcCollegiateArenaPage() {
                               severity: 'high',
                             }),
                           }).catch(() => {});
-                          alert(`⚠️ Proctoring Alert: Suspicious external code paste detected!\n${check.reason}\nThis incident has been logged for recruiter and admin review.`);
+                          alert(`⚠️ Proctoring Alert: Suspicious external code paste detected!\n${check.reason}\nThis incident has been logged for proctor review.`);
                         }
                       }}
                       placeholder={`// Write your ${selectedLanguage.toUpperCase()} algorithm solution here from scratch...\n// Read input from standard input and print the answer to standard output.\n\n#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}`}
@@ -1208,7 +1180,7 @@ export default function IcpcCollegiateArenaPage() {
               <div className="p-3 rounded-xl bg-charcoal-950 text-left text-xs font-mono text-slate-400 border border-charcoal-800 space-y-1">
                 <p className="text-slate-300 font-bold">How to get Faculty Access:</p>
                 <p>1. Switch your role to "Faculty" in your Profile settings.</p>
-                <p>2. Or contact your university campus admin to receive the verified educator badge.</p>
+                <p>2. Or contact your university campus coordinator to receive the verified educator badge.</p>
               </div>
             </div>
             <div className="pt-2">

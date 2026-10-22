@@ -542,7 +542,7 @@ export function WorkspaceTeamHuddle({
       id: `st-${Date.now()}`,
       userId: currentUserId,
       userName: activeUserName,
-      userRole: currentUserProfile?.role === 'admin' ? 'Project Lead' : 'Builder',
+      userRole: 'Builder',
       shipped: newShipped.trim(),
       nextUp: newNextUp.trim(),
       blockers: newBlockers.trim() || undefined,

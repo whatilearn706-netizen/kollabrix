@@ -79,7 +79,7 @@ export async function GET(request: Request) {
           response.cookies.set('linkora_user_id', '', { path: '/', maxAge: 0 });
           response.cookies.set('linkora_user_email', '', { path: '/', maxAge: 0 });
           response.cookies.set('linkora_admin_session', '', { path: '/', maxAge: 0 });
-          const reason = profile.suspension_reason || 'This account has been suspended by administration. Access denied.';
+          const reason = profile.suspension_reason || 'This account has been suspended. Access denied.';
           return NextResponse.redirect(`${redirectBase}/explore?error=${encodeURIComponent(reason)}`);
         }
 
@@ -99,13 +99,8 @@ export async function GET(request: Request) {
           maxAge: 31536000,
           sameSite: 'lax',
         });
-        if (isOwner) {
-          response.cookies.set('linkora_admin_session', 'true', {
-            path: '/',
-            maxAge: 31536000,
-            sameSite: 'lax',
-          });
-        }
+        // Clear any deprecated admin markers from cookies
+        response.cookies.set('linkora_admin_session', '', { path: '/', maxAge: 0 });
 
         const targetUrl = `${redirectBase}${next}`;
 
@@ -134,15 +129,12 @@ export async function GET(request: Request) {
       localStorage.removeItem('linkora_explicit_signout');
       sessionStorage.removeItem('linkora_explicit_signout');
       sessionStorage.removeItem('linkora_signing_out');
+      localStorage.removeItem('linkora_admin_session');
       localStorage.setItem('linkora_auth_user', ${JSON.stringify(JSON.stringify(user))});
       localStorage.setItem('linkora_auth_session', ${JSON.stringify(JSON.stringify(session))});
       localStorage.setItem('linkora_auth_user_id', ${JSON.stringify(user.id)});
       localStorage.setItem('linkora_auth_user_email', ${JSON.stringify(user.email || '')});
       ${profile ? `localStorage.setItem('linkora_auth_profile', ${JSON.stringify(JSON.stringify(profile))});` : ''}
-      ${isOwner ? `
-      localStorage.setItem('linkora_admin_session', 'true');
-      document.cookie = 'linkora_admin_session=true; path=/; max-age=31536000; SameSite=Lax';
-      ` : ''}
       document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
       document.cookie = 'linkora_user_id=' + ${JSON.stringify(user.id)} + '; path=/; max-age=31536000; SameSite=Lax';
       document.cookie = 'linkora_user_email=' + encodeURIComponent(${JSON.stringify(user.email || '')}) + '; path=/; max-age=31536000; SameSite=Lax';

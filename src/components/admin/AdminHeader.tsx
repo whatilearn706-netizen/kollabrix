@@ -140,7 +140,7 @@ export function AdminHeader({
                   Owner Access
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono bg-charcoal-800 border border-charcoal-700 text-slate-300">
-                  {adminEmail || 'goyalmayank142@gmail.com'}
+                  {adminEmail || 'Owner Authorized'}
                 </span>
               </div>
               <p className="text-xs text-slate-400">

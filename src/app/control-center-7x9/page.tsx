@@ -44,11 +44,11 @@ import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
 import { AdminResourcesTab } from '@/components/admin/AdminResourcesTab';
 
 export default function AdminControlCenterPage() {
-  const { user, profile, openAuthModal, loginWithAdminPasscode, loginAsOwner, isLoading: isAuthLoading } = useAuth();
+  const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
     if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('linkora_admin_verified');
+      const stored = sessionStorage.getItem('linkora_cc_auth_v7');
       if (stored === 'true') return true;
     }
     return null;
@@ -100,7 +100,7 @@ export default function AdminControlCenterPage() {
         setAdminUser(null);
         setAdminProfile(null);
         setAuthToken(undefined);
-        try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
+        try { sessionStorage.removeItem('linkora_cc_auth_v7'); } catch {}
         return;
       }
 
@@ -113,7 +113,7 @@ export default function AdminControlCenterPage() {
         if (!token) {
           setIsAdmin(false);
           setAuthToken(undefined);
-          try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
+          try { sessionStorage.removeItem('linkora_cc_auth_v7'); } catch {}
           return;
         }
 
@@ -132,19 +132,19 @@ export default function AdminControlCenterPage() {
           setIsAdmin(true);
           setAdminUser(result.user);
           setAdminProfile(result.profile);
-          try { sessionStorage.setItem('linkora_admin_verified', 'true'); } catch {}
+          try { sessionStorage.setItem('linkora_cc_auth_v7', 'true'); } catch {}
         } else {
           setIsAdmin(false);
           setAdminUser(null);
           setAdminProfile(null);
-          try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
+          try { sessionStorage.removeItem('linkora_cc_auth_v7'); } catch {}
         }
       } catch {
         if (!cancelled) {
           setIsAdmin(false);
           setAdminUser(null);
           setAdminProfile(null);
-          try { sessionStorage.removeItem('linkora_admin_verified'); } catch {}
+          try { sessionStorage.removeItem('linkora_cc_auth_v7'); } catch {}
         }
       }
     }
@@ -305,7 +305,7 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       <AdminHeader
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
-        adminEmail={adminUser?.email || user?.email || 'goyalmayank142@gmail.com'}
+        adminEmail={adminUser?.email || user?.email || 'Platform Owner'}
         adminRole={adminProfile?.role || 'admin'}
       />
 
@@ -319,7 +319,7 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
             </span>
             <p className="text-[11px] text-slate-400 leading-relaxed">
               {authToken
-                ? `Authorized as ${adminUser?.email || 'goyalmayank142@gmail.com'}. All changes save directly to Supabase PostgreSQL database.`
+                ? `Authorized as ${adminUser?.email || user?.email || 'Platform Owner'}. All changes save directly to Supabase PostgreSQL database.`
                 : 'All changes save immediately to cookies & persistent local session across all tabs and links.'}
             </p>
           </div>
@@ -481,7 +481,7 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
 
       {visitedTabs.has('theme') && (
         <div className={currentTab === 'theme' ? 'block' : 'hidden'}>
-          <AdminThemeTab authToken={authToken} adminEmail={adminUser?.email || user?.email || 'goyalmayank142@gmail.com'} />
+          <AdminThemeTab authToken={authToken} adminEmail={adminUser?.email || user?.email || 'Platform Owner'} />
         </div>
       )}
 

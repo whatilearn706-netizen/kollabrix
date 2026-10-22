@@ -75,7 +75,6 @@ export default function NewHackathonPage() {
 
   const isTeacher =
     profile?.role === 'teacher' ||
-    profile?.role === 'admin' ||
     Boolean(profile?.faculty_verified) ||
     (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 

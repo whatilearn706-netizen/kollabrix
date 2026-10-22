@@ -368,7 +368,6 @@ export default function ProjectDetailsPage() {
   }
 
   const isOwner = Boolean(user && user.id === project.owner_id);
-  const isAdmin = Boolean(user && ((profile as any)?.role === 'admin' || user.email === 'goyalmayank142@gmail.com'));
   const creatorName = project.owner?.display_name || 'Student Creator';
   const creatorUsername = project.owner?.username;
   const isTeamFull = project.current_team_size >= project.desired_team_size;
@@ -470,17 +469,6 @@ export default function ProjectDetailsPage() {
                 Delete
               </Button>
             </>
-          )}
-
-          {!isOwner && isAdmin && (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-            >
-              Admin Delete
-            </Button>
           )}
 
           {!isOwner && isMember && (

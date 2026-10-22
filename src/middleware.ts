@@ -51,23 +51,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, { status: 301 });
   }
 
-  const configuredAdminPath = (process.env.NEXT_PUBLIC_ADMIN_ROUTE_PATH || '/control-center-7x9').trim();
-
-  // 2. Direct /admin route redirect to /control-center-7x9
-  if (pathname === '/admin') {
+  // If someone probes /admin, return 404 to avoid leaking the internal control center path
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/control-center-7x9';
-    return NextResponse.redirect(url);
+    url.pathname = '/not-found';
+    return NextResponse.rewrite(url, { status: 404 });
   }
-
-  // 3. If a custom admin route path is configured and matches the request, rewrite to the internal /control-center-7x9 page
-  if (configuredAdminPath !== '/control-center-7x9' && pathname === configuredAdminPath) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/control-center-7x9';
-    return NextResponse.rewrite(url);
-  }
-
-  const isAdminCookie = request.cookies.get('linkora_admin_session')?.value === 'true';
 
   let response = NextResponse.next({
     request: {

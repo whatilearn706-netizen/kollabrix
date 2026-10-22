@@ -159,7 +159,7 @@ export default function HackathonWorkspacePage() {
         participants.some((p) => p.user_id === user.id && p.role === 'organizer') ||
         profile?.role === 'teacher' ||
         (profile as any)?.role === 'faculty' ||
-        (profile as any)?.role === 'admin')
+        Boolean(profile?.faculty_verified))
   );
   const isJudge = Boolean(
     user && (isOrganizer || participants.some((p) => p.user_id === user.id && p.role === 'judge'))
@@ -210,7 +210,7 @@ export default function HackathonWorkspacePage() {
         const dTitles: string[] = hData?.deletedTitles || [];
         deletedSet = new Set([...dIds, ...dTitles].map((id: string) => id.trim().toLowerCase()));
         if (deletedSet.has(hackathonId.toLowerCase())) {
-          setError('This hackathon has been permanently removed by the administrator.');
+          setError('This hackathon has been removed.');
           setIsLoading(false);
           return;
         }
@@ -295,7 +295,7 @@ export default function HackathonWorkspacePage() {
           deletedSet.has((currentHack.join_code || '').toLowerCase()) ||
           deletedSet.has((currentHack.title || '').trim().toLowerCase()))
       ) {
-        setError('This hackathon has been permanently removed by the administrator.');
+        setError('This hackathon has been removed.');
         setIsLoading(false);
         return;
       }

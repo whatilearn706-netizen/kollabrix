@@ -39,7 +39,7 @@ export function ProtectedPageGuard({
         <div>
           <h2 className="text-xl font-bold text-white">Account Suspended</h2>
           <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-            Your account has been suspended by platform administration. Protected collaborative actions are locked.
+            Your account has been suspended. Protected collaborative actions are locked.
           </p>
           {profile.suspension_reason && (
             <p className="mt-3 p-3 rounded-lg bg-charcoal-950 border border-charcoal-800 text-amber-300 text-xs font-mono">

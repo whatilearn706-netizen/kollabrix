@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { HotPatchConfig } from '@/app/api/admin/hotpatch/route';
+import type { HotPatchConfig } from '@/app/api/admin/hotpatch/route';
 import { cleanHotPatchCode } from '@/lib/security/hotpatchCleaner';
 
 export function GlobalHotPatchInjector() {
@@ -104,7 +104,7 @@ export function GlobalHotPatchInjector() {
 
     fetchPatch();
 
-    // 3. Listen for live update events from admin desk
+    // 3. Listen for live update events
     const handleUpdate = () => {
       executedJsRef.current = '';
       fetchPatch();

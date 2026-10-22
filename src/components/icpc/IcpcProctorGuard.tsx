@@ -1771,11 +1771,11 @@ export function IcpcProctorGuard({
                 🚨 CONTEST DISQUALIFIED // SESSION TERMINATED
               </span>
               <h2 className="text-2xl font-black text-white tracking-tight">
-                {isDemolishedByAdmin ? 'Contest Demolished by Admin Proctor' : 'Academic Integrity Policy Enforced'}
+                {isDemolishedByAdmin ? 'Contest Demolished by Proctor' : 'Academic Integrity Policy Enforced'}
               </h2>
               <p className="text-xs text-rose-200 leading-relaxed font-mono">
                 {isDemolishedByAdmin
-                  ? 'The contest faculty administrator has reviewed your session and forcefully demolished your contest attempt.'
+                  ? 'The contest proctor has reviewed your session and forcefully demolished your contest attempt.'
                   : warningCount >= MAX_WARNINGS
                   ? `Contestant exceeded the maximum allowable proctor warnings (${MAX_WARNINGS} violations recorded).`
                   : 'Mandatory screen sharing was terminated during the active contest.'}

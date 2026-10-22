@@ -90,7 +90,7 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
 
     fetchWords();
 
-    // Re-check on window focus (e.g. user switches tabs from admin to app)
+    // Re-check on window focus (e.g. user switches tabs)
     const handleFocus = () => fetchWords();
     window.addEventListener('focus', handleFocus);
 

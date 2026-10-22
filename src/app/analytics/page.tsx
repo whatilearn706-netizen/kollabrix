@@ -29,7 +29,6 @@ export default function CollegeAnalyticsPage() {
 
   const isAuthorized =
     profile?.role === 'teacher' ||
-    profile?.role === 'admin' ||
     Boolean(profile?.faculty_verified) ||
     (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
 
@@ -167,7 +166,7 @@ export default function CollegeAnalyticsPage() {
         </div>
         <h2 className="text-lg font-bold text-white">Institutional Access Restricted</h2>
         <p className="text-xs text-slate-400 leading-relaxed">
-          College-wide analytics and cross-department collaboration metrics are restricted strictly to verified faculty members, mentors, and administrators.
+          College-wide analytics and cross-department collaboration metrics are restricted strictly to verified faculty members and mentors.
         </p>
         <div className="pt-2 flex justify-center gap-3">
           <Link href="/teacher/dashboard">

@@ -237,7 +237,7 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           college: collegeName || (profile as any)?.college || 'Partner Collegiate Network',
           creatorId: user?.id,
           userRole: profile?.role,
-          facultyVerified: profile?.faculty_verified || Boolean(profile?.college) || profile?.role === 'teacher' || profile?.role === 'admin',
+          facultyVerified: profile?.faculty_verified || Boolean(profile?.college) || profile?.role === 'teacher',
         }),
       });
 

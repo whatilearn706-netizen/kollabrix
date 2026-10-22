@@ -289,7 +289,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
     fetchColleges();
   }, []);
 
-  // Sync activeTab if current tab gets disabled by admin
+  // Sync activeTab if current tab gets disabled
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some((t) => t.id === activeTab)) {
       setActiveTab(availableTabs[0].id);
@@ -390,7 +390,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
     return () => clearInterval(interval);
   }, [isFeature3Live]);
 
-  // If the entire section is toggled off in admin or no features are live, do not render
+  // If the entire section is toggled off or no features are live, do not render
   if (!isMasterEnabled || availableTabs.length === 0) {
     return null;
   }

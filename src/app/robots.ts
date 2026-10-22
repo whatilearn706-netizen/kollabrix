@@ -9,7 +9,8 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         disallow: [
-          '/control-center-7x9',
+          '/control-center*',
+          '/admin',
           '/api/',
           '/settings/',
           '/my-projects',

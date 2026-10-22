@@ -106,7 +106,7 @@ export default function EditProblemStatementPage() {
 
     if (!user || !problem) return;
 
-    if (problem.author_id !== user.id && profile?.role !== 'admin') {
+    if (problem.author_id !== user.id) {
       setError('You are not authorized to edit this problem statement.');
       return;
     }
@@ -154,32 +154,14 @@ export default function EditProblemStatementPage() {
 
     try {
       setIsDeleting(true);
-      const isAdmin = (profile as any)?.role === 'admin' || user.email === 'goyalmayank142@gmail.com';
+      const { error: delError } = await supabase
+        .from('problem_statements')
+        .delete()
+        .eq('id', id)
+        .eq('author_id', user.id);
 
-      if (isAdmin) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        const res = await fetch('/api/admin/problems', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ problemId: id, title: problem.title }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to delete problem statement as administrator.');
-        }
-      } else {
-        const { error: delError } = await supabase
-          .from('problem_statements')
-          .delete()
-          .eq('id', id);
-
-        if (delError) {
-          throw new Error(delError.message);
-        }
+      if (delError) {
+        throw new Error(delError.message);
       }
 
       router.push('/problems');
@@ -199,7 +181,7 @@ export default function EditProblemStatementPage() {
     );
   }
 
-  const isAuthor = user?.id === problem?.author_id || profile?.role === 'admin';
+  const isAuthor = user?.id === problem?.author_id;
 
   if (!isAuthor) {
     return (
@@ -208,7 +190,7 @@ export default function EditProblemStatementPage() {
           <Lock className="w-10 h-10 text-red-400 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-white mb-2">Access Denied</h2>
           <p className="text-sm text-slate-400 mb-6">
-            Only the authoring faculty member or an administrator can edit this problem statement.
+            Only the authoring mentor can edit this problem statement.
           </p>
           <Link href={`/problems/${id}`}>
             <Button variant="outline" leftIcon={<ArrowLeft className="w-4 h-4" />}>

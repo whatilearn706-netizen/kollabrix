@@ -94,7 +94,7 @@ export function GlobalBroadcastBanner() {
       }
     } catch (e) {}
 
-    // Listen for custom admin update event
+    // Listen for custom broadcast update event
     const handleUpdate = () => loadConfig();
     window.addEventListener('linkora_master_control_updated', handleUpdate);
     return () => {

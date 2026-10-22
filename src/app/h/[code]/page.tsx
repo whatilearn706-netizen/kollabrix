@@ -60,7 +60,7 @@ export default function JoinHackathonPage() {
           const dTitles: string[] = hData?.deletedTitles || [];
           deletedSet = new Set([...dIds, ...dTitles].map((id: string) => id.trim().toLowerCase()));
           if (deletedSet.has(cleanCode)) {
-            setError('This hackathon has been permanently removed by the administrator.');
+            setError('This hackathon has been removed.');
             setIsLoading(false);
             return;
           }
@@ -189,7 +189,7 @@ export default function JoinHackathonPage() {
             deletedSet.has((foundHackathon.join_code || '').toLowerCase()) ||
             deletedSet.has((foundHackathon.title || '').trim().toLowerCase()))
         ) {
-          setError('This hackathon has been permanently removed by the administrator.');
+          setError('This hackathon has been removed.');
           setHackathon(null);
           setIsLoading(false);
           return;

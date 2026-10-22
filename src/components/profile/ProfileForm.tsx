@@ -570,7 +570,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               className={isCollegeVerified ? 'pr-9 bg-slate-900/60 border-emerald-500/40 text-slate-200 cursor-not-allowed' : ''}
             />
             {isCollegeVerified && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400" title="Locked: College affiliation verified by faculty/admin">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400" title="Locked: College affiliation verified">
                 <Lock className="w-4 h-4" />
               </div>
             )}
@@ -588,7 +588,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               <div className="flex items-center gap-2.5 text-xs text-amber-200">
                 <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
                 <div>
-                  <span className="font-bold text-amber-300">Submitted — Wait for Verified:</span> Your Student ID card has been submitted. Please wait for an administrator to verify it. Re-uploading is locked.
+                  <span className="font-bold text-amber-300">Submitted — Wait for Verified:</span> Your Student ID card has been submitted. Please wait for verification. Re-uploading is locked.
                 </div>
               </div>
               <Button
@@ -798,9 +798,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
               <span className="text-sm font-semibold text-white">Institutional Role</span>
             </div>
             <span className="text-xs font-semibold uppercase px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
-              {profileRole === 'admin'
-                ? 'Administrator'
-                : profileRole === 'teacher' || initialProfile?.faculty_verified
+              {profileRole === 'teacher' || initialProfile?.faculty_verified
                 ? 'Faculty / Mentor'
                 : initialProfile?.birth_year && initialProfile.birth_year > 2003
                 ? `Student (Born ${initialProfile.birth_year})`
@@ -855,7 +853,7 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
                 }}
               />
               <p className="text-[11px] text-slate-400">
-                Institutional Passcodes are issued by your campus administrator in the Admin Control Center (Format: <code className="text-brand-300 font-mono">FAC-XXXX-XXXX</code>).
+                Institutional Passcodes are issued by your campus coordinator (Format: <code className="text-brand-300 font-mono">FAC-XXXX-XXXX</code>).
               </p>
               {facultyVerifyMsg && (
                 <p className={`text-xs ${facultyVerifyMsg.isError ? 'text-red-400' : 'text-emerald-400'}`}>

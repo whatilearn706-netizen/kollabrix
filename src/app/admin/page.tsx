@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
-export default function AdminRedirectPage() {
-  redirect('/control-center-7x9');
+export default function AdminNotFoundPage() {
+  notFound();
 }

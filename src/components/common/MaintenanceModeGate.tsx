@@ -7,30 +7,18 @@ import { ShieldAlert, KeyRound, Wrench, Clock, ArrowRight, ShieldCheck, CheckCir
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { MaintenanceModeConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/masterControl';
-import { useAuth } from '@/components/auth/AuthProvider';
 
 export function MaintenanceModeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, profile, session } = useAuth();
 
   const [maintenance, setMaintenance] = useState<MaintenanceModeConfig>(DEFAULT_MASTER_CONTROL_CONFIG.maintenance);
   const [passcodeAttempt, setPasscodeAttempt] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [isPreviewingAsVisitor, setIsPreviewingAsVisitor] = useState(false);
-  const [isDeactivating, setIsDeactivating] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-
-    // Check if URL query has preview_maintenance flag
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('preview_maintenance') === 'true') {
-        setIsPreviewingAsVisitor(true);
-      }
-    }
 
     // Check session unlock state
     try {
@@ -70,112 +58,18 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  // Restore public access only after the server authorizes the change.
-  const handleTurnOffMaintenance = async () => {
-    if (
-      !session?.access_token ||
-      profile?.is_suspended ||
-      (profile?.role !== 'admin' &&
-        user?.id !== 'c86ce05f-24de-4a1a-a45f-944d4180b508')
-    ) {
-      setErrorMsg('Please sign in with an authorized administrator account.');
-      return;
-    }
-
-    setIsDeactivating(true);
-    setErrorMsg('');
-
-    try {
-      const updatedM: MaintenanceModeConfig = {
-        ...maintenance,
-        mode: 'public',
-      };
-
-      const res = await fetch('/api/admin/master-control', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ config: { maintenance: updatedM } }),
-      });
-
-      if (!res.ok) {
-        setErrorMsg('The server rejected this change. Check administrator access and try again.');
-        return;
-      }
-
-      setMaintenance(updatedM);
-      setIsPreviewingAsVisitor(false);
-
-      try {
-        const cached = localStorage.getItem('linkora_master_control_v1');
-        const parsed = cached ? JSON.parse(cached) : {};
-        const newFull = { ...parsed, maintenance: updatedM };
-        localStorage.setItem('linkora_master_control_v1', JSON.stringify(newFull));
-        document.cookie = `linkora_master_control_config=${encodeURIComponent(JSON.stringify(newFull))}; path=/; max-age=31536000; SameSite=Lax`;
-        window.dispatchEvent(new Event('linkora_master_control_updated'));
-      } catch {
-        // Server update succeeded; refreshing the local cache is best-effort.
-      }
-    } catch {
-      setErrorMsg('Could not update maintenance mode. Please try again.');
-    } finally {
-      setIsDeactivating(false);
-    }
-  };
-
-  // Always allow admin routes through so administrators are never locked out
-  if (pathname?.startsWith('/control-center-7x9') || pathname?.startsWith('/admin') || pathname?.startsWith('/api/')) {
+  // Always allow API routes and internal control routes through
+  if (pathname?.startsWith('/api/') || pathname?.includes('control-center')) {
     return <>{children}</>;
   }
-
-  // Bypass if user is logged in as an admin or platform owner
-  const isOwner = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' || user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508';
-  const isAdminUser = profile?.role === 'admin' || isOwner;
 
   // If public mode, pass through
   if (!mounted || maintenance.mode === 'public') {
     return <>{children}</>;
   }
 
-  // If user is Admin and NOT testing lock screen view as visitor:
-  if (isAdminUser && !isPreviewingAsVisitor) {
-    return (
-      <>
-        {/* Floating Admin Banner showing Maintenance is Active */}
-        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white px-4 py-2.5 text-xs font-bold sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-elevated border-b border-red-700 animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 animate-pulse text-amber-200 shrink-0" />
-            <span>
-              🚨 EMERGENCY GATE ACTIVE: Linkora is currently in <strong>{maintenance.mode === 'campus_only' ? 'Campus-Only Passcode Mode' : 'Scheduled Maintenance Mode'}</strong>. Regular visitors see the lock screen. You have administrator bypass.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              disabled={isDeactivating}
-              onClick={handleTurnOffMaintenance}
-              className="px-3 py-1 bg-white text-charcoal-950 font-black rounded-xl hover:bg-slate-100 transition-colors shadow-2xs text-xs cursor-pointer"
-            >
-              {isDeactivating ? 'Restoring...' : '🟢 Deactivate & Set Public'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPreviewingAsVisitor(true)}
-              className="px-3 py-1 bg-charcoal-900/70 text-white font-bold rounded-xl hover:bg-charcoal-900 transition-colors text-xs border border-white/20 cursor-pointer"
-            >
-              👁️ Test Lock Screen as Visitor
-            </button>
-          </div>
-        </div>
-        {children}
-      </>
-    );
-  }
-
   // If already unlocked via passcode by student or visitor
-  if (isUnlocked && !isPreviewingAsVisitor) {
+  if (isUnlocked) {
     return <>{children}</>;
   }
 
@@ -190,7 +84,6 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
 
     if (isMatch) {
       setIsUnlocked(true);
-      setIsPreviewingAsVisitor(false);
       try {
         sessionStorage.setItem('linkora_maintenance_unlocked', 'true');
         localStorage.setItem('linkora_maintenance_unlocked', 'true');
@@ -205,18 +98,6 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-charcoal-950 text-white flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-      {/* Exit visitor preview button for Admin */}
-      {isAdminUser && isPreviewingAsVisitor && (
-        <div className="absolute top-4 left-4 z-50">
-          <button
-            type="button"
-            onClick={() => setIsPreviewingAsVisitor(false)}
-            className="px-4 py-2 bg-charcoal-900 hover:bg-charcoal-800 text-amber-300 font-bold rounded-xl text-xs border border-charcoal-700 shadow-elevated"
-          >
-            ← Exit Lock Screen Preview & Return to Full Site
-          </button>
-        </div>
-      )}
       {/* Background glow effects */}
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />

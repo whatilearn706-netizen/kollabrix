@@ -39,31 +39,6 @@ const AuthContext = createContext<AuthContextType>({
   closeAuthModal: () => {},
 });
 
-const DEFAULT_OWNER_USER: any = {
-  id: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
-  email: 'goyalmayank142@gmail.com',
-  user_metadata: {
-    display_name: 'Mayank Goyal (Owner)',
-    username: 'mayank_admin',
-  },
-};
-
-const DEFAULT_OWNER_PROFILE: Profile = {
-  user_id: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
-  username: 'mayank_admin',
-  display_name: 'Mayank Goyal (Owner)',
-  avatar_url: null,
-  bio: 'Linkora Platform Owner & Administrator',
-  role: 'admin',
-  status: 'active',
-  is_suspended: false,
-  skills: ['Fullstack Engineering', 'Platform Governance'],
-  interests: ['Collegiate Innovation', 'Open Source'],
-  preferred_roles: ['Platform Owner'],
-  created_at: '2026-01-01T00:00:00.000Z',
-  updated_at: '2026-01-01T00:00:00.000Z',
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [suspendedNotice, setSuspendedNotice] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -155,8 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (
           localStorage.getItem('linkora_auth_user') ||
-          localStorage.getItem('linkora_admin_session') === 'true' ||
-          document.cookie.includes('linkora_admin_session=true') ||
           document.cookie.includes('linkora_user_session=true')
         ) {
           return false;
@@ -186,10 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = `linkora_user_id=${u.id}; path=/; max-age=31536000; SameSite=Lax`;
         document.cookie = `linkora_user_email=${encodeURIComponent(u.email || '')}; path=/; max-age=31536000; SameSite=Lax`;
-
-        // Admin access must be verified by the server, never by a browser-controlled marker.
-        localStorage.removeItem('linkora_admin_session');
-        document.cookie = 'linkora_admin_session=; path=/; max-age=0; SameSite=Lax';
       } else {
         localStorage.removeItem('linkora_auth_user');
         localStorage.removeItem('linkora_auth_user_id');
@@ -211,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const performForcedSignOut = useCallback(async (reason?: string) => {
-    const notice = reason || 'Your account has been suspended by administration. Access has been revoked.';
+    const notice = reason || 'Your account has been suspended. Access has been revoked.';
     setSuspendedNotice(notice);
     if (typeof window !== 'undefined') {
       try {
@@ -223,10 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('linkora_auth_user_email');
         localStorage.removeItem('linkora_auth_session');
         localStorage.removeItem('linkora_auth_profile');
-        localStorage.removeItem('linkora_admin_session');
-        localStorage.removeItem('linkora_admin_passcode');
         const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-        document.cookie = 'linkora_admin_session=' + expCookie;
         document.cookie = 'linkora_user_session=' + expCookie;
         document.cookie = 'linkora_user_email=' + expCookie;
         document.cookie = 'linkora_user_id=' + expCookie;
@@ -260,7 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Enforce suspension for every account, including the platform owner.
         if (data.is_suspended === true || data.status === 'suspended') {
           console.warn('Suspended user detected during profile fetch:', userId);
-          await performForcedSignOut(data.suspension_reason || 'This account has been suspended by administration.');
+          await performForcedSignOut(data.suspension_reason || 'This account has been suspended.');
           return null;
         }
 
@@ -510,12 +476,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         if (!activeUserId) return;
 
-        const isOwner =
-          activeEmail?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-          activeUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-          activeUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53';
-        if (isOwner) return;
-
         // 1. Authoritative server-side suspension check (bypasses RLS & verifies DB + settings)
         try {
           const res = await fetch('/api/auth/check-status', {
@@ -527,7 +487,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.ok) {
             const data = await res.json();
             if (data.isSuspended) {
-              await performForcedSignOut(data.reason || 'This account has been suspended by administration.');
+              await performForcedSignOut(data.reason || 'This account has been suspended.');
               return;
             }
           }
@@ -541,7 +501,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle();
 
         if (prof && (prof.is_suspended === true || prof.status === 'suspended')) {
-          await performForcedSignOut(prof.suspension_reason || 'This account has been suspended by administration.');
+          await performForcedSignOut(prof.suspension_reason || 'This account has been suspended.');
         }
       } catch (e) {}
     };
@@ -566,7 +526,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           (payload: any) => {
             const updated = payload?.new;
             if (updated && (updated.is_suspended === true || updated.status === 'suspended')) {
-              performForcedSignOut(updated.suspension_reason || 'This account has been suspended by administration.');
+              performForcedSignOut(updated.suspension_reason || 'This account has been suspended.');
             }
           }
         )
@@ -620,28 +580,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (typeof window !== 'undefined') {
         try {
-          localStorage.removeItem('linkora_admin_session');
-          localStorage.removeItem('linkora_admin_passcode');
           localStorage.removeItem('linkora_student_id_status');
           localStorage.removeItem('linkora_auth_user');
           localStorage.removeItem('linkora_auth_user_id');
           localStorage.removeItem('linkora_auth_user_email');
           localStorage.removeItem('linkora_auth_session');
           localStorage.removeItem('linkora_auth_profile');
-          sessionStorage.removeItem('linkora_admin_verified');
           sessionStorage.removeItem('linkora_maintenance_unlocked');
 
           // Purge all Supabase and Linkora keys in localStorage
           for (let i = localStorage.length - 1; i >= 0; i--) {
             const key = localStorage.key(i);
-            if (key && (key.startsWith('sb-') || key.startsWith('linkora_auth_'))) {
+            if (key && (key.startsWith('sb-') || key.startsWith('linkora_'))) {
               localStorage.removeItem(key);
             }
           }
 
           // Expire Linkora session cookies across paths
           const cookieNames = [
-            'linkora_admin_session',
             'linkora_user_session',
             'linkora_user_email',
             'linkora_user_id',
@@ -681,7 +637,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         const path = window.location.pathname;
         if (
-          path.startsWith('/control-center-7x9') ||
+          path.includes('control-center') ||
           path.startsWith('/profile/setup') ||
           path.startsWith('/settings') ||
           path.startsWith('/my-') ||
@@ -733,7 +689,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-white tracking-tight">Account Suspended</h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Your account has been suspended by platform administration. All active sessions have been securely terminated.
+                Your account has been suspended. All active sessions have been securely terminated.
               </p>
             </div>
 

@@ -42,8 +42,7 @@ export default function HackathonsPage() {
   const { theme } = useSiteTheme();
   const isTeacherOrAdmin =
     profile?.role === 'teacher' ||
-    profile?.role === 'admin' ||
-    profile?.faculty_verified;
+    Boolean(profile?.faculty_verified);
 
   // Instant In-Memory / Stale-While-Revalidate Cache
   const cachedHackathons = getPageCache<Hackathon[]>('linkora_hackathons_list');

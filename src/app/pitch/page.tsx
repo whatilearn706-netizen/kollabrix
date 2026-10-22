@@ -94,7 +94,7 @@ const PITCH_SCENES: PitchScene[] = [
     narration:
       'Linkora elevates university accreditation ratings, boosts median placement packages, and showcases departmental innovations. The platform is live and fully engineered — ready for a zero-cost pilot program at our university today.',
     visualHighlight:
-      'Zero infrastructure cost. Dedicated department admin control center ready for rollout.',
+      'Zero infrastructure cost. Dedicated department governance portal ready for rollout.',
     metrics: [
       { label: 'University Cost', value: '$0 / Free' },
       { label: 'Rollout Time', value: '24 Hours' },

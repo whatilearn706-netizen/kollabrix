@@ -146,7 +146,7 @@ export default function TeacherDashboardPage() {
         const data = await res.json();
         if (data.isRevoked) {
           setIsRevoked(true);
-          setVerifyError('Your faculty access has been revoked by an administrator. Please enter an active access passcode to regain access.');
+          setVerifyError('Your faculty access has been revoked. Please enter an active access passcode to regain access.');
         } else {
           setIsRevoked(false);
         }
@@ -170,22 +170,13 @@ export default function TeacherDashboardPage() {
     }
   }, []);
 
-  const [adminBypassGranted, setAdminBypassGranted] = useState(false);
-
-  const isAdmin = Boolean(
-    profile?.role === 'admin' ||
-    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-    user?.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-  );
-
-  // Strict Faculty Check: Requires verified teacher status in DB or explicit admin bypass
+  // Strict Faculty Check: Requires verified teacher status in DB
   const isTeacher =
     !isRevoked &&
     !isPreviewingGateAsVisitor &&
     Boolean(
       profile?.role === 'teacher' ||
-      Boolean(profile?.faculty_verified) ||
-      (isAdmin && adminBypassGranted && !isRevoked)
+      Boolean(profile?.faculty_verified)
     );
 
   const loadDashboardData = useCallback(async () => {
@@ -466,7 +457,7 @@ export default function TeacherDashboardPage() {
 
     const code = facultyCode.trim().toUpperCase();
     if (!code) {
-      setVerifyError('Please enter an institutional faculty code or admin-issued passcode.');
+      setVerifyError('Please enter an institutional faculty code or campus passcode.');
       return;
     }
 
@@ -477,14 +468,7 @@ export default function TeacherDashboardPage() {
       code.includes('FACULTY 2026') ||
       code.includes('FACULTY-2026')
     ) {
-      setVerifyError('⛔ Access Denied: "FACULTY2026" has been permanently blocked and revoked. It was only an example format. Please enter an active administrator-issued passcode (e.g. FAC-849201) or authenticate via DigiLocker.');
-      return;
-    }
-
-    // Allow admin bypass only for verified administrators
-    if (isAdmin && (code === 'ADMIN7X9' || cleanNoSpaces === 'ADMIN7X9')) {
-      setAdminBypassGranted(true);
-      setVerifySuccess('Admin access verified! Entering Faculty Dashboard...');
+      setVerifyError('⛔ Access Denied: "FACULTY2026" has been permanently blocked and revoked. It was only an example format. Please enter an active campus passcode (e.g. FAC-849201) or authenticate via DigiLocker.');
       return;
     }
 
@@ -497,7 +481,7 @@ export default function TeacherDashboardPage() {
     try {
       setIsVerifying(true);
 
-      // 1. Check admin-generated passcodes and platform settings via API endpoint
+      // 1. Check passcodes and platform settings via API endpoint
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -532,7 +516,7 @@ export default function TeacherDashboardPage() {
 
       setVerifyError(
         resData.error ||
-          'Invalid faculty code. Please request an access passcode from your platform administrator or verify via institutional documents.'
+          'Invalid faculty code. Please request an access passcode from your campus coordinator or verify via institutional documents.'
       );
     } catch (err: unknown) {
       setVerifyError(err instanceof Error ? err.message : 'Error verifying faculty code.');
@@ -781,33 +765,6 @@ export default function TeacherDashboardPage() {
             }}
           />
 
-          {/* Admin Bypass Option if logged in as Admin */}
-          {isAdmin && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Platform Administrator Detected
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200">
-                  Owner
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                You are signed in with platform administrator authority ({user.email}). You can enter with an administrative bypass to inspect student projects and hackathons.
-              </p>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => setAdminBypassGranted(true)}
-                className="w-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-charcoal-950"
-              >
-                ⚡ Enter Faculty Portal with Admin Bypass
-              </Button>
-            </div>
-          )}
-
           <div className="text-center pt-2">
             <Link href="/" className="text-xs text-slate-400 hover:text-white transition-colors">
               ← Return to Student Campus Home
@@ -820,26 +777,6 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Admin Faculty Bypass Indicator */}
-      {isAdmin && adminBypassGranted && (
-        <div className="mb-6 p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-300 animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span><strong>Administrator Faculty Bypass Active</strong> — Viewing Faculty Dashboard as Platform Owner.</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setAdminBypassGranted(false);
-              setIsPreviewingGateAsVisitor(true);
-            }}
-            className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 font-bold text-xs text-amber-200 transition-colors shrink-0 cursor-pointer"
-          >
-            🔒 Lock &amp; Test Gate
-          </button>
-        </div>
-      )}
-
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -866,17 +803,6 @@ export default function TeacherDashboardPage() {
           >
             🇮🇳 DigiLocker Identity
           </Button>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPreviewingGateAsVisitor(true)}
-              className="text-amber-300 border-amber-500/30 hover:bg-amber-500/10 text-xs"
-              leftIcon={<Eye className="w-3.5 h-3.5" />}
-            >
-              Test Gate
-            </Button>
-          )}
           <Button
             variant="primary"
             size="sm"

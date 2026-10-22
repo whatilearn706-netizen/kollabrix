@@ -44,7 +44,7 @@ const CURATED_BLUEPRINTS: Record<string, BlueprintResult> = {
     category: 'AI / Healthcare',
     difficulty: 'Advanced',
     summary:
-      'A low-latency speech-to-text pipeline that transcribes bedside doctor-patient dialogue into formatted FHIR-compliant electronic health records, reducing administrative physician burnout.',
+      'A low-latency speech-to-text pipeline that transcribes bedside doctor-patient dialogue into formatted FHIR-compliant electronic health records, reducing repetitive clinical paperwork burnout.',
     technologies: ['Next.js', 'PyTorch', 'Whisper API', 'FastAPI', 'TailwindCSS'],
     desired_roles: ['Lead ML Engineer', 'Full-Stack Developer', 'Healthcare UI/UX Designer'],
     rolesBreakdown: [

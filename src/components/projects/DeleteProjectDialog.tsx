@@ -36,37 +36,16 @@ export function DeleteProjectDialog({
       setIsDeleting(true);
       setError(null);
 
-      const isAdmin = profile?.role === 'admin' || user.email === 'goyalmayank142@gmail.com';
+      // Standard owner delete
+      const { error: deleteError } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('owner_id', user.id);
 
-      if (isAdmin) {
-        // Authoritative admin deletion via server API route
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        const res = await fetch('/api/admin/projects', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ projectId, title: projectTitle }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to delete project as administrator.');
-        }
-      } else {
-        // Standard owner delete
-        const { error: deleteError } = await supabase
-          .from('projects')
-          .delete()
-          .eq('id', projectId)
-          .eq('owner_id', user.id);
-
-        if (deleteError) {
-          setError(deleteError.message);
-          return;
-        }
+      if (deleteError) {
+        setError(deleteError.message);
+        return;
       }
 
       onClose();

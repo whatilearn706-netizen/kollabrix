@@ -6,9 +6,8 @@ import { Profile } from '@/types/database';
  * 
  * Rules:
  * 1. Must be authenticated with a valid user.
- * 2. Profile role is 'teacher' or 'admin', or faculty_verified is true.
- * 3. Platform owner (goyalmayank142@gmail.com) always has full faculty access.
- * 4. Regular students (profile.role === 'student') are explicitly NOT faculty unless elevated.
+ * 2. Profile role is 'teacher', or faculty_verified is true.
+ * 3. Regular students (profile.role === 'student') are explicitly NOT faculty unless elevated.
  * 5. Per-user verified token in localStorage is honored only if profile is not explicitly 'student'.
  */
 export function isFacultyUser(

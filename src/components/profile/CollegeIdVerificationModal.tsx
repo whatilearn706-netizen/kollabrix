@@ -360,7 +360,7 @@ export function CollegeIdVerificationModal({
       // 3. Update modal UI state to State 2 (Wait for Verified)
       setExistingRequest(submissionRecord);
       setIsReuploading(false);
-      setSuccessMsg('Your Student ID card has been submitted! Our admin team will verify it within 24 hours.');
+      setSuccessMsg('Your Student ID card has been submitted! It will be verified within 24 hours.');
 
       try {
         localStorage.setItem('linkora_student_id_status', JSON.stringify(submissionRecord));
@@ -486,7 +486,7 @@ export function CollegeIdVerificationModal({
                     </p>
                   )}
                   <p className="text-xs text-amber-200/90 leading-relaxed pt-1">
-                    Your Student ID card has been securely submitted. Please <strong className="text-amber-300 font-semibold">Wait for Verified</strong> from an administrator. Re-uploading is locked to protect university verification integrity.
+                    Your Student ID card has been securely submitted. Please <strong className="text-amber-300 font-semibold">Wait for Verified</strong> status. Re-uploading is locked to protect university verification integrity.
                   </p>
                 </div>
 

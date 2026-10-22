@@ -40,7 +40,6 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
   const { user, profile, openAuthModal } = useAuth();
   const isVerifiedTeacher = Boolean(
     profile?.role === 'teacher' ||
-      profile?.role === 'admin' ||
       profile?.faculty_verified ||
       (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true')
   );
@@ -523,7 +522,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Teacher / Mentor / Professor</h4>
                     <span className="text-[10px] text-indigo-600 font-semibold">
-                      {isVerifiedTeacher || profile?.role === 'teacher' || profile?.role === 'admin' || profile?.faculty_verified
+                      {isVerifiedTeacher || profile?.role === 'teacher' || profile?.faculty_verified
                         ? '✓ Verified Faculty'
                         : profile?.birth_year && profile.birth_year > 2003
                         ? `Student (Born ${profile.birth_year})`
