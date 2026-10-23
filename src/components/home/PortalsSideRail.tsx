@@ -72,30 +72,30 @@ const PORTAL_ITEMS: PortalItem[] = [
     title: 'AI Spark Studio',
     href: '/spark',
     icon: Sparkles,
-    themeColor: 'violet',
-    iconBgClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
-    borderClass: 'border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.25)]',
+    themeColor: 'amber',
+    iconBgClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    borderClass: 'border-amber-400/40 hover:border-amber-400 shadow-[0_8px_32px_0_rgba(217,119,6,0.25)]',
     badge: 'AI // SQUAD BUILDER',
-    badgeBgClass: 'bg-violet-500/25 border-violet-400/50',
-    badgeTextClass: 'text-violet-200',
+    badgeBgClass: 'bg-amber-500/25 border-amber-400/50',
+    badgeTextClass: 'text-amber-200',
     description: 'AI project blueprint architect, squad builder & tech stacks.',
     ctaText: 'Launch AI Spark',
-    ctaClass: 'text-violet-300',
+    ctaClass: 'text-amber-300',
   },
   {
     id: 'feedback',
     title: 'Community Feedback',
     href: 'mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback',
     icon: MessageSquare,
-    themeColor: 'cyan',
-    iconBgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
-    borderClass: 'border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)]',
+    themeColor: 'amber',
+    iconBgClass: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
+    borderClass: 'border-orange-400/40 hover:border-orange-400 shadow-[0_8px_32px_0_rgba(234,88,12,0.25)]',
     badge: 'COMMUNITY // VOICE',
-    badgeBgClass: 'bg-cyan-500/25 border-cyan-400/50',
-    badgeTextClass: 'text-cyan-200',
+    badgeBgClass: 'bg-orange-500/25 border-orange-400/50',
+    badgeTextClass: 'text-orange-200',
     description: 'Direct message to Admin Control Center with ideas & bug reports.',
     ctaText: 'Community Feedback',
-    ctaClass: 'text-cyan-300',
+    ctaClass: 'text-orange-300',
   },
   {
     id: 'hackathons',
@@ -117,45 +117,45 @@ const PORTAL_ITEMS: PortalItem[] = [
     title: 'Faculty Problems',
     href: '/problems',
     icon: Lightbulb,
-    themeColor: 'violet',
-    iconBgClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
-    borderClass: 'border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.25)]',
+    themeColor: 'amber',
+    iconBgClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    borderClass: 'border-amber-400/40 hover:border-amber-400 shadow-[0_8px_32px_0_rgba(217,119,6,0.25)]',
     badge: 'FACULTY // BRIEFS',
-    badgeBgClass: 'bg-violet-500/25 border-violet-400/50',
-    badgeTextClass: 'text-violet-200',
+    badgeBgClass: 'bg-amber-500/25 border-amber-400/50',
+    badgeTextClass: 'text-amber-200',
     description: 'Tackle real engineering briefs published by professors.',
     ctaText: 'Solve Problems',
-    ctaClass: 'text-violet-300',
+    ctaClass: 'text-amber-300',
   },
   {
     id: 'icpc',
     title: 'ICPC Arena',
     href: '/icpc',
     icon: Terminal,
-    themeColor: 'cyan',
-    iconBgClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
-    borderClass: 'border-cyan-400/40 hover:border-cyan-400 shadow-[0_8px_32px_0_rgba(6,182,212,0.25)]',
+    themeColor: 'amber',
+    iconBgClass: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
+    borderClass: 'border-orange-400/40 hover:border-orange-400 shadow-[0_8px_32px_0_rgba(234,88,12,0.25)]',
     badge: 'ICPC // SPEEDRUN',
-    badgeBgClass: 'bg-cyan-500/25 border-cyan-400/50',
-    badgeTextClass: 'text-cyan-200',
+    badgeBgClass: 'bg-orange-500/25 border-orange-400/50',
+    badgeTextClass: 'text-orange-200',
     description: 'Collegiate speedruns, ACM rounds & algorithmic ranks.',
     ctaText: 'Enter ICPC',
-    ctaClass: 'text-cyan-300',
+    ctaClass: 'text-orange-300',
   },
   {
     id: 'resources',
     title: 'Resources Hub',
     href: '/resources',
     icon: BookOpen,
-    themeColor: 'violet',
-    iconBgClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30',
-    borderClass: 'border-violet-400/40 hover:border-violet-400 shadow-[0_8px_32px_0_rgba(139,92,246,0.25)]',
+    themeColor: 'amber',
+    iconBgClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    borderClass: 'border-amber-400/40 hover:border-amber-400 shadow-[0_8px_32px_0_rgba(217,119,6,0.25)]',
     badge: 'LEARNING // ROADMAPS',
-    badgeBgClass: 'bg-violet-500/25 border-violet-400/50',
-    badgeTextClass: 'text-violet-200',
+    badgeBgClass: 'bg-amber-500/25 border-amber-400/50',
+    badgeTextClass: 'text-amber-200',
     description: 'Curated beginner and active learner roadmaps with YouTube tutorials.',
     ctaText: 'Open Resources',
-    ctaClass: 'text-violet-300',
+    ctaClass: 'text-amber-300',
     openInNewTab: true,
   },
   {
@@ -331,15 +331,15 @@ export function PortalsSideRail() {
             <button
               type="button"
               onClick={() => setIsSpotlightOpen(true)}
-              className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-900 dark:bg-black border-2 border-violet-500/70 shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:border-violet-400 hover:shadow-violet-500/30 active:scale-95"
+              className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-900 dark:bg-black border-2 border-amber-500/70 shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:border-amber-400 hover:shadow-amber-500/30 active:scale-95"
               aria-label="Lil Point of Linkora - Open Spotlight Ring (⌘K)"
               title="Lil Point of Linkora • Tap or press ⌘K to open Big Ring"
             >
               {/* Animated Radar Pulse */}
-              <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-500 via-pink-500 to-emerald-500 opacity-70 blur-xs animate-ping pointer-events-none" />
+              <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 opacity-70 blur-xs animate-ping pointer-events-none" />
 
               {/* Glowing Center Core */}
-              <span className="relative z-10 w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-emerald-400 via-violet-400 to-pink-400 flex items-center justify-center shadow-inner group-hover:rotate-45 transition-transform pointer-events-none">
+              <span className="relative z-10 w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-400 via-orange-400 to-rose-400 flex items-center justify-center shadow-inner group-hover:rotate-45 transition-transform pointer-events-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               </span>
             </button>
@@ -348,7 +348,7 @@ export function PortalsSideRail() {
             <button
               type="button"
               onClick={() => setIsSpotlightOpen(true)}
-              className="inline-flex items-center gap-0.5 text-[8px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded bg-white/80 dark:bg-charcoal-800/90 border border-slate-200/90 dark:border-charcoal-700 hover:border-violet-400 hover:text-violet-500 transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-0.5 text-[8px] font-mono font-bold text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded bg-white/80 dark:bg-charcoal-800/90 border border-slate-200/90 dark:border-charcoal-700 hover:border-amber-400 hover:text-amber-600 transition-colors cursor-pointer shadow-2xs"
               title="Tap or press ⌘K to open Big Ring"
             >
               <Command className="w-2.5 h-2.5" />
@@ -370,15 +370,15 @@ export function PortalsSideRail() {
         <button
           type="button"
           onClick={() => setIsSpotlightOpen(true)}
-          className="flex items-center gap-2 bg-slate-900/90 dark:bg-black/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-violet-500/50 shadow-xl text-white active:scale-95 transition-all cursor-pointer"
+          className="flex items-center gap-2 bg-slate-900/90 dark:bg-black/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-500/50 shadow-xl text-white active:scale-95 transition-all cursor-pointer"
           title="Open Portals Ring"
         >
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
           </span>
           <span className="text-xs font-bold tracking-tight">Portals</span>
-          <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded bg-white/20 text-violet-200 flex items-center gap-0.5">
+          <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded bg-white/20 text-amber-200 flex items-center gap-0.5">
             <Command className="w-2 h-2" />
             <span>K</span>
           </span>
@@ -405,11 +405,11 @@ export function PortalsSideRail() {
           aria-modal="true"
           aria-label="Linkora Big Portals Ring"
         >
-          {/* Animated Atmospheric Blur Backside */}
+          {/* Animated Atmospheric Warm Blur Backside */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-            <div className="absolute w-[440px] h-[440px] sm:w-[650px] sm:h-[650px] rounded-full bg-gradient-to-tr from-violet-600/30 via-indigo-600/25 to-pink-500/20 blur-[120px] ambient-blur-animation" />
-            <div className="absolute w-[380px] h-[380px] sm:w-[540px] sm:h-[540px] rounded-full bg-gradient-to-bl from-amber-500/25 via-rose-500/20 to-transparent blur-[110px] ambient-blur-animation-reverse" />
-            <div className="absolute w-[360px] h-[360px] sm:w-[500px] sm:h-[500px] rounded-full bg-gradient-to-r from-emerald-500/25 via-cyan-500/20 to-transparent blur-[100px] ambient-blur-animation" />
+            <div className="absolute w-[440px] h-[440px] sm:w-[650px] sm:h-[650px] rounded-full bg-gradient-to-tr from-amber-600/30 via-orange-600/25 to-rose-500/20 blur-[120px] ambient-blur-animation" />
+            <div className="absolute w-[380px] h-[380px] sm:w-[540px] sm:h-[540px] rounded-full bg-gradient-to-bl from-amber-500/25 via-yellow-500/20 to-transparent blur-[110px] ambient-blur-animation-reverse" />
+            <div className="absolute w-[360px] h-[360px] sm:w-[500px] sm:h-[500px] rounded-full bg-gradient-to-r from-orange-500/25 via-amber-500/20 to-transparent blur-[100px] ambient-blur-animation" />
           </div>
 
           {/* =====================================================================
@@ -454,15 +454,15 @@ export function PortalsSideRail() {
                 />
                 <defs>
                   <linearGradient id="railRingGradOuter" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.95" />
-                    <stop offset="30%" stopColor="#ec4899" stopOpacity="0.8" />
-                    <stop offset="65%" stopColor="#06b6d4" stopOpacity="0.9" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.95" />
+                    <stop offset="0%" stopColor="#ea580c" stopOpacity="0.95" />
+                    <stop offset="30%" stopColor="#d97706" stopOpacity="0.8" />
+                    <stop offset="65%" stopColor="#f59e0b" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#c2410c" stopOpacity="0.95" />
                   </linearGradient>
                   <linearGradient id="railRingGradInner" x1="100%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.85" />
-                    <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.85" />
+                    <stop offset="50%" stopColor="#fb923c" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#ea580c" stopOpacity="0.85" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -470,12 +470,12 @@ export function PortalsSideRail() {
 
             {/* Center Transparent Command Core */}
             <div className="relative z-30 flex flex-col items-center justify-center text-center p-2">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/10 dark:bg-white/[0.08] border border-white/25 dark:border-white/20 shadow-[0_8px_32px_0_rgba(139,92,246,0.35)] flex flex-col items-center justify-center p-2 backdrop-blur-3xl group">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/10 dark:bg-white/[0.08] border border-white/25 dark:border-white/20 shadow-[0_8px_32px_0_rgba(217,119,6,0.35)] flex flex-col items-center justify-center p-2 backdrop-blur-3xl group">
                 <BrandLogo size="sm" wordmarkColor="light" showWordmark={false} />
                 <span className="text-[9px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-white mt-0.5 drop-shadow-md">
                   LINKORA
                 </span>
-                <span className="text-[7px] sm:text-[8px] font-mono font-bold text-violet-300 uppercase tracking-wider">
+                <span className="text-[7px] sm:text-[8px] font-mono font-bold text-amber-200 uppercase tracking-wider">
                   PORTALS RING
                 </span>
               </div>

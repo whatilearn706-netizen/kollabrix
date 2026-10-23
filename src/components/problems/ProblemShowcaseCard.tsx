@@ -14,7 +14,7 @@ interface ProblemShowcaseCardProps {
 export function ProblemShowcaseCard({ problem }: ProblemShowcaseCardProps) {
   const { theme, isDark } = useSiteTheme();
   const effectiveDark = isDark || isColorDark(theme.surfaceColor);
-  const headingColor = effectiveDark ? '#ffffff' : (theme.headingColor || '#0f172a');
+  const headingColor = effectiveDark ? '#ffffff' : (theme.headingColor || '#1C1917');
 
   const authorName = problem.author?.display_name || 'Faculty Mentor';
   const collegeName = problem.author?.college || 'Faculty of Engineering & Tech';

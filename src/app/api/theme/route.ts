@@ -20,9 +20,22 @@ export async function GET() {
       .eq('key', SETTINGS_KEY)
       .maybeSingle();
 
-    const theme: SiteThemeConfig = settingData?.value
+    let theme: SiteThemeConfig = settingData?.value
       ? { ...DEFAULT_SITE_THEME, ...settingData.value }
       : DEFAULT_SITE_THEME;
+
+    // Gracefully migrate legacy cold defaults to warm palette
+    if (theme.backgroundColor === '#fafbfc') theme.backgroundColor = '#FAF7F2';
+    if (theme.brandColor === '#6366F1' || theme.brandColor === '#6366f1') theme.brandColor = '#C2410C';
+    if (theme.brandHoverColor === '#4F46E5' || theme.brandHoverColor === '#4f46e5') theme.brandHoverColor = '#9A3412';
+    if (theme.accentColor === '#EC4899' || theme.accentColor === '#ec4899') theme.accentColor = '#D97706';
+    if (theme.borderColor === '#e2e8f0') theme.borderColor = '#E5DFD5';
+    if (theme.headingColor === '#0f172a') theme.headingColor = '#1C1917';
+    if (theme.bodyTextColor === '#334155') theme.bodyTextColor = '#443E38';
+    if (theme.mutedTextColor === '#64748b') theme.mutedTextColor = '#78716C';
+    if (theme.announcementBannerBg === '#6366F1' || theme.announcementBannerBg === '#6366f1') {
+      theme.announcementBannerBg = '#C2410C';
+    }
 
     return NextResponse.json({
       success: true,

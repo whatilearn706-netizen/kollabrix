@@ -14,7 +14,7 @@ export function ResourcesSubNav() {
       label: 'Learning Roadmaps',
       icon: BookOpen,
       badge: 'ROADMAPS',
-      badgeColor: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-500/30',
+      badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
       isActive: pathname === '/resources',
     },
     {
@@ -30,7 +30,7 @@ export function ResourcesSubNav() {
       label: 'Hackathon Starter Kits',
       icon: Zap,
       badge: '1-CLICK MVP',
-      badgeColor: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30',
+      badgeColor: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30',
       isActive: pathname === '/starter-kits',
     },
   ];

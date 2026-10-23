@@ -160,7 +160,7 @@ linkora-link.online`;
   };
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] text-zinc-900 print:bg-white print:text-black">
+    <div className="min-h-screen bg-[#FAF7F2] text-stone-900 print:bg-white print:text-black">
       
       {/* Top Leadership Banner */}
       <div className="bg-zinc-950 text-white border-b border-zinc-800 py-2.5 px-4 print:hidden">

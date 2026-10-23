@@ -53,12 +53,15 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         if (userPref === 'dark') {
           return {
             ...DEFAULT_SITE_THEME,
-            backgroundColor: '#090B10',
-            surfaceColor: '#11141E',
-            borderColor: '#1F2436',
-            headingColor: '#F8FAFC',
-            bodyTextColor: '#CBD5E1',
-            mutedTextColor: '#64748B',
+            backgroundColor: '#141210',
+            surfaceColor: '#1C1916',
+            borderColor: '#2E2822',
+            headingColor: '#FAF7F2',
+            bodyTextColor: '#D6CEC5',
+            mutedTextColor: '#8C8276',
+            brandColor: '#EA580C',
+            brandHoverColor: '#C2410C',
+            accentColor: '#F59E0B',
             navbarStyle: 'dark',
             cardShadow: 'glow',
           };
@@ -174,12 +177,11 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
       .begin-colorful {
         background: linear-gradient(
           90deg,
-          #ff3366 0%,
-          #ff6b35 20%,
-          #f72585 40%,
-          #7209b7 60%,
-          #3a86ff 80%,
-          #00f5d4 100%
+          #D97706 0%,
+          #EA580C 25%,
+          #C2410C 50%,
+          #B45309 75%,
+          #F59E0B 100%
         ) !important;
         background-size: 100% 100% !important;
         -webkit-background-clip: text !important;
@@ -221,7 +223,29 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         color: var(--site-accent) !important;
       }
 
-      /* Dark Theme Global Adaptations Across All Pages */
+      /* Global Warm Color Palette Harmonization Across Components */
+      .bg-indigo-600,
+      .bg-violet-600 {
+        background-color: var(--site-brand) !important;
+      }
+      .hover\\:bg-indigo-500:hover,
+      .hover\\:bg-indigo-700:hover,
+      .hover\\:bg-violet-500:hover,
+      .hover\\:bg-violet-700:hover {
+        background-color: var(--site-brand-hover) !important;
+      }
+      .text-indigo-600,
+      .text-violet-600 {
+        color: var(--site-brand) !important;
+      }
+      .border-indigo-500,
+      .border-violet-500,
+      .border-indigo-600,
+      .border-violet-600 {
+        border-color: var(--site-brand) !important;
+      }
+
+      /* Dark Theme Global Warm Adaptations Across All Pages */
       .site-theme-dark .bg-white {
         background-color: var(--site-surface) !important;
         color: var(--site-text) !important;
@@ -250,15 +274,33 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         border-color: var(--site-border) !important;
       }
 
-      /* Light Theme Global Adaptations */
+      /* Light Theme Global Warm Adaptations Across All Pages */
       .site-theme-light .text-slate-900 {
         color: var(--site-heading) !important;
       }
+      .site-theme-light .text-slate-800 {
+        color: var(--site-heading) !important;
+      }
+      .site-theme-light .text-slate-700,
       .site-theme-light .text-slate-600 {
         color: var(--site-text) !important;
       }
-      .site-theme-light .border-slate-200 {
+      .site-theme-light .text-slate-500,
+      .site-theme-light .text-slate-400 {
+        color: var(--site-text-muted) !important;
+      }
+      .site-theme-light .border-slate-200,
+      .site-theme-light .border-slate-200\\/90,
+      .site-theme-light .border-slate-200\\/80,
+      .site-theme-light .border-slate-200\\/60,
+      .site-theme-light .border-slate-300 {
         border-color: var(--site-border) !important;
+      }
+      .site-theme-light .bg-slate-50 {
+        background-color: #FAF4ED !important;
+      }
+      .site-theme-light .bg-slate-100 {
+        background-color: #F3ECE3 !important;
       }
 
       /* Custom CSS Injection by Admin */
@@ -277,24 +319,30 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         if (userPref === 'dark') {
           activeTheme = {
             ...activeTheme,
-            backgroundColor: '#090B10',
-            surfaceColor: '#11141E',
-            borderColor: '#1F2436',
-            headingColor: '#F8FAFC',
-            bodyTextColor: '#CBD5E1',
-            mutedTextColor: '#64748B',
+            backgroundColor: '#141210',
+            surfaceColor: '#1C1916',
+            borderColor: '#2E2822',
+            headingColor: '#FAF7F2',
+            bodyTextColor: '#D6CEC5',
+            mutedTextColor: '#8C8276',
+            brandColor: '#EA580C',
+            brandHoverColor: '#C2410C',
+            accentColor: '#F59E0B',
             navbarStyle: 'dark',
             cardShadow: 'glow',
           };
         } else if (userPref === 'light') {
           activeTheme = {
             ...activeTheme,
-            backgroundColor: '#fafbfc',
+            backgroundColor: '#FAF7F2',
             surfaceColor: '#ffffff',
-            borderColor: '#e2e8f0',
-            headingColor: '#0f172a',
-            bodyTextColor: '#334155',
-            mutedTextColor: '#64748b',
+            borderColor: '#E5DFD5',
+            headingColor: '#1C1917',
+            bodyTextColor: '#443E38',
+            mutedTextColor: '#78716C',
+            brandColor: '#C2410C',
+            brandHoverColor: '#9A3412',
+            accentColor: '#D97706',
             navbarStyle: 'auto',
             cardShadow: 'subtle',
           };
@@ -319,12 +367,15 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
       if (nextIsDark) {
         nextTheme = {
           ...prev,
-          backgroundColor: '#090B10',
-          surfaceColor: '#11141E',
-          borderColor: '#1F2436',
-          headingColor: '#F8FAFC',
-          bodyTextColor: '#CBD5E1',
-          mutedTextColor: '#64748B',
+          backgroundColor: '#141210',
+          surfaceColor: '#1C1916',
+          borderColor: '#2E2822',
+          headingColor: '#FAF7F2',
+          bodyTextColor: '#D6CEC5',
+          mutedTextColor: '#8C8276',
+          brandColor: '#EA580C',
+          brandHoverColor: '#C2410C',
+          accentColor: '#F59E0B',
           navbarStyle: 'dark',
           cardShadow: 'glow',
         };
@@ -334,12 +385,15 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
       } else {
         nextTheme = {
           ...prev,
-          backgroundColor: '#fafbfc',
+          backgroundColor: '#FAF7F2',
           surfaceColor: '#ffffff',
-          borderColor: '#e2e8f0',
-          headingColor: '#0f172a',
-          bodyTextColor: '#334155',
-          mutedTextColor: '#64748b',
+          borderColor: '#E5DFD5',
+          headingColor: '#1C1917',
+          bodyTextColor: '#443E38',
+          mutedTextColor: '#78716C',
+          brandColor: '#C2410C',
+          brandHoverColor: '#9A3412',
+          accentColor: '#D97706',
           navbarStyle: 'auto',
           cardShadow: 'subtle',
         };

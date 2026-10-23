@@ -34,7 +34,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
   // Determine effective darkness based on theme or explicit variant
   const effectiveDark = variant ? variant === 'dark' : isDark;
   const isCardDark = effectiveDark || isColorDark(theme.surfaceColor);
-  const cardHeadingColor = isCardDark ? '#ffffff' : (theme.headingColor || '#0f172a');
+  const cardHeadingColor = isCardDark ? '#ffffff' : (theme.headingColor || '#1C1917');
 
   return (
     <div

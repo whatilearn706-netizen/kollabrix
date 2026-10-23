@@ -433,7 +433,7 @@ Check out the verified certificate: ${verificationUrl}
             <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex items-center justify-between gap-4">
               <div>
                 <span className="text-xs font-bold text-slate-300 block mb-1">Live Badge Preview:</span>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#6366f1] text-white font-bold text-xs shadow-sm">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#C2410C] text-white font-bold text-xs shadow-sm">
                   <ShieldCheck className="w-4 h-4" />
                   <span>Linkora Verified Project</span>
                 </div>

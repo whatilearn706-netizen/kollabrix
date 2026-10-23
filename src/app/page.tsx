@@ -117,7 +117,7 @@ function TopScrollProgressBeam() {
   return (
     <div
       ref={beamRef}
-      className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-violet-600 via-indigo-500 to-pink-500 z-50 pointer-events-none origin-left shadow-[0_0_12px_rgba(139,92,246,0.5)]"
+      className="fixed top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700 z-50 pointer-events-none origin-left shadow-[0_0_12px_rgba(217,119,6,0.45)]"
       style={{ transform: 'scaleX(0)' }}
     />
   );
@@ -511,16 +511,16 @@ export default function HomePage() {
          ========================================================================= */}
       {sectionsConfig.hero && (
         <section className="relative pt-8 pb-14 md:pt-16 md:pb-24 overflow-hidden">
-          {/* Ambient Cinematic Mesh Lighting Orbs */}
-          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-violet-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-          <div className="absolute top-1/3 right-4 w-[500px] h-[500px] bg-gradient-to-bl from-pink-500/15 via-rose-500/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+          {/* Ambient Warm Sunlight & Sunset Mesh Lighting Orbs */}
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-amber-500/20 via-orange-500/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+          <div className="absolute top-1/3 right-4 w-[500px] h-[500px] bg-gradient-to-bl from-rose-500/15 via-amber-500/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-amber-400/10 rounded-full blur-[150px] pointer-events-none -z-10" />
 
           <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-12 items-center">
               {/* Left Column: Brand, Editorial Headline & Primary Actions */}
               <div className="lg:col-span-7 space-y-6 text-left">
-                {/* Glassmorphic Badge with Neon Radar Pulse */}
+                {/* Glassmorphic Badge with Warm Radar Pulse */}
                 <div
                   style={{ borderRadius: theme.borderRadius }}
                   className="inline-flex items-center gap-2.5 px-4 py-1.5 backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold tracking-wider uppercase shadow-2xs"
@@ -541,7 +541,7 @@ export default function HomePage() {
                   }}
                   className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
                 >
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600">
                     Linkora.
                   </span>{' '}
                   <span>
@@ -598,12 +598,12 @@ export default function HomePage() {
                       size="lg"
                       style={{
                         borderRadius: theme.borderRadius,
-                        color: isDark ? '#ffffff' : '#0f172a',
+                        color: isDark ? '#FAF7F2' : '#1C1917',
                       }}
-                      className="border border-slate-300 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white font-bold px-7 py-3.5 bg-white dark:bg-white/5 shadow-2xs transition-all active:scale-[0.98]"
-                      leftIcon={<Users className="w-4 h-4" style={{ color: isDark ? '#ffffff' : '#0f172a' }} />}
+                      className="border border-stone-300 dark:border-white/15 hover:bg-stone-100 dark:hover:bg-white/10 text-stone-900 dark:text-white font-bold px-7 py-3.5 bg-white dark:bg-white/5 shadow-2xs transition-all active:scale-[0.98]"
+                      leftIcon={<Users className="w-4 h-4" style={{ color: isDark ? '#FAF7F2' : '#1C1917' }} />}
                     >
-                      <span className="text-slate-900 dark:text-white font-bold" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>
+                      <span className="text-stone-900 dark:text-white font-bold" style={{ color: isDark ? '#FAF7F2' : '#1C1917' }}>
                         {theme.secondaryCtaText || 'Find Teammates'}
                       </span>
                     </Button>
@@ -630,9 +630,9 @@ export default function HomePage() {
                   </Link>
                   <Link
                     href="/leaderboard"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-violet-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-amber-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
                   >
-                    <Trophy className="w-3.5 h-3.5 text-violet-500 fill-violet-500/20" />
+                    <Trophy className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
                     <span><strong className="font-bold text-slate-900 dark:text-white">National</strong> Leaderboard</span>
                   </Link>
                   <Link
@@ -818,8 +818,8 @@ export default function HomePage() {
          ========================================================================= */}
       {sectionsConfig.workflow && (
         <section className="py-16 md:py-24 relative overflow-hidden">
-          {/* Subtle Ambient Glow Orb */}
-          <div className="absolute top-1/2 left-10 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+          {/* Subtle Ambient Warm Glow Orb */}
+          <div className="absolute top-1/2 left-10 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
           <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-12 relative z-10">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-600 font-bold">
@@ -1038,8 +1038,8 @@ export default function HomePage() {
          ========================================================================= */}
       {sectionsConfig.showcase && (
         <section className="py-16 md:py-24 relative overflow-hidden">
-          {/* Subtle Ambient Glow Orb */}
-          <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+          {/* Subtle Ambient Warm Glow Orb */}
+          <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
           <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-12 relative z-10">
             {/* Header with Segmented Switcher */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -1262,7 +1262,7 @@ export default function HomePage() {
           SECTION 4: COMPETE (CAMPUS PASSCODE & PRIVATE CHALLENGES)
          ========================================================================= */}
       {sectionsConfig.hackathons && (
-        <section className="py-16 md:py-24 bg-[#fafbfc] border-b border-slate-200/80">
+        <section className="py-16 md:py-24 bg-[#FAF7F2] dark:bg-[#141210] border-b border-stone-200/80 dark:border-stone-800">
           <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-10">
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-rose-600 font-bold">

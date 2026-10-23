@@ -26,7 +26,7 @@ type FeedbackCategory = 'feature' | 'bug' | 'ui_ux' | 'faculty' | 'icpc' | 'gene
 const CATEGORIES: { id: FeedbackCategory; label: string; icon: React.ElementType; color: string }[] = [
   { id: 'feature', label: 'Feature Idea', icon: Lightbulb, color: 'text-amber-500' },
   { id: 'bug', label: 'Bug / Glitch', icon: Bug, color: 'text-rose-500' },
-  { id: 'ui_ux', label: 'UI / Design', icon: Palette, color: 'text-violet-500' },
+  { id: 'ui_ux', label: 'UI / Design', icon: Palette, color: 'text-amber-500' },
   { id: 'faculty', label: 'Faculty & Mentors', icon: GraduationCap, color: 'text-emerald-500' },
   { id: 'icpc', label: 'ICPC & Streak', icon: Terminal, color: 'text-cyan-500' },
   { id: 'general', label: 'General Thoughts', icon: HelpCircle, color: 'text-blue-500' },
@@ -99,13 +99,13 @@ export function WebsiteFeedbackSection() {
 
   return (
     <section id="feedback-section" className="py-20 scroll-mt-16 bg-slate-900 border-t border-slate-800 text-white relative overflow-hidden">
-      {/* Subtle ambient blur */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-violet-600/10 rounded-full blur-[140px] pointer-events-none" />
+      {/* Subtle warm ambient blur */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-amber-600/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-8">
         {/* Section Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-violet-500/15 border border-violet-500/30 text-violet-300">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">
             <MessageSquare className="w-3.5 h-3.5" />
             <span>COMMUNITY VOICE & FEEDBACK</span>
           </div>
@@ -161,7 +161,7 @@ export function WebsiteFeedbackSection() {
                         onClick={() => setCategory(cat.id)}
                         className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-violet-600/20 border-violet-500 text-white font-bold shadow-sm'
+                            ? 'bg-amber-600/20 border-amber-500 text-white font-bold shadow-sm'
                             : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'
                         }`}
                       >

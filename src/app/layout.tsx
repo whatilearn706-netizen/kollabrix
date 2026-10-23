@@ -257,7 +257,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white relative">
+      <body className="min-h-screen bg-[#FAF7F2] text-stone-900 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative">
         <AuthProvider>
           <SiteThemeProvider>
             <GlobalLightRays />

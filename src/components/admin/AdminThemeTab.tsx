@@ -298,7 +298,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
-                      value={theme.backgroundColor.startsWith('#') ? theme.backgroundColor : '#fafbfc'}
+                      value={theme.backgroundColor.startsWith('#') ? theme.backgroundColor : '#FAF7F2'}
                       onChange={(e) => updateField('backgroundColor', e.target.value)}
                       className="w-10 h-10 rounded-xl cursor-pointer border border-charcoal-700 bg-transparent"
                     />
@@ -310,11 +310,11 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                     />
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {[
-                        { label: 'Clean Light', color: '#fafbfc' },
+                        { label: 'Warm Ivory', color: '#FAF7F2' },
                         { label: 'Pure White', color: '#ffffff' },
+                        { label: 'Warm Espresso Dark', color: '#141210' },
                         { label: 'Obsidian Dark', color: '#090B10' },
                         { label: 'Midnight Deep', color: '#070A0E' },
-                        { label: 'Navy Slate', color: '#090D16' },
                       ].map((item) => (
                         <button
                           key={item.color}
@@ -406,7 +406,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                       className="font-mono uppercase bg-charcoal-800 border-charcoal-700 text-xs w-32"
                     />
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      {['#6366F1', '#8B5CF6', '#10B981', '#EC4899', '#F43F5E', '#3B82F6', '#06B6D4', '#0F172A'].map((c) => (
+                      {['#C2410C', '#EA580C', '#D97706', '#F59E0B', '#B45309', '#9A3412', '#78350F', '#1C1917'].map((c) => (
                         <button
                           key={c}
                           type="button"

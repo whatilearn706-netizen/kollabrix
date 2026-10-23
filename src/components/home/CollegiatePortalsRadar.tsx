@@ -34,11 +34,11 @@ export function CollegiatePortalsRadar() {
       desc: 'Tackle real-world challenges published by college faculty. Form student teams, submit solution architectures, and earn faculty mentorship.',
       href: '/problems',
       badge: 'ACADEMIC CHALLENGES',
-      badgeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
       icon: Lightbulb,
-      iconColor: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
-      borderColor: 'hover:border-indigo-500/50',
-      accentGlow: 'from-indigo-500/10 to-transparent',
+      iconColor: 'text-amber-600 bg-amber-500/10 border-amber-500/20',
+      borderColor: 'hover:border-amber-500/50',
+      accentGlow: 'from-amber-500/10 to-transparent',
       actionText: 'View Problems',
     },
     {
@@ -64,10 +64,10 @@ export function CollegiatePortalsRadar() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
               </span>
-              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
                 CAMPUS NETWORK RADAR
               </span>
             </div>

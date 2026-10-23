@@ -4,8 +4,8 @@
   "description": "Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fafbfc",
-  "theme_color": "#6366f1",
+  "background_color": "#FAF7F2",
+  "theme_color": "#C2410C",
   "icons": [
     {
       "src": "/favicon-48x48.png",

@@ -25,14 +25,14 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
   const { profile, match_score, matching_skills, matching_roles, reasons } = match;
 
   const isCardDark = isDark || isColorDark(theme.surfaceColor);
-  const teammateNameColor = isCardDark ? '#ffffff' : (theme.headingColor || '#0f172a');
-  const teammateUsernameColor = isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#64748b');
+  const teammateNameColor = isCardDark ? '#ffffff' : (theme.headingColor || '#1C1917');
+  const teammateUsernameColor = isCardDark ? '#94a3b8' : (theme.mutedTextColor || '#78716C');
 
   const scoreBadgeColor =
     match_score >= 80
       ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
       : match_score >= 60
-      ? 'bg-violet-500/15 text-violet-500 border-violet-500/30'
+      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
       : 'bg-slate-500/15 text-slate-400 border-slate-500/30';
 
   return (

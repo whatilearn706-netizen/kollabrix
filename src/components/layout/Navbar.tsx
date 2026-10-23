@@ -147,13 +147,13 @@ export function Navbar() {
       className="sticky top-0 z-40 w-full border-b backdrop-blur-2xl transition-all shadow-sm"
     >
       {/* Subtle bottom accent ray */}
-      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/25 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent pointer-events-none" />
 
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 h-16 flex items-center justify-between gap-4 relative">
         {/* Brand Logo & Wordmark */}
         <Link
           href="/"
-          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg shrink-0"
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg shrink-0"
           aria-label={`${theme.siteTitle || 'Linkora'} Home`}
         >
           <BrandLogo
@@ -193,11 +193,11 @@ export function Navbar() {
                   'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-150 inline-flex items-center gap-2 border select-none active:scale-[0.96]',
                   isActive
                     ? isNavbarDark
-                      ? 'bg-white/12 text-white border-white/25 shadow-xs shadow-violet-500/10'
-                      : 'bg-slate-100 text-slate-900 border-slate-200/90 shadow-xs'
+                      ? 'bg-white/12 text-white border-white/25 shadow-xs shadow-amber-500/10'
+                      : 'bg-stone-200/70 text-stone-900 border-stone-300/90 shadow-xs'
                     : isNavbarDark
-                    ? 'text-slate-300 border-transparent hover:text-white hover:bg-white/8 hover:border-white/10'
-                    : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-100 hover:border-slate-200/60'
+                    ? 'text-stone-300 border-transparent hover:text-white hover:bg-white/8 hover:border-white/10'
+                    : 'text-stone-600 border-transparent hover:text-stone-900 hover:bg-stone-100 hover:border-stone-200/60'
                 )}
               >
                 <Icon
@@ -205,16 +205,16 @@ export function Navbar() {
                     'w-3.5 h-3.5 transition-colors',
                     isActive
                       ? isNavbarDark
-                        ? 'text-violet-400'
-                        : 'text-violet-600'
+                        ? 'text-amber-400'
+                        : 'text-amber-600'
                       : isNavbarDark
-                      ? 'text-slate-400'
-                      : 'text-slate-500'
+                      ? 'text-stone-400'
+                      : 'text-stone-500'
                   )}
                 />
                 <span>{link.label}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
                 )}
               </Link>
             );
@@ -226,13 +226,13 @@ export function Navbar() {
           {/* Magic UI Pulsating Resources Button */}
           <PulsatingButton
             onClick={() => window.open('/resources', '_blank')}
-            pulseColor={isNavbarDark ? 'rgba(139, 92, 246, 0.45)' : 'rgba(99, 102, 241, 0.35)'}
+            pulseColor={isNavbarDark ? 'rgba(251, 191, 36, 0.45)' : 'rgba(217, 119, 6, 0.35)'}
             duration="1.8s"
             className={clsx(
               'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-sm border flex items-center gap-2 active:scale-[0.98]',
               isNavbarDark
-                ? 'bg-gradient-to-r from-violet-900/80 via-indigo-900/80 to-purple-900/80 hover:bg-violet-800 text-white border-violet-400/40 shadow-[0_0_14px_rgba(139,92,246,0.25)]'
-                : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-violet-500/30 shadow-[0_2px_10px_rgba(139,92,246,0.2)]'
+                ? 'bg-gradient-to-r from-amber-700 via-orange-600 to-amber-800 hover:bg-amber-600 text-white border-amber-400/40 shadow-[0_0_14px_rgba(217,119,6,0.25)]'
+                : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-amber-500/30 shadow-[0_2px_10px_rgba(217,119,6,0.2)]'
             )}
             title="Collegiate Learning Resources & Compilers (Opens in new tab)"
           >
@@ -338,7 +338,7 @@ export function Navbar() {
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-medium"
                     >
-                      <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
+                      <Briefcase className="w-3.5 h-3.5 text-amber-600" />
                       <span>My Projects &amp; Workspace</span>
                     </Link>
 
@@ -357,7 +357,7 @@ export function Navbar() {
                         onClick={() => setUserDropdownOpen(false)}
                         className="flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-medium"
                       >
-                        <User className="w-3.5 h-3.5 text-indigo-500" />
+                        <User className="w-3.5 h-3.5 text-amber-600" />
                         <span>Public Portfolio</span>
                       </Link>
                     )}
@@ -376,25 +376,25 @@ export function Navbar() {
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-medium"
                     >
-                      <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                      <Bot className="w-3.5 h-3.5 text-orange-500" />
                       <span>AI Project Planner</span>
                     </Link>
 
                     <Link
                       href="/teacher/dashboard"
                       onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-400 hover:bg-purple-500/10 transition-colors font-bold"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-600 hover:bg-amber-500/10 transition-colors font-bold"
                     >
-                      <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
+                      <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
                       <span>Faculty Portal</span>
                     </Link>
 
                     <a
                       href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
                       onClick={() => setUserDropdownOpen(false)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-violet-400 hover:bg-violet-500/10 transition-colors font-bold text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold text-left cursor-pointer"
                     >
-                      <MessageSquare className="w-3.5 h-3.5 text-violet-400" />
+                      <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
                       <span>Community Feedback</span>
                     </a>
 
@@ -478,7 +478,7 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
-              <Compass className="w-4 h-4 text-violet-500" />
+              <Compass className="w-4 h-4 text-amber-600" />
               <span>Explore Projects</span>
             </Link>
 
@@ -499,9 +499,9 @@ export function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/25 transition-colors shadow-2xs active:scale-[0.98]"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25 transition-colors shadow-2xs active:scale-[0.98]"
             >
-              <BookOpen className="w-4 h-4 text-violet-600 dark:text-cyan-400" />
+              <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Learning Resources Hub ↗</span>
             </a>
 
@@ -562,7 +562,7 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
             >
-              <MessageSquare className="w-4 h-4 text-violet-400" />
+              <MessageSquare className="w-4 h-4 text-amber-500" />
               <span>Community Feedback</span>
             </a>
 
@@ -570,9 +570,9 @@ export function Navbar() {
               href="/teacher/dashboard"
               prefetch={true}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-purple-400 hover:bg-purple-500/10 transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/10 transition-colors"
             >
-              <GraduationCap className="w-4 h-4 text-purple-500" />
+              <GraduationCap className="w-4 h-4 text-amber-600" />
               <span>Faculty Portal</span>
             </Link>
 
@@ -584,7 +584,7 @@ export function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 >
-                  <Briefcase className="w-4 h-4 text-indigo-500" />
+                  <Briefcase className="w-4 h-4 text-amber-600" />
                   <span>Project Workspace</span>
                 </Link>
 
@@ -594,7 +594,7 @@ export function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                   >
-                    <User className="w-4 h-4 text-indigo-500" />
+                    <User className="w-4 h-4 text-amber-600" />
                     <span>Public Portfolio</span>
                   </Link>
                 )}

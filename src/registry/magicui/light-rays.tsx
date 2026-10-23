@@ -91,7 +91,7 @@ export const LightRays = React.forwardRef<HTMLDivElement, LightRaysProps>(
       className,
       style,
       count = 7,
-      color = "rgba(160, 210, 255, 0.2)",
+      color = "rgba(245, 158, 11, 0.22)",
       blur = 36,
       speed = 14,
       length = "70vh",
