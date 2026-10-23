@@ -2,17 +2,27 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
-import { IntentConsole } from '@/components/landing/IntentConsole';
 import { ProjectCard } from '@/components/projects/ProjectCard';
+import { HackathonCard } from '@/components/hackathons/HackathonCard';
+import { ProblemShowcaseCard } from '@/components/problems/ProblemShowcaseCard';
+import { HeroProductPreview } from '@/components/landing/HeroProductPreview';
+import { CollegiateWorkflow } from '@/components/landing/CollegiateWorkflow';
+import { VerifiedProofAndSpotlights } from '@/components/landing/VerifiedProofAndSpotlights';
+import { CampusPasscodeCard } from '@/components/landing/CampusPasscodeCard';
+import { CampusPulseHub } from '@/components/landing/CampusPulseHub';
+import { CampusOpportunityTicker } from '@/components/landing/CampusOpportunityTicker';
+import { CustomAdminSpotlightSection } from '@/components/landing/CustomAdminSpotlightSection';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
+import { DEMO_PROBLEMS } from '@/data/mockProblems';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { Project, Hackathon, ProblemStatement } from '@/types/database';
+import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { isFacultyUser } from '@/lib/auth/faculty';
 import {
   Compass,
   Users,
@@ -20,47 +30,25 @@ import {
   PlusCircle,
   ArrowRight,
   Sparkles,
-  Lock,
   GraduationCap,
   Briefcase,
   ShieldCheck,
-  Layers,
-  Kanban,
   CheckCircle2,
-  KeyRound,
-  Zap,
   AlertCircle,
   Award,
   Lightbulb,
-  Flame,
-  Radio,
-  Clock,
-  MessageSquare,
 } from 'lucide-react';
-import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
-import { OpportunityCategoryBar } from '@/components/landing/OpportunityCategoryBar';
-import { CampusOpportunityTicker } from '@/components/landing/CampusOpportunityTicker';
-import { UnstopHeroSearchBar } from '@/components/landing/UnstopHeroSearchBar';
-import { UnstopDomainGrid } from '@/components/landing/UnstopDomainGrid';
-import { HackathonCard } from '@/components/hackathons/HackathonCard';
-import { ProblemShowcaseCard } from '@/components/problems/ProblemShowcaseCard';
-import { CustomAdminSpotlightSection } from '@/components/landing/CustomAdminSpotlightSection';
-import { DEMO_PROBLEMS } from '@/data/mockProblems';
-import { isFacultyUser } from '@/lib/auth/faculty';
-
-import { CollegiatePortalsRadar } from '@/components/home/CollegiatePortalsRadar';
-
-const OrigamiBirdSculpture = dynamic(
-  () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
-        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
-      </div>
-    ),
-  }
-);
+import {
+  HomepageIntentConfig,
+  HomepageShowcaseConfig,
+  DEFAULT_HOMEPAGE_INTENT_CONFIG,
+  DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
+} from '@/types/homepageConfig';
+import {
+  HomepageSectionToggles,
+  MasterControlConfig,
+  DEFAULT_MASTER_CONTROL_CONFIG,
+} from '@/types/masterControl';
 
 const PortalsSideRail = dynamic(
   () => import('@/components/home/PortalsSideRail').then((m) => m.PortalsSideRail),
@@ -71,19 +59,6 @@ const ProjectSparkGeneratorModal = dynamic(
   () => import('@/components/ai/ProjectSparkGeneratorModal').then((m) => m.ProjectSparkGeneratorModal),
   { ssr: false }
 );
-
-import {
-  HomepageIntentConfig,
-  HomepageShowcaseConfig,
-  DEFAULT_HOMEPAGE_INTENT_CONFIG,
-  DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
-} from '@/types/homepageConfig';
-import { CampusPulseHub } from '@/components/landing/CampusPulseHub';
-import {
-  HomepageSectionToggles,
-  MasterControlConfig,
-  DEFAULT_MASTER_CONTROL_CONFIG,
-} from '@/types/masterControl';
 
 /**
  * High-performance 120fps Top Scroll Progress Beam
@@ -124,32 +99,30 @@ function TopScrollProgressBeam() {
 }
 
 export default function HomePage() {
-  const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
   const { theme, isDark } = useSiteTheme();
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>(DEMO_PROJECTS.slice(0, 3));
   const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>(CURATED_HACKATHONS.slice(0, 3));
   const [featuredProblems, setFeaturedProblems] = useState<ProblemStatement[]>(DEMO_PROBLEMS.slice(0, 3));
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [, setIsLoadingData] = useState(true);
   const [showcaseTab, setShowcaseTab] = useState<'projects' | 'hackathons' | 'problems'>('projects');
-  const [quickPasscode, setQuickPasscode] = useState('');
   const [oauthErrorNotice, setOauthErrorNotice] = useState<string | null>(null);
   const [isSparkModalOpen, setIsSparkModalOpen] = useState(false);
-  const [intentConfig, setIntentConfig] = useState<HomepageIntentConfig>(() => {
+  const [, setIntentConfig] = useState<HomepageIntentConfig>(() => {
     if (typeof window !== 'undefined') {
       try {
         const localI = localStorage.getItem('linkora_intent_config_v1');
         if (localI) return JSON.parse(localI);
-      } catch (e) {}
+      } catch {}
     }
     return DEFAULT_HOMEPAGE_INTENT_CONFIG;
   });
-  const [showcaseConfig, setShowcaseConfig] = useState<HomepageShowcaseConfig>(() => {
+  const [, setShowcaseConfig] = useState<HomepageShowcaseConfig>(() => {
     if (typeof window !== 'undefined') {
       try {
         const localS = localStorage.getItem('linkora_showcase_config_v1');
         if (localS) return JSON.parse(localS);
-      } catch (e) {}
+      } catch {}
     }
     return DEFAULT_HOMEPAGE_SHOWCASE_CONFIG;
   });
@@ -161,7 +134,7 @@ export default function HomePage() {
           const parsed = JSON.parse(cachedM);
           if (parsed?.sections) return { ...DEFAULT_MASTER_CONTROL_CONFIG.sections, ...parsed.sections };
         }
-      } catch (e) {}
+      } catch {}
     }
     return DEFAULT_MASTER_CONTROL_CONFIG.sections;
   });
@@ -173,39 +146,14 @@ export default function HomePage() {
           const parsed = JSON.parse(cachedM);
           if (parsed) return { ...DEFAULT_MASTER_CONTROL_CONFIG, ...parsed };
         }
-      } catch (e) {}
+      } catch {}
     }
     return DEFAULT_MASTER_CONTROL_CONFIG;
   });
   const [mounted, setMounted] = useState(false);
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
-    handleResize();
-    window.addEventListener('resize', handleResize, { passive: true });
-
-    // High-performance IntersectionObserver for scroll-reveal animations
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-revealed');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
-    );
-
-    const revealEls = document.querySelectorAll('.scroll-reveal');
-    revealEls.forEach((el) => observer.observe(el));
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      observer.disconnect();
-    };
   }, []);
 
   // Catch incoming OAuth or URL authentication errors
@@ -233,12 +181,10 @@ export default function HomePage() {
     async function loadLiveData() {
       setIsLoadingData(true);
       try {
-        // Load Live Homepage Admin Config (Intent + Showcase)
         let liveIntent = DEFAULT_HOMEPAGE_INTENT_CONFIG;
         let liveShowcase = DEFAULT_HOMEPAGE_SHOWCASE_CONFIG;
 
         try {
-          // Check local cache first for instant reactivity
           const localI = localStorage.getItem('linkora_intent_config_v1');
           if (localI) liveIntent = JSON.parse(localI);
           const localS = localStorage.getItem('linkora_showcase_config_v1');
@@ -258,7 +204,6 @@ export default function HomePage() {
           }
         } catch {}
 
-        // Load Live Master Control Config (Sections toggles & titles)
         try {
           let currentM = DEFAULT_MASTER_CONTROL_CONFIG;
           const cachedM = localStorage.getItem('linkora_master_control_v1');
@@ -267,7 +212,7 @@ export default function HomePage() {
               currentM = JSON.parse(cachedM);
               if (currentM?.sections) setSectionsConfig(currentM.sections);
               setMasterConfig(currentM);
-            } catch (e) {}
+            } catch {}
           }
 
           const mRes = await fetch(`/api/master-control?_t=${Date.now()}`, { cache: 'no-store' });
@@ -279,19 +224,19 @@ export default function HomePage() {
               setMasterConfig(mData.config);
               try {
                 localStorage.setItem('linkora_master_control_v1', JSON.stringify(mData.config));
-              } catch (e) {}
+              } catch {}
             } else if (cachedM && currentM) {
               if (currentM.sections) setSectionsConfig(currentM.sections);
               setMasterConfig(currentM);
             }
           }
-        } catch (e) {}
+        } catch {}
 
         setIntentConfig(liveIntent);
         setShowcaseConfig(liveShowcase);
 
         // 1. Check deleted projects tombstone and verified users from platform_settings
-        let deletedSet = new Set<string>();
+        const deletedSet = new Set<string>();
         const verifiedUserSet = new Set<string>();
         if (isSupabaseConfigured()) {
           try {
@@ -317,7 +262,7 @@ export default function HomePage() {
                     if (s) deletedSet.add(s.trim().toLowerCase());
                   });
                 } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
-                  row.value.forEach((v: any) => {
+                  row.value.forEach((v: { userId?: string; username?: string }) => {
                     if (v.userId) verifiedUserSet.add(v.userId);
                     if (v.username) verifiedUserSet.add(v.username.toLowerCase().trim());
                   });
@@ -361,7 +306,6 @@ export default function HomePage() {
           }
         }
 
-        // Combine pool with DEMO_PROJECTS, strictly excluding any deleted projects
         const poolMap = new Map<string, Project>();
         for (const dp of DEMO_PROJECTS) {
           if (!deletedSet.has((dp.id || '').toLowerCase()) && !deletedSet.has((dp.title || '').trim().toLowerCase())) {
@@ -374,7 +318,6 @@ export default function HomePage() {
           }
         }
 
-        // Select exact showcase projects configured by Admin
         if (Array.isArray(liveShowcase.selectedProjectIds)) {
           const curated: Project[] = [];
           for (const pid of liveShowcase.selectedProjectIds) {
@@ -388,7 +331,6 @@ export default function HomePage() {
           setFeaturedProjects(poolProjects.slice(0, 3).length > 0 ? poolProjects.slice(0, 3) : Array.from(poolMap.values()).slice(0, 3));
         }
 
-        // Fetch live published hackathons
         try {
           const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
           const hData = await hRes.json();
@@ -401,7 +343,6 @@ export default function HomePage() {
           setActiveHackathons(CURATED_HACKATHONS.slice(0, 3));
         }
 
-        // Fetch live problem statements
         try {
           if (isSupabaseConfigured()) {
             const { data: pRows } = await supabase
@@ -448,25 +389,13 @@ export default function HomePage() {
           if (parsed?.sections) setSectionsConfig(parsed.sections);
           setMasterConfig(parsed);
         }
-      } catch (e) {}
+      } catch {}
     };
     window.addEventListener('linkora_master_control_updated', handleMasterUpdate);
     return () => {
       window.removeEventListener('linkora_master_control_updated', handleMasterUpdate);
     };
   }, []);
-
-  const handleQuickJoin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickPasscode.trim()) return;
-    const clean = quickPasscode
-      .replace(/.*\/h\//, '')
-      .replace(/[^a-zA-Z0-9_-]/g, '')
-      .toLowerCase();
-    if (clean) {
-      router.push(`/h/${clean}`);
-    }
-  };
 
   return (
     <div
@@ -476,10 +405,10 @@ export default function HomePage() {
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
     >
-      {/* Dynamic Ambient Top Scroll Beam (Zero Re-render GPU Accelerated) */}
+      {/* Dynamic Ambient Top Scroll Beam (GPU Accelerated 120fps) */}
       <TopScrollProgressBeam />
 
-      {/* Real-time Campus Opportunity Ticker (Unstop-Inspired) */}
+      {/* Real-time Campus Opportunity Ticker */}
       {sectionsConfig.campusTicker !== false && <CampusOpportunityTicker />}
 
       {/* OAuth Notice Banner */}
@@ -507,28 +436,24 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
-          HERO: BALANCED SPLIT STAGE (HEADLINE + 3D LINKORA ORIGAMI BIRD)
+          1. SIMPLER FIRST SCREEN: PRODUCT-FIRST HERO WITH CLEAR VALUE & 2 CTAS
          ========================================================================= */}
       {sectionsConfig.hero && (
-        <section className="relative pt-8 pb-14 md:pt-16 md:pb-24 overflow-hidden">
-          {/* Ambient Cinematic Mesh Lighting Orbs */}
-          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-violet-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-          <div className="absolute top-1/3 right-4 w-[500px] h-[500px] bg-gradient-to-bl from-pink-500/15 via-rose-500/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[700px] h-[250px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+        <section className="relative pt-8 pb-14 md:pt-16 md:pb-20 overflow-hidden border-b border-slate-200/80 dark:border-white/10">
+          {/* Subtle Ambient Glow Lighting */}
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-violet-600/15 via-indigo-600/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
+          <div className="absolute top-1/3 right-10 w-[450px] h-[450px] bg-gradient-to-bl from-pink-500/10 via-rose-500/5 to-transparent rounded-full blur-[120px] pointer-events-none -z-10" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
-              {/* Left Column: Brand, Editorial Headline & Primary Actions */}
-              <div className="lg:col-span-7 space-y-6 text-left">
-                {/* Glassmorphic Badge with Neon Radar Pulse */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+              {/* Left Column: Clear Headline, Crisp Explanation, Exactly 2 Main Actions */}
+              <div className="lg:col-span-6 space-y-6 text-left">
+                {/* Clean, Restrained Identity Badge */}
                 <div
                   style={{ borderRadius: theme.borderRadius }}
-                  className="inline-flex items-center gap-2.5 px-4 py-1.5 backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold tracking-wider uppercase shadow-2xs"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 backdrop-blur-md bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 text-xs font-mono font-bold tracking-wider uppercase shadow-2xs"
                 >
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0" />
                   <span>{theme.heroBadgeText || 'Linkora • Student Collaboration Network'}</span>
                 </div>
 
@@ -539,20 +464,12 @@ export default function HomePage() {
                     letterSpacing: theme.letterSpacing,
                     fontWeight: theme.headingWeight,
                   }}
-                  className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
+                  className="text-4xl sm:text-6xl lg:text-6xl font-black tracking-tight leading-[1.08]"
                 >
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500">
-                    Linkora.
+                    Build something real,
                   </span>{' '}
-                  <span>
-                    {theme.heroHeadline ? (
-                      theme.heroHeadline.toLowerCase().startsWith('linkora')
-                        ? theme.heroHeadline.replace(/^linkora[:.]?\s*/i, '')
-                        : theme.heroHeadline
-                    ) : (
-                      'Build something bigger, together.'
-                    )}
-                  </span>
+                  <span>together.</span>
                 </h1>
 
                 <p
@@ -560,22 +477,13 @@ export default function HomePage() {
                     color: theme.bodyTextColor,
                     fontFamily: `var(--site-font-body, "${theme.bodyFont}")`,
                   }}
-                  className="text-base sm:text-xl leading-relaxed font-normal max-w-xl opacity-90"
+                  className="text-base sm:text-lg leading-relaxed font-normal max-w-xl text-slate-600 dark:text-slate-300"
                 >
-                  {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
+                  {theme.heroSubheadline ||
+                    'The student collaboration network. Connect with university builders, assemble hackathon dream squads, and turn ideas into verified software.'}
                 </p>
 
-                {/* Mobile / Tablet 3D Model Stage (Instantly visible above the fold on mobile!) */}
-                {sectionsConfig.origamiBird !== false && isDesktop === false && (
-                  <div className="lg:hidden w-full flex items-center justify-center relative min-h-[300px] sm:min-h-[360px] overflow-hidden my-2">
-                    <OrigamiBirdSculpture />
-                  </div>
-                )}
-
-                {/* Unstop-Style Interactive Global Search Console */}
-                {sectionsConfig.heroSearch !== false && <UnstopHeroSearchBar />}
-
-                {/* Direct Primary & Secondary Action CTAs */}
+                {/* Exactly 2 Main Actions */}
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <Link href="/explore">
                     <Button
@@ -585,10 +493,10 @@ export default function HomePage() {
                         backgroundColor: theme.brandColor,
                         borderRadius: theme.borderRadius,
                       }}
-                      className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-md border-0 transition-all active:scale-[0.98]"
+                      className="hover:opacity-90 text-white font-bold px-7 py-3.5 shadow-sm border-0 transition-all active:scale-[0.98]"
                       leftIcon={<Compass className="w-4 h-4" />}
                     >
-                      {theme.primaryCtaText || 'Explore Projects'}
+                      Find a project
                     </Button>
                   </Link>
 
@@ -604,129 +512,66 @@ export default function HomePage() {
                       leftIcon={<Users className="w-4 h-4" style={{ color: isDark ? '#ffffff' : '#0f172a' }} />}
                     >
                       <span className="text-slate-900 dark:text-white font-bold" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>
-                        {theme.secondaryCtaText || 'Find Teammates'}
+                        Find teammates
                       </span>
                     </Button>
                   </Link>
-
-                  <button
-                    onClick={() => setIsSparkModalOpen(true)}
-                    style={{ borderRadius: theme.borderRadius }}
-                    className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 font-bold text-sm hover:border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>AI Spark Generator</span>
-                  </button>
                 </div>
 
-                {/* Floating Live Telemetry Chips */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <Link
-                    href="/spark"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-amber-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">AI Spark</strong> Studio</span>
-                  </Link>
-                  <Link
-                    href="/leaderboard"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-violet-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
-                  >
-                    <Trophy className="w-3.5 h-3.5 text-violet-500 fill-violet-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">National</strong> Leaderboard</span>
-                  </Link>
-                  <Link
-                    href="/deadlines"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-rose-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">Live</strong> Deadlines</span>
-                  </Link>
-                </div>
-
-                {/* High-signal Trust Chips */}
+                {/* Transparent Micro-Proof Strip */}
                 <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>250+ Squads Formed</span>
+                  </div>
+                  <span className="text-slate-300 dark:text-slate-700">&bull;</span>
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-violet-500 shrink-0" />
+                    <span>94% Algorithmic Match</span>
+                  </div>
+                  <span className="text-slate-300 dark:text-slate-700">&bull;</span>
+                  <div className="flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-amber-500 shrink-0" />
                     <span>Verified GitHub Proof</span>
-                  </div>
-                  <span className="text-slate-300 dark:text-slate-700">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span>College Hackathons</span>
-                  </div>
-                  <span className="text-slate-300 dark:text-slate-700">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>Faculty Mentorship</span>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Linkora Origami Bird (Desktop Sticky Scroll Stage) */}
-              {sectionsConfig.origamiBird !== false && isDesktop === true && (
-                <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] lg:sticky lg:top-24 overflow-hidden z-10">
-                  <OrigamiBirdSculpture />
-                </div>
-              )}
+              {/* Right Column: High-Signal Interactive Product Preview (Replaces Origami Bird) */}
+              <div className="lg:col-span-6 w-full flex items-center justify-center">
+                <HeroProductPreview />
+              </div>
             </div>
           </div>
 
-          {/* Fixed Portals Side Rail (Fixed on screen, website scrolls normally) */}
+          {/* Portals Side Rail for Fast Direct Navigation */}
           <PortalsSideRail />
-          <div className="glow-divider mt-12" />
         </section>
       )}
 
-      {/* Collegiate Innovation Portals Radar (Hackathons, Problems & Faculty Portal) */}
-      {sectionsConfig.collegiateRadar !== false && (
-        <div className="scroll-reveal">
-          <CollegiatePortalsRadar />
-        </div>
-      )}
-
-      {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
-      {sectionsConfig.domainGrid !== false && (
-        <div className="scroll-reveal scroll-reveal-delay-1">
-          <UnstopDomainGrid
-            title={sectionsConfig.domainGridTitle}
-            subtitle={sectionsConfig.domainGridSubtitle}
-          />
-        </div>
-      )}
-
-      {/* Opportunity Category Navigation Rail (Unstop-Inspired) */}
-      {sectionsConfig.categoryRails !== false && (
-        <div className="scroll-reveal scroll-reveal-delay-2">
-          <OpportunityCategoryBar />
-        </div>
-      )}
-
-      {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: below_hero */}
+      {/* Custom Admin Spotlight / Announcement Section */}
       {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
         masterConfig.customSection &&
         (masterConfig.customSection.position || 'below_hero') === 'below_hero' && (
-          <div className="scroll-reveal">
-            <CustomAdminSpotlightSection config={masterConfig.customSection} />
-          </div>
+          <CustomAdminSpotlightSection config={masterConfig.customSection} />
         )}
 
       {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
          ========================================================================= */}
       {mounted && user && (
-        <section className="border-b border-slate-200/80 bg-white py-4">
+        <section className="border-b border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xs">
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center shrink-0 shadow-xs">
                   <Briefcase className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
                     Welcome back, {profile?.display_name || user.email?.split('@')[0]}
                   </h3>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     {isTeacher
                       ? 'Educator Workspace: Manage campus challenges, problem statements, and student reviews.'
                       : 'Jump directly back into your sprint workboards, applications, or team matching.'}
@@ -789,435 +634,221 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
-          SECTION 1: INTENT (INTERACTIVE BUILDER CONSOLE)
+          2. FEATURED OPPORTUNITIES SHOWCASE (PRIMARY VALUE DESTINATION)
+             Clean, segmented tabs: Projects, Hackathons, Problem Statements
          ========================================================================= */}
-      {sectionsConfig.intent && (
-        <section className="scroll-reveal py-16 md:py-20 relative bg-white border-b border-slate-200/80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-            <div className="text-center max-w-2xl mx-auto space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-700 font-bold">
-                <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                <span>01 • LINKORA CONSOLE</span>
+      {sectionsConfig.showcase && (
+        <section className="py-16 md:py-24 relative overflow-hidden bg-white dark:bg-transparent border-b border-slate-200/80 dark:border-white/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 relative z-10">
+            {/* Header with Segmented Switcher */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-violet-600 dark:text-violet-400 font-bold mb-1">
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Active Campus Opportunities</span>
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {sectionsConfig.showcaseTitle || 'Explore What’s Building'}
+                </h2>
+                <p className="mt-1 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xl font-normal">
+                  {sectionsConfig.showcaseSubtitle ||
+                    'Join student projects recruiting collaborators, or enter upcoming university competitions.'}
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                Intent
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 font-normal">
-                Choose your goal to instantly match with builders, open project slots, or campus competitions.
-              </p>
+
+              {/* Segmented Tab Switcher */}
+              <div className="p-1.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center gap-1 shrink-0 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowcaseTab('projects')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                    showcaseTab === 'projects'
+                      ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Compass className="w-4 h-4" />
+                  <span>Collegiate Projects</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-white/10 font-mono">
+                    {featuredProjects.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowcaseTab('hackathons')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                    showcaseTab === 'hackathons'
+                      ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <span>Hackathons</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold">
+                    {activeHackathons.length} Live
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowcaseTab('problems')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                    showcaseTab === 'problems'
+                      ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Lightbulb className="w-4 h-4 text-blue-500" />
+                  <span>Problem Statements</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold">
+                    {featuredProblems.length}
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <IntentConsole sampleProjects={featuredProjects} config={intentConfig} />
+            {/* TAB 1: PROJECTS */}
+            {showcaseTab === 'projects' && (
+              <div className="space-y-8 animate-fadeIn">
+                {featuredProjects.length === 0 ? (
+                  <div className="p-12 text-center rounded-3xl bg-slate-50 border border-slate-200/80 max-w-lg mx-auto">
+                    <p className="text-base font-bold text-slate-800">No projects currently featured.</p>
+                    <p className="text-xs text-slate-500 mt-1">Explore all collegiate projects recruiting collaborators across campus.</p>
+                    <div className="pt-4">
+                      <Link href="/explore">
+                        <Button variant="primary" size="sm" className="bg-slate-900 text-white font-bold">
+                          Browse Project Directory
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {featuredProjects.map((project) => (
+                      <ProjectCard key={project.id} project={project} variant="light" />
+                    ))}
+                  </div>
+                )}
+
+                <div className="pt-2 text-center">
+                  <Link href="/explore">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Browse All Collegiate Projects
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: HACKATHONS */}
+            {showcaseTab === 'hackathons' && (
+              <div className="space-y-8 animate-fadeIn">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activeHackathons.map((hackathon) => (
+                    <HackathonCard key={hackathon.id} hackathon={hackathon} />
+                  ))}
+                </div>
+
+                <div className="pt-2 text-center">
+                  <Link href="/hackathons">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Browse All Competitions &amp; Hackathons
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: PROBLEM STATEMENTS */}
+            {showcaseTab === 'problems' && (
+              <div className="space-y-8 animate-fadeIn">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredProblems.map((problem) => (
+                    <ProblemShowcaseCard key={problem.id} problem={problem} />
+                  ))}
+                </div>
+
+                <div className="pt-2 text-center">
+                  <Link href="/problems">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Browse All Campus Problem Briefs
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="glow-divider mt-16" />
         </section>
       )}
 
       {/* =========================================================================
-          SECTION 2: WORKFLOW (FROM CONCEPT TO PROOF)
+          3. HOW IT WORKS: THE COLLEGIATE JOURNEY (MATCH -> SQUAD -> SHIP)
          ========================================================================= */}
       {sectionsConfig.workflow && (
-        <section className="py-16 md:py-24 relative overflow-hidden">
-          {/* Subtle Ambient Glow Orb */}
-          <div className="absolute top-1/2 left-10 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
-            <div className="text-center max-w-2xl mx-auto space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-600 font-bold">
-                <Layers className="w-3.5 h-3.5 text-slate-500" />
-                <span>02 • ARCHITECTURE</span>
-              </div>
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                {sectionsConfig.workflowTitle || 'Collegiate Journey'}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 font-normal">
-                {sectionsConfig.workflowSubtitle || 'From raw concept to verified career proof in four collegiate stages.'}
-              </p>
-            </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Stage 1: Match */}
-            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-emerald-400 transition-colors duration-200">
-                    01
-                  </span>
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-emerald-100 transition-all duration-200">
-                    <Users className="w-5 h-5 text-emerald-700" />
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors duration-200">
-                  Match
-                </h3>
-
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  Find peers across campuses whose tech stacks match yours. Filter by languages, commit hours, and target hackathons.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    React
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    FastAPI
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    PyTorch
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                href="/teammates"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
-              >
-                <span>Find Teammates</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
-              </Link>
-            </div>
-
-            {/* Stage 2: Squad Up */}
-            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-blue-400 transition-colors duration-200">
-                    02
-                  </span>
-                  <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-blue-100 transition-all duration-200">
-                    <Kanban className="w-5 h-5 text-blue-700" />
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-black text-slate-900 group-hover:text-blue-700 transition-colors duration-200">
-                  Squad Up
-                </h3>
-
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  Lock your team capacity and assign clear responsibilities (Frontend, Backend, AI, Design) with 1-click approvals.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    Role Lock
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    1-Click Apply
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    Milestones
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                href="/explore"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
-              >
-                <span>Browse Squads</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
-              </Link>
-            </div>
-
-            {/* Stage 3: Real-Time Workspace */}
-            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-pink-400 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-pink-400 transition-colors duration-200">
-                    03
-                  </span>
-                  <div className="w-10 h-10 rounded-2xl bg-pink-50 border border-pink-200 text-pink-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-pink-100 transition-all duration-200">
-                    <Layers className="w-5 h-5 text-pink-700" />
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-black text-slate-900 group-hover:text-pink-700 transition-colors duration-200">
-                  Build Live
-                </h3>
-
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  No more dead WhatsApp groups. Collaborate in Universal Canvas (Figma/Canva live), Voice Huddle, and AI Closer Kit.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    Live Canvas
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    Audio Huddle
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    AI Pitch Kit
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                href="/workspace/demo"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
-              >
-                <span>Try Live Workspace</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
-              </Link>
-            </div>
-
-            {/* Stage 4: Prove & Win */}
-            <div className="p-7 rounded-3xl bg-white border border-slate-200/90 card-hover-lift flex flex-col justify-between space-y-5 group relative overflow-hidden shadow-sm">
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-black font-mono text-slate-300 group-hover:text-amber-400 transition-colors duration-200">
-                    04
-                  </span>
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:bg-amber-100 transition-all duration-200">
-                    <ShieldCheck className="w-5 h-5 text-amber-700" />
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-black text-slate-900 group-hover:text-amber-700 transition-colors duration-200">
-                  Prove &amp; Win
-                </h3>
-
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  Export cryptographically signed Proof-of-Work credentials, link GitHub PRs, and showcase citations in the Hall of Fame.
-                </p>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    Signed Certs
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    GitHub Proof
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-bold text-[10px]">
-                    Hall of Fame
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                href="/hackathons"
-                className="inline-flex items-center text-xs font-bold text-slate-900 hover:text-black transition-colors pt-2 group/link"
-              >
-                <span>Browse Competitions</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform duration-200 group-hover/link:translate-x-1.5" />
-              </Link>
-            </div>
-          </div>
-          <div className="glow-divider mt-16" />
-        </div>
-      </section>
+        <CollegiateWorkflow
+          title={sectionsConfig.workflowTitle}
+          subtitle={sectionsConfig.workflowSubtitle}
+        />
       )}
 
       {/* =========================================================================
-          SECTION: LINKORA CAMPUS INNOVATION HUB (1 UNIFIED SECTION)
-          Modules 1, 2, 3: College Leaderboard, AI Dream Team, Live Campus Pulse
+          4. CAMPUS INNOVATION HUB (SECONDARY FEATURES ORGANIZED IN ONE PLACE)
+             Modules: National Leaderboard, AI Dream Team / Spark, Live Deadlines
          ========================================================================= */}
       {sectionsConfig.campusPulse !== false && (
-        <div className="scroll-reveal">
-          <CampusPulseHub
-            sections={sectionsConfig}
-            projects={featuredProjects}
-            user={user}
-          />
-        </div>
-      )}
-
-      {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: above_showcase */}
-      {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
-        masterConfig.customSection &&
-        masterConfig.customSection.position === 'above_showcase' && (
-          <CustomAdminSpotlightSection config={masterConfig.customSection} />
-        )}
-
-      {/* =========================================================================
-          SECTION 3: SHOWCASE (LIVE ACTIVE PROJECTS & HACKATHONS)
-         ========================================================================= */}
-      {sectionsConfig.showcase && (
-        <section className="py-16 md:py-24 relative overflow-hidden">
-          {/* Subtle Ambient Glow Orb */}
-          <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
-            {/* Header with Segmented Switcher */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-500 font-bold mb-1">
-                  <Compass className="w-3.5 h-3.5" />
-                  <span>03 • CAMPUS ACTIVITY</span>
-                </div>
-                <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                  {sectionsConfig.showcaseTitle || 'Showcase'}
-                </h2>
-                <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-xl font-normal">
-                  {sectionsConfig.showcaseSubtitle || 'Explore active projects recruiting collaborators, or enter upcoming university competitions.'}
-                </p>
-              </div>
-
-            {/* Segmented Switcher */}
-            <div className="p-1.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center gap-1 shrink-0 overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setShowcaseTab('projects')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                  showcaseTab === 'projects'
-                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Compass className="w-4 h-4" />
-                <span>Collegiate Projects</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-white/10 font-mono">
-                  {featuredProjects.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowcaseTab('hackathons')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                  showcaseTab === 'hackathons'
-                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Trophy className="w-4 h-4 text-amber-500" />
-                <span>Hackathons</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold">
-                  {activeHackathons.length} Live
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowcaseTab('problems')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                  showcaseTab === 'problems'
-                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Lightbulb className="w-4 h-4 text-blue-500" />
-                <span>Problem Briefs</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold">
-                  {featuredProblems.length}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* TAB 1: PROJECTS */}
-          {showcaseTab === 'projects' && (
-            <div className="space-y-8 animate-fadeIn">
-              {featuredProjects.length === 0 ? (
-                <div className="p-12 text-center rounded-3xl bg-slate-50 border border-slate-200/80 max-w-lg mx-auto">
-                  <p className="text-base font-bold text-slate-800">No projects currently featured.</p>
-                  <p className="text-xs text-slate-500 mt-1">Explore all collegiate projects recruiting collaborators across campus.</p>
-                  <div className="pt-4">
-                    <Link href="/explore">
-                      <Button variant="primary" size="sm" className="bg-slate-900 text-white font-bold">
-                        Browse Project Directory
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredProjects.map((project) => (
-                    <ProjectCard key={project.id} project={project} variant="light" />
-                  ))}
-                </div>
-              )}
-
-              <div className="pt-2 text-center">
-                <Link href="/explore">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
-                    rightIcon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    Browse All Collegiate Projects
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: HACKATHONS */}
-          {showcaseTab === 'hackathons' && (
-            <div className="space-y-8 animate-fadeIn">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeHackathons.map((hackathon) => (
-                  <HackathonCard key={hackathon.id} hackathon={hackathon} />
-                ))}
-              </div>
-
-              <div className="pt-2 text-center">
-                <Link href="/hackathons">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
-                    rightIcon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    Browse All Competitions &amp; Hackathons
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: PROBLEM STATEMENTS */}
-          {showcaseTab === 'problems' && (
-            <div className="space-y-8 animate-fadeIn">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredProblems.map((problem) => (
-                  <ProblemShowcaseCard key={problem.id} problem={problem} />
-                ))}
-              </div>
-
-              <div className="pt-2 text-center">
-                <Link href="/problems">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="bg-slate-900 hover:bg-black text-white font-bold px-7 py-3 rounded-2xl shadow-sm"
-                    rightIcon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    Browse All Campus Problem Briefs
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-          <div className="glow-divider mt-16" />
-        </div>
-      </section>
+        <CampusPulseHub
+          sections={sectionsConfig}
+          projects={featuredProjects}
+          user={user}
+        />
       )}
 
       {/* =========================================================================
-          SECTION: VERIFIED COLLEGIATE PARTNER NETWORK (MODULE 3)
+          5. SPECIFIC PROOF & REAL STUDENT TESTIMONIALS (BUILDING TRUST)
          ========================================================================= */}
-      {(sectionsConfig.colleges !== false) && masterConfig.colleges && masterConfig.colleges.length > 0 && (
-        <section className="py-16 md:py-20 bg-slate-50/60 border-b border-slate-200/80">
+      <VerifiedProofAndSpotlights />
+
+      {/* =========================================================================
+          6. DEPARTMENT PASSCODE UNLOCK & PRIVATE HACKATHONS
+         ========================================================================= */}
+      {sectionsConfig.hackathons && <CampusPasscodeCard />}
+
+      {/* =========================================================================
+          7. VERIFIED COLLEGIATE PARTNER NETWORK
+         ========================================================================= */}
+      {sectionsConfig.colleges !== false && masterConfig.colleges && masterConfig.colleges.length > 0 && (
+        <section className="py-16 md:py-20 bg-slate-50/60 dark:bg-white/[0.02] border-b border-slate-200/80 dark:border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-brand-600 font-bold mb-1">
-                  <GraduationCap className="w-4 h-4 text-brand-600" />
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-violet-600 dark:text-violet-400 font-bold mb-1">
+                  <GraduationCap className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                   <span>Campus Partner Network</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  Partner Universities & Whitelisted Campuses
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Partner Universities &amp; Whitelisted Campuses
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
                   Collegiate communities with authorized builder chapters, automated campus domain verification, and institutional hackathons.
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold text-slate-600 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs self-start md:self-auto">
+              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs self-start md:self-auto">
                 {masterConfig.colleges.length} Verified Institutions
               </span>
             </div>
@@ -1226,27 +857,27 @@ export default function HomePage() {
               {masterConfig.colleges.map((col) => (
                 <div
                   key={col.id}
-                  className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-brand-300 hover:shadow-md transition-all duration-200 space-y-3"
+                  className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:shadow-md transition-all duration-200 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700 font-black text-sm shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-500/20 flex items-center justify-center text-violet-700 dark:text-violet-300 font-black text-sm shrink-0">
                       {col.name.slice(0, 2).toUpperCase()}
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
                       Whitelisted
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{col.name}</h3>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{col.name}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                       <span>{col.city || 'India'}</span>
-                      <span>•</span>
-                      <span className="font-mono text-brand-600">@{col.domain}</span>
+                      <span>&bull;</span>
+                      <span className="font-mono text-violet-600 dark:text-violet-400">@{col.domain}</span>
                     </p>
                   </div>
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-400">
                     <span>Partner since {col.partnerSince}</span>
-                    <span className="font-semibold text-emerald-600 flex items-center gap-1">
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       Active
                     </span>
@@ -1259,84 +890,25 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
-          SECTION 4: COMPETE (CAMPUS PASSCODE & PRIVATE CHALLENGES)
+          8. STUDENT HALL OF FAME & HONORS BADGES
          ========================================================================= */}
-      {sectionsConfig.hackathons && (
-        <section className="py-16 md:py-24 bg-[#fafbfc] border-b border-slate-200/80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-            <div className="text-center max-w-2xl mx-auto space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-rose-600 font-bold">
-                <Lock className="w-3.5 h-3.5" />
-                <span>04 • UNIVERSITY PORTAL</span>
-              </div>
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                Compete
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 font-normal">
-                Enter your department passcode to unlock private hackathon guidelines and form teams.
-              </p>
-            </div>
-
-            {/* Passcode Quick Entry Card */}
-            <div className="max-w-3xl mx-auto p-7 sm:p-9 rounded-3xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
-              <div className="space-y-1.5 max-w-md">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-black text-slate-900">Department Challenge Passcode</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-bold uppercase">
-                    Encrypted
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  Announced by your faculty or hackathon leads? Enter the event code below.
-                </p>
-              </div>
-
-              <form onSubmit={handleQuickJoin} className="flex items-center gap-2 flex-1 sm:max-w-sm">
-                <div className="relative flex-1">
-                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={quickPasscode}
-                    onChange={(e) => setQuickPasscode(e.target.value)}
-                    placeholder="e.g. col-apex26"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-slate-900 transition-colors shadow-2xs"
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  className="bg-slate-900 hover:bg-black text-white shrink-0 font-bold py-2.5 px-5 shadow-2xs rounded-xl"
-                >
-                  Unlock
-                </Button>
-              </form>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* =========================================================================
-          SECTION: STUDENT HALL OF FAME & HONORS BADGES (MODULE 4)
-         ========================================================================= */}
-      {(sectionsConfig.badges !== false) && masterConfig.badges && masterConfig.badges.length > 0 && (
-        <section className="py-16 md:py-20 bg-white border-b border-slate-200/80">
+      {sectionsConfig.badges !== false && masterConfig.badges && masterConfig.badges.length > 0 && (
+        <section className="py-16 md:py-20 bg-white dark:bg-transparent border-b border-slate-200/80 dark:border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-amber-600 font-bold mb-1">
-                  <Award className="w-4 h-4 text-amber-600" />
-                  <span>Collegiate Honors & Achievements</span>
+                <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold mb-1">
+                  <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Collegiate Honors &amp; Achievements</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  Student Hall of Fame & Citations
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Student Hall of Fame &amp; Citations
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
                   Celebrating outstanding collegiate engineers, open-source innovators, and hackathon champions recognized across campuses.
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold text-slate-600 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs self-start md:self-auto">
+              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs self-start md:self-auto">
                 {masterConfig.badges.length} Honors Conferred
               </span>
             </div>
@@ -1345,11 +917,11 @@ export default function HomePage() {
               {masterConfig.badges.map((b) => (
                 <div
                   key={b.id}
-                  className="p-6 rounded-3xl bg-gradient-to-br from-white to-slate-50/70 border border-slate-200/90 hover:border-amber-400/80 hover:shadow-lg transition-all duration-200 space-y-4 flex flex-col justify-between"
+                  className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-amber-400/80 hover:shadow-lg transition-all duration-200 space-y-4 flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-900">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-300">
                         {b.badgeTitle}
                       </span>
                       <span className="text-[11px] font-mono text-slate-400">
@@ -1357,17 +929,17 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                       &ldquo;{b.reason}&rdquo;
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
+                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold text-xs flex items-center justify-center shadow-2xs">
                         {b.username.slice(0, 1).toUpperCase()}
                       </div>
-                      <span className="text-xs font-bold text-slate-900">@{b.username}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">@{b.username}</span>
                     </div>
                     <span className="text-[10px] uppercase font-mono font-bold text-slate-400">
                       by {b.awardedBy}
@@ -1380,30 +952,22 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: above_footer */}
-      {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
-        masterConfig.customSection &&
-        masterConfig.customSection.position === 'above_footer' && (
-          <CustomAdminSpotlightSection config={masterConfig.customSection} />
-        )}
-
-
       {/* =========================================================================
-          SECTION 5: BEGIN (CLOSING CALL TO ACTION)
+          9. CLOSING CALL TO ACTION
          ========================================================================= */}
       {sectionsConfig.ctaBanner && (
-        <section className="py-20 md:py-28 relative text-center bg-white overflow-hidden">
+        <section className="py-20 md:py-28 relative text-center bg-white dark:bg-transparent overflow-hidden">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col items-center justify-center text-center space-y-6">
+            <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white dark:bg-slate-950 border border-slate-800 shadow-xl flex flex-col items-center justify-center text-center space-y-6">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono font-bold">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>05 • JOIN LINKORA</span>
+                  <span>Join Linkora Free</span>
                 </div>
               </div>
 
-              <h2 className="text-4xl sm:text-7xl font-black tracking-tight leading-tight w-full text-center">
-                <span className="begin-colorful">Begin</span>
+              <h2 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight w-full text-center">
+                Ready to build something real?
               </h2>
 
               <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed font-normal">
@@ -1418,34 +982,20 @@ export default function HomePage() {
                     className="font-bold px-8 py-3.5 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 shadow-sm border-none transition-all"
                     leftIcon={<Compass className="w-4 h-4 text-slate-900" />}
                   >
-                    Explore Projects
+                    Find a project
                   </Button>
                 </Link>
 
-                {!mounted ? (
-                  <div className="w-40 h-12 rounded-2xl bg-slate-800 animate-pulse border border-slate-700" />
-                ) : user ? (
-                  <Link href="/projects/new">
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
-                      leftIcon={<PlusCircle className="w-4 h-4 text-white" />}
-                    >
-                      Start a Project
-                    </Button>
-                  </Link>
-                ) : (
+                <Link href="/teammates">
                   <Button
                     variant="ghost"
                     size="lg"
                     className="font-bold px-8 py-3.5 rounded-2xl border border-slate-700 text-white hover:bg-slate-800 bg-slate-800/80 hover:border-slate-500 shadow-sm transition-all"
-                    onClick={() => openAuthModal('signup')}
                     leftIcon={<Users className="w-4 h-4 text-white" />}
                   >
-                    Join Linkora Free
+                    Find teammates
                   </Button>
-                )}
+                </Link>
               </div>
             </div>
           </div>
