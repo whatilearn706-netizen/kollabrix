@@ -1,0 +1,300 @@
+@font-face {
+  font-family: "Geist Mono LCB";
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  src: url(data:font/woff2;base64,d09GMgABAAAAAAbQAA8AAAAADKQAAAZ5AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhYbHhwoBmA/U1RBVEQAPBEICo4UinELOgABNgIkAzwEIAWEOAcgG8IJEdWkHsg0UhbO38/vm/v3zmbzYCdbJFaP8bMiWwBwdHwrvytzoGjrKhTFB/KsfykWYHfGtWYmSaUkA6FcojML8rQ+7lfziZN4ozr8/Uz3AQeeOrAp/heLV6vsiwQ60Cg/yjI8DOIDsqY7ltc1mGH6sR0EwIIaECCJjYkKgMI4GKZtO/bFEILsdfn+FGyTGQIT0Dqko9zdhQHygiknS5GieTABcVKkgO9NdKiAJbQhJQhhfAFuQfiD6O4fuM9LRLbuwwNMQsb4/f8rIDfRyUmgf+29C4gh4lloEgJbbA1BABgWKaYl+5ot3bzd0Npd7qDpIAyDhCHEBM3YNgwqoJE078AyMGM5nAITpcQsKRAkiA2go4xPwmbf9//4D5ZCrQXk+xiYsXENskrgM9fziF8ThGTAxRbQhk2eMBI8sIgM8WcAKYNySDg8gcMWzxxkDZZSBgdZgwbpsBw0eGR4cWhIaJAVVvGgDlR00OIi51Uhl0zqOJt8ysF+21Z0ynGw31YJPuXRAVcp4lMeHXCVKp90XTrgeXzKicdcV520bex3HD7lJeO2zSafcpz55nltbGpYIkAFmyvNr7KodIaXVMRCJabfJPYcsUbPMlgqY7a1VjCxqQgllWTMdyWS459FBov9dpKa3GKy1I2tdTbR2Qs0qgWWyuS8KiY6OTa5ddg2qdpGSvpwu8HEKU+c48NmHiSqhKHsVs5wOrFoCQnCW5eNcJx4XCWu33m1AuKb3ZKOekwHHrkJl1hocuw6kTbsv+3EHeLN2lQ0EGq76JhzO3bpwsHcOU5QoVD35Tib4XSWU2mVSWkDvWjB1G6RRovG4iv95/vzi+dF5mHyz6eZn093Pzz68Ogke8TmYSM2I//scXdvPTt/zs59s5YGNmRmL9z7ob5pY8/YucrzXIRyOjhX9FxVNhSutDvDJLsdytlMqt55I5F03kg1MC2b1y8c8ojnsnXVFTbOoxhva1Vk4c9oo5qaZjd6RPMS23eimb/UMsH4LyYS/gsTsZaGqprkpiMHD206mqxBM3+X7EFDVQMxQqKXf1B14IfSpqomB6Szg0mu6sbaRMWNZGO0qt1Eds+i3eJ5Qa7ObWW9ivHWVkWW8ziMYatigKCeVP7W7BQ8WfiyrjamBsXTtVP2/VlL83TbX/umtoEln5JPyQfkU/Ipibmz6W67dYTwU2JBY6w5HGPbWt+n31+/cQKbv2iMjrOf5niaZ4ixz0uuoJenb3x+gMSMyDnHlIM033cxJrkY6+Ppg1POOeDj2+Wn7p+l+Xb5qQfnIJvNJGvsN9IZ+41kLcMka5Ejk4bramKknXVJs+3t0nHWbUcWNwD4wGVZF9r5d/yDWlsLRdmaBzX+/avadtXX+TzeOn/9LmQze1jXHvZyz5rHULhKlaEloz7lHx3gPxraPNyhlwW98us2ShC0ick5b9CzX5Tc26W+UdJ3JMJ5XW7OGzkCw2xfwkEPCWm3SK+NMjKj3r8iW1osqlVUL/bOb1RLPUaLqbZH6/X12i1dQbfIXubzlht8nMtS9EOwgJ5Xv6TPKo1YzI7qISWm7fqSnEJ+uQuy2SMb9m16i36rjeuKRrmutrfotzZt2Afis5z39TPzXj/j/SyHdTU5T/DilPqwvz48JXjRU5PrqSMX1ZEwvN6daw1fk16VhnLtr3dGbqtvqTG94LNr4QfND5rDn1wrgIE6UzlOfkCdqbxKAgDy+fznIAAQD9OTCw8wrbPtv00RCr8HgG/q7tYCwLc68738a/9nBAdFCwFMguDex2/Jewjq8q/990xwUPg93JMFxK/QCuqwBs0o105qRi/KQYGFTBnshQE+lKMdBgPQoAwU1sgBA2SA35TWFcSfkKL9ZVrg4nclOAMnMyp68yI38a9FCEF8DGoBZuEttRB6nF0vGlaLsQzb1JOwCh2qWTBCTgk2QoLVizENiwLFmKFgICXyTQCDUQyjHSPwISU3DqEfnQjKs73oQwq16BagOZjCGJKwQiWTUVzoxgh65MgIUstg4+wkuqHEKBLohWexDKEUQlO2jkJBWqopJZBEf/drJdBACRPU0GT6NtSAAYXgCghJjAxHpzGEdiSm2SSKoYRRm4+tR6JxsgRaqKGFHhJwSOpeQCAQRUImA5h1yqEqpK8EHpIk8eZl10N6MRxsTaMDSnRedEiFzIHhNbGhYRNxm+IahXIRK/+ZAC2bPw/tz2WBCw==) format("woff2");
+}
+
+/* ========================================================
+   Tactile Skeuomorphic Liquid-Chrome Resources Button
+   ======================================================== */
+.liquid-chrome-btn {
+  --btn-h: 38px;
+  --u: calc(var(--btn-h) / 232);
+  --w: calc(706 * var(--u));
+  --h: calc(232 * var(--u));
+  --ink: #4c4c52;
+  --ink-hover: #0f0f12;
+  --chev: #2c2c33;
+  --chev-hover: #fff3e4;
+  --accent: 255, 138, 40;
+  --ease-io: cubic-bezier(.45, 0, .2, 1);
+  --ease-out: cubic-bezier(.16, .84, .3, 1);
+  --m: calc(48 * var(--u));
+
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  border-radius: calc(116 * var(--u));
+  cursor: pointer;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  isolation: isolate;
+  transition: transform .18s var(--ease-out);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Expanded hit area ring */
+.liquid-chrome-btn::after {
+  content: "";
+  position: absolute;
+  inset: calc(-27 * var(--u));
+  border-radius: calc(143 * var(--u));
+  z-index: 1;
+}
+
+/* Multi-tier Skeuomorphic Drop Shadows */
+.liquid-chrome-btn::before {
+  content: "";
+  position: absolute;
+  inset: calc(-26 * var(--u));
+  border-radius: calc(142 * var(--u));
+  z-index: -2;
+  pointer-events: none;
+  clip-path: inset(0 calc(-400 * var(--u)) calc(-700 * var(--u)) calc(-400 * var(--u)));
+  box-shadow:
+    0 calc(59 * var(--u)) calc(96 * var(--u)) calc(-17 * var(--u)) rgba(0, 0, 0, .72),
+    0 calc(182 * var(--u)) calc(88 * var(--u)) 0 rgba(0, 0, 0, .32),
+    0 calc(16 * var(--u)) calc(44 * var(--u)) calc(-18 * var(--u)) rgba(0, 0, 0, 0),
+    0 calc(101 * var(--u)) calc(93 * var(--u)) calc(-38 * var(--u)) rgba(0, 0, 0, 0),
+    0 calc(51 * var(--u)) calc(61 * var(--u)) calc(-26 * var(--u)) rgba(0, 0, 0, 0),
+    0 calc(13 * var(--u)) calc(34 * var(--u)) calc(-12 * var(--u)) rgba(0, 0, 0, 0);
+  transition: box-shadow .35s cubic-bezier(.6, 0, .35, 1) .1s;
+}
+
+.liquid-chrome-btn:focus-visible {
+  outline: 2px solid #ff9a3c;
+  outline-offset: 6px;
+}
+
+.liquid-chrome-btn:active {
+  transform: translateY(calc(2 * var(--u))) scale(.992);
+}
+
+/* Warm Molten Amber Halo projected onto background on hover */
+.liquid-chrome-btn .lcb-halo {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  left: calc(430 * var(--u));
+  top: calc(-44 * var(--u));
+  width: calc(320 * var(--u));
+  height: calc(320 * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent), .42) 0%, rgba(var(--accent), .16) 35%, rgba(var(--accent), 0) 66%);
+  opacity: 0;
+  transition: opacity .42s cubic-bezier(.6, 0, .35, 1);
+}
+
+/* Canvas stage for WebGL shader face + liquid chrome ring */
+.liquid-chrome-btn .lcb-face {
+  position: absolute;
+  inset: calc(-1 * var(--m));
+  pointer-events: none;
+}
+
+.liquid-chrome-btn .lcb-face canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Button Label Typography */
+.liquid-chrome-btn .lcb-label {
+  position: absolute;
+  left: calc(112 * var(--u));
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: "Geist Mono LCB", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  font-size: calc(46 * var(--u));
+  line-height: 1;
+  letter-spacing: calc(2.4 * var(--u));
+  white-space: pre;
+  color: var(--ink);
+  -webkit-text-stroke: calc(0.35 * var(--u)) currentColor;
+  pointer-events: none;
+  user-select: none;
+  transition: color .3s var(--ease-io) .23s;
+  z-index: 2;
+}
+
+/* Voronoi Crystal Knob Overlays */
+.liquid-chrome-btn .lcb-knob {
+  position: absolute;
+  left: calc(502 * var(--u));
+  top: calc(28 * var(--u));
+  width: calc(176 * var(--u));
+  height: calc(176 * var(--u));
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle, #000 99%, transparent 100%);
+  mask-image: radial-gradient(circle, #000 99%, transparent 100%);
+  z-index: 2;
+}
+
+.liquid-chrome-btn .lcb-knob > * {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* Glow timer for shader interpolation */
+.liquid-chrome-btn .lcb-glow {
+  width: 0;
+  height: 0;
+  inset: auto;
+  opacity: 0;
+  transition: opacity .42s cubic-bezier(.6, 0, .35, 1);
+}
+
+/* Animated Scribbling Pen SVG */
+.liquid-chrome-btn .lcb-pen {
+  overflow: visible;
+}
+
+.liquid-chrome-btn .lcb-pen path {
+  fill: none;
+  stroke: var(--chev);
+  stroke-width: 4.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke .15s var(--ease-io) .15s;
+}
+
+.liquid-chrome-btn .lcb-pen-move {
+  transform: translate(calc(-6 * var(--u)), 0) rotate(0deg);
+  transform-origin: 68px 108px;
+  transition: transform .5s var(--ease-io) .05s;
+}
+
+.liquid-chrome-btn .lcb-pen-wiggle {
+  transform-origin: 68px 108px;
+}
+
+.liquid-chrome-btn .lcb-scribble {
+  stroke: var(--chev-hover);
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  transition: stroke-dashoffset .45s var(--ease-io);
+}
+
+@keyframes lcb-pen-write {
+  0% { transform: rotate(-4deg) translate(0, 0); }
+  50% { transform: rotate(3deg) translate(0, calc(-1.5 * var(--u))); }
+  100% { transform: rotate(-4deg) translate(0, 0); }
+}
+
+/* Hover & Focus Active States */
+.liquid-chrome-btn:hover::before,
+.liquid-chrome-btn:focus-visible::before,
+.liquid-chrome-btn.is-hover::before {
+  box-shadow:
+    0 calc(59 * var(--u)) calc(96 * var(--u)) calc(-17 * var(--u)) rgba(0, 0, 0, 0),
+    0 calc(182 * var(--u)) calc(88 * var(--u)) 0 rgba(0, 0, 0, 0),
+    0 calc(16 * var(--u)) calc(44 * var(--u)) calc(-18 * var(--u)) rgba(0, 0, 0, 0),
+    0 calc(101 * var(--u)) calc(93 * var(--u)) calc(-38 * var(--u)) rgba(0, 0, 0, .12),
+    0 calc(51 * var(--u)) calc(61 * var(--u)) calc(-26 * var(--u)) rgba(0, 0, 0, .45),
+    0 calc(13 * var(--u)) calc(34 * var(--u)) calc(-12 * var(--u)) rgba(0, 0, 0, .98);
+  transition: box-shadow .4s var(--ease-io) .17s;
+}
+
+.liquid-chrome-btn:hover .lcb-halo,
+.liquid-chrome-btn:focus-visible .lcb-halo,
+.liquid-chrome-btn.is-hover .lcb-halo {
+  opacity: 1;
+  transition: opacity .4s cubic-bezier(.5, 0, .3, 1) .28s;
+}
+
+.liquid-chrome-btn:hover .lcb-label,
+.liquid-chrome-btn:focus-visible .lcb-label,
+.liquid-chrome-btn.is-hover .lcb-label {
+  color: var(--ink-hover);
+  transition: color .38s cubic-bezier(.55, 0, .25, 1) .19s;
+}
+
+.liquid-chrome-btn:hover .lcb-glow,
+.liquid-chrome-btn:focus-visible .lcb-glow,
+.liquid-chrome-btn.is-hover .lcb-glow {
+  opacity: 1;
+  transition: opacity .32s cubic-bezier(.5, 0, .3, 1) .26s;
+}
+
+.liquid-chrome-btn:hover .lcb-pen path,
+.liquid-chrome-btn:focus-visible .lcb-pen path,
+.liquid-chrome-btn.is-hover .lcb-pen path {
+  stroke: var(--chev-hover);
+  transition: stroke .34s var(--ease-io) .1s;
+}
+
+.liquid-chrome-btn:hover .lcb-pen-move,
+.liquid-chrome-btn:focus-visible .lcb-pen-move,
+.liquid-chrome-btn.is-hover .lcb-pen-move {
+  transform: translate(calc(20 * var(--u)), calc(-1 * var(--u))) rotate(-6deg);
+  transition: transform .9s cubic-bezier(.5, 0, .3, 1) .22s;
+}
+
+.liquid-chrome-btn:hover .lcb-scribble,
+.liquid-chrome-btn:focus-visible .lcb-scribble,
+.liquid-chrome-btn.is-hover .lcb-scribble {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset .9s cubic-bezier(.5, 0, .3, 1) .22s;
+}
+
+.liquid-chrome-btn:hover .lcb-pen-wiggle,
+.liquid-chrome-btn:focus-visible .lcb-pen-wiggle,
+.liquid-chrome-btn.is-hover .lcb-pen-wiggle {
+  animation: lcb-pen-write 1.1s ease-in-out 1.1s infinite;
+}
+
+/* No-WebGL Fallback */
+.liquid-chrome-btn.no-gl .lcb-face {
+  background: linear-gradient(#f5f5f5 0%, #e6e6e6 14%, #bcbcbf 60%, #86868a 100%);
+  border: calc(2.5 * var(--u)) solid #545458;
+  border-radius: calc(116 * var(--u));
+}
+
+.liquid-chrome-btn.no-gl .lcb-knob-fallback {
+  position: absolute;
+  left: calc(502 * var(--u));
+  top: calc(28 * var(--u));
+  width: calc(176 * var(--u));
+  height: calc(176 * var(--u));
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 30%, #ffffff 0%, #d9d9e3 28%, #8d8d9b 70%, #5a5a66 100%);
+  box-shadow: inset 0 calc(4 * var(--u)) calc(10 * var(--u)) rgba(0, 0, 0, .35);
+  transition: background .4s;
+}
+
+.liquid-chrome-btn.no-gl:hover .lcb-knob-fallback {
+  background: radial-gradient(circle at 50% 40%, #3a1400 0%, #a03c00 45%, #ff8a28 100%);
+}
+
+.lcb-knob-fallback {
+  display: none;
+}
+
+.liquid-chrome-btn.no-gl .lcb-knob-fallback {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-chrome-btn,
+  .liquid-chrome-btn *,
+  .liquid-chrome-btn::before {
+    transition-duration: .01s !important;
+    transition-delay: 0s !important;
+  }
+}

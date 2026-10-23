@@ -46,7 +46,7 @@ import {
   DailyStreakAutoPrompt,
 } from '@/components/gamification/DailyStreakHub';
 import { isFacultyUser } from '@/lib/auth/faculty';
-import { PulsatingButton } from '@/registry/magicui/pulsating-button';
+import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -223,25 +223,14 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Magic UI Pulsating Resources Button */}
-          <PulsatingButton
+          {/* Tactile Skeuomorphic Liquid-Chrome Resources Button */}
+          <LiquidChromeButton
+            label="RESOURCES"
+            height={38}
             onClick={() => window.open('/resources', '_blank')}
-            pulseColor={isNavbarDark ? 'rgba(251, 191, 36, 0.45)' : 'rgba(217, 119, 6, 0.35)'}
-            duration="1.8s"
-            className={clsx(
-              'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-sm border flex items-center gap-2 active:scale-[0.98]',
-              isNavbarDark
-                ? 'bg-gradient-to-r from-amber-700 via-orange-600 to-amber-800 hover:bg-amber-600 text-white border-amber-400/40 shadow-[0_0_14px_rgba(217,119,6,0.25)]'
-                : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-amber-500/30 shadow-[0_2px_10px_rgba(217,119,6,0.2)]'
-            )}
             title="Collegiate Learning Resources & Compilers (Opens in new tab)"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-white" />
-            <span className="font-extrabold tracking-tight">Resources</span>
-            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-mono uppercase font-black tracking-wider bg-white/20 text-white shadow-xs">
-              Hub ↗
-            </span>
-          </PulsatingButton>
+            className="shrink-0"
+          />
 
           {/* Quick Theme Toggle Button */}
           <button

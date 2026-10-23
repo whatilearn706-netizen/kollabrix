@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "./liquid-chrome-button.css";
+
 :root {
   --background: #FAF7F2;
   --foreground: #1C1917;
