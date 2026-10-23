@@ -21,24 +21,22 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Linkora Link — Student Project Collaboration & Hackathon Platform',
-    template: '%s | Linkora Link',
+    default: 'Linkora — Student Project Collaboration & Hackathon Platform',
+    template: '%s | Linkora',
   },
   description:
-    'Linkora Link is the official student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    'Linkora is the official student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
   keywords: [
-    'Linkora Link',
-    'linkora link',
     'Linkora',
     'linkora',
     'LinkOra',
-    'linkora-link',
-    'linkora-link.online',
+    'linkora platform',
+    'linkora project collaboration',
     'linkora.in',
     'Linkora India',
     'linkora online',
-    'linkora platform',
-    'linkora project collaboration',
+    'linkora-link.online',
+    'linkora-edu.online',
     'student projects',
     'college collaboration',
     'hackathon teams',
@@ -47,9 +45,9 @@ export const metadata: Metadata = {
     'university software development',
   ],
   authors: [{ name: 'Linkora Team' }],
-  creator: 'Linkora Link',
-  publisher: 'Linkora Link',
-  applicationName: 'Linkora Link',
+  creator: 'Linkora',
+  publisher: 'Linkora',
+  applicationName: 'Linkora',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -73,10 +71,10 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
-    title: 'Linkora Link — Student Project Collaboration & Hackathon Platform',
+    title: 'Linkora — Student Project Collaboration & Hackathon Platform',
     description:
-      'Linkora Link is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
-    siteName: 'Linkora Link',
+      'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    siteName: 'Linkora',
     images: [
       {
         url: `${siteUrl}/brand/linkora-logo.png`,
@@ -94,9 +92,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Linkora Link — Student Project Collaboration & Hackathon Platform',
+    title: 'Linkora — Student Project Collaboration & Hackathon Platform',
     description:
-      'Linkora Link is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+      'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
     images: [`${siteUrl}/brand/linkora-logo.png`],
   },
   robots: {
@@ -126,7 +124,7 @@ const jsonLd = {
       '@type': 'WebSite',
       '@id': 'https://linkora-link.online/#website',
       url: 'https://linkora-link.online/',
-      name: 'Linkora Link',
+      name: 'Linkora',
       alternateName: ['Linkora', 'LinkOra', 'Linkora Platform', 'linkora-link.online', 'linkora.in', 'Linkora India'],
       description: 'College-Wide Student Project Collaboration & Hackathon Platform',
       inLanguage: 'en-US',
