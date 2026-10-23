@@ -8,16 +8,16 @@ import { BroadcastBannerConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/ma
 
 const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: string; badge: string; button: string }> = {
   gradient: {
-    bg: 'bg-gradient-to-r from-violet-600 via-brand-600 to-indigo-600',
+    bg: 'bg-gradient-to-r from-amber-700 via-orange-600 to-amber-800',
     text: 'text-white',
     badge: 'bg-white/20 text-white border-white/30',
-    button: 'bg-white text-brand-700 hover:bg-slate-100',
+    button: 'bg-white text-amber-900 hover:bg-amber-50',
   },
   indigo: {
-    bg: 'bg-indigo-600',
+    bg: 'bg-amber-600',
     text: 'text-white',
-    badge: 'bg-indigo-800/60 text-indigo-100 border-indigo-400/30',
-    button: 'bg-white text-indigo-700 hover:bg-indigo-50',
+    badge: 'bg-amber-800/60 text-amber-100 border-amber-400/30',
+    button: 'bg-white text-amber-900 hover:bg-amber-50',
   },
   emerald: {
     bg: 'bg-emerald-600',
