@@ -88,6 +88,11 @@ export interface WorkspaceFeaturesConfig {
   proofOfWork: boolean;
 }
 
+export interface StudentToolsConfig {
+  perksVault: boolean;
+  starterKits: boolean;
+}
+
 export interface MasterControlConfig {
   banner: BroadcastBannerConfig;
   sections: HomepageSectionToggles;
@@ -96,6 +101,7 @@ export interface MasterControlConfig {
   maintenance: MaintenanceModeConfig;
   workspaceFeatures?: WorkspaceFeaturesConfig;
   customSection?: CustomSectionConfig;
+  studentTools?: StudentToolsConfig;
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
@@ -104,6 +110,10 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     liveToolBridge: false,
     teamHuddle: false,
     proofOfWork: false,
+  },
+  studentTools: {
+    perksVault: true,
+    starterKits: true,
   },
   banner: {
     enabled: true,

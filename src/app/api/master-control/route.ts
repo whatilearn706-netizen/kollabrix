@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
             maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(row.value.maintenance || {}) },
             workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(row.value.workspaceFeatures || {}) },
             customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(row.value.customSection || {}) },
+            studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
           };
         }
       } catch (dbErr) {

@@ -35,6 +35,7 @@ import {
   ArrowRight,
   Globe,
   Sliders,
+  Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -47,11 +48,12 @@ import {
   MaintenanceModeConfig,
   MasterControlConfig,
   WorkspaceFeaturesConfig,
+  StudentToolsConfig,
   CustomSectionConfig,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'restricted' | 'workspace' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
@@ -194,6 +196,10 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
             workspaceFeatures: {
               ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures!,
               ...(data.config.workspaceFeatures || {}),
+            },
+            studentTools: {
+              ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools!,
+              ...(data.config.studentTools || {}),
             },
           };
           setConfig(merged);
@@ -383,6 +389,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
   const subTabs = [
     { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
+    { id: 'studentTools' as SubTab, label: '🎁 Student Tools (Perks & Starter Kits)', icon: Gift },
     { id: 'custom' as SubTab, label: '🌟 Custom Spotlight Builder', icon: PlusCircle },
     { id: 'sections' as SubTab, label: '2. Homepage Sections (15 Elements)', icon: LayoutGrid },
     { id: 'workspace' as SubTab, label: '⚡ Workspace Modules (4 Centers)', icon: Zap },
@@ -472,6 +479,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
             {[
+              { id: 'module-student-tools', label: '🎁 Student Tools', color: 'hover:border-emerald-400 text-emerald-300' },
               { id: 'module-custom', label: '🌟 Spotlight Builder', color: 'hover:border-amber-400 text-amber-300' },
               { id: 'module-2', label: '2. Sections (15 Elements)', color: 'hover:border-amber-500 text-blue-300' },
               { id: 'module-workspace', label: '⚡ Workspace (4 Centers)', color: 'hover:border-violet-500 text-violet-300' },
@@ -493,6 +501,183 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 {m.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* STUDENT TOOLS COMMAND CENTER (LIVE VS HIDDEN TOGGLES) */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'studentTools') && (
+        <div id="module-student-tools" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  STUDENT HELPING TOOLS
+                </span>
+                <span className="text-xs font-mono text-emerald-400 font-bold">
+                  {Object.values(config.studentTools || { perksVault: true, starterKits: true }).filter(Boolean).length} / 2 Modules Live
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-white">Student Helping Tools (Live vs Hidden Toggles)</h3>
+              <p className="text-xs text-slate-400">
+                Instantly publish or take offline the Campus Student Perks Vault and 1-Click Hackathon Starter Kits. When Hidden, regular students see a Coming Soon banner while Admins retain full preview access.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = { perksVault: true, starterKits: true };
+                  const updatedConfig = { ...config, studentTools: updated };
+                  setConfig(updatedConfig);
+                  handleSave(updatedConfig);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-750 border border-charcoal-700 text-xs text-slate-300 hover:text-white font-medium transition-colors"
+              >
+                Make Both LIVE
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = { perksVault: false, starterKits: false };
+                  const updatedConfig = { ...config, studentTools: updated };
+                  setConfig(updatedConfig);
+                  handleSave(updatedConfig);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-750 border border-charcoal-700 text-xs text-slate-400 hover:text-rose-400 font-medium transition-colors"
+              >
+                Hide Both
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Tool 1: Campus Student Perks & Free Credits Vault */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              config.studentTools?.perksVault ?? true
+                ? 'bg-charcoal-850/90 border-emerald-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-70'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    config.studentTools?.perksVault ?? true
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">1. Campus Student Perks Vault ($14K+)</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Route: /perks</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.studentTools?.perksVault ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.studentTools || { perksVault: true, starterKits: true }),
+                        perksVault: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, studentTools: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Directory of verified student privileges including GitHub Student Developer Pack, AWS Educate credits, Azure, JetBrains, free domains, Figma, and Notion with step-by-step claiming guides and local claim progress tracker.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-charcoal-800 text-[11px]">
+                <div className="flex items-center gap-2">
+                  <a
+                    href="/perks"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-emerald-400 hover:underline font-mono"
+                  >
+                    <span>Open /perks</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <span className={`font-mono font-bold ${(config.studentTools?.perksVault ?? true) ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {(config.studentTools?.perksVault ?? true) ? '🟢 LIVE ON SITE' : '⚪ DISABLED (HIDDEN)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tool 2: 1-Click Hackathon Starter Kits & Boilerplates */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              config.studentTools?.starterKits ?? true
+                ? 'bg-charcoal-850/90 border-violet-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-70'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    config.studentTools?.starterKits ?? true
+                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">2. Hackathon Starter Kits & Boilerplates</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Route: /starter-kits</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.studentTools?.starterKits ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.studentTools || { perksVault: true, starterKits: true }),
+                        starterKits: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, studentTools: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Pre-configured deploy-ready repositories with Supabase authentication, streaming AI assistant APIs, Vercel 1-click deploy, terminal copy commands, and environment variable configuration guides.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-charcoal-800 text-[11px]">
+                <div className="flex items-center gap-2">
+                  <a
+                    href="/starter-kits"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-violet-400 hover:underline font-mono"
+                  >
+                    <span>Open /starter-kits</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <span className={`font-mono font-bold ${(config.studentTools?.starterKits ?? true) ? 'text-violet-400' : 'text-slate-500'}`}>
+                  {(config.studentTools?.starterKits ?? true) ? '🟢 LIVE ON SITE' : '⚪ DISABLED (HIDDEN)'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}

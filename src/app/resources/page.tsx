@@ -31,6 +31,7 @@ import { LanguageCurriculum } from '@/types/curriculum';
 import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import { StepLearningWorkspace } from '@/components/resources/StepLearningWorkspace';
 import { CircularSkillsShowcase } from '@/components/resources/CircularSkillsShowcase';
+import { ResourcesSubNav } from '@/components/resources/ResourcesSubNav';
 
 export default function ResourcesPage() {
   // Whether the user has chosen their level: null = first visit/unselected, 'beginner' | 'learning' = level selected
@@ -154,6 +155,9 @@ export default function ResourcesPage() {
             </Link>
           </div>
         </header>
+
+        {/* Resources Hub Sub-Navigation (Roadmaps, Perks, Starter Kits) */}
+        <ResourcesSubNav />
 
         {/* VIEW 1: Active Step Learning Workspace */}
         {activeCurriculum ? (
