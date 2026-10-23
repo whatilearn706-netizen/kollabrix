@@ -58,7 +58,7 @@ export function CollegiatePortalsRadar() {
 
   return (
     <section className="py-8 sm:py-12 border-b border-slate-200/80 dark:border-charcoal-800 bg-gradient-to-b from-transparent via-slate-50/50 dark:via-charcoal-900/30 to-transparent relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 relative z-10">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div className="space-y-1.5">

@@ -444,8 +444,8 @@ export default function HomePage() {
           <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-violet-600/15 via-indigo-600/10 to-transparent rounded-full blur-[130px] pointer-events-none -z-10" />
           <div className="absolute top-1/3 right-10 w-[450px] h-[450px] bg-gradient-to-bl from-pink-500/10 via-rose-500/5 to-transparent rounded-full blur-[120px] pointer-events-none -z-10" />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+          <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center">
               {/* Left Column: Clear Headline, Crisp Explanation, Exactly 2 Main Actions */}
               <div className="lg:col-span-6 space-y-6 text-left">
                 {/* Clean, Restrained Identity Badge */}
@@ -464,7 +464,7 @@ export default function HomePage() {
                     letterSpacing: theme.letterSpacing,
                     fontWeight: theme.headingWeight,
                   }}
-                  className="text-4xl sm:text-6xl lg:text-6xl font-black tracking-tight leading-[1.08]"
+                  className="text-4xl sm:text-6xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.06]"
                 >
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500">
                     Build something real,
@@ -477,7 +477,7 @@ export default function HomePage() {
                     color: theme.bodyTextColor,
                     fontFamily: `var(--site-font-body, "${theme.bodyFont}")`,
                   }}
-                  className="text-base sm:text-lg leading-relaxed font-normal max-w-xl text-slate-600 dark:text-slate-300"
+                  className="text-base sm:text-lg leading-relaxed font-normal max-w-2xl text-slate-600 dark:text-slate-300"
                 >
                   {theme.heroSubheadline ||
                     'The student collaboration network. Connect with university builders, assemble hackathon dream squads, and turn ideas into verified software.'}
@@ -561,7 +561,7 @@ export default function HomePage() {
          ========================================================================= */}
       {mounted && user && (
         <section className="border-b border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] py-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xs">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center shrink-0 shadow-xs">
@@ -639,7 +639,7 @@ export default function HomePage() {
          ========================================================================= */}
       {sectionsConfig.showcase && (
         <section className="py-16 md:py-24 relative overflow-hidden bg-white dark:bg-transparent border-b border-slate-200/80 dark:border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 relative z-10">
+          <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-10 relative z-10">
             {/* Header with Segmented Switcher */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
@@ -834,7 +834,7 @@ export default function HomePage() {
          ========================================================================= */}
       {sectionsConfig.colleges !== false && masterConfig.colleges && masterConfig.colleges.length > 0 && (
         <section className="py-16 md:py-20 bg-slate-50/60 dark:bg-white/[0.02] border-b border-slate-200/80 dark:border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-violet-600 dark:text-violet-400 font-bold mb-1">
@@ -894,7 +894,7 @@ export default function HomePage() {
          ========================================================================= */}
       {sectionsConfig.badges !== false && masterConfig.badges && masterConfig.badges.length > 0 && (
         <section className="py-16 md:py-20 bg-white dark:bg-transparent border-b border-slate-200/80 dark:border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold mb-1">

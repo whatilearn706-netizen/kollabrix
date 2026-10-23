@@ -339,7 +339,7 @@ export default function HackathonsPage() {
   }, [hackathons, activeTab, savedIds, enrolledIds, user, onlyOpen, selectedMode, selectedTheme, searchQuery]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
+    <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10 space-y-8">
       {/* Top Header */}
       <div
         style={{ borderColor: theme.borderColor }}

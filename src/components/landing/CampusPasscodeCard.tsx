@@ -23,7 +23,7 @@ export function CampusPasscodeCard() {
 
   return (
     <section className="py-16 md:py-20 bg-slate-50/60 dark:bg-white/[0.02] border-b border-slate-200/80 dark:border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-rose-600 dark:text-rose-400 font-bold">
             <Lock className="w-3.5 h-3.5" />

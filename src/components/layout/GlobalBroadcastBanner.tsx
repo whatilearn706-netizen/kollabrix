@@ -120,7 +120,7 @@ export function GlobalBroadcastBanner() {
       aria-label="Platform Announcement"
       className={`relative z-40 px-3 py-2 text-xs sm:text-sm font-medium transition-all shadow-sm ${themeStyle.bg} ${themeStyle.text}`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 flex items-center justify-between gap-3">
         {/* Left / Center content */}
         <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-center">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${themeStyle.badge}`}>

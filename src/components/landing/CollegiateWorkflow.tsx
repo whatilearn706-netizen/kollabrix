@@ -57,7 +57,7 @@ export function CollegiateWorkflow({
 
   return (
     <section className="py-16 md:py-24 relative overflow-hidden bg-white dark:bg-transparent border-b border-slate-200/80 dark:border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-12 relative z-10">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">
             <Layers className="w-3.5 h-3.5 text-slate-500" />

@@ -26,7 +26,7 @@ export function Footer() {
       }}
       className="w-full border-t py-12 text-sm transition-all"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         <div
           style={{ borderColor: theme.borderColor }}
           className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"

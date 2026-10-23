@@ -148,7 +148,7 @@ export function Navbar() {
       {/* Subtle bottom accent ray */}
       <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/25 to-transparent pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4 relative">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 h-16 flex items-center justify-between gap-4 relative">
         {/* Brand Logo & Wordmark */}
         <Link
           href="/"

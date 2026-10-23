@@ -35,7 +35,7 @@ export function CustomAdminSpotlightSection({ config }: CustomAdminSpotlightSect
 
   return (
     <section className="py-12 sm:py-16 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         <div
           className={`p-8 sm:p-12 lg:p-14 rounded-3xl border ${getThemeClasses()} shadow-xl relative overflow-hidden`}
         >

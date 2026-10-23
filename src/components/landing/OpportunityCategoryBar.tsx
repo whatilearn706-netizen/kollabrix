@@ -119,7 +119,7 @@ const CATEGORIES: CategoryItem[] = [
 export function OpportunityCategoryBar() {
   return (
     <div className="w-full relative border-y border-slate-200/80 dark:border-white/10 bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 shadow-2xs py-4 sm:py-5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         {/* Category Header Row */}
         <div className="flex items-center justify-between mb-3.5 px-0.5">
           <div className="flex items-center gap-2">

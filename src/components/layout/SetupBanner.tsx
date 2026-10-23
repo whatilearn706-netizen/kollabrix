@@ -17,7 +17,7 @@ export function SetupBanner() {
   return (
     <>
       <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-xs text-amber-200">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+        <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
