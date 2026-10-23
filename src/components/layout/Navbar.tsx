@@ -226,7 +226,7 @@ export function Navbar() {
           {/* Tactile Skeuomorphic Liquid-Chrome Resources Button */}
           <LiquidChromeButton
             label="RESOURCES"
-            height={38}
+            height={32}
             onClick={() => window.open('/resources', '_blank')}
             title="Collegiate Learning Resources & Compilers (Opens in new tab)"
             className="shrink-0"

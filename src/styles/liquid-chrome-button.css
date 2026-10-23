@@ -10,12 +10,12 @@
    Tactile Skeuomorphic Liquid-Chrome Resources Button
    ======================================================== */
 .liquid-chrome-btn {
-  --btn-h: 38px;
+  --btn-h: 31px;
   --u: calc(var(--btn-h) / 232);
   --w: calc(706 * var(--u));
   --h: calc(232 * var(--u));
-  --ink: #4c4c52;
-  --ink-hover: #0f0f12;
+  --ink: #38383e;
+  --ink-hover: #0a0a0d;
   --chev: #2c2c33;
   --chev-hover: #fff3e4;
   --accent: 255, 138, 40;
@@ -47,37 +47,33 @@
 .liquid-chrome-btn::after {
   content: "";
   position: absolute;
-  inset: calc(-27 * var(--u));
+  inset: calc(-18 * var(--u));
   border-radius: calc(143 * var(--u));
   z-index: 1;
 }
 
-/* Multi-tier Skeuomorphic Drop Shadows */
+/* Multi-tier Skeuomorphic Drop Shadows tuned for navigation bar */
 .liquid-chrome-btn::before {
   content: "";
   position: absolute;
-  inset: calc(-26 * var(--u));
-  border-radius: calc(142 * var(--u));
+  inset: calc(-14 * var(--u));
+  border-radius: calc(130 * var(--u));
   z-index: -2;
   pointer-events: none;
-  clip-path: inset(0 calc(-400 * var(--u)) calc(-700 * var(--u)) calc(-400 * var(--u)));
+  clip-path: inset(0 calc(-200 * var(--u)) calc(-300 * var(--u)) calc(-200 * var(--u)));
   box-shadow:
-    0 calc(59 * var(--u)) calc(96 * var(--u)) calc(-17 * var(--u)) rgba(0, 0, 0, .72),
-    0 calc(182 * var(--u)) calc(88 * var(--u)) 0 rgba(0, 0, 0, .32),
-    0 calc(16 * var(--u)) calc(44 * var(--u)) calc(-18 * var(--u)) rgba(0, 0, 0, 0),
-    0 calc(101 * var(--u)) calc(93 * var(--u)) calc(-38 * var(--u)) rgba(0, 0, 0, 0),
-    0 calc(51 * var(--u)) calc(61 * var(--u)) calc(-26 * var(--u)) rgba(0, 0, 0, 0),
-    0 calc(13 * var(--u)) calc(34 * var(--u)) calc(-12 * var(--u)) rgba(0, 0, 0, 0);
+    0 calc(18 * var(--u)) calc(32 * var(--u)) calc(-6 * var(--u)) rgba(0, 0, 0, .45),
+    0 calc(40 * var(--u)) calc(44 * var(--u)) 0 rgba(0, 0, 0, .18);
   transition: box-shadow .35s cubic-bezier(.6, 0, .35, 1) .1s;
 }
 
 .liquid-chrome-btn:focus-visible {
   outline: 2px solid #ff9a3c;
-  outline-offset: 6px;
+  outline-offset: 4px;
 }
 
 .liquid-chrome-btn:active {
-  transform: translateY(calc(2 * var(--u))) scale(.992);
+  transform: translateY(calc(1.5 * var(--u))) scale(.99);
 }
 
 /* Warm Molten Amber Halo projected onto background on hover */
@@ -113,17 +109,17 @@
 /* Button Label Typography */
 .liquid-chrome-btn .lcb-label {
   position: absolute;
-  left: calc(112 * var(--u));
+  left: calc(106 * var(--u));
   top: 50%;
   transform: translateY(-50%);
   font-family: "Geist Mono LCB", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-weight: 600;
-  font-size: calc(46 * var(--u));
+  font-weight: 700;
+  font-size: max(8px, calc(52 * var(--u)));
   line-height: 1;
-  letter-spacing: calc(2.4 * var(--u));
+  letter-spacing: calc(1.8 * var(--u));
   white-space: pre;
   color: var(--ink);
-  -webkit-text-stroke: calc(0.35 * var(--u)) currentColor;
+  -webkit-text-stroke: calc(0.3 * var(--u)) currentColor;
   pointer-events: none;
   user-select: none;
   transition: color .3s var(--ease-io) .23s;
@@ -202,12 +198,8 @@
 .liquid-chrome-btn:focus-visible::before,
 .liquid-chrome-btn.is-hover::before {
   box-shadow:
-    0 calc(59 * var(--u)) calc(96 * var(--u)) calc(-17 * var(--u)) rgba(0, 0, 0, 0),
-    0 calc(182 * var(--u)) calc(88 * var(--u)) 0 rgba(0, 0, 0, 0),
-    0 calc(16 * var(--u)) calc(44 * var(--u)) calc(-18 * var(--u)) rgba(0, 0, 0, 0),
-    0 calc(101 * var(--u)) calc(93 * var(--u)) calc(-38 * var(--u)) rgba(0, 0, 0, .12),
-    0 calc(51 * var(--u)) calc(61 * var(--u)) calc(-26 * var(--u)) rgba(0, 0, 0, .45),
-    0 calc(13 * var(--u)) calc(34 * var(--u)) calc(-12 * var(--u)) rgba(0, 0, 0, .98);
+    0 calc(12 * var(--u)) calc(24 * var(--u)) calc(-4 * var(--u)) rgba(0, 0, 0, .25),
+    0 calc(28 * var(--u)) calc(36 * var(--u)) calc(-8 * var(--u)) rgba(0, 0, 0, .14);
   transition: box-shadow .4s var(--ease-io) .17s;
 }
 

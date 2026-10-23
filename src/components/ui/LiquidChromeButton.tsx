@@ -217,7 +217,7 @@ export const LiquidChromeButton = React.forwardRef<HTMLButtonElement, LiquidChro
   (
     {
       label = 'RESOURCES',
-      height = 38,
+      height = 32,
       className,
       title = 'Collegiate Learning Resources & Compilers (Opens in new tab)',
       onClick,
