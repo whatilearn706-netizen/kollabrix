@@ -228,30 +228,30 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 pb-20">
-      {/* Top Header / Breadcrumb & Progress */}
-      <div className="bg-slate-900/80 border border-slate-800 backdrop-blur-xl rounded-2xl p-5 shadow-xl">
+      {/* Top Header / Breadcrumb & Progress (Enhanced Glassmorphism matching cosmic background) */}
+      <div className="bg-slate-950/80 border border-amber-500/20 backdrop-blur-2xl rounded-3xl p-5 sm:p-6 shadow-2xl shadow-black/80">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors border border-slate-700/80 flex items-center gap-1.5 text-xs font-medium"
+              className="p-2.5 rounded-xl bg-stone-900/90 text-stone-300 hover:text-white hover:bg-stone-800 transition-colors border border-stone-800 hover:border-amber-500/30 flex items-center gap-1.5 text-xs font-medium shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Languages</span>
             </button>
-            <div className="h-6 w-px bg-slate-800 hidden sm:block" />
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">{curriculum.icon}</span>
+            <div className="h-6 w-px bg-stone-800 hidden sm:block" />
+            <div className="flex items-center gap-3">
+              <span className="text-3xl filter drop-shadow-md">{curriculum.icon}</span>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                   {curriculum.title}
                   <span
-                    className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${curriculum.badgeBg}`}
+                    className={`text-[10px] uppercase font-mono font-bold tracking-wider px-2.5 py-0.5 rounded-full border ${curriculum.badgeBg}`}
                   >
                     {curriculum.track}
                   </span>
                 </h1>
-                <p className="text-xs text-slate-400">{curriculum.tagline}</p>
+                <p className="text-xs text-stone-400 font-normal">{curriculum.tagline}</p>
               </div>
             </div>
           </div>
@@ -260,22 +260,22 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowFullSyllabus(!showFullSyllabus)}
-              className="px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-mono flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono flex items-center gap-1.5 transition-colors shadow-sm"
             >
-              <BookMarked className="w-4 h-4 text-indigo-400" />
-              <span>{showFullSyllabus ? 'Hide Syllabus' : 'Full Course Syllabus'}</span>
+              <BookMarked className="w-4 h-4 text-amber-400" />
+              <span>{showFullSyllabus ? 'Hide Course Syllabus' : 'Full Course Syllabus'}</span>
             </button>
 
-            <div className="flex items-center gap-3 bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <div className="flex items-center gap-3 bg-stone-900/90 border border-stone-800 px-4 py-2 rounded-xl shadow-inner">
               <div className="text-right">
-                <div className="text-[10px] text-slate-400 font-mono">Completed:</div>
-                <div className="text-xs font-bold text-emerald-400 font-mono">
+                <div className="text-[10px] text-stone-400 font-mono">Progress:</div>
+                <div className="text-xs font-bold text-amber-400 font-mono">
                   {completedSteps.length}/{curriculum.steps.length} Steps ({progressPercent}%)
                 </div>
               </div>
-              <div className="w-20 sm:w-28 bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
+              <div className="w-20 sm:w-28 bg-stone-800 h-2 rounded-full overflow-hidden border border-stone-700/80">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-amber-500 via-orange-400 to-emerald-400 rounded-full transition-all duration-500 shadow-sm"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -285,9 +285,9 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
 
         {/* Full Syllabus drawer if toggled */}
         {showFullSyllabus && (
-          <div className="mt-4 pt-4 border-t border-slate-800 bg-slate-950/80 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono border-b border-slate-800 pb-2">
-              <span className="text-indigo-400 font-semibold flex items-center gap-1.5">
+          <div className="mt-5 pt-4 border-t border-stone-800/80 bg-slate-950/90 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between text-xs text-stone-400 font-mono border-b border-stone-800 pb-2">
+              <span className="text-amber-400 font-bold flex items-center gap-1.5">
                 <Layers className="w-4 h-4" />
                 Course Outline ({curriculum.steps.length} Steps • {curriculum.estimatedTotalHours})
               </span>
@@ -298,14 +298,15 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                 const isCur = i === activeStepIndex;
                 const isDone = completedSteps.includes(st.stepNumber);
                 return (
-                  <div
+                  <button
                     key={st.stepNumber}
+                    onClick={() => handleSelectStep(i)}
                     className={`text-left p-3 rounded-xl border transition-all text-xs flex items-start gap-2.5 ${
                       isCur
-                        ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md'
+                        ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-md'
                         : isDone
-                        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
-                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                        ? 'bg-stone-900/80 border-emerald-500/30 text-stone-300 hover:border-emerald-500/50'
+                        : 'bg-stone-900/50 border-stone-800 text-stone-400 hover:text-white hover:bg-stone-900'
                     }`}
                   >
                     <span
@@ -313,17 +314,17 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                         isDone
                           ? 'bg-emerald-500 text-slate-950'
                           : isCur
-                          ? 'bg-indigo-500 text-white'
-                          : 'bg-slate-800 text-slate-400'
+                          ? 'bg-amber-500 text-slate-950'
+                          : 'bg-stone-800 text-stone-400'
                       }`}
                     >
                       {isDone ? '✓' : st.stepNumber}
                     </span>
                     <div className="min-w-0">
                       <div className="font-semibold truncate">Step {st.stepNumber}: {st.title}</div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">{st.estimatedTime}</div>
+                      <div className="text-[10px] text-stone-400 font-mono mt-0.5">{st.estimatedTime}</div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -343,28 +344,30 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
         style={{ transformOrigin: flipDirection === 'next' ? 'left center' : 'right center' }}
       >
         {/* Current Step Overview Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+        <div className="bg-slate-950/80 border border-stone-800/80 hover:border-amber-500/30 backdrop-blur-2xl rounded-3xl p-6 sm:p-7 shadow-2xl shadow-black/80 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 transition-colors">
           <div>
-            <div className="flex items-center gap-2 text-xs font-mono text-indigo-400 mb-1">
-              <span>STEP {currentStep.stepNumber} OF {curriculum.steps.length}</span>
+            <div className="flex items-center gap-2 text-xs font-mono text-amber-400 mb-1 font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                STEP {currentStep.stepNumber} OF {curriculum.steps.length}
+              </span>
               <span>•</span>
-              <span className="flex items-center gap-1 text-slate-400">
-                <Clock className="w-3 h-3" />
+              <span className="flex items-center gap-1 text-stone-400">
+                <Clock className="w-3 h-3 text-stone-400" />
                 {currentStep.estimatedTime}
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">{currentStep.title}</h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">{currentStep.summary}</p>
+            <h2 className="text-xl sm:text-2xl font-black text-white mb-1 tracking-tight">{currentStep.title}</h2>
+            <p className="text-xs sm:text-sm text-stone-300 max-w-3xl leading-relaxed">{currentStep.summary}</p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <Button
               size="sm"
               onClick={() => toggleStepCompleted(currentStep.stepNumber)}
-              className={`text-xs px-3.5 py-2 rounded-xl transition-all border ${
+              className={`text-xs px-4 py-2 rounded-xl transition-all border font-semibold ${
                 completedSteps.includes(currentStep.stepNumber)
                   ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/25'
-                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  : 'bg-stone-900 text-stone-200 border-stone-800 hover:bg-stone-800 hover:border-amber-500/30'
               }`}
             >
               {completedSteps.includes(currentStep.stepNumber) ? (
@@ -379,64 +382,206 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
           </div>
         </div>
 
-        {/* 4 Tabs in EXACT Order Requested in 2nd Image:
-            1. Video Lecture -> 2. Practice Questions -> 3. Study Material -> 4. Live Compiler */}
-        <div className="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 shadow-md overflow-x-auto scrollbar-none mb-6">
-          <button
-            onClick={() => setActiveTab('video')}
-            className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'video'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <Play className="w-4 h-4 fill-current" />
-            <span>1. Video Lecture {stepVideos.length > 1 ? `(${stepVideos.length})` : ''}</span>
-          </button>
+        {/* 
+          NEW WORKSPACE LAYOUT (Image 5 Overhaul):
+          Left side: Vertical Dock Navigation with the 4 tabs
+          Right side: Active stage content
+        */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* ========================================================= */}
+          {/* LEFT COLUMN: Vertical Dock (Image 5 Tabs Now Vertical)    */}
+          {/* ========================================================= */}
+          <aside className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24 space-y-4">
+            <div className="bg-slate-950/85 backdrop-blur-2xl border border-amber-500/25 rounded-3xl p-3 sm:p-4 shadow-2xl shadow-black/80 space-y-3">
+              {/* Dock Header */}
+              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Workspace Dock
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-stone-300 font-medium">
+                  Step {currentStep.stepNumber}
+                </span>
+              </div>
 
-          <button
-            onClick={() => setActiveTab('practice')}
-            className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'practice'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span>2. Practice Questions ({currentStep.practiceQuestions.length})</span>
-          </button>
+              {/* 4 Vertical Tabs acting like an interactive Dock */}
+              <div className="space-y-2">
+                {/* 1. Video Lecture */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('video')}
+                  className={`w-full text-left p-3.5 rounded-2xl border transition-all group flex items-start gap-3 ${
+                    activeTab === 'video'
+                      ? 'bg-gradient-to-r from-amber-500/25 via-orange-500/15 to-transparent border-amber-500/60 text-white shadow-lg shadow-amber-500/10'
+                      : 'bg-white/[0.03] border-white/5 text-stone-400 hover:text-white hover:bg-white/[0.06] hover:border-white/10'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold transition-transform group-hover:scale-105 ${
+                      activeTab === 'video'
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                        : 'bg-stone-800 text-stone-400'
+                    }`}
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${activeTab === 'video' ? 'text-amber-300' : 'text-stone-200'}`}>
+                        1. Video Lecture
+                      </span>
+                      {stepVideos.length > 1 && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          {stepVideos.length} vids
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                      {activeVideo?.duration ? `${activeVideo.duration} • Concept video` : 'Watch & learn topic'}
+                    </p>
+                  </div>
+                </button>
 
-          <button
-            onClick={() => setActiveTab('study')}
-            className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'study'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>3. Study Material</span>
-          </button>
+                {/* 2. Practice Questions */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('practice')}
+                  className={`w-full text-left p-3.5 rounded-2xl border transition-all group flex items-start gap-3 ${
+                    activeTab === 'practice'
+                      ? 'bg-gradient-to-r from-amber-500/25 via-orange-500/15 to-transparent border-amber-500/60 text-white shadow-lg shadow-amber-500/10'
+                      : 'bg-white/[0.03] border-white/5 text-stone-400 hover:text-white hover:bg-white/[0.06] hover:border-white/10'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold transition-transform group-hover:scale-105 ${
+                      activeTab === 'practice'
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                        : 'bg-stone-800 text-stone-400'
+                    }`}
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${activeTab === 'practice' ? 'text-amber-300' : 'text-stone-200'}`}>
+                        2. Practice Questions
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {currentStep.practiceQuestions.length} Qs
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                      Hands-on code challenges
+                    </p>
+                  </div>
+                </button>
 
-          <button
-            onClick={() => setActiveTab('compiler')}
-            className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'compiler'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <Terminal className="w-4 h-4 text-emerald-400" />
-            <span>4. Live Compiler</span>
-          </button>
-        </div>
+                {/* 3. Study Material */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('study')}
+                  className={`w-full text-left p-3.5 rounded-2xl border transition-all group flex items-start gap-3 ${
+                    activeTab === 'study'
+                      ? 'bg-gradient-to-r from-amber-500/25 via-orange-500/15 to-transparent border-amber-500/60 text-white shadow-lg shadow-amber-500/10'
+                      : 'bg-white/[0.03] border-white/5 text-stone-400 hover:text-white hover:bg-white/[0.06] hover:border-white/10'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold transition-transform group-hover:scale-105 ${
+                      activeTab === 'study'
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                        : 'bg-stone-800 text-stone-400'
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${activeTab === 'study' ? 'text-amber-300' : 'text-stone-200'}`}>
+                        3. Study Material
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        Notes
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                      Key takeaways & cheatsheet
+                    </p>
+                  </div>
+                </button>
+
+                {/* 4. Live Compiler */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('compiler')}
+                  className={`w-full text-left p-3.5 rounded-2xl border transition-all group flex items-start gap-3 ${
+                    activeTab === 'compiler'
+                      ? 'bg-gradient-to-r from-emerald-500/25 via-teal-500/15 to-transparent border-emerald-500/60 text-white shadow-lg shadow-emerald-500/10'
+                      : 'bg-white/[0.03] border-white/5 text-stone-400 hover:text-white hover:bg-white/[0.06] hover:border-white/10'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold transition-transform group-hover:scale-105 ${
+                      activeTab === 'compiler'
+                        ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30'
+                        : 'bg-stone-800 text-stone-400'
+                    }`}
+                  >
+                    <Terminal className="w-3.5 h-3.5 text-emerald-400 group-hover:text-slate-950" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${activeTab === 'compiler' ? 'text-emerald-300' : 'text-stone-200'}`}>
+                        4. Live Compiler
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Sandbox
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                      Run & test code in browser
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Quick Step Nav Buttons Inside Dock */}
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    disabled={activeStepIndex === 0}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[11px] font-mono text-stone-300 hover:text-white border border-white/5 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center gap-1"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    disabled={activeStepIndex === curriculum.steps.length - 1}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-[11px] font-mono text-amber-300 hover:text-amber-200 border border-amber-500/30 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center gap-1 font-bold"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ========================================================= */}
+          {/* RIGHT COLUMN: Active Stage Content                        */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-8 xl:col-span-9 min-w-0 space-y-6">
 
         {/* Tab 1: Video Lecture (With Multi-Video Side Playlist + Next Step Button Inside) */}
         {activeTab === 'video' && (
           <div className="space-y-6">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+            <div className="bg-slate-950/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl shadow-black/80">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800/80 pb-4">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-mono text-rose-400 mb-1">
                     <span>STEP {currentStep.stepNumber} LECTURE</span>
@@ -461,10 +606,10 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
               </div>
 
               {/* Main Video Player + Side Playlist (if multiple videos exist) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className={`${stepVideos.length > 1 ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-4`}>
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                <div className={`${stepVideos.length > 1 ? 'xl:col-span-8' : 'xl:col-span-12'} space-y-4`}>
                   {/* Embedded Video Player */}
-                  <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-black">
+                  <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-stone-800 shadow-2xl bg-black">
                     {activeVideo?.youtubeId ? (
                       <iframe
                         src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?rel=0&modestbranding=1`}
@@ -482,7 +627,7 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
 
                   {/* Notes & Timestamp guide */}
                   {activeVideo?.notes && (
-                    <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs sm:text-sm text-slate-300">
+                    <div className="p-4 rounded-xl bg-slate-950/80 border border-stone-800 text-xs sm:text-sm text-slate-300">
                       <span className="font-semibold text-amber-400">Instructor Timestamp Guide: </span>
                       {activeVideo.notes}
                     </div>
@@ -491,8 +636,8 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
 
                 {/* Multiple Videos Side Playlist Rail */}
                 {stepVideos.length > 1 && (
-                  <div className="lg:col-span-4 bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-mono text-slate-300 uppercase tracking-wider pb-2 border-b border-slate-800">
+                  <div className="xl:col-span-4 bg-slate-950/80 border border-stone-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono text-slate-300 uppercase tracking-wider pb-2 border-b border-stone-800">
                       <ListVideo className="w-4 h-4 text-rose-400" />
                       <span>Topic Playlist ({stepVideos.length} Videos)</span>
                     </div>
@@ -535,12 +680,12 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
               </div>
 
               {/* "NEXT STEP" Button specifically inside the Video Lecture tab! */}
-              <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="pt-6 border-t border-stone-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <Button
                   variant="outline"
                   onClick={handlePrevStep}
                   disabled={activeStepIndex === 0}
-                  className="w-full sm:w-auto text-xs px-5 py-2.5 rounded-xl border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                  className="w-full sm:w-auto text-xs px-5 py-2.5 rounded-xl border-stone-800 text-stone-300 hover:bg-stone-800 disabled:opacity-40"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Previous Step (Step {activeStepIndex})
@@ -563,7 +708,7 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                   ) : (
                     <Button
                       onClick={handleNextStep}
-                      className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+                      className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
                     >
                       <span>Complete Lecture & Next Step: Step {activeStepIndex + 2}</span>
                       <ChevronRight className="w-4 h-4" />
@@ -578,12 +723,12 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
         {/* Tab 2: Practice Questions */}
         {activeTab === 'practice' && (
           <div className="space-y-4">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div className="bg-slate-950/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl shadow-black/80">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-indigo-400" />
+                <HelpCircle className="w-5 h-5 text-amber-400" />
                 Practice Questions for Step {currentStep.stepNumber}
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-stone-400 mt-1">
                 Solve coding challenges tailored to this topic. Click &quot;Solve in Compiler&quot; to test your code in our online sandbox!
               </p>
             </div>
@@ -591,9 +736,9 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
             {currentStep.practiceQuestions.map((q) => (
               <div
                 key={q.id}
-                className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-lg hover:border-slate-700 transition-colors"
+                className="bg-slate-950/70 border border-stone-800/80 rounded-2xl p-6 space-y-4 shadow-xl hover:border-amber-500/30 transition-all"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800/80 pb-3">
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                       {q.difficulty}
@@ -610,19 +755,19 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                   </Button>
                 </div>
 
-                <div className="text-xs sm:text-sm text-slate-300 whitespace-pre-line leading-relaxed">
+                <div className="text-xs sm:text-sm text-stone-300 whitespace-pre-line leading-relaxed">
                   {q.description}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 font-mono text-xs">
-                    <div className="text-slate-400 font-semibold mb-1">Expected Output:</div>
+                  <div className="p-3 bg-slate-950 rounded-xl border border-stone-800 font-mono text-xs">
+                    <div className="text-stone-400 font-semibold mb-1">Expected Output:</div>
                     <pre className="text-emerald-400 whitespace-pre-wrap">{q.expectedOutput}</pre>
                   </div>
                   {q.hints && q.hints.length > 0 && (
-                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 font-mono text-xs">
+                    <div className="p-3 bg-slate-950 rounded-xl border border-stone-800 font-mono text-xs">
                       <div className="text-amber-400 font-semibold mb-1">💡 Hints:</div>
-                      <ul className="list-disc list-inside text-slate-400 space-y-1">
+                      <ul className="list-disc list-inside text-stone-400 space-y-1">
                         {q.hints.map((hint, hi) => (
                           <li key={hi}>{hint}</li>
                         ))}
@@ -637,14 +782,14 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
 
         {/* Tab 3: Study Material */}
         {activeTab === 'study' && (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="bg-slate-950/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl shadow-black/80">
+            <div className="flex items-center justify-between border-b border-stone-800/80 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-400" />
+                  <FileText className="w-5 h-5 text-amber-400" />
                   Comprehensive Study Notes: {currentStep.topic}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-stone-400 mt-1">
                   College-level concepts, architectural notes, and syntax foundations.
                 </p>
               </div>
@@ -653,7 +798,7 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                   href={currentStep.studyMaterial.officialDocUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-mono hover:underline"
+                  className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 font-mono hover:underline"
                 >
                   Official Docs <ExternalLink className="w-3.5 h-3.5" />
                 </a>
@@ -661,13 +806,13 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
             </div>
 
             {/* Overview */}
-            <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-sm text-slate-200 leading-relaxed">
+            <div className="p-4 rounded-xl bg-slate-950/70 border border-stone-800 text-sm text-stone-200 leading-relaxed">
               {currentStep.studyMaterial.overview}
             </div>
 
             {/* Key Conceptual Points */}
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2 font-mono">
+              <h4 className="text-sm font-semibold text-stone-200 uppercase tracking-wider mb-3 flex items-center gap-2 font-mono">
                 <Lightbulb className="w-4 h-4 text-amber-400" />
                 Core Takeaways & Rules
               </h4>
@@ -675,9 +820,9 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                 {currentStep.studyMaterial.keyPoints.map((pt, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/50 border border-slate-800/80 text-xs sm:text-sm text-slate-300"
+                    className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/50 border border-stone-800/80 text-xs sm:text-sm text-stone-300"
                   >
-                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center shrink-0 text-xs">
+                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center shrink-0 text-xs">
                       {i + 1}
                     </span>
                     <span>{pt}</span>
@@ -689,13 +834,13 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
             {/* Code Examples */}
             {currentStep.studyMaterial.codeExamples && currentStep.studyMaterial.codeExamples.length > 0 && (
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-stone-200 uppercase tracking-wider font-mono flex items-center gap-2">
                   <Code2 className="w-4 h-4 text-emerald-400" />
                   Code Walkthrough
                 </h4>
                 {currentStep.studyMaterial.codeExamples.map((ex, i) => (
-                  <div key={i} className="rounded-xl border border-slate-800 bg-slate-950 overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 border-b border-slate-800 text-xs font-mono text-slate-300">
+                  <div key={i} className="rounded-xl border border-stone-800 bg-slate-950 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-stone-900/80 border-b border-stone-800 text-xs font-mono text-stone-300">
                       <span>{ex.title}</span>
                       <Button
                         size="sm"
@@ -713,7 +858,7 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                       {ex.code}
                     </pre>
                     {ex.explanation && (
-                      <div className="p-3 bg-slate-900/50 border-t border-slate-800/70 text-xs text-slate-400">
+                      <div className="p-3 bg-stone-900/50 border-t border-stone-800/70 text-xs text-stone-400">
                         💡 {ex.explanation}
                       </div>
                     )}
@@ -724,14 +869,14 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
 
             {/* Cheatsheet */}
             {currentStep.studyMaterial.cheatsheet && (
-              <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/20">
-                <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2 font-mono">
+              <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-500/20">
+                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 font-mono">
                   ⚡ Quick Cheatsheet Rules
                 </h4>
-                <ul className="space-y-1.5 text-xs text-indigo-200/90 font-mono">
+                <ul className="space-y-1.5 text-xs text-amber-200/90 font-mono">
                   {currentStep.studyMaterial.cheatsheet.map((rule, idx) => (
                     <li key={idx} className="flex items-center gap-2">
-                      <span className="text-indigo-400">→</span>
+                      <span className="text-amber-400">→</span>
                       {rule}
                     </li>
                   ))}
@@ -745,9 +890,9 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
         {activeTab === 'compiler' && (
           <div className="space-y-4">
             {activeQuestion && (
-              <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 flex items-center justify-between text-xs font-mono text-indigo-300">
+              <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between text-xs font-mono text-amber-300">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <Sparkles className="w-4 h-4 text-amber-400" />
                   <span>
                     Currently Solving: <strong className="text-white">{activeQuestion.title}</strong>
                   </span>
@@ -757,7 +902,7 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
                     setActiveQuestion(null);
                     setCompilerCode(currentStep.compilerStarterCode);
                   }}
-                  className="text-slate-400 hover:text-white underline"
+                  className="text-stone-400 hover:text-white underline"
                 >
                   Reset to Step Default Code
                 </button>
@@ -774,6 +919,8 @@ export function StepLearningWorkspace({ curriculum, onBack }: StepLearningWorksp
             />
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* GRAND DOUBLE-DOOR CLOSING & OPENING STAGE PORTAL */}
