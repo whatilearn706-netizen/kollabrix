@@ -46,6 +46,7 @@ import {
   DailyStreakAutoPrompt,
 } from '@/components/gamification/DailyStreakHub';
 import { isFacultyUser } from '@/lib/auth/faculty';
+import { PulsatingButton } from '@/registry/magicui/pulsating-button';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -222,39 +223,25 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Creative Next-Gen Resources Studio Button (Left of Theme Toggle) */}
-          <Link
-            href="/resources"
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* Magic UI Pulsating Resources Button */}
+          <PulsatingButton
+            onClick={() => window.open('/resources', '_blank')}
+            pulseColor={isNavbarDark ? 'rgba(139, 92, 246, 0.45)' : 'rgba(99, 102, 241, 0.35)'}
+            duration="1.8s"
             className={clsx(
-              'relative group overflow-hidden px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2 shrink-0 border shadow-sm hover:scale-[1.03] active:scale-[0.98]',
+              'px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-sm border flex items-center gap-2 active:scale-[0.98]',
               isNavbarDark
-                ? 'bg-gradient-to-r from-violet-950/70 via-indigo-950/70 to-slate-900 border-violet-500/40 hover:border-cyan-400/80 text-white shadow-[0_0_16px_rgba(139,92,246,0.2)] hover:shadow-[0_0_24px_rgba(6,182,212,0.45)]'
-                : 'bg-gradient-to-r from-violet-50/90 via-indigo-50/80 to-white border-violet-200/90 hover:border-violet-400 text-slate-800 hover:text-slate-950 shadow-[0_2px_10px_rgba(139,92,246,0.12)] hover:shadow-[0_4px_18px_rgba(139,92,246,0.25)]'
+                ? 'bg-gradient-to-r from-violet-900/80 via-indigo-900/80 to-purple-900/80 hover:bg-violet-800 text-white border-violet-400/40 shadow-[0_0_14px_rgba(139,92,246,0.25)]'
+                : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-violet-500/30 shadow-[0_2px_10px_rgba(139,92,246,0.2)]'
             )}
             title="Collegiate Learning Resources & Compilers (Opens in new tab)"
           >
-            {/* Iridescent Light Sweep Shimmer Effect on Hover */}
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 dark:via-cyan-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out pointer-events-none" />
-
-            {/* Pulsing Neon Indicator Dot */}
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-gradient-to-tr from-cyan-500 to-indigo-500" />
-            </span>
-
-            {/* Dynamic Creative Icon */}
-            <BookOpen className="w-3.5 h-3.5 text-violet-500 dark:text-cyan-300 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
-
-            {/* Label */}
+            <BookOpen className="w-3.5 h-3.5 text-white" />
             <span className="font-extrabold tracking-tight">Resources</span>
-
-            {/* Cosmic Pill Tag */}
-            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-mono uppercase font-black tracking-wider bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500 text-white shadow-xs group-hover:shadow-[0_0_10px_rgba(236,72,153,0.6)] transition-shadow">
+            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-mono uppercase font-black tracking-wider bg-white/20 text-white shadow-xs">
               Hub ↗
             </span>
-          </Link>
+          </PulsatingButton>
 
           {/* Quick Theme Toggle Button */}
           <button
