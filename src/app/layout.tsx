@@ -7,6 +7,7 @@ import { SetupBanner } from '@/components/layout/SetupBanner';
 import { AuthModal } from '@/components/auth/AuthModal';
 
 import { SiteThemeProvider } from '@/components/theme/SiteThemeProvider';
+import { GlobalLightRays } from '@/components/layout/GlobalLightRays';
 import { GlobalBroadcastBanner } from '@/components/layout/GlobalBroadcastBanner';
 import { GlobalHotPatchInjector } from '@/components/common/GlobalHotPatchInjector';
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
@@ -258,16 +259,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white">
+      <body className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-pink-500 selection:text-white relative">
         <AuthProvider>
           <SiteThemeProvider>
+            <GlobalLightRays />
             <RestrictedWordsGuard>
               <GlobalBroadcastBanner />
               <GlobalHotPatchInjector />
               <MaintenanceModeGate>
                 <SetupBanner />
                 <Navbar />
-                <main className="flex-1 flex flex-col">{children}</main>
+                <main className="flex-1 flex flex-col relative z-[1]">{children}</main>
                 <Footer />
                 <AuthModal />
                 <FeedbackModal />

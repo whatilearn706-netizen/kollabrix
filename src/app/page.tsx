@@ -471,7 +471,7 @@ export default function HomePage() {
   return (
     <div
       style={{
-        backgroundColor: theme.backgroundColor,
+        backgroundColor: 'transparent',
         color: theme.bodyTextColor,
       }}
       className="flex flex-col w-full overflow-hidden transition-colors duration-200"
