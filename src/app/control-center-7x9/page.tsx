@@ -56,7 +56,7 @@ export default function AdminControlCenterPage() {
   const [adminUser, setAdminUser] = useState<any>(null);
   const [adminProfile, setAdminProfile] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState<AdminTab>('master');
-  const [masterSubTab, setMasterSubTab] = useState<'all' | 'restricted' | 'workspace' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance'>('all');
+  const [masterSubTab, setMasterSubTab] = useState<'all' | 'templates' | 'restricted' | 'workspace' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance'>('all');
   const [visitedTabs, setVisitedTabs] = useState<Set<AdminTab>>(() => new Set<AdminTab>(['master']));
   const [overviewStats, setOverviewStats] = useState<any>(null);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);

@@ -93,6 +93,26 @@ export interface StudentToolsConfig {
   starterKits: boolean;
 }
 
+export interface VisualTemplatesConfig {
+  allEnabled: boolean; // Master toggle: Live / Not Live for ALL templates
+  bentoGrid: boolean; // Template 1: Interactive Aceternity Bento Grid (Collegiate Ecosystem)
+  techOrbit: boolean; // Template 2: Animated Tech-Stack & Campus Orbit (Magic UI Circles)
+  codeTerminal: boolean; // Template 3: Interactive Code Playground & Compiler Terminal
+  connectionBeams: boolean; // Template 4: Animated Connection Beams (Magic UI Flow Graph)
+  campusMarquee: boolean; // Template 5: 3D Diagonal Campus Pulse Marquee Cards
+  floatingDock: boolean; // Template 6: Floating Glassmorphic Quick-Action Dock
+}
+
+export const DEFAULT_VISUAL_TEMPLATES_CONFIG: VisualTemplatesConfig = {
+  allEnabled: true,
+  bentoGrid: true,
+  techOrbit: true,
+  codeTerminal: true,
+  connectionBeams: true,
+  campusMarquee: true,
+  floatingDock: true,
+};
+
 export interface MasterControlConfig {
   banner: BroadcastBannerConfig;
   sections: HomepageSectionToggles;
@@ -102,9 +122,11 @@ export interface MasterControlConfig {
   workspaceFeatures?: WorkspaceFeaturesConfig;
   customSection?: CustomSectionConfig;
   studentTools?: StudentToolsConfig;
+  visualTemplates?: VisualTemplatesConfig;
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
+  visualTemplates: DEFAULT_VISUAL_TEMPLATES_CONFIG,
   workspaceFeatures: {
     aiCloserKit: false,
     liveToolBridge: false,

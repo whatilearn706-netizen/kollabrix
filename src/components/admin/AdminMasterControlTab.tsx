@@ -36,6 +36,7 @@ import {
   Globe,
   Sliders,
   Gift,
+  Terminal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -50,10 +51,12 @@ import {
   WorkspaceFeaturesConfig,
   StudentToolsConfig,
   CustomSectionConfig,
+  VisualTemplatesConfig,
+  DEFAULT_VISUAL_TEMPLATES_CONFIG,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'templates' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
@@ -142,6 +145,10 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
                 ...DEFAULT_MASTER_CONTROL_CONFIG.sections,
                 ...(parsed.sections || {}),
               },
+              visualTemplates: {
+                ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!,
+                ...(parsed.visualTemplates || {}),
+              },
             };
           }
         }
@@ -200,6 +207,10 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
             studentTools: {
               ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools!,
               ...(data.config.studentTools || {}),
+            },
+            visualTemplates: {
+              ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!,
+              ...(data.config.visualTemplates || {}),
             },
           };
           setConfig(merged);
@@ -389,6 +400,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
   const subTabs = [
     { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
+    { id: 'templates' as SubTab, label: '✨ Visual Templates (All 6 Live / Inactive)', icon: Palette },
     { id: 'studentTools' as SubTab, label: '🎁 Student Tools (Perks & Starter Kits)', icon: Gift },
     { id: 'custom' as SubTab, label: '🌟 Custom Spotlight Builder', icon: PlusCircle },
     { id: 'sections' as SubTab, label: '2. Homepage Sections (15 Elements)', icon: LayoutGrid },
@@ -479,6 +491,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
             {[
+              { id: 'module-visual-templates', label: '✨ Visual Templates (6 Modules)', color: 'hover:border-amber-400 text-amber-300' },
               { id: 'module-student-tools', label: '🎁 Student Tools', color: 'hover:border-emerald-400 text-emerald-300' },
               { id: 'module-custom', label: '🌟 Spotlight Builder', color: 'hover:border-amber-400 text-amber-300' },
               { id: 'module-2', label: '2. Sections (15 Elements)', color: 'hover:border-amber-500 text-blue-300' },
@@ -501,6 +514,465 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 {m.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* VISUAL ENHANCEMENT TEMPLATES COMMAND CENTER (ALL 6 MODULES + MASTER) */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'templates') && (
+        <div id="module-visual-templates" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24 shadow-elevated">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  VISUAL TEMPLATES STUDIO
+                </span>
+                <span className={`text-xs font-mono font-bold flex items-center gap-1.5 ${
+                  (config.visualTemplates?.allEnabled ?? true) ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${
+                    (config.visualTemplates?.allEnabled ?? true) ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                  }`} />
+                  {(config.visualTemplates?.allEnabled ?? true) ? 'MASTER STATUS: LIVE' : 'MASTER STATUS: OFF'}
+                </span>
+              </div>
+              <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+                <span>Visual Enhancement Templates Control</span>
+                <span className="text-xs font-normal text-slate-400 font-mono">(6 Specialized Components)</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-3xl">
+                Toggle all 6 modern warm skeuomorphic templates live or inactive across Linkora. The Master Switch can publish or suppress all 6 templates simultaneously, or you can tune each component individually.
+              </p>
+            </div>
+
+            {/* Master Switch & Global Quick Actions */}
+            <div className="flex flex-wrap items-center gap-3 bg-charcoal-950 p-3 rounded-2xl border border-charcoal-800 shrink-0">
+              <div className="flex items-center gap-3 pr-3 border-r border-charcoal-800">
+                <div className="text-right">
+                  <span className="block text-xs font-bold text-white">MASTER TOGGLE</span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {(config.visualTemplates?.allEnabled ?? true) ? 'Live for All' : 'Disabled for All'}
+                  </span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.allEnabled ?? true}
+                    onChange={(e) => {
+                      const updatedVt: VisualTemplatesConfig = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        allEnabled: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updatedVt };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-12 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 shadow-inner"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updatedVt: VisualTemplatesConfig = {
+                      allEnabled: true,
+                      bentoGrid: true,
+                      techOrbit: true,
+                      codeTerminal: true,
+                      connectionBeams: true,
+                      campusMarquee: true,
+                      floatingDock: true,
+                    };
+                    const updatedConfig = { ...config, visualTemplates: updatedVt };
+                    setConfig(updatedConfig);
+                    handleSave(updatedConfig);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-xs text-amber-300 font-semibold transition-all active:scale-95 flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Turn ALL 6 Live</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updatedVt: VisualTemplatesConfig = {
+                      allEnabled: false,
+                      bentoGrid: false,
+                      techOrbit: false,
+                      codeTerminal: false,
+                      connectionBeams: false,
+                      campusMarquee: false,
+                      floatingDock: false,
+                    };
+                    const updatedConfig = { ...config, visualTemplates: updatedVt };
+                    setConfig(updatedConfig);
+                    handleSave(updatedConfig);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-rose-500/20 border border-charcoal-700 hover:border-rose-500/30 text-xs text-slate-400 hover:text-rose-400 font-semibold transition-all active:scale-95"
+                >
+                  <span>Disable All</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Master Switch Alert Banner if Disabled */}
+          {!(config.visualTemplates?.allEnabled ?? true) && (
+            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs text-rose-300">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>
+                  <strong>Master Switch is currently INACTIVE.</strong> All 6 visual enhancement templates are suppressed site-wide. Flip the Master Toggle above to re-enable them.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedVt: VisualTemplatesConfig = {
+                    ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                    allEnabled: true,
+                  };
+                  const updatedConfig = { ...config, visualTemplates: updatedVt };
+                  setConfig(updatedConfig);
+                  handleSave(updatedConfig);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-bold border border-rose-500/40"
+              >
+                Reactivate Now
+              </button>
+            </div>
+          )}
+
+          {/* Grid of 6 Template Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            {/* Template 1 */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true)
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <LayoutGrid className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">1. Bento Grid Matrix</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Landing Page (Collegiate Ecosystem)</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.bentoGrid ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        bentoGrid: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                High-density spotlight matrix containing Matchmaking Radar, 24-day Streak Flame, Verified Student ID Card, instant C++ Sandbox, and Closer Kit™ Capstone Framework.
+              </p>
+
+              <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
+                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                </span>
+                <a href="/#template-1" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
+                  Preview <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Template 2 */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true)
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">2. Tech & Campus Orbit</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Landing Page (Magic UI Rings)</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.techOrbit ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        techOrbit: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                3-tier concentric spinning orbital rings with Python, Rust, React, PyTorch, IIT Delhi, and BITS Pilani counter-revolving around a glowing Linkora Core.
+              </p>
+
+              <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
+                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                </span>
+                <a href="/#template-2" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
+                  Preview <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Template 3 */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true)
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Terminal className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">3. Code Sandbox Terminal</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Interactive Execution Console</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.codeTerminal ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        codeTerminal: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Brushed titanium macOS execution window with switchable tabs (Python, C++20, Rust, TypeScript), syntax highlighting, and instant live execution.
+              </p>
+
+              <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
+                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                </span>
+                <a href="/#template-3" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
+                  Preview <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Template 4 */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true)
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">4. Connection Beams Graph</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Talent Flow Synergy Engine</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.connectionBeams ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        connectionBeams: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Animated curved energy beams displaying student roles (AI, UI, BE) flowing into the Linkora Matching Core and emerging into hackathon wins and capstone repos.
+              </p>
+
+              <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
+                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                </span>
+                <a href="/#template-4" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
+                  Preview <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Template 5 */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true)
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">5. Campus Pulse Marquee</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Real-Time Activity Ticker</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.campusMarquee ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        campusMarquee: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                2 rows of live student activity pulse cards with gradient edge fades, real-time timestamps, and hover pauses for match alerts and hackathon updates.
+              </p>
+
+              <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
+                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                </span>
+                <a href="/#template-5" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
+                  Preview <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Template 6 */}
+            <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
+              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true)
+                ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
+                : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true)
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-charcoal-800 text-slate-500'
+                  }`}>
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">6. Floating Quick-Action Dock</h4>
+                    <span className="text-[11px] font-mono text-slate-400">Global Bottom Navigation Bar</span>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.visualTemplates?.floatingDock ?? true}
+                    onChange={(e) => {
+                      const updated = {
+                        ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
+                        floatingDock: e.target.checked,
+                      };
+                      const updatedConfig = { ...config, visualTemplates: updated };
+                      setConfig(updatedConfig);
+                      handleSave(updatedConfig);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Persistent floating bottom dock with spring magnification, active amber status pills, Resources button with liquid chrome styling, and Build project shortcut.
+              </p>
+
+              <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
+                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true) ? '● LIVE ACROSS ALL PAGES' : '○ INACTIVE'}
+                </span>
+                <span className="text-slate-500 text-[10px]">Persistent Global Component</span>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

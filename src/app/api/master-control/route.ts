@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
             workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(row.value.workspaceFeatures || {}) },
             customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(row.value.customSection || {}) },
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
+            visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
           };
         }
       } catch (dbErr) {
@@ -76,6 +77,9 @@ export async function GET(request: NextRequest) {
             badges: Array.isArray(parsed.badges) ? parsed.badges : DEFAULT_MASTER_CONTROL_CONFIG.badges,
             maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(parsed.maintenance || {}) },
             workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(parsed.workspaceFeatures || {}) },
+            customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(parsed.customSection || {}) },
+            studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(parsed.studentTools || {}) },
+            visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(parsed.visualTemplates || {}) },
           };
         } catch (e) {}
       }

@@ -79,9 +79,16 @@ import {
   DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
 } from '@/types/homepageConfig';
 import { CampusPulseHub } from '@/components/landing/CampusPulseHub';
+import { InteractiveBentoGrid } from '@/components/landing/templates/InteractiveBentoGrid';
+import { CampusOrbitSection } from '@/components/landing/templates/CampusOrbitSection';
+import { InteractiveCodeTerminal } from '@/components/landing/templates/InteractiveCodeTerminal';
+import { ConnectionBeamsSection } from '@/components/landing/templates/ConnectionBeamsSection';
+import { CampusPulseMarquee } from '@/components/landing/templates/CampusPulseMarquee';
 import {
   HomepageSectionToggles,
   MasterControlConfig,
+  VisualTemplatesConfig,
+  DEFAULT_VISUAL_TEMPLATES_CONFIG,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
@@ -177,6 +184,13 @@ export default function HomePage() {
     }
     return DEFAULT_MASTER_CONTROL_CONFIG;
   });
+
+  const visualTemplates: VisualTemplatesConfig = masterConfig?.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG;
+  const isTemplateLive = (key: keyof VisualTemplatesConfig) => {
+    if (visualTemplates.allEnabled === false) return false;
+    return Boolean(visualTemplates[key]);
+  };
+
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
@@ -712,6 +726,15 @@ export default function HomePage() {
         )}
 
       {/* =========================================================================
+          TEMPLATE 5: 3D DIAGONAL CAMPUS PULSE MARQUEE CARDS
+         ========================================================================= */}
+      {isTemplateLive('campusMarquee') && (
+        <div id="template-5" className="scroll-reveal is-revealed bg-[#141210]">
+          <CampusPulseMarquee />
+        </div>
+      )}
+
+      {/* =========================================================================
           AUTH BANNER (FOR SIGNED-IN STUDENTS / EDUCATORS)
          ========================================================================= */}
       {mounted && user && (
@@ -789,6 +812,15 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
+          TEMPLATE 1: INTERACTIVE ACETERNITY BENTO GRID (COLLEGIATE ECOSYSTEM)
+         ========================================================================= */}
+      {isTemplateLive('bentoGrid') && (
+        <div id="template-1" className="scroll-reveal is-revealed bg-[#141210]">
+          <InteractiveBentoGrid />
+        </div>
+      )}
+
+      {/* =========================================================================
           SECTION 1: INTENT (INTERACTIVE BUILDER CONSOLE)
          ========================================================================= */}
       {sectionsConfig.intent && (
@@ -811,6 +843,15 @@ export default function HomePage() {
           </div>
           <div className="glow-divider mt-16" />
         </section>
+      )}
+
+      {/* =========================================================================
+          TEMPLATE 2: ANIMATED TECH-STACK & CAMPUS ORBIT (MAGIC UI CIRCLES)
+         ========================================================================= */}
+      {isTemplateLive('techOrbit') && (
+        <div id="template-2" className="scroll-reveal is-revealed bg-[#141210]">
+          <CampusOrbitSection />
+        </div>
       )}
 
       {/* =========================================================================
@@ -1010,6 +1051,15 @@ export default function HomePage() {
           <div className="glow-divider mt-16" />
         </div>
       </section>
+      )}
+
+      {/* =========================================================================
+          TEMPLATE 4: ANIMATED CONNECTION BEAMS (MAGIC UI FLOW GRAPH)
+         ========================================================================= */}
+      {isTemplateLive('connectionBeams') && (
+        <div id="template-4" className="scroll-reveal is-revealed bg-[#141210]">
+          <ConnectionBeamsSection />
+        </div>
       )}
 
       {/* =========================================================================
@@ -1256,6 +1306,15 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* =========================================================================
+          TEMPLATE 3: INTERACTIVE CODE PLAYGROUND & COMPILER TERMINAL
+         ========================================================================= */}
+      {isTemplateLive('codeTerminal') && (
+        <div id="template-3" className="scroll-reveal is-revealed bg-[#141210]">
+          <InteractiveCodeTerminal />
+        </div>
       )}
 
       {/* =========================================================================

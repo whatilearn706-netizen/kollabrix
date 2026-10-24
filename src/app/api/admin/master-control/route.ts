@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
             workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(row.value.workspaceFeatures || {}) },
             customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(row.value.customSection || {}) },
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
+            visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
           };
         }
 
@@ -157,6 +158,7 @@ export async function GET(request: NextRequest) {
             maintenance: { ...DEFAULT_MASTER_CONTROL_CONFIG.maintenance, ...(parsed.maintenance || {}) },
             workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(parsed.workspaceFeatures || {}) },
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(parsed.studentTools || {}) },
+            visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(parsed.visualTemplates || {}) },
           };
         } catch (e) {}
       }
@@ -204,6 +206,7 @@ export async function POST(request: NextRequest) {
       workspaceFeatures: { ...DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures, ...(incoming.workspaceFeatures || {}) },
       customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(incoming.customSection || {}) },
       studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(incoming.studentTools || {}) },
+      visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(incoming.visualTemplates || {}) },
     };
 
     let savedToDb = false;

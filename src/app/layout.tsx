@@ -13,6 +13,7 @@ import { GlobalHotPatchInjector } from '@/components/common/GlobalHotPatchInject
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { FloatingQuickDock } from '@/components/navigation/FloatingQuickDock';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -271,6 +272,7 @@ export default function RootLayout({
                 <Footer />
                 <AuthModal />
                 <FeedbackModal />
+                <FloatingQuickDock />
               </MaintenanceModeGate>
             </RestrictedWordsGuard>
           </SiteThemeProvider>
