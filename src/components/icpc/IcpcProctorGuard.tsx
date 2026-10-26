@@ -1297,7 +1297,7 @@ export function IcpcProctorGuard({
                 }
               : undefined
           }
-          className={`fixed z-50 shadow-2xl rounded-2xl border ${
+          className={`fixed z-[100] shadow-2xl rounded-2xl border ${
             isDraggingPip ? 'transition-none select-none shadow-cyan-500/30 scale-[1.01]' : 'transition-all duration-200'
           } ${
             activeWarning
@@ -1525,7 +1525,7 @@ export function IcpcProctorGuard({
 
       {/* ── MANDATORY DUAL-LENS PROCTOR ENTRANCE MODAL ── */}
       {isActive && showEntranceModal && (
-        <div className="fixed inset-0 z-[120] bg-charcoal-950/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[200] bg-charcoal-950/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="max-w-xl w-full p-6 sm:p-8 rounded-3xl bg-charcoal-900 border-2 border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-center space-y-6 animate-in zoom-in-95 duration-200 my-auto">
             {/* Header */}
             <div className="space-y-2">
@@ -1839,7 +1839,7 @@ export function IcpcProctorGuard({
 
       {/* ── SECURITY VIOLATION ALERT OVERLAY MODAL (For Warnings < MAX_WARNINGS) ── */}
       {activeWarning && !isTerminated && (
-        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="max-w-md w-full p-6 rounded-3xl bg-charcoal-950 border-2 border-rose-500 text-center space-y-4 shadow-2xl shadow-rose-500/30 animate-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-3xl bg-rose-500/20 border-2 border-rose-500/40 flex items-center justify-center mx-auto text-rose-400 animate-bounce">
               <ShieldAlert className="w-8 h-8" />

@@ -732,24 +732,25 @@ export default function IcpcCollegiateArenaPage() {
 
         {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}
         {mounted && activeProblem && selectedContest && typeof document !== 'undefined' && createPortal(
-          <IcpcProctorGuard
-            contestId={selectedContest.id}
-            contestTitle={selectedContest.title}
-            problemId={activeProblem.id}
-            problemTitle={activeProblem.title}
-            studentId={user?.id || 'anon'}
-            studentName={profile?.display_name || user?.user_metadata?.display_name || 'Contestant'}
-            studentEmail={user?.email}
-            college={(profile as any)?.college || 'Collegiate Builder'}
-            isActive={Boolean(activeProblem)}
-            onCloseArena={() => {
-              if (typeof document !== 'undefined' && document.fullscreenElement) {
-                document.exitFullscreen().catch(() => {});
-              }
-              setActiveProblem(null);
-            }}
-          >
-            <div className="fixed inset-0 z-[999999] bg-charcoal-950 flex flex-col text-white w-screen h-screen overflow-hidden animate-in fade-in duration-150 select-none">
+          <div id="icpc-exam-proctor-portal" className="fixed inset-0 z-[99999] bg-charcoal-950 overflow-hidden">
+            <IcpcProctorGuard
+              contestId={selectedContest.id}
+              contestTitle={selectedContest.title}
+              problemId={activeProblem.id}
+              problemTitle={activeProblem.title}
+              studentId={user?.id || 'anon'}
+              studentName={profile?.display_name || user?.user_metadata?.display_name || 'Contestant'}
+              studentEmail={user?.email}
+              college={(profile as any)?.college || 'Collegiate Builder'}
+              isActive={Boolean(activeProblem)}
+              onCloseArena={() => {
+                if (typeof document !== 'undefined' && document.fullscreenElement) {
+                  document.exitFullscreen().catch(() => {});
+                }
+                setActiveProblem(null);
+              }}
+            >
+              <div className="fixed inset-0 z-0 bg-charcoal-950 flex flex-col text-white w-screen h-screen overflow-hidden animate-in fade-in duration-150 select-none">
               {/* Top Navigation Bar (56px) */}
               <header className="h-14 shrink-0 px-4 bg-charcoal-900 border-b border-charcoal-800 flex items-center justify-between gap-3 select-none">
                 {/* Left: Exit Arena, Contest Title, and Problem Switcher */}
@@ -1167,7 +1168,8 @@ export default function IcpcCollegiateArenaPage() {
                 </div>
               </div>
             </div>
-        </IcpcProctorGuard>,
+          </IcpcProctorGuard>
+        </div>,
         document.body
       )}
 
