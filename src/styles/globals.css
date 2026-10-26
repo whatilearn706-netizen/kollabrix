@@ -506,6 +506,27 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   border-color: var(--site-brand) !important;
 }
 
+/* ========================================================
+   ICPC Exam Mode: Full Immersion / Zero Distractions
+   Hides all global navigation, docks, banners, footers, rails
+   ======================================================== */
+html.icpc-exam-mode nav,
+body.icpc-exam-mode nav,
+html.icpc-exam-mode header.sticky,
+body.icpc-exam-mode header.sticky,
+html.icpc-exam-mode footer,
+body.icpc-exam-mode footer,
+html.icpc-exam-mode aside,
+body.icpc-exam-mode aside,
+html.icpc-exam-mode #global-broadcast-banner,
+body.icpc-exam-mode #global-broadcast-banner,
+html.icpc-exam-mode .floating-quick-dock,
+body.icpc-exam-mode .floating-quick-dock {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 
 
 

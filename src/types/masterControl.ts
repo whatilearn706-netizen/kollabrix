@@ -104,13 +104,13 @@ export interface VisualTemplatesConfig {
 }
 
 export const DEFAULT_VISUAL_TEMPLATES_CONFIG: VisualTemplatesConfig = {
-  allEnabled: true,
-  bentoGrid: true,
-  techOrbit: true,
-  codeTerminal: true,
-  connectionBeams: true,
-  campusMarquee: true,
-  floatingDock: true,
+  allEnabled: false,
+  bentoGrid: false,
+  techOrbit: false,
+  codeTerminal: false,
+  connectionBeams: false,
+  campusMarquee: false,
+  floatingDock: false,
 };
 
 export interface MasterControlConfig {

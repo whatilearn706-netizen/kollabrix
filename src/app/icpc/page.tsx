@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -80,8 +81,9 @@ export default function IcpcCollegiateArenaPage() {
     userRole === 'professor' ||
     userRole === 'coordinator';
 
-  // Load student progress from localStorage on mount
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
     try {
       const saved = localStorage.getItem('linkora_icpc_progress');
       if (saved) {
@@ -92,6 +94,29 @@ export default function IcpcCollegiateArenaPage() {
       }
     } catch (e) {}
   }, []);
+
+  // ICPC Exam Immersion Mode: hide global nav, banners, quick dock, lock page scroll
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (activeProblem) {
+      document.documentElement.classList.add('icpc-exam-mode');
+      document.body.classList.add('icpc-exam-mode');
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      window.dispatchEvent(new CustomEvent('linkora_exam_mode', { detail: { active: true } }));
+
+      return () => {
+        document.documentElement.classList.remove('icpc-exam-mode');
+        document.body.classList.remove('icpc-exam-mode');
+        document.body.style.overflow = originalOverflow;
+        window.dispatchEvent(new CustomEvent('linkora_exam_mode', { detail: { active: false } }));
+      };
+    } else {
+      document.documentElement.classList.remove('icpc-exam-mode');
+      document.body.classList.remove('icpc-exam-mode');
+      window.dispatchEvent(new CustomEvent('linkora_exam_mode', { detail: { active: false } }));
+    }
+  }, [activeProblem]);
 
   useEffect(() => {
     async function loadContests() {
@@ -706,7 +731,7 @@ export default function IcpcCollegiateArenaPage() {
         </section>
 
         {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}
-        {activeProblem && selectedContest && (
+        {mounted && activeProblem && selectedContest && typeof document !== 'undefined' && createPortal(
           <IcpcProctorGuard
             contestId={selectedContest.id}
             contestTitle={selectedContest.title}
@@ -724,7 +749,7 @@ export default function IcpcCollegiateArenaPage() {
               setActiveProblem(null);
             }}
           >
-            <div className="fixed inset-0 z-40 bg-charcoal-950 flex flex-col text-white w-screen h-screen overflow-hidden animate-in fade-in duration-150 select-none">
+            <div className="fixed inset-0 z-[999999] bg-charcoal-950 flex flex-col text-white w-screen h-screen overflow-hidden animate-in fade-in duration-150 select-none">
               {/* Top Navigation Bar (56px) */}
               <header className="h-14 shrink-0 px-4 bg-charcoal-900 border-b border-charcoal-800 flex items-center justify-between gap-3 select-none">
                 {/* Left: Exit Arena, Contest Title, and Problem Switcher */}
@@ -1142,7 +1167,8 @@ export default function IcpcCollegiateArenaPage() {
                 </div>
               </div>
             </div>
-        </IcpcProctorGuard>
+        </IcpcProctorGuard>,
+        document.body
       )}
 
         {/* Host ICPC Contest Modal */}

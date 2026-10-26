@@ -51,21 +51,30 @@ import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 export function Navbar() {
   const rawPathname = usePathname();
   const pathname = rawPathname || '';
-
-  // Dedicated Resource Hub runs in its own focused workspace without global navbar
-  if (pathname.startsWith('/resources')) {
-    return null;
-  }
-
   const router = useRouter();
   const { user, profile, signOut, openAuthModal } = useAuth();
   const { theme, isDark, toggleTheme } = useSiteTheme();
 
+  const [isExamMode, setIsExamMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleExam = (e: any) => {
+      setIsExamMode(Boolean(e.detail?.active));
+    };
+    const checkExamClass = () => {
+      if (typeof document !== 'undefined') {
+        setIsExamMode(document.body.classList.contains('icpc-exam-mode'));
+      }
+    };
+    checkExamClass();
+    window.addEventListener('linkora_exam_mode', handleExam);
+    return () => window.removeEventListener('linkora_exam_mode', handleExam);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -88,6 +97,11 @@ export function Navbar() {
     setMobileMenuOpen(false);
     setUserDropdownOpen(false);
   }, [pathname]);
+
+  // Dedicated Resource Hub and Active Exam Mode run in their own focused workspace without global navbar
+  if (pathname.startsWith('/resources') || isExamMode) {
+    return null;
+  }
 
   const handleStartProjectClick = () => {
     if (!user) {

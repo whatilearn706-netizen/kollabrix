@@ -16,8 +16,24 @@ import { VisualTemplatesConfig, DEFAULT_VISUAL_TEMPLATES_CONFIG } from '@/types/
 
 export function FloatingQuickDock() {
   const pathname = usePathname();
-  const [isVisible, setIsVisible] = useState<boolean>(true);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isExamMode, setIsExamMode] = useState<boolean>(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  // Listen for active ICPC exam mode
+  useEffect(() => {
+    const handleExam = (e: any) => {
+      setIsExamMode(Boolean(e.detail?.active));
+    };
+    const checkExamClass = () => {
+      if (typeof document !== 'undefined') {
+        setIsExamMode(document.body.classList.contains('icpc-exam-mode'));
+      }
+    };
+    checkExamClass();
+    window.addEventListener('linkora_exam_mode', handleExam);
+    return () => window.removeEventListener('linkora_exam_mode', handleExam);
+  }, []);
 
   // Check if active in master control config
   useEffect(() => {
@@ -45,7 +61,7 @@ export function FloatingQuickDock() {
         }
       }
 
-      setIsVisible(true);
+      setIsVisible(false);
     };
 
     checkConfig();
@@ -53,8 +69,13 @@ export function FloatingQuickDock() {
     return () => window.removeEventListener('linkora_master_control_updated', checkConfig);
   }, []);
 
-  // Hide in Admin Control Center to avoid overlapping admin controls
-  if (pathname?.startsWith('/control-center-7x9') || pathname?.startsWith('/admin')) {
+  // Hide in Admin Control Center, ICPC contest/exam arena, and during proctored exams
+  if (
+    pathname?.startsWith('/control-center-7x9') ||
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/icpc') ||
+    isExamMode
+  ) {
     return null;
   }
 

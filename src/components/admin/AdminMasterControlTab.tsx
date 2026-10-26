@@ -530,12 +530,12 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   VISUAL TEMPLATES STUDIO
                 </span>
                 <span className={`text-xs font-mono font-bold flex items-center gap-1.5 ${
-                  (config.visualTemplates?.allEnabled ?? true) ? 'text-emerald-400' : 'text-rose-400'
+                  (config.visualTemplates?.allEnabled ?? false) ? 'text-emerald-400' : 'text-rose-400'
                 }`}>
                   <span className={`w-2 h-2 rounded-full ${
-                    (config.visualTemplates?.allEnabled ?? true) ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                    (config.visualTemplates?.allEnabled ?? false) ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
                   }`} />
-                  {(config.visualTemplates?.allEnabled ?? true) ? 'MASTER STATUS: LIVE' : 'MASTER STATUS: OFF'}
+                  {(config.visualTemplates?.allEnabled ?? false) ? 'MASTER STATUS: LIVE' : 'MASTER STATUS: OFF'}
                 </span>
               </div>
               <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
@@ -553,13 +553,13 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <div className="text-right">
                   <span className="block text-xs font-bold text-white">MASTER TOGGLE</span>
                   <span className="text-[10px] font-mono text-slate-400">
-                    {(config.visualTemplates?.allEnabled ?? true) ? 'Live for All' : 'Disabled for All'}
+                    {(config.visualTemplates?.allEnabled ?? false) ? 'Live for All' : 'Disabled for All'}
                   </span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.allEnabled ?? true}
+                    checked={config.visualTemplates?.allEnabled ?? false}
                     onChange={(e) => {
                       const updatedVt: VisualTemplatesConfig = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -622,7 +622,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           </div>
 
           {/* Master Switch Alert Banner if Disabled */}
-          {!(config.visualTemplates?.allEnabled ?? true) && (
+          {!(config.visualTemplates?.allEnabled ?? false) && (
             <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-xs text-rose-300">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
@@ -653,14 +653,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
             
             {/* Template 1 */}
             <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true)
+              (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.bentoGrid ?? false)
                 ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
                 : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
             }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
-                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true)
+                    (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.bentoGrid ?? false)
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                       : 'bg-charcoal-800 text-slate-500'
                   }`}>
@@ -675,7 +675,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.bentoGrid ?? true}
+                    checked={config.visualTemplates?.bentoGrid ?? false}
                     onChange={(e) => {
                       const updated = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -696,8 +696,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
-                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
-                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.bentoGrid ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                <span className={(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.bentoGrid ?? false) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.bentoGrid ?? false) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
                 </span>
                 <a href="/#template-1" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
                   Preview <ExternalLink className="w-3 h-3" />
@@ -707,14 +707,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
             {/* Template 2 */}
             <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true)
+              (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.techOrbit ?? false)
                 ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
                 : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
             }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
-                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true)
+                    (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.techOrbit ?? false)
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                       : 'bg-charcoal-800 text-slate-500'
                   }`}>
@@ -729,7 +729,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.techOrbit ?? true}
+                    checked={config.visualTemplates?.techOrbit ?? false}
                     onChange={(e) => {
                       const updated = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -750,8 +750,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
-                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
-                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.techOrbit ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                <span className={(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.techOrbit ?? false) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.techOrbit ?? false) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
                 </span>
                 <a href="/#template-2" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
                   Preview <ExternalLink className="w-3 h-3" />
@@ -761,14 +761,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
             {/* Template 3 */}
             <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true)
+              (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.codeTerminal ?? false)
                 ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
                 : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
             }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
-                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true)
+                    (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.codeTerminal ?? false)
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                       : 'bg-charcoal-800 text-slate-500'
                   }`}>
@@ -783,7 +783,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.codeTerminal ?? true}
+                    checked={config.visualTemplates?.codeTerminal ?? false}
                     onChange={(e) => {
                       const updated = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -804,8 +804,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
-                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
-                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.codeTerminal ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                <span className={(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.codeTerminal ?? false) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.codeTerminal ?? false) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
                 </span>
                 <a href="/#template-3" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
                   Preview <ExternalLink className="w-3 h-3" />
@@ -815,14 +815,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
             {/* Template 4 */}
             <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true)
+              (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.connectionBeams ?? false)
                 ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
                 : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
             }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
-                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true)
+                    (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.connectionBeams ?? false)
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                       : 'bg-charcoal-800 text-slate-500'
                   }`}>
@@ -837,7 +837,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.connectionBeams ?? true}
+                    checked={config.visualTemplates?.connectionBeams ?? false}
                     onChange={(e) => {
                       const updated = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -858,8 +858,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
-                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
-                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.connectionBeams ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                <span className={(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.connectionBeams ?? false) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.connectionBeams ?? false) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
                 </span>
                 <a href="/#template-4" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
                   Preview <ExternalLink className="w-3 h-3" />
@@ -869,14 +869,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
             {/* Template 5 */}
             <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true)
+              (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.campusMarquee ?? false)
                 ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
                 : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
             }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
-                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true)
+                    (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.campusMarquee ?? false)
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                       : 'bg-charcoal-800 text-slate-500'
                   }`}>
@@ -891,7 +891,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.campusMarquee ?? true}
+                    checked={config.visualTemplates?.campusMarquee ?? false}
                     onChange={(e) => {
                       const updated = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -912,8 +912,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
-                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
-                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.campusMarquee ?? true) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
+                <span className={(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.campusMarquee ?? false) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.campusMarquee ?? false) ? '● LIVE ON HOMEPAGE' : '○ INACTIVE'}
                 </span>
                 <a href="/#template-5" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-1">
                   Preview <ExternalLink className="w-3 h-3" />
@@ -923,14 +923,14 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
             {/* Template 6 */}
             <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-              (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true)
+              (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.floatingDock ?? false)
                 ? 'bg-charcoal-850/90 border-amber-500/40 shadow-sm'
                 : 'bg-charcoal-950/60 border-charcoal-800 opacity-60'
             }`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
-                    (config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true)
+                    (config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.floatingDock ?? false)
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                       : 'bg-charcoal-800 text-slate-500'
                   }`}>
@@ -945,7 +945,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.visualTemplates?.floatingDock ?? true}
+                    checked={config.visualTemplates?.floatingDock ?? false}
                     onChange={(e) => {
                       const updated = {
                         ...(config.visualTemplates || DEFAULT_VISUAL_TEMPLATES_CONFIG),
@@ -966,8 +966,8 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
-                <span className={(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true) ? 'text-emerald-400' : 'text-slate-500'}>
-                  {(config.visualTemplates?.allEnabled ?? true) && (config.visualTemplates?.floatingDock ?? true) ? '● LIVE ACROSS ALL PAGES' : '○ INACTIVE'}
+                <span className={(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.floatingDock ?? false) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {(config.visualTemplates?.allEnabled ?? false) && (config.visualTemplates?.floatingDock ?? false) ? '● LIVE ACROSS ALL PAGES' : '○ INACTIVE'}
                 </span>
                 <span className="text-slate-500 text-[10px]">Persistent Global Component</span>
               </div>

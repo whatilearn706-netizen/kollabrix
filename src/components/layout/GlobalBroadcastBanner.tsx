@@ -41,9 +41,21 @@ const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: s
 
 export function GlobalBroadcastBanner() {
   const pathname = usePathname();
-  if (pathname?.startsWith('/resources')) {
-    return null;
-  }
+  const [isExamMode, setIsExamMode] = useState(false);
+
+  useEffect(() => {
+    const handleExam = (e: any) => {
+      setIsExamMode(Boolean(e.detail?.active));
+    };
+    const checkExamClass = () => {
+      if (typeof document !== 'undefined') {
+        setIsExamMode(document.body.classList.contains('icpc-exam-mode'));
+      }
+    };
+    checkExamClass();
+    window.addEventListener('linkora_exam_mode', handleExam);
+    return () => window.removeEventListener('linkora_exam_mode', handleExam);
+  }, []);
 
   const [banner, setBanner] = useState<BroadcastBannerConfig>(DEFAULT_MASTER_CONTROL_CONFIG.banner);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -102,7 +114,13 @@ export function GlobalBroadcastBanner() {
     };
   }, []);
 
-  if (!banner.enabled || isDismissed) {
+  if (
+    pathname?.startsWith('/resources') ||
+    pathname?.startsWith('/icpc') ||
+    isExamMode ||
+    !banner.enabled ||
+    isDismissed
+  ) {
     return null;
   }
 
