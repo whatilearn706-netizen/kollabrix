@@ -13,11 +13,11 @@ import { GlobalHotPatchInjector } from '@/components/common/GlobalHotPatchInject
 import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
-import { FloatingQuickDock } from '@/components/navigation/FloatingQuickDock';
+import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.online';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.in';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -123,33 +123,33 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://kollabrix.online/#website',
-      url: 'https://kollabrix.online/',
+      '@id': 'https://kollabrix.in/#website',
+      url: 'https://kollabrix.in/',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix', 'kollabrix.online', 'Kollabrix Platform', 'Linkora', 'LinkOra', 'linkora-link.online', 'linkora.in', 'Kollabrix India'],
+      alternateName: ['Kollabrix', 'kollabrix.in', 'Kollabrix India', 'Kollabrix Platform', 'kollabrix.online', 'Linkora'],
       description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: 'https://kollabrix.online/explore?q={search_term_string}',
+          urlTemplate: 'https://kollabrix.in/explore?q={search_term_string}',
         },
         'query-input': 'required name=search_term_string',
       },
       publisher: {
-        '@id': 'https://kollabrix.online/#organization',
+        '@id': 'https://kollabrix.in/#organization',
       },
     },
     {
       '@type': 'WebApplication',
-      '@id': 'https://kollabrix.online/#app',
+      '@id': 'https://kollabrix.in/#app',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix Platform', 'kollabrix.online', 'Linkora'],
+      alternateName: ['Kollabrix Platform', 'kollabrix.in', 'Kollabrix India'],
       applicationCategory: 'EducationalApplication, DeveloperApplication, CollaborationPlatform',
       operatingSystem: 'All Modern Web Browsers, iOS, Android, macOS, Windows',
       browserRequirements: 'Requires JavaScript. Requires HTML5.',
-      url: 'https://kollabrix.online',
+      url: 'https://kollabrix.in',
       description:
         'Kollabrix is the official student project collaboration network, real-time workspace huddle, and hackathon closer platform.',
       offers: {
@@ -167,7 +167,7 @@ const jsonLd = {
     },
     {
       '@type': 'ItemList',
-      '@id': 'https://kollabrix.online/#sitelinks',
+      '@id': 'https://kollabrix.in/#sitelinks',
       name: 'Kollabrix Sitelinks',
       itemListElement: [
         {
@@ -175,48 +175,49 @@ const jsonLd = {
           position: 1,
           name: 'Explore Projects',
           description: 'Discover active collegiate engineering projects seeking collaborators.',
-          url: 'https://kollabrix.online/explore',
+          url: 'https://kollabrix.in/explore',
         },
         {
           '@type': 'SiteNavigationElement',
           position: 2,
           name: 'Find Teammates',
           description: 'Connect with university designers, coders, and builders.',
-          url: 'https://kollabrix.online/teammates',
+          url: 'https://kollabrix.in/teammates',
         },
         {
           '@type': 'SiteNavigationElement',
           position: 3,
           name: 'Hackathon Arena',
           description: 'Join campus hackathons and build in private collaborative workspaces.',
-          url: 'https://kollabrix.online/hackathons',
+          url: 'https://kollabrix.in/hackathons',
         },
         {
           '@type': 'SiteNavigationElement',
           position: 4,
           name: 'Problem Bank',
           description: 'Solve real-world challenges curated by faculty and industry mentors.',
-          url: 'https://kollabrix.online/problems',
+          url: 'https://kollabrix.in/problems',
         },
       ],
     },
     {
       '@type': 'Organization',
-      '@id': 'https://kollabrix.online/#organization',
+      '@id': 'https://kollabrix.in/#organization',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix Platform', 'kollabrix.online', 'Linkora'],
-      url: 'https://kollabrix.online/',
+      alternateName: ['Kollabrix Platform', 'kollabrix.in', 'Linkora'],
+      url: 'https://kollabrix.in/',
       logo: {
         '@type': 'ImageObject',
-        '@id': 'https://kollabrix.online/#logo',
-        url: 'https://kollabrix.online/brand/kollabrix-logo.svg',
+        '@id': 'https://kollabrix.in/#logo',
+        url: 'https://kollabrix.in/brand/kollabrix-logo.png',
         caption: 'Kollabrix Logo',
         inLanguage: 'en-US',
         width: 1024,
         height: 1024,
       },
-      image: 'https://linkora-link.online/brand/kollabrix-logo.svg',
+      image: 'https://kollabrix.in/brand/kollabrix-logo.png',
       sameAs: [
+        'https://kollabrix.in',
         'https://linkora-link.online',
         'https://linkora.in',
         'https://github.com/goyalmayank142-pixel/LinkOra',
@@ -272,7 +273,7 @@ export default function RootLayout({
                 <Footer />
                 <AuthModal />
                 <FeedbackModal />
-                <FloatingQuickDock />
+                <KollabrixQuickDock />
               </MaintenanceModeGate>
             </RestrictedWordsGuard>
           </SiteThemeProvider>

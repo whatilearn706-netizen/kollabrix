@@ -71,7 +71,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
     const canonicalOrigin = typeof window !== 'undefined'
       ? window.location.origin
-      : 'https://kollabrix.online';
+      : 'https://kollabrix.in';
 
     try {
       setIsGoogleLoading(true);
@@ -117,7 +117,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile
 
     const canonicalOrigin = typeof window !== 'undefined'
       ? window.location.origin
-      : 'https://kollabrix.online';
+      : 'https://kollabrix.in';
 
     try {
       setIsGitHubLoading(true);

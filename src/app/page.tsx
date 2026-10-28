@@ -50,7 +50,7 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 
 import { CollegiatePortalsRadar } from '@/components/home/CollegiatePortalsRadar';
 
-import { HeroPlatformShowcase } from '@/components/landing/HeroPlatformShowcase';
+import { CreativeHeroShowcase } from '@/components/landing/CreativeHeroShowcase';
 
 const ProjectSparkGeneratorModal = dynamic(
   () => import('@/components/ai/ProjectSparkGeneratorModal').then((m) => m.ProjectSparkGeneratorModal),
@@ -64,7 +64,6 @@ import {
   DEFAULT_HOMEPAGE_SHOWCASE_CONFIG,
 } from '@/types/homepageConfig';
 import { CampusPulseHub } from '@/components/landing/CampusPulseHub';
-import { InteractiveBentoGrid } from '@/components/landing/templates/InteractiveBentoGrid';
 import { CampusOrbitSection } from '@/components/landing/templates/CampusOrbitSection';
 import { InteractiveCodeTerminal } from '@/components/landing/templates/InteractiveCodeTerminal';
 import { ConnectionBeamsSection } from '@/components/landing/templates/ConnectionBeamsSection';
@@ -568,7 +567,7 @@ export default function HomePage() {
 
                 {/* Mobile / Tablet Platform Showcase Stage */}
                 <div className="lg:hidden w-full my-4">
-                  <HeroPlatformShowcase />
+                  <CreativeHeroShowcase />
                 </div>
 
                 {/* Unstop-Style Interactive Global Search Console */}
@@ -639,7 +638,7 @@ export default function HomePage() {
 
               {/* Right Column: Signature Interactive Platform Showcase Console */}
               <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] z-10">
-                <HeroPlatformShowcase />
+                <CreativeHeroShowcase />
               </div>
             </div>
           </div>
@@ -654,11 +653,6 @@ export default function HomePage() {
           <CollegiatePortalsRadar />
         </div>
       )}
-
-      {/* Collegiate Ecosystem Bento Matrix (Creative High-Craft Bento Grid) */}
-      <div className="scroll-reveal bg-stone-950 py-6 border-y border-stone-800">
-        <InteractiveBentoGrid />
-      </div>
 
       {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: below_hero */}
       {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&
@@ -755,14 +749,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* =========================================================================
-          TEMPLATE 1: INTERACTIVE ACETERNITY BENTO GRID (COLLEGIATE ECOSYSTEM)
-         ========================================================================= */}
-      {isTemplateLive('bentoGrid') && (
-        <div id="template-1" className="scroll-reveal is-revealed bg-[#141210]">
-          <InteractiveBentoGrid />
-        </div>
-      )}
 
       {/* =========================================================================
           SECTION 1: INTENT (INTERACTIVE BUILDER CONSOLE)
