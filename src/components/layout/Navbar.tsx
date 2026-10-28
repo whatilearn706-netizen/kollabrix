@@ -281,30 +281,32 @@ export function Navbar() {
             )}
           </button>
 
-          {/* Daily Streak Flame Button */}
-          <StreakNavbarButton onClick={() => setIsStreakModalOpen(true)} />
-
-          {/* Configurable Brand CTA Button */}
-          <button
-            type="button"
-            onClick={handleStartProjectClick}
-            style={{
-              borderRadius: theme.borderRadius,
-              backgroundColor: isNavbarDark ? undefined : theme.brandColor,
-            }}
-            className={clsx(
-              "inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
-              isNavbarDark
-                ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
-                : "shadow-xs"
-            )}
-          >
-            <PlusCircle className="w-3.5 h-3.5 text-white" />
-            <span>{theme.navbarCtaText || 'Start Project'}</span>
-          </button>
-
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              {/* Daily Streak Flame Button - Authenticated only */}
+              {mounted && (
+                <StreakNavbarButton onClick={() => setIsStreakModalOpen(true)} />
+              )}
+
+              {/* Configurable Brand CTA Button */}
+              <button
+                type="button"
+                onClick={handleStartProjectClick}
+                style={{
+                  borderRadius: theme.borderRadius,
+                  backgroundColor: isNavbarDark ? undefined : theme.brandColor,
+                }}
+                className={clsx(
+                  "inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
+                  isNavbarDark
+                    ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
+                    : "shadow-xs"
+                )}
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-white" />
+                <span>{theme.navbarCtaText || 'Start Project'}</span>
+              </button>
+
               <NotificationBell />
 
               {/* User Dropdown */}
@@ -448,6 +450,18 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openAuthModal('login')}
+                className={clsx(
+                  "text-xs font-semibold px-3 py-1.5 rounded-xl transition-all",
+                  isNavbarDark
+                    ? "text-slate-300 hover:text-white hover:bg-white/5"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
+                )}
+              >
+                Sign In
+              </button>
               <button
                 type="button"
                 onClick={() => openAuthModal('signup')}
@@ -651,19 +665,21 @@ export function Navbar() {
 
           <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
-          {/* Mobile Daily Streak Indicator */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
-            <span className="text-xs font-bold text-white flex items-center gap-2">
-              <span className="text-sm">🔥</span>
-              <span>Daily Build Streak</span>
-            </span>
-            <StreakNavbarButton
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setIsStreakModalOpen(true);
-              }}
-            />
-          </div>
+          {/* Mobile Daily Streak Indicator - Only when authenticated */}
+          {user && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+              <span className="text-xs font-bold text-white flex items-center gap-2">
+                <span className="text-sm">🔥</span>
+                <span>Daily Build Streak</span>
+              </span>
+              <StreakNavbarButton
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setIsStreakModalOpen(true);
+                }}
+              />
+            </div>
+          )}
 
           {/* Mobile Theme Toggle Button */}
           <button
@@ -688,21 +704,51 @@ export function Navbar() {
             <span className="text-[10px] font-mono opacity-60 uppercase">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              handleStartProjectClick();
-            }}
-            style={{
-              backgroundColor: theme.brandColor,
-              borderRadius: theme.borderRadius,
-            }}
-            className="w-full flex items-center justify-center gap-2 py-3 text-white font-bold text-sm shadow-md"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>{theme.navbarCtaText || 'Start a Project'}</span>
-          </button>
+          {user ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleStartProjectClick();
+              }}
+              style={{
+                backgroundColor: theme.brandColor,
+                borderRadius: theme.borderRadius,
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 text-white font-bold text-sm shadow-md"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>{theme.navbarCtaText || 'Start a Project'}</span>
+            </button>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal('login');
+                }}
+                className={clsx(
+                  "py-2.5 px-3 rounded-xl text-xs font-bold border transition-colors text-center",
+                  isNavbarDark
+                    ? "border-white/10 text-slate-200 bg-white/5 hover:bg-white/10"
+                    : "border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100"
+                )}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal('signup');
+                }}
+                className="py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md text-center"
+              >
+                Join Free
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>

@@ -94,13 +94,6 @@ export function LandingHero() {
           >
             Explore Projects
           </Link>
-          <Link
-            href="/spark"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm sm:text-base font-medium hover:bg-amber-500/20 transition-all duration-300"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            AI Spark Generator
-          </Link>
         </motion.div>
 
         {/* Feature bullets */}
