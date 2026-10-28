@@ -36,14 +36,11 @@ export function CreativeHeroShowcase() {
           {/* Top Bar: Brand Identifier + Live Colleges Pulse */}
           <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3">
-              <div className="relative w-11 h-11 rounded-2xl overflow-hidden border border-amber-500/30 shadow-md bg-stone-950 p-1 flex items-center justify-center shrink-0">
-                <Image
-                  src="/brand/kollabrix-icon.png"
+              <div className="relative w-11 h-11 rounded-2xl overflow-hidden border border-amber-500/40 shadow-lg bg-stone-900 flex items-center justify-center shrink-0">
+                <img
+                  src="/brand/kollabrix-k.png?v=20261028"
                   alt="Kollabrix 3D Emblem"
-                  width={44}
-                  height={44}
-                  className="w-full h-full object-contain drop-shadow"
-                  priority
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>
