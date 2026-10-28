@@ -174,25 +174,8 @@ export default function ResourcesPage() {
           />
         ) : selectedTrack === null ? (
           /* VIEW 2: First Gate Screen - Absolute Beginner & Active Learner Stunning Cards */
-          <div className="min-h-[72vh] flex flex-col items-center justify-center text-center space-y-10 max-w-5xl mx-auto py-10">
-            {/* Header with Purpose-Driven, Understandable Language */}
-            <div className="space-y-4 max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-mono tracking-wider uppercase backdrop-blur-md shadow-md shadow-amber-500/10">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Kollabrix Collegiate Learning Hub • Zero to Squad-Ready</span>
-              </div>
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.12]">
-                Choose Your Path to{' '}
-                <span className="bg-gradient-to-r from-amber-400 via-orange-300 to-amber-200 bg-clip-text text-transparent">
-                  Build Real Projects
-                </span>
-              </h1>
-              <p className="text-sm sm:text-base text-stone-300 max-w-2xl mx-auto leading-relaxed font-normal">
-                Kollabrix is where student developers find teammates and win hackathons. Before jumping into a squad, choose your path below to master essential skills through guided lectures, hands-on practice, concept notes, and our live online compiler.
-              </p>
-            </div>
-
-            {/* Beginner vs Active Learner - Absolute Stunning Overhauled Cards */}
+          <div className="min-h-[70vh] flex flex-col items-center justify-center text-center space-y-6 max-w-5xl mx-auto py-4">
+            {/* Beginner vs Active Learner Cards - Direct Access */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl pt-2">
               {/* CARD 1: Absolute Beginner */}
               <button

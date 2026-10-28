@@ -136,19 +136,9 @@ export function Navbar() {
       icon: Compass,
     },
     {
-      href: '/hackathons',
-      label: 'Hackathons',
-      icon: Trophy,
-    },
-    {
       href: '/teammates',
       label: 'Teammates',
       icon: Users,
-    },
-    {
-      href: '/icpc',
-      label: 'ICPC Arena',
-      icon: Bot,
     },
     {
       href: '/my-projects',
@@ -247,9 +237,11 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Clean Resources Link */}
+          {/* Clean Resources Link (Opens in new tab) */}
           <Link
             href="/resources"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
             title="Collegiate Learning Resources & Compilers"
           >
