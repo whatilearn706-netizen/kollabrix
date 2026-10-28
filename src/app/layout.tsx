@@ -111,6 +111,7 @@ export const metadata: Metadata = {
   },
   verification: {
     google: [
+      'wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s',
       '_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4',
       '9xu7ptCM7RZND-4JzerULVadJwY6Byl2-IJYvnmtJRQ',
       'h7QRxMIPeARrCxq-9QyCR-EFofiKAIAyjxwE_xWnF7c',
@@ -242,6 +243,7 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://bmiwmlfraaridbekuily.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
+        <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
