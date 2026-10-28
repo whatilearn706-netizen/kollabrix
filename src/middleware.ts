@@ -11,24 +11,10 @@ export async function middleware(request: NextRequest) {
   const ALLOWED_HOSTS = new Set([
     'kollabrix.in',
     'www.kollabrix.in',
-    'linkora-link.online',
-    'www.linkora-link.online',
-    'linkora.in',
-    'www.linkora.in',
   ]);
 
-  // 1. Permanently 301 redirect all linkora-edu and legacy vercel.app traffic to primary domain
-  if (!isLocal && (host.includes('linkora-edu') || host.includes('vercel.app'))) {
-    if (pathname === '/robots.txt' && host.includes('vercel.app')) {
-      return new NextResponse('User-agent: *\nDisallow: /\n', {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/plain',
-          'X-Robots-Tag': 'noindex, nofollow, noarchive',
-        },
-      });
-    }
-
+  // 1. Permanently 301 redirect all other hosts (linkora, vercel.app, etc.) directly to https://kollabrix.in
+  if (!isLocal && !ALLOWED_HOSTS.has(host)) {
     const url = request.nextUrl.clone();
     url.host = PRIMARY_DOMAIN;
     url.protocol = 'https';
@@ -43,20 +29,11 @@ export async function middleware(request: NextRequest) {
   // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback
   if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
     const url = request.nextUrl.clone();
-    url.host = isLocal ? host : (ALLOWED_HOSTS.has(host) ? host : PRIMARY_DOMAIN);
+    url.host = isLocal ? host : PRIMARY_DOMAIN;
     url.protocol = isLocal ? url.protocol : 'https';
     url.port = isLocal ? url.port : '';
     url.pathname = '/auth/callback';
     return NextResponse.redirect(url, { status: 307 });
-  }
-
-  // 3. Ensure any unknown host redirects to PRIMARY_DOMAIN
-  if (!isLocal && !ALLOWED_HOSTS.has(host)) {
-    const url = request.nextUrl.clone();
-    url.host = PRIMARY_DOMAIN;
-    url.protocol = 'https';
-    url.port = '';
-    return NextResponse.redirect(url, { status: 301 });
   }
 
   // If someone probes /admin, return 404 to avoid leaking the internal control center path
