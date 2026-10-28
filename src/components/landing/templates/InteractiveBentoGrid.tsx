@@ -37,13 +37,13 @@ export function InteractiveBentoGrid() {
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-500 font-mono text-xs font-bold uppercase tracking-wider mb-2">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Collegiate Ecosystem Matrix</span>
+            <span>Collegiate Innovation Core</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white site-heading-white tracking-tight">
-            Aceternity Bento Architecture
+            Engineered for Collegiate Builders.
           </h2>
           <p className="text-sm !text-stone-300 mt-1 max-w-2xl" style={{ color: '#D6D3D1' }}>
-            High-density spotlight matrix grouping live AI matchmaking, daily coding streaks, verified campus identity, and capstone delivery.
+            Everything you need to assemble hackathon dream teams, compete with anti-cheat rigor, and ship verified software.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-mono text-stone-400">

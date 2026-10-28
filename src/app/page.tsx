@@ -50,22 +50,7 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 
 import { CollegiatePortalsRadar } from '@/components/home/CollegiatePortalsRadar';
 
-const OrigamiBirdSculpture = dynamic(
-  () => import('@/components/canvas/OrigamiBirdSculpture').then((m) => m.OrigamiBirdSculpture),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-none">
-        <div className="w-56 h-56 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75 animate-pulse" />
-      </div>
-    ),
-  }
-);
-
-const PortalsSideRail = dynamic(
-  () => import('@/components/home/PortalsSideRail').then((m) => m.PortalsSideRail),
-  { ssr: false }
-);
+import { HeroPlatformShowcase } from '@/components/landing/HeroPlatformShowcase';
 
 const ProjectSparkGeneratorModal = dynamic(
   () => import('@/components/ai/ProjectSparkGeneratorModal').then((m) => m.ProjectSparkGeneratorModal),
@@ -581,12 +566,10 @@ export default function HomePage() {
                   {theme.heroSubheadline || 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.'}
                 </p>
 
-                {/* Mobile / Tablet 3D Model Stage (Instantly visible above the fold on mobile!) */}
-                {sectionsConfig.origamiBird !== false && isDesktop === false && (
-                  <div className="lg:hidden w-full flex items-center justify-center relative min-h-[300px] sm:min-h-[360px] overflow-hidden my-2">
-                    <OrigamiBirdSculpture />
-                  </div>
-                )}
+                {/* Mobile / Tablet Platform Showcase Stage */}
+                <div className="lg:hidden w-full my-4">
+                  <HeroPlatformShowcase />
+                </div>
 
                 {/* Unstop-Style Interactive Global Search Console */}
                 {sectionsConfig.heroSearch !== false && <UnstopHeroSearchBar />}
@@ -635,31 +618,6 @@ export default function HomePage() {
                   </button>
                 </div>
 
-                {/* Floating Live Telemetry Chips */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <Link
-                    href="/spark"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-amber-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">AI Spark</strong> Studio</span>
-                  </Link>
-                  <Link
-                    href="/leaderboard"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-amber-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
-                  >
-                    <Trophy className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">National</strong> Leaderboard</span>
-                  </Link>
-                  <Link
-                    href="/deadlines"
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-rose-500/40 text-slate-700 dark:text-slate-300 text-xs font-medium shadow-2xs hover:-translate-y-0.5 active:scale-[0.96] transition-all duration-200 cursor-pointer"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
-                    <span><strong className="font-bold text-slate-900 dark:text-white">Live</strong> Deadlines</span>
-                  </Link>
-                </div>
-
                 {/* High-signal Trust Chips */}
                 <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5">
@@ -679,17 +637,13 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Kollabrix Emblem (Desktop Sticky Scroll Stage) */}
-              {sectionsConfig.origamiBird !== false && isDesktop === true && (
-                <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] lg:sticky lg:top-24 overflow-hidden z-10">
-                  <OrigamiBirdSculpture />
-                </div>
-              )}
+              {/* Right Column: Signature Interactive Platform Showcase Console */}
+              <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] z-10">
+                <HeroPlatformShowcase />
+              </div>
             </div>
           </div>
 
-          {/* Fixed Portals Side Rail (Fixed on screen, website scrolls normally) */}
-          <PortalsSideRail />
           <div className="glow-divider mt-12" />
         </section>
       )}
@@ -701,22 +655,10 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 5-Domain Category Explorer Grid (Unstop-Inspired) */}
-      {sectionsConfig.domainGrid !== false && (
-        <div className="scroll-reveal scroll-reveal-delay-1">
-          <UnstopDomainGrid
-            title={sectionsConfig.domainGridTitle}
-            subtitle={sectionsConfig.domainGridSubtitle}
-          />
-        </div>
-      )}
-
-      {/* Opportunity Category Navigation Rail (Unstop-Inspired) */}
-      {sectionsConfig.categoryRails !== false && (
-        <div className="scroll-reveal scroll-reveal-delay-2">
-          <OpportunityCategoryBar />
-        </div>
-      )}
+      {/* Collegiate Ecosystem Bento Matrix (Creative High-Craft Bento Grid) */}
+      <div className="scroll-reveal bg-stone-950 py-6 border-y border-stone-800">
+        <InteractiveBentoGrid />
+      </div>
 
       {/* Custom Admin Spotlight / Announcement Section ("Add whatever you want to the website") - Position: below_hero */}
       {(sectionsConfig.customSection || masterConfig.customSection?.enabled) &&

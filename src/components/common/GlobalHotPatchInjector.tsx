@@ -13,6 +13,12 @@ export function GlobalHotPatchInjector() {
   const applyPatch = (patch: HotPatchConfig) => {
     if (typeof document === 'undefined') return;
 
+    // Purge any legacy lingering injected dock elements
+    ['lk-dock', 'lk-tip', 'lk-ring'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+
     // Clean any Claude / ChatGPT markdown blocks or wrapping <style>/<script> tags
     const cleanCss = cleanHotPatchCode(patch.customCss || '', 'css');
     const cleanJs = cleanHotPatchCode(patch.customJs || '', 'js');
@@ -74,10 +80,14 @@ export function GlobalHotPatchInjector() {
       try {
         const cached = localStorage.getItem('linkora_hotpatch_v1');
         if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && typeof parsed === 'object') {
-            setHotpatch(parsed);
-            applyPatch(parsed);
+          if (cached.includes('lk-dock') || cached.includes('PORTAL LAUNCHER')) {
+            localStorage.removeItem('linkora_hotpatch_v1');
+          } else {
+            const parsed = JSON.parse(cached);
+            if (parsed && typeof parsed === 'object') {
+              setHotpatch(parsed);
+              applyPatch(parsed);
+            }
           }
         }
       } catch (e) {}

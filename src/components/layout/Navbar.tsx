@@ -136,9 +136,19 @@ export function Navbar() {
       icon: Compass,
     },
     {
+      href: '/hackathons',
+      label: 'Hackathons',
+      icon: Trophy,
+    },
+    {
       href: '/teammates',
       label: 'Teammates',
       icon: Users,
+    },
+    {
+      href: '/icpc',
+      label: 'ICPC Arena',
+      icon: Bot,
     },
     {
       href: '/my-projects',
@@ -237,14 +247,15 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Tactile Skeuomorphic Liquid-Chrome Resources Button */}
-          <LiquidChromeButton
-            label="RESOURCES"
-            height={32}
-            onClick={() => window.open('/resources', '_blank')}
-            title="Collegiate Learning Resources & Compilers (Opens in new tab)"
-            className="shrink-0"
-          />
+          {/* Clean Resources Link */}
+          <Link
+            href="/resources"
+            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+            title="Collegiate Learning Resources & Compilers"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Resources</span>
+          </Link>
 
           {/* Quick Theme Toggle Button */}
           <button
