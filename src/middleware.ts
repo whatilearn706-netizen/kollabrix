@@ -6,10 +6,17 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
 
-  const PRIMARY_DOMAIN = 'linkora-link.online';
+  const PRIMARY_DOMAIN = 'kollabrix.in';
+  const ALLOWED_HOSTS = new Set([
+    'kollabrix.in',
+    'www.kollabrix.in',
+    'linkora-link.online',
+    'www.linkora-link.online',
+    'linkora.in',
+    'www.linkora.in',
+  ]);
 
-  // 1. Permanently 301 redirect all linkora-edu and vercel.app traffic to linkora-link.online
-  // This removes linkora-edu from Google Search and forces all users and crawlers to linkora-link.online
+  // 1. Permanently 301 redirect all linkora-edu and legacy vercel.app traffic to primary domain
   if (!isLocal && (host.includes('linkora-edu') || host.includes('vercel.app'))) {
     if (pathname === '/robots.txt' && host.includes('vercel.app')) {
       return new NextResponse('User-agent: *\nDisallow: /\n', {
@@ -32,18 +39,18 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback on linkora-link.online
+  // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback
   if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
     const url = request.nextUrl.clone();
-    url.host = isLocal ? host : PRIMARY_DOMAIN;
+    url.host = isLocal ? host : (ALLOWED_HOSTS.has(host) ? host : PRIMARY_DOMAIN);
     url.protocol = isLocal ? url.protocol : 'https';
     url.port = isLocal ? url.port : '';
     url.pathname = '/auth/callback';
     return NextResponse.redirect(url, { status: 307 });
   }
 
-  // 3. Ensure any other non-canonical host redirects to PRIMARY_DOMAIN
-  if (!isLocal && host !== PRIMARY_DOMAIN && host !== `www.${PRIMARY_DOMAIN}` && host !== 'linkora.in' && host !== 'www.linkora.in') {
+  // 3. Ensure any unknown host redirects to PRIMARY_DOMAIN
+  if (!isLocal && !ALLOWED_HOSTS.has(host)) {
     const url = request.nextUrl.clone();
     url.host = PRIMARY_DOMAIN;
     url.protocol = 'https';
