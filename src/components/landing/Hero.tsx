@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
-import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { WarpSpeedCanvas } from './WarpSpeedCanvas';
 
 export function LandingHero() {
@@ -120,19 +120,6 @@ export function LandingHero() {
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> Faculty Mentorship
           </span>
         </motion.div>
-      </motion.div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.8, duration: 1 }}
-        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-      >
-        <span className="text-[11px] uppercase tracking-[0.2em] text-slate-600 font-medium">
-          Scroll
-        </span>
-        <ChevronDown className="w-4 h-4 text-slate-600 animate-bounce" />
       </motion.div>
 
       {/* Bottom gradient fade into dark section */}

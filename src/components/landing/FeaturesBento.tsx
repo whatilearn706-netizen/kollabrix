@@ -100,12 +100,15 @@ export function LandingFeatures() {
       <div className="max-w-6xl mx-auto">
         {/* Section header — left-aligned for asymmetry */}
         <div className="max-w-2xl mb-16">
-          <span className="text-sm font-semibold uppercase tracking-[0.15em] text-orange-600 dark:text-orange-400 mb-4 block">
+          <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-400 mb-4 block flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
             Platform
           </span>
           <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-stone-900 dark:text-white leading-tight">
             Everything you need to ship something{' '}
-            <span className="landing-gradient-text">extraordinary.</span>
+            <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-teal-300 bg-clip-text text-transparent">
+              extraordinary.
+            </span>
           </h2>
         </div>
 

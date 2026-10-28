@@ -36,8 +36,8 @@ export function WarpSpeedCanvas({ className = '' }: { className?: string }) {
     };
     updateDimensions();
 
-    const numStars = 950;
-    const speed = 19; // Hyperspace light speed factor
+    const numStars = 850;
+    const speed = 4.2; // Gentle, majestic cosmic star cruise (slowed down by >75% for elegant ambient motion)
     const maxZ = 1200;
 
     const colors = [

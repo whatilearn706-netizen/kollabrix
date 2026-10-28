@@ -50,9 +50,22 @@ export function BrandLogo({
           }`}
         >
           {resolvedTitle === 'Kollabrix' ? (
-            <span className="flex items-center tracking-tight">
+            <span className="flex items-center tracking-tight font-black select-none">
+              {/* KOLLA in brand amber-orange */}
               <span className="text-amber-500 font-black">KOLLA</span>
-              <span className="text-cyan-400 font-black">BRIX</span>
+              {/* The 'B' letter split 50/50: left half orange (joining KOLLA -> KOLLAB) and right half cyan (joining RIX -> BRIX) */}
+              <span
+                className="font-black inline-block"
+                style={{
+                  background: 'linear-gradient(to right, #f59e0b 50%, #22d3ee 50%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                B
+              </span>
+              {/* RIX in brand electric cyan */}
+              <span className="text-cyan-400 font-black">RIX</span>
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block ml-1 animate-pulse" />
             </span>
           ) : (
