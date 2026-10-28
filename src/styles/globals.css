@@ -532,3 +532,135 @@ body.icpc-exam-mode .floating-quick-dock {
 
 
 
+
+/* ========================================================
+   Landing Page — Premium Animated Gradient Orbs
+   ======================================================== */
+.landing-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.landing-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(234, 88, 12, 0.14) 0%, transparent 70%);
+  top: -15%;
+  right: -10%;
+  animation: orbDrift1 20s ease-in-out infinite;
+}
+
+.landing-orb-2 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.09) 0%, transparent 70%);
+  bottom: -10%;
+  left: -5%;
+  animation: orbDrift2 25s ease-in-out infinite;
+}
+
+.landing-orb-3 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.07) 0%, transparent 70%);
+  top: 40%;
+  left: 45%;
+  animation: orbDrift3 18s ease-in-out infinite;
+}
+
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 25px) scale(1.06); }
+  66% { transform: translate(25px, -20px) scale(0.94); }
+}
+
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -25px) scale(1.08); }
+  66% { transform: translate(-20px, 30px) scale(0.92); }
+}
+
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-25px, -35px) scale(1.12); }
+}
+
+/* CTA section pulsing orb */
+.landing-orb-pulse {
+  animation: orbPulse 6s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* ========================================================
+   Landing Page — Gradient Text Utility
+   ======================================================== */
+.landing-gradient-text {
+  background: linear-gradient(135deg, #EA580C 0%, #D97706 40%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========================================================
+   Landing Page — Button Glow Effect
+   ======================================================== */
+.landing-btn-glow {
+  box-shadow: 0 0 20px -5px rgba(234, 88, 12, 0.4),
+              0 0 40px -10px rgba(217, 119, 6, 0.2);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.landing-btn-glow:hover {
+  box-shadow: 0 0 30px -5px rgba(234, 88, 12, 0.6),
+              0 0 60px -10px rgba(217, 119, 6, 0.35);
+  transform: translateY(-1px);
+}
+
+/* ========================================================
+   Landing Page — Feature Card Hover Glow Border
+   ======================================================== */
+.landing-card {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 40%, rgba(234, 88, 12, 0.35) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.landing-card:hover::before {
+  opacity: 1;
+}
+
+.landing-card:hover {
+  transform: translateY(-4px);
+}
+
+.dark .landing-card:hover {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5),
+              0 0 20px -5px rgba(234, 88, 12, 0.12);
+}
+
+:root:not(.dark) .landing-card:hover {
+  box-shadow: 0 20px 40px -15px rgba(28, 25, 23, 0.08),
+              0 0 20px -5px rgba(234, 88, 12, 0.1);
+}

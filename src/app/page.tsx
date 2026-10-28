@@ -1,17 +1,15 @@
-// src/app/page.tsx
-
-import HeroSection from '@/components/tripo/Hero';
-import FeaturesSection from '@/components/tripo/Features';
-import ShowcaseSection from '@/components/tripo/Showcase';
-import FooterSection from '@/components/tripo/Footer';
+import { LandingHero } from '@/components/landing/Hero';
+import { LandingFeatures } from '@/components/landing/FeaturesBento';
+import { LandingStats } from '@/components/landing/StatsSection';
+import { LandingCTA } from '@/components/landing/CTASection';
 
 export default function HomePage() {
   return (
     <>
-      <HeroSection />
-      <FeaturesSection />
-      <ShowcaseSection />
-      <FooterSection />
+      <LandingHero />
+      <LandingFeatures />
+      <LandingStats />
+      <LandingCTA />
     </>
   );
 }
