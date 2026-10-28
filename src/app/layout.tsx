@@ -17,7 +17,7 @@ import { FloatingQuickDock } from '@/components/navigation/FloatingQuickDock';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.online';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -123,33 +123,33 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://linkora-link.online/#website',
-      url: 'https://linkora-link.online/',
+      '@id': 'https://kollabrix.online/#website',
+      url: 'https://kollabrix.online/',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix', 'Kollabrix Platform', 'Linkora', 'LinkOra', 'linkora-link.online', 'linkora.in', 'Kollabrix India'],
+      alternateName: ['Kollabrix', 'kollabrix.online', 'Kollabrix Platform', 'Linkora', 'LinkOra', 'linkora-link.online', 'linkora.in', 'Kollabrix India'],
       description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: 'https://linkora-link.online/explore?q={search_term_string}',
+          urlTemplate: 'https://kollabrix.online/explore?q={search_term_string}',
         },
         'query-input': 'required name=search_term_string',
       },
       publisher: {
-        '@id': 'https://linkora-link.online/#organization',
+        '@id': 'https://kollabrix.online/#organization',
       },
     },
     {
       '@type': 'WebApplication',
-      '@id': 'https://linkora-link.online/#app',
+      '@id': 'https://kollabrix.online/#app',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix Platform', 'Linkora'],
+      alternateName: ['Kollabrix Platform', 'kollabrix.online', 'Linkora'],
       applicationCategory: 'EducationalApplication, DeveloperApplication, CollaborationPlatform',
       operatingSystem: 'All Modern Web Browsers, iOS, Android, macOS, Windows',
       browserRequirements: 'Requires JavaScript. Requires HTML5.',
-      url: 'https://linkora-link.online',
+      url: 'https://kollabrix.online',
       description:
         'Kollabrix is the official student project collaboration network, real-time workspace huddle, and hackathon closer platform.',
       offers: {
@@ -167,7 +167,7 @@ const jsonLd = {
     },
     {
       '@type': 'ItemList',
-      '@id': 'https://linkora-link.online/#sitelinks',
+      '@id': 'https://kollabrix.online/#sitelinks',
       name: 'Kollabrix Sitelinks',
       itemListElement: [
         {
@@ -175,41 +175,41 @@ const jsonLd = {
           position: 1,
           name: 'Explore Projects',
           description: 'Discover active collegiate engineering projects seeking collaborators.',
-          url: 'https://linkora-link.online/explore',
+          url: 'https://kollabrix.online/explore',
         },
         {
           '@type': 'SiteNavigationElement',
           position: 2,
           name: 'Find Teammates',
           description: 'Connect with university designers, coders, and builders.',
-          url: 'https://linkora-link.online/teammates',
+          url: 'https://kollabrix.online/teammates',
         },
         {
           '@type': 'SiteNavigationElement',
           position: 3,
           name: 'Hackathon Arena',
           description: 'Join campus hackathons and build in private collaborative workspaces.',
-          url: 'https://linkora-link.online/hackathons',
+          url: 'https://kollabrix.online/hackathons',
         },
         {
           '@type': 'SiteNavigationElement',
           position: 4,
           name: 'Problem Bank',
           description: 'Solve real-world challenges curated by faculty and industry mentors.',
-          url: 'https://linkora-link.online/problems',
+          url: 'https://kollabrix.online/problems',
         },
       ],
     },
     {
       '@type': 'Organization',
-      '@id': 'https://linkora-link.online/#organization',
+      '@id': 'https://kollabrix.online/#organization',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix Platform', 'Linkora'],
-      url: 'https://linkora-link.online/',
+      alternateName: ['Kollabrix Platform', 'kollabrix.online', 'Linkora'],
+      url: 'https://kollabrix.online/',
       logo: {
         '@type': 'ImageObject',
-        '@id': 'https://linkora-link.online/#logo',
-        url: 'https://linkora-link.online/brand/kollabrix-logo.svg',
+        '@id': 'https://kollabrix.online/#logo',
+        url: 'https://kollabrix.online/brand/kollabrix-logo.svg',
         caption: 'Kollabrix Logo',
         inLanguage: 'en-US',
         width: 1024,

@@ -4,19 +4,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 /**
- * 3D Geometric Emblem Sculpture for Kollabrix
- * Re-creates the geometric folded origami bird in Three.js
- * Colors:
- * - One wing (left): Emerald green
- * - Other wing (right): Deep rich burgundy
- * - Neck part: Light burgundy
- * Features crisp flat-shaded paper facets, gliding flight kinematics, and interactive rotation.
+ * 3D Kollabrix "K" Modular Nexus Sculpture
+ * 
+ * Replaces the legacy origami bird with a true 3D isometric modular "K"
+ * sculpture composed of architectural voxels ("Brix"):
+ * - Vertical Left Stem: Stacked golden amber modular brix
+ * - Upper Diagonal Arm: Innovation arm angled up-right in sky cyan and gold
+ * - Lower Diagonal Leg: High-tech foundation angled down-right in electric cyan / turquoise
+ * - Central Nexus Core: Interlocking synergy prism with internal glow
+ * - Ambient Floating Embers: Luminous golden and cyan micro-particles
+ * - Interactive: 360° drag to rotate with inertial damping & mouse parallax
  */
 export function OrigamiBirdSculpture() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [webglSupported, setWebglSupported] = useState(true);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
-  const startWebGLRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const container = containerRef.current;
@@ -29,7 +31,7 @@ export function OrigamiBirdSculpture() {
       if (destroyed || !containerRef.current) return;
       const activeContainer = containerRef.current;
 
-      // Check WebGL availability
+      // 1. Check WebGL availability
       try {
         const testCanvas = document.createElement('canvas');
         const hasWebGL = Boolean(
@@ -51,436 +53,401 @@ export function OrigamiBirdSculpture() {
       const width = activeContainer.clientWidth || 460;
       const height = activeContainer.clientHeight || 460;
 
-      // Scene
+      // 2. Scene & Camera Setup
       const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+      camera.position.set(0, 0, 7.8);
 
-      // Camera: perfectly aligned so the original origami bird fits cleanly inside the canvas with generous breathing room
-      const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-      camera.position.set(0, 0, 7.2);
-
-      // Renderer
+      // 3. Renderer Setup
       const renderer = new THREE.WebGLRenderer({
         alpha: true,
         antialias: true,
         powerPreference: 'high-performance',
       });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 1.25;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
       activeContainer.innerHTML = '';
       activeContainer.appendChild(renderer.domElement);
       setIsCanvasReady(true);
 
-      // Lighting setup for crisp origami paper facets
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-      scene.add(ambientLight);
-
-      // Key studio light (from top-front)
-      const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
-      keyLight.position.set(3, 4, 4);
+      // 4. Studio Lighting Configuration
+      // Warm Key Light (Top-Left)
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 2.2);
+      keyLight.position.set(4, 5, 5);
       scene.add(keyLight);
 
-      // Emerald fill light (from bottom-left)
-      const fillLight = new THREE.DirectionalLight(0x34d399, 0.6);
-      fillLight.position.set(-4, -2, 2);
-      scene.add(fillLight);
+      // Electric Cyan Fill Light (Right-Bottom)
+      const cyanLight = new THREE.DirectionalLight(0x06b6d4, 2.6);
+      cyanLight.position.set(5, -2, 4);
+      scene.add(cyanLight);
 
-      // Burgundy rim light (from back-top)
-      const rimLight = new THREE.DirectionalLight(0x9c3252, 0.9);
-      rimLight.position.set(-2, 3, -4);
+      // Warm Amber Rim Light (Back-Top)
+      const rimLight = new THREE.DirectionalLight(0xf59e0b, 1.8);
+      rimLight.position.set(-4, 4, -4);
       scene.add(rimLight);
 
-      // Materials - Flat shaded for crisp origami creases
-      // 1. One wing is green
-      const greenOuterMat = new THREE.MeshStandardMaterial({
-        color: 0x10b981, // #10b981 Emerald bright
-        roughness: 0.32,
-        metalness: 0.05,
-        flatShading: true,
-        side: THREE.DoubleSide,
+      // Soft Ambient Light
+      const ambientLight = new THREE.AmbientLight(0x1e293b, 0.9);
+      scene.add(ambientLight);
+
+      // 5. Materials
+      // Golden Amber Brix (Vertical Stem)
+      const amberBrixMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        roughness: 0.22,
+        metalness: 0.12,
+        emissive: 0xb45309,
+        emissiveIntensity: 0.15,
       });
 
-      const greenInnerMat = new THREE.MeshStandardMaterial({
-        color: 0x059669, // #059669 Deep jade
-        roughness: 0.35,
-        metalness: 0.05,
-        flatShading: true,
-        side: THREE.DoubleSide,
+      // Gold Isometric Top Cap
+      const goldTopMat = new THREE.MeshStandardMaterial({
+        color: 0xfde047,
+        roughness: 0.18,
+        metalness: 0.2,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.12,
       });
 
-      // 2. Right wing is deep rich burgundy
-      const burgundyMat = new THREE.MeshStandardMaterial({
-        color: 0x761329, // #761329 Deep rich burgundy
-        roughness: 0.32,
-        metalness: 0.06,
-        flatShading: true,
-        side: THREE.DoubleSide,
+      // Sky Cyan Brix (Upper Diagonal Arm)
+      const skyArmMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        roughness: 0.22,
+        metalness: 0.15,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.22,
       });
 
-      // 3. Neck part is light burgundy
-      const lightBurgundyMat = new THREE.MeshStandardMaterial({
-        color: 0xb54568, // #b54568 Soft light burgundy
-        roughness: 0.32,
-        metalness: 0.05,
-        flatShading: true,
-        side: THREE.DoubleSide,
+      // Electric Cyan / Turquoise Brix (Lower Diagonal Leg)
+      const cyanBrixMat = new THREE.MeshStandardMaterial({
+        color: 0x06b6d4,
+        roughness: 0.2,
+        metalness: 0.15,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.3,
       });
 
-      const wireMat = new THREE.LineBasicMaterial({
+      // Central Nexus Core Material
+      const nexusMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        transparent: true,
-        opacity: 0.14,
+        roughness: 0.1,
+        metalness: 0.2,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 0.6,
       });
 
-      // Root Bird Hierarchy
-      const birdRoot = new THREE.Group();
-      scene.add(birdRoot);
+      // Sub-Brix Architectural Grid Line Highlight Materials
+      const amberLineMat = new THREE.LineBasicMaterial({
+        color: 0xfef08a,
+        transparent: true,
+        opacity: 0.7,
+      });
+      const cyanLineMat = new THREE.LineBasicMaterial({
+        color: 0xa5f3fc,
+        transparent: true,
+        opacity: 0.85,
+      });
 
-      // --- 1. LEFT WING (Front, Green Folded Facets) ---
-      const leftWingGroup = new THREE.Group();
-      leftWingGroup.position.set(0.1, 0.2, 0.15); // hinge at shoulder
+      // 6. 3D Model Construction: Master Group
+      const masterGroup = new THREE.Group();
+      scene.add(masterGroup);
 
-      const leftWingGeo = new THREE.BufferGeometry();
-      const lwVertices = new Float32Array([
-        // Outer Wing Triangle (P0 -> P1 -> P2) - Bright Emerald
-        0, 0, 0,
-        -0.5, 1.7, 0.25,
-        -2.1, 2.1, 0.1,
+      const sculptureGroup = new THREE.Group();
+      masterGroup.add(sculptureGroup);
 
-        // Inner Wing Triangle (P0 -> P2 -> P3) - Deep Jade
-        0, 0, 0,
-        -2.1, 2.1, 0.1,
-        -0.2, -0.8, 0.1,
+      // Helper to create a modular block with edges
+      const createBrixBlock = (
+        w: number,
+        h: number,
+        d: number,
+        mat: THREE.Material,
+        lineMat: THREE.Material,
+        x: number,
+        y: number,
+        z: number,
+        rx = 0,
+        ry = 0,
+        rz = 0
+      ) => {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.set(rx, ry, rz);
+        sculptureGroup.add(mesh);
 
-        // Lower Flank Triangle (P0 -> P3 -> P1)
-        0, 0, 0,
-        -0.2, -0.8, 0.1,
-        -0.5, 1.7, 0.25,
-      ]);
-      leftWingGeo.setAttribute('position', new THREE.BufferAttribute(lwVertices, 3));
-      leftWingGeo.computeVertexNormals();
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, lineMat);
+        mesh.add(line);
 
-      const leftWingMesh = new THREE.Mesh(leftWingGeo, greenOuterMat);
-      leftWingGroup.add(leftWingMesh);
+        return mesh;
+      };
 
-      const leftWire = new THREE.LineSegments(new THREE.WireframeGeometry(leftWingGeo), wireMat);
-      leftWingGroup.add(leftWire);
-      birdRoot.add(leftWingGroup);
+      // --- 1. LEFT VERTICAL STEM (Golden Amber Stacked Brix Column) ---
+      const stemX = -0.78;
+      const brixSize = 0.48;
+      const stemHeights = [-1.3, -0.78, -0.26, 0.26, 0.78, 1.3];
 
-      // --- 2. RIGHT WING (Other Wing - Deep Burgundy Folded Facet) ---
-      const rightWingGroup = new THREE.Group();
-      rightWingGroup.position.set(0.1, 0.2, -0.15);
+      stemHeights.forEach((y, i) => {
+        const isTop = i === stemHeights.length - 1;
+        createBrixBlock(
+          brixSize,
+          0.48,
+          brixSize,
+          isTop ? goldTopMat : amberBrixMat,
+          amberLineMat,
+          stemX,
+          y,
+          0
+        );
+      });
 
-      const rightWingGeo = new THREE.BufferGeometry();
-      const rwVertices = new Float32Array([
-        // Trailing Rear Wing Triangle - Deep Burgundy
-        0, 0, 0,
-        -1.9, 1.6, -0.2,
-        -0.4, 1.3, -0.15,
+      // --- 2. UPPER DIAGONAL ARM (Ascending Sky Cyan / Gold Brix) ---
+      const armBlocks = [
+        { x: -0.32, y: 0.38, z: 0.04, mat: amberBrixMat, lineMat: amberLineMat },
+        { x: 0.12, y: 0.78, z: 0.08, mat: skyArmMat, lineMat: cyanLineMat },
+        { x: 0.56, y: 1.18, z: 0.12, mat: skyArmMat, lineMat: cyanLineMat },
+        { x: 1.00, y: 1.58, z: 0.16, mat: skyArmMat, lineMat: cyanLineMat },
+      ];
 
-        // Secondary rear facet
-        0, 0, 0,
-        -0.4, 1.3, -0.15,
-        -0.2, -0.5, -0.1,
-      ]);
-      rightWingGeo.setAttribute('position', new THREE.BufferAttribute(rwVertices, 3));
-      rightWingGeo.computeVertexNormals();
+      armBlocks.forEach((b) => {
+        createBrixBlock(
+          brixSize * 0.95,
+          brixSize * 0.95,
+          brixSize * 0.95,
+          b.mat,
+          b.lineMat,
+          b.x,
+          b.y,
+          b.z,
+          0,
+          0,
+          -0.12
+        );
+      });
 
-      const rightWingMesh = new THREE.Mesh(rightWingGeo, burgundyMat);
-      rightWingGroup.add(rightWingMesh);
+      // --- 3. LOWER DIAGONAL LEG (Electric Cyan High-Tech Brix) ---
+      const legBlocks = [
+        { x: -0.25, y: -0.32, z: 0.04 },
+        { x: 0.18, y: -0.72, z: 0.08 },
+        { x: 0.62, y: -1.12, z: 0.12 },
+        { x: 1.06, y: -1.52, z: 0.16 },
+      ];
 
-      const rightWire = new THREE.LineSegments(new THREE.WireframeGeometry(rightWingGeo), wireMat);
-      rightWingGroup.add(rightWire);
-      birdRoot.add(rightWingGroup);
+      legBlocks.forEach((b) => {
+        createBrixBlock(
+          brixSize * 0.98,
+          brixSize * 0.98,
+          brixSize * 0.98,
+          cyanBrixMat,
+          cyanLineMat,
+          b.x,
+          b.y,
+          b.z,
+          0,
+          0,
+          0.12
+        );
+      });
 
-      // --- 3. NECK & THROAT (Light Burgundy Folded Facets) ---
-      const neckGeo = new THREE.BufferGeometry();
-      const neckVertices = new Float32Array([
-        // Main Neck / Chest Triangle (Light Burgundy)
-        0.1, 0.2, 0.0,
-        0.8, 0.7, 0.0,
-        0.2, -0.4, 0.0,
+      // --- 4. CENTRAL INTERLOCKING NEXUS SPARK (The Bridge Core) ---
+      const nexusGeo = new THREE.OctahedronGeometry(0.24, 0);
+      const nexusMesh = new THREE.Mesh(nexusGeo, nexusMat);
+      nexusMesh.position.set(-0.45, 0.03, 0.28);
+      sculptureGroup.add(nexusMesh);
 
-        // Lower Throat Facet (Light Burgundy)
-        0.8, 0.7, 0.0,
-        1.2, 0.65, 0.0,
-        0.5, 0.2, 0.0,
+      const nexusPointLight = new THREE.PointLight(0x38bdf8, 2.5, 3.5);
+      nexusPointLight.position.set(-0.45, 0.03, 0.4);
+      sculptureGroup.add(nexusPointLight);
 
-        // Breast Underbelly
-        0.1, 0.2, 0.05,
-        0.2, -0.4, 0.05,
-        -0.2, -0.7, 0.05,
-      ]);
-      neckGeo.setAttribute('position', new THREE.BufferAttribute(neckVertices, 3));
-      neckGeo.computeVertexNormals();
+      // --- 5. AMBIENT FLOATING EMBERS PARTICLES ---
+      const particleCount = 45;
+      const particleGeo = new THREE.BufferGeometry();
+      const particlePositions = new Float32Array(particleCount * 3);
+      const particleColors = new Float32Array(particleCount * 3);
 
-      const neckMesh = new THREE.Mesh(neckGeo, lightBurgundyMat);
-      birdRoot.add(neckMesh);
+      for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+        particlePositions[i3] = (Math.random() - 0.5) * 6;
+        particlePositions[i3 + 1] = (Math.random() - 0.5) * 5;
+        particlePositions[i3 + 2] = (Math.random() - 0.5) * 3;
 
-      const neckWire = new THREE.LineSegments(new THREE.WireframeGeometry(neckGeo), wireMat);
-      birdRoot.add(neckWire);
+        // Half amber, half cyan particles
+        if (Math.random() > 0.5) {
+          particleColors[i3] = 0.96;
+          particleColors[i3 + 1] = 0.62;
+          particleColors[i3 + 2] = 0.04;
+        } else {
+          particleColors[i3] = 0.02;
+          particleColors[i3 + 1] = 0.71;
+          particleColors[i3 + 2] = 0.83;
+        }
+      }
 
-      // --- 4. HEAD & BEAK (Origami Crown) ---
-      const headGeo = new THREE.BufferGeometry();
-      const headVertices = new Float32Array([
-        // Head Crown & Face
-        0.8, 0.7, 0.0,
-        1.3, 0.95, 0.0,
-        1.2, 0.65, 0.0,
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
 
-        // Beak Fold (Folded downwards-forward)
-        1.3, 0.95, 0.0,
-        1.7, 0.7, 0.0,
-        1.2, 0.65, 0.0,
-      ]);
-      headGeo.setAttribute('position', new THREE.BufferAttribute(headVertices, 3));
-      headGeo.computeVertexNormals();
+      const particleMat = new THREE.PointsMaterial({
+        size: 0.06,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.75,
+      });
 
-      const headMesh = new THREE.Mesh(headGeo, lightBurgundyMat);
-      birdRoot.add(headMesh);
+      const particleSystem = new THREE.Points(particleGeo, particleMat);
+      masterGroup.add(particleSystem);
 
-      const headWire = new THREE.LineSegments(new THREE.WireframeGeometry(headGeo), wireMat);
-      birdRoot.add(headWire);
+      // Initial isometric orientation
+      const baseRotX = 0.22;
+      const baseRotY = -0.38;
+      sculptureGroup.rotation.x = baseRotX;
+      sculptureGroup.rotation.y = baseRotY;
 
-      // --- 5. TAIL (Sharp Folded Trailing Origami Planes) ---
-      // Upper green tail facet
-      const tailGreenGeo = new THREE.BufferGeometry();
-      const tailGreenVertices = new Float32Array([
-        0.2, -0.4, 0.05,
-        -1.2, -1.8, 0.05,
-        -0.4, -0.7, 0.05,
-      ]);
-      tailGreenGeo.setAttribute('position', new THREE.BufferAttribute(tailGreenVertices, 3));
-      tailGreenGeo.computeVertexNormals();
-
-      const tailGreenMesh = new THREE.Mesh(tailGreenGeo, greenInnerMat);
-      birdRoot.add(tailGreenMesh);
-
-      const tailGreenWire = new THREE.LineSegments(new THREE.WireframeGeometry(tailGreenGeo), wireMat);
-      birdRoot.add(tailGreenWire);
-
-      // Trailing deep burgundy tail feather
-      const tailBurgundyGeo = new THREE.BufferGeometry();
-      const tailBurgundyVertices = new Float32Array([
-        0.2, -0.4, -0.05,
-        -0.4, -0.7, -0.05,
-        -1.4, -2.1, -0.05,
-      ]);
-      tailBurgundyGeo.setAttribute('position', new THREE.BufferAttribute(tailBurgundyVertices, 3));
-      tailBurgundyGeo.computeVertexNormals();
-
-      const tailBurgundyMesh = new THREE.Mesh(tailBurgundyGeo, burgundyMat);
-      birdRoot.add(tailBurgundyMesh);
-
-      const tailBurgundyWire = new THREE.LineSegments(new THREE.WireframeGeometry(tailBurgundyGeo), wireMat);
-      birdRoot.add(tailBurgundyWire);
-
-      // Initial orientation & precise framing scale
-      // Centered with vertical offset 0.2 and scale 0.95 so the entire bird fits inside the hero canvas without overflowing or touching the section border
-      birdRoot.position.set(0, 0.2, 0);
-      birdRoot.rotation.z = 0.15;
-      birdRoot.rotation.y = -0.3;
-      birdRoot.rotation.x = 0.1;
-      birdRoot.scale.set(0.95, 0.95, 0.95);
-
-      // Interaction variables
+      // 7. Interactive Drag & Pointer Parallax Tracking
       let isDragging = false;
       let prevMouseX = 0;
       let prevMouseY = 0;
-      let targetRotY = -0.3;
-      let targetRotX = 0.1;
-      let currentRotY = -0.3;
-      let currentRotX = 0.1;
+      let targetRotX = baseRotX;
+      let targetRotY = baseRotY;
+      let rotVelX = 0;
+      let rotVelY = 0;
+      let mouseParallaxX = 0;
+      let mouseParallaxY = 0;
 
-      // Mouse movement parallax
-      const handleMouseMove = (e: MouseEvent) => {
-        if (isDragging) {
-          const deltaX = e.clientX - prevMouseX;
-          const deltaY = e.clientY - prevMouseY;
-          targetRotY += deltaX * 0.01;
-          targetRotX += deltaY * 0.01;
-          prevMouseX = e.clientX;
-          prevMouseY = e.clientY;
-        } else {
-          const rect = activeContainer.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width - 0.5;
-          const y = (e.clientY - rect.top) / rect.height - 0.5;
-          targetRotY = -0.3 + x * 0.7;
-          targetRotX = 0.1 - y * 0.5;
-        }
-      };
-
-      const handleMouseDown = (e: MouseEvent) => {
+      const onPointerDown = (e: MouseEvent | TouchEvent) => {
         isDragging = true;
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        prevMouseX = clientX;
+        prevMouseY = clientY;
       };
 
-      const handleMouseUp = () => {
+      const onPointerMove = (e: MouseEvent | TouchEvent) => {
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+        // Subtle ambient parallax when hovering
+        const rect = activeContainer.getBoundingClientRect();
+        const normX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const normY = -(((clientY - rect.top) / rect.height) * 2 - 1);
+        mouseParallaxX = normX * 0.12;
+        mouseParallaxY = normY * 0.12;
+
+        if (!isDragging) return;
+
+        const deltaX = clientX - prevMouseX;
+        const deltaY = clientY - prevMouseY;
+        prevMouseX = clientX;
+        prevMouseY = clientY;
+
+        rotVelY = deltaX * 0.008;
+        rotVelX = deltaY * 0.008;
+
+        targetRotY += rotVelY;
+        targetRotX += rotVelX;
+      };
+
+      const onPointerUp = () => {
         isDragging = false;
       };
 
-      const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length > 0) {
-          isDragging = true;
-          prevMouseX = e.touches[0].clientX;
-          prevMouseY = e.touches[0].clientY;
-        }
-      };
+      activeContainer.addEventListener('mousedown', onPointerDown);
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
 
-      const handleTouchMove = (e: TouchEvent) => {
-        if (isDragging && e.touches.length > 0) {
-          const deltaX = e.touches[0].clientX - prevMouseX;
-          const deltaY = e.touches[0].clientY - prevMouseY;
-          targetRotY += deltaX * 0.015;
-          targetRotX += deltaY * 0.015;
-          prevMouseX = e.touches[0].clientX;
-          prevMouseY = e.touches[0].clientY;
-        }
-      };
+      activeContainer.addEventListener('touchstart', onPointerDown, { passive: true });
+      window.addEventListener('touchmove', onPointerMove, { passive: true });
+      window.addEventListener('touchend', onPointerUp);
 
-      const handleTouchEnd = () => {
-        isDragging = false;
-      };
-
-      activeContainer.addEventListener('mousedown', handleMouseDown);
-      window.addEventListener('mousemove', handleMouseMove, { passive: true });
-      window.addEventListener('mouseup', handleMouseUp);
-      activeContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-      window.addEventListener('touchmove', handleTouchMove, { passive: true });
-      window.addEventListener('touchend', handleTouchEnd);
-
-      // Scroll-based 3D Kinematics variables
-      let targetScrollY = 0;
-      let currentScrollY = 0;
-      let scrollVelocity = 0;
-      let lastRawScrollY = 0;
-
-      const handleScroll = () => {
-        if (typeof window === 'undefined') return;
-        const rawY = window.scrollY || window.pageYOffset || 0;
-        scrollVelocity = rawY - lastRawScrollY;
-        lastRawScrollY = rawY;
-        targetScrollY = rawY;
-      };
-
-      window.addEventListener('scroll', handleScroll, { passive: true });
-
-      // Resize handler keeping the aspect ratio tight and centered
+      // Handle Resize smoothly
       const handleResize = () => {
-        if (!activeContainer || !renderer || !camera) return;
-        const newWidth = activeContainer.clientWidth;
-        const newHeight = activeContainer.clientHeight;
-        if (newWidth === 0 || newHeight === 0) return;
-        camera.aspect = newWidth / newHeight;
+        if (!activeContainer) return;
+        const newW = activeContainer.clientWidth || 460;
+        const newH = activeContainer.clientHeight || 460;
+        camera.aspect = newW / newH;
         camera.updateProjectionMatrix();
-        renderer.setSize(newWidth, newHeight);
+        renderer.setSize(newW, newH);
       };
-
       window.addEventListener('resize', handleResize);
 
-      // Animation Loop with Visibility Occlusion Culling
-      const clock = new THREE.Clock();
-      let isVisible = true;
-      let isRunning = true;
+      // 8. Animation & Render Loop
+      let clock = new THREE.Clock();
 
       const animate = () => {
-        if (!isVisible) {
-          isRunning = false;
-          return;
-        }
+        if (destroyed) return;
         animationFrameId = requestAnimationFrame(animate);
-        const t = clock.getElapsedTime();
 
-        // Smoothly interpolate scroll offset and decay velocity
-        currentScrollY += (targetScrollY - currentScrollY) * 0.1;
-        scrollVelocity *= 0.9;
+        const elapsedTime = clock.getElapsedTime();
 
-        // Direct, vivid scroll kinematics (responds immediately to scroll)
-        // 1. Panoramic 3D banking turn: rotates bird Y smoothly as user scrolls
-        const scrollRotY = currentScrollY * 0.0055;
-        // 2. Aerodynamic pitch: bird swoops gracefully along scroll
-        const scrollRotX = Math.sin(currentScrollY * 0.004) * 0.32;
-        // 3. Banking roll along Z: dynamic tilt according to scroll direction & speed
-        const scrollRotZ = Math.sin(currentScrollY * 0.0035) * 0.3 + scrollVelocity * 0.003;
-        // 4. Parallax vertical descent & subtle drift
-        const scrollPosY = -Math.min(currentScrollY * 0.0008, 0.6);
-        const scrollPosX = Math.sin(currentScrollY * 0.003) * 0.25;
+        // Smooth damping rotation physics
+        if (!isDragging) {
+          rotVelX *= 0.92;
+          rotVelY *= 0.92;
+          targetRotX += rotVelX;
+          targetRotY += rotVelY;
 
-        // Smooth interpolation to target rotation combining mouse + scroll
-        currentRotX += (targetRotX + scrollRotX - currentRotX) * 0.08;
-        currentRotY += (targetRotY + scrollRotY - currentRotY) * 0.08;
+          // Idle gentle oscillation
+          const idleHover = Math.sin(elapsedTime * 1.6) * 0.12;
+          sculptureGroup.position.y = idleHover;
 
-        birdRoot.rotation.x = currentRotX;
-        birdRoot.rotation.y = currentRotY;
+          const idleYaw = Math.sin(elapsedTime * 0.8) * 0.08;
+          sculptureGroup.rotation.y += (targetRotY + idleYaw + mouseParallaxX - sculptureGroup.rotation.y) * 0.06;
+          sculptureGroup.rotation.x += (targetRotX + mouseParallaxY - sculptureGroup.rotation.x) * 0.06;
+        } else {
+          sculptureGroup.rotation.y = targetRotY;
+          sculptureGroup.rotation.x = targetRotX;
+        }
 
-        // Banking roll based on yaw turns + scroll banking
-        birdRoot.rotation.z = 0.15 + (currentRotY + 0.3) * 0.2 + scrollRotZ + Math.sin(t * 0.8) * 0.03;
+        // Shimmer Nexus Point Light
+        nexusPointLight.intensity = 2.2 + Math.sin(elapsedTime * 3) * 0.6;
+        nexusMesh.rotation.y = elapsedTime * 0.8;
+        nexusMesh.rotation.z = elapsedTime * 0.5;
 
-        // Gentle gliding flight & bobbing levitation + scroll parallax
-        birdRoot.position.y = 0.2 + Math.sin(t * 1.8) * 0.08 + scrollPosY;
-        birdRoot.position.x = Math.cos(t * 1.2) * 0.05 + scrollPosX;
-
-        // Dynamic wing flapping responding to scroll flight velocity
-        const flightFlapSpeed = 2.8 + Math.min(Math.abs(scrollVelocity) * 0.08, 5.0);
-        const flightFlapAmp = 0.1 + Math.min(Math.abs(scrollVelocity) * 0.004, 0.22);
-        const wingFlex = Math.sin(t * flightFlapSpeed) * flightFlapAmp;
-        leftWingGroup.rotation.z = wingFlex;
-        rightWingGroup.rotation.z = -wingFlex * 0.8;
+        // Drift Floating Particles
+        const positions = particleGeo.attributes.position.array as Float32Array;
+        for (let i = 0; i < particleCount; i++) {
+          const i3 = i * 3 + 1;
+          positions[i3] += 0.003;
+          if (positions[i3] > 2.8) {
+            positions[i3] = -2.8;
+          }
+        }
+        particleGeo.attributes.position.needsUpdate = true;
 
         renderer.render(scene, camera);
       };
 
-      // Visibility observer: stop WebGL drawing completely when scrolled out of view
-      const visibilityObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            isVisible = entry.isIntersecting;
-            if (isVisible && !isRunning) {
-              isRunning = true;
-              animationFrameId = requestAnimationFrame(animate);
-            }
-          });
-        },
-        { threshold: 0.05 }
-      );
-      visibilityObserver.observe(activeContainer);
-
       animate();
 
       cleanupFn = () => {
-        visibilityObserver.disconnect();
         cancelAnimationFrame(animationFrameId);
-        activeContainer.removeEventListener('mousedown', handleMouseDown);
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-        activeContainer.removeEventListener('touchstart', handleTouchStart);
-        window.removeEventListener('touchmove', handleTouchMove);
-        window.removeEventListener('touchend', handleTouchEnd);
-        window.removeEventListener('scroll', handleScroll);
         window.removeEventListener('resize', handleResize);
+        activeContainer.removeEventListener('mousedown', onPointerDown);
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        activeContainer.removeEventListener('touchstart', onPointerDown);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
 
-        if (activeContainer && renderer.domElement && activeContainer.contains(renderer.domElement)) {
-          activeContainer.removeChild(renderer.domElement);
-        }
-
-        leftWingGeo.dispose();
-        rightWingGeo.dispose();
-        neckGeo.dispose();
-        headGeo.dispose();
-        tailGreenGeo.dispose();
-        tailBurgundyGeo.dispose();
-        greenOuterMat.dispose();
-        greenInnerMat.dispose();
-        burgundyMat.dispose();
-        lightBurgundyMat.dispose();
-        wireMat.dispose();
+        // Clean up Three.js objects
+        scene.traverse((obj) => {
+          if (obj instanceof THREE.Mesh) {
+            obj.geometry.dispose();
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((m) => m.dispose());
+            } else if (obj.material) {
+              obj.material.dispose();
+            }
+          }
+        });
         renderer.dispose();
       };
     };
 
-    // Initialize WebGL immediately on mount
     initWebGL();
 
     return () => {
@@ -495,9 +462,9 @@ export function OrigamiBirdSculpture() {
         <img
           src="/brand/kollabrix-logo.svg"
           alt="Kollabrix 3D Emblem"
-          width={192}
-          height={192}
-          className="w-48 h-48 object-contain drop-shadow-2xl animate-pulse"
+          width={220}
+          height={220}
+          className="w-56 h-56 object-contain drop-shadow-2xl animate-pulse"
         />
       </div>
     );
@@ -507,9 +474,9 @@ export function OrigamiBirdSculpture() {
     <div
       className="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] flex items-center justify-center select-none pointer-events-auto overflow-hidden"
     >
-      {/* Soft atmospheric ambient glow tailored to Emerald & Burgundy */}
+      {/* Soft atmospheric ambient glow tailored to Golden Amber & Electric Cyan */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gradient-to-tr from-emerald-500/15 via-[#b54568]/20 to-transparent blur-3xl opacity-75" />
+        <div className="w-72 h-72 sm:w-88 sm:h-88 rounded-full bg-gradient-to-tr from-amber-500/20 via-cyan-500/25 to-transparent blur-3xl opacity-80" />
       </div>
 
       {/* Three.js canvas container */}
@@ -518,7 +485,7 @@ export function OrigamiBirdSculpture() {
         className={`relative w-full h-full z-10 cursor-grab active:cursor-grabbing transition-opacity duration-500 flex items-center justify-center ${
           isCanvasReady ? 'opacity-100' : 'opacity-0'
         }`}
-        title="Interactive 3D Origami Bird • Drag to rotate"
+        title="Interactive 3D Kollabrix Nexus • Drag to rotate"
       />
 
       {/* Tactile hint pill */}
@@ -526,10 +493,10 @@ export function OrigamiBirdSculpture() {
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-fadeIn whitespace-nowrap">
           <span className="text-[11px] font-mono font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 text-white backdrop-blur-md border border-slate-700/80 dark:border-white/20 shadow-xl flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
             </span>
-            <span>3D Origami • Scroll &amp; Drag to Rotate</span>
+            <span>3D Kollabrix Nexus • Drag to Rotate</span>
           </span>
         </div>
       )}

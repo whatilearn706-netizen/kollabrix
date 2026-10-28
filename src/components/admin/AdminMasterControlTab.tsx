@@ -1740,7 +1740,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   { key: 'campusTicker' as const, label: '1. Top Live Opportunity Ticker', tag: 'Ticker', desc: 'Floating collegiate updates strip at very top' },
                   { key: 'hero' as const, label: '2. Hero Header & Call to Action Stage', tag: 'Hero', desc: 'Main collegiate headline, subtitle & CTA buttons' },
                   { key: 'heroSearch' as const, label: '3. Unstop Opportunity Search Console', tag: 'Search', desc: 'Category filter bar & trending tags (SIH, Google)' },
-                  { key: 'origamiBird' as const, label: '4. 3D Interactive Origami Bird Sculpture', tag: '3D Art', desc: 'Signature geometric bird in hero right column' },
+                  { key: 'origamiBird' as const, label: '4. 3D Interactive Kollabrix "K" Modular Sculpture', tag: '3D Art', desc: 'Signature geometric 3D modular "K" nexus in hero right column' },
                   { key: 'collegiateRadar' as const, label: '5. Collegiate Innovation Hubs (Portals Radar)', tag: 'Radar', desc: '3-card radar: College Hackathons, Faculty Briefs & Educator Desk' },
                   { key: 'domainGrid' as const, label: '6. 5-Domain Vibrant Explorer Cards', tag: 'Domains', desc: 'Unstop-style pastel cards: Hackathons, Squads, etc.' },
                   { key: 'categoryRails' as const, label: '7. Opportunity Category Quick-Rails', tag: 'Nav Rail', desc: 'Horizontal quick-jump category navigation chips' },

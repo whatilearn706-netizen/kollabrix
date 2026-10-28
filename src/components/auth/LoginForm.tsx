@@ -100,8 +100,8 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
     }
 
     const canonicalOrigin = typeof window !== 'undefined'
-      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-link.online')
-      : 'https://linkora-link.online';
+      ? window.location.origin
+      : 'https://kollabrix.online';
 
     try {
       setIsGoogleLoading(true);
@@ -146,8 +146,8 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
     }
 
     const canonicalOrigin = typeof window !== 'undefined'
-      ? (window.location.hostname.includes('localhost') ? window.location.origin : 'https://linkora-link.online')
-      : 'https://linkora-link.online';
+      ? window.location.origin
+      : 'https://kollabrix.online';
 
     try {
       setIsGitHubLoading(true);

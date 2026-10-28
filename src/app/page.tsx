@@ -521,7 +521,7 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
-          HERO: BALANCED SPLIT STAGE (HEADLINE + 3D LINKORA ORIGAMI BIRD)
+          HERO: BALANCED SPLIT STAGE (HEADLINE + 3D KOLLABRIX "K" MODULAR SCULPTURE)
          ========================================================================= */}
       {sectionsConfig.hero && (
         <section className="relative pt-8 pb-14 md:pt-16 md:pb-24 overflow-hidden">
