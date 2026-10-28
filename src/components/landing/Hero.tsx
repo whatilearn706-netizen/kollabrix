@@ -4,9 +4,11 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { WarpSpeedCanvas } from './WarpSpeedCanvas';
 
 export function LandingHero() {
+  const { user } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -82,7 +84,7 @@ export function LandingHero() {
           className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8"
         >
           <Link
-            href="/signup"
+            href={user ? "/my-projects" : "/signup"}
             className="group inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-sm sm:text-base landing-btn-glow shadow-lg shadow-orange-500/20 hover:scale-105 transition-all duration-200"
           >
             Start Building

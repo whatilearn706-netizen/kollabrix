@@ -4,8 +4,10 @@ import { useRef } from 'react';
 import { motion, useInView } from 'motion/react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export function LandingCTA() {
+  const { user } = useAuth();
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
 
@@ -48,10 +50,10 @@ export function LandingCTA() {
           and shipping real projects on Kollabrix.
         </p>
         <Link
-          href="/signup"
+          href={user ? "/my-projects" : "/signup"}
           className="group inline-flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-lg landing-btn-glow"
         >
-          Get Started — It&apos;s Free
+          {user ? 'Go to Workspace' : "Get Started — It's Free"}
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
         </Link>
         <p className="mt-5 text-sm text-slate-600">No credit card required</p>

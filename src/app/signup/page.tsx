@@ -1,11 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
 export default function SignupPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace('/my-projects');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || user) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">

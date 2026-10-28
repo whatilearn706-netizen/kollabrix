@@ -452,18 +452,6 @@ export function Navbar() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => openAuthModal('login')}
-                className={clsx(
-                  "text-xs font-semibold px-3 py-1.5 rounded-xl transition-all",
-                  isNavbarDark
-                    ? "text-slate-300 hover:text-white hover:bg-white/5"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-black/5"
-                )}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
                 onClick={() => openAuthModal('signup')}
                 style={{
                   borderRadius: theme.borderRadius,
@@ -721,29 +709,14 @@ export function Navbar() {
               <span>{theme.navbarCtaText || 'Start a Project'}</span>
             </button>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openAuthModal('login');
-                }}
-                className={clsx(
-                  "py-2.5 px-3 rounded-xl text-xs font-bold border transition-colors text-center",
-                  isNavbarDark
-                    ? "border-white/10 text-slate-200 bg-white/5 hover:bg-white/10"
-                    : "border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100"
-                )}
-              >
-                Sign In
-              </button>
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   openAuthModal('signup');
                 }}
-                className="py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md text-center"
+                className="w-full py-3 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md text-center"
               >
                 Join Free
               </button>
