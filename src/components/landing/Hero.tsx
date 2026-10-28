@@ -79,21 +79,46 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8"
         >
           <Link
             href="/signup"
-            className="group inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-base landing-btn-glow"
+            className="group inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-sm sm:text-base landing-btn-glow shadow-lg shadow-orange-500/20 hover:scale-105 transition-all duration-200"
           >
             Start Building
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
           </Link>
           <Link
             href="/explore"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full border border-white/[0.12] text-slate-300 font-medium hover:border-white/25 hover:bg-white/[0.04] transition-all duration-300"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/[0.12] bg-white/[0.03] text-slate-200 text-sm sm:text-base font-medium hover:border-white/25 hover:bg-white/[0.08] transition-all duration-300"
           >
             Explore Projects
           </Link>
+          <Link
+            href="/spark"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm sm:text-base font-medium hover:bg-amber-500/20 transition-all duration-300"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            AI Spark Generator
+          </Link>
+        </motion.div>
+
+        {/* Feature bullets */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.75, duration: 0.7 }}
+          className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400"
+        >
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Verified GitHub Proof
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" /> College Hackathons
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> Faculty Mentorship
+          </span>
         </motion.div>
       </motion.div>
 
