@@ -127,7 +127,9 @@ export function Navbar() {
 
 
   const isNavbarDark =
-    theme.navbarStyle === 'dark' || (theme.navbarStyle === 'auto' && isDark);
+    pathname === '/' ||
+    theme.navbarStyle === 'dark' ||
+    (theme.navbarStyle === 'auto' && isDark);
 
   const navLinks = [
     {
@@ -152,11 +154,13 @@ export function Navbar() {
       <header
       style={{
         backgroundColor:
-          theme.navbarBgColor ||
           (isNavbarDark
-            ? 'rgba(9, 11, 16, 0.82)'
-            : 'rgba(255, 255, 255, 0.85)'),
-        borderColor: theme.navbarBorderColor || (isNavbarDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)'),
+            ? 'rgba(9, 11, 16, 0.85)'
+            : theme.navbarBgColor || 'rgba(255, 255, 255, 0.85)'),
+        borderColor:
+          (isNavbarDark
+            ? 'rgba(255, 255, 255, 0.08)'
+            : theme.navbarBorderColor || 'rgba(226, 232, 240, 0.8)'),
       }}
       className="sticky top-0 z-40 w-full border-b backdrop-blur-2xl transition-all shadow-sm"
     >
@@ -242,7 +246,12 @@ export function Navbar() {
             href="/resources"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+            className={clsx(
+              "hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+              isNavbarDark
+                ? "text-slate-300 hover:text-amber-400 hover:bg-white/5"
+                : "text-stone-600 dark:text-stone-300 hover:text-amber-500 dark:hover:text-amber-400"
+            )}
             title="Collegiate Learning Resources & Compilers"
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -280,10 +289,15 @@ export function Navbar() {
             type="button"
             onClick={handleStartProjectClick}
             style={{
-              backgroundColor: theme.brandColor,
               borderRadius: theme.borderRadius,
+              backgroundColor: isNavbarDark ? undefined : theme.brandColor,
             }}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-90"
+            className={clsx(
+              "inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
+              isNavbarDark
+                ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
+                : "shadow-xs"
+            )}
           >
             <PlusCircle className="w-3.5 h-3.5 text-white" />
             <span>{theme.navbarCtaText || 'Start Project'}</span>
@@ -438,10 +452,15 @@ export function Navbar() {
                 type="button"
                 onClick={() => openAuthModal('signup')}
                 style={{
-                  backgroundColor: theme.brandColor,
                   borderRadius: theme.borderRadius,
+                  backgroundColor: isNavbarDark ? undefined : theme.brandColor,
                 }}
-                className="text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-90"
+                className={clsx(
+                  "text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
+                  isNavbarDark
+                    ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
+                    : "shadow-xs"
+                )}
               >
                 Join Free
               </button>
@@ -455,7 +474,12 @@ export function Navbar() {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl opacity-80 hover:opacity-100 transition-colors focus-visible:outline-none"
+            className={clsx(
+              "p-2 rounded-xl transition-colors focus-visible:outline-none",
+              isNavbarDark
+                ? "text-slate-300 hover:text-white hover:bg-white/10"
+                : "opacity-80 hover:opacity-100"
+            )}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -467,10 +491,13 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div
           style={{
-            backgroundColor: theme.surfaceColor,
-            borderColor: theme.borderColor,
+            backgroundColor: isNavbarDark ? 'rgba(9, 11, 16, 0.96)' : theme.surfaceColor,
+            borderColor: isNavbarDark ? 'rgba(255, 255, 255, 0.1)' : theme.borderColor,
           }}
-          className="md:hidden border-t px-5 pt-4 pb-8 space-y-4 animate-fadeIn shadow-xl"
+          className={clsx(
+            "md:hidden border-t px-5 pt-4 pb-8 space-y-4 animate-fadeIn shadow-xl",
+            isNavbarDark && "text-slate-200"
+          )}
         >
           <div className="space-y-1">
             <p className="text-[11px] font-mono uppercase tracking-wider opacity-60 px-3 pb-1 font-bold">

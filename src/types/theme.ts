@@ -86,7 +86,7 @@ export const DEFAULT_SITE_THEME: SiteThemeConfig = {
   borderRadius: '16px',
   buttonShape: 'rounded-2xl',
 
-  navbarStyle: 'auto',
+  navbarStyle: 'dark',
   navbarBgColor: '',
   navbarBorderColor: '',
   siteTitle: 'Kollabrix',
@@ -154,7 +154,7 @@ export const THEME_PRESETS: ThemePreset[] = [
       headingFont: 'Inter',
       borderRadius: '16px',
       buttonShape: 'rounded-2xl',
-      navbarStyle: 'auto',
+      navbarStyle: 'dark',
       cardShadow: 'subtle',
     },
   },

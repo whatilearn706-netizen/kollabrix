@@ -14,21 +14,22 @@ export function Footer() {
   }
 
   const { theme, isDark } = useSiteTheme();
+  const isFooterDark = pathname === '/' || isDark;
 
   return (
     <footer
       style={{
         backgroundColor:
           theme.footerBgColor ||
-          (isDark ? theme.surfaceColor || '#11141E' : '#f8fafc'),
-        borderColor: theme.footerBorderColor || theme.borderColor,
-        color: theme.bodyTextColor,
+          (isFooterDark ? '#090B10' : '#f8fafc'),
+        borderColor: theme.footerBorderColor || (isFooterDark ? 'rgba(255, 255, 255, 0.08)' : theme.borderColor),
+        color: isFooterDark ? '#94A3B8' : theme.bodyTextColor,
       }}
       className="w-full border-t py-12 text-sm transition-all"
     >
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         <div
-          style={{ borderColor: theme.borderColor }}
+          style={{ borderColor: isFooterDark ? 'rgba(255, 255, 255, 0.08)' : theme.borderColor }}
           className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"
         >
           {/* Brand Info */}
@@ -36,7 +37,7 @@ export function Footer() {
             <Link href="/" className="inline-block focus-visible:outline-none">
               <BrandLogo
                 size="sm"
-                wordmarkColor={isDark ? 'light' : 'dark'}
+                wordmarkColor={isFooterDark ? 'light' : 'dark'}
                 title={theme.siteTitle || 'Kollabrix'}
               />
             </Link>
@@ -53,7 +54,7 @@ export function Footer() {
           {/* Platform Destinations */}
           <div className="space-y-2.5">
             <h4
-              style={{ color: theme.headingColor }}
+              style={{ color: isFooterDark ? '#F1F5F9' : theme.headingColor }}
               className="text-xs font-bold uppercase tracking-wider font-mono"
             >
               Platform
@@ -103,7 +104,7 @@ export function Footer() {
           {/* Student & Faculty Pathways */}
           <div className="space-y-2.5">
             <h4
-              style={{ color: theme.headingColor }}
+              style={{ color: isFooterDark ? '#F1F5F9' : theme.headingColor }}
               className="text-xs font-bold uppercase tracking-wider font-mono"
             >
               Workspaces
@@ -135,7 +136,7 @@ export function Footer() {
           {/* Technical Architecture */}
           <div className="space-y-2.5">
             <h4
-              style={{ color: theme.headingColor }}
+              style={{ color: isFooterDark ? '#F1F5F9' : theme.headingColor }}
               className="text-xs font-bold uppercase tracking-wider font-mono"
             >
               Architecture

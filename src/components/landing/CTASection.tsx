@@ -14,8 +14,8 @@ export function LandingCTA() {
       {/* Dark background */}
       <div className="absolute inset-0 bg-[#090B10]" />
 
-      {/* Top gradient fade from site bg */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[var(--site-bg)] to-transparent pointer-events-none z-10" />
+      {/* Top gradient fade from dark section */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#090B10] to-transparent pointer-events-none z-10" />
 
       {/* Central glow orb */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">

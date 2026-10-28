@@ -115,8 +115,8 @@ export function LandingHero() {
         <ChevronDown className="w-4 h-4 text-slate-600 animate-bounce" />
       </motion.div>
 
-      {/* Bottom gradient fade into site bg */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[var(--site-bg)] to-transparent pointer-events-none" />
+      {/* Bottom gradient fade into dark section */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#090B10] to-transparent pointer-events-none" />
     </section>
   );
 }
