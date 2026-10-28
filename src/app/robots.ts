@@ -4,35 +4,19 @@ export default function robots(): MetadataRoute.Robots {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.in';
 
   return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: [
-          '/control-center*',
-          '/admin',
-          '/api/',
-          '/settings/',
-          '/my-projects',
-          '/my-applications',
-          '/notifications',
-        ],
-      },
-      {
-        userAgent: ['Googlebot', 'Googlebot-Image'],
-        allow: [
-          '/',
-          '/favicon.ico',
-          '/favicon-*.png',
-          '/icon-*.png',
-          '/apple-touch-icon.png',
-          '/brand/*',
-          '/google*.html',
-          '/manifest.json',
-          '/manifest.webmanifest',
-        ],
-      },
-    ],
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: [
+        '/control-center',
+        '/admin',
+        '/api/',
+        '/settings/',
+        '/my-projects',
+        '/my-applications',
+        '/notifications',
+      ],
+    },
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

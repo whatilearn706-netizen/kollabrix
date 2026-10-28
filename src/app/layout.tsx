@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.webmanifest',
   alternates: {
-    canonical: '/',
+    canonical: `${siteUrl}/`,
   },
   openGraph: {
     type: 'website',
