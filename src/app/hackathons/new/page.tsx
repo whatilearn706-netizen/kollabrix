@@ -73,10 +73,13 @@ export default function NewHackathonPage() {
   const [createdHackathon, setCreatedHackathon] = useState<Hackathon | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const isTeacher =
-    profile?.role === 'teacher' ||
-    Boolean(profile?.faculty_verified) ||
-    (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true');
+  const isTeacher = Boolean(
+    user &&
+      (profile?.role === 'teacher' ||
+        (profile as any)?.role === 'faculty' ||
+        profile?.role === 'admin' ||
+        Boolean(profile?.faculty_verified))
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +87,11 @@ export default function NewHackathonPage() {
 
     if (!user) {
       setError('You must be signed in to host a college hackathon.');
+      return;
+    }
+
+    if (!isTeacher) {
+      setError('Only verified college faculty members and administrators are authorized to host hackathons.');
       return;
     }
 
@@ -223,6 +231,29 @@ export default function NewHackathonPage() {
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
+
+  if (user && profile && !isTeacher) {
+    return (
+      <div className="max-w-xl mx-auto my-20 p-8 rounded-3xl bg-slate-50 dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 text-center space-y-4 shadow-sm">
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto">
+          <Lock className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          Faculty Authorization Required
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          Hosting college hackathons is restricted to verified faculty members, professors, and department administrators. As a student, you can participate, form teams, and submit projects in open hackathons.
+        </p>
+        <div className="pt-2">
+          <Link href="/hackathons">
+            <Button variant="primary" size="sm">
+              Back to Hackathons
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">

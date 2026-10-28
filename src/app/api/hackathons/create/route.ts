@@ -52,6 +52,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Creator authentication required.' }, { status: 401 });
     }
 
+    // Verify faculty or administrator privileges
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: creatorProfile } = await dbClient
+          .from('profiles')
+          .select('role, faculty_verified')
+          .eq('user_id', creatorId)
+          .maybeSingle();
+
+        if (creatorProfile) {
+          const isFaculty =
+            creatorProfile.role === 'teacher' ||
+            creatorProfile.role === 'faculty' ||
+            creatorProfile.role === 'admin' ||
+            Boolean(creatorProfile.faculty_verified);
+
+          if (!isFaculty) {
+            return NextResponse.json(
+              { error: 'Only verified college faculty members and administrators are authorized to host hackathons.' },
+              { status: 403 }
+            );
+          }
+        }
+      } catch (authErr) {
+        console.warn('Faculty verification check notice:', authErr);
+      }
+    }
+
     if (!title || !description || !registrationDeadline || !startDate) {
       return NextResponse.json(
         { error: 'Please provide all required fields: title, description, start date, and deadline.' },

@@ -40,9 +40,13 @@ export default function HackathonsPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { theme } = useSiteTheme();
-  const isTeacherOrAdmin =
-    profile?.role === 'teacher' ||
-    Boolean(profile?.faculty_verified);
+  const isTeacherOrAdmin = Boolean(
+    user &&
+      (profile?.role === 'teacher' ||
+        (profile as any)?.role === 'faculty' ||
+        profile?.role === 'admin' ||
+        Boolean(profile?.faculty_verified))
+  );
 
   // Instant In-Memory / Stale-While-Revalidate Cache
   const cachedHackathons = getPageCache<Hackathon[]>('linkora_hackathons_list');
@@ -378,7 +382,7 @@ export default function HackathonsPage() {
             Refresh Events
           </Button>
 
-          {user && (
+          {isTeacherOrAdmin && (
             <Link href="/hackathons/new">
               <Button
                 variant="primary"

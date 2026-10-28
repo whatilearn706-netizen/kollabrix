@@ -76,6 +76,18 @@ export function CreateHackathonModal({
       return;
     }
 
+    const isFaculty = Boolean(
+      profile?.role === 'teacher' ||
+        (profile as any)?.role === 'faculty' ||
+        profile?.role === 'admin' ||
+        Boolean(profile?.faculty_verified)
+    );
+
+    if (!isFaculty) {
+      setError('Only verified college faculty members and administrators are authorized to host hackathons.');
+      return;
+    }
+
     if (!title.trim() || !description.trim() || !startDate || !registrationDeadline || !submissionDeadline) {
       setError('Please fill in all required fields (Title, Description, Start Date, Registration & Submission Deadlines).');
       return;
