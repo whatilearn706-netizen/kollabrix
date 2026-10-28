@@ -159,14 +159,14 @@ export function Navbar() {
             : theme.navbarBgColor || 'rgba(255, 255, 255, 0.85)'),
         borderColor:
           (isNavbarDark
-            ? 'rgba(255, 255, 255, 0.08)'
+            ? 'transparent'
             : theme.navbarBorderColor || 'rgba(226, 232, 240, 0.8)'),
       }}
-      className="sticky top-0 z-40 w-full border-b backdrop-blur-2xl transition-all shadow-sm"
+      className={clsx(
+        "sticky top-0 z-40 w-full backdrop-blur-2xl transition-all shadow-none",
+        !isNavbarDark && "border-b shadow-sm"
+      )}
     >
-      {/* Subtle bottom accent ray */}
-      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent pointer-events-none" />
-
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 h-16 flex items-center justify-between gap-4 relative">
         {/* Brand Logo & Wordmark */}
         <Link

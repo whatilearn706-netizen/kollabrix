@@ -8,31 +8,31 @@ import { BroadcastBannerConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/ma
 
 const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: string; badge: string; button: string }> = {
   gradient: {
-    bg: 'bg-[#090B10] border-b border-white/[0.08]',
+    bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     button: 'bg-gradient-to-r from-orange-600 to-amber-500 text-white hover:opacity-95 shadow-xs border border-white/10',
   },
   indigo: {
-    bg: 'bg-[#090B10] border-b border-white/[0.08]',
+    bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     button: 'bg-gradient-to-r from-orange-600 to-amber-500 text-white hover:opacity-95 shadow-xs border border-white/10',
   },
   emerald: {
-    bg: 'bg-[#090B10] border-b border-white/[0.08]',
+    bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
     button: 'bg-emerald-600/80 text-white hover:bg-emerald-600 border border-emerald-500/30',
   },
   amber: {
-    bg: 'bg-[#090B10] border-b border-white/[0.08]',
+    bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     button: 'bg-gradient-to-r from-orange-600 to-amber-500 text-white hover:opacity-95 shadow-xs border border-white/10',
   },
   rose: {
-    bg: 'bg-[#090B10] border-b border-white/[0.08]',
+    bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
     button: 'bg-rose-600/80 text-white hover:bg-rose-600 border border-rose-500/30',
@@ -138,11 +138,8 @@ export function GlobalBroadcastBanner() {
   return (
     <aside
       aria-label="Platform Announcement"
-      className={`relative z-40 px-3 py-2 text-xs sm:text-sm font-medium transition-all shadow-sm ${themeStyle.bg} ${themeStyle.text}`}
+      className={`relative z-40 px-3 py-2 text-xs sm:text-sm font-medium transition-all ${themeStyle.bg} ${themeStyle.text}`}
     >
-      {/* Subtle bottom ambient glow ray */}
-      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/25 to-transparent pointer-events-none" />
-
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 flex items-center justify-between gap-3">
         {/* Left / Center content */}
         <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-center">
