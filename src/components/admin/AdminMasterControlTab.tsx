@@ -369,7 +369,7 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
   const handleCopyMarkdownReport = () => {
     const md = `# Kollabrix Executive Platform Briefing
 **Date:** ${new Date().toLocaleDateString()}
-**Platform:** https://linkora-link.online
+**Platform:** https://kollabrix.in
 
 ## Core Collaboration KPIs
 - **Verified Students:** ${ceoStats?.totalUsers || 142}

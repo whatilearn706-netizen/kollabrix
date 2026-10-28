@@ -147,7 +147,7 @@ export default function IcpcCollegiateArenaPage() {
   };
 
   const handleCopyRoomLink = (contest: IcpcContest) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://kollabrix.in';
     const code = contest.passcode || '';
     const url = `${origin}/icpc?passcode=${encodeURIComponent(code)}`;
     navigator.clipboard.writeText(url);

@@ -95,7 +95,7 @@ export function WorkspaceProofOfWork({
   const verificationUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/verify/${credentialId}`
-      : `https://linkora-link.online/verify/${credentialId}`;
+      : `https://kollabrix.in/verify/${credentialId}`;
 
   const completionDate = new Date().toLocaleDateString('en-US', {
     month: 'long',

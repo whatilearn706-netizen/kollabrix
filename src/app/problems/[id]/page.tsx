@@ -319,7 +319,7 @@ export default function ProblemStatementDetailPage() {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/problems/${id}`;
     }
-    return `https://linkora-link.online/problems/${id}`;
+    return `https://kollabrix.in/problems/${id}`;
   };
 
   const handleCopyLink = () => {

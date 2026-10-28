@@ -81,9 +81,9 @@ export function WorkspaceCloserKit({ project, members, currentUserId }: Workspac
 
 > ${customTagline}
 
-[![Collegiate Verified on Kollabrix](https://img.shields.io/badge/Kollabrix-Collegiate%20Verified%20Project-6366f1?style=for-the-badge&logo=shield)](https://linkora-link.online/projects/${project.id})
+[![Collegiate Verified on Kollabrix](https://img.shields.io/badge/Kollabrix-Collegiate%20Verified%20Project-6366f1?style=for-the-badge&logo=shield)](https://kollabrix.in/projects/${project.id})
 [![License: ${licenseType}](https://img.shields.io/badge/License-${encodeURIComponent(licenseType)}-emerald?style=for-the-badge)](LICENSE)
-[![Category: ${project.category}](https://img.shields.io/badge/Category-${encodeURIComponent(project.category)}-amber?style=for-the-badge)](https://linkora-link.online)
+[![Category: ${project.category}](https://img.shields.io/badge/Category-${encodeURIComponent(project.category)}-amber?style=for-the-badge)](https://kollabrix.in)
 
 ---
 

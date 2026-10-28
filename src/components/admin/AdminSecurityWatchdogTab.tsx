@@ -247,7 +247,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
 
   const handleTestWhatsAppAlert = async () => {
     try {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://kollabrix.in';
       const res = await fetch('/api/admin/security', {
         method: 'POST',
         headers: {

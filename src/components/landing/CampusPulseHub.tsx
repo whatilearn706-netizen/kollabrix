@@ -665,7 +665,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
                     <button
                       onClick={() => {
                         navigator.clipboard?.writeText(
-                          `Check out my verified Kollabrix Student Builder profile from ${cardCollege}: https://linkora-link.online/teammates`
+                          `Check out my verified Kollabrix Student Builder profile from ${cardCollege}: https://kollabrix.in/teammates`
                         );
                         setCopiedShareLink(true);
                         setTimeout(() => setCopiedShareLink(false), 2000);

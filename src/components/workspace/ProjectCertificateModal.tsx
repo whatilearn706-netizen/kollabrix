@@ -50,7 +50,7 @@ export function ProjectCertificateModal({
   const verificationUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/profile/${profile?.username || 'student'}?verified=${credentialId}`
-      : `https://linkora-link.online/profile/${profile?.username || 'student'}`;
+      : `https://kollabrix.in/profile/${profile?.username || 'student'}`;
 
   const handlePrint = () => {
     window.print();

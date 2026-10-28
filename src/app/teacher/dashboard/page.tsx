@@ -1223,7 +1223,7 @@ export default function TeacherDashboardPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online'}/problems/${prob.id}`;
+                          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://kollabrix.in'}/problems/${prob.id}`;
                           navigator.clipboard.writeText(link);
                           alert(`Problem link copied!\n${link}\n\nShare this directly with your students.`);
                         }}
@@ -1236,7 +1236,7 @@ export default function TeacherDashboardPage() {
                         size="sm"
                         variant="secondary"
                         onClick={() => {
-                          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online'}/problems/${prob.id}`;
+                          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://kollabrix.in'}/problems/${prob.id}`;
                           const text = `🎓 Faculty Problem Statement: "${prob.title}"\n\nApply your answers here: ${link}`;
                           window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
                         }}

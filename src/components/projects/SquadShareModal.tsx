@@ -31,7 +31,7 @@ export function SquadShareModal({ isOpen, onClose, project, onOpenLinkedIn }: Sq
   const projectUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/projects/${project.id}`
-      : `https://linkora-link.online/projects/${project.id}`;
+      : `https://kollabrix.in/projects/${project.id}`;
 
   const rolesText =
     project.desired_roles && project.desired_roles.length > 0

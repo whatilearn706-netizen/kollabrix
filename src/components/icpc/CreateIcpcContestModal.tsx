@@ -136,7 +136,7 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
   const [successMsg, setSuccessMsg] = useState('');
 
   const handleCopyInviteLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linkora-link.online';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://kollabrix.in';
     const code = passcode.trim() || 'ICPC2026';
     const url = `${origin}/icpc?passcode=${encodeURIComponent(code)}`;
     navigator.clipboard.writeText(url);

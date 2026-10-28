@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
       const sanitizedSlug = project.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
       const repoUrl = project.repository_url || `https://github.com/linkora-campus/${sanitizedSlug}`;
-      const demoUrl = project.demo_url || `https://linkora-link.online/projects/${project.id}`;
+      const demoUrl = project.demo_url || `https://kollabrix.in/projects/${project.id}`;
 
       // Build realistic architecture diagram based on domain
       let archDiagram = '';
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
   <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Framework-Next.js%2014-black.svg?style=for-the-badge&logo=next.js" alt="Next.js" /></a>
   <a href="https://typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-blue.svg?style=for-the-badge&logo=typescript" alt="TypeScript" /></a>
   <a href="https://supabase.com"><img src="https://img.shields.io/badge/Database-Supabase%20Postgres-3ecf8e.svg?style=for-the-badge&logo=supabase" alt="Supabase" /></a>
-  <a href="https://linkora-link.online"><img src="https://img.shields.io/badge/Kollabrix-Collegiate%20Verified-6366f1.svg?style=for-the-badge&logo=shield" alt="Kollabrix Verified" /></a>
+  <a href="https://kollabrix.in"><img src="https://img.shields.io/badge/Kollabrix-Collegiate%20Verified-6366f1.svg?style=for-the-badge&logo=shield" alt="Kollabrix Verified" /></a>
 </p>
 
 ---
@@ -258,7 +258,7 @@ ${contributorsMd}
 ---
 
 ## 📜 License
-Distributed under the **MIT License**. See \`LICENSE\` for more details. Built with pride on [Kollabrix](https://linkora-link.online).
+Distributed under the **MIT License**. See \`LICENSE\` for more details. Built with pride on [Kollabrix](https://kollabrix.in).
 `;
 
       return NextResponse.json({

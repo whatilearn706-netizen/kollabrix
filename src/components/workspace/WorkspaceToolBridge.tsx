@@ -102,7 +102,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
   const [showViewpointForm, setShowViewpointForm] = useState(false);
 
   // Live Demo Preview State
-  const initialDemoUrl = project.demo_url || 'https://linkora-link.online';
+  const initialDemoUrl = project.demo_url || 'https://kollabrix.in';
   const [demoInputUrl, setDemoInputUrl] = useState(initialDemoUrl);
   const [activeDemoUrl, setActiveDemoUrl] = useState(initialDemoUrl);
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -345,7 +345,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
           {
             id: 'vault-3',
             title: 'Technical Specs & Architecture Spec',
-            url: `https://linkora-link.online/projects/${project.id}`,
+            url: `https://kollabrix.in/projects/${project.id}`,
             category: 'docs' as const,
             addedBy: 'Kollabrix System',
             createdAt: new Date().toLocaleDateString(),

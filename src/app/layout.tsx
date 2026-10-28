@@ -219,7 +219,7 @@ const jsonLd = {
       image: 'https://kollabrix.in/brand/kollabrix-logo.png',
       sameAs: [
         'https://kollabrix.in',
-        'https://linkora-link.online',
+        'https://kollabrix.in',
         'https://linkora.in',
         'https://github.com/goyalmayank142-pixel/LinkOra',
       ],

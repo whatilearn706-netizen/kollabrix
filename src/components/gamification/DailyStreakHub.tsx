@@ -485,7 +485,7 @@ export function DailyStreakModal({ isOpen, onClose }: DailyStreakModalProps) {
   const handleCopyShare = () => {
     const text = `🔥 Day ${streakState.currentStreak} on my Kollabrix Daily Build Streak!\n\nToday I worked on: ${
       note || selectedCategory
-    }\n\nJoin the collegiate builder movement: https://linkora-link.online`;
+    }\n\nJoin the collegiate builder movement: https://kollabrix.in`;
     navigator.clipboard?.writeText(text);
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 2000);

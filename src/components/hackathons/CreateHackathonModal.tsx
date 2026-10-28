@@ -162,7 +162,7 @@ export function CreateHackathonModal({
             eligibility: 'Open to all college students',
             themes,
             prize_pool: prizePool.trim() || null,
-            website_url: `https://linkora-link.online/h/${resData.joinCode}`,
+            website_url: `https://kollabrix.in/h/${resData.joinCode}`,
             banner_url: bannerUrl.trim() || null,
             is_verified: true,
           };

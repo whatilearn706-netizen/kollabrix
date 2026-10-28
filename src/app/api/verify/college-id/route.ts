@@ -55,7 +55,7 @@ async function sendTelegramVerificationAlert(verification: StudentIdVerification
 🕒 *Submitted:* ${time} IST
 
 👉 *Review & Approve in Admin Control Center:*
-https://linkora-link.online/control-center-7x9?tab=id_verifications`;
+https://kollabrix.in/control-center-7x9?tab=id_verifications`;
 
     await fetch(`https://api.telegram.org/bot${tg.botToken}/sendMessage`, {
       method: 'POST',
