@@ -116,7 +116,7 @@ export function CircularSkillsShowcase({
               </h1>
               <p className="text-xs sm:text-sm text-stone-300 font-normal leading-relaxed max-w-md pt-1">
                 {isBeginner
-                  ? 'Start from ground zero. Guided lectures, real-time code sandboxes, and auto-checked practice problems to become confident and squad-ready on Linkora.'
+                  ? 'Start from ground zero. Guided lectures, real-time code sandboxes, and auto-checked practice problems to become confident and squad-ready on Kollabrix.'
                   : 'Master production frameworks, high-throughput backend services, graph algorithms, and architectural patterns to lead winning hackathon squads.'}
               </p>
             </div>
@@ -155,7 +155,7 @@ export function CircularSkillsShowcase({
                 <div className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
                 </div>
-                <span>Build Projects Ready for Linkora Squads</span>
+                <span>Build Projects Ready for Kollabrix Squads</span>
               </div>
             </div>
           </div>

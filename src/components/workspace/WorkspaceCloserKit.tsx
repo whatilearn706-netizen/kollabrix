@@ -60,7 +60,7 @@ export function WorkspaceCloserKit({ project, members, currentUserId }: Workspac
   const [readmePreviewMode, setReadmePreviewMode] = useState<'preview' | 'raw'>('preview');
   const [copiedReadme, setCopiedReadme] = useState(false);
   const [customTagline, setCustomTagline] = useState(
-    project.description || 'A next-generation collegiate engineering solution built on Linkora.'
+    project.description || 'A next-generation collegiate engineering solution built on Kollabrix.'
   );
   const [installCommand, setInstallCommand] = useState('npm install && npm run dev');
   const [licenseType, setLicenseType] = useState('MIT License');
@@ -81,7 +81,7 @@ export function WorkspaceCloserKit({ project, members, currentUserId }: Workspac
 
 > ${customTagline}
 
-[![Collegiate Verified on Linkora](https://img.shields.io/badge/Linkora-Collegiate%20Verified%20Project-6366f1?style=for-the-badge&logo=shield)](https://linkora-link.online/projects/${project.id})
+[![Collegiate Verified on Kollabrix](https://img.shields.io/badge/Kollabrix-Collegiate%20Verified%20Project-6366f1?style=for-the-badge&logo=shield)](https://linkora-link.online/projects/${project.id})
 [![License: ${licenseType}](https://img.shields.io/badge/License-${encodeURIComponent(licenseType)}-emerald?style=for-the-badge)](LICENSE)
 [![Category: ${project.category}](https://img.shields.io/badge/Category-${encodeURIComponent(project.category)}-amber?style=for-the-badge)](https://linkora-link.online)
 
@@ -122,7 +122,7 @@ Supabase PostgreSQL & Realtime State
 - **Frontend**: Next.js 14, React Server/Client Components, TailwindCSS
 - **Backend & Database**: Supabase PostgreSQL, Edge Functions, Row-Level Security
 - **Authentication**: Role-based access control with session persistence
-- **Verification**: Linkora Cryptographic Project Signature Protocol
+- **Verification**: Kollabrix Cryptographic Project Signature Protocol
 
 ---
 
@@ -143,7 +143,7 @@ ${contributorList}
 ---
 
 ## 📜 License
-Distributed under the **${licenseType}**. Built with pride for collegiate hackathons on Linkora.
+Distributed under the **${licenseType}**. Built with pride for collegiate hackathons on Kollabrix.
 `;
 
   const activeReadme = aiGeneratedReadme || fallbackReadme;
@@ -265,7 +265,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
       title: 'Scalability, Moat & Verification',
       timing: '1:20 - 1:45 (25s)',
       focus: 'Explain how this expands beyond 1 college to 50+ campuses',
-      script: `We didn't just build for this 24-hour hackathon. Our multi-tenant architecture is designed to scale across university campuses. With Linkora's cryptographic credential protocol, every student who contributes receives tamper-proof proof of work that recruiters can verify with one click on LinkedIn. That is our retention flywheel.`,
+      script: `We didn't just build for this 24-hour hackathon. Our multi-tenant architecture is designed to scale across university campuses. With Kollabrix's cryptographic credential protocol, every student who contributes receives tamper-proof proof of work that recruiters can verify with one click on LinkedIn. That is our retention flywheel.`,
       keyPoints: [
         `Multi-campus scalability across 50+ universities.`,
         `Cryptographic proof-of-work: tamper-proof recruiter credentials.`,
@@ -504,7 +504,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
         { layer: 1, name: 'Client Presentation', tech: 'Next.js 14 App Router, TailwindCSS, React Server Components', role: 'Sub-second initial paint, optimistic updates, zero layout shift' },
         { layer: 2, name: 'Edge API & Middleware', tech: 'Vercel Edge Functions, Next.js Route Handlers, JWT Gatekeeper', role: 'Sub-50ms edge validation, CORS proxying, rate-limiting' },
         { layer: 3, name: 'Database & Realtime', tech: 'Supabase PostgreSQL, Postgres Realtime Changefeed, RLS Policies', role: 'Multi-tenant isolation, real-time presence broadcast' },
-        { layer: 4, name: 'Trust & Verification', tech: 'Linkora Cryptographic Credential Protocol, SVG Proof Signatures', role: 'Verifiable proof of work and recruiter LinkedIn badge export' },
+        { layer: 4, name: 'Trust & Verification', tech: 'Kollabrix Cryptographic Credential Protocol, SVG Proof Signatures', role: 'Verifiable proof of work and recruiter LinkedIn badge export' },
       ],
       mermaid: `graph TD
   subgraph Client ["Client Browser / Mobile PWA"]
@@ -546,7 +546,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
         { layer: 1, name: 'Interactive UI Tier', tech: 'Next.js 14 Streaming Chat UI, Audio WebRTC Mesh', role: 'Low-latency token streaming, voice command input' },
         { layer: 2, name: 'Inference Orchestration', tech: 'Python FastAPI, LangChain / LlamaIndex, Edge Router', role: 'Prompt engineering, token optimization, async task dispatch' },
         { layer: 3, name: 'Model & Vector Embedding Store', tech: 'PyTorch / HuggingFace Models, pgvector / Supabase Vector', role: 'Semantic indexing, cosine similarity retrieval, context memory' },
-        { layer: 4, name: 'Evaluation & Verifiable Output', tech: 'Automated Fact-Checking, Linkora Proof Protocol', role: 'Hallucination guardrails and cryptographically anchored outputs' },
+        { layer: 4, name: 'Evaluation & Verifiable Output', tech: 'Automated Fact-Checking, Kollabrix Proof Protocol', role: 'Hallucination guardrails and cryptographically anchored outputs' },
       ],
       mermaid: `graph TD
   subgraph Interface ["Client Tier"]
@@ -566,7 +566,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
 
   subgraph Persistence ["Application State"]
     SupabaseDB[("PostgreSQL Metadata")]
-    Proof["Linkora Verified Hash"]
+    Proof["Kollabrix Verified Hash"]
   end
 
   ChatUI --> FastAPI
@@ -660,7 +660,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
         { layer: 1, name: 'DApp Client Interface', tech: 'Next.js 14, Wagmi, RainbowKit, Viem', role: 'Non-custodial wallet connection, gas fee estimation, signing UI' },
         { layer: 2, name: 'Smart Contract Protocol', tech: 'Solidity EVM Contracts, Hardhat / Foundry, OpenZeppelin', role: 'Deterministic on-chain state, automated escrow, tokenomics' },
         { layer: 3, name: 'Decentralized Storage', tech: 'IPFS / Filecoin, Arweave, Decentralized Graph Indexing', role: 'Censorship-resistant project assets and immutable commit logs' },
-        { layer: 4, name: 'Off-Chain Indexer & Verifier', tech: 'The Graph Subgraphs, Linkora Proof Oracle, Supabase Cache', role: 'High-speed querying of on-chain events without RPC throttling' },
+        { layer: 4, name: 'Off-Chain Indexer & Verifier', tech: 'The Graph Subgraphs, Kollabrix Proof Oracle, Supabase Cache', role: 'High-speed querying of on-chain events without RPC throttling' },
       ],
       mermaid: `graph TD
   subgraph ClientDApp ["Client DApp"]
@@ -679,7 +679,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
 
   subgraph Indexer ["Index & Oracle"]
     TheGraph["The Graph Subgraph Indexer"]
-    LinkoraOracle["Linkora Verification Oracle"]
+    KollabrixOracle["Kollabrix Verification Oracle"]
   end
 
   Web3UI --> Wallet
@@ -688,7 +688,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
   Web3UI --> IPFS
   EVM --> TheGraph
   TheGraph --> Web3UI
-  Escrow --> LinkoraOracle`,
+  Escrow --> KollabrixOracle`,
     },
   };
 
@@ -921,7 +921,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
                     </p>
                     <div className="flex flex-wrap gap-2 mt-4">
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
-                        Linkora Verified
+                        Kollabrix Verified
                       </span>
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
                         {licenseType}

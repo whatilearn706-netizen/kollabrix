@@ -13,7 +13,7 @@ export function AuthModal() {
     <Modal
       isOpen={authModalOpen}
       onClose={closeAuthModal}
-      title={authModalView === 'login' ? 'Welcome back to Linkora' : 'Join Linkora'}
+      title={authModalView === 'login' ? 'Welcome back to Kollabrix' : 'Join Kollabrix'}
       description={
         authModalView === 'login'
           ? 'Log in to publish project ideas, assemble your team, and customize your student profile.'

@@ -18,7 +18,7 @@ export default function ProfileSetupPage() {
         <div className="border-b border-charcoal-800 pb-6 text-center sm:text-left">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono text-brand-400 uppercase tracking-wider mb-2">
             <UserCheck className="w-4 h-4" />
-            <span>Welcome to Linkora &middot; Quick Onboarding</span>
+            <span>Welcome to Kollabrix &middot; Quick Onboarding</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Complete Your Student Profile

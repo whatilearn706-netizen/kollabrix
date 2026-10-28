@@ -116,7 +116,7 @@ export function WorkspaceProofOfWork({
   // Recruiter-Grade LinkedIn Post
   const linkedInCaseStudy = `🚀 Excited to announce that our team just completed and launched "${project.title}"!
 
-Over the past collegiate sprint on Linkora, we engineered a production solution for ${project.category}:
+Over the past collegiate sprint on Kollabrix, we engineered a production solution for ${project.category}:
 "${project.description || 'Building a scalable, production-grade system with verified team deliverables.'}"
 
 🛠️ Tech Stack & Architecture:
@@ -126,11 +126,11 @@ ${project.required_skills?.map((s) => `• ${s}`).join('\n') || '• Next.js 14\
 ${members.map((m) => `• ${m.profile?.display_name || m.profile?.username || 'Teammate'} (${m.role})`).join('\n')}
 
 🏆 Verified Proof-of-Work:
-Our project completed ${completedTasksCount} peer-reviewed deliverables and has been cryptographically verified on Linkora (Credential ID: ${credentialId}).
+Our project completed ${completedTasksCount} peer-reviewed deliverables and has been cryptographically verified on Kollabrix (Credential ID: ${credentialId}).
 
 Check out the verified certificate: ${verificationUrl}
 
-#CollegiateEngineering #Hackathon #NextJS #SoftwareEngineering #Linkora #OpenSource`;
+#CollegiateEngineering #Hackathon #NextJS #SoftwareEngineering #Kollabrix #OpenSource`;
 
   const handleCopyLinkedIn = () => {
     navigator.clipboard.writeText(linkedInCaseStudy);
@@ -154,7 +154,7 @@ Check out the verified certificate: ${verificationUrl}
   };
 
   // GitHub README Badge Code
-  const badgeMarkdown = `[![Collegiate Verified on Linkora](https://img.shields.io/badge/Linkora-Collegiate%20Verified%20Project-6366f1?style=for-the-badge&logo=shield)](${verificationUrl})`;
+  const badgeMarkdown = `[![Collegiate Verified on Kollabrix](https://img.shields.io/badge/Kollabrix-Collegiate%20Verified%20Project-6366f1?style=for-the-badge&logo=shield)](${verificationUrl})`;
 
   const handleCopyBadge = () => {
     navigator.clipboard.writeText(badgeMarkdown);
@@ -301,7 +301,7 @@ Check out the verified certificate: ${verificationUrl}
                 Certificate of Accomplishment
               </h1>
               <p className="text-xs text-slate-500 italic">
-                Issued under the Linkora Verified Collegiate Project Standard
+                Issued under the Kollabrix Verified Collegiate Project Standard
               </p>
             </div>
 
@@ -435,7 +435,7 @@ Check out the verified certificate: ${verificationUrl}
                 <span className="text-xs font-bold text-slate-300 block mb-1">Live Badge Preview:</span>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#C2410C] text-white font-bold text-xs shadow-sm">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Linkora Verified Project</span>
+                  <span>Kollabrix Verified Project</span>
                 </div>
               </div>
 

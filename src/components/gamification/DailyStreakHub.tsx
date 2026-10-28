@@ -483,7 +483,7 @@ export function DailyStreakModal({ isOpen, onClose }: DailyStreakModalProps) {
   };
 
   const handleCopyShare = () => {
-    const text = `🔥 Day ${streakState.currentStreak} on my Linkora Daily Build Streak!\n\nToday I worked on: ${
+    const text = `🔥 Day ${streakState.currentStreak} on my Kollabrix Daily Build Streak!\n\nToday I worked on: ${
       note || selectedCategory
     }\n\nJoin the collegiate builder movement: https://linkora-link.online`;
     navigator.clipboard?.writeText(text);
@@ -538,7 +538,7 @@ export function DailyStreakModal({ isOpen, onClose }: DailyStreakModalProps) {
                 <div>
                   <h4 className="text-sm font-bold text-white">Your Streak Starts at 0</h4>
                   <p className="text-xs text-slate-300">
-                    Streaks on Linkora represent real proof-of-work, not empty clicks.
+                    Streaks on Kollabrix represent real proof-of-work, not empty clicks.
                   </p>
                 </div>
               </div>

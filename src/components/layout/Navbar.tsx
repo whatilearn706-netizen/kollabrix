@@ -168,12 +168,12 @@ export function Navbar() {
         <Link
           href="/"
           className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg shrink-0"
-          aria-label={`${theme.siteTitle || 'Linkora'} Home`}
+          aria-label={`${(!theme.siteTitle || theme.siteTitle === 'Linkora' ? 'Kollabrix' : theme.siteTitle)} Home`}
         >
           <BrandLogo
             size="md"
             wordmarkColor={isNavbarDark ? 'light' : 'dark'}
-            title={theme.siteTitle || 'Linkora'}
+            title={!theme.siteTitle || theme.siteTitle === 'Linkora' ? 'Kollabrix' : theme.siteTitle}
           />
         </Link>
 
@@ -393,7 +393,7 @@ export function Navbar() {
                     </Link>
 
                     <a
-                      href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+                      href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
                       onClick={() => setUserDropdownOpen(false)}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold text-left cursor-pointer"
                     >
@@ -561,7 +561,7 @@ export function Navbar() {
             </Link>
 
             <a
-              href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+              href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
             >

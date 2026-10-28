@@ -139,7 +139,7 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
   },
   banner: {
     enabled: true,
-    text: '🚀 Linkora is live on campus! Assemble your hackathon dream team & showcase projects.',
+    text: '🚀 Kollabrix is live on campus! Assemble your hackathon dream team & showcase projects.',
     linkText: 'Explore Projects →',
     linkUrl: '/explore',
     theme: 'gradient',
@@ -194,7 +194,7 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     mode: 'public',
     campusPasscode: 'CAMPUS2026',
     maintenanceHeadline: 'Scheduled Campus Upgrade in Progress',
-    maintenanceMessage: 'We are updating collegiate sprint workboards and team matching algorithms. Linkora will be back shortly.',
+    maintenanceMessage: 'We are updating collegiate sprint workboards and team matching algorithms. Kollabrix will be back shortly.',
     expectedBackAt: '30 minutes',
   },
 };

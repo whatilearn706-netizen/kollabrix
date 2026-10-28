@@ -72,9 +72,9 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
             title: 'Print Your Student Identity Card',
             difficulty: 'Easy',
             description:
-              'Write a Java program that prints your Name on the first line and your College/Role on the second line.\n\nInput: None\nOutput Format:\nLine 1: Name: Alex Mercer\nLine 2: College: Linkora University',
-            starterCode: `class Main {\n    public static void main(String[] args) {\n        // Step 1: Print your name\n        System.out.println("Name: Alex Mercer");\n        // Step 2: Print your college\n        System.out.println("College: Linkora University");\n    }\n}`,
-            expectedOutput: 'Name: Alex Mercer\nCollege: Linkora University',
+              'Write a Java program that prints your Name on the first line and your College/Role on the second line.\n\nInput: None\nOutput Format:\nLine 1: Name: Alex Mercer\nLine 2: College: Kollabrix University',
+            starterCode: `class Main {\n    public static void main(String[] args) {\n        // Step 1: Print your name\n        System.out.println("Name: Alex Mercer");\n        // Step 2: Print your college\n        System.out.println("College: Kollabrix University");\n    }\n}`,
+            expectedOutput: 'Name: Alex Mercer\nCollege: Kollabrix University',
             hints: [
               'Use System.out.println() twice.',
               'Ensure exact spelling and spaces match the prompt.',
@@ -366,7 +366,7 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
             hints: ['Use cout and endl twice.'],
           },
         ],
-        compilerStarterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "⚡ C++20 is active in Linkora Compiler!" << endl;\n    cout << "Ready for high-speed algorithmic practice." << endl;\n    return 0;\n}`,
+        compilerStarterCode: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "⚡ C++20 is active in Kollabrix Compiler!" << endl;\n    cout << "Ready for high-speed algorithmic practice." << endl;\n    return 0;\n}`,
       },
       {
         stepNumber: 2,
@@ -611,7 +611,7 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
           codeExamples: [
             {
               title: 'Python First Script',
-              code: `name = "Linkora Student"\ngpa = 3.9\nprint(f"Welcome {name}! Target GPA: {gpa}")`,
+              code: `name = "Kollabrix Student"\ngpa = 3.9\nprint(f"Welcome {name}! Target GPA: {gpa}")`,
             },
           ],
           cheatsheet: [
@@ -1373,7 +1373,7 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
           codeExamples: [
             {
               title: 'Spring Boot Controller Architecture (Pattern)',
-              code: `// Enterprise Controller Structure Pattern\nclass UserDto {\n    String email;\n    String role;\n    UserDto(String e, String r) { this.email = e; this.role = r; }\n}\n\nclass Main {\n    public static void main(String[] args) {\n        UserDto user = new UserDto("admin@linkora.edu", "STUDENT_ADMIN");\n        System.out.println("Simulated Endpoint 200 OK: " + user.email + " [" + user.role + "]");\n    }\n}`,
+              code: `// Enterprise Controller Structure Pattern\nclass UserDto {\n    String email;\n    String role;\n    UserDto(String e, String r) { this.email = e; this.role = r; }\n}\n\nclass Main {\n    public static void main(String[] args) {\n        UserDto user = new UserDto("admin@kollabrix.com", "STUDENT_ADMIN");\n        System.out.println("Simulated Endpoint 200 OK: " + user.email + " [" + user.role + "]");\n    }\n}`,
             },
           ],
           cheatsheet: ['Follow Clean Architecture: Controller -> Service -> Repository.'],
@@ -1393,9 +1393,9 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
             title: 'Simulate Microservice Response JSON',
             difficulty: 'Medium',
             description:
-              'Simulate a microservice HTTP 200 payload: "status: 200, service: linkora-auth, health: UP".',
-            starterCode: `class Main {\n    public static void main(String[] args) {\n        System.out.println("status: 200, service: linkora-auth, health: UP");\n    }\n}`,
-            expectedOutput: 'status: 200, service: linkora-auth, health: UP',
+              'Simulate a microservice HTTP 200 payload: "status: 200, service: kollabrix-auth, health: UP".',
+            starterCode: `class Main {\n    public static void main(String[] args) {\n        System.out.println("status: 200, service: kollabrix-auth, health: UP");\n    }\n}`,
+            expectedOutput: 'status: 200, service: kollabrix-auth, health: UP',
             hints: ['Format exact output string.'],
           },
         ],
@@ -1679,7 +1679,7 @@ export const DEFAULT_CURRICULA: Record<string, LanguageCurriculum> = {
             hints: ['Access dictionary keys and format string.'],
           },
         ],
-        compilerStarterCode: `import json\n\npayload = {"service": "linkora-ai", "status": "healthy"}\nprint("Payload JSON:", json.dumps(payload))`,
+        compilerStarterCode: `import json\n\npayload = {"service": "kollabrix-ai", "status": "healthy"}\nprint("Payload JSON:", json.dumps(payload))`,
       },
       {
         stepNumber: 3,

@@ -144,7 +144,7 @@ export default function ResourcesPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-black tracking-tight text-white group-hover:text-amber-300 transition-colors">
-                Linkora
+                Kollabrix
               </span>
               <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
                 Resources Hub
@@ -179,7 +179,7 @@ export default function ResourcesPage() {
             <div className="space-y-4 max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-mono tracking-wider uppercase backdrop-blur-md shadow-md shadow-amber-500/10">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Linkora Collegiate Learning Hub • Zero to Squad-Ready</span>
+                <span>Kollabrix Collegiate Learning Hub • Zero to Squad-Ready</span>
               </div>
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.12]">
                 Choose Your Path to{' '}
@@ -188,7 +188,7 @@ export default function ResourcesPage() {
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-stone-300 max-w-2xl mx-auto leading-relaxed font-normal">
-                Linkora is where student developers find teammates and win hackathons. Before jumping into a squad, choose your path below to master essential skills through guided lectures, hands-on practice, concept notes, and our live online compiler.
+                Kollabrix is where student developers find teammates and win hackathons. Before jumping into a squad, choose your path below to master essential skills through guided lectures, hands-on practice, concept notes, and our live online compiler.
               </p>
             </div>
 
@@ -240,7 +240,7 @@ export default function ResourcesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-emerald-400 font-bold">✓</span>
-                      <span>Build small mini-projects to showcase on Linkora</span>
+                      <span>Build small mini-projects to showcase on Kollabrix</span>
                     </div>
                   </div>
 

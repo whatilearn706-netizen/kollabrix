@@ -190,7 +190,7 @@ export const DEFAULT_CAMPUS_DEADLINES: CampusDeadlineItem[] = [
   {
     id: 'dl-1',
     title: 'Grand Collegiate Winter Hackathon 2026',
-    organizer: 'Linkora Innovation Council & IIT Delhi',
+    organizer: 'Kollabrix Innovation Council & IIT Delhi',
     type: 'hackathon',
     deadlineDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
     category: 'Web3 & AI Hackathon',

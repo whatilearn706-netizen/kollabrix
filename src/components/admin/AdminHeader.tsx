@@ -133,7 +133,7 @@ export function AdminHeader({
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
-                  Linkora Admin Control Center
+                  Kollabrix Admin Control Center
                 </h1>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
                   <ShieldCheck className="w-3 h-3 text-emerald-400" />

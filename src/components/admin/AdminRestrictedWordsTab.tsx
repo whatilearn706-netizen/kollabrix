@@ -355,7 +355,7 @@ export function AdminRestrictedWordsTab({ authToken }: AdminRestrictedWordsTabPr
           </span>
         </div>
         <p className="text-xs text-slate-400">
-          Type or paste any text into this box. You will see how Linkora instantaneously detects prohibited terms, warns the user, and sanitizes the output.
+          Type or paste any text into this box. You will see how Kollabrix instantaneously detects prohibited terms, warns the user, and sanitizes the output.
         </p>
         <Input
           value={testInput}
@@ -506,9 +506,9 @@ export function AdminRestrictedWordsTab({ authToken }: AdminRestrictedWordsTabPr
       <div className="p-4 rounded-xl border border-charcoal-800 bg-charcoal-900/40 flex items-start gap-3 text-xs text-slate-400">
         <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-semibold text-slate-300">How Linkora Restricted Mode Works:</p>
+          <p className="font-semibold text-slate-300">How Kollabrix Restricted Mode Works:</p>
           <p>
-            When a student or applicant writes or pastes text anywhere on Linkora (project title, description, team pitch, comments, profile bio, search), the platform interceptor evaluates each word. If a prohibited term is found, Linkora immediately strips the word, triggers an on-screen warning, and blocks form submission.
+            When a student or applicant writes or pastes text anywhere on Kollabrix (project title, description, team pitch, comments, profile bio, search), the platform interceptor evaluates each word. If a prohibited term is found, Kollabrix immediately strips the word, triggers an on-screen warning, and blocks form submission.
           </p>
           <p className="text-slate-500">
             Safe word-boundary matching ensures words like &quot;assignment&quot;, &quot;passport&quot;, &quot;classic&quot;, and &quot;developer&quot; are never accidentally blocked.

@@ -89,14 +89,14 @@ export const DEFAULT_SITE_THEME: SiteThemeConfig = {
   navbarStyle: 'auto',
   navbarBgColor: '',
   navbarBorderColor: '',
-  siteTitle: 'Linkora',
+  siteTitle: 'Kollabrix',
   navbarCtaText: 'Start a Project',
 
   footerBgColor: '',
   footerBorderColor: '',
-  footerTagline: 'Collegiate collaboration platform connecting student builders, creators, and mentors.',
+  footerTagline: 'Collegiate innovation platform connecting student builders, creators, and mentors.',
 
-  heroBadgeText: 'Linkora • Student Collaboration Network',
+  heroBadgeText: 'Kollabrix • Collegiate Innovation & Hackathon Network',
   heroHeadline: 'Build something bigger, together.',
   heroSubheadline: 'Find your people, turn ideas into projects, and build a portfolio that proves what you can do.',
   primaryCtaText: 'Explore Projects',

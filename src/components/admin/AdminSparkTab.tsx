@@ -460,7 +460,7 @@ export function AdminSparkTab({ authToken }: AdminSparkTabProps) {
                     <option value="auto">Auto Intelligent Hybrid (Gemini 1.5 → OpenAI → Neural Fallback)</option>
                     <option value="gemini">Google Gemini 1.5 Flash (Recommended - Fastest & High Depth)</option>
                     <option value="openai">OpenAI GPT-4o-mini</option>
-                    <option value="neural">Linkora Built-in Synthesis Neural Engine v2 (Zero External Keys)</option>
+                    <option value="neural">Kollabrix Built-in Synthesis Neural Engine v2 (Zero External Keys)</option>
                   </select>
                 </div>
 

@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const newDeadline: CampusDeadlineItem = {
       id: `dl-${Date.now()}`,
       title: title.trim(),
-      organizer: (organizer || 'Linkora Campus').trim(),
+      organizer: (organizer || 'Kollabrix Campus').trim(),
       type: type || 'hackathon',
       deadlineDate: new Date(deadlineDate).toISOString(),
       category: category || 'Campus Opportunity',

@@ -418,7 +418,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>LINKORA PULSE • THE COLLEGIATE NETWORK</span>
+              <span>KOLLABRIX PULSE • THE COLLEGIATE NETWORK</span>
             </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
               {sections.pulseTitle || 'Campus Innovation Hub'}
@@ -606,9 +606,9 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-slate-950 text-xs">
-                          L
+                          K
                         </span>
-                        <span className="font-extrabold text-sm text-white tracking-wider">LINKORA</span>
+                        <span className="font-extrabold text-sm text-white tracking-wider">KOLLABRIX</span>
                       </div>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                         VERIFIED STUDENT BUILDER
@@ -622,7 +622,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-slate-800 text-xs text-slate-400 font-mono">
-                      <span>linkora.in/p/{cardName.toLowerCase().replace(/\s+/g, '')}</span>
+                      <span>kollabrix.com/p/{cardName.toLowerCase().replace(/\s+/g, '')}</span>
                       <span className="text-emerald-400 font-bold">Top 5% Collegiate Peer</span>
                     </div>
                   </div>
@@ -665,7 +665,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
                     <button
                       onClick={() => {
                         navigator.clipboard?.writeText(
-                          `Check out my verified Linkora Student Builder profile from ${cardCollege}: https://linkora-link.online/teammates`
+                          `Check out my verified Kollabrix Student Builder profile from ${cardCollege}: https://linkora-link.online/teammates`
                         );
                         setCopiedShareLink(true);
                         setTimeout(() => setCopiedShareLink(false), 2000);
@@ -701,7 +701,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
                 </span>
                 <h3 className="text-lg font-bold text-white">Assemble Your Ideal Hackathon Squad</h3>
                 <p className="text-xs text-slate-400">
-                  Tell Linkora AI what you are building. It queries the verified student talent graph to recommend the
+                  Tell Kollabrix AI what you are building. It queries the verified student talent graph to recommend the
                   highest compatibility partners.
                 </p>
               </div>

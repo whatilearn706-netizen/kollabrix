@@ -334,7 +334,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
           </div>
 
           <p className="text-xs text-slate-400 leading-relaxed">
-            Linkora delivers real-time emergency alerts directly to your personal WhatsApp with 1-tap maintenance buttons whenever threats or brute-force attempts are detected.
+            Kollabrix delivers real-time emergency alerts directly to your personal WhatsApp with 1-tap maintenance buttons whenever threats or brute-force attempts are detected.
           </p>
 
           {/* Quick CallMeBot Free Activation Helper */}
@@ -627,7 +627,7 @@ export function AdminSecurityWatchdogTab({ authToken }: AdminSecurityWatchdogTab
       <div className="p-6 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-xl space-y-4">
         <div className="flex items-center gap-2 border-b border-charcoal-800 pb-3">
           <ShieldCheck className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-sm font-bold text-white">Why Linkora Is Architecturally Protected</h3>
+          <h3 className="text-sm font-bold text-white">Why Kollabrix Is Architecturally Protected</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

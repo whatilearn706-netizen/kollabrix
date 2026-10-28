@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
               codeExamples: [
                 {
                   title: 'Hello World Starter',
-                  code: c.compilerStarterCode || '// Start writing code here\nconsole.log("Hello from Linkora!");',
+                  code: c.compilerStarterCode || '// Start writing code here\nconsole.log("Hello from Kollabrix!");',
                   explanation: 'Initial starter code demonstrating standard program execution.',
                 },
               ],
@@ -149,13 +149,13 @@ export async function POST(req: NextRequest) {
                 id: `q-${newId}-1`,
                 title: 'First Output Verification',
                 difficulty: 'Easy',
-                description: `Write a program that outputs "Linkora Skill Master: ${c.title || 'Ready'}".`,
+                description: `Write a program that outputs "Kollabrix Skill Master: ${c.title || 'Ready'}".`,
                 starterCode: c.compilerStarterCode || '// Write code here\n',
-                expectedOutput: `Linkora Skill Master: ${c.title || 'Ready'}`,
+                expectedOutput: `Kollabrix Skill Master: ${c.title || 'Ready'}`,
                 hints: ['Print the exact verification message.'],
               },
             ],
-            compilerStarterCode: c.compilerStarterCode || '// Linkora Coding Sandbox\n',
+            compilerStarterCode: c.compilerStarterCode || '// Kollabrix Coding Sandbox\n',
           },
         ],
       };

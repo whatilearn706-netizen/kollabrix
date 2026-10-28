@@ -22,42 +22,42 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://linkora-link.online
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Linkora — Student Project Collaboration & Hackathon Platform',
-    template: '%s | Linkora',
+    default: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+    template: '%s | Kollabrix',
   },
   description:
-    'Linkora is the official student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    'Kollabrix is the official student innovation network to discover collegiate projects, assemble hackathon dream teams, compete in proctored ICPC arenas, and build game-changing engineering portfolios.',
   keywords: [
+    'Kollabrix',
+    'kollabrix',
+    'Kollabrix platform',
+    'kollabrix collegiate network',
+    'kollabrix.com',
+    'kollabrix.in',
+    'kollabrix online',
     'Linkora',
-    'linkora',
-    'LinkOra',
-    'linkora platform',
-    'linkora project collaboration',
-    'linkora.in',
-    'Linkora India',
-    'linkora online',
-    'linkora-link.online',
-    'linkora-edu.online',
     'student projects',
     'college collaboration',
     'hackathon teams',
     'developer platform',
     'student portfolio',
+    'ICPC contest arena',
     'university software development',
   ],
-  authors: [{ name: 'Linkora Team' }],
-  creator: 'Linkora',
-  publisher: 'Linkora',
-  applicationName: 'Linkora',
+  authors: [{ name: 'Kollabrix Team' }],
+  creator: 'Kollabrix',
+  publisher: 'Kollabrix',
+  applicationName: 'Kollabrix',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
+      { url: '/brand/kollabrix-logo.svg', type: 'image/svg+xml' },
       { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
       { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
       { url: '/favicon-144x144.png', sizes: '144x144', type: 'image/png' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-      { url: '/brand/linkora-logo.png', sizes: '1024x1024', type: 'image/png' },
+      { url: '/brand/kollabrix-logo.svg', sizes: 'any', type: 'image/svg+xml' },
     ],
     shortcut: '/favicon.ico',
     apple: [
@@ -72,31 +72,31 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
-    title: 'Linkora — Student Project Collaboration & Hackathon Platform',
+    title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
     description:
-      'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
-    siteName: 'Linkora',
+      'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    siteName: 'Kollabrix',
     images: [
       {
-        url: `${siteUrl}/brand/linkora-logo.png`,
+        url: `${siteUrl}/brand/kollabrix-logo.svg`,
         width: 1024,
         height: 1024,
-        alt: 'Linkora Brand Logo',
+        alt: 'Kollabrix Brand Logo',
       },
       {
         url: `${siteUrl}/icon-512.png`,
         width: 512,
         height: 512,
-        alt: 'Linkora Icon',
+        alt: 'Kollabrix Icon',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Linkora — Student Project Collaboration & Hackathon Platform',
+    title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
     description:
-      'Linkora is the student collaboration network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
-    images: [`${siteUrl}/brand/linkora-logo.png`],
+      'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
+    images: [`${siteUrl}/brand/kollabrix-logo.svg`],
   },
   robots: {
     index: true,
@@ -125,9 +125,9 @@ const jsonLd = {
       '@type': 'WebSite',
       '@id': 'https://linkora-link.online/#website',
       url: 'https://linkora-link.online/',
-      name: 'Linkora',
-      alternateName: ['Linkora', 'LinkOra', 'Linkora Platform', 'linkora-link.online', 'linkora.in', 'Linkora India'],
-      description: 'College-Wide Student Project Collaboration & Hackathon Platform',
+      name: 'Kollabrix',
+      alternateName: ['Kollabrix', 'Kollabrix Platform', 'Linkora', 'LinkOra', 'linkora-link.online', 'linkora.in', 'Kollabrix India'],
+      description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',
@@ -144,14 +144,14 @@ const jsonLd = {
     {
       '@type': 'WebApplication',
       '@id': 'https://linkora-link.online/#app',
-      name: 'Linkora',
-      alternateName: ['LinkOra', 'Linkora Platform'],
+      name: 'Kollabrix',
+      alternateName: ['Kollabrix Platform', 'Linkora'],
       applicationCategory: 'EducationalApplication, DeveloperApplication, CollaborationPlatform',
       operatingSystem: 'All Modern Web Browsers, iOS, Android, macOS, Windows',
       browserRequirements: 'Requires JavaScript. Requires HTML5.',
       url: 'https://linkora-link.online',
       description:
-        'Linkora is the official student project collaboration network, real-time workspace huddle, and hackathon closer platform.',
+        'Kollabrix is the official student project collaboration network, real-time workspace huddle, and hackathon closer platform.',
       offers: {
         '@type': 'Offer',
         price: '0',
@@ -168,7 +168,7 @@ const jsonLd = {
     {
       '@type': 'ItemList',
       '@id': 'https://linkora-link.online/#sitelinks',
-      name: 'Linkora Sitelinks',
+      name: 'Kollabrix Sitelinks',
       itemListElement: [
         {
           '@type': 'SiteNavigationElement',
@@ -203,19 +203,19 @@ const jsonLd = {
     {
       '@type': 'Organization',
       '@id': 'https://linkora-link.online/#organization',
-      name: 'Linkora',
-      alternateName: ['LinkOra'],
+      name: 'Kollabrix',
+      alternateName: ['Kollabrix Platform', 'Linkora'],
       url: 'https://linkora-link.online/',
       logo: {
         '@type': 'ImageObject',
         '@id': 'https://linkora-link.online/#logo',
-        url: 'https://linkora-link.online/brand/linkora-logo.png',
-        caption: 'Linkora Logo',
+        url: 'https://linkora-link.online/brand/kollabrix-logo.svg',
+        caption: 'Kollabrix Logo',
         inLanguage: 'en-US',
         width: 1024,
         height: 1024,
       },
-      image: 'https://linkora-link.online/brand/linkora-logo.png',
+      image: 'https://linkora-link.online/brand/kollabrix-logo.svg',
       sameAs: [
         'https://linkora-link.online',
         'https://linkora.in',
@@ -249,10 +249,10 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="application-name" content="Linkora" />
-        <meta name="apple-mobile-web-app-title" content="Linkora" />
-        <meta name="site_name" content="Linkora" />
-        <meta property="og:site_name" content="Linkora" />
+        <meta name="application-name" content="Kollabrix" />
+        <meta name="apple-mobile-web-app-title" content="Kollabrix" />
+        <meta name="site_name" content="Kollabrix" />
+        <meta property="og:site_name" content="Kollabrix" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

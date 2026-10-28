@@ -49,7 +49,7 @@ export default function PrivacyPolicyPage() {
               <span>Information We Collect</span>
             </h2>
             <p>
-              Linkora collects minimal, purpose-driven data required to operate collaborative project workspaces and collegiate hackathons:
+              Kollabrix collects minimal, purpose-driven data required to operate collaborative project workspaces and collegiate hackathons:
             </p>
             <ul className="list-disc pl-6 space-y-1.5 text-slate-600 dark:text-slate-400">
               <li><strong>Account Credentials:</strong> Institutional or personal email address used exclusively for passwordless OTP authentication. We do not store plaintext passwords.</li>
@@ -121,7 +121,7 @@ export default function PrivacyPolicyPage() {
               <span>Cookies &amp; Local Browser Storage</span>
             </h2>
             <p>
-              Linkora uses essential browser storage mechanisms (session cookies and `localStorage`) strictly to maintain your active authentication session, cache draft project submissions, and persist your preferred visual theme across page visits. We do not use intrusive cross-site tracking cookies.
+              Kollabrix uses essential browser storage mechanisms (session cookies and `localStorage`) strictly to maintain your active authentication session, cache draft project submissions, and persist your preferred visual theme across page visits. We do not use intrusive cross-site tracking cookies.
             </p>
           </section>
 
@@ -130,8 +130,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Privacy Officer &amp; Inquiries</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               For questions regarding our privacy practices, data deletion requests, or institutional compliance agreements, please contact our Data Governance Team at{' '}
-              <a href="mailto:privacy@linkora.edu" className="text-emerald-600 dark:text-emerald-400 underline font-medium">
-                privacy@linkora.edu
+              <a href="mailto:whatilearn706@gmail.com" className="text-emerald-600 dark:text-emerald-400 underline font-medium">
+                whatilearn706@gmail.com
               </a>.
             </p>
           </section>

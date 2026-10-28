@@ -49,7 +49,7 @@ export default function TermsOfServicePage() {
               <span>Acceptance of Terms</span>
             </h2>
             <p>
-              By accessing, browsing, registering for, or using the <strong>Linkora</strong> collegiate collaboration platform (&quot;Platform&quot;), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, you may not access or use the Platform.
+              By accessing, browsing, registering for, or using the <strong>Kollabrix</strong> collegiate collaboration platform (&quot;Platform&quot;), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, you may not access or use the Platform.
             </p>
           </section>
 
@@ -60,7 +60,7 @@ export default function TermsOfServicePage() {
               <span>Collegiate Eligibility &amp; Account Responsibility</span>
             </h2>
             <p>
-              Linkora is specifically engineered for tertiary education students, collegiate engineering teams, faculty members, and academic researchers.
+              Kollabrix is specifically engineered for tertiary education students, collegiate engineering teams, faculty members, and academic researchers.
             </p>
             <ul className="list-disc pl-6 space-y-1.5 text-slate-600 dark:text-slate-400">
               <li>You must provide accurate, current, and verifiable information during email authentication and profile onboarding.</li>
@@ -81,7 +81,7 @@ export default function TermsOfServicePage() {
                 <span>100% Student &amp; Creator Ownership Guarantee</span>
               </p>
               <p>
-                Linkora claims <strong>no ownership rights</strong> over the software code, UI designs, system architectures, research documents, or proprietary assets created by student teams within project workspaces or hackathon submissions.
+                Kollabrix claims <strong>no ownership rights</strong> over the software code, UI designs, system architectures, research documents, or proprietary assets created by student teams within project workspaces or hackathon submissions.
               </p>
             </div>
             <p>
@@ -112,7 +112,7 @@ export default function TermsOfServicePage() {
               <span>Collegiate Hackathons &amp; Competition Rules</span>
             </h2>
             <p>
-              Participation in campus or national hackathons hosted via Linkora is subject to event-specific rules, evaluation rubrics, and deadlines established by verified faculty organizers.
+              Participation in campus or national hackathons hosted via Kollabrix is subject to event-specific rules, evaluation rubrics, and deadlines established by verified faculty organizers.
             </p>
             <ul className="list-disc pl-6 space-y-1.5 text-slate-600 dark:text-slate-400">
               <li>Private campus hackathons require a valid departmental join code issued by designated collegiate organizers.</li>
@@ -128,7 +128,7 @@ export default function TermsOfServicePage() {
               <span>Limitation of Liability &amp; Disclaimers</span>
             </h2>
             <p>
-              The Platform is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis without warranties of any kind. Linkora and its contributing engineering team shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the platform.
+              The Platform is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis without warranties of any kind. Kollabrix and its contributing engineering team shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the platform.
             </p>
           </section>
 
@@ -137,8 +137,8 @@ export default function TermsOfServicePage() {
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Contact &amp; Governance</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               If you have questions regarding these Terms or wish to report a violation, email{' '}
-              <a href="mailto:legal@linkora.edu" className="text-violet-600 dark:text-violet-400 underline font-medium">
-                legal@linkora.edu
+              <a href="mailto:whatilearn706@gmail.com" className="text-violet-600 dark:text-violet-400 underline font-medium">
+                whatilearn706@gmail.com
               </a>.
             </p>
           </section>

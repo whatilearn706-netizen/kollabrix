@@ -82,7 +82,7 @@ const SPOTLIGHT_PRESETS = [
   {
     name: '📢 Ambassador Hiring',
     badge: '📢 STUDENT LEADERSHIP',
-    title: 'Lead Linkora on Your Campus',
+    title: 'Lead Kollabrix on Your Campus',
     subtitle: 'Become an official Campus Ambassador, host collegiate sprint sessions, and earn verified citations.',
     content: 'Ambassadors receive exclusive swag kits, direct access to the founding team, and letter of recommendation citations signed by platform leads.',
     primaryButtonText: 'Apply as Ambassador →',
@@ -339,7 +339,7 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
   // CSV Report Generator for Dean/CEO
   const handleDownloadCsv = () => {
     const rows = [
-      ['Linkora Platform Executive Metric', 'Collegiate Value', 'Report Date'],
+      ['Kollabrix Platform Executive Metric', 'Collegiate Value', 'Report Date'],
       ['Total Registered Students', ceoStats?.totalUsers || 142, new Date().toLocaleDateString()],
       ['Total Live Projects', ceoStats?.totalProjects || 38, new Date().toLocaleDateString()],
       ['Total Teammate Applications', ceoStats?.totalApplications || 96, new Date().toLocaleDateString()],
@@ -359,7 +359,7 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Linkora_Executive_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Kollabrix_Executive_Report_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -367,7 +367,7 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
 
   // Copy Markdown Pitch Report
   const handleCopyMarkdownReport = () => {
-    const md = `# Linkora Executive Platform Briefing
+    const md = `# Kollabrix Executive Platform Briefing
 **Date:** ${new Date().toLocaleDateString()}
 **Platform:** https://linkora-link.online
 
@@ -543,7 +543,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                 <span className="text-xs font-normal text-slate-400 font-mono">(6 Specialized Components)</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1 max-w-3xl">
-                Toggle all 6 modern warm skeuomorphic templates live or inactive across Linkora. The Master Switch can publish or suppress all 6 templates simultaneously, or you can tune each component individually.
+                Toggle all 6 modern warm skeuomorphic templates live or inactive across Kollabrix. The Master Switch can publish or suppress all 6 templates simultaneously, or you can tune each component individually.
               </p>
             </div>
 
@@ -746,7 +746,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </div>
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                3-tier concentric spinning orbital rings with Python, Rust, React, PyTorch, IIT Delhi, and BITS Pilani counter-revolving around a glowing Linkora Core.
+                3-tier concentric spinning orbital rings with Python, Rust, React, PyTorch, IIT Delhi, and BITS Pilani counter-revolving around a glowing Kollabrix Core.
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
@@ -854,7 +854,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </div>
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                Animated curved energy beams displaying student roles (AI, UI, BE) flowing into the Linkora Matching Core and emerging into hackathon wins and capstone repos.
+                Animated curved energy beams displaying student roles (AI, UI, BE) flowing into the Kollabrix Matching Core and emerging into hackathon wins and capstone repos.
               </p>
 
               <div className="pt-2 border-t border-charcoal-800 flex items-center justify-between text-[11px] font-mono">
@@ -1752,7 +1752,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   { key: 'colleges' as const, label: '13. Verified Campus Partner Universities', tag: 'Partners', desc: 'Participating college network grid' },
                   { key: 'badges' as const, label: '14. Collegiate Honors & Hall of Fame', tag: 'Honors', desc: 'Verified student badges and award citations' },
                   { key: 'hackathons' as const, label: '15. Live Campus Hackathons Strip', tag: 'Contests', desc: 'Department competition passcode and portals' },
-                  { key: 'ctaBanner' as const, label: '16. Bottom Join Linkora Free Banner', tag: 'Closing', desc: 'Closing call to action for students and faculty' },
+                  { key: 'ctaBanner' as const, label: '16. Bottom Join Kollabrix Free Banner', tag: 'Closing', desc: 'Closing call to action for students and faculty' },
                 ].map(({ key, label, tag, desc }) => (
                   <label
                     key={key}
@@ -2207,7 +2207,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   >
                     <option value="below_hero">Below Hero & Domain Cards (Top Priority)</option>
                     <option value="above_showcase">Middle Stage (Above Opportunities Showcase)</option>
-                    <option value="above_footer">Bottom Stage (Above Join Linkora Footer)</option>
+                    <option value="above_footer">Bottom Stage (Above Join Kollabrix Footer)</option>
                   </select>
                 </div>
 

@@ -669,7 +669,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                     <label className="block text-xs font-semibold text-slate-300 mb-1">Site Wordmark / Name</label>
                     <Input
                       type="text"
-                      value={theme.siteTitle || 'Linkora'}
+                      value={theme.siteTitle || 'Kollabrix'}
                       onChange={(e) => updateField('siteTitle', e.target.value)}
                       className="bg-charcoal-800 border-charcoal-700 text-xs font-bold"
                     />
@@ -921,7 +921,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
               </div>
 
               <div className="p-3 rounded-xl bg-charcoal-800/80 border border-charcoal-700 text-[11px] text-slate-400">
-                <span className="font-bold text-slate-200">Tip:</span> Use classes like <code className="text-pink-400">.site-card</code>, <code className="text-pink-400">.site-btn-primary</code>, or standard tags like <code className="text-pink-400">h1, h2, nav</code> to style any element across Linkora.
+                <span className="font-bold text-slate-200">Tip:</span> Use classes like <code className="text-pink-400">.site-card</code>, <code className="text-pink-400">.site-btn-primary</code>, or standard tags like <code className="text-pink-400">h1, h2, nav</code> to style any element across Kollabrix.
               </div>
             </div>
           )}
@@ -966,7 +966,7 @@ export function AdminThemeTab({ authToken, adminEmail }: AdminThemeTabProps) {
                   ▲
                 </div>
                 <span style={{ color: theme.headingColor }} className="text-xs font-black">
-                  {theme.siteTitle || 'Linkora'}
+                  {theme.siteTitle || 'Kollabrix'}
                 </span>
               </div>
               <div className="flex items-center gap-2">

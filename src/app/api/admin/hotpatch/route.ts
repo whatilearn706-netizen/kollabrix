@@ -21,7 +21,7 @@ export interface HotPatchConfig {
 
 const DEFAULT_HOTPATCH: HotPatchConfig = {
   enabled: true,
-  customCss: `/* Linkora Live AI Hot-Patch & CSS Injection */
+  customCss: `/* Kollabrix Live AI Hot-Patch & CSS Injection */
 /* Paste any CSS from ChatGPT, Claude, or Gemini below to fix glitches live */
 `,
   customJs: `// Live Safe JavaScript Hot-Fixes
@@ -36,7 +36,7 @@ const DEFAULT_HOTPATCH: HotPatchConfig = {
 let memoryHotPatch = { ...DEFAULT_HOTPATCH };
 
 /**
- * Linkora SafeGuard Shield: Audits code for security hazards before live injection.
+ * Kollabrix SafeGuard Shield: Audits code for security hazards before live injection.
  * Prevents credential theft, cookie sniffing, and unauthorized exfiltration.
  */
 function auditHotPatchSafety(css: string, js: string): { safe: boolean; reason?: string } {

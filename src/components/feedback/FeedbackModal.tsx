@@ -199,7 +199,7 @@ export function FeedbackModal() {
             <p className="text-xs text-slate-400 leading-relaxed">
               Have an idea or bug report? Send directly to{' '}
               <a
-                href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+                href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
                 className="text-cyan-300 underline font-mono font-bold hover:text-cyan-200"
               >
                 whatilearn706@gmail.com
@@ -228,7 +228,7 @@ export function FeedbackModal() {
                 Feedback Received!
               </h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Thank you for helping us improve Linkora! Your message has been delivered directly into the Admin Control Center.
+                Thank you for helping us improve Kollabrix! Your message has been delivered directly into the Admin Control Center.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -324,7 +324,7 @@ export function FeedbackModal() {
                 required
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Tell us what you want added, any bug you noticed, or how Linkora can be better for your college..."
+                placeholder="Tell us what you want added, any bug you noticed, or how Kollabrix can be better for your college..."
                 className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/15 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none"
               />
             </div>

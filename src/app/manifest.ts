@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Linkora — College-Wide Student Project Collaboration Platform',
-    short_name: 'Linkora',
+    name: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+    short_name: 'Kollabrix',
     description:
       'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
     start_url: '/',

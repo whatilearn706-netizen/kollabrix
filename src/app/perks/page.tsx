@@ -57,7 +57,7 @@ export default function PerksPage() {
 
           <div className="space-y-2">
             <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              Linkora Campus Vault
+              Kollabrix Campus Vault
             </span>
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
               Student Perks Vault Coming Soon

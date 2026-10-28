@@ -49,7 +49,7 @@ export function GlobalHotPatchInjector() {
         const newScript = document.createElement('script');
         newScript.id = 'linkora-live-hotpatch-js';
         newScript.type = 'text/javascript';
-        newScript.textContent = `try { ${cleanJs} } catch (err) { console.warn("[Linkora HotPatch execution notice]:", err); }`;
+        newScript.textContent = `try { ${cleanJs} } catch (err) { console.warn("[Kollabrix HotPatch execution notice]:", err); }`;
         document.body.appendChild(newScript);
         executedJsRef.current = cleanJs;
       } catch (scriptErr) {

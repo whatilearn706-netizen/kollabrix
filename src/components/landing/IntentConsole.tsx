@@ -144,7 +144,7 @@ export function IntentConsole({
 
         <span className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-mono text-slate-400 pr-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Linkora Console</span>
+          <span>Kollabrix Console</span>
         </span>
       </div>
 

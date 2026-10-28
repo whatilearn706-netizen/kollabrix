@@ -288,7 +288,7 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                  Linkora Spark: AI Project Blueprint Generator
+                  Kollabrix Spark: AI Project Blueprint Generator
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold uppercase">
                   AI Powered

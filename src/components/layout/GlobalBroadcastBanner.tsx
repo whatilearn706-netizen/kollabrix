@@ -125,6 +125,8 @@ export function GlobalBroadcastBanner() {
   }
 
   const themeStyle = THEME_STYLES[banner.theme] || THEME_STYLES.gradient;
+  const bannerText = banner.text ? banner.text.replace(/Linkora/gi, 'Kollabrix') : '';
+  const bannerLinkText = banner.linkText ? banner.linkText.replace(/Linkora/gi, 'Kollabrix') : '';
 
   const handleDismiss = () => {
     setIsDismissed(true);
@@ -145,13 +147,13 @@ export function GlobalBroadcastBanner() {
             <Megaphone className="w-3 h-3 shrink-0" />
             Announcement
           </span>
-          <span className="font-semibold leading-tight">{banner.text}</span>
-          {banner.linkText && banner.linkUrl && (
+          <span className="font-semibold leading-tight">{bannerText}</span>
+          {bannerLinkText && banner.linkUrl && (
             <Link
               href={banner.linkUrl}
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-xs transition-colors shadow-subtle ${themeStyle.button}`}
             >
-              <span>{banner.linkText}</span>
+              <span>{bannerLinkText}</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           )}

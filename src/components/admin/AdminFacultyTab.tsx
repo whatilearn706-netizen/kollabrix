@@ -586,7 +586,7 @@ export function AdminFacultyTab({ authToken, adminEmail }: AdminFacultyTabProps)
               </span>
             </h3>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Professors and instructors who currently have active teacher privileges on Linkora.
+              Professors and instructors who currently have active teacher privileges on Kollabrix.
             </p>
           </div>
 

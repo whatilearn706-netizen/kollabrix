@@ -125,7 +125,7 @@ export default function FeedbackPage() {
             <span>COMMUNITY FEEDBACK & SUGGESTIONS</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
-            Help Shape Linkora
+            Help Shape Kollabrix
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             Your voice directly influences our roadmap. Found a bug, have an idea for campus hackathons, or want a new tool? Tell Mayank and the core team.
@@ -143,7 +143,7 @@ export default function FeedbackPage() {
                 Feedback Successfully Received!
               </h2>
               <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
-                Thank you for contributing to the Linkora collegiate network. Your feedback has been forwarded directly to the Linkora Admin desk.
+                Thank you for contributing to the Kollabrix collegiate network. Your feedback has been forwarded directly to the Kollabrix Admin desk.
               </p>
             </div>
 
@@ -260,7 +260,7 @@ export default function FeedbackPage() {
                     rows={5}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Tell us what's working well, what feels glitchy, or what features you'd like to see next on Linkora..."
+                    placeholder="Tell us what's working well, what feels glitchy, or what features you'd like to see next on Kollabrix..."
                     className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-slate-50 dark:bg-charcoal-800 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all resize-y"
                     required
                   />
@@ -353,7 +353,7 @@ export default function FeedbackPage() {
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        <span>Send to Linkora Admin Desk</span>
+                        <span>Send to Kollabrix Admin Desk</span>
                       </>
                     )}
                   </button>
@@ -375,7 +375,7 @@ export default function FeedbackPage() {
                   Why Your Feedback Matters
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Linkora is built specifically for Indian engineering campuses. From real-time team builders to ICPC competitive arenas, every feature came directly from student requests.
+                  Kollabrix is built specifically for Indian engineering campuses. From real-time team builders to ICPC competitive arenas, every feature came directly from student requests.
                 </p>
                 <div className="pt-2 space-y-2.5">
                   <div className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">

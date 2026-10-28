@@ -45,13 +45,22 @@ export function isColorDark(colorStr?: string): boolean {
   return false;
 }
 
+export function sanitizeTheme(t: SiteThemeConfig): SiteThemeConfig {
+  return {
+    ...t,
+    siteTitle: (!t.siteTitle || t.siteTitle.trim() === 'Linkora') ? 'Kollabrix' : t.siteTitle.replace(/Linkora/g, 'Kollabrix'),
+    heroBadgeText: t.heroBadgeText ? t.heroBadgeText.replace(/Linkora/g, 'Kollabrix') : 'Kollabrix • Collegiate Innovation & Hackathon Network',
+    announcementBannerText: t.announcementBannerText ? t.announcementBannerText.replace(/Linkora/g, 'Kollabrix') : t.announcementBannerText,
+  };
+}
+
 export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<SiteThemeConfig>(() => {
     if (typeof window !== 'undefined') {
       try {
         const userPref = localStorage.getItem('linkora_user_theme_mode');
         if (userPref === 'dark') {
-          return {
+          return sanitizeTheme({
             ...DEFAULT_SITE_THEME,
             backgroundColor: '#141210',
             surfaceColor: '#1C1916',
@@ -64,11 +73,11 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
             accentColor: '#F59E0B',
             navbarStyle: 'dark',
             cardShadow: 'glow',
-          };
+          });
         }
       } catch (e) {}
     }
-    return DEFAULT_SITE_THEME;
+    return sanitizeTheme(DEFAULT_SITE_THEME);
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -349,8 +358,9 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setTheme(activeTheme);
-      applyThemeToDocument(activeTheme);
+      const sanitized = sanitizeTheme(activeTheme);
+      setTheme(sanitized);
+      applyThemeToDocument(sanitized);
     } catch (err) {
       console.warn('Could not load site theme:', err);
     } finally {

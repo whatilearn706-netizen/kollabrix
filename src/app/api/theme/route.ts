@@ -37,6 +37,19 @@ export async function GET() {
       theme.announcementBannerBg = '#C2410C';
     }
 
+    // Auto-migrate brand strings from legacy Linkora to Kollabrix
+    if (!theme.siteTitle || theme.siteTitle === 'Linkora') {
+      theme.siteTitle = 'Kollabrix';
+    } else {
+      theme.siteTitle = theme.siteTitle.replace(/Linkora/gi, 'Kollabrix');
+    }
+    if (theme.heroBadgeText) {
+      theme.heroBadgeText = theme.heroBadgeText.replace(/Linkora/gi, 'Kollabrix');
+    }
+    if (theme.announcementBannerText) {
+      theme.announcementBannerText = theme.announcementBannerText.replace(/Linkora/gi, 'Kollabrix');
+    }
+
     return NextResponse.json({
       success: true,
       theme,
@@ -131,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Theme, colors, fonts, and design updated successfully across Linkora.',
+      message: 'Theme, colors, fonts, and design updated successfully across Kollabrix.',
       theme: mergedTheme,
     });
   } catch (err: unknown) {

@@ -15,7 +15,7 @@ export default function SignupPage() {
             <BrandLogo size="lg" wordmarkColor="dark" />
           </Link>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Join Linkora
+            Join Kollabrix
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
             Create your account with Google, LinkedIn, or GitHub to start collaborating.

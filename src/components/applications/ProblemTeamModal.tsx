@@ -436,7 +436,7 @@ export function ProblemTeamModal({
                       Post this student team to Explore Projects
                     </span>
                     <span className="text-[11px] text-slate-300 block leading-relaxed mt-0.5">
-                      Enable this if you want other Linkora students browsing Explore &amp; Teammates to discover your squad and apply to join. If unchecked, your team stays exclusively within this faculty challenge.
+                      Enable this if you want other Kollabrix students browsing Explore &amp; Teammates to discover your squad and apply to join. If unchecked, your team stays exclusively within this faculty challenge.
                     </span>
                   </div>
                 </div>

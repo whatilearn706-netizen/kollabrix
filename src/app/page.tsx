@@ -543,7 +543,7 @@ export default function HomePage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
-                  <span>{theme.heroBadgeText || 'Linkora • Student Collaboration Network'}</span>
+                  <span>{(theme.heroBadgeText ? theme.heroBadgeText.replace(/Linkora/g, 'Kollabrix') : 'Kollabrix • Student Collaboration Network')}</span>
                 </div>
 
                 <h1
@@ -556,11 +556,13 @@ export default function HomePage() {
                   className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.06]"
                 >
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600">
-                    Linkora.
+                    Kollabrix.
                   </span>{' '}
                   <span>
                     {theme.heroHeadline ? (
-                      theme.heroHeadline.toLowerCase().startsWith('linkora')
+                      theme.heroHeadline.toLowerCase().startsWith('kollabrix')
+                        ? theme.heroHeadline.replace(/^kollabrix[:.]?\s*/i, '')
+                        : theme.heroHeadline.toLowerCase().startsWith('linkora')
                         ? theme.heroHeadline.replace(/^linkora[:.]?\s*/i, '')
                         : theme.heroHeadline
                     ) : (
@@ -677,7 +679,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Column: Signature 3D Linkora Origami Bird (Desktop Sticky Scroll Stage) */}
+              {/* Right Column: Signature 3D Kollabrix Emblem (Desktop Sticky Scroll Stage) */}
               {sectionsConfig.origamiBird !== false && isDesktop === true && (
                 <div className="hidden lg:flex lg:col-span-5 items-center justify-center relative min-h-[440px] lg:sticky lg:top-24 overflow-hidden z-10">
                   <OrigamiBirdSculpture />
@@ -829,7 +831,7 @@ export default function HomePage() {
             <div className="text-center max-w-2xl mx-auto space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-emerald-700 font-bold">
                 <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                <span>01 • LINKORA CONSOLE</span>
+                <span>01 • KOLLABRIX CONSOLE</span>
               </div>
               <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
                 Intent
@@ -1457,7 +1459,7 @@ export default function HomePage() {
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono font-bold">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>05 • JOIN LINKORA</span>
+                  <span>05 • JOIN KOLLABRIX</span>
                 </div>
               </div>
 
@@ -1502,7 +1504,7 @@ export default function HomePage() {
                     onClick={() => openAuthModal('signup')}
                     leftIcon={<Users className="w-4 h-4 text-white" />}
                   >
-                    Join Linkora Free
+                    Join Kollabrix Free
                   </Button>
                 )}
               </div>
@@ -1511,7 +1513,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Linkora Spark: AI Blueprint & Squad Generator Modal */}
+      {/* Kollabrix Spark: AI Blueprint & Squad Generator Modal */}
       <ProjectSparkGeneratorModal
         isOpen={isSparkModalOpen}
         onClose={() => setIsSparkModalOpen(false)}

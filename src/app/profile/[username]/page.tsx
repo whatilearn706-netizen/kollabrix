@@ -463,7 +463,7 @@ export default function PublicProfilePage() {
                 </h2>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                Factual log of deliverables completed by this student across Linkora collegiate workspaces.
+                Factual log of deliverables completed by this student across Kollabrix collegiate workspaces.
               </p>
             </div>
             <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-slate-100 dark:bg-charcoal-850 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-charcoal-750 self-start">

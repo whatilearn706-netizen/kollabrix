@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Thank you! Your feedback has been sent to the Linkora Admin desk.',
+      message: 'Thank you! Your feedback has been sent to the Kollabrix Admin desk.',
       feedback: newFeedback,
     });
   } catch (err: any) {

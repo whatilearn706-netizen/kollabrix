@@ -18,7 +18,7 @@ export function ConnectionBeamsSection() {
             Animated Connection Beams Flow Graph
           </h2>
           <p className="text-sm mt-1 max-w-2xl" style={{ color: '#A8A29E' }}>
-            Visualizing how disparate campus talents route through the Linkora AI Matching Core into championship hackathons and funded capstones.
+            Visualizing how disparate campus talents route through the Kollabrix AI Matching Core into championship hackathons and funded capstones.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-mono text-stone-400">
@@ -74,11 +74,11 @@ export function ConnectionBeamsSection() {
             </div>
           </div>
 
-          {/* Center Column: Linkora Matching Engine */}
+          {/* Center Column: Kollabrix Matching Engine */}
           <div className="flex flex-col items-center justify-center text-center py-4">
             <div className="relative w-28 h-28 rounded-2xl bg-gradient-to-tr from-[#EA580C] to-[#F59E0B] flex items-center justify-center shadow-[0_0_50px_rgba(234,88,12,0.45)] border-2 border-white/20 select-none">
               <div className="text-white">
-                <div className="text-3xl font-black tracking-tight leading-none">LO</div>
+                <div className="text-3xl font-black tracking-tight leading-none">KB</div>
                 <div className="text-[9px] uppercase tracking-wider font-bold opacity-90 mt-1">Matching Core</div>
               </div>
               <div className="absolute inset-0 rounded-2xl border-2 border-orange-400/50 animate-ping pointer-events-none opacity-40" />

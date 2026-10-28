@@ -196,7 +196,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE hackathon_teams;`;
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Sender Name:</span>
-                <span className="text-purple-300">Linkora Collegiate Team</span>
+                <span className="text-purple-300">Kollabrix Collegiate Team</span>
               </div>
             </div>
 

@@ -116,7 +116,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Auto-prefill form if launched from Linkora Spark AI Generator
+  // Auto-prefill form if launched from Kollabrix Spark AI Generator
   React.useEffect(() => {
     if (typeof window !== 'undefined' && !initialData) {
       try {

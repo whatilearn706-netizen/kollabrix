@@ -990,7 +990,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               <p className="text-xs text-slate-400 mt-1">
                 {isArenaLive
                   ? 'Students can freely view all contests, run code simulations, and submit solutions against the testbench.'
-                  : 'Student traffic is paused with an official Linkora Maintenance notice. Admins can still preview.'}
+                  : 'Student traffic is paused with an official Kollabrix Maintenance notice. Admins can still preview.'}
               </p>
             </div>
           </div>
@@ -1239,7 +1239,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                   <span>External Proctor Meeting App (Google Meet / Zoom / Discord / Teams)</span>
                 </div>
                 <p className="text-[11px] text-slate-400 max-w-2xl leading-relaxed">
-                  For mass proctoring (50+ to 100+ students), set a live conference call URL. All contestants will see this link on entering the arena so faculty can view all shared screens simultaneously in Google Meet or Zoom while Linkora automates cautions, blackouts, and terminations.
+                  For mass proctoring (50+ to 100+ students), set a live conference call URL. All contestants will see this link on entering the arena so faculty can view all shared screens simultaneously in Google Meet or Zoom while Kollabrix automates cautions, blackouts, and terminations.
                 </p>
               </div>
 
@@ -1894,8 +1894,8 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       <CreateIcpcContestModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        organizerName="Linkora Master Admin"
-        collegeName="Linkora Collegiate Platform"
+        organizerName="Kollabrix Master Admin"
+        collegeName="Kollabrix Collegiate Platform"
         onCreated={() => {
           setIsCreateOpen(false);
           loadData();

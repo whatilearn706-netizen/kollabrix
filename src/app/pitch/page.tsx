@@ -46,7 +46,7 @@ const PITCH_SCENES: PitchScene[] = [
     narration:
       'Respected Leadership: Today, Tier-1 recruiters dismiss standard classroom projects because candidates cannot prove authentic team collaboration. Meanwhile, solo student builders on campus struggle to find complementary teammates in AI, full-stack, and UI/UX.',
     visualHighlight:
-      'Linkora transforms isolated coding into verifiable, interdisciplinary collegiate engineering squads.',
+      'Kollabrix transforms isolated coding into verifiable, interdisciplinary collegiate engineering squads.',
     metrics: [
       { label: 'Unverified Resumes', value: '88%' },
       { label: 'Solo Student Dropouts', value: '64%' },
@@ -55,12 +55,12 @@ const PITCH_SCENES: PitchScene[] = [
   },
   {
     id: 2,
-    title: 'Linkora: The Student Innovation Network',
+    title: 'Kollabrix: The Student Innovation Network',
     subtitle: 'From AI project spark to high-performance squad in 2 minutes',
     duration: 14,
     badge: '02 · The Solution',
     narration:
-      'Linkora provides an integrated collegiate platform where students launch AI-assisted sprint blueprints, discover peers across departments, manage sprint roadmaps, and build production software solving real campus challenges.',
+      'Kollabrix provides an integrated collegiate platform where students launch AI-assisted sprint blueprints, discover peers across departments, manage sprint roadmaps, and build production software solving real campus challenges.',
     visualHighlight:
       'Features AI Spark Generator, structured role matching, and Campus Hall of Fame spotlights.',
     metrics: [
@@ -76,7 +76,7 @@ const PITCH_SCENES: PitchScene[] = [
     duration: 14,
     badge: '03 · Recruiter Confidence',
     narration:
-      'Unlike static resumes, Linkora automatically issues an official, verifiable collegiate project credential backed by GitHub commit proof and milestone completion. Recruiters can verify exact code contributions in one click.',
+      'Unlike static resumes, Kollabrix automatically issues an official, verifiable collegiate project credential backed by GitHub commit proof and milestone completion. Recruiters can verify exact code contributions in one click.',
     visualHighlight:
       'Unique credential IDs (e.g. LNK-2026-VRF) verifiable on LinkedIn and candidate profiles.',
     metrics: [
@@ -92,7 +92,7 @@ const PITCH_SCENES: PitchScene[] = [
     duration: 14,
     badge: '04 · University ROI',
     narration:
-      'Linkora elevates university accreditation ratings, boosts median placement packages, and showcases departmental innovations. The platform is live and fully engineered — ready for a zero-cost pilot program at our university today.',
+      'Kollabrix elevates university accreditation ratings, boosts median placement packages, and showcases departmental innovations. The platform is live and fully engineered — ready for a zero-cost pilot program at our university today.',
     visualHighlight:
       'Zero infrastructure cost. Dedicated department governance portal ready for rollout.',
     metrics: [
@@ -140,9 +140,9 @@ export default function PitchPage() {
 
   const executiveMessageText = `Respected Leadership,
 
-I am writing to share Linkora (linkora-link.online), a student-developed platform built to enhance campus project portfolios and placement outcomes at our university.
+I am writing to share Kollabrix (linkora-link.online), a student-developed platform built to enhance campus project portfolios and placement outcomes at our university.
 
-Linkora helps students form cross-disciplinary squads, build production-grade software with GitHub verification, and earn verifiable collegiate project credentials that impress placement recruiters.
+Kollabrix helps students form cross-disciplinary squads, build production-grade software with GitHub verification, and earn verifiable collegiate project credentials that impress placement recruiters.
 
 I have prepared an interactive 60-second executive walkthrough and university impact summary here:
 👉 https://linkora-link.online/pitch
@@ -150,7 +150,7 @@ I have prepared an interactive 60-second executive walkthrough and university im
 The platform is live and ready for a zero-cost departmental pilot. I would welcome 10 minutes of your time this week for a brief demonstration.
 
 Warm regards,
-Linkora Student Innovation Lead
+Kollabrix Student Innovation Lead
 linkora-link.online`;
 
   const copyExecutiveMessage = () => {
@@ -197,7 +197,7 @@ linkora-link.online`;
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-zinc-900 text-white text-xs font-semibold tracking-wide">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Linkora · Collegiate Innovation Initiative</span>
+            <span>Kollabrix · Collegiate Innovation Initiative</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 leading-tight">
             Accelerating Student Placements Through Verifiable Squad Collaboration
@@ -357,7 +357,7 @@ linkora-link.online`;
         <section className="space-y-6">
           <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-              Why Campus Leadership Supports Linkora
+              Why Campus Leadership Supports Kollabrix
             </h2>
             <p className="text-sm text-zinc-600 mt-1">
               Measurable institutional value delivered to students, departments, and corporate placement partners.
@@ -443,7 +443,7 @@ linkora-link.online`;
         <div className="pt-8 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-zinc-400" />
-            <span>Linkora · Institutional University Partnership Initiative</span>
+            <span>Kollabrix · Institutional University Partnership Initiative</span>
           </div>
           <div>
             Built with pride for university builders worldwide.

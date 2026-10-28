@@ -48,7 +48,7 @@ export function SetupBanner() {
       <Modal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
-        title="Connect Supabase to Linkora"
+        title="Connect Supabase to Kollabrix"
         description="Follow these 3 simple steps to enable live database storage and authentication:"
         maxWidth="lg"
       >

@@ -31,7 +31,7 @@ export async function sendAutomatedWhatsAppAlert({
   const auditLink = `${origin}/control-center-7x9?tab=audit`;
 
   const messageText = 
-`🚨 *LINKORA SECURITY WATCHDOG ALERT*
+`🚨 *KOLLABRIX SECURITY WATCHDOG ALERT*
 
 ⚠️ *Threat*: ${title}
 ${description ? `📝 *Details*: ${description}\n` : ''}📍 *Source IP*: ${ip || 'Unknown'}

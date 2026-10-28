@@ -1,5 +1,5 @@
 /**
- * Linkora Security - URL Sanitizer
+ * Kollabrix Security - URL Sanitizer
  * Defends against Stored XSS and malicious protocol injection (javascript:, data:, vbscript:)
  * in user-supplied profile links, project repositories, demo URLs, and documentation links.
  */

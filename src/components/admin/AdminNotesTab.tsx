@@ -48,7 +48,7 @@ const DEFAULT_NOTES: AdminNote[] = [
   },
   {
     id: 'note-ceo-pitch',
-    title: 'Pitch Linkora to College CEO / Director',
+    title: 'Pitch Kollabrix to College CEO / Director',
     content:
       'Send the executive briefing and interactive 60-second walkthrough at linkora-link.online/pitch to college leadership for a zero-cost departmental pilot.',
     category: 'Campus / Meeting',
@@ -244,7 +244,7 @@ export function AdminNotesTab({ authToken }: { authToken?: string }) {
             <span>Admin Notes & Feature Backlog</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Keep track of ideas, upcoming features, campus feedback, and things you want to add to Linkora later.
+            Keep track of ideas, upcoming features, campus feedback, and things you want to add to Kollabrix later.
           </p>
         </div>
 

@@ -81,7 +81,7 @@ export default function CertificateVerificationPage() {
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">ISSUING PLATFORM</span>
-                <span className="text-sm font-bold text-slate-200">Linkora Collegiate Trust Protocol</span>
+                <span className="text-sm font-bold text-slate-200">Kollabrix Collegiate Trust Protocol</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">SIGNATURE ENCRYPTION</span>
@@ -96,7 +96,7 @@ export default function CertificateVerificationPage() {
           {/* Description */}
           <div className="space-y-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
             <p>
-              This certificate verifies that the recipient successfully fulfilled all peer-reviewed production tasks and delivered verified engineering artifacts according to Linkora collegiate project standards.
+              This certificate verifies that the recipient successfully fulfilled all peer-reviewed production tasks and delivered verified engineering artifacts according to Kollabrix collegiate project standards.
             </p>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function CertificateVerificationPage() {
 
             <Link href="/projects">
               <Button variant="primary" size="sm" rightIcon={<ExternalLink className="w-4 h-4" />}>
-                View on Linkora
+                View on Kollabrix
               </Button>
             </Link>
           </div>

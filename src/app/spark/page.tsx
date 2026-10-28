@@ -176,7 +176,7 @@ ${blueprint.technologies.map((t) => `- ${t}`).join('\n')}
 ${blueprint.rolesBreakdown
   .map(
     (r) =>
-      `### ${r.role} ${r.isCoveredByUser ? '(Covered by You)' : '(Recruit on Linkora)'}
+      `### ${r.role} ${r.isCoveredByUser ? '(Covered by You)' : '(Recruit on Kollabrix)'}
 - **Skills:** ${r.skills.join(', ')}
 - **Focus:** ${r.focus}`
   )
@@ -191,7 +191,7 @@ ${blueprint.milestones
   .join('\n\n')}
 
 ---
-*Synthesized by Linkora AI Spark Studio (https://linkora.in/spark)*
+*Synthesized by Kollabrix AI Spark Studio (https://kollabrix.com/spark)*
 `;
 
     navigator.clipboard.writeText(md);
@@ -804,7 +804,7 @@ ${blueprint.milestones
                   Ready to turn this blueprint into reality?
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Publish this project on Linkora so students across 38+ universities can apply to join your squad.
+                  Publish this project on Kollabrix so students across 38+ universities can apply to join your squad.
                 </p>
               </div>
               <button

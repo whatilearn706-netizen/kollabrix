@@ -1,5 +1,5 @@
 /**
- * Linkora Hot-Patch Code Cleaner & Sanitizer
+ * Kollabrix Hot-Patch Code Cleaner & Sanitizer
  * Automatically strips markdown code fences (```css, ```javascript),
  * HTML wrapper tags (<style>, <script>), and conversational AI headers/footers
  * so code copied directly from Claude, ChatGPT, or Gemini applies instantly

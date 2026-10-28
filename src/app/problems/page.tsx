@@ -242,7 +242,7 @@ export default function ProblemStatementsPage() {
           Faculty Problem Statements
         </h1>
         <p className="text-sm text-slate-200 mb-8 leading-relaxed font-normal">
-          Curated academic problem statements and research challenges proposed by college faculty mentors are available exclusively to registered Linkora students. Sign in to browse challenges and apply answers.
+          Curated academic problem statements and research challenges proposed by college faculty mentors are available exclusively to registered Kollabrix students. Sign in to browse challenges and apply answers.
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <Button

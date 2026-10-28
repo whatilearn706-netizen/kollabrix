@@ -85,7 +85,7 @@ const PORTAL_ITEMS: PortalItem[] = [
   {
     id: 'feedback',
     title: 'Community Feedback',
-    href: 'mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback',
+    href: 'mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback',
     icon: MessageSquare,
     themeColor: 'amber',
     iconBgClass: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
@@ -225,7 +225,7 @@ export function PortalsSideRail() {
     };
   }, [isSpotlightOpen]);
 
-  const FEEDBACK_MAILTO = 'mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback';
+  const FEEDBACK_MAILTO = 'mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback';
 
   const triggerFeedbackAction = () => {
     if (typeof window !== 'undefined') {
@@ -262,10 +262,10 @@ export function PortalsSideRail() {
           - Position is fixed on right edge while website scrolls normally
           - Shows 2 names cleanly before scrolling
           - Direct 1-tap navigation for all orbital items
-          - Lil Point of Linkora with ⌘K badge triggers Big Ring modal
+          - Lil Point of Kollabrix with ⌘K badge triggers Big Ring modal
          ========================================================================= */}
       <aside
-        aria-label="Linkora Quick Portals"
+        aria-label="Kollabrix Quick Portals"
         className="hidden lg:flex fixed right-3 sm:right-4 2xl:right-6 top-1/2 -translate-y-1/2 z-40 select-none pointer-events-auto"
       >
         <div className="flex items-center gap-2.5 sm:gap-3 bg-transparent">
@@ -326,14 +326,14 @@ export function PortalsSideRail() {
             </div>
           </div>
 
-          {/* The "Lil Point of Linkora" (Radar button triggers ⌘K Big Ring Modal) */}
+          {/* The "Lil Point of Kollabrix" (Radar button triggers ⌘K Big Ring Modal) */}
           <div className="flex flex-col items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => setIsSpotlightOpen(true)}
               className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-900 dark:bg-black border-2 border-amber-500/70 shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:border-amber-400 hover:shadow-amber-500/30 active:scale-95"
-              aria-label="Lil Point of Linkora - Open Spotlight Ring (⌘K)"
-              title="Lil Point of Linkora • Tap or press ⌘K to open Big Ring"
+              aria-label="Lil Point of Kollabrix - Open Spotlight Ring (⌘K)"
+              title="Lil Point of Kollabrix • Tap or press ⌘K to open Big Ring"
             >
               {/* Animated Radar Pulse */}
               <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 opacity-70 blur-xs animate-ping pointer-events-none" />
@@ -364,7 +364,7 @@ export function PortalsSideRail() {
           - 1 tap opens the Big Ring modal anywhere on the page
          ========================================================================= */}
       <aside
-        aria-label="Linkora Quick Portals Mobile"
+        aria-label="Kollabrix Quick Portals Mobile"
         className="lg:hidden fixed bottom-5 right-4 z-40 select-none pointer-events-auto"
       >
         <button
@@ -403,7 +403,7 @@ export function PortalsSideRail() {
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 backdrop-blur-2xl bg-slate-950/70 dark:bg-black/80 animate-fadeIn cursor-pointer overflow-y-auto"
           role="dialog"
           aria-modal="true"
-          aria-label="Linkora Big Portals Ring"
+          aria-label="Kollabrix Big Portals Ring"
         >
           {/* Animated Atmospheric Warm Blur Backside */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">

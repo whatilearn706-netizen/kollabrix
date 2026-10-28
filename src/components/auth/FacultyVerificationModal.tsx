@@ -44,7 +44,7 @@ export function FacultyVerificationModal({
   onSuccess,
   onContinueAsStudent,
   title = 'Institutional Verification via DigiLocker',
-  description = 'Directly authenticate through the official National DigiLocker / MeriPehchan portal. No sensitive security PINs required on Linkora.',
+  description = 'Directly authenticate through the official National DigiLocker / MeriPehchan portal. No sensitive security PINs required on Kollabrix.',
 }: FacultyVerificationModalProps) {
   const { user, profile, refreshProfile } = useAuth();
 

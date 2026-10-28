@@ -26,7 +26,7 @@ export function InteractiveBentoGrid() {
     setOutputResult(null);
     setTimeout(() => {
       setIsRunning(false);
-      setOutputResult('Linkora: Team matched in 0.04s! Memory: 1.2MB');
+      setOutputResult('Kollabrix: Team matched in 0.04s! Memory: 1.2MB');
     }, 450);
   };
 
@@ -165,7 +165,7 @@ export function InteractiveBentoGrid() {
 
           <div className="my-3 p-4 rounded-xl bg-gradient-to-tr from-stone-900 via-stone-800/90 to-stone-900 border border-amber-500/30 shadow-2xl relative overflow-hidden group-hover:border-amber-400/60 transition-all">
             <div className="flex items-center justify-between text-[11px] font-bold text-stone-300">
-              <span className="tracking-widest font-mono">LINKORA ID</span>
+              <span className="tracking-widest font-mono">KOLLABRIX ID</span>
               <span className="text-amber-400">★★★★★</span>
             </div>
             <div className="mt-3 flex items-center gap-3">
@@ -197,7 +197,7 @@ export function InteractiveBentoGrid() {
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-              <span className="text-xs font-mono text-stone-400 ml-2">quick_sort.cpp — Linkora Sandbox</span>
+              <span className="text-xs font-mono text-stone-400 ml-2">quick_sort.cpp — Kollabrix Sandbox</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
@@ -219,7 +219,7 @@ export function InteractiveBentoGrid() {
             <span className="text-purple-400">#include</span> <span className="text-emerald-400">&lt;vector&gt;</span><br />
             <span className="text-blue-400">int</span> <span className="text-yellow-400">main</span>() &#123;<br />
             &nbsp;&nbsp;<span className="text-stone-500">// Instant collegiate compiler execution</span><br />
-            &nbsp;&nbsp;std::cout &lt;&lt; <span className="text-emerald-300">&quot;Linkora: Team matched in 0.04s!&quot;</span> &lt;&lt; std::endl;<br />
+            &nbsp;&nbsp;std::cout &lt;&lt; <span className="text-emerald-300">&quot;Kollabrix: Team matched in 0.04s!&quot;</span> &lt;&lt; std::endl;<br />
             &nbsp;&nbsp;<span className="text-blue-400">return</span> <span className="text-amber-400">0</span>;<br />
             &#125;
           </div>

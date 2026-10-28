@@ -17,7 +17,7 @@ export function CampusOrbitSection() {
             Animated Tech-Stack & Campus Orbit
           </h2>
           <p className="text-sm !text-stone-300 mt-1 max-w-2xl" style={{ color: '#D6D3D1' }}>
-            Concentric orbital spheres displaying student skills, software frameworks, and premier collegiate ecosystems revolving around the Linkora Matching Core.
+            Concentric orbital spheres displaying student skills, software frameworks, and premier collegiate ecosystems revolving around the Kollabrix Matching Core.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-mono text-stone-400">
@@ -32,10 +32,10 @@ export function CampusOrbitSection() {
         {/* Ambient Warm Backlight */}
         <div className="absolute w-96 h-96 rounded-full bg-orange-600/10 blur-[100px] pointer-events-none" />
 
-        {/* Central Glowing Linkora Sphere */}
+        {/* Central Glowing Kollabrix Sphere */}
         <div className="relative z-20 w-24 h-24 rounded-full bg-gradient-to-tr from-[#EA580C] via-[#F59E0B] to-[#FBBF24] flex items-center justify-center shadow-[0_0_60px_rgba(234,88,12,0.55)] border-2 border-white/40 select-none">
           <div className="text-center">
-            <div className="text-white font-black text-xl tracking-tight leading-none drop-shadow-md">Linkora</div>
+            <div className="text-white font-black text-xl tracking-tight leading-none drop-shadow-md">Kollabrix</div>
             <div className="text-[9px] text-amber-950 font-extrabold uppercase tracking-widest mt-1">Core Engine</div>
           </div>
         </div>

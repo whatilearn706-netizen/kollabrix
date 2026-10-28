@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         studentName: 'Admin Diagnostic Test',
         studentId: 'admin-test',
         contestTitle: 'ICPC Arena Proctor System Verification',
-        college: 'Linkora System Watchdog',
+        college: 'Kollabrix System Watchdog',
         event: 'started',
         details: '🔔 Real-Time Proctor Alert Test: Telegram connection is ACTIVE. You will receive live contestant notifications here with 1-click live screen inspection links!',
         botToken: tg.botToken,

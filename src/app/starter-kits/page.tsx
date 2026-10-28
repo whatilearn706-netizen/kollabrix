@@ -57,7 +57,7 @@ export default function StarterKitsPage() {
 
           <div className="space-y-2">
             <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">
-              Linkora Hackathon Studio
+              Kollabrix Hackathon Studio
             </span>
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
               Hackathon Starter Kits Coming Soon

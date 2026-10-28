@@ -1,16 +1,16 @@
-# 🕊️ Linkora
+# ⚡ Kollabrix
 
-### The Central Platform for College-Wide Student Project Collaboration, Hackathon Team Building, and Faculty Problem Solving
+### The Central Platform for College-Wide Student Project Collaboration, Hackathon Team Building, and ICPC Arena
 
 [![Live Platform](https://img.shields.io/badge/Live%20Platform-linkora--link.online-10b981?style=for-the-badge&logo=vercel)](https://linkora-link.online)
 [![Explore Projects](https://img.shields.io/badge/Explore-Projects%20%26%20Teams-6366f1?style=for-the-badge)](https://linkora-link.online/explore)
 [![Hackathon Arena](https://img.shields.io/badge/Compete-Hackathon%20Arena-f59e0b?style=for-the-badge)](https://linkora-link.online/hackathons)
 
-🌐 **Official Linkora Platform**: [https://linkora-link.online](https://linkora-link.online)
+🌐 **Official Kollabrix Platform**: [https://linkora-link.online](https://linkora-link.online)
 
 ---
 
-## 🎯 The Purpose: Why Linkora Exists
+## 🎯 The Purpose: Why Kollabrix Exists
 
 Across universities and engineering campuses, exceptional talent is everywhere — but it is scattered in silos:
 
@@ -19,17 +19,17 @@ Across universities and engineering campuses, exceptional talent is everywhere �
 * **The Faculty Member** has real-world research problems and industry challenges, but no direct bridge to connect with driven students outside the classroom.
 * **The Hackathon Team** struggles with last-minute scrambles on informal chat groups to find designers or ML engineers.
 
-**Linkora was created to solve this fragmentation.** 
+**Kollabrix was created to solve this fragmentation.** 
 
-It serves as the definitive collegiate commons where student builders, designers, researchers, and professors connect, collaborate, and bring impactful ideas to life. Linkora replaces unorganized group chats and bulletin boards with a structured, professional, and inspiring digital ecosystem.
+It serves as the definitive collegiate commons where student builders, designers, researchers, and professors connect, collaborate, and bring impactful ideas to life. Kollabrix replaces unorganized group chats and bulletin boards with a structured, professional, and inspiring digital ecosystem.
 
 ---
 
-## 👁️ The Vision: Five Pillars of the Linkora Experience
+## 👁️ The Vision: Five Pillars of the Kollabrix Experience
 
 ```
                        ┌─────────────────────────┐
-                       │      🕊️ LINKORA         │
+                       │      ⚡ KOLLABRIX       │
                        │   Campus Collaboration  │
                        └────────────┬────────────┘
                                     │
@@ -42,19 +42,19 @@ It serves as the definitive collegiate commons where student builders, designers
 ```
 
 ### 1. 🤝 Teammate Matchmaker & Complementary Skill Pairing
-Linkora allows students to discover collaborators based on complementary skills rather than social circles. An AI/ML student can instantly connect with a React developer and a UI/UX designer. Detailed student profiles showcase verified skill tags, GitHub repositories, and past projects without compromising personal privacy.
+Kollabrix allows students to discover collaborators based on complementary skills rather than social circles. An AI/ML student can instantly connect with a React developer and a UI/UX designer. Detailed student profiles showcase verified skill tags, GitHub repositories, and past projects without compromising personal privacy.
 
-### 2. 🏆 The Private Hackathon Arena
-College hackathons are intense, high-energy launchpads for innovation. Linkora provides a dedicated, password-protected arena for university hackathons featuring live countdown clocks, multi-track challenges, real-time team assembling, and project submission showcases. It eliminates the chaos of team formation before the hackathon clock starts.
+### 2. 🏆 The Private Hackathon Arena & ICPC Testbench
+College hackathons are intense, high-energy launchpads for innovation. Kollabrix provides a dedicated, password-protected arena for university hackathons and algorithmic competitions featuring live countdown clocks, multi-track challenges, real-time team assembling, proctoring safeguards, and project submission showcases.
 
 ### 3. 🎓 The Faculty Problem Bank: Bridging Academia & Industry
-Instead of building generic clone apps for capstone and semester projects, Linkora provides a direct channel for professors, department heads, and industry partners to publish genuine, high-impact problem statements. Students can take ownership of these challenges, receive faculty mentorship, and produce work with real-world significance.
+Instead of building generic clone apps for capstone and semester projects, Kollabrix provides a direct channel for professors, department heads, and industry partners to publish genuine, high-impact problem statements. Students can take ownership of these challenges, receive faculty mentorship, and produce work with real-world significance.
 
-### 4. 🤖 The AI Project Planner
-Turning a vague idea into a concrete software architecture is often the hardest hurdle for student teams. Linkora's built-in Project Planner analyzes high-level concepts and automatically outlines technical roadmaps, key milestones, and granular task lists so teams can begin building with clarity and velocity.
+### 4. 🤖 The AI Project Planner (Kollabrix Spark)
+Turning a vague idea into a concrete software architecture is often the hardest hurdle for student teams. Kollabrix's built-in Project Planner analyzes high-level concepts and automatically outlines technical roadmaps, key milestones, and granular task lists so teams can begin building with clarity and velocity.
 
 ### 5. 🛠️ Dedicated Collaborative Workspaces
-Every project on Linkora has its own private operations center:
+Every project on Kollabrix has its own private operations center:
 * **Kanban Task Boards**: Track features from ideation through development to completion.
 * **Milestone Progress Tracking**: Visualize roadmap progress and sprint goals.
 * **Team Channels**: Keep architectural discussions, announcements, and notes centralized in one place.
@@ -62,25 +62,17 @@ Every project on Linkora has its own private operations center:
 
 ---
 
-## 🎨 The Design Philosophy: The 3D Origami Emblem
+## 🎨 The Design Philosophy: The Kollabrix Emblem
 
-At the heart of Linkora is an interactive 3D folded origami bird sculpture rendered in real-time WebGL. 
+The brand symbol of **Kollabrix** is an interlocking modular "K" constructed of 3D geometric isometric blocks ("Brix"). 
 
-**Why an Origami Bird?**
-Origami is the ancient discipline of taking a simple, flat sheet of paper and, through deliberate, precise folds, transforming it into something that takes flight. 
-
-This mirrors the student engineering journey:
-* **The Raw Paper**: An unshaped idea or raw curiosity.
-* **The Deliberate Folds**: Collaboration, code reviews, design iterations, and mentorship.
-* **The Flight**: The finished software, deployed and soaring in the real world.
-
-The sculpture's harmonious palette — **rich burgundy** representing academic tradition and rigor, paired with **vibrant emerald green** representing innovation, growth, and fresh ideas — reflects the dual spirit of Linkora.
+Each building block represents a fundamental pillar of collegiate engineering — code, design, algorithmic logic, and product architecture. When assembled seamlessly together, the individual bricks form the powerful, forward-pointing letter **K**, embodying interdisciplinary collaboration, structural strength, and collegiate innovation.
 
 ---
 
-## 👥 Who Linkora Is Built For
+## 👥 Who Kollabrix Is Built For
 
-| Audience | What Linkora Delivers |
+| Audience | What Kollabrix Delivers |
 | :--- | :--- |
 | **Student Builders & Coders** | Discover exciting projects, find reliable teammates, and assemble an undeniable portfolio. |
 | **Hackathon Competitors** | Find the missing designer or developer to complete your winning roster before competition day. |
@@ -90,7 +82,7 @@ The sculpture's harmonious palette — **rich burgundy** representing academic t
 
 ---
 
-## 🌐 Experience Linkora
+## 🌐 Experience Kollabrix
 
 Visit the live platform to explore active student projects, browse collegiate hackathons, or assemble your next team:
 
@@ -99,5 +91,5 @@ Visit the live platform to explore active student projects, browse collegiate ha
 ---
 
 <p align="center">
-  <b>Linkora</b> — <i>Built for collegiate builders, engineers, and dreamers.</i>
+  <b>Kollabrix</b> — <i>Built for collegiate builders, engineers, and dreamers.</i>
 </p>

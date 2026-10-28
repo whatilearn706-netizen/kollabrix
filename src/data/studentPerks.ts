@@ -218,7 +218,7 @@ export const STUDENT_PERKS: StudentPerk[] = [
       {
         step: 2,
         title: 'Search Your Desired Handle',
-        description: 'Enter your preferred personal handle (e.g., yourname.me or linkora-squad.tech).',
+        description: 'Enter your preferred personal handle (e.g., yourname.me or kollabrix-squad.tech).',
       },
       {
         step: 3,
@@ -274,7 +274,7 @@ export const STUDENT_PERKS: StudentPerk[] = [
       {
         step: 4,
         title: 'Upgrade Team Workspace',
-        description: 'Create an Education Team in Figma and invite your Linkora teammates for free collaboration.',
+        description: 'Create an Education Team in Figma and invite your Kollabrix teammates for free collaboration.',
       },
     ],
     proTips: [

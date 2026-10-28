@@ -157,7 +157,7 @@ export function verifyLinkedInIdentity(
 
     return {
       isMatch: false,
-      reason: `Identity Mismatch! The LinkedIn profile belongs to "${linkedInName}", which does not match your Linkora account name ("${userDisplayName || username}"). You cannot use someone else's LinkedIn profile.`,
+      reason: `Identity Mismatch! The LinkedIn profile belongs to "${linkedInName}", which does not match your Kollabrix account name ("${userDisplayName || username}"). You cannot use someone else's LinkedIn profile.`,
     };
   }
 

@@ -1,5 +1,5 @@
 /**
- * Linkora Content Moderation - Restricted Words Dictionary & Verification Engine
+ * Kollabrix Content Moderation - Restricted Words Dictionary & Verification Engine
  * Prevents inappropriate language, profanity, scams, academic dishonesty, and harassment
  * across all inputs, textareas, forms, and pages.
  */

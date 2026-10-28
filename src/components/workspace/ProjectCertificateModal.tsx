@@ -57,7 +57,7 @@ export function ProjectCertificateModal({
   };
 
   const handleLinkedInShare = () => {
-    const text = `Excited to showcase my verified engineering contribution on "${project.title}" as ${roleTitle} via Linkora! Verified credential: ${credentialId}`;
+    const text = `Excited to showcase my verified engineering contribution on "${project.title}" as ${roleTitle} via Kollabrix! Verified credential: ${credentialId}`;
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
       verificationUrl
     )}&summary=${encodeURIComponent(text)}`;
@@ -125,7 +125,7 @@ export function ProjectCertificateModal({
               Certificate of Accomplishment
             </h2>
             <p className="text-xs text-slate-500 italic">
-              Issued under Linkora Open Project Verification Protocol
+              Issued under Kollabrix Open Project Verification Protocol
             </p>
           </div>
 

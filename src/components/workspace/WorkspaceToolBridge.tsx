@@ -347,7 +347,7 @@ export function WorkspaceToolBridge({ project, currentUserId }: WorkspaceToolBri
             title: 'Technical Specs & Architecture Spec',
             url: `https://linkora-link.online/projects/${project.id}`,
             category: 'docs' as const,
-            addedBy: 'Linkora System',
+            addedBy: 'Kollabrix System',
             createdAt: new Date().toLocaleDateString(),
           },
         ];

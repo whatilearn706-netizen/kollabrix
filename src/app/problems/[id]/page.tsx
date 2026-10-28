@@ -335,7 +335,7 @@ export default function ProblemStatementDetailPage() {
   const handleShareWhatsApp = () => {
     const url = getProblemUrl();
     const title = problem?.title || 'Faculty Problem Statement';
-    const text = `🎓 *Faculty Problem Statement*\n\n*${title}*\n\nReview the problem specifications and directly apply your team's answer on Linkora:\n${url}`;
+    const text = `🎓 *Faculty Problem Statement*\n\n*${title}*\n\nReview the problem specifications and directly apply your team's answer on Kollabrix:\n${url}`;
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     if (typeof window !== 'undefined') {
       window.open(waUrl, '_blank');

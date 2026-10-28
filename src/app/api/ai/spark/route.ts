@@ -179,8 +179,8 @@ function computeSkillGaps(
   });
 
   const analysis = covered.length > 0
-    ? `You have skills aligned with ${covered.join(' & ')}. You need to recruit ${missing.length > 0 ? missing.join(' and ') : 'collaborators'} to complete your squad on Linkora.`
-    : `Your skills provide a strong foundation. Recruit ${missing.join(', ')} on Linkora to assemble a complementary hackathon squad.`;
+    ? `You have skills aligned with ${covered.join(' & ')}. You need to recruit ${missing.length > 0 ? missing.join(' and ') : 'collaborators'} to complete your squad on Kollabrix.`
+    : `Your skills provide a strong foundation. Recruit ${missing.join(', ')} on Kollabrix to assemble a complementary hackathon squad.`;
 
   return {
     userSkillsFound: rawUserSkills,
@@ -424,7 +424,7 @@ function synthesizeDynamicBlueprint(
     resumeBullets,
     milestones,
     hackathonTrack: track || 'Open Innovation Track',
-    engine: 'Linkora Neural Architecture Engine v2',
+    engine: 'Kollabrix Neural Architecture Engine v2',
   };
 }
 

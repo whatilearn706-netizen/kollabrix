@@ -510,11 +510,11 @@ export async function POST(request: NextRequest) {
       });
 
       const messageText =
-        `LINKORA SECURITY ALERT\n\n` +
+        `KOLLABRIX SECURITY ALERT\n\n` +
         `Event: ${title}\n` +
         `Source: ${ip}\n` +
         `Time: ${timestamp} IST\n\n` +
-        `Please sign in to Linkora and review the security dashboard.\n` +
+        `Please sign in to Kollabrix and review the security dashboard.\n` +
         `${origin}/control-center-7x9`;
 
       const whatsappUrl = phone
@@ -546,7 +546,7 @@ export async function POST(request: NextRequest) {
       const result = await sendTelegramSecurityAlert({
         botToken,
         chatId,
-        title: 'Linkora Security Watchdog Test',
+        title: 'Kollabrix Security Watchdog Test',
         description:
           'This is a test notification. Review your security dashboard to verify the alert configuration.',
         ip: 'Test notification',
@@ -579,7 +579,7 @@ export async function POST(request: NextRequest) {
       const result = await sendAutomatedWhatsAppAlert({
         phone,
         apiKey,
-        title: 'Linkora Security Watchdog Test',
+        title: 'Kollabrix Security Watchdog Test',
         description:
           'This is a test notification. Review your security dashboard to verify the alert configuration.',
         ip: 'Test notification',

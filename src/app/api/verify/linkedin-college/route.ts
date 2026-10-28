@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
           userDisplayName: effectiveDisplayName || effectiveUsername || 'Your account',
           message:
             identityCheck.reason ||
-            `Identity Mismatch! The LinkedIn profile belongs to "${linkedInMeta.name}", which does not match your Linkora account name ("${
+            `Identity Mismatch! The LinkedIn profile belongs to "${linkedInMeta.name}", which does not match your Kollabrix account name ("${
               effectiveDisplayName || effectiveUsername
             }"). You cannot use someone else's LinkedIn profile.`,
         });

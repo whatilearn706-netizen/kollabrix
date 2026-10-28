@@ -15,7 +15,7 @@ export default function LoginPage() {
             <BrandLogo size="lg" wordmarkColor="dark" />
           </Link>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Log in to Linkora
+            Log in to Kollabrix
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
             Sign in with Google, LinkedIn, or GitHub for instant, 100% free access.

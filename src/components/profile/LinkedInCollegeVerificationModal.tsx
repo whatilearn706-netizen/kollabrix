@@ -197,14 +197,14 @@ export function LinkedInCollegeVerificationModal({
           {modalState === 'input' && (
             <div className="space-y-4">
               <p className="text-xs text-slate-300 leading-relaxed">
-                To build project trust across colleges, connect your personal LinkedIn profile. Linkora cross-checks your account identity and real LinkedIn education history. Once verified, a verified checkmark appears next to your college name for everyone across Linkora.
+                To build project trust across colleges, connect your personal LinkedIn profile. Kollabrix cross-checks your account identity and real LinkedIn education history. Once verified, a verified checkmark appears next to your college name for everyone across Kollabrix.
               </p>
 
               {/* College Name Input */}
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1.5 flex items-center gap-1.5">
                   <GraduationCap className="w-4 h-4 text-indigo-400" />
-                  <span>College / University Name on Linkora</span>
+                  <span>College / University Name on Kollabrix</span>
                 </label>
                 <input
                   type="text"
@@ -252,7 +252,7 @@ export function LinkedInCollegeVerificationModal({
               <div className="p-3.5 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-[11px] text-slate-300 space-y-1">
                 <span className="font-bold text-blue-300 block">🔒 Trust &amp; Anti-Fraud Policy:</span>
                 <p className="text-slate-400 leading-relaxed">
-                  Linkora cross-checks your identity and educational history. If the entered college name does not match your authentic LinkedIn profile, verification will be rejected.
+                  Kollabrix cross-checks your identity and educational history. If the entered college name does not match your authentic LinkedIn profile, verification will be rejected.
                 </p>
               </div>
 
@@ -329,7 +329,7 @@ export function LinkedInCollegeVerificationModal({
                 <div className="p-3.5 rounded-xl bg-slate-950/80 border border-red-500/20 text-left text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400 text-[11px]">
-                      {mismatchData.type === 'identity_mismatch' ? 'Linkora Account:' : 'Entered on Linkora:'}
+                      {mismatchData.type === 'identity_mismatch' ? 'Kollabrix Account:' : 'Entered on Kollabrix:'}
                     </span>
                     <strong className="text-white font-mono">{mismatchData.entered}</strong>
                   </div>

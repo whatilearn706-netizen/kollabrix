@@ -266,7 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           display_name: initialDisplayName,
           avatar_url: initialAvatar,
           role: 'student',
-          bio: 'College builder excited to collaborate on Linkora projects.',
+          bio: 'College builder excited to collaborate on Kollabrix projects.',
           skills: [],
           interests: [],
           preferred_roles: [],

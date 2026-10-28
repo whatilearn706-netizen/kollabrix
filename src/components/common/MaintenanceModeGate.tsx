@@ -126,7 +126,7 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
 
           <p className="text-sm text-slate-300 leading-relaxed">
             {maintenance.maintenanceMessage ||
-              'Linkora is currently undergoing scheduled platform updates for college project matching.'}
+              'Kollabrix is currently undergoing scheduled platform updates for college project matching.'}
           </p>
 
           {maintenance.expectedBackAt && (

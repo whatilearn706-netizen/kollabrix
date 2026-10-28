@@ -344,7 +344,7 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
                 </span>
               </p>
               <p className="text-xs text-red-200/80 mt-1 leading-relaxed">
-                This word is prohibited on Linkora. The restricted term has been blocked and removed.
+                This word is prohibited on Kollabrix. The restricted term has been blocked and removed.
               </p>
             </div>
             <button

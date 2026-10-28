@@ -85,6 +85,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Ensure brand name is migrated to Kollabrix
+    if (config.banner) {
+      if (config.banner.text) {
+        config.banner.text = config.banner.text.replace(/Linkora/gi, 'Kollabrix');
+      }
+      if (config.banner.linkText) {
+        config.banner.linkText = config.banner.linkText.replace(/Linkora/gi, 'Kollabrix');
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,

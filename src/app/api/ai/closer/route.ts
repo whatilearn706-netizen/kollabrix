@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
   <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Framework-Next.js%2014-black.svg?style=for-the-badge&logo=next.js" alt="Next.js" /></a>
   <a href="https://typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-blue.svg?style=for-the-badge&logo=typescript" alt="TypeScript" /></a>
   <a href="https://supabase.com"><img src="https://img.shields.io/badge/Database-Supabase%20Postgres-3ecf8e.svg?style=for-the-badge&logo=supabase" alt="Supabase" /></a>
-  <a href="https://linkora-link.online"><img src="https://img.shields.io/badge/Linkora-Collegiate%20Verified-6366f1.svg?style=for-the-badge&logo=shield" alt="Linkora Verified" /></a>
+  <a href="https://linkora-link.online"><img src="https://img.shields.io/badge/Kollabrix-Collegiate%20Verified-6366f1.svg?style=for-the-badge&logo=shield" alt="Kollabrix Verified" /></a>
 </p>
 
 ---
@@ -258,7 +258,7 @@ ${contributorsMd}
 ---
 
 ## 📜 License
-Distributed under the **MIT License**. See \`LICENSE\` for more details. Built with pride on [Linkora](https://linkora-link.online).
+Distributed under the **MIT License**. See \`LICENSE\` for more details. Built with pride on [Kollabrix](https://linkora-link.online).
 `;
 
       return NextResponse.json({
@@ -331,7 +331,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
             title: 'Scalability, Moat & Verification',
             timing: '1:20 - 1:45 (25s)',
             focus: 'Explain how this expands beyond 1 college to 50+ campuses',
-            script: `We didn't just build for this 24-hour hackathon. Our database architecture supports multi-campus cohorts. With Linkora's cryptographic credential protocol, every student who writes a line of code receives a tamper-proof certificate that recruiters can verify with one click on LinkedIn. That is our retention loop.`,
+            script: `We didn't just build for this 24-hour hackathon. Our database architecture supports multi-campus cohorts. With Kollabrix's cryptographic credential protocol, every student who writes a line of code receives a tamper-proof certificate that recruiters can verify with one click on LinkedIn. That is our retention loop.`,
             keyPoints: [
               `Multi-campus scalability across 50+ universities.`,
               `Cryptographic proof-of-work: tamper-proof recruiter credentials.`,
@@ -494,7 +494,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
             { layer: 1, name: 'Client Presentation', tech: 'Next.js 14 App Router, TailwindCSS, React Server Components', role: 'Sub-second initial paint, optimistic updates, zero layout shift' },
             { layer: 2, name: 'Edge API & Middleware', tech: 'Vercel Edge Functions, Next.js Route Handlers, JWT Gatekeeper', role: 'Sub-50ms edge validation, CORS proxying, rate-limiting' },
             { layer: 3, name: 'Database & Realtime', tech: 'Supabase PostgreSQL, Postgres Realtime Changefeed, RLS Policies', role: 'Multi-tenant isolation, real-time presence broadcast' },
-            { layer: 4, name: 'Trust & Verification', tech: 'Linkora Cryptographic Credential Protocol, SVG Proof Signatures', role: 'Verifiable proof of work and recruiter LinkedIn badge export' },
+            { layer: 4, name: 'Trust & Verification', tech: 'Kollabrix Cryptographic Credential Protocol, SVG Proof Signatures', role: 'Verifiable proof of work and recruiter LinkedIn badge export' },
           ],
           mermaid: `graph TD
   subgraph Client ["Client Browser / Mobile PWA"]
@@ -531,7 +531,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
             { layer: 1, name: 'User Interaction Interface', tech: 'Next.js 14 Streaming Chat UI, Audio WebRTC Mesh', role: 'Low-latency streaming responses, voice command input' },
             { layer: 2, name: 'Inference & Orchestration Gateway', tech: 'Python FastAPI, LangChain / LlamaIndex, Edge Router', role: 'Prompt engineering, token optimization, async task dispatch' },
             { layer: 3, name: 'Model & Vector Embedding Store', tech: 'PyTorch / HuggingFace Models, pgvector / Supabase Vector', role: 'Semantic indexing, cosine similarity retrieval, context memory' },
-            { layer: 4, name: 'Evaluation & Verifiable Output', tech: 'Automated Fact-Checking, Linkora Proof Protocol', role: 'Hallucination guardrails and cryptographically anchored outputs' },
+            { layer: 4, name: 'Evaluation & Verifiable Output', tech: 'Automated Fact-Checking, Kollabrix Proof Protocol', role: 'Hallucination guardrails and cryptographically anchored outputs' },
           ],
           mermaid: `graph TD
   subgraph Interface ["Client Tier"]
@@ -548,7 +548,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
   end
   subgraph Persistence ["Application State"]
     SupabaseDB[("PostgreSQL Metadata")]
-    Proof["Linkora Verified Hash"]
+    Proof["Kollabrix Verified Hash"]
   end
   ChatUI --> FastAPI
   Voice --> FastAPI
@@ -631,7 +631,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
             { layer: 1, name: 'DApp Client Interface', tech: 'Next.js 14, Wagmi, RainbowKit, Viem', role: 'Non-custodial wallet connection, gas fee estimation, signing UI' },
             { layer: 2, name: 'Smart Contract Protocol', tech: 'Solidity EVM Contracts, Hardhat / Foundry, OpenZeppelin', role: 'Deterministic on-chain state, automated escrow, tokenomics' },
             { layer: 3, name: 'Decentralized Storage', tech: 'IPFS / Filecoin, Arweave, Decentralized Graph Indexing', role: 'Censorship-resistant project assets and immutable commit logs' },
-            { layer: 4, name: 'Off-Chain Indexer & Verifier', tech: 'The Graph Subgraphs, Linkora Proof Oracle, Supabase Cache', role: 'High-speed querying of on-chain events without RPC throttling' },
+            { layer: 4, name: 'Off-Chain Indexer & Verifier', tech: 'The Graph Subgraphs, Kollabrix Proof Oracle, Supabase Cache', role: 'High-speed querying of on-chain events without RPC throttling' },
           ],
           mermaid: `graph TD
   subgraph ClientDApp ["Client DApp"]
@@ -647,7 +647,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
   end
   subgraph Indexer ["Index & Oracle"]
     TheGraph["The Graph Subgraph Indexer"]
-    LinkoraOracle["Linkora Verification Oracle"]
+    KollabrixOracle["Kollabrix Verification Oracle"]
   end
   Web3UI --> Wallet
   Wallet --> EVM
@@ -655,7 +655,7 @@ Distributed under the **MIT License**. See \`LICENSE\` for more details. Built w
   Web3UI --> IPFS
   EVM --> TheGraph
   TheGraph --> Web3UI
-  Escrow --> LinkoraOracle`,
+  Escrow --> KollabrixOracle`,
         },
       };
 

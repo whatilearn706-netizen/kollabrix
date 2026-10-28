@@ -52,7 +52,7 @@ export function LinkedInProjectShareModal({
     let text = '';
 
     if (selectedTone === 'collegiate') {
-      text = `🚀 Excited to announce what we've been building on Linkora: ${project.title}!
+      text = `🚀 Excited to announce what we've been building on Kollabrix: ${project.title}!
 
 💡 The Big Idea:
 ${project.summary}
@@ -64,10 +64,10 @@ ${techStack}
 👥 Team & Campus:
 Collaborating with peers${collegeAffiliation}. We are actively welcoming student contributors and feedback from mentors!
 
-👉 Check out the full project & join the squad on Linkora:
+👉 Check out the full project & join the squad on Kollabrix:
 ${projectUrl}
 
-#Linkora #BuildInPublic #StudentDevelopers #${cleanCategory} #CollegiateProjects #WebDev #OpenSource #Innovation`;
+#Kollabrix #BuildInPublic #StudentDevelopers #${cleanCategory} #CollegiateProjects #WebDev #OpenSource #Innovation`;
     } else if (selectedTone === 'professional') {
       text = `Proud to share my latest technical milestone: ${project.title}
 
@@ -79,19 +79,19 @@ Key Architecture & Innovations:
 • Designed for high performance and real-world collaboration
 • Open for peer code reviews and architectural discussions
 
-🔗 Explore the interactive project specs on Linkora:
+🔗 Explore the interactive project specs on Kollabrix:
 ${projectUrl}
 
 I would love your feedback and thoughts from fellow engineers, tech leads, and mentors!
 
-#SoftwareEngineering #${cleanCategory} #BuildInPublic #Linkora #TechInnovation #Coding #FullStack`;
+#SoftwareEngineering #${cleanCategory} #BuildInPublic #Kollabrix #TechInnovation #Coding #FullStack`;
     } else {
       // recruiting focus
       const rolesNeeded = project.desired_roles && project.desired_roles.length > 0
         ? project.desired_roles.join(', ')
         : 'Frontend Developers, Backend Engineers & UI Designers';
 
-      text = `👋 We are building ${project.title} and recruiting student teammates on Linkora!
+      text = `👋 We are building ${project.title} and recruiting student teammates on Kollabrix!
 
 🎯 What we are building:
 ${project.summary}
@@ -107,7 +107,7 @@ If you're eager to build a real-world project, sharpen your portfolio, and colla
 🚀 Apply to join our squad here:
 ${projectUrl}
 
-#TeamForge #Linkora #HiringStudents #TechSquad #ProjectCollab #DevelopersWanted #${cleanCategory}`;
+#Kollabrix #HiringStudents #TechSquad #ProjectCollab #DevelopersWanted #${cleanCategory}`;
     }
 
     setPostContent(text);

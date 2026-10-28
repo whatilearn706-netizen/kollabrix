@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 /**
- * 3D Origami Bird Sculpture for Linkora
+ * 3D Geometric Emblem Sculpture for Kollabrix
  * Re-creates the geometric folded origami bird in Three.js
  * Colors:
  * - One wing (left): Emerald green
@@ -493,8 +493,8 @@ export function OrigamiBirdSculpture() {
     return (
       <div className="w-full h-full flex items-center justify-center p-6">
         <img
-          src="/brand/linkora-logo.png"
-          alt="Linkora Origami Bird"
+          src="/brand/kollabrix-logo.svg"
+          alt="Kollabrix 3D Emblem"
           width={192}
           height={192}
           className="w-48 h-48 object-contain drop-shadow-2xl animate-pulse"

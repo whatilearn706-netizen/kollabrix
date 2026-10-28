@@ -78,7 +78,7 @@ export function HackathonCard({
                 {hackathon.mode} Sprint
               </span>
               <span className="text-[10px] text-slate-400 font-mono">
-                {hackathon.organizer || 'Linkora Campus'}
+                {hackathon.organizer || 'Kollabrix Campus'}
               </span>
             </div>
           </div>

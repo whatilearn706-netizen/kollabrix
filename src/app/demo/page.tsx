@@ -4,8 +4,8 @@ import { Play, Download, Sparkles, ArrowRight, ShieldCheck, Users, Trophy } from
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Live Product Tour & Demo | Linkora',
-  description: 'Watch the official 30-second live product tour of Linkora — campus hackathon squads, project collaboration, and developer portfolios.',
+  title: 'Live Product Tour & Demo | Kollabrix',
+  description: 'Watch the official 30-second live product tour of Kollabrix — campus hackathon squads, project collaboration, and developer portfolios.',
 };
 
 export default function DemoPage() {
@@ -22,7 +22,7 @@ export default function DemoPage() {
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-          Experience Linkora in Action
+          Experience Kollabrix in Action
         </h1>
 
         <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
@@ -54,7 +54,7 @@ export default function DemoPage() {
             href="/"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all"
           >
-            <span>Launch Linkora Platform</span>
+            <span>Launch Kollabrix Platform</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
 

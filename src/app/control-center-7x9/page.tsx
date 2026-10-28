@@ -223,7 +223,7 @@ export default function AdminControlCenterPage() {
   }
 
 
-  const unlockSql = `-- Linkora Admin Master Control Database Unlock
+  const unlockSql = `-- Kollabrix Admin Master Control Database Unlock
 -- Run this in Supabase SQL Editor (https://supabase.com/dashboard/project/bmiwmlfraaridbekuily/sql):
 
 CREATE TABLE IF NOT EXISTS public.platform_settings (

@@ -37,7 +37,7 @@ export function Footer() {
               <BrandLogo
                 size="sm"
                 wordmarkColor={isDark ? 'light' : 'dark'}
-                title={theme.siteTitle || 'Linkora'}
+                title={theme.siteTitle || 'Kollabrix'}
               />
             </Link>
             <p className="text-xs opacity-80 leading-relaxed">
@@ -91,7 +91,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="mailto:whatilearn706@gmail.com?subject=Linkora%20Community%20Feedback"
+                  href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
                   className="hover:opacity-100 transition-opacity font-medium text-violet-400 cursor-pointer text-left inline-block"
                 >
                   💬 Community Feedback
@@ -177,7 +177,7 @@ export function Footer() {
 
         {/* Bottom Credits */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs opacity-70">
-          <p>© {new Date().getFullYear()} {theme.siteTitle || 'Linkora'} Collegiate Innovation Network. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {theme.siteTitle || 'Kollabrix'} Collegiate Innovation Network. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/terms" className="hover:underline hover:opacity-100 transition-opacity">
               Terms of Service

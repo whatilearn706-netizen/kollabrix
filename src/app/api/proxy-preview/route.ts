@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(
         `<!DOCTYPE html><html><body style="background:#0f172a;color:#ef4444;font-family:sans-serif;padding:32px;text-align:center;">
           <h3 style="margin-bottom:8px;">⚠️ Security Protection Notice</h3>
-          <p style="color:#94a3b8;font-size:13px;max-width:400px;margin:0 auto;">Embedding internal loopback addresses or private local networks is blocked by the Linkora Security Shield.</p>
+          <p style="color:#94a3b8;font-size:13px;max-width:400px;margin:0 auto;">Embedding internal loopback addresses or private local networks is blocked by the Kollabrix Security Shield.</p>
         </body></html>`,
         { status: 403, headers: { 'Content-Type': 'text/html' } }
       );

@@ -180,7 +180,7 @@ export function AdminHotPatchTab({ authToken }: AdminHotPatchTabProps) {
   };
 
   const handleCopyExternalAiPrompt = () => {
-    const prompt = `I am the administrator of Linkora (a Next.js collegiate web platform).
+    const prompt = `I am the administrator of Kollabrix (a Next.js collegiate web platform).
 My AI assistant is temporarily out of tokens.
 I want to make the following modification or fix a glitch on my website:
 [EXPLAIN YOUR ISSUE HERE: e.g. "Hide the origami bird section", or "Change navbar background to dark", or "Fix mobile gap on contest page"]
@@ -278,7 +278,7 @@ Make sure the code is production-ready.`;
             <Textarea
               rows={6}
               className="font-mono text-xs text-violet-300 bg-charcoal-950 border-charcoal-700"
-              placeholder={`// Safe JavaScript snippet\nconsole.log("Linkora Live AI Hotpatch active");`}
+              placeholder={`// Safe JavaScript snippet\nconsole.log("Kollabrix Live AI Hotpatch active");`}
               value={customJs}
               onChange={(e) => setCustomJs(e.target.value)}
               spellCheck={false}

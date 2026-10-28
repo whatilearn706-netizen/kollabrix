@@ -113,7 +113,7 @@ export function WebsiteFeedbackSection() {
             Write Your Feedback
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Have an idea to improve Linkora, found a glitch, or want a tool for your college? Write your feedback below and it goes directly to Mayank in the Admin Control Center.
+            Have an idea to improve Kollabrix, found a glitch, or want a tool for your college? Write your feedback below and it goes directly to Mayank in the Admin Control Center.
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export function WebsiteFeedbackSection() {
                 Feedback Sent Successfully!
               </h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Thank you for helping us improve Linkora! Your submission has been delivered directly to the platform Admin Control Center.
+                Thank you for helping us improve Kollabrix! Your submission has been delivered directly to the platform Admin Control Center.
               </p>
             </div>
             <button

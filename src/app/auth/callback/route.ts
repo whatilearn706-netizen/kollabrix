@@ -109,7 +109,7 @@ export async function GET(request: Request) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Authenticating Linkora...</title>
+  <title>Authenticating Kollabrix...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { background: #0b0f19; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
 <body>
   <div class="loader">
     <div class="spinner"></div>
-    <div style="font-weight: 700; font-size: 16px;">Authenticating Linkora Account...</div>
+    <div style="font-weight: 700; font-size: 16px;">Authenticating Kollabrix Account...</div>
     <div style="font-size: 13px; opacity: 0.6; margin-top: 6px;">Syncing session across all tabs...</div>
   </div>
   <script>

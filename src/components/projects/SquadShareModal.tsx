@@ -44,7 +44,7 @@ export function SquadShareModal({ isOpen, onClose, project, onOpenLinkedIn }: Sq
       : 'Modern Full-Stack';
 
   // Pre-formatted messages
-  const whatsappPitch = `🚀 *Squad Recruitment on Linkora!*
+  const whatsappPitch = `🚀 *Squad Recruitment on Kollabrix!*
 
 Hey! We're building *${project.title}* for upcoming college challenges.
 
@@ -60,7 +60,7 @@ ${projectUrl}`;
 
 **🎯 Needed Roles:** \`${rolesText}\`
 **🛠️ Technologies:** \`${techText}\`
-**🔗 Join on Linkora:** <${projectUrl}>`;
+**🔗 Join on Kollabrix:** <${projectUrl}>`;
 
   const copyToClipboard = (text: string, type: 'link' | 'discord' | 'pitch') => {
     navigator.clipboard.writeText(text);
@@ -76,7 +76,7 @@ ${projectUrl}`;
   const shareToTelegram = () => {
     const encodedUrl = encodeURIComponent(projectUrl);
     const encodedText = encodeURIComponent(
-      `🚀 Join our squad for "${project.title}" on Linkora! Looking for: ${rolesText}`
+      `🚀 Join our squad for "${project.title}" on Kollabrix! Looking for: ${rolesText}`
     );
     window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank');
   };

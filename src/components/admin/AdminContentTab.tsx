@@ -816,7 +816,7 @@ export function AdminContentTab({ authToken }: AdminContentTabProps) {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Type or paste any text below to test how Linkora intercepts and cleans prohibited words in real time.
+              Type or paste any text below to test how Kollabrix intercepts and cleans prohibited words in real time.
             </p>
             <Input
               value={testInput}

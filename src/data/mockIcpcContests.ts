@@ -242,7 +242,7 @@ using namespace std;
     id: 'icpc-speedrun-1',
     title: 'LeetCode-Style Collegiate Speedrun #1',
     subtitle: 'Practice Sprint • Data Structures & Algorithmic Puzzles',
-    organizer: 'Linkora Academic Council',
+    organizer: 'Kollabrix Academic Council',
     organizerRole: 'Collegiate Competitive Programming Guild',
     college: 'All Partner Universities',
     contestType: 'practice',
