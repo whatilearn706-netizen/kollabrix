@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
+import { normalizeHackathonDeadlines } from '@/lib/hackathons/hackathonStatus';
 
 export default function JoinHackathonPage() {
   const params = useParams();
@@ -199,6 +200,7 @@ export default function JoinHackathonPage() {
           setError('This hackathon join link is invalid, expired, or has been removed.');
           setHackathon(null);
         } else {
+          foundHackathon = normalizeHackathonDeadlines(foundHackathon);
           setHackathon(foundHackathon);
 
           // Check if current user is enrolled

@@ -62,7 +62,7 @@ import { EvaluationModal } from '@/components/hackathons/EvaluationModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
-import { isHackathonClosed } from '@/lib/hackathons/hackathonStatus';
+import { isHackathonClosed, normalizeHackathonDeadlines } from '@/lib/hackathons/hackathonStatus';
 
 interface TeamWithMembers extends HackathonTeam {
   members?: Array<HackathonTeamMember & { profile?: { display_name: string; avatar_url: string | null; college?: string | null } }>;
@@ -186,9 +186,29 @@ export default function HackathonWorkspacePage() {
   );
 
   // Submission deadline check
-  const isSubmissionClosed = Boolean(
-    hackathon?.submission_deadline && new Date() > new Date(hackathon.submission_deadline)
-  );
+  const isSubmissionClosed = useMemo(() => {
+    if (!hackathon) return false;
+    const norm = normalizeHackathonDeadlines(hackathon);
+    const now = Date.now();
+
+    // If registration is ongoing, submissions are definitely not closed
+    if (norm.registration_deadline && new Date(norm.registration_deadline).getTime() > now) {
+      return false;
+    }
+    // If hackathon hasn't started yet, submissions are definitely not closed
+    if (norm.start_date && new Date(norm.start_date).getTime() > now) {
+      return false;
+    }
+    // Check normalized submission deadline or end date
+    const subTime = norm.submission_deadline ? new Date(norm.submission_deadline).getTime() : 0;
+    const endTime = norm.end_date ? new Date(norm.end_date).getTime() : 0;
+    const validDeadline = subTime || endTime;
+
+    if (validDeadline && validDeadline < now) {
+      return true;
+    }
+    return false;
+  }, [hackathon]);
 
   // Load all workspace data
   const loadWorkspace = useCallback(async () => {
@@ -298,6 +318,29 @@ export default function HackathonWorkspacePage() {
         setError('This hackathon has been removed.');
         setIsLoading(false);
         return;
+      }
+
+      currentHack = normalizeHackathonDeadlines(currentHack);
+
+      if (typeof window !== 'undefined') {
+        try {
+          const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          let changed = false;
+          const updated = localHacks.map((h: any) => {
+            if (h.id === currentHack?.id || (currentHack?.join_code && h.join_code === currentHack?.join_code)) {
+              changed = true;
+              return {
+                ...h,
+                submission_deadline: currentHack?.submission_deadline,
+                end_date: currentHack?.end_date,
+              };
+            }
+            return h;
+          });
+          if (changed) {
+            localStorage.setItem('teamforge_created_hackathons', JSON.stringify(updated));
+          }
+        } catch {}
       }
 
       setHackathon(currentHack);

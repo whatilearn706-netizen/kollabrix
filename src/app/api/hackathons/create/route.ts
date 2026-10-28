@@ -59,6 +59,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (submissionDeadline && startDate) {
+      const subTime = new Date(submissionDeadline).getTime();
+      const startTime = new Date(startDate).getTime();
+      if (!isNaN(subTime) && !isNaN(startTime) && subTime <= startTime) {
+        return NextResponse.json(
+          { error: 'Final submission deadline must be after the hackathon start date.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Generate unique non-guessable join code
     const joinCode = generateJoinCode();
 

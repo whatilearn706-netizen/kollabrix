@@ -81,6 +81,25 @@ export function CreateHackathonModal({
       return;
     }
 
+    const regTime = new Date(registrationDeadline).getTime();
+    const startTime = new Date(startDate).getTime();
+    const subTime = new Date(submissionDeadline).getTime();
+
+    if (isNaN(regTime) || isNaN(startTime) || isNaN(subTime)) {
+      setError('Please provide valid dates and times for all deadline fields.');
+      return;
+    }
+
+    if (subTime <= startTime) {
+      setError('Final Submission Deadline must be after the Hackathon Start date.');
+      return;
+    }
+
+    if (subTime <= regTime) {
+      setError('Final Submission Deadline must be after the Registration Deadline.');
+      return;
+    }
+
     if (accessType === 'private' && (!password || password.length < 4)) {
       setError('Private hackathons require an access password of at least 4 characters.');
       return;
