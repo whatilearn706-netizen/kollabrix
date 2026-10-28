@@ -32,8 +32,10 @@ import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import { StepLearningWorkspace } from '@/components/resources/StepLearningWorkspace';
 import { CircularSkillsShowcase } from '@/components/resources/CircularSkillsShowcase';
 import { ResourcesSubNav } from '@/components/resources/ResourcesSubNav';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function ResourcesPage() {
+  const { user, openAuthModal } = useAuth();
   // Whether the user has chosen their level: null = first visit/unselected, 'beginner' | 'learning' = level selected
   const [selectedTrack, setSelectedTrack] = useState<ResourceTrack | null>(null);
   // Selected Curriculum ID (e.g. 'java-beginner') - when non-null, shows the step-by-step workspace
@@ -41,6 +43,20 @@ export default function ResourcesPage() {
   const [curriculaMap, setCurriculaMap] = useState<Record<string, LanguageCurriculum>>(DEFAULT_CURRICULA);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Resume pending track once user authenticates
+  useEffect(() => {
+    if (user) {
+      try {
+        const pending = localStorage.getItem('kollabrix_pending_resource_track') as ResourceTrack | null;
+        if (pending === 'beginner' || pending === 'learning') {
+          setSelectedTrack(pending);
+          localStorage.removeItem('kollabrix_pending_resource_track');
+          localStorage.setItem('linkora_resource_track', pending);
+        }
+      } catch {}
+    }
+  }, [user]);
 
   // Load saved track preference and fetch dynamic curricula from Supabase
   useEffect(() => {
@@ -73,6 +89,15 @@ export default function ResourcesPage() {
   }, []);
 
   const handleSelectTrack = (track: ResourceTrack) => {
+    // If not authenticated, require student to create account / sign in first
+    if (!user) {
+      try {
+        localStorage.setItem('kollabrix_pending_resource_track', track);
+      } catch {}
+      openAuthModal('signup');
+      return;
+    }
+
     setSelectedTrack(track);
     setActiveCurriculumId(null);
     try {
@@ -175,6 +200,12 @@ export default function ResourcesPage() {
         ) : selectedTrack === null ? (
           /* VIEW 2: First Gate Screen - Absolute Beginner & Active Learner Stunning Cards */
           <div className="min-h-[70vh] flex flex-col items-center justify-center text-center space-y-6 max-w-5xl mx-auto py-4">
+            {!user && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono shadow-sm animate-fadeIn">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Account required to access learning paths & track progress. Tap either track below to create your account or sign in!</span>
+              </div>
+            )}
             {/* Beginner vs Active Learner Cards - Direct Access */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl pt-2">
               {/* CARD 1: Absolute Beginner */}
@@ -194,7 +225,7 @@ export default function ResourcesPage() {
                     </div>
                     <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                      Start From Day 0
+                      {!user ? 'Login / Signup Required' : 'Start From Day 0'}
                     </span>
                   </div>
 
@@ -243,7 +274,7 @@ export default function ResourcesPage() {
                 {/* Bottom Action Footer */}
                 <div className="pt-6 mt-6 border-t border-stone-800/80 flex items-center justify-between text-xs font-bold text-amber-300 font-mono relative z-10">
                   <span className="flex items-center gap-1.5">
-                    <span>Enter Beginner Track</span>
+                    <span>{!user ? 'Create Account & Enter' : 'Enter Beginner Track'}</span>
                     <span className="text-[10px] text-stone-400 font-normal">~15 Hours</span>
                   </span>
                   <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 group-hover:translate-x-1.5 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
@@ -269,7 +300,7 @@ export default function ResourcesPage() {
                     </div>
                     <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                      Hackathon & Squad Ready
+                      {!user ? 'Login / Signup Required' : 'Hackathon & Squad Ready'}
                     </span>
                   </div>
 
@@ -318,7 +349,7 @@ export default function ResourcesPage() {
                 {/* Bottom Action Footer */}
                 <div className="pt-6 mt-6 border-t border-stone-800/80 flex items-center justify-between text-xs font-bold text-cyan-300 font-mono relative z-10">
                   <span className="flex items-center gap-1.5">
-                    <span>Enter Active Learner Track</span>
+                    <span>{!user ? 'Create Account & Enter' : 'Enter Active Learner Track'}</span>
                     <span className="text-[10px] text-stone-400 font-normal">~35 Hours</span>
                   </span>
                   <div className="w-8 h-8 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300 group-hover:translate-x-1.5 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-all">

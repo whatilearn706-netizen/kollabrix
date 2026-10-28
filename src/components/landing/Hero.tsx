@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react';
+import { WarpSpeedCanvas } from './WarpSpeedCanvas';
 
 export function LandingHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -20,23 +21,17 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#090B10]"
     >
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="landing-orb landing-orb-1" />
-        <div className="landing-orb landing-orb-2" />
-        <div className="landing-orb landing-orb-3" />
-      </div>
+      {/* Continuous 60fps Light-Speed Hyperspace Starfield (Derived from reference Image 3 with spaceship removed) */}
+      <WarpSpeedCanvas />
 
-      {/* Dot grid pattern */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundSize: '28px 28px',
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)',
-        }}
-        aria-hidden="true"
-      />
+      {/* Soft radial vignette to keep headline & buttons ultra-readable */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(9,11,16,0.7)_100%)] pointer-events-none" />
+
+      {/* Subtle ambient warm glow orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="landing-orb landing-orb-1 opacity-60" />
+        <div className="landing-orb landing-orb-2 opacity-60" />
+      </div>
 
       {/* Content */}
       <motion.div
