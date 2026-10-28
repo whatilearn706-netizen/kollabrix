@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     let finalSource = rawCode;
     if (langKey === 'java') {
-      finalSource = normalizeJavaCode(code);
+      finalSource = normalizeJavaCode(rawCode);
     }
 
     const b64Source = Buffer.from(finalSource).toString('base64');
