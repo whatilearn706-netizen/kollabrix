@@ -38,14 +38,18 @@
 }
 
 html {
+  color-scheme: dark;
+  background-color: #090B10;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
+  color-scheme: dark;
   color: var(--site-text);
-  background: var(--site-bg);
+  background-color: #090B10;
+  background: #090B10;
   font-family: var(--site-font-body);
   overflow-x: hidden;
   min-height: 100vh;
