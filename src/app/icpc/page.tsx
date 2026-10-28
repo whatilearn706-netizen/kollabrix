@@ -42,6 +42,16 @@ import {
 import { IcpcContest, IcpcProblem, ContestSubmission, StudentIcpcProgress } from '@/types/icpc';
 import { IcpcProctorGuard, checkSuspiciousPaste } from '@/components/icpc/IcpcProctorGuard';
 
+function getDefaultStarter(lang: 'cpp' | 'python' | 'java'): string {
+  if (lang === 'cpp') {
+    return `#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    \n    // Read input and implement solution\n    \n    return 0;\n}`;
+  }
+  if (lang === 'java') {
+    return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) throws IOException {\n        Scanner sc = new Scanner(System.in);\n        \n        // Read input and implement solution\n        \n    }\n}`;
+  }
+  return `import sys\n\ndef solve():\n    input_data = sys.stdin.read().split()\n    if not input_data:\n        return\n    # Read input and implement solution\n\nif __name__ == '__main__':\n    solve()`;
+}
+
 export default function IcpcCollegiateArenaPage() {
   const { user, profile } = useAuth();
   const [contests, setContests] = useState<IcpcContest[]>([]);
@@ -176,11 +186,11 @@ export default function IcpcCollegiateArenaPage() {
     setActiveProblem(problem);
     setSolverTab('editor');
     setConsoleOutput({ status: 'idle', message: '' });
-    // User must write code themselves from scratch — no automatic code written
-    setUserCode('');
+    const starter = problem.starterCode?.[selectedLanguage] || getDefaultStarter(selectedLanguage);
+    setUserCode(starter);
   };
 
-  const handleRunSample = () => {
+  const handleRunSample = async () => {
     if (!activeProblem) return;
 
     if (!userCode.trim()) {
@@ -191,17 +201,61 @@ export default function IcpcCollegiateArenaPage() {
       return;
     }
 
-    setConsoleOutput({ status: 'running', message: 'Compiling code & running sample testcases against testbench...' });
+    setConsoleOutput({ status: 'running', message: `Compiling ${selectedLanguage.toUpperCase()} and executing against sample testcase...` });
 
-    setTimeout(() => {
-      setConsoleOutput({
-        status: 'success',
-        message: `✅ Sample Testcases Passed!\n\nInput:\n${activeProblem.sampleInput}\n\nYour Output:\n${activeProblem.sampleOutput}\n\nExpected Output:\n${activeProblem.sampleOutput}\n\nExecution Time: 18ms | Memory: 14.2MB\nCompilation: Zero errors or warnings.`,
+    try {
+      const res = await fetch('/api/icpc/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceCode: userCode,
+          language: selectedLanguage,
+          stdin: activeProblem.sampleInput || '',
+          expectedOutput: activeProblem.sampleOutput || '',
+          cpuTimeLimit: activeProblem.timeLimit ? parseFloat(activeProblem.timeLimit) || 2 : 2,
+          memoryLimitMb: activeProblem.memoryLimit ? parseInt(activeProblem.memoryLimit) || 256 : 256,
+        }),
       });
-    }, 800);
+
+      const result = await res.json();
+
+      if (!res.ok || result.error) {
+        setConsoleOutput({
+          status: 'error',
+          message: `❌ Execution Failed\n\n${result.error || 'Server error occurred while executing code.'}`,
+        });
+        return;
+      }
+
+      if (result.status === 'Accepted') {
+        setConsoleOutput({
+          status: 'success',
+          message: `✅ Sample Testcase Passed!\n\nStandard Input:\n${activeProblem.sampleInput}\n\nYour Output:\n${result.stdout || '(no output)'}\n\nExpected Output:\n${activeProblem.sampleOutput}\n\nCompiler / VM: ${result.compilerOutput ? '\n' + result.compilerOutput + '\n' : 'Zero warnings.'}\nExecution Time: ${result.time} | Memory: ${result.memory}`,
+        });
+      } else {
+        let details = '';
+        if (result.compile_output) {
+          details = `Compilation Diagnostics:\n${result.compile_output}`;
+        } else if (result.stderr) {
+          details = `Runtime Error / Exception:\n${result.stderr}`;
+        } else {
+          details = `Input:\n${activeProblem.sampleInput}\n\nYour Output:\n${result.stdout || '(no output)'}\n\nExpected Output:\n${activeProblem.sampleOutput}`;
+        }
+
+        setConsoleOutput({
+          status: 'error',
+          message: `❌ Verdict: ${result.status} (${result.statusDescription})\n\n${details}\n\nExecution Time: ${result.time || 'N/A'} | Memory: ${result.memory || 'N/A'}`,
+        });
+      }
+    } catch (err: any) {
+      setConsoleOutput({
+        status: 'error',
+        message: `❌ Network Error: Could not connect to judge execution server.\n${err.message || ''}`,
+      });
+    }
   };
 
-  const handleSubmitSolution = () => {
+  const handleSubmitSolution = async () => {
     if (!activeProblem || !selectedContest) return;
 
     if (!userCode.trim()) {
@@ -212,63 +266,150 @@ export default function IcpcCollegiateArenaPage() {
       return;
     }
 
-    setConsoleOutput({ status: 'running', message: 'Evaluating against 25 hidden collegiate testcases...' });
+    const testCases = (activeProblem.testCases && activeProblem.testCases.length > 0)
+      ? activeProblem.testCases
+      : [{ input: activeProblem.sampleInput, output: activeProblem.sampleOutput, isHidden: false }];
 
-    setTimeout(() => {
-      // Automatic Points and Streak Credit
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-      const isAlreadySolved = progress.solvedProblemIds.includes(activeProblem.id);
+    setConsoleOutput({ status: 'running', message: `Compiling ${selectedLanguage.toUpperCase()} & evaluating against ${testCases.length} collegiate testcases...` });
 
-      let newStreak = progress.streak;
-      if (progress.lastSolvedDate === yesterday) {
-        newStreak = progress.streak + 1;
-      } else if (progress.lastSolvedDate === today) {
-        newStreak = progress.streak;
-      } else {
-        newStreak = 1;
+    try {
+      let passedCount = 0;
+      let maxTime = '0.00s';
+      let maxMemory = '0 KB';
+      let failedResult: any = null;
+      let failedCaseIndex = -1;
+
+      for (let i = 0; i < testCases.length; i++) {
+        const tc = testCases[i];
+        const res = await fetch('/api/icpc/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceCode: userCode,
+            language: selectedLanguage,
+            stdin: tc.input,
+            expectedOutput: tc.output,
+            cpuTimeLimit: activeProblem.timeLimit ? parseFloat(activeProblem.timeLimit) || 2 : 2,
+            memoryLimitMb: activeProblem.memoryLimit ? parseInt(activeProblem.memoryLimit) || 256 : 256,
+          }),
+        });
+
+        const result = await res.json();
+        if (!res.ok || result.error) {
+          failedResult = { status: 'Judge Error', statusDescription: result.error || 'Server error' };
+          failedCaseIndex = i + 1;
+          break;
+        }
+
+        if (result.time && result.time > maxTime) maxTime = result.time;
+        if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
+
+        if (result.status === 'Accepted') {
+          passedCount++;
+        } else {
+          failedResult = result;
+          failedCaseIndex = i + 1;
+          break;
+        }
       }
 
-      const pointsToAdd = isAlreadySolved ? 0 : activeProblem.points;
-      const newTotalPoints = progress.totalPoints + pointsToAdd;
-      const updatedSolved = isAlreadySolved
-        ? progress.solvedProblemIds
-        : [...progress.solvedProblemIds, activeProblem.id];
+      if (passedCount === testCases.length) {
+        // Automatic Points and Streak Credit
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const isAlreadySolved = progress.solvedProblemIds.includes(activeProblem.id);
 
-      const updatedProgress: StudentIcpcProgress = {
-        streak: newStreak,
-        lastSolvedDate: today,
-        totalPoints: newTotalPoints,
-        solvedProblemIds: updatedSolved,
-      };
+        let newStreak = progress.streak;
+        if (progress.lastSolvedDate === yesterday) {
+          newStreak = progress.streak + 1;
+        } else if (progress.lastSolvedDate === today) {
+          newStreak = progress.streak;
+        } else {
+          newStreak = 1;
+        }
 
-      setProgress(updatedProgress);
-      try {
-        localStorage.setItem('linkora_icpc_progress', JSON.stringify(updatedProgress));
-      } catch (e) {}
+        const pointsToAdd = isAlreadySolved ? 0 : activeProblem.points;
+        const newTotalPoints = progress.totalPoints + pointsToAdd;
+        const updatedSolved = isAlreadySolved
+          ? progress.solvedProblemIds
+          : [...progress.solvedProblemIds, activeProblem.id];
 
+        const updatedProgress: StudentIcpcProgress = {
+          streak: newStreak,
+          lastSolvedDate: today,
+          totalPoints: newTotalPoints,
+          solvedProblemIds: updatedSolved,
+        };
+
+        setProgress(updatedProgress);
+        try {
+          localStorage.setItem('linkora_icpc_progress', JSON.stringify(updatedProgress));
+        } catch (e) {}
+
+        setConsoleOutput({
+          status: 'success',
+          message: `🎉 ACCEPTED (AC)\n\nVerdict: All ${testCases.length}/${testCases.length} Testcases Passed!\nLanguage: ${selectedLanguage.toUpperCase()} (Genuine Compiler Execution)\nPeak Runtime: ${maxTime}\nPeak Memory: ${maxMemory}\n\n⚡ Points Credited: +${pointsToAdd} ICPC Points (Total: ${newTotalPoints} pts)\n🔥 Daily Streak: ${newStreak} Day${newStreak > 1 ? 's' : ''} Active!\n${isAlreadySolved ? 'ℹ️ Problem previously solved — streak maintained.' : '🌟 First-time solve bonus credited to your collegiate rank!'}`,
+        });
+
+        const newSub: ContestSubmission = {
+          id: `sub-${Date.now()}`,
+          contestId: selectedContest.id,
+          problemId: activeProblem.id,
+          studentName: profile?.display_name || user?.email?.split('@')[0] || 'Anonymous Student',
+          college: profile?.college || 'Collegiate Network',
+          language: selectedLanguage.toUpperCase(),
+          code: userCode,
+          verdict: 'Accepted',
+          runtime: maxTime,
+          memory: maxMemory,
+          submittedAt: 'Just now',
+          pointsEarned: pointsToAdd,
+        };
+
+        setSubmissions((prev) => [newSub, ...prev]);
+      } else {
+        const tc = testCases[failedCaseIndex - 1];
+        let details = '';
+        if (failedResult.compile_output) {
+          details = `Compilation Diagnostics:\n${failedResult.compile_output}`;
+        } else if (failedResult.stderr) {
+          details = `Runtime Error on Testcase #${failedCaseIndex}:\n${failedResult.stderr}`;
+        } else {
+          if (tc.isHidden) {
+            details = `Failed on Hidden Testcase #${failedCaseIndex}.\n(Hidden testcase details are veiled to preserve competitive integrity)`;
+          } else {
+            details = `Failed on Testcase #${failedCaseIndex}:\nInput:\n${tc.input}\n\nYour Output:\n${failedResult.stdout || '(no output)'}\n\nExpected Output:\n${tc.output}`;
+          }
+        }
+
+        setConsoleOutput({
+          status: 'error',
+          message: `❌ Verdict: ${failedResult.status || 'Wrong Answer'} on Testcase ${failedCaseIndex}/${testCases.length}\n${failedResult.statusDescription ? '(' + failedResult.statusDescription + ')\n' : ''}\n${details}\n\nTime: ${failedResult.time || 'N/A'} | Memory: ${failedResult.memory || 'N/A'}`,
+        });
+
+        const newSub: ContestSubmission = {
+          id: `sub-${Date.now()}`,
+          contestId: selectedContest.id,
+          problemId: activeProblem.id,
+          studentName: profile?.display_name || user?.email?.split('@')[0] || 'Anonymous Student',
+          college: profile?.college || 'Collegiate Network',
+          language: selectedLanguage.toUpperCase(),
+          code: userCode,
+          verdict: failedResult.status === 'Compilation Error' ? 'Compilation Error' : (failedResult.status === 'Time Limit Exceeded' ? 'Time Limit Exceeded' : (failedResult.status === 'Runtime Error' ? 'Runtime Error' : 'Wrong Answer')),
+          runtime: failedResult.time || 'N/A',
+          memory: failedResult.memory || 'N/A',
+          submittedAt: 'Just now',
+          pointsEarned: 0,
+        };
+
+        setSubmissions((prev) => [newSub, ...prev]);
+      }
+    } catch (err: any) {
       setConsoleOutput({
-        status: 'success',
-        message: `🎉 ACCEPTED (AC)\n\nVerdict: 25/25 Testcases Passed!\nRuntime: 24ms (Faster than 96.8% of collegiate submissions)\nMemory: 16.4MB\n\n⚡ Points Credited: +${pointsToAdd} ICPC Points (Total: ${newTotalPoints} pts)\n🔥 Daily Streak: ${newStreak} Day${newStreak > 1 ? 's' : ''} Active!\n${isAlreadySolved ? 'ℹ️ Problem previously solved — streak maintained.' : '🌟 First-time solve bonus credited to your collegiate rank!'}`,
+        status: 'error',
+        message: `❌ Testbench Evaluation Error: Could not connect to judge execution server.\n${err.message || ''}`,
       });
-
-      const newSub: ContestSubmission = {
-        id: `sub-${Date.now()}`,
-        contestId: selectedContest.id,
-        problemId: activeProblem.id,
-        studentName: profile?.display_name || user?.email?.split('@')[0] || 'Anonymous Student',
-        college: profile?.college || 'Collegiate Network',
-        language: selectedLanguage.toUpperCase(),
-        code: userCode,
-        verdict: 'Accepted',
-        runtime: '24ms',
-        memory: '16.4MB',
-        submittedAt: 'Just now',
-        pointsEarned: pointsToAdd,
-      };
-
-      setSubmissions((prev) => [newSub, ...prev]);
-    }, 1200);
+    }
   };
 
   const filteredContests = contests.filter((c) => {
@@ -1060,7 +1201,8 @@ export default function IcpcCollegiateArenaPage() {
                           type="button"
                           onClick={() => {
                             setSelectedLanguage(lang);
-                            setUserCode('');
+                            const starter = activeProblem?.starterCode?.[lang] || getDefaultStarter(lang);
+                            setUserCode(starter);
                           }}
                           className={`px-2.5 py-1 rounded-lg uppercase text-xs font-mono font-bold transition-all ${
                             selectedLanguage === lang
@@ -1108,7 +1250,13 @@ export default function IcpcCollegiateArenaPage() {
                           alert(`⚠️ Proctoring Alert: Suspicious external code paste detected!\n${check.reason}\nThis incident has been logged for proctor review.`);
                         }
                       }}
-                      placeholder={`// Write your ${selectedLanguage.toUpperCase()} algorithm solution here from scratch...\n// Read input from standard input and print the answer to standard output.\n\n#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}`}
+                      placeholder={
+                        selectedLanguage === 'python'
+                          ? `# Write your Python 3 solution here...\n# Read from sys.stdin and print to sys.stdout\nimport sys\n\ndef solve():\n    pass\n\nif __name__ == '__main__':\n    solve()`
+                          : selectedLanguage === 'java'
+                          ? `// Write your Java solution here...\n// Class must be named Main\nimport java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n    }\n}`
+                          : `// Write your C++ solution here...\n#include <iostream>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    return 0;\n}`
+                      }
                       className="w-full flex-1 p-4 font-mono text-xs text-cyan-200 bg-transparent border-none resize-none focus:outline-none selection:bg-cyan-500/30 leading-relaxed"
                       spellCheck={false}
                     />

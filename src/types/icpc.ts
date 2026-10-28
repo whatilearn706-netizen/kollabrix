@@ -1,5 +1,11 @@
 export type ProblemDifficulty = 'Easy' | 'Medium' | 'Hard';
 
+export interface IcpcTestCase {
+  input: string;
+  output: string;
+  isHidden?: boolean;
+}
+
 export interface IcpcProblem {
   id: string;
   title: string;
@@ -14,6 +20,12 @@ export interface IcpcProblem {
   constraints: string;
   sampleInput: string;
   sampleOutput: string;
+  testCases?: IcpcTestCase[];
+  starterCode?: {
+    cpp?: string;
+    java?: string;
+    python?: string;
+  };
   explanation?: string;
   solutionCode?: string;
   solutionExplanation?: string;
@@ -55,7 +67,7 @@ export interface ContestSubmission {
   college: string;
   language: string;
   code: string;
-  verdict: 'Accepted' | 'Wrong Answer' | 'Time Limit Exceeded' | 'Compilation Error';
+  verdict: 'Accepted' | 'Wrong Answer' | 'Time Limit Exceeded' | 'Compilation Error' | 'Runtime Error';
   runtime: string;
   memory: string;
   submittedAt: string;
