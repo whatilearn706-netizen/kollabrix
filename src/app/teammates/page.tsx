@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
+import { DEMO_PROFILES } from '@/data/mockProfiles';
 
 export default function TeammatesPage() {
   const router = useRouter();
@@ -134,8 +135,20 @@ export default function TeammatesPage() {
                 Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
               return { ...p, college_verified: isVerified };
             });
-          setAllProfiles(activeProfs);
-          setPageCache('linkora_teammates_profiles', activeProfs);
+
+          // Enrich with collegiate seed builder profiles when platform is starting up
+          const existingUserIds = new Set(activeProfs.map((p) => p.user_id));
+          const existingUsernames = new Set(activeProfs.map((p) => (p.username || '').toLowerCase()));
+          const seedFallback = DEMO_PROFILES.filter(
+            (dp) => !existingUserIds.has(dp.user_id) && !existingUsernames.has((dp.username || '').toLowerCase())
+          );
+          const combinedProfiles = [...activeProfs, ...seedFallback];
+
+          setAllProfiles(combinedProfiles);
+          setPageCache('linkora_teammates_profiles', combinedProfiles);
+        } else {
+          setAllProfiles(DEMO_PROFILES);
+          setPageCache('linkora_teammates_profiles', DEMO_PROFILES);
         }
 
         // 2. If logged in, fetch owned projects
@@ -184,6 +197,8 @@ export default function TeammatesPage() {
           const combinedInvitedIds = Array.from(new Set([...remoteInvitedIds, ...localInvitedIds]));
           setInvitedUserIds(combinedInvitedIds);
         }
+      } else {
+        setAllProfiles(DEMO_PROFILES);
       }
     } catch (e) {
       console.warn('Error loading teammates data:', e);

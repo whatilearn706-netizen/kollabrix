@@ -47,6 +47,12 @@ const QUICK_INSPIRATIONS = [
   'Smart AgriTech Pest Diagnosis via Edge WASM',
   'Micro-Grants DAO for Student Open-Source',
   'Real-Time College Carpool & Ride Share Radar',
+  'AI Lecture Audio to Anki Flashcards & Summary',
+  'Campus EV Micro-Mobility & Battery Station Swapper',
+  'Decentralized Degree & Certificate Verifier on Polygon',
+  'Lab Equipment Slot Booking & Sensor Telemetry',
+  'Peer-to-Peer Campus Textbook & Gadget Exchange',
+  'ProctorGuard: Browser Sandbox with Eye-Gaze Tracking',
 ];
 
 const THINKING_STEPS = [

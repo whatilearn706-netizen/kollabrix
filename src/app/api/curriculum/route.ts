@@ -28,7 +28,26 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
 
       if (!error && data?.value && typeof data.value === 'object') {
-        memoryCurricula = { ...DEFAULT_CURRICULA, ...data.value };
+        const dbData = data.value as Record<string, LanguageCurriculum>;
+        const merged: Record<string, LanguageCurriculum> = { ...DEFAULT_CURRICULA };
+        for (const [key, curr] of Object.entries(dbData)) {
+          if (!merged[key]) {
+            merged[key] = curr;
+          } else {
+            const defCurr = merged[key];
+            const defSteps = defCurr.steps || [];
+            const dbSteps = curr.steps || [];
+            // Preserve full comprehensive steps from defaults if DB only has a truncated subset
+            const stepsToUse = dbSteps.length >= defSteps.length ? dbSteps : defSteps;
+            merged[key] = {
+              ...defCurr,
+              ...curr,
+              steps: stepsToUse,
+              stepsCount: stepsToUse.length,
+            };
+          }
+        }
+        memoryCurricula = merged;
         return NextResponse.json({ success: true, curricula: memoryCurricula, source: 'database' });
       }
     }

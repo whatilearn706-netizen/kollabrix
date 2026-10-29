@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Profile, Project, ProjectTask, ProjectMember } from '@/types/database';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
+import { DEMO_PROFILES } from '@/data/mockProfiles';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -43,12 +44,17 @@ export default function PublicProfilePage() {
   const { user } = useAuth();
   const username = (params?.username as string)?.toLowerCase();
 
+  const matchingDemoProfile = DEMO_PROFILES.find(
+    (p) => p.username.toLowerCase() === username
+  );
+
   const matchingDemo = DEMO_PROJECTS.find(
     (p) => p.owner?.username?.toLowerCase() === username
   );
 
   const initialDemoProfile: Profile | null =
-    matchingDemo && matchingDemo.owner
+    matchingDemoProfile ||
+    (matchingDemo && matchingDemo.owner
       ? {
           user_id: matchingDemo.owner.user_id || 'demo-user',
           username: matchingDemo.owner.username || username,
@@ -68,7 +74,7 @@ export default function PublicProfilePage() {
           created_at: matchingDemo.created_at,
           updated_at: matchingDemo.updated_at,
         }
-      : null;
+      : null);
 
   const [profile, setProfile] = useState<Profile | null>(() => initialDemoProfile);
   const [userProjects, setUserProjects] = useState<Project[]>(() =>
@@ -97,6 +103,11 @@ export default function PublicProfilePage() {
           .single();
 
         if (profileErr || !profileData) {
+          if (matchingDemoProfile) {
+            setProfile(matchingDemoProfile);
+            setIsLoading(false);
+            return;
+          }
           setError('Student profile not found.');
           setIsLoading(false);
           return;
