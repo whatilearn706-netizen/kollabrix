@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
+    const code = searchParams.get('code') || searchParams.get('room') || searchParams.get('roomCode');
 
     if (!code) {
       return NextResponse.json({ success: false, error: 'Room code is required' }, { status: 400 });

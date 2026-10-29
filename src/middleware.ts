@@ -26,8 +26,13 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback
-  if (request.nextUrl.searchParams.has('code') && pathname !== '/auth/callback') {
+  // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback (excluding API & Arena room routes)
+  if (
+    request.nextUrl.searchParams.has('code') &&
+    pathname !== '/auth/callback' &&
+    !pathname.startsWith('/api/') &&
+    !pathname.startsWith('/arena')
+  ) {
     const url = request.nextUrl.clone();
     url.host = isLocal ? host : PRIMARY_DOMAIN;
     url.protocol = isLocal ? url.protocol : 'https';
