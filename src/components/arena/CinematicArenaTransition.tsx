@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronRight, Zap, Flame, ShieldCheck } from 'lucide-react';
+import { ChevronRight, Zap, Flame, ShieldCheck, Swords, Cpu } from 'lucide-react';
 import {
   playGlassShatterBreachSound,
   playSubSonicBoomSound,
   playLightningArcSound,
   playCyberSwordClashSound,
-  playVoxelShatterSound,
+  playBattleSlamSound,
+  playTacticalSelectSound,
 } from '@/lib/arena/soundEffects';
 
 interface CinematicArenaTransitionProps {
@@ -15,37 +16,19 @@ interface CinematicArenaTransitionProps {
   onAnimationComplete: () => void;
 }
 
-// 3D Isometric Voxel Cube representation
-interface VoxelBlock {
-  x: number;
-  y: number;
-  z: number;
-  vx: number;
-  vy: number;
-  vz: number;
-  rx: number;
-  ry: number;
-  rz: number;
-  vrx: number;
-  vry: number;
-  vrz: number;
-  size: number;
-  hue: 'cyan' | 'crimson' | 'gold';
-  alpha: number;
-}
-
-// Warp star streak
-interface WarpStar {
+// Hyperspace relativistic warp streak
+interface WarpStreak {
   x: number;
   y: number;
   z: number;
   pz: number;
   color: string;
   speed: number;
+  width: number;
 }
 
-// Impact spark particle
-interface SparkParticle {
+// Explosive plasma clash spark
+interface PlasmaSpark {
   x: number;
   y: number;
   vx: number;
@@ -56,19 +39,27 @@ interface SparkParticle {
   decay: number;
 }
 
+// Electric lightning arc branch
+interface LightningBranch {
+  points: { x: number; y: number }[];
+  color: string;
+  alpha: number;
+  width: number;
+}
+
 export function CinematicArenaTransition({
   isActive,
   onAnimationComplete,
 }: CinematicArenaTransitionProps) {
-  // Phases: 'idle' -> 'voxel_shatter' -> 'warp_acceleration' -> 'sword_clash' -> 'title_lock' -> 'warp_dive'
+  // Phases: 'hyper_rift' (0-350ms) -> 'blade_charge' (350-650ms) -> 'supernova_clash' (650-1100ms) -> 'title_lock' (1100-2200ms) -> 'battle_dive' (2200-2500ms)
   const [phase, setPhase] = useState<
-    'idle' | 'voxel_shatter' | 'warp_acceleration' | 'sword_clash' | 'title_lock' | 'warp_dive'
+    'idle' | 'hyper_rift' | 'blade_charge' | 'supernova_clash' | 'title_lock' | 'battle_dive'
   >('idle');
 
-  const [screenRumble, setScreenRumble] = useState(false);
-  const [chromaticGlitch, setChromaticGlitch] = useState(false);
-  const [supernovaFlash, setSupernovaFlash] = useState(false);
+  const [screenShake, setScreenShake] = useState(false);
+  const [flashBloom, setFlashBloom] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
+  const [hudStatusText, setHudStatusText] = useState('ENGAGING TOURNAMENT HYPERSPACE...');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -85,77 +76,78 @@ export function CinematicArenaTransition({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isActive, onAnimationComplete]);
 
-  // Main Choreography Timeline
+  // Master Choreography Timeline
   useEffect(() => {
     if (!isActive) {
       setPhase('idle');
-      setScreenRumble(false);
-      setChromaticGlitch(false);
-      setSupernovaFlash(false);
+      setScreenShake(false);
+      setFlashBloom(false);
       setProgressPercent(0);
       return;
     }
 
-    // T = 0ms: Voxel Shatter Explosion & Reality Rift
-    setPhase('voxel_shatter');
-    setScreenRumble(true);
-    setChromaticGlitch(true);
+    // T = 0ms: Dimension Tear / Hyperspace Warp
+    setPhase('hyper_rift');
+    setScreenShake(true);
     playGlassShatterBreachSound();
     playSubSonicBoomSound();
 
-    // T = 350ms: Hyperspace Warp Acceleration
-    const tWarp = setTimeout(() => {
-      setPhase('warp_acceleration');
+    // T = 350ms: Dual Plasma Blades Charge
+    const tBlades = setTimeout(() => {
+      setPhase('blade_charge');
+      setHudStatusText('DUAL COMBATANTS LOCKING TARGET VECTOR...');
       playLightningArcSound();
     }, 350);
 
-    // T = 800ms: Dual Supersonic Plasma Blades Clash at Dead Center
+    // T = 650ms: THE SUPERNOVA CLASH (Shockwave & Blade Collision)
     const tClash = setTimeout(() => {
-      setPhase('sword_clash');
-      setSupernovaFlash(true);
-      setScreenRumble(true);
-      setChromaticGlitch(true);
+      setPhase('supernova_clash');
+      setFlashBloom(true);
+      setScreenShake(true);
+      setHudStatusText('CRITICAL IMPACT: PROTOCOL ACTIVATED');
       playCyberSwordClashSound();
-      playVoxelShatterSound();
-      setTimeout(() => setSupernovaFlash(false), 220);
-    }, 800);
+      playBattleSlamSound();
+      setTimeout(() => setFlashBloom(false), 240);
+    }, 650);
 
-    // T = 1200ms: Title Lock & Championship Hologram
+    // T = 1100ms: Monolithic Title Lock & Hologram Calibration
     const tTitle = setTimeout(() => {
       setPhase('title_lock');
-      setScreenRumble(false);
-      setChromaticGlitch(false);
-    }, 1200);
+      setScreenShake(false);
+      setHudStatusText('ARENA SECURED // INITIALIZING COMBAT PODS');
+      playTacticalSelectSound();
+    }, 1100);
 
-    // Smooth Progress Bar
-    const interval = setInterval(() => {
+    // Progress counter
+    const progressInterval = setInterval(() => {
       setProgressPercent((prev) => {
         if (prev >= 100) return 100;
-        return prev + 4;
+        return prev + 3;
       });
     }, 45);
 
-    // T = 2200ms: Hyperspace Dive into Battlefield
+    // T = 2100ms: Hyperspace Dive into Arena
     const tDive = setTimeout(() => {
-      setPhase('warp_dive');
-    }, 2200);
+      setPhase('battle_dive');
+      setHudStatusText('LAUNCHING DUEL MATRIX...');
+    }, 2100);
 
-    // T = 2650ms: Complete and transition to Step 1
-    const tDone = setTimeout(() => {
+    // T = 2500ms: Transition to Setup Room
+    const tComplete = setTimeout(() => {
       onAnimationComplete();
-    }, 2650);
+    }, 2500);
 
     return () => {
-      clearTimeout(tWarp);
+      clearTimeout(tBlades);
       clearTimeout(tClash);
       clearTimeout(tTitle);
       clearTimeout(tDive);
-      clearTimeout(tDone);
-      clearInterval(interval);
+      clearTimeout(tComplete);
+      clearInterval(progressInterval);
     };
   }, [isActive, onAnimationComplete]);
 
-  // High Performance Canvas 3D Engine (Voxels + Warp Tunnel + Sparks + Shockwave)
+  // High-Performance 60FPS Canvas Animation Engine
   useEffect(() => {
     if (!isActive || phase === 'idle') return;
     const canvas = canvasRef.current;
@@ -176,127 +168,161 @@ export function CinematicArenaTransition({
     const cx = width / 2;
     const cy = height / 2;
 
-    // 1. Generate 3D Falling Voxel Blocks (1cm / ~32px scale)
-    const voxels: VoxelBlock[] = [];
-    const cornerSpawns = [
-      { x: 40, y: 40, vx: 5, vy: 3 },
-      { x: width - 40, y: 40, vx: -5, vy: 3 },
-      { x: 40, y: height - 40, vx: 5, vy: -3 },
-      { x: width - 40, y: height - 40, vx: -5, vy: -3 },
-      { x: cx, y: 30, vx: 0, vy: 5 },
-      { x: cx, y: height - 30, vx: 0, vy: -5 },
-    ];
-
-    cornerSpawns.forEach((spawn) => {
-      for (let i = 0; i < 22; i++) {
-        const hueType: 'cyan' | 'crimson' | 'gold' =
-          i % 3 === 0 ? 'cyan' : i % 3 === 1 ? 'crimson' : 'gold';
-        voxels.push({
-          x: spawn.x + (Math.random() * 120 - 60),
-          y: spawn.y + (Math.random() * 120 - 60),
-          z: Math.random() * 300 + 100,
-          vx: spawn.vx * (Math.random() * 1.5 + 0.8) + (Math.random() * 4 - 2),
-          vy: spawn.vy * (Math.random() * 1.5 + 0.8) + (Math.random() * 4 - 2),
-          vz: Math.random() * 6 - 3,
-          rx: Math.random() * Math.PI * 2,
-          ry: Math.random() * Math.PI * 2,
-          rz: Math.random() * Math.PI * 2,
-          vrx: (Math.random() - 0.5) * 0.1,
-          vry: (Math.random() - 0.5) * 0.1,
-          vrz: (Math.random() - 0.5) * 0.1,
-          size: Math.random() * 14 + 22, // 22px to 36px (~1cm block)
-          hue: hueType,
-          alpha: 1,
-        });
-      }
-    });
-
-    // 2. Generate 450+ 3D Relativistic Warp Star Streaks
-    const warpStars: WarpStar[] = [];
-    const starColors = ['#00f0ff', '#ffffff', '#ff0055', '#38bdf8', '#fbbf24'];
-    for (let i = 0; i < 450; i++) {
-      warpStars.push({
-        x: (Math.random() - 0.5) * width * 2,
-        y: (Math.random() - 0.5) * height * 2,
-        z: Math.random() * 1000 + 1,
-        pz: 1000,
-        color: starColors[Math.floor(Math.random() * starColors.length)],
-        speed: Math.random() * 18 + 12,
+    // 1. Relativistic Hyperspace Laser Streaks (600+ luminous stars/lasers)
+    const warpStreaks: WarpStreak[] = [];
+    const streakColors = ['#00f0ff', '#ffffff', '#ff0055', '#38bdf8', '#f59e0b', '#ec4899'];
+    for (let i = 0; i < 650; i++) {
+      warpStreaks.push({
+        x: (Math.random() - 0.5) * width * 2.8,
+        y: (Math.random() - 0.5) * height * 2.8,
+        z: Math.random() * 1200 + 1,
+        pz: 1200,
+        color: streakColors[Math.floor(Math.random() * streakColors.length)],
+        speed: Math.random() * 22 + 14,
+        width: Math.random() * 2.4 + 1,
       });
     }
 
-    // 3. Shockwave & Clash Sparks
-    let shockwaveR = 5;
-    let shockwaveAlpha = 1;
-    const sparks: SparkParticle[] = [];
+    // 2. Center Plasma Sparks (Triggered on collision)
+    const sparks: PlasmaSpark[] = [];
+    let sparksSpawned = false;
 
     const spawnSparks = () => {
-      for (let i = 0; i < 180; i++) {
+      for (let i = 0; i < 320; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 26 + 6;
+        const speed = Math.random() * 32 + 8;
         sparks.push({
           x: cx,
           y: cy,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          size: Math.random() * 3.5 + 1.5,
-          color: i % 2 === 0 ? '#00f0ff' : '#ff0055',
+          size: Math.random() * 4 + 1.5,
+          color: i % 3 === 0 ? '#00f0ff' : i % 3 === 1 ? '#ff0055' : '#ffffff',
           alpha: 1,
-          decay: Math.random() * 0.02 + 0.015,
+          decay: Math.random() * 0.02 + 0.012,
         });
       }
     };
 
-    let clashSpawned = false;
+    // 3. Procedural Lightning Arcs from screen corners
+    let lightningBranches: LightningBranch[] = [];
+
+    const generateLightning = (startX: number, startY: number, endX: number, endY: number, color: string): LightningBranch => {
+      const points = [{ x: startX, y: startY }];
+      const segments = 12;
+      for (let i = 1; i < segments; i++) {
+        const t = i / segments;
+        const lx = startX + (endX - startX) * t;
+        const ly = startY + (endY - startY) * t;
+        const offset = (Math.random() - 0.5) * 70;
+        points.push({ x: lx + offset, y: ly + offset });
+      }
+      points.push({ x: endX, y: endY });
+      return {
+        points,
+        color,
+        alpha: 1,
+        width: Math.random() * 2.5 + 1.5,
+      };
+    };
+
+    // 4. Expanding Supernova Shockwaves
+    let shockwaveRadius = 10;
+    let shockwaveAlpha = 1;
+
     let tick = 0;
 
     const render = () => {
       tick++;
       ctx.clearRect(0, 0, width, height);
 
-      // Deep space atmospheric background
-      const bgGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(width, height) * 0.85);
-      bgGrad.addColorStop(0, '#060a17');
-      bgGrad.addColorStop(0.5, '#040711');
+      // Deep space abyss gradient with cosmic ambient glow
+      const bgGrad = ctx.createRadialGradient(cx, cy, 30, cx, cy, Math.max(width, height) * 0.9);
+      bgGrad.addColorStop(0, '#0a0d1e');
+      bgGrad.addColorStop(0.4, '#050713');
       bgGrad.addColorStop(1, '#020308');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // ================= 1. RELATIVISTIC WARP TUNNEL =================
-      const warpSpeedMultiplier =
-        phase === 'voxel_shatter'
-          ? 4
-          : phase === 'warp_acceleration' || phase === 'sword_clash'
-          ? 18
-          : phase === 'warp_dive'
-          ? 32
-          : 6;
+      // ================= 1. 3D PERSPECTIVE STADIUM FLOOR & CEILING GRIDS =================
+      const gridSpeed = (tick * 12) % 60;
+      ctx.save();
+      ctx.lineWidth = 1;
+
+      // Bottom Cyber Grid (Floor)
+      const floorGrad = ctx.createLinearGradient(0, height * 0.65, 0, height);
+      floorGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+      floorGrad.addColorStop(1, 'rgba(0, 240, 255, 0.22)');
+      ctx.strokeStyle = floorGrad;
+
+      for (let x = -width; x < width * 2; x += 110) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 40);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+
+      for (let y = height * 0.65; y <= height; y += 28) {
+        const animatedY = y + gridSpeed * 0.45;
+        if (animatedY <= height) {
+          ctx.beginPath();
+          ctx.moveTo(0, animatedY);
+          ctx.lineTo(width, animatedY);
+          ctx.stroke();
+        }
+      }
+
+      // Top Cyber Grid (Ceiling - Crimson)
+      const ceilGrad = ctx.createLinearGradient(0, height * 0.35, 0, 0);
+      ceilGrad.addColorStop(0, 'rgba(255, 0, 85, 0)');
+      ceilGrad.addColorStop(1, 'rgba(255, 0, 85, 0.18)');
+      ctx.strokeStyle = ceilGrad;
+
+      for (let x = -width; x < width * 2; x += 110) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 40);
+        ctx.lineTo(x, 0);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // ================= 2. RELATIVISTIC WARP TUNNEL =================
+      const warpSpeedMult =
+        phase === 'hyper_rift'
+          ? 12
+          : phase === 'blade_charge'
+          ? 22
+          : phase === 'supernova_clash'
+          ? 34
+          : phase === 'battle_dive'
+          ? 48
+          : 16;
 
       ctx.save();
-      warpStars.forEach((star) => {
-        star.pz = star.z;
-        star.z -= star.speed * (warpSpeedMultiplier / 8);
+      warpStreaks.forEach((streak) => {
+        streak.pz = streak.z;
+        streak.z -= streak.speed * (warpSpeedMult / 10);
 
-        if (star.z <= 0) {
-          star.z = 1000;
-          star.pz = 1000;
-          star.x = (Math.random() - 0.5) * width * 2;
-          star.y = (Math.random() - 0.5) * height * 2;
+        if (streak.z <= 0) {
+          streak.z = 1200;
+          streak.pz = 1200;
+          streak.x = (Math.random() - 0.5) * width * 2.8;
+          streak.y = (Math.random() - 0.5) * height * 2.8;
         }
 
-        const k = 320 / star.z;
-        const px = star.x * k + cx;
-        const py = star.y * k + cy;
+        const k = 340 / streak.z;
+        const px = streak.x * k + cx;
+        const py = streak.y * k + cy;
 
-        const pk = 320 / star.pz;
-        const prevX = star.x * pk + cx;
-        const prevY = star.y * pk + cy;
+        const pk = 340 / streak.pz;
+        const prevX = streak.x * pk + cx;
+        const prevY = streak.y * pk + cy;
 
         if (px >= 0 && px <= width && py >= 0 && py <= height) {
-          const alpha = Math.min(1, (1000 - star.z) / 400);
-          ctx.strokeStyle = star.color;
+          const alpha = Math.min(1, (1200 - streak.z) / 450);
+          ctx.strokeStyle = streak.color;
           ctx.globalAlpha = alpha;
-          ctx.lineWidth = Math.max(1, (1 - star.z / 1000) * 3);
+          ctx.lineWidth = Math.max(1, (1 - streak.z / 1200) * streak.width * 2.2);
           ctx.beginPath();
           ctx.moveTo(prevX, prevY);
           ctx.lineTo(px, py);
@@ -305,160 +331,130 @@ export function CinematicArenaTransition({
       });
       ctx.restore();
 
-      // ================= 2. ROTATING CYBER RINGS / PORTAL ACCELERATOR =================
+      // ================= 3. ROTATING TECH HUD RINGS & GYROSCOPES =================
       ctx.save();
       ctx.translate(cx, cy);
 
-      // Outer Portal Ring
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.25)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, 220, 0, Math.PI * 2);
-      ctx.stroke();
+      const rotSpeed = tick * 0.025;
 
-      // Spinning Tech Brackets
-      const ringRot = tick * 0.02;
+      // Outer Cyan Aperture Ring
       ctx.save();
-      ctx.rotate(ringRot);
-      ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = 2.5;
+      ctx.rotate(rotSpeed);
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)';
+      ctx.lineWidth = 1.8;
       ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 14;
 
-      for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
         ctx.beginPath();
-        ctx.arc(0, 0, 190, a, a + 0.35);
+        ctx.arc(0, 0, 240, a, a + 0.45);
         ctx.stroke();
       }
       ctx.restore();
 
-      // Counter-rotating Inner Crimson Ring
+      // Inner Crimson Reticle Ring
       ctx.save();
-      ctx.rotate(-ringRot * 1.4);
-      ctx.strokeStyle = '#ff0055';
-      ctx.lineWidth = 2;
+      ctx.rotate(-rotSpeed * 1.5);
+      ctx.strokeStyle = 'rgba(255, 0, 85, 0.55)';
+      ctx.lineWidth = 2.2;
       ctx.shadowColor = '#ff0055';
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 12;
 
       for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
         ctx.beginPath();
-        ctx.arc(0, 0, 140, a, a + 0.25);
+        ctx.arc(0, 0, 180, a, a + 0.35);
         ctx.stroke();
       }
       ctx.restore();
+
+      // Pulsing Center Target Reticle
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, 110, 0, Math.PI * 2);
+      ctx.stroke();
+
       ctx.restore();
 
-      // ================= 3. 3D ISOMETRIC TUMBLING VOXELS =================
-      voxels.forEach((v) => {
-        v.x += v.vx;
-        v.y += v.vy;
-        v.z += v.vz;
-        v.rx += v.vrx;
-        v.ry += v.vry;
-        v.rz += v.vrz;
+      // ================= 4. PROCEDURAL LIGHTNING ARCS =================
+      if (tick % 6 === 0 && (phase === 'hyper_rift' || phase === 'blade_charge')) {
+        const corners = [
+          { x: 0, y: 0, color: '#00f0ff' },
+          { x: width, y: 0, color: '#ff0055' },
+          { x: 0, y: height, color: '#00f0ff' },
+          { x: width, y: height, color: '#ff0055' },
+        ];
+        const selected = corners[Math.floor(Math.random() * corners.length)];
+        lightningBranches.push(
+          generateLightning(selected.x, selected.y, cx + (Math.random() * 80 - 40), cy + (Math.random() * 80 - 40), selected.color)
+        );
+      }
 
-        // Gravity pull toward center vortex
-        const dx = cx - v.x;
-        const dy = cy - v.y;
-        v.vx += dx * 0.0008;
-        v.vy += dy * 0.0008;
-
-        if (phase === 'warp_acceleration' || phase === 'sword_clash' || phase === 'warp_dive') {
-          v.alpha = Math.max(0, v.alpha - 0.02);
+      ctx.save();
+      for (let i = lightningBranches.length - 1; i >= 0; i--) {
+        const b = lightningBranches[i];
+        b.alpha -= 0.08;
+        if (b.alpha <= 0) {
+          lightningBranches.splice(i, 1);
+          continue;
         }
 
-        if (v.alpha <= 0) return;
+        ctx.strokeStyle = b.color;
+        ctx.globalAlpha = b.alpha;
+        ctx.lineWidth = b.width;
+        ctx.shadowColor = b.color;
+        ctx.shadowBlur = 15;
 
-        // Render 3D shaded isometric cube
-        ctx.save();
-        ctx.translate(v.x, v.y);
-        ctx.rotate(v.rz);
-        ctx.globalAlpha = v.alpha;
-
-        const s = v.size * (200 / (v.z + 100));
-        const colorPalette =
-          v.hue === 'cyan'
-            ? { top: '#22d3ee', front: '#0891b2', side: '#0e7490', glow: '#00f0ff' }
-            : v.hue === 'crimson'
-            ? { top: '#fb7185', front: '#e11d48', side: '#be123c', glow: '#ff0055' }
-            : { top: '#fde047', front: '#eab308', side: '#ca8a04', glow: '#ffb700' };
-
-        // Front Face
-        ctx.fillStyle = colorPalette.front;
         ctx.beginPath();
-        ctx.rect(-s / 2, -s / 2, s, s);
-        ctx.fill();
+        b.points.forEach((pt, idx) => {
+          if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+      }
+      ctx.restore();
 
-        // Top Face
-        ctx.fillStyle = colorPalette.top;
-        ctx.beginPath();
-        ctx.moveTo(-s / 2, -s / 2);
-        ctx.lineTo(-s / 2 + s * 0.4, -s / 2 - s * 0.3);
-        ctx.lineTo(s / 2 + s * 0.4, -s / 2 - s * 0.3);
-        ctx.lineTo(s / 2, -s / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        // Right Side Face
-        ctx.fillStyle = colorPalette.side;
-        ctx.beginPath();
-        ctx.moveTo(s / 2, -s / 2);
-        ctx.lineTo(s / 2 + s * 0.4, -s / 2 - s * 0.3);
-        ctx.lineTo(s / 2 + s * 0.4, s / 2 - s * 0.3);
-        ctx.lineTo(s / 2, s / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        // Glowing Wireframe Edges
-        ctx.strokeStyle = colorPalette.glow;
-        ctx.lineWidth = 1;
-        ctx.shadowColor = colorPalette.glow;
-        ctx.shadowBlur = 8;
-        ctx.strokeRect(-s / 2, -s / 2, s, s);
-
-        ctx.restore();
-      });
-
-      // ================= 4. SWORD CLASH SHOCKWAVE & SPARKS =================
-      if ((phase === 'sword_clash' || phase === 'title_lock') && !clashSpawned) {
-        clashSpawned = true;
+      // ================= 5. SUPERNOVA SHOCKWAVE & 300+ SPARKS =================
+      if ((phase === 'supernova_clash' || phase === 'title_lock') && !sparksSpawned) {
+        sparksSpawned = true;
         spawnSparks();
       }
 
-      if (phase === 'sword_clash' || phase === 'title_lock' || phase === 'warp_dive') {
-        // Shockwave 1: Crimson Outer
-        shockwaveR += 24;
-        shockwaveAlpha = Math.max(0, shockwaveAlpha - 0.022);
+      if (phase === 'supernova_clash' || phase === 'title_lock' || phase === 'battle_dive') {
+        // Shockwave Ring 1 (Cyan/White)
+        shockwaveRadius += 28;
+        shockwaveAlpha = Math.max(0, shockwaveAlpha - 0.024);
 
         if (shockwaveAlpha > 0) {
           ctx.save();
-          ctx.strokeStyle = `rgba(255, 0, 85, ${shockwaveAlpha})`;
-          ctx.lineWidth = 5;
-          ctx.shadowColor = '#ff0055';
-          ctx.shadowBlur = 30;
+          ctx.strokeStyle = `rgba(0, 240, 255, ${shockwaveAlpha})`;
+          ctx.lineWidth = 6;
+          ctx.shadowColor = '#00f0ff';
+          ctx.shadowBlur = 35;
           ctx.beginPath();
-          ctx.arc(cx, cy, shockwaveR, 0, Math.PI * 2);
+          ctx.arc(cx, cy, shockwaveRadius, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Shockwave 2: Cyan Inner
-          ctx.strokeStyle = `rgba(0, 240, 255, ${shockwaveAlpha * 0.9})`;
-          ctx.lineWidth = 3.5;
-          ctx.shadowColor = '#00f0ff';
-          ctx.shadowBlur = 20;
+          // Shockwave Ring 2 (Crimson Outer)
+          ctx.strokeStyle = `rgba(255, 0, 85, ${shockwaveAlpha * 0.85})`;
+          ctx.lineWidth = 4;
+          ctx.shadowColor = '#ff0055';
+          ctx.shadowBlur = 25;
           ctx.beginPath();
-          ctx.arc(cx, cy, shockwaveR * 0.65, 0, Math.PI * 2);
+          ctx.arc(cx, cy, shockwaveRadius * 0.75, 0, Math.PI * 2);
           ctx.stroke();
           ctx.restore();
         }
 
         // Sparks Physics
+        ctx.save();
         for (let i = sparks.length - 1; i >= 0; i--) {
           const sp = sparks[i];
           sp.x += sp.vx;
           sp.y += sp.vy;
           sp.vx *= 0.94;
           sp.vy *= 0.94;
-          sp.vy += 0.15; // gentle gravity
+          sp.vy += 0.12; // subtle gravity
           sp.alpha -= sp.decay;
 
           if (sp.alpha <= 0) {
@@ -466,16 +462,15 @@ export function CinematicArenaTransition({
             continue;
           }
 
-          ctx.save();
           ctx.globalAlpha = sp.alpha;
           ctx.fillStyle = sp.color;
           ctx.shadowColor = sp.color;
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 12;
           ctx.beginPath();
           ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
           ctx.fill();
-          ctx.restore();
         }
+        ctx.restore();
       }
 
       animFrameRef.current = requestAnimationFrame(render);
@@ -494,123 +489,123 @@ export function CinematicArenaTransition({
   return (
     <div
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-black select-none ${
-        screenRumble ? 'animate-epic-rumble' : ''
+        screenShake ? 'animate-titan-shake' : ''
       }`}
     >
       {/* Dynamic Keyframe Styles */}
       <style>{`
-        @keyframes epicRumble {
+        @keyframes titanShake {
           0% { transform: translate3d(0, 0, 0); }
-          15% { transform: translate3d(-5px, 4px, 0) scale(1.008); }
-          30% { transform: translate3d(5px, -4px, 0) scale(0.996); }
-          45% { transform: translate3d(-4px, -3px, 0) scale(1.006); }
-          60% { transform: translate3d(4px, 3px, 0) scale(0.998); }
-          75% { transform: translate3d(-3px, 2px, 0) scale(1.004); }
+          15% { transform: translate3d(-6px, 4px, 0) scale(1.006); }
+          30% { transform: translate3d(6px, -4px, 0) scale(0.998); }
+          45% { transform: translate3d(-5px, -3px, 0) scale(1.004); }
+          60% { transform: translate3d(5px, 3px, 0) scale(0.999); }
+          75% { transform: translate3d(-3px, 2px, 0) scale(1.002); }
           100% { transform: translate3d(0, 0, 0) scale(1); }
         }
-        .animate-epic-rumble {
-          animation: epicRumble 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+        .animate-titan-shake {
+          animation: titanShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
         }
 
-        @keyframes swordStrikeLeft {
+        @keyframes plasmaSlashLeft {
           0% {
-            transform: translate3d(-140%, -100%, 0) rotate(-45deg) scale(2);
+            transform: translate3d(-150%, -100%, 0) rotate(-35deg) scaleX(2.5);
             opacity: 0;
           }
           40% {
             opacity: 1;
           }
           100% {
-            transform: translate3d(-35%, -35%, 0) rotate(-20deg) scale(1);
+            transform: translate3d(-20%, -15%, 0) rotate(-15deg) scaleX(1);
             opacity: 1;
           }
         }
 
-        @keyframes swordStrikeRight {
+        @keyframes plasmaSlashRight {
           0% {
-            transform: translate3d(140%, 100%, 0) rotate(135deg) scale(2);
+            transform: translate3d(150%, 100%, 0) rotate(145deg) scaleX(2.5);
             opacity: 0;
           }
           40% {
             opacity: 1;
           }
           100% {
-            transform: translate3d(35%, 35%, 0) rotate(160deg) scale(1);
+            transform: translate3d(20%, 15%, 0) rotate(165deg) scaleX(1);
             opacity: 1;
           }
         }
 
-        .animate-sword-left {
-          animation: swordStrikeLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animate-plasma-left {
+          animation: plasmaSlashLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        .animate-sword-right {
-          animation: swordStrikeRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animate-plasma-right {
+          animation: plasmaSlashRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        @keyframes neonPulseGlow {
+        @keyframes titleGlowPulsar {
           0%, 100% {
-            filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.9)) drop-shadow(0 0 50px rgba(255, 0, 85, 0.7));
+            filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.85)) drop-shadow(0 0 60px rgba(255, 0, 85, 0.75));
           }
           50% {
-            filter: drop-shadow(0 0 45px rgba(0, 240, 255, 1)) drop-shadow(0 0 85px rgba(255, 0, 85, 0.9));
+            filter: drop-shadow(0 0 50px rgba(0, 240, 255, 1)) drop-shadow(0 0 95px rgba(255, 0, 85, 0.95));
           }
         }
-        .animate-neon-pulse {
-          animation: neonPulseGlow 1.8s ease-in-out infinite;
+        .animate-title-pulsar {
+          animation: titleGlowPulsar 1.8s ease-in-out infinite;
         }
       `}</style>
 
-      {/* Physics Canvas Background */}
+      {/* 60FPS Quantum Warp Canvas Background (Zero Boxes, Pure Speed Streaks & Electric Arcs) */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" />
 
-      {/* Chromatic Glitch RGB Displacement Overlay */}
-      {chromaticGlitch && (
-        <div className="absolute inset-0 pointer-events-none z-20 mix-blend-screen opacity-60 bg-gradient-to-r from-cyan-500/15 via-transparent to-rose-500/15 animate-pulse" />
-      )}
-
-      {/* Supernova Blinding Flash on Sword Contact */}
-      {supernovaFlash && (
+      {/* Supernova Flash on Blade Collision */}
+      {flashBloom && (
         <div className="absolute inset-0 z-50 bg-white pointer-events-none animate-ping duration-200" />
       )}
 
-      {/* ================= DUAL SUPERSONIC PLASMA BLADES ================= */}
-      {(phase === 'sword_clash' || phase === 'title_lock') && (
+      {/* ================= DUAL HIGH-ENERGY PLASMA BEAMS ================= */}
+      {(phase === 'blade_charge' || phase === 'supernova_clash') && (
         <div className="absolute inset-0 z-25 pointer-events-none flex items-center justify-center overflow-hidden">
-          {/* Team Alpha Cyan Plasma Beam */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-8 bg-gradient-to-r from-transparent via-cyan-400 to-white rounded-full shadow-[0_0_60px_#00f0ff] animate-sword-left origin-right" />
-          {/* Team Omega Crimson Plasma Beam */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-8 bg-gradient-to-l from-transparent via-rose-500 to-white rounded-full shadow-[0_0_60px_#ff0055] animate-sword-right origin-left" />
+          {/* Cyan Energy Katana (Team Alpha) */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-10 bg-gradient-to-r from-transparent via-cyan-400 to-white rounded-full shadow-[0_0_80px_#00f0ff] animate-plasma-left origin-right" />
+          {/* Crimson Energy Katana (Team Omega) */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-10 bg-gradient-to-l from-transparent via-rose-500 to-white rounded-full shadow-[0_0_80px_#ff0055] animate-plasma-right origin-left" />
         </div>
       )}
 
-      {/* ================= CENTER TITANIC TITLE CORE ================= */}
+      {/* ================= MONUMENTAL CHAMPIONSHIP TITLE CORE ================= */}
       <div
         className={`relative z-30 flex flex-col items-center justify-center text-center px-4 transition-all duration-500 ${
-          phase === 'voxel_shatter'
+          phase === 'hyper_rift'
             ? 'scale-70 opacity-0 blur-md'
-            : phase === 'warp_acceleration'
+            : phase === 'blade_charge'
             ? 'scale-85 opacity-70 blur-xs'
-            : phase === 'sword_clash' || phase === 'title_lock'
+            : phase === 'supernova_clash' || phase === 'title_lock'
             ? 'scale-100 opacity-100'
             : 'scale-160 opacity-0 blur-xl duration-500'
         }`}
       >
-        {/* Holographic Arena Insignia */}
-        <div className="relative mb-6 flex items-center justify-center">
-          <div className="absolute -inset-14 rounded-full bg-gradient-to-r from-cyan-500 via-rose-500 to-amber-400 opacity-40 blur-3xl animate-pulse" />
+        {/* Holographic Arena Crest */}
+        <div className="relative mb-5 flex items-center justify-center">
+          <div className="absolute -inset-16 rounded-full bg-gradient-to-r from-cyan-500 via-rose-500 to-amber-400 opacity-45 blur-3xl animate-pulse" />
 
-          {/* Dual Crest Shield */}
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-slate-950/95 border-2 border-cyan-400/80 shadow-[0_0_60px_rgba(0,240,255,0.7)] flex items-center justify-center backdrop-blur-xl">
+          {/* Championship Emblem */}
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-slate-950/95 border-2 border-cyan-400/80 shadow-[0_0_70px_rgba(0,240,255,0.8)] flex items-center justify-center backdrop-blur-2xl">
             <div className="relative">
-              <Zap className="w-12 h-12 text-cyan-300 drop-shadow-[0_0_20px_#00f0ff] animate-pulse" />
-              <Flame className="w-7 h-7 text-rose-500 absolute -bottom-1 -right-1 drop-shadow-[0_0_15px_#ff0055]" />
+              <Swords className="w-12 h-12 text-cyan-300 drop-shadow-[0_0_25px_#00f0ff] animate-pulse" />
+              <Flame className="w-6 h-6 text-rose-500 absolute -bottom-1 -right-1 drop-shadow-[0_0_15px_#ff0055]" />
             </div>
           </div>
         </div>
 
-        {/* Monumental 3D Title: BATTLE ARENA */}
+        {/* Top Tournament Header Tag */}
+        <div className="mb-3 px-4 py-1 rounded-full bg-slate-900/80 border border-cyan-500/30 text-[10px] sm:text-xs font-mono uppercase tracking-widest text-cyan-300 shadow-lg backdrop-blur-md">
+          <span>⚡ KOLLABRIX CHAMPIONSHIP // PROTOCOL OVERRIDE ⚡</span>
+        </div>
+
+        {/* Giant Monolithic 3D Typography: BATTLE ARENA */}
         <div className="relative">
-          <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tight text-white font-mono uppercase animate-neon-pulse select-none">
+          <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tight text-white font-mono uppercase animate-title-pulsar select-none drop-shadow-[0_10px_35px_rgba(0,0,0,0.9)]">
             <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-200 to-cyan-500">
               BATTLE
             </span>{' '}
@@ -619,11 +614,11 @@ export function CinematicArenaTransition({
             </span>
           </h1>
 
-          {/* Subtle Cyber Grid Scanline */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.5)_51%)] bg-[size:100%_4px] pointer-events-none opacity-40" />
+          {/* Cyber Scanline Overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.6)_51%)] bg-[size:100%_4px] pointer-events-none opacity-30" />
         </div>
 
-        {/* Format Selector Badges */}
+        {/* Format Selector Pills (1v1 & 2v2) */}
         <div className="mt-5 flex items-center gap-3 sm:gap-4 px-6 py-2.5 rounded-full bg-slate-950/90 border border-slate-700/80 text-xs sm:text-sm font-mono tracking-widest text-slate-200 shadow-2xl backdrop-blur-xl">
           <span className="text-cyan-400 font-black flex items-center gap-1.5 drop-shadow-[0_0_10px_#00f0ff]">
             <Zap className="w-4 h-4 fill-current" />
@@ -636,10 +631,11 @@ export function CinematicArenaTransition({
           </span>
         </div>
 
-        {/* High-Tech Telemetry HUD */}
-        <div className="mt-6 flex items-center gap-3 text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-400">
+        {/* Live Combat Telemetry Feed */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-400">
           <span className="flex items-center gap-1.5 text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <Cpu className="w-3.5 h-3.5 text-emerald-400" />
             <span>JUDGE0 CLUSTER ONLINE</span>
           </span>
           <span className="text-slate-600">|</span>
@@ -649,10 +645,15 @@ export function CinematicArenaTransition({
           </span>
         </div>
 
+        {/* Dynamic Status HUD Text */}
+        <p className="mt-3 text-[11px] font-mono text-cyan-400/90 tracking-widest uppercase animate-pulse">
+          &gt; {hudStatusText}
+        </p>
+
         {/* Glowing Matrix Charging Bar */}
-        <div className="mt-5 w-64 sm:w-80 h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-800 shadow-inner p-0.5">
+        <div className="mt-4 w-64 sm:w-80 h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-800 shadow-inner p-0.5">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 shadow-[0_0_15px_#00f0ff] transition-all duration-75 ease-out"
+            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 shadow-[0_0_18px_#00f0ff] transition-all duration-75 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -662,7 +663,7 @@ export function CinematicArenaTransition({
       <button
         type="button"
         onClick={onAnimationComplete}
-        className="absolute bottom-6 right-6 z-40 px-4 py-2 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-2xl backdrop-blur-md"
+        className="absolute bottom-6 right-6 z-40 px-4 py-2 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-2xl backdrop-blur-md cursor-pointer"
         title="Skip intro animation (Esc)"
       >
         <span>Skip Intro</span>

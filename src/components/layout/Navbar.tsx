@@ -63,7 +63,7 @@ export function Navbar() {
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
   const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
-  const [isArenaLive, setIsArenaLive] = useState(true);
+  const [isArenaLive, setIsArenaLive] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,25 +77,7 @@ export function Navbar() {
       .catch(() => {});
   }, []);
 
-  const handleLaunchArena = async () => {
-    try {
-      const res = await fetch('/api/arena/status', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.isLive === false) {
-          setIsArenaLive(false);
-          router.push('/arena');
-          return;
-        } else {
-          setIsArenaLive(true);
-        }
-      }
-    } catch {}
-
-    if (!isArenaLive) {
-      router.push('/arena');
-      return;
-    }
+  const handleLaunchArena = () => {
     setIsVoxelTransitionActive(true);
   };
 
@@ -278,12 +260,13 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Real-time Fighting Game Laptop Trigger (Left of Resources) */}
-          <MiniArcadeLaptop
-            onLaunchBattle={handleLaunchArena}
-            isLive={isArenaLive}
-            className="shrink-0"
-          />
+          {/* Real-time Fighting Game Laptop Trigger (Only visible when Battle Arena is set to LIVE in Admin Control Center) */}
+          {isArenaLive && (
+            <MiniArcadeLaptop
+              onLaunchBattle={handleLaunchArena}
+              className="shrink-0"
+            />
+          )}
 
           {/* Clean Resources Link (Opens in new tab) */}
           <Link

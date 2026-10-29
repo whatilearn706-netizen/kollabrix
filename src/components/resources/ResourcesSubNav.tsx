@@ -1,14 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Gift, Zap, Sparkles } from 'lucide-react';
 
 export function ResourcesSubNav() {
   const pathname = usePathname() || '';
+  const [isFlightRecorderLive, setIsFlightRecorderLive] = useState(false);
 
-  const navItems = [
+  useEffect(() => {
+    fetch('/api/flight-recorder/config', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.is_live === 'boolean') {
+          setIsFlightRecorderLive(data.is_live);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const rawNavItems = [
     {
       href: '/resources',
       label: 'Learning Roadmaps',
@@ -16,6 +28,7 @@ export function ResourcesSubNav() {
       badge: 'ROADMAPS',
       badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
       isActive: pathname === '/resources',
+      visible: true,
     },
     {
       href: '/passport',
@@ -24,6 +37,7 @@ export function ResourcesSubNav() {
       badge: 'FLIGHT RECORDER',
       badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
       isActive: pathname === '/passport',
+      visible: isFlightRecorderLive, // Only visible when admin sets Flight Recorder to LIVE!
     },
     {
       href: '/perks',
@@ -32,6 +46,7 @@ export function ResourcesSubNav() {
       badge: '100% FREE',
       badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
       isActive: pathname === '/perks',
+      visible: true,
     },
     {
       href: '/starter-kits',
@@ -40,8 +55,11 @@ export function ResourcesSubNav() {
       badge: '1-CLICK MVP',
       badgeColor: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30',
       isActive: pathname === '/starter-kits',
+      visible: true,
     },
   ];
+
+  const navItems = rawNavItems.filter((item) => item.visible);
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto p-1.5 rounded-2xl bg-slate-950/80 border border-stone-800/80 backdrop-blur-2xl shadow-xl scrollbar-none">
