@@ -51,16 +51,16 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon.ico?v=20261030f', sizes: 'any' },
-      { url: '/favicon-48x48.png?v=20261030f', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-96x96.png?v=20261030f', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-144x144.png?v=20261030f', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png?v=20261030f', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=20261030f', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico?v=20261030g', sizes: 'any' },
+      { url: '/favicon-48x48.png?v=20261030g', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png?v=20261030g', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-144x144.png?v=20261030g', sizes: '144x144', type: 'image/png' },
+      { url: '/icon-192.png?v=20261030g', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=20261030g', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico?v=20261030f',
+    shortcut: '/favicon.ico?v=20261030g',
     apple: [
-      { url: '/apple-touch-icon.png?v=20261030f', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=20261030g', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.webmanifest',
@@ -244,12 +244,12 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
-        <link rel="icon" href="/favicon.ico?v=20261030f" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261030f" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261030f" />
-        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261030f" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261030f" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261030f" />
+        <link rel="icon" href="/favicon.ico?v=20261030g" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261030g" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261030g" />
+        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261030g" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261030g" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261030g" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="application-name" content="Kollabrix" />
         <meta name="apple-mobile-web-app-title" content="Kollabrix" />

@@ -35,11 +35,11 @@ export function BrandLogo({
     <div className={`flex items-center gap-2.5 group select-none ${className}`}>
       {/* Official 3D Interlocking Molten Amber Kollabrix Emblem */}
       <div
-        className={`${iconSizes[size]} relative overflow-hidden shadow-md group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/40 bg-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.25)]`}
+        className={`${iconSizes[size]} relative overflow-hidden shadow-xl group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/50 bg-[#07080c] shadow-[0_4px_20px_rgba(245,158,11,0.35)] ring-1 ring-amber-500/20`}
       >
         <img
-          src="/brand/kollabrix-k.png?v=20261030f"
-          alt="Kollabrix"
+          src="/brand/kollabrix-k.png?v=20261030g"
+          alt="Kollabrix 3D Emblem"
           className="w-full h-full object-cover"
         />
       </div>
