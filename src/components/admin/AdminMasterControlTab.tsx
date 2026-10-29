@@ -41,6 +41,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { AdminRestrictedWordsTab } from './AdminRestrictedWordsTab';
+import { AdminIntegrationsPanel } from './AdminIntegrationsPanel';
 import {
   BroadcastBannerConfig,
   HomepageSectionToggles,
@@ -3112,6 +3113,13 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
             </div>
           </div>
         </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* PRODUCTION INTEGRATIONS & API KEYS VERIFICATION */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'maintenance' || activeSubTab === 'ceo') && (
+        <AdminIntegrationsPanel />
       )}
 
       {/* ==================================================================== */}

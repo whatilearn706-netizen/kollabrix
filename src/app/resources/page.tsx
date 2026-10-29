@@ -32,6 +32,7 @@ import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import { StepLearningWorkspace } from '@/components/resources/StepLearningWorkspace';
 import { CircularSkillsShowcase } from '@/components/resources/CircularSkillsShowcase';
 import { ResourcesSubNav } from '@/components/resources/ResourcesSubNav';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function ResourcesPage() {
@@ -163,19 +164,14 @@ export default function ResourcesPage() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Dedicated Standalone Resources Hub Header (Clean & Focused) */}
         <header className="flex items-center justify-between pb-4 border-b border-stone-800/80 backdrop-blur-md">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-700 flex items-center justify-center text-sm shadow-lg shadow-amber-600/25 border border-amber-400/30 group-hover:scale-105 transition-transform">
-              🚀
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-black tracking-tight text-white group-hover:text-amber-300 transition-colors">
-                Kollabrix
-              </span>
-              <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
-                Resources Hub
-              </span>
-            </div>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="hover:opacity-95 transition-opacity">
+              <BrandLogo size="md" wordmarkColor="light" />
+            </Link>
+            <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold hidden sm:inline-block">
+              Resources Hub
+            </span>
+          </div>
 
           <div className="flex items-center gap-3">
             <Link

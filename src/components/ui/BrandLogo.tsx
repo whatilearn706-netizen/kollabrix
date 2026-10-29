@@ -16,63 +16,50 @@ export function BrandLogo({
   title = 'Kollabrix',
 }: BrandLogoProps) {
   const iconSizes = {
-    sm: 'w-7 h-7',
-    md: 'w-9 h-9',
-    lg: 'w-11 h-11',
+    sm: 'w-7 h-7 rounded-lg',
+    md: 'w-9 h-9 rounded-xl',
+    lg: 'w-11 h-11 rounded-xl',
   };
 
   const textSizes = {
-    sm: 'text-base',
-    md: 'text-lg',
-    lg: 'text-2xl',
+    sm: 'text-sm tracking-[0.14em]',
+    md: 'text-base tracking-[0.16em]',
+    lg: 'text-xl tracking-[0.18em]',
   };
 
   const resolvedTitle = (!title || title.trim() === 'Linkora') ? 'Kollabrix' : title.replace(/Linkora/g, 'Kollabrix');
 
   return (
     <div className={`flex items-center gap-2.5 group select-none ${className}`}>
-      {/* Official 3D Isometric Kollabrix Brix Emblem */}
+      {/* Official 3D Interlocking Molten Amber Kollabrix Emblem */}
       <div
-        className={`${iconSizes[size]} relative rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/40 bg-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.25)]`}
+        className={`${iconSizes[size]} relative overflow-hidden shadow-md group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/40 bg-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.25)]`}
       >
         <img
-          src="/brand/kollabrix-k.png?v=20261030b"
-          alt="Kollabrix Emblem"
+          src="/brand/kollabrix-k.png?v=20261030e"
+          alt="Kollabrix"
           className="w-full h-full object-cover"
         />
       </div>
 
-      {/* Typography Wordmark with High-Contrast Dual-Tone Styling */}
+      {/* Official High-Tech Metallic Wordmark: KOLLΛBRIX™ */}
       {showWordmark && (
         <span
-          className={`font-black ${textSizes[size]} tracking-tight flex items-center ${
+          className={`font-black uppercase flex items-center select-none font-sans ${textSizes[size]} ${
             wordmarkColor === 'dark' ? 'text-slate-900 dark:text-white' : 'text-white'
           }`}
         >
           {resolvedTitle === 'Kollabrix' ? (
-            <span className="flex items-center tracking-tight font-black select-none">
-              {/* KOLLA in brand amber-orange */}
-              <span className="text-amber-500 font-black">KOLLA</span>
-              {/* The 'B' letter split 50/50: left half orange (joining KOLLA -> KOLLAB) and right half cyan (joining RIX -> BRIX) */}
-              <span
-                className="font-black inline-block"
-                style={{
-                  background: 'linear-gradient(to right, #f59e0b 50%, #22d3ee 50%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                B
+            <span className="flex items-center tracking-[0.15em] font-extrabold select-none uppercase">
+              <span className="text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+                KOLL<span className="inline-block scale-y-[0.98] mx-[0.5px]">Λ</span>BRIX
               </span>
-              {/* RIX in brand electric cyan */}
-              <span className="text-cyan-400 font-black">RIX</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block ml-1 animate-pulse" />
+              <span className="text-[0.45em] font-bold text-slate-400 self-start relative -top-0.5 ml-1 select-none">
+                ™
+              </span>
             </span>
           ) : (
-            <>
-              <span>{resolvedTitle}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block ml-0.5 animate-pulse" />
-            </>
+            <span className="tracking-wider">{resolvedTitle}</span>
           )}
         </span>
       )}

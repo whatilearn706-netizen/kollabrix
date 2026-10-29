@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#FAF7F2',
-    theme_color: '#C2410C',
+    background_color: '#090B10',
+    theme_color: '#F59E0B',
     icons: [
       {
         src: '/favicon-48x48.png',

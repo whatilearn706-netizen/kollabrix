@@ -49,12 +49,12 @@ export function generateKollabrixEmailHtml(payload: TransactionalEmailPayload): 
           
           <!-- Logo & Brand Header -->
           <tr>
-            <td style="padding: 32px 36px 20px 36px; border-bottom: 1px solid #1e293b;">
+            <td style="padding: 28px 36px 20px 36px; border-bottom: 1px solid #1e293b;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
-                    <span style="font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff;">
-                      KOLLABRIX <span style="font-size: 11px; font-family: monospace; background-color: rgba(6, 182, 212, 0.15); color: #06b6d4; padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(6, 182, 212, 0.3); vertical-align: middle; margin-left: 6px;">COLLEGIATE NETWORK</span>
+                    <span style="font-size: 19px; font-weight: 900; letter-spacing: 2px; color: #ffffff; text-transform: uppercase;">
+                      KOLL&#923;BRIX&#8482; <span style="font-size: 10px; font-family: monospace; background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); vertical-align: middle; margin-left: 8px;">COLLEGIATE NETWORK</span>
                     </span>
                   </td>
                 </tr>
@@ -136,13 +136,13 @@ export async function sendTransactionalEmail(payload: TransactionalEmailPayload)
   error?: string;
 }> {
   const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Kollabrix <team@kollabrix.in>';
+  let fromEmail = process.env.RESEND_FROM_EMAIL || 'Kollabrix <team@kollabrix.in>';
 
   const html = generateKollabrixEmailHtml(payload);
 
   if (apiKey) {
     try {
-      const res = await fetch('https://api.resend.com/emails', {
+      let res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,6 +155,28 @@ export async function sendTransactionalEmail(payload: TransactionalEmailPayload)
           html,
         }),
       });
+
+      // If custom domain is not yet DNS-verified in Resend, gracefully retry via official onboarding sandbox sender
+      if (!res.ok && res.status === 403) {
+        const errBody = await res.text();
+        if (errBody.includes('domain') || errBody.includes('not verified') || errBody.includes('validation_error')) {
+          console.warn('[RESEND FALLBACK] Domain unverified on Resend. Retrying with onboarding@resend.dev sandbox sender...');
+          fromEmail = 'Kollabrix <onboarding@resend.dev>';
+          res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: [payload.to],
+              subject: payload.subject,
+              html,
+            }),
+          });
+        }
+      }
 
       if (!res.ok) {
         const errText = await res.text();
