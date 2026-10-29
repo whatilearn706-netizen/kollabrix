@@ -19,7 +19,7 @@ import {
   Building2,
   GraduationCap,
 } from 'lucide-react';
-import { CampusDeadlineItem, DEFAULT_CAMPUS_DEADLINES } from '@/types/communityFeatures';
+import { CampusDeadlineItem } from '@/types/communityFeatures';
 
 function formatCountdown(targetDateStr: string) {
   const diff = new Date(targetDateStr).getTime() - Date.now();
@@ -34,7 +34,7 @@ function formatCountdown(targetDateStr: string) {
 }
 
 export default function CollegiateDeadlinesPage() {
-  const [deadlines, setDeadlines] = useState<CampusDeadlineItem[]>(DEFAULT_CAMPUS_DEADLINES);
+  const [deadlines, setDeadlines] = useState<CampusDeadlineItem[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -47,17 +47,20 @@ export default function CollegiateDeadlinesPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch deadlines
+  // Fetch deadlines with no-store to prevent stale cache
   useEffect(() => {
     async function loadDeadlines() {
       try {
-        const res = await fetch('/api/deadlines');
+        const res = await fetch('/api/deadlines', { cache: 'no-store' });
         const data = await res.json();
         if (data.deadlines && Array.isArray(data.deadlines)) {
           setDeadlines(data.deadlines);
+        } else {
+          setDeadlines([]);
         }
       } catch (err) {
         console.warn('Deadlines fetch note:', err);
+        setDeadlines([]);
       } finally {
         setIsLoading(false);
       }
@@ -139,7 +142,23 @@ export default function CollegiateDeadlinesPage() {
 
         {/* Deadlines Radar Grid */}
         <div className="space-y-4">
-          {filteredDeadlines.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="p-6 rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 animate-pulse flex flex-col lg:flex-row justify-between gap-6"
+                >
+                  <div className="space-y-3 w-full max-w-xl">
+                    <div className="h-5 bg-slate-200 dark:bg-charcoal-800 rounded-lg w-1/3" />
+                    <div className="h-6 bg-slate-200 dark:bg-charcoal-800 rounded-lg w-3/4" />
+                    <div className="h-4 bg-slate-200 dark:bg-charcoal-800 rounded-lg w-1/2" />
+                  </div>
+                  <div className="h-14 w-48 bg-slate-200 dark:bg-charcoal-800 rounded-2xl shrink-0" />
+                </div>
+              ))}
+            </div>
+          ) : filteredDeadlines.length === 0 ? (
             <div className="p-12 text-center rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 space-y-3">
               <Clock className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
               <h3 className="text-base font-bold text-slate-900 dark:text-white">No Deadlines On Radar</h3>

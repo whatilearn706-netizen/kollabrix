@@ -27,11 +27,11 @@ export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
         const cached = localStorage.getItem('linkora_deadlines_cache');
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed;
         }
       } catch {}
     }
-    return DEFAULT_CAMPUS_DEADLINES;
+    return [];
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -54,11 +54,14 @@ export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
   const fetchDeadlines = async () => {
     setActionError('');
     try {
-      const res = await fetch('/api/deadlines');
+      const res = await fetch('/api/deadlines', { cache: 'no-store' });
       const data = await res.json();
       if (data.deadlines && Array.isArray(data.deadlines)) {
         setDeadlines(data.deadlines);
         try { localStorage.setItem('linkora_deadlines_cache', JSON.stringify(data.deadlines)); } catch {}
+      } else {
+        setDeadlines([]);
+        try { localStorage.setItem('linkora_deadlines_cache', JSON.stringify([])); } catch {}
       }
     } catch (err: any) {
       setActionError(err.message);

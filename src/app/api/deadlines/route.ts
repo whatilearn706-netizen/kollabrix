@@ -26,14 +26,23 @@ export async function GET() {
       (a, b) => new Date(a.deadlineDate).getTime() - new Date(b.deadlineDate).getTime()
     );
 
-    return NextResponse.json({
-      success: true,
-      deadlines,
-      totalDeadlines: deadlines.length,
-      urgentCount: deadlines.filter(
-        (d) => new Date(d.deadlineDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000
-      ).length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        deadlines,
+        totalDeadlines: deadlines.length,
+        urgentCount: deadlines.filter(
+          (d) => new Date(d.deadlineDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000
+        ).length,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'CDN-Cache-Control': 'no-store',
+          'Vercel-CDN-Cache-Control': 'no-store',
+        },
+      }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { deadlines: [], error: err.message },
