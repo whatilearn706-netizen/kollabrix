@@ -141,7 +141,7 @@ import java.lang.reflect.*;
             return Integer.parseInt(token.replaceAll("[^0-9-]", ""));
         }
         if (type == int[].class) {
-            token = token.replaceAll("[\\[\\]\\s]", "");
+            token = token.replace("[", "").replace("]", "").replace(" ", "").trim();
             if (token.isEmpty()) return new int[0];
             String[] parts = token.split(",");
             int[] arr = new int[parts.length];
@@ -151,7 +151,10 @@ import java.lang.reflect.*;
             return arr;
         }
         if (type == String.class) {
-            return token.replaceAll("^[\\"']|[\\"']$", "");
+            if ((token.startsWith("\"") && token.endsWith("\"")) || (token.startsWith("'") && token.endsWith("'"))) {
+                return token.substring(1, token.length() - 1);
+            }
+            return token;
         }
         return token;
     }
