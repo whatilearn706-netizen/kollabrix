@@ -32,15 +32,32 @@ const WANDBOX_COMPILERS: Record<string, string> = {
 /**
  * Normalizes Java code to match Judge0 entry-point conventions.
  * If user creates a custom class name or non-public Main, ensures public class Main exists.
+ * Also handles missing import statements or bare methods automatically.
  */
 function normalizeJavaCode(code: string): string {
-  if (/public\s+class\s+([A-Za-z0-9_$]+)/.test(code)) {
-    return code.replace(/public\s+class\s+([A-Za-z0-9_$]+)/, 'public class Main');
+  let finalCode = code;
+  const needsImport =
+    !finalCode.includes('import java.util') &&
+    (finalCode.includes('Scanner') ||
+      finalCode.includes('List') ||
+      finalCode.includes('Map') ||
+      finalCode.includes('Arrays') ||
+      finalCode.includes('Set') ||
+      finalCode.includes('Collections'));
+  const header = needsImport ? 'import java.util.*;\nimport java.io.*;\n' : '';
+
+  if (!/class\s+[A-Za-z0-9_$]+/.test(finalCode)) {
+    // If student wrote bare methods (like in beginner roadmaps), wrap inside public class Main
+    finalCode = header + 'public class Main {\n' + finalCode + '\n}';
+  } else {
+    if (/public\s+class\s+([A-Za-z0-9_$]+)/.test(finalCode)) {
+      finalCode = finalCode.replace(/public\s+class\s+([A-Za-z0-9_$]+)/, 'public class Main');
+    } else if (!/class\s+Main/.test(finalCode) && /class\s+([A-Za-z0-9_$]+)/.test(finalCode)) {
+      finalCode = finalCode.replace(/class\s+([A-Za-z0-9_$]+)/, 'class Main');
+    }
+    finalCode = header + finalCode;
   }
-  if (!/class\s+Main/.test(code) && /class\s+([A-Za-z0-9_$]+)/.test(code)) {
-    return code.replace(/class\s+([A-Za-z0-9_$]+)/, 'class Main');
-  }
-  return code;
+  return finalCode;
 }
 
 /**

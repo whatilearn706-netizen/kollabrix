@@ -8,13 +8,11 @@ import {
   Check,
   Terminal,
   Loader2,
-  Sparkles,
   CheckCircle2,
   AlertTriangle,
   FileCode,
   CornerDownRight,
-  Maximize2,
-  Minimize2,
+  Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -28,6 +26,22 @@ interface InteractiveCompilerProps {
   className?: string;
 }
 
+/**
+ * Checks whether user code uses interactive console input mechanisms.
+ */
+function checkCodeExpectsInput(sourceCode: string): boolean {
+  if (!sourceCode) return false;
+  return (
+    /Scanner|System\.in|BufferedReader|InputStreamReader|readLine|readInt|nextInt|nextLong|nextDouble|nextFloat|nextLine|next\(\s*\)/.test(
+      sourceCode
+    ) ||
+    /cin\s*>>|getline\s*\(\s*cin/.test(sourceCode) ||
+    /input\s*\(|sys\.stdin/.test(sourceCode) ||
+    /scanf\s*\(|getchar\s*\(|fgets\s*\(/.test(sourceCode) ||
+    /readline\s*\(|prompt\s*\(/.test(sourceCode)
+  );
+}
+
 export function InteractiveCompiler({
   language,
   compilerDisplayName,
@@ -38,8 +52,10 @@ export function InteractiveCompiler({
   className = '',
 }: InteractiveCompilerProps) {
   const [code, setCode] = useState<string>(initialCode);
-  const [stdin, setStdin] = useState<string>(initialStdin);
-  const [showStdin, setShowStdin] = useState<boolean>(Boolean(initialStdin));
+  const [currentInput, setCurrentInput] = useState<string>(initialStdin || '');
+  const [waitingForInput, setWaitingForInput] = useState<boolean>(false);
+  const [lastRanInput, setLastRanInput] = useState<string | null>(null);
+
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [stdout, setStdout] = useState<string>('');
   const [stderr, setStderr] = useState<string>('');
@@ -47,7 +63,9 @@ export function InteractiveCompiler({
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<'passed' | 'failed' | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Live timer tick during code compilation
   useEffect(() => {
@@ -73,12 +91,13 @@ export function InteractiveCompiler({
     setStderr('');
     setTestResult(null);
     setExecutionTime(null);
+    setWaitingForInput(false);
+    setLastRanInput(null);
   }, [initialCode]);
 
   useEffect(() => {
     if (initialStdin) {
-      setStdin(initialStdin);
-      setShowStdin(true);
+      setCurrentInput(initialStdin);
     }
   }, [initialStdin]);
 
@@ -86,6 +105,7 @@ export function InteractiveCompiler({
     setCode(newCode);
     if (onCodeChange) onCodeChange(newCode);
     if (testResult) setTestResult(null);
+    if (waitingForInput) setWaitingForInput(false);
   };
 
   // Enable Tab key indent in textarea
@@ -103,7 +123,7 @@ export function InteractiveCompiler({
       }, 0);
     } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
-      runCode();
+      handleRunClick();
     }
   };
 
@@ -115,17 +135,48 @@ export function InteractiveCompiler({
 
   const handleReset = () => {
     setCode(initialCode);
+    setCurrentInput(initialStdin || '');
     setStdout('');
     setStderr('');
     setTestResult(null);
+    setWaitingForInput(false);
+    setLastRanInput(null);
   };
 
-  const runCode = async () => {
+  /**
+   * Primary entry point when user clicks "Run Code".
+   * If code needs input and none has been typed yet, halts and prompts in the console.
+   */
+  const handleRunClick = () => {
     if (isRunning) return;
+
+    if (checkCodeExpectsInput(code) && !currentInput.trim()) {
+      setWaitingForInput(true);
+      setStdout('');
+      setStderr('');
+      setTestResult(null);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 60);
+      return;
+    }
+
+    executeProgram(currentInput);
+  };
+
+  /**
+   * Executes the code against the server with the given standard input.
+   */
+  const executeProgram = async (inputToSend: string) => {
+    if (isRunning) return;
+    setWaitingForInput(false);
     setIsRunning(true);
     setStdout('');
     setStderr('');
     setTestResult(null);
+    setLastRanInput(inputToSend.trim() ? inputToSend : null);
 
     try {
       const res = await fetch('/api/compiler/run', {
@@ -134,7 +185,7 @@ export function InteractiveCompiler({
         body: JSON.stringify({
           language,
           code,
-          stdin: showStdin ? stdin : '',
+          stdin: inputToSend,
         }),
       });
 
@@ -152,7 +203,6 @@ export function InteractiveCompiler({
       setStderr(returnedStderr);
       setExecutionTime(data.executionTimeMs || null);
 
-      // Check against expectedOutput if question has one
       if (expectedOutput && returnedStdout) {
         const cleanOut = returnedStdout.trim().replace(/\r\n/g, '\n');
         const cleanExpected = expectedOutput.trim().replace(/\r\n/g, '\n');
@@ -191,20 +241,8 @@ export function InteractiveCompiler({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowStdin(!showStdin)}
-            className={`px-2.5 py-1 rounded-md transition-colors border ${
-              showStdin
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
-            }`}
-            title="Toggle Custom Input (stdin)"
-          >
-            Custom Input {showStdin ? '(On)' : ''}
-          </button>
-
-          <button
             onClick={handleCopy}
-            className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+            className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors cursor-pointer"
             title="Copy code"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -212,7 +250,7 @@ export function InteractiveCompiler({
 
           <button
             onClick={handleReset}
-            className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+            className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors cursor-pointer"
             title="Reset code"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -220,14 +258,23 @@ export function InteractiveCompiler({
 
           <Button
             size="sm"
-            onClick={runCode}
+            onClick={handleRunClick}
             disabled={isRunning}
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium px-4 py-1.5 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all active:scale-95"
+            className={`font-medium px-4 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+              waitingForInput
+                ? 'bg-amber-500 hover:bg-amber-400 text-black font-bold ring-2 ring-amber-400/40 shadow-amber-500/20 animate-pulse'
+                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-500/20'
+            }`}
           >
             {isRunning ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Compiling ({elapsedSeconds.toFixed(1)}s)...
+              </>
+            ) : waitingForInput ? (
+              <>
+                <CornerDownRight className="w-3.5 h-3.5" />
+                Provide Input Below
               </>
             ) : (
               <>
@@ -264,25 +311,6 @@ export function InteractiveCompiler({
         </div>
       </div>
 
-      {/* Stdin Drawer (if enabled) */}
-      {showStdin && (
-        <div className="p-3 bg-slate-900 border-t border-slate-800">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1.5">
-            <span className="flex items-center gap-1.5 text-amber-400">
-              <CornerDownRight className="w-3.5 h-3.5" />
-              Standard Input (stdin):
-            </span>
-            <span className="text-slate-500">Provide input values separated by spaces or newlines</span>
-          </div>
-          <textarea
-            value={stdin}
-            onChange={(e) => setStdin(e.target.value)}
-            placeholder="Enter standard input for Scanner / cin / input() here..."
-            className="w-full h-16 bg-slate-950 text-slate-200 font-mono text-xs p-2.5 rounded-lg border border-slate-700/80 focus:outline-none focus:border-amber-500 resize-none"
-          />
-        </div>
-      )}
-
       {/* Test Result Banner (if testing against question) */}
       {testResult && (
         <div
@@ -312,11 +340,17 @@ export function InteractiveCompiler({
       )}
 
       {/* Terminal Output Window */}
-      <div className="bg-black/90 border-t border-slate-800/90 p-4 font-mono text-xs">
-        <div className="flex items-center justify-between text-slate-400 mb-2 pb-1.5 border-b border-slate-800/60">
+      <div className="bg-black/95 border-t border-slate-800/90 p-4 font-mono text-xs flex flex-col min-h-[170px]">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between text-slate-400 mb-2 pb-1.5 border-b border-slate-800/60 select-none">
           <div className="flex items-center gap-2 text-slate-300 font-semibold">
             <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Output Console</span>
+            <span>Terminal Console</span>
+            {waitingForInput && (
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                Waiting for Input...
+              </span>
+            )}
           </div>
           {executionTime !== null && (
             <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -325,37 +359,100 @@ export function InteractiveCompiler({
           )}
         </div>
 
-        {isRunning ? (
-          <div className="flex items-center gap-2 text-emerald-400 py-3">
-            <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
-            <span>Executing code in high-speed sandbox ({elapsedSeconds.toFixed(1)}s)...</span>
-          </div>
-        ) : stdout || stderr ? (
-          <div className="space-y-2">
-            {stdout && (
-              <pre className="text-slate-100 whitespace-pre-wrap leading-5 font-mono selection:bg-emerald-500/20">
-                {stdout}
-              </pre>
-            )}
-            {stderr && (
-              <pre className="text-rose-400 whitespace-pre-wrap leading-5 font-mono bg-rose-950/30 p-2.5 rounded-lg border border-rose-900/50">
-                {stderr}
-              </pre>
-            )}
-          </div>
-        ) : (
-          <div className="text-slate-600 italic py-2">
-            Click &quot;Run Code&quot; or press ⌘ + Enter to execute. Output will appear here.
-          </div>
-        )}
+        {/* Output Body */}
+        <div className="flex-1 space-y-2 py-1">
+          {isRunning ? (
+            <div className="flex items-center gap-2 text-emerald-400 py-3">
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
+              <span>Executing code in high-speed sandbox ({elapsedSeconds.toFixed(1)}s)...</span>
+            </div>
+          ) : waitingForInput ? (
+            <div className="py-2.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1 animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                <span>Program is waiting for user input (stdin)...</span>
+              </div>
+              <p className="text-[11px] text-amber-200/80">
+                Type your input in the box below and press <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-500/40 text-amber-200 font-mono">Enter ↵</kbd> to see the answer.
+              </p>
+            </div>
+          ) : stdout || stderr ? (
+            <div className="space-y-2">
+              {lastRanInput && (
+                <div className="text-[11px] text-cyan-300 font-mono bg-cyan-950/40 px-2.5 py-1 rounded border border-cyan-800/50 flex items-center gap-2">
+                  <span className="text-slate-500">$ stdin:</span>
+                  <span className="font-bold text-cyan-200">{lastRanInput}</span>
+                </div>
+              )}
+              {stdout && (
+                <pre className="text-slate-100 whitespace-pre-wrap leading-5 font-mono selection:bg-emerald-500/20">
+                  {stdout}
+                </pre>
+              )}
+              {stderr && (
+                <pre className="text-rose-400 whitespace-pre-wrap leading-5 font-mono bg-rose-950/30 p-2.5 rounded-lg border border-rose-900/50">
+                  {stderr}
+                </pre>
+              )}
+            </div>
+          ) : (
+            <div className="text-slate-500 italic py-2">
+              Click &quot;Run Code&quot; or press ⌘ + Enter to execute. Type any input below like a real terminal.
+            </div>
+          )}
+        </div>
 
         {/* Expected output comparison if failed */}
         {testResult === 'failed' && expectedOutput && (
-          <div className="mt-3 p-3 bg-slate-900/90 rounded-lg border border-slate-800">
+          <div className="mt-2 p-3 bg-slate-900/90 rounded-lg border border-slate-800">
             <div className="text-amber-400 font-semibold mb-1">Expected Output:</div>
             <pre className="text-emerald-400 whitespace-pre-wrap font-mono">{expectedOutput}</pre>
           </div>
         )}
+
+        {/* Interactive Terminal Input Prompt */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            executeProgram(currentInput);
+          }}
+          className={`mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2 transition-all ${
+            waitingForInput ? 'bg-amber-950/30 -mx-4 -mb-4 p-3 rounded-b-2xl border-amber-500/40' : ''
+          }`}
+        >
+          <div className="flex items-center gap-1.5 font-mono text-emerald-400 font-bold shrink-0">
+            <span>&gt;_</span>
+            <span className="text-slate-400 text-xs">Input:</span>
+          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            value={currentInput}
+            onChange={(e) => setCurrentInput(e.target.value)}
+            placeholder={
+              waitingForInput
+                ? 'Type input (e.g. 2024) and press Enter ↵'
+                : 'Enter standard input (stdin) for your program (e.g. 2024)...'
+            }
+            className={`flex-1 bg-slate-900/90 text-slate-100 placeholder-slate-500 px-3.5 py-2 rounded-xl border text-xs font-mono focus:outline-none transition-all ${
+              waitingForInput
+                ? 'border-amber-400 ring-2 ring-amber-400/40 bg-black text-amber-200 shadow-md'
+                : 'border-slate-700/80 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40'
+            }`}
+          />
+          <button
+            type="submit"
+            disabled={isRunning}
+            className={`px-4 py-2 rounded-xl font-mono font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md active:scale-95 disabled:opacity-50 ${
+              waitingForInput
+                ? 'bg-amber-500 hover:bg-amber-400 text-black ring-2 ring-amber-400/40 shadow-amber-500/20'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
+            }`}
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>{waitingForInput ? 'Send Input ↵' : 'Run with Input'}</span>
+          </button>
+        </form>
       </div>
     </div>
   );
