@@ -27,7 +27,9 @@ export function BrandLogo({
     lg: 'text-xl tracking-[0.18em]',
   };
 
-  const resolvedTitle = (!title || title.trim() === 'Linkora') ? 'Kollabrix' : title.replace(/Linkora/g, 'Kollabrix');
+  // Check if title is Kollabrix or default
+  const cleanTitle = (title || '').trim().toLowerCase();
+  const isKollabrixBrand = !cleanTitle || cleanTitle === 'kollabrix' || cleanTitle === 'linkora';
 
   return (
     <div className={`flex items-center gap-2.5 group select-none ${className}`}>
@@ -36,7 +38,7 @@ export function BrandLogo({
         className={`${iconSizes[size]} relative overflow-hidden shadow-md group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/40 bg-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.25)]`}
       >
         <img
-          src="/brand/kollabrix-k.png?v=20261030e"
+          src="/brand/kollabrix-k.png?v=20261030f"
           alt="Kollabrix"
           className="w-full h-full object-cover"
         />
@@ -49,7 +51,7 @@ export function BrandLogo({
             wordmarkColor === 'dark' ? 'text-slate-900 dark:text-white' : 'text-white'
           }`}
         >
-          {resolvedTitle === 'Kollabrix' ? (
+          {isKollabrixBrand ? (
             <span className="flex items-center tracking-[0.15em] font-extrabold select-none uppercase">
               <span className="text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
                 KOLL<span className="inline-block scale-y-[0.98] mx-[0.5px]">Λ</span>BRIX
@@ -59,7 +61,7 @@ export function BrandLogo({
               </span>
             </span>
           ) : (
-            <span className="tracking-wider">{resolvedTitle}</span>
+            <span className="tracking-wider">{title}</span>
           )}
         </span>
       )}

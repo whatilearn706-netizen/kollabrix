@@ -38,7 +38,7 @@ export function Footer() {
               <BrandLogo
                 size="sm"
                 wordmarkColor={isFooterDark ? 'light' : 'dark'}
-                title={theme.siteTitle || 'Kollabrix'}
+                title="Kollabrix"
               />
             </Link>
             <p className="text-xs opacity-80 leading-relaxed">

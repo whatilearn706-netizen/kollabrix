@@ -229,7 +229,7 @@ export function Navbar() {
           <BrandLogo
             size="md"
             wordmarkColor={isNavbarDark ? 'light' : 'dark'}
-            title={!theme.siteTitle || theme.siteTitle === 'Linkora' ? 'Kollabrix' : theme.siteTitle}
+            title="Kollabrix"
           />
         </Link>
 

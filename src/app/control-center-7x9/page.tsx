@@ -43,6 +43,7 @@ import { AdminFlightRecorderTab } from '@/components/admin/AdminFlightRecorderTa
 import { AdminArenaTab } from '@/components/admin/AdminArenaTab';
 import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
 import { AdminResourcesTab } from '@/components/admin/AdminResourcesTab';
+import { AdminIntegrationsPanel } from '@/components/admin/AdminIntegrationsPanel';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
@@ -279,6 +280,14 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10 text-xs font-bold"
+            onClick={() => setCurrentTab('integrations')}
+          >
+            ⚡ Test Resend & PostHog
+          </Button>
           {!authToken && (
             <Button
               size="sm"
@@ -317,6 +326,12 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       {visitedTabs.has('master') && (
         <div className={currentTab === 'master' ? 'block' : 'hidden'}>
           <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+        </div>
+      )}
+
+      {visitedTabs.has('integrations') && (
+        <div className={currentTab === 'integrations' ? 'block' : 'hidden'}>
+          <AdminIntegrationsPanel />
         </div>
       )}
 
