@@ -29,12 +29,14 @@ import {
   ChevronRight,
   GraduationCap,
   BookOpen,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
   | 'master'
+  | 'arena'
   | 'flight_recorder'
   | 'id_verifications'
   | 'resources'
@@ -78,6 +80,7 @@ export function AdminHeader({
 
   const tabs: { id: AdminTab; label: string; icon: any; category: TabCategory }[] = [
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
+    { id: 'arena', label: '⚔️ 2v2 Battleground Arena', icon: Zap, category: 'code' },
     { id: 'flight_recorder', label: '🛸 Flight Recorder & Passports', icon: Sparkles, category: 'master' },
     { id: 'id_verifications', label: '🎓 Student ID Verifications', icon: GraduationCap, category: 'campus' },
     { id: 'resources', label: '📚 Learning Resources Hub', icon: BookOpen, category: 'campus' },

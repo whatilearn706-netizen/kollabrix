@@ -45,6 +45,9 @@ import {
 } from '@/components/gamification/DailyStreakHub';
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
+import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
+import { VoxelShatterTransition } from '@/components/arena/VoxelShatterTransition';
+import { MultiplayerDuelLobbyModal } from '@/components/arena/MultiplayerDuelLobbyModal';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -58,6 +61,8 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
+  const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
+  const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -239,6 +244,9 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
+          {/* Real-time Fighting Game Laptop Trigger (Left of Resources) */}
+          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} />
+
           {/* Clean Resources Link (Opens in new tab) */}
           <Link
             href="/resources"
@@ -447,6 +455,7 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
+          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} />
           {mounted && user && <NotificationBell />}
 
           <button
@@ -689,6 +698,26 @@ export function Navbar() {
 
     {/* Floating Streak Celebration Toast */}
     <StreakCelebrationToast />
+
+    {/* Voxel Shatter 1x1cm Corner Cascade Transition */}
+    <VoxelShatterTransition
+      isActive={isVoxelTransitionActive}
+      onAnimationComplete={() => {
+        setIsVoxelTransitionActive(false);
+        setIsArenaModalOpen(true);
+      }}
+    />
+
+    {/* 2v2 Multiplayer Duel Battleground Lobby & Combat Modal */}
+    <MultiplayerDuelLobbyModal
+      isOpen={isArenaModalOpen}
+      onClose={() => setIsArenaModalOpen(false)}
+      currentUser={{
+        displayName,
+        username,
+        avatarUrl: profile?.avatar_url || user?.user_metadata?.avatar_url || undefined,
+      }}
+    />
   </>
 );
 }
