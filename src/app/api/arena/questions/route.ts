@@ -105,3 +105,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+// DELETE: Admin deletes a question by ID
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = await verifyAdminSession(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: auth.status || 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const questionId = searchParams.get('id');
+
+    if (!questionId) {
+      return NextResponse.json({ error: 'Question ID is required' }, { status: 400 });
+    }
+
+    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
+      'arena_duel_questions',
+      DEFAULT_ARENA_QUESTIONS
+    );
+
+    const currentList = Array.isArray(storedQuestions) ? [...storedQuestions] : [...DEFAULT_ARENA_QUESTIONS];
+    const updatedList = currentList.filter((q) => q.id !== questionId);
+
+    await updateMasterControlSubkey('arena_duel_questions', updatedList);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Question deleted successfully from server',
+      remaining: updatedList.length,
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

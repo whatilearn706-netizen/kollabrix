@@ -27,6 +27,8 @@ import {
   Bot,
   Globe,
   Share2,
+  Maximize2,
+  RefreshCw,
 } from 'lucide-react';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
@@ -47,9 +49,9 @@ export function FullArenaExperience({
   initialRoomCode,
   currentUser,
 }: FullArenaExperienceProps) {
-  // Navigation Step:
+  // Navigation Steps:
   // 1: Name & Team Size (1v1 / 2v2)
-  // 2: Choose Arena & Topics (HTML, CSS, JS checkboxes)
+  // 2: Choose Arena & Topics (Web Dev / Algo / Bug Hunt)
   // 3: Room Code & Invite Link Lobby
   // 4: Countdown (3-2-1)
   // 5: Battling Split-Screen
@@ -60,7 +62,7 @@ export function FullArenaExperience({
   const [playerName, setPlayerName] = useState(
     currentUser?.displayName || currentUser?.username || 'CyberCoder'
   );
-  const [teamSize, setTeamSize] = useState<'1v1' | '2v2'>('2v2');
+  const [teamSize, setTeamSize] = useState<'1v1' | '2v2'>('1v1');
 
   // Step 2: Arena & Topic Selection
   const [arena, setArena] = useState<ArenaCategory>('web_dev');
@@ -68,24 +70,29 @@ export function FullArenaExperience({
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [timeLimit, setTimeLimit] = useState<number>(300);
 
-  // Step 3: Room & Invite
-  const [roomCode] = useState(
+  // Step 3: Room & Invite (Fresh random code generated on mount)
+  const [roomCode, setRoomCode] = useState(
     () => initialRoomCode || `KBX-${Math.floor(1000 + Math.random() * 9000)}`
   );
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [isBotOpponentAdded, setIsBotOpponentAdded] = useState(true);
+  // Default to false: user can invite student via link/code, or check bot to practice solo!
+  const [isBotOpponentAdded, setIsBotOpponentAdded] = useState(false);
 
   // Step 4 & 5: Battlefield States
   const [countdownNum, setCountdownNum] = useState<number>(3);
   const [timeLeft, setTimeLeft] = useState<number>(300);
-  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(DEFAULT_ARENA_QUESTIONS[3]);
+  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(DEFAULT_ARENA_QUESTIONS[0]);
 
-  // Code editors for Team Alpha
-  const [activeTab, setActiveTab] = useState<'html' | 'css' | 'js'>('html');
+  // Code editor tabs for active question
+  const [activeTab, setActiveTab] = useState<string>('html');
   const [htmlCode, setHtmlCode] = useState('');
   const [cssCode, setCssCode] = useState('');
   const [jsCode, setJsCode] = useState('');
+  const [pythonCode, setPythonCode] = useState('');
+  const [javaCode, setJavaCode] = useState('');
+  const [cppCode, setCppCode] = useState('');
+
   const [userTestsPassed, setUserTestsPassed] = useState<number>(1);
   const [totalTests, setTotalTests] = useState<number>(3);
   const [testLog, setTestLog] = useState<string>('Ready to test code');
@@ -96,8 +103,27 @@ export function FullArenaExperience({
   const [opponentAlert, setOpponentAlert] = useState<string>('');
   const [winnerTeam, setWinnerTeam] = useState<'Team Alpha' | 'Team Omega' | null>(null);
 
+  // Image 6 Parity: Maximize pane state for Preview and Output
+  const [maximizedPane, setMaximizedPane] = useState<'none' | 'preview' | 'output'>('none');
+  const [renderNonce, setRenderNonce] = useState<number>(0);
+
   // Relay Role in 2v2 (swaps every 2.5 mins)
   const [relayPlayer, setRelayPlayer] = useState<'Driver (You)' | 'Navigator (Teammate)'>('Driver (You)');
+
+  // When changing arena, select sensible default tags
+  const handleSelectArena = (newArena: ArenaCategory) => {
+    setArena(newArena);
+    if (newArena === 'web_dev') {
+      setSelectedTags(['html', 'css']);
+      setActiveTab('html');
+    } else if (newArena === 'algorithms') {
+      setSelectedTags(['python']);
+      setActiveTab('python');
+    } else if (newArena === 'bug_hunt') {
+      setSelectedTags(['react']);
+      setActiveTab('react');
+    }
+  };
 
   // Tag toggle helper
   const handleToggleTag = (tagId: string) => {
@@ -127,8 +153,20 @@ export function FullArenaExperience({
     }
   };
 
-  // Launch Match: Server questions or fallback
+  // Launch Match: Pull random question matching arena & selected tags from database or fallback
   const handleStartBattle = async () => {
+    // If bot opponent is not checked and no student joined yet:
+    if (!isBotOpponentAdded) {
+      const confirmBot = confirm(
+        `No opponent has entered Room ${roomCode} yet!\n\nWould you like to turn ON the AI Practice Bot and start battling right now?\n\n(Click Cancel if you want to copy the room code / link and wait for a classmate.)`
+      );
+      if (confirmBot) {
+        setIsBotOpponentAdded(true);
+      } else {
+        return;
+      }
+    }
+
     let chosen: DuelQuestion | null = null;
     try {
       const res = await fetch(
@@ -138,6 +176,7 @@ export function FullArenaExperience({
       if (res.ok) {
         const data = await res.json();
         if (data.questions && data.questions.length > 0) {
+          // Truly random pick from matching questions
           chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
         }
       }
@@ -150,24 +189,41 @@ export function FullArenaExperience({
         if (q.arena !== arena) return false;
         return selectedTags.some((t) => q.tags.includes(t));
       });
-      chosen = matching.length > 0 ? matching[Math.floor(Math.random() * matching.length)] : DEFAULT_ARENA_QUESTIONS[0];
+      chosen =
+        matching.length > 0
+          ? matching[Math.floor(Math.random() * matching.length)]
+          : DEFAULT_ARENA_QUESTIONS[0];
     }
 
     setActiveQuestion(chosen);
+
+    // Initialize starter code
     setHtmlCode(chosen.starterHtml || '');
     setCssCode(chosen.starterCss || '');
     setJsCode(chosen.starterJs || '');
+    setPythonCode(chosen.starterPython || '# Your python solution\n');
+    setJavaCode(chosen.starterJava || '// Your java solution\n');
+    setCppCode(chosen.starterCpp || '// Your C++ solution\n');
+
     setTotalTests(chosen.testCases?.length || 3);
     setUserTestsPassed(1);
     setOpponentTestsPassed(0);
     setTimeLeft(chosen.timeLimitSeconds || 300);
 
-    // Switch tab to the first selected tag
-    if (selectedTags.includes('html')) setActiveTab('html');
-    else if (selectedTags.includes('css')) setActiveTab('css');
-    else if (selectedTags.includes('javascript')) setActiveTab('js');
+    // Set active tab based on arena and tags
+    if (arena === 'web_dev') {
+      if (selectedTags.includes('html')) setActiveTab('html');
+      else if (selectedTags.includes('css')) setActiveTab('css');
+      else setActiveTab('js');
+    } else if (arena === 'algorithms') {
+      if (selectedTags.includes('python')) setActiveTab('python');
+      else if (selectedTags.includes('java')) setActiveTab('java');
+      else setActiveTab('cpp');
+    } else {
+      setActiveTab('react');
+    }
 
-    // Go to countdown
+    // Advance to countdown
     setStep(4);
     setCountdownNum(3);
   };
@@ -407,6 +463,8 @@ export function FullArenaExperience({
               type="button"
               onClick={() => {
                 playArcadeCoinSound();
+                // Generate a fresh random room code for the match
+                setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
                 setStep(2);
               }}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-amber-500 to-rose-500 text-slate-950 font-black font-mono text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2"
@@ -457,7 +515,7 @@ export function FullArenaExperience({
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setArena(item.id as ArenaCategory)}
+                  onClick={() => handleSelectArena(item.id as ArenaCategory)}
                   className={`p-3.5 rounded-2xl border text-left transition-all ${
                     arena === item.id
                       ? 'bg-rose-950/40 border-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.3)]'
@@ -471,7 +529,8 @@ export function FullArenaExperience({
               ))}
             </div>
 
-            {/* If Web Dev, Multi-checkboxes for HTML, CSS, JavaScript */}
+            {/* Arena-Specific Language / Topic Checkboxes */}
+            {/* 1. WEB DEV CHECKBOXES */}
             {arena === 'web_dev' && (
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
@@ -512,6 +571,104 @@ export function FullArenaExperience({
                         <div>
                           <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
                           <p className="text-[10px] text-slate-400">{topic.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 2. ALGORITHMS / DSA LANGUAGE CHECKBOXES */}
+            {arena === 'algorithms' && (
+              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                    Algorithms Languages (Choose 1, 2, or All 3):
+                  </span>
+                  <span className="text-[11px] font-mono text-cyan-400">
+                    {selectedTags.length} selected
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'python', label: 'Python', desc: 'Python 3.12 - Fast prototyping' },
+                    { id: 'java', label: 'Java', desc: 'Java 21 OpenJDK - Enterprise DSA' },
+                    { id: 'cpp', label: 'C++', desc: 'Modern C++ 20 - Ultra-fast competitive' },
+                  ].map((lang) => {
+                    const isChecked = selectedTags.includes(lang.id);
+                    return (
+                      <div
+                        key={lang.id}
+                        onClick={() => handleToggleTag(lang.id)}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
+                          isChecked
+                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
+                            isChecked
+                              ? 'bg-cyan-500 border-cyan-400 text-slate-950'
+                              : 'border-slate-600'
+                          }`}
+                        >
+                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold font-mono text-white">{lang.label}</p>
+                          <p className="text-[10px] text-slate-400">{lang.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3. BUG HUNT CHECKBOXES */}
+            {arena === 'bug_hunt' && (
+              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                    Bug Hunt Topics:
+                  </span>
+                  <span className="text-[11px] font-mono text-cyan-400">
+                    {selectedTags.length} selected
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'react', label: 'React', desc: 'Infinite renders & stale closures' },
+                    { id: 'javascript', label: 'JavaScript', desc: 'Async unhandled promises' },
+                    { id: 'python', label: 'Python / Java', desc: 'Memory & exception leaks' },
+                  ].map((hunt) => {
+                    const isChecked = selectedTags.includes(hunt.id);
+                    return (
+                      <div
+                        key={hunt.id}
+                        onClick={() => handleToggleTag(hunt.id)}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
+                          isChecked
+                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
+                            isChecked
+                              ? 'bg-cyan-500 border-cyan-400 text-slate-950'
+                              : 'border-slate-600'
+                          }`}
+                        >
+                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold font-mono text-white">{hunt.label}</p>
+                          <p className="text-[10px] text-slate-400">{hunt.desc}</p>
                         </div>
                       </div>
                     );
@@ -644,6 +801,35 @@ export function FullArenaExperience({
               </div>
             </div>
 
+            {/* PRACTICE BOT CHECKBOX TOGGLE */}
+            <label className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 cursor-pointer select-none transition-all">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                    isBotOpponentAdded
+                      ? 'bg-rose-500 text-white shadow-[0_0_12px_#f43f5e]'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-mono font-bold text-white text-xs">
+                    Play vs AI Practice Bot (Solo Instant Start)
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Tick this box to practice immediately without waiting for a classmate.
+                  </p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isBotOpponentAdded}
+                onChange={(e) => setIsBotOpponentAdded(e.target.checked)}
+                className="w-5 h-5 rounded-md border-slate-700 bg-slate-900 text-rose-500 focus:ring-rose-500 cursor-pointer"
+              />
+            </label>
+
             {/* Roster Slots based on 1v1 vs 2v2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Team Alpha (Cyan) */}
@@ -698,30 +884,47 @@ export function FullArenaExperience({
                   </span>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                        <Bot className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-white font-bold">ByteRival Bot</span>
-                      <span className="text-[10px] text-rose-400 font-semibold">(Practice AI)</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-bold">READY</span>
-                  </div>
-
-                  {teamSize === '2v2' && (
+                {isBotOpponentAdded ? (
+                  <div className="space-y-2">
                     <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
                           <Bot className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-white font-bold">ApexAI Partner</span>
+                        <span className="text-white font-bold">ByteRival Bot</span>
+                        <span className="text-[10px] text-rose-400 font-semibold">(Practice AI)</span>
                       </div>
                       <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                     </div>
-                  )}
-                </div>
+
+                    {teamSize === '2v2' && (
+                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                            <Bot className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-white font-bold">ApexAI Partner</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold">READY</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-dashed border-rose-500/40 flex flex-col gap-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-rose-400 font-bold flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                        Waiting for Opponent...
+                      </span>
+                      <span className="text-[10px] text-amber-400 font-bold bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded">
+                        OPEN
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Share room code <strong className="text-cyan-300">{roomCode}</strong> or copy the invite link above so a student can enter this match!
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -761,16 +964,16 @@ export function FullArenaExperience({
               GET READY TO CODE...
             </h3>
             <p className="mt-2 text-xs font-mono text-slate-400">
-              Fog of War will engage automatically upon match start.
+              Anti-Cheat Fog of War will engage automatically upon match start.
             </p>
           </div>
         )}
 
         {/* ================= STEP 5: SPLIT-SCREEN REFINED COMBAT ARENA ================= */}
         {step === 5 && (
-          <div className="w-full h-full flex flex-col gap-4 animate-fadeIn">
+          <div className="w-full h-full flex flex-col gap-3 animate-fadeIn">
             {/* Mission Objective Header */}
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="p-3 rounded-2xl bg-slate-950/85 border border-slate-800 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -792,55 +995,117 @@ export function FullArenaExperience({
               )}
             </div>
 
-            {/* Split Screen Grid (Left: Squad Studio, Right: Opponent Fog of War) */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[460px]">
-              {/* LEFT: Team Alpha (Your Team Code Studio) */}
+            {/* Split Screen Grid: Left Studio & Opponent Telemetry, Right Preview & Output (Image 6 Parity) */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[560px]">
+              
+              {/* LEFT: Team Alpha (Code Studio + Live Opponent Telemetry HUD) */}
               <div className="flex flex-col rounded-2xl bg-slate-950/90 border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.1)] overflow-hidden">
                 {/* Editor Header Bar */}
                 <div className="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-1.5">
-                    {selectedTags.includes('html') && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('html')}
-                        className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                          activeTab === 'html'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        index.html
-                      </button>
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+                    {/* Web Dev Tabs */}
+                    {arena === 'web_dev' && (
+                      <>
+                        {selectedTags.includes('html') && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('html')}
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              activeTab === 'html'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            index.html
+                          </button>
+                        )}
+                        {selectedTags.includes('css') && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('css')}
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              activeTab === 'css'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            styles.css
+                          </button>
+                        )}
+                        {selectedTags.includes('javascript') && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('js')}
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              activeTab === 'js'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            script.js
+                          </button>
+                        )}
+                      </>
                     )}
-                    {selectedTags.includes('css') && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('css')}
-                        className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                          activeTab === 'css'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        styles.css
-                      </button>
+
+                    {/* Algorithms Tabs */}
+                    {arena === 'algorithms' && (
+                      <>
+                        {selectedTags.includes('python') && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('python')}
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              activeTab === 'python'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            solution.py
+                          </button>
+                        )}
+                        {selectedTags.includes('java') && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('java')}
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              activeTab === 'java'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Solution.java
+                          </button>
+                        )}
+                        {selectedTags.includes('cpp') && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('cpp')}
+                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              activeTab === 'cpp'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            solution.cpp
+                          </button>
+                        )}
+                      </>
                     )}
-                    {selectedTags.includes('javascript') && (
+
+                    {/* Bug Hunt Tab */}
+                    {arena === 'bug_hunt' && (
                       <button
                         type="button"
-                        onClick={() => setActiveTab('js')}
-                        className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                          activeTab === 'js'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
+                        onClick={() => setActiveTab('react')}
+                        className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                       >
-                        script.js
+                        BugFix.tsx
                       </button>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className="text-[11px] font-mono text-cyan-400 font-bold">
                       Tests: {userTestsPassed} / {totalTests}
                     </span>
@@ -855,148 +1120,193 @@ export function FullArenaExperience({
                   </div>
                 </div>
 
-                {/* Code Textarea */}
-                <div className="flex-1 relative bg-[#060812] p-3">
+                {/* Code Textarea Studio */}
+                <div className="flex-1 min-h-[300px] sm:min-h-[350px] relative bg-[#060812] p-3 border-b border-slate-800">
                   <textarea
                     value={
                       activeTab === 'html'
                         ? htmlCode
                         : activeTab === 'css'
                         ? cssCode
+                        : activeTab === 'js'
+                        ? jsCode
+                        : activeTab === 'python'
+                        ? pythonCode
+                        : activeTab === 'java'
+                        ? javaCode
+                        : activeTab === 'cpp'
+                        ? cppCode
                         : jsCode
                     }
                     onChange={(e) => {
-                      if (activeTab === 'html') setHtmlCode(e.target.value);
-                      else if (activeTab === 'css') setCssCode(e.target.value);
-                      else setJsCode(e.target.value);
+                      const val = e.target.value;
+                      if (activeTab === 'html') setHtmlCode(val);
+                      else if (activeTab === 'css') setCssCode(val);
+                      else if (activeTab === 'js') setJsCode(val);
+                      else if (activeTab === 'python') setPythonCode(val);
+                      else if (activeTab === 'java') setJavaCode(val);
+                      else if (activeTab === 'cpp') setCppCode(val);
+                      else setJsCode(val);
                     }}
-                    placeholder="// Type code here..."
+                    placeholder="// Type your solution here..."
                     className="w-full h-full bg-transparent font-mono text-xs sm:text-sm text-cyan-200 resize-none focus:outline-none leading-relaxed"
                     spellCheck={false}
                   />
                 </div>
 
-                {/* Bottom Previews (Target Component vs Live Preview) */}
-                <div className="h-44 border-t border-slate-800 bg-slate-900/60 p-2.5 grid grid-cols-2 gap-2 shrink-0">
-                  {/* Target Component */}
-                  <div className="flex flex-col rounded-xl bg-slate-950 border border-slate-800 p-2 overflow-hidden">
-                    <span className="text-[10px] font-mono uppercase text-slate-400 font-bold mb-1">
-                      Target Goal to Match:
+                {/* Integrated Opponent Fog of War Telemetry HUD */}
+                <div className="p-3 bg-slate-950 border-t border-slate-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span className="font-mono text-xs font-bold text-rose-400 uppercase tracking-wider">
+                        OPPONENT &bull; FOG OF WAR ACTIVE
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                      <EyeOff className="w-3 h-3 text-rose-400" />
+                      <span>Zero-Cheating Shield</span>
                     </span>
-                    <div
-                      className="flex-1 overflow-auto flex items-center justify-center p-2"
-                      dangerouslySetInnerHTML={{
-                        __html: activeQuestion.targetComponentHtml || '<p>Target</p>',
-                      }}
-                    />
                   </div>
 
-                  {/* Live Rendered Iframe */}
-                  <div className="flex flex-col rounded-xl bg-slate-950 border border-cyan-500/30 p-2 overflow-hidden">
-                    <span className="text-[10px] font-mono uppercase text-cyan-400 font-bold mb-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                      Your Live Render:
-                    </span>
-                    <div className="flex-1 overflow-auto bg-white/5 rounded p-2">
-                      <style>{cssCode}</style>
-                      <div dangerouslySetInnerHTML={{ __html: htmlCode }} />
+                  {/* Opponent Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-slate-400 text-[11px]">
+                        {isBotOpponentAdded ? 'ByteRival Bot (Practice AI)' : 'Classmate Opponent'}
+                      </span>
+                      <span className="text-rose-400 font-bold text-[11px]">
+                        {opponentTestsPassed} / {totalTests} Tests Passed
+                      </span>
                     </div>
+                    <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-500"
+                        style={{
+                          width: `${(opponentTestsPassed / totalTests) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Telemetry Heartbeat Cards */}
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Cadence:</span>
+                      <div className="font-black text-rose-400 flex items-center gap-1">
+                        <Flame className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                        <span>{opponentWpm} WPM</span>
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Compile:</span>
+                      <span className="font-black text-cyan-400">Active</span>
+                    </div>
+                  </div>
+
+                  {/* Encrypted Code Glitch preview (Unlocks at finish) */}
+                  <div className="p-2 rounded-xl bg-[#070914] border border-rose-500/20 font-mono text-[9px] text-rose-400/70 select-none overflow-hidden">
+                    <p className="truncate">0x7F4A89C // ENCRYPTED_BLOCK // 01001011 01001111 // TESTS_LOCKED</p>
+                    <p className="truncate">0x3E8B12A // ENCRYPTED_HASH  // 01100010 01111001 // RUNNER_ACTIVE</p>
                   </div>
                 </div>
               </div>
 
-              {/* RIGHT: Team Omega (Opponent Screen under Anti-Cheat Fog of War) */}
-              <div className="flex flex-col rounded-2xl bg-slate-950/90 border border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.1)] overflow-hidden">
-                {/* Header Bar */}
-                <div className="h-10 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
-                    <span className="font-mono text-xs font-bold text-rose-400 uppercase tracking-wider">
-                      OPPONENT &bull; FOG OF WAR ACTIVE
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                    <EyeOff className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Zero-Cheating Shield</span>
-                  </span>
-                </div>
-
-                {/* Fog of War Obscured Editor Matrix */}
-                <div className="flex-1 relative bg-[#070914] p-5 flex flex-col justify-between overflow-hidden">
-                  {/* Encrypted Glitch Scanline Background */}
-                  <div className="absolute inset-0 opacity-20 pointer-events-none font-mono text-[10px] text-rose-400/80 p-4 select-none filter blur-[2px] overflow-hidden">
-                    {Array.from({ length: 18 }).map((_, i) => (
-                      <p key={i} className="whitespace-nowrap">
-                        0x7F4A89C // ENCRYPTED_BLOCK // 01001011 01001111 01001100 // COMPILING_TESTS_LOCKED
-                      </p>
-                    ))}
-                  </div>
-
-                  {/* Shield Notification Box */}
-                  <div className="relative z-10 p-5 rounded-2xl bg-slate-950/80 border border-rose-500/40 backdrop-blur-md space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400">
-                        <ShieldAlert className="w-6 h-6 animate-pulse" />
-                      </div>
-                      <div>
-                        <h4 className="font-mono font-bold text-white text-sm">
-                          Anti-Cheat Privacy Shield Engaged
-                        </h4>
-                        <p className="text-xs text-slate-400">
-                          Opponent code is securely encrypted during the match to prevent copying. Full code diff unlocks instantly upon match finish.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Opponent Live Telemetry Meter */}
-                    <div className="pt-2 border-t border-slate-800 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-slate-400">Opponent Test Cases Passed:</span>
-                        <span className="text-rose-400 font-bold">
-                          {opponentTestsPassed} / {totalTests}
-                        </span>
-                      </div>
-                      <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-500"
-                          style={{
-                            width: `${(opponentTestsPassed / totalTests) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Live Alerts & Telemetry Cards */}
-                  <div className="relative z-10 grid grid-cols-2 gap-3 mt-4">
-                    <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold">
-                        Typing Cadence:
+              {/* RIGHT: IMAGE 6 PARITY — PREVIEW & OUTPUT SPLIT VIEW */}
+              <div className="flex flex-col gap-3 min-h-[500px]">
+                {/* TOP: PREVIEW CONTAINER (Target Component Blueprint) */}
+                {maximizedPane !== 'output' && (
+                  <div
+                    className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-200 ${
+                      maximizedPane === 'preview' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                    }`}
+                  >
+                    {/* Preview Title Bar (Image 6 Parity) */}
+                    <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
+                      <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
+                        preview
                       </span>
-                      <div className="text-xl font-mono font-black text-white mt-0.5 flex items-center gap-1.5">
-                        <Flame className="w-4 h-4 text-rose-500 animate-pulse" />
-                        <span>{opponentWpm} WPM</span>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <button
+                          type="button"
+                          onClick={() => setRenderNonce((n) => n + 1)}
+                          className="hover:text-white transition-colors p-1"
+                          title="Refresh Target Blueprint"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMaximizedPane(maximizedPane === 'preview' ? 'none' : 'preview')
+                          }
+                          className="hover:text-white transition-colors p-1"
+                          title={maximizedPane === 'preview' ? 'Restore View' : 'Maximize Preview'}
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                      <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold">
-                        Last Compile:
-                      </span>
-                      <div className="text-xl font-mono font-black text-cyan-400 mt-0.5">
-                        Active
-                      </div>
+                    {/* Preview White Canvas Canvas (Image 6 Design) */}
+                    <div
+                      key={`preview-${renderNonce}`}
+                      className="flex-1 p-3 bg-white overflow-auto flex items-center justify-center"
+                    >
+                      <div
+                        className="w-full"
+                        dangerouslySetInnerHTML={{
+                          __html: activeQuestion.targetComponentHtml || '<p>Target Preview</p>',
+                        }}
+                      />
                     </div>
                   </div>
+                )}
 
-                  {/* Opponent Event Toast */}
-                  {opponentAlert && (
-                    <div className="relative z-10 mt-3 p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-xs font-mono text-rose-200 animate-fadeIn flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />
-                      <span>{opponentAlert}</span>
+                {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering) */}
+                {maximizedPane !== 'preview' && (
+                  <div
+                    className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
+                      maximizedPane === 'output' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                    }`}
+                  >
+                    {/* Output Title Bar (Image 6 Parity) */}
+                    <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
+                      <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
+                        output
+                      </span>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <button
+                          type="button"
+                          onClick={() => setRenderNonce((n) => n + 1)}
+                          className="hover:text-white transition-colors p-1"
+                          title="Re-render Live Output"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMaximizedPane(maximizedPane === 'output' ? 'none' : 'output')
+                          }
+                          className="hover:text-white transition-colors p-1"
+                          title={maximizedPane === 'output' ? 'Restore View' : 'Maximize Output'}
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Output White Canvas Canvas (Image 6 Live Render) */}
+                    <div
+                      key={`output-${renderNonce}`}
+                      className="flex-1 p-3 bg-white overflow-auto"
+                    >
+                      <style>{cssCode}</style>
+                      <div dangerouslySetInnerHTML={{ __html: htmlCode }} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1077,11 +1387,11 @@ export function FullArenaExperience({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-52 overflow-y-auto">
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-cyan-300 overflow-x-auto">
                   <p className="text-[10px] text-slate-500 font-bold mb-1">// Your Squad Code</p>
-                  <pre>{htmlCode || cssCode || 'Solution'}</pre>
+                  <pre>{htmlCode || cssCode || pythonCode || javaCode || cppCode || 'Solution'}</pre>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-rose-300 overflow-x-auto">
                   <p className="text-[10px] text-slate-500 font-bold mb-1">// Opponent Code (Revealed)</p>
-                  <pre>{activeQuestion.starterHtml ? `<div class="card">\n  <h2>Article</h2>\n</div>` : 'Solution'}</pre>
+                  <pre>{activeQuestion.starterHtml || activeQuestion.starterPython || 'Solution'}</pre>
                 </div>
               </div>
             </div>
@@ -1100,6 +1410,7 @@ export function FullArenaExperience({
                 type="button"
                 onClick={() => {
                   playArcadeCoinSound();
+                  setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
                   setStep(1);
                 }}
                 className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-amber-500 to-rose-500 text-slate-950 font-black font-mono text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2"

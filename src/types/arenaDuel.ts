@@ -76,6 +76,153 @@ export interface DuelRoom {
 
 // Built-in Default Questions for every tag combination!
 export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
+  // 1. Web Dev: HTML + CSS 3-Card Responsive Grid (Image 4 Flagship Challenge)
+  {
+    id: 'q-html-css-cards-grid',
+    arena: 'web_dev',
+    title: 'The Responsive Modern Cards Grid',
+    description: 'Replicate the 3-column responsive cards layout shown in the Preview: Card 1 with [Active] badge, Card 2 with light cyan-blue background (#b9dced) and [Featured] badge, and Card 3 with [New] badge. Each card has a 2px black border, clean typography, and a dark [Learn More] button.',
+    tags: ['html', 'css'],
+    difficulty: 'medium',
+    timeLimitSeconds: 300,
+    targetPreviewTitle: 'Responsive Cards Grid Blueprint',
+    targetComponentHtml: `
+      <div style="background:#ffffff;padding:24px;border-radius:12px;font-family:sans-serif;color:#111;width:100%;max-width:680px;box-sizing:border-box;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:16px;">
+          <!-- Card 1 -->
+          <div style="border:2px solid #222;background:#fff;padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:220px;box-sizing:border-box;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <h3 style="font-size:22px;font-weight:900;margin:0;line-height:1.1;">Card<br/>1</h3>
+                <span style="background:#e2e8f0;color:#0f172a;font-size:12px;font-weight:bold;padding:4px 10px;border-radius:6px;">Active</span>
+              </div>
+              <p style="font-size:13px;color:#334155;line-height:1.5;margin:0 0 16px 0;">Learn the fundamentals of modern web development.</p>
+            </div>
+            <button style="background:#333;color:#fff;border:none;padding:8px 14px;font-size:12px;font-weight:bold;cursor:pointer;width:fit-content;">Learn More</button>
+          </div>
+
+          <!-- Card 2 (Featured - Pastel Cyan) -->
+          <div style="border:2px solid #222;background:#b9dced;padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:220px;box-sizing:border-box;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <h3 style="font-size:22px;font-weight:900;margin:0;line-height:1.1;">Card<br/>2</h3>
+                <span style="background:#e2e8f0;color:#0f172a;font-size:12px;font-weight:bold;padding:4px 10px;border-radius:6px;">Featured</span>
+              </div>
+              <p style="font-size:13px;color:#1e293b;line-height:1.5;margin:0 0 16px 0;">Build responsive and accessible websites using HTML and CSS.</p>
+            </div>
+            <button style="background:#333;color:#fff;border:none;padding:8px 14px;font-size:12px;font-weight:bold;cursor:pointer;width:fit-content;">Learn More</button>
+          </div>
+
+          <!-- Card 3 -->
+          <div style="border:2px solid #222;background:#fff;padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:220px;box-sizing:border-box;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <h3 style="font-size:22px;font-weight:900;margin:0;line-height:1.1;">Card<br/>3</h3>
+                <span style="background:#e2e8f0;color:#0f172a;font-size:12px;font-weight:bold;padding:4px 10px;border-radius:6px;">New</span>
+              </div>
+              <p style="font-size:13px;color:#334155;line-height:1.5;margin:0 0 16px 0;">Practice layouts, styling, and responsive design techniques.</p>
+            </div>
+            <button style="background:#333;color:#fff;border:none;padding:8px 14px;font-size:12px;font-weight:bold;cursor:pointer;width:fit-content;">Learn More</button>
+          </div>
+        </div>
+      </div>
+    `,
+    starterHtml: `<div class="cards-grid">
+  <!-- Card 1 (Started) -->
+  <div class="card">
+    <div>
+      <div class="card-header">
+        <h3 class="card-title">Card<br/>1</h3>
+        <span class="badge">Active</span>
+      </div>
+      <p class="card-desc">Learn the fundamentals of modern web development.</p>
+    </div>
+    <button class="card-btn">Learn More</button>
+  </div>
+
+  <!-- TODO: Build Card 2 (Featured with background #b9dced) and Card 3 (New) -->
+</div>`,
+    starterCss: `body {
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  background: #ffffff;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.card {
+  border: 2px solid #222;
+  background: #ffffff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  box-sizing: border-box;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+  color: #111;
+}
+
+.badge {
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.card-btn {
+  background: #333;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  width: fit-content;
+  border-radius: 4px;
+}`,
+    starterJs: ``,
+    validationCriteria: [
+      '3 cards rendered with titles and badges',
+      'Card 2 has distinct pastel cyan background (#b9dced)',
+      'Buttons and text match layout',
+    ],
+    testCases: [
+      { input: 'has3Cards', expectedOutput: 'true', description: '3 Card items present in container' },
+      { input: 'hasFeaturedColor', expectedOutput: 'true', description: 'Card 2 featured background matches' },
+      { input: 'hasBadges', expectedOutput: 'true', description: 'Active, Featured, New badges styled' },
+    ],
+  },
   // 1. Web Dev: HTML ONLY
   {
     id: 'q-html-only-1',

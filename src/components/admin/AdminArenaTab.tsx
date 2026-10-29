@@ -18,6 +18,8 @@ import {
   Tag,
   AlertCircle,
   HelpCircle,
+  Trash2,
+  Eye,
 } from 'lucide-react';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
 import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
@@ -128,6 +130,29 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       setStatusMsg({ text: err.message || 'Network error saving question', type: 'error' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this duel question from the server?')) return;
+    try {
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch(`/api/arena/questions?id=${questionId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+        setStatusMsg({ text: 'Question removed from live arena question bank!', type: 'success' });
+      } else {
+        setStatusMsg({ text: data.error || 'Failed to delete question', type: 'error' });
+      }
+    } catch (err: any) {
+      setStatusMsg({ text: err.message || 'Error deleting question', type: 'error' });
     }
   };
 
@@ -326,6 +351,25 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             </div>
           </div>
 
+          {/* Target Component HTML (Visual Blueprint preview like Image 4) */}
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-slate-300 font-mono">
+              Target Component HTML (Rendered Blueprint for Students):
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <textarea
+                rows={5}
+                value={newTargetHtml}
+                onChange={(e) => setNewTargetHtml(e.target.value)}
+                placeholder="<div style='background:#fff;border:2px solid #222;...'>Target Card</div>"
+                className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+              />
+              <div className="rounded-xl border border-charcoal-750 bg-white p-3 overflow-auto max-h-36 flex items-center justify-center">
+                <div dangerouslySetInnerHTML={{ __html: newTargetHtml }} className="w-full" />
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -397,6 +441,14 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
               <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-900 px-2 py-1 rounded-md">
                 {q.testCases?.length || 3} Test Cases
               </span>
+              <button
+                type="button"
+                onClick={() => handleDeleteQuestion(q.id)}
+                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 transition-colors flex items-center justify-center"
+                title="Delete Question"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         ))}
