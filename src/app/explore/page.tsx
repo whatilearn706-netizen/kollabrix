@@ -472,47 +472,60 @@ export default function ExploreProjectsPage() {
         </div>
       </div>
 
-      {/* Projects Grid / Content View */}
-      <div className="w-full py-2">
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <ProjectCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : projects.length === 0 ? (
-          /* Empty State */
-          <div className="rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-12 text-center max-w-lg mx-auto space-y-4 shadow-sm my-6">
-            <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto">
-              <FolderSearch className="w-6 h-6" />
+      {/* Scrollable Container with Blur-to-Focus Stack */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
+        {/* Blur Curtains for Upper & Lower Margins */}
+        <div className="scroll-blur-curtain-top" />
+        <div className="scroll-blur-curtain-bottom" />
+
+        {/* Projects Viewport with Blur-to-Focus Mask */}
+        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ProjectCardSkeleton key={i} />
+              ))}
             </div>
-            <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">No matching projects found</h3>
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                We couldn&apos;t find any projects matching your current combination of keywords and filters. Try adjusting your search or clearing active filters.
-              </p>
+          ) : projects.length === 0 ? (
+            /* Empty State */
+            <div className="rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-12 text-center max-w-lg mx-auto space-y-4 shadow-sm my-6">
+              <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto">
+                <FolderSearch className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">No matching projects found</h3>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  We couldn&apos;t find any projects matching your current combination of keywords and filters. Try adjusting your search or clearing active filters.
+                </p>
+              </div>
+              <div className="pt-2 flex justify-center gap-3">
+                <Button variant="outline" size="sm" onClick={handleClearFilters} className="font-bold border-slate-200 dark:border-charcoal-700">
+                  Clear All Filters
+                </Button>
+                {user ? (
+                  <Link href="/projects/new">
+                    <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold">
+                      Publish this Idea
+                    </Button>
+                  </Link>
+                ) : null}
+              </div>
             </div>
-            <div className="pt-2 flex justify-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleClearFilters} className="font-bold border-slate-200 dark:border-charcoal-700">
-                Clear All Filters
-              </Button>
-              {user ? (
-                <Link href="/projects/new">
-                  <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold">
-                    Publish this Idea
-                  </Button>
-                </Link>
-              ) : null}
+          ) : (
+            /* Project Cards Grid with Blur-to-Focus Card Stacking */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((project, idx) => (
+                <div
+                  key={project.id}
+                  className="blur-to-focus-card"
+                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                >
+                  <ProjectCard project={project} />
+                </div>
+              ))}
             </div>
-          </div>
-        ) : (
-          /* Project Cards Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Database-Backed Pagination Controls */}

@@ -352,9 +352,15 @@ export default function ProblemStatementsPage() {
         </div>
       </div>
 
-      {/* Problems Grid / Content View */}
-      <div className="w-full py-2">
-        {isLoading ? (
+      {/* Scrollable Container with Blur-to-Focus Stack */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
+        {/* Blur Curtains for Upper & Lower Margins */}
+        <div className="scroll-blur-curtain-top" />
+        <div className="scroll-blur-curtain-bottom" />
+
+        {/* Problems Viewport with Blur-to-Focus Mask */}
+        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
+          {isLoading ? (
             <div className="py-20 text-center space-y-4">
               <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
               <p className="text-xs text-slate-300 font-mono">Loading problem statements...</p>
@@ -523,6 +529,7 @@ export default function ProblemStatementsPage() {
             </div>
           )}
         </div>
+      </div>
     </div>
   );
 }

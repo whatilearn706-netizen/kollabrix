@@ -347,10 +347,33 @@ div[role="dialog"] .bg-amber-500\/10 strong {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Blur Curtains for Upper & Lower Scroll Margins - Disabled globally to remove odd box borders */
-.scroll-blur-curtain-top,
+/* Blur Curtains for Upper & Lower Scroll Margins */
+.scroll-blur-curtain-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 52px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
+}
+
 .scroll-blur-curtain-bottom {
-  display: none !important;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to top, black 25%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, black 25%, transparent 100%);
 }
 
 /* Compact Blur Curtains for Written-On-Page Portals Rail (Shows 2 Names Before Scroll) */

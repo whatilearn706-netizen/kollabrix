@@ -679,67 +679,78 @@ export default function TeammatesPage() {
         </div>
       </div>
 
-      {/* Teammates Grid / Content View */}
-      <div className="w-full py-2">
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {Array.from({ length: 6 }).map((_, n) => (
-              <TeammateCardSkeleton key={n} />
-            ))}
-          </div>
-        ) : filteredMatches.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {filteredMatches.map((match) => (
-              <div key={match.profile.user_id} className="h-full">
-                <TeammateCard
-                  match={match}
-                  onInvite={handleOpenInvite}
-                  isInvited={invitedUserIds.includes(match.profile.user_id)}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div
-            style={{
-              backgroundColor: theme.surfaceColor,
-              borderColor: theme.borderColor,
-              borderRadius: theme.borderRadius,
-            }}
-            className="p-12 border text-center space-y-4 shadow-xs my-6 max-w-lg mx-auto"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto text-violet-500">
-              <Users className="w-6 h-6" />
+      {/* Scrollable Container with Blur-to-Focus Stack */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
+        {/* Blur Curtains for Upper & Lower Margins */}
+        <div className="scroll-blur-curtain-top" />
+        <div className="scroll-blur-curtain-bottom" />
+
+        {/* Teammates Viewport with Blur-to-Focus Mask */}
+        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              {Array.from({ length: 6 }).map((_, n) => (
+                <TeammateCardSkeleton key={n} />
+              ))}
             </div>
-            <h3
-              style={{ color: theme.headingColor }}
-              className="text-lg font-black"
+          ) : filteredMatches.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              {filteredMatches.map((match, idx) => (
+                <div
+                  key={match.profile.user_id}
+                  className="blur-to-focus-card h-full"
+                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                >
+                  <TeammateCard
+                    match={match}
+                    onInvite={handleOpenInvite}
+                    isInvited={invitedUserIds.includes(match.profile.user_id)}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                backgroundColor: theme.surfaceColor,
+                borderColor: theme.borderColor,
+                borderRadius: theme.borderRadius,
+              }}
+              className="p-12 border text-center space-y-4 shadow-xs my-6 max-w-lg mx-auto"
             >
-              No Matching Students Found
-            </h3>
-            <p
-              style={{ color: theme.bodyTextColor }}
-              className="text-xs max-w-sm mx-auto opacity-80"
-            >
-              Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
-            </p>
-            {(searchQuery || selectedSkill !== 'All' || selectedRole !== 'All' || minScore > 0) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedSkill('All');
-                  setSelectedRole('All');
-                  setMinScore(0);
-                }}
-                style={{ color: theme.brandColor }}
-                className="text-xs font-bold hover:underline cursor-pointer"
+              <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto text-violet-500">
+                <Users className="w-6 h-6" />
+              </div>
+              <h3
+                style={{ color: theme.headingColor }}
+                className="text-lg font-black"
               >
-                Reset All Filters
-              </button>
-            )}
-          </div>
-        )}
+                No Matching Students Found
+              </h3>
+              <p
+                style={{ color: theme.bodyTextColor }}
+                className="text-xs max-w-sm mx-auto opacity-80"
+              >
+                Try adjusting your search keywords, lowering the match score threshold, or inviting students from across campus.
+              </p>
+              {(searchQuery || selectedSkill !== 'All' || selectedRole !== 'All' || minScore > 0) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedSkill('All');
+                    setSelectedRole('All');
+                    setMinScore(0);
+                  }}
+                  style={{ color: theme.brandColor }}
+                  className="text-xs font-bold hover:underline cursor-pointer"
+                >
+                  Reset All Filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Invite Modal */}
