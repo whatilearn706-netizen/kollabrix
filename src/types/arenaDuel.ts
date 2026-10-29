@@ -60,6 +60,7 @@ export interface DuelTeam {
 
 export interface DuelRoom {
   code: string; // e.g. "KBX-8821"
+  mode?: '1v1' | '2v2';
   arena: ArenaCategory;
   selectedTags: string[];
   difficulty: 'easy' | 'medium' | 'hard';

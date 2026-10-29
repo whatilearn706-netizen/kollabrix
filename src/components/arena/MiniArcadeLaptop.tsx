@@ -165,10 +165,10 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '' }: MiniArcadeL
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`relative group cursor-pointer select-none transition-transform duration-200 active:scale-95 flex items-center ${className}`}
-      title="⚔️ 2v2 Live Code Battleground (Click to Enter)"
+      title="⚔️ Battle Arena: 1v1 & 2v2 Live Code Duels (Click to Enter)"
       role="button"
       tabIndex={0}
-      aria-label="Enter 2v2 Live Code Arena"
+      aria-label="Enter Battle Arena: 1v1 & 2v2 Live Code Duels"
     >
       {/* Laptop Outer Bezel Chassis */}
       <div className="relative p-1 rounded-t-lg bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 border border-slate-600 shadow-md group-hover:border-rose-500 group-hover:shadow-[0_0_15px_rgba(244,63,94,0.5)] transition-all">
@@ -204,7 +204,7 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '' }: MiniArcadeL
       {isHovered && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1 rounded-lg bg-slate-900/95 border border-rose-500/50 text-[10px] font-mono font-bold text-rose-400 whitespace-nowrap shadow-xl z-50 pointer-events-none flex items-center gap-1.5 animate-fadeIn">
           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-          <span>2v2 CODE ARENA &bull; PLAY LIVE</span>
+          <span>BATTLE ARENA &bull; 1v1 & 2v2 LIVE</span>
         </div>
       )}
     </div>

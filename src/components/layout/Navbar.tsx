@@ -46,8 +46,8 @@ import {
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
-import { VoxelShatterTransition } from '@/components/arena/VoxelShatterTransition';
-import { MultiplayerDuelLobbyModal } from '@/components/arena/MultiplayerDuelLobbyModal';
+import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
+import { FullArenaExperience } from '@/components/arena/FullArenaExperience';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -699,8 +699,8 @@ export function Navbar() {
     {/* Floating Streak Celebration Toast */}
     <StreakCelebrationToast />
 
-    {/* Voxel Shatter 1x1cm Corner Cascade Transition */}
-    <VoxelShatterTransition
+    {/* Cinematic Cyber Warp Battle Arena Transition */}
+    <CinematicArenaTransition
       isActive={isVoxelTransitionActive}
       onAnimationComplete={() => {
         setIsVoxelTransitionActive(false);
@@ -708,16 +708,17 @@ export function Navbar() {
       }}
     />
 
-    {/* 2v2 Multiplayer Duel Battleground Lobby & Combat Modal */}
-    <MultiplayerDuelLobbyModal
-      isOpen={isArenaModalOpen}
-      onClose={() => setIsArenaModalOpen(false)}
-      currentUser={{
-        displayName,
-        username,
-        avatarUrl: profile?.avatar_url || user?.user_metadata?.avatar_url || undefined,
-      }}
-    />
+    {/* Full Screen Immersive Battle Arena Experience */}
+    {isArenaModalOpen && (
+      <FullArenaExperience
+        onClose={() => setIsArenaModalOpen(false)}
+        currentUser={{
+          displayName,
+          username,
+          avatarUrl: profile?.avatar_url || user?.user_metadata?.avatar_url || undefined,
+        }}
+      />
+    )}
   </>
 );
 }

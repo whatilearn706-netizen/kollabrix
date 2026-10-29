@@ -20,8 +20,8 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
-import { VoxelShatterTransition } from '@/components/arena/VoxelShatterTransition';
-import { MultiplayerDuelLobbyModal } from '@/components/arena/MultiplayerDuelLobbyModal';
+import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
+import { FullArenaExperience } from '@/components/arena/FullArenaExperience';
 
 interface AdminArenaTabProps {
   authToken?: string;
@@ -402,8 +402,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         ))}
       </div>
 
-      {/* Voxel Shatter & Modal for Admin Live Testing */}
-      <VoxelShatterTransition
+      {/* Cinematic Transition & Full Arena for Admin Live Testing */}
+      <CinematicArenaTransition
         isActive={isTestTransitionActive}
         onAnimationComplete={() => {
           setIsTestTransitionActive(false);
@@ -411,14 +411,15 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         }}
       />
 
-      <MultiplayerDuelLobbyModal
-        isOpen={isTestLobbyOpen}
-        onClose={() => setIsTestLobbyOpen(false)}
-        currentUser={{
-          displayName: 'Admin Tester',
-          username: 'admin',
-        }}
-      />
+      {isTestLobbyOpen && (
+        <FullArenaExperience
+          onClose={() => setIsTestLobbyOpen(false)}
+          currentUser={{
+            displayName: 'Admin Tester',
+            username: 'admin',
+          }}
+        />
+      )}
     </div>
   );
 }
