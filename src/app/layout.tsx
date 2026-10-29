@@ -14,6 +14,7 @@ import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
+import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -263,22 +264,24 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#090B10] text-slate-100 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative overflow-x-hidden">
         <AuthProvider>
-          <SiteThemeProvider>
-            <GlobalLightRays />
-            <RestrictedWordsGuard>
-              <GlobalBroadcastBanner />
-              <GlobalHotPatchInjector />
-              <MaintenanceModeGate>
-                <SetupBanner />
-                <Navbar />
-                <main className="flex-1 flex flex-col relative z-[1]">{children}</main>
-                <Footer />
-                <AuthModal />
-                <FeedbackModal />
-                <KollabrixQuickDock />
-              </MaintenanceModeGate>
-            </RestrictedWordsGuard>
-          </SiteThemeProvider>
+          <AnalyticsProvider>
+            <SiteThemeProvider>
+              <GlobalLightRays />
+              <RestrictedWordsGuard>
+                <GlobalBroadcastBanner />
+                <GlobalHotPatchInjector />
+                <MaintenanceModeGate>
+                  <SetupBanner />
+                  <Navbar />
+                  <main className="flex-1 flex flex-col relative z-[1]">{children}</main>
+                  <Footer />
+                  <AuthModal />
+                  <FeedbackModal />
+                  <KollabrixQuickDock />
+                </MaintenanceModeGate>
+              </RestrictedWordsGuard>
+            </SiteThemeProvider>
+          </AnalyticsProvider>
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

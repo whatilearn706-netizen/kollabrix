@@ -179,6 +179,24 @@ export function InviteTeammateModal({
         } catch {
           // Non-critical
         }
+
+        // 3. Trigger Transactional Email Dispatch (Resend + Telegram)
+        try {
+          fetch('/api/notifications/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipientUserId: candidate.user_id,
+              type: 'project_invitation',
+              subject: `🚀 ${user.user_metadata?.full_name || 'A student'} invited you to join "${selectedProj?.title || 'their project'}"`,
+              senderName: user.user_metadata?.full_name || 'A Collegiate Teammate',
+              title: `You've been invited to join "${selectedProj?.title || 'a project squad'}"!`,
+              details: message.trim() || `Proposed role: ${proposedRole.trim()}. View the project details on Kollabrix to accept and join.`,
+              actionText: 'Review Invitation',
+              actionUrl: `/projects/${selectedProjectId}`,
+            }),
+          }).catch(() => {});
+        } catch {}
       } else {
         // Local storage fallback for unconfigured supabase
         if (typeof window !== 'undefined') {

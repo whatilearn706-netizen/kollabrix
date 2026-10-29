@@ -136,6 +136,27 @@ export function ApplyModal({
       }
 
       setIsSuccess(true);
+
+      // Trigger Transactional Email Dispatch to project owner
+      if (projectOwnerId) {
+        try {
+          fetch('/api/notifications/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipientUserId: projectOwnerId,
+              type: 'application_received',
+              subject: `📝 New Application: ${profile?.display_name || user.email} applied for "${projectTitle}"`,
+              senderName: profile?.display_name || user.email || 'A student',
+              title: `New Team Application for "${projectTitle}"`,
+              details: message.trim() || `Proposed role: ${proposedRole}. Review this candidate on your project dashboard.`,
+              actionText: 'Review Application',
+              actionUrl: `/projects/${projectId}/applications`,
+            }),
+          }).catch(() => {});
+        } catch {}
+      }
+
       setTimeout(() => {
         setIsSuccess(false);
         setMessage('');
