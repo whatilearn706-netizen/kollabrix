@@ -66,17 +66,9 @@ export async function GET() {
 // POST: Admin toggle to change Battle Arena status
 export async function POST(request: NextRequest) {
   try {
-    const adminKey = request.headers.get('x-admin-key') || '';
-    const emergencyKey = 'linkora-sec-emergency-2026';
-    const isKeyAuthorized = adminKey === emergencyKey;
-
-    let auth: any = { authorized: false };
-    if (!isKeyAuthorized) {
-      auth = await verifyAdminSession(request);
-    }
-
-    if (!isKeyAuthorized && !auth.authorized) {
-      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: auth.status || 403 });
+    const auth = await verifyAdminSession(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized admin access' }, { status: auth.status || 403 });
     }
 
     const body = await request.json();

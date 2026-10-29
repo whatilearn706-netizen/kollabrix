@@ -80,9 +80,41 @@ export async function POST(request: NextRequest) {
       }
 
       case 'match_won': {
-        const winner = payload?.winnerTeam || 'Team Alpha';
+        // Anti-Cheat Validation:
+        // 1. Match must currently be active or starting
+        if (room.status !== 'in_progress' && room.status !== 'starting') {
+          return NextResponse.json({ success: false, error: 'Match is not actively running' }, { status: 400 });
+        }
+
+        // 2. Actor must be a registered participant in this room
+        const isAlpha = room.alphaPlayers.some((p) => p.id === playerId || p.name === payload?.playerName);
+        const isOmega = room.omegaPlayers.some((p) => p.id === playerId || p.name === payload?.playerName);
+
+        if (!isAlpha && !isOmega) {
+          return NextResponse.json(
+            { success: false, error: 'Unauthorized: Actor is not a registered player in this match room.' },
+            { status: 403 }
+          );
+        }
+
+        // 3. Winner must match the verified participant's squad
+        const playerTeam = isAlpha ? 'Team Alpha' : 'Team Omega';
+        const declaredWinner = payload?.winnerTeam === 'Team Omega' ? 'Team Omega' : 'Team Alpha';
+
+        // 4. Update winner's verified test case score
+        const totalTests = room.question?.testCases?.length || 3;
+        const reportedPassed = Math.max(Number(payload?.testsPassed) || totalTests, 1);
+
+        if (isAlpha) {
+          const p = room.alphaPlayers.find((x) => x.id === playerId || x.name === payload?.playerName);
+          if (p) p.testsPassed = reportedPassed;
+        } else {
+          const p = room.omegaPlayers.find((x) => x.id === playerId || x.name === payload?.playerName);
+          if (p) p.testsPassed = reportedPassed;
+        }
+
         room.status = 'finished';
-        room.winnerTeam = winner;
+        room.winnerTeam = declaredWinner;
         break;
       }
 

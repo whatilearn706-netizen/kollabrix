@@ -42,6 +42,7 @@ import {
   ShieldCheck,
   Wifi,
   UserCheck,
+  Laptop,
 } from 'lucide-react';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
@@ -82,6 +83,21 @@ export function FullArenaExperience({
   const [joinCodeInput, setJoinCodeInput] = useState(() => initialRoomCode || '');
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+
+  // Mobile Device Intelligence Banner
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showMobileBanner, setShowMobileBanner] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const check = () => {
+        setIsMobileDevice(window.innerWidth < 768 || /Mobi|Android|iPhone/i.test(navigator.userAgent));
+      };
+      check();
+      window.addEventListener('resize', check);
+      return () => window.removeEventListener('resize', check);
+    }
+  }, []);
 
   // Multiplayer Server State
   const [myPlayerId] = useState(() => currentUser?.username || `pilot-${Math.random().toString(36).substring(2, 9)}`);
@@ -1115,6 +1131,49 @@ export function FullArenaExperience({
           <span className="hidden sm:inline">Exit Arena</span>
         </button>
       </header>
+
+      {/* Mobile Screen Guidance Banner */}
+      {isMobileDevice && showMobileBanner && (
+        <div className="relative z-30 w-full px-4 py-2.5 bg-gradient-to-r from-amber-950/90 via-slate-950/95 to-amber-950/90 border-b border-amber-500/40 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2 text-amber-200">
+            <Laptop className="w-4 h-4 shrink-0 text-amber-400 animate-pulse" />
+            <span>
+              <strong className="text-amber-300">Laptop Recommended:</strong> Live coding speedruns require a physical keyboard.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const url = typeof window !== 'undefined' ? `${window.location.origin}/arena?room=${roomCode}` : 'https://kollabrix.in/arena';
+                navigator.clipboard.writeText(url);
+                alert(`Battle link copied! Open it on your laptop browser: ${url}`);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-[11px] font-bold border border-amber-500/30 transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <Copy className="w-3 h-3" />
+              <span>Copy PC Link</span>
+            </button>
+            <a
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Join my Kollabrix Live Coding Arena room on your laptop: https://kollabrix.in/arena?room=${roomCode}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-500/30 transition-all flex items-center gap-1"
+            >
+              <Share2 className="w-3 h-3" />
+              <span>WhatsApp</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setShowMobileBanner(false)}
+              className="p-1 rounded-md text-slate-400 hover:text-white transition-colors"
+              title="Dismiss notice"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Arena Viewport */}
       <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-center items-center p-4 sm:p-6">

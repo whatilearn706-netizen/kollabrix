@@ -1,8 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import vm from 'node:vm';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+// High-speed In-Memory Sliding-Window Rate Limiter (Anti-DDoS / Anti-Spam)
+// Max 20 compilation requests per 60 seconds per IP
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const ipRequestHistory = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const history = ipRequestHistory.get(ip) || [];
+  const recent = history.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    const oldestInWindow = recent[0];
+    const retryAfterSeconds = Math.ceil((oldestInWindow + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { allowed: false, retryAfterSeconds: Math.max(1, retryAfterSeconds) };
+  }
+
+  recent.push(now);
+  ipRequestHistory.set(ip, recent);
+
+  // Periodically clean up old IP entries to prevent memory growth
+  if (ipRequestHistory.size > 1000) {
+    Array.from(ipRequestHistory.entries()).forEach(([key, timestamps]) => {
+      const active = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+      if (active.length === 0) {
+        ipRequestHistory.delete(key);
+      } else {
+        ipRequestHistory.set(key, active);
+      }
+    });
+  }
+
+  return { allowed: true };
+}
 
 interface CompileRequest {
   language: 'java' | 'cpp' | 'python' | 'javascript' | 'c';
@@ -367,60 +401,6 @@ int main() {
 }
 
 /**
- * Fast-path in-process execution for JavaScript when no stdin is required.
- * Returns in < 5ms with full standard library support.
- */
-function executeJavaScriptInVm(code: string, startTime: number) {
-  const logs: string[] = [];
-  const errLogs: string[] = [];
-
-  const sandbox = {
-    console: {
-      log: (...args: any[]) =>
-        logs.push(args.map((a) => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ')),
-      info: (...args: any[]) =>
-        logs.push(args.map((a) => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ')),
-      warn: (...args: any[]) =>
-        logs.push(args.map((a) => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ')),
-      error: (...args: any[]) =>
-        errLogs.push(args.map((a) => (typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a))).join(' ')),
-    },
-    Math,
-    Date,
-    parseInt,
-    parseFloat,
-    isNaN,
-    isFinite,
-    String,
-    Number,
-    Array,
-    Object,
-    JSON,
-    Boolean,
-    RegExp,
-    Map,
-    Set,
-    Promise,
-    BigInt,
-  };
-
-  const context = vm.createContext(sandbox);
-  vm.runInContext(code, context, { timeout: 2500 });
-
-  const stdout = logs.join('\n');
-  const stderr = errLogs.join('\n');
-
-  return {
-    success: errLogs.length === 0,
-    exitCode: errLogs.length === 0 ? 0 : 1,
-    stdout,
-    stderr: stderr || undefined,
-    executionTimeMs: Date.now() - startTime,
-    engine: 'instant-vm',
-  };
-}
-
-/**
  * Execute code using Judge0 CE high-speed compiler engine (~1-2s latency).
  */
 async function executeWithJudge0(language: string, code: string, stdin: string, startTime: number) {
@@ -444,7 +424,11 @@ async function executeWithJudge0(language: string, code: string, stdin: string, 
 
   const res = await fetch('https://ce.judge0.com/submissions?base64_encoded=true&wait=true', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 KollabrixJudge/1.0',
+      'Accept': 'application/json',
+    },
     body: JSON.stringify({
       source_code: b64Source,
       language_id: langId,
@@ -538,6 +522,25 @@ async function executeWithWandbox(language: string, code: string, stdin: string,
  */
 export async function POST(req: NextRequest) {
   try {
+    // 1. Anti-Spam / Anti-DDoS Rate Limiting
+    const forwarded = req.headers.get('x-forwarded-for');
+    const realIp = req.headers.get('x-real-ip');
+    const clientIp = forwarded ? forwarded.split(',')[0].trim() : realIp || '127.0.0.1';
+
+    const rateCheck = checkRateLimit(clientIp);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Compile rate limit exceeded. Please wait ${rateCheck.retryAfterSeconds}s before compiling again.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateCheck.retryAfterSeconds || 10) },
+        }
+      );
+    }
+
     const body: CompileRequest = await req.json();
     const { language, code, stdin = '' } = body;
 
@@ -547,26 +550,7 @@ export async function POST(req: NextRequest) {
 
     const startTime = Date.now();
 
-    // 1. Fast path for JavaScript (Instant execution)
-    if (language === 'javascript' && !stdin) {
-      try {
-        const vmResult = executeJavaScriptInVm(code, startTime);
-        return NextResponse.json(vmResult);
-      } catch (e: any) {
-        // Syntax or runtime exception in VM
-        if (e && e.message && !e.message.includes('timed out')) {
-          return NextResponse.json({
-            success: false,
-            exitCode: 1,
-            stdout: '',
-            stderr: e.message,
-            executionTimeMs: Date.now() - startTime,
-          });
-        }
-      }
-    }
-
-    // 2. High-speed compilation via Judge0 CE (~1-2s)
+    // 2. High-speed compilation via Judge0 CE (~1-2s container-isolated sandbox)
     try {
       const judge0Result = await executeWithJudge0(language, code, stdin, startTime);
       return NextResponse.json(judge0Result);

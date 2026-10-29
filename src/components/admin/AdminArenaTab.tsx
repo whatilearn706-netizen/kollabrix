@@ -123,7 +123,6 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-admin-key': 'linkora-sec-emergency-2026',
         },
         body: JSON.stringify({
           isLive: targetLive,
@@ -172,7 +171,6 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-admin-key': 'linkora-sec-emergency-2026',
         },
         body: JSON.stringify({
           isLive: isArenaLive,
