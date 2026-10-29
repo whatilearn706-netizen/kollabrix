@@ -29,10 +29,21 @@ import {
   Share2,
   Maximize2,
   RefreshCw,
+  Send,
+  Cpu,
+  FileCode,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
-import { playVictorySound, playArcadeCoinSound } from '@/lib/arena/soundEffects';
+import {
+  playVictorySound,
+  playArcadeCoinSound,
+  playCompileSuccessSound,
+  playCompileErrorSound,
+} from '@/lib/arena/soundEffects';
 
 interface FullArenaExperienceProps {
   onClose: () => void;
@@ -67,8 +78,24 @@ export function FullArenaExperience({
   // Step 2: Arena & Topic Selection
   const [arena, setArena] = useState<ArenaCategory>('web_dev');
   const [selectedTags, setSelectedTags] = useState<string[]>(['html', 'css']);
+  const [bugDomain, setBugDomain] = useState<'web' | 'logic'>('web');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [timeLimit, setTimeLimit] = useState<number>(300);
+
+  // Real Compiler Execution States for Java, C++, and Python
+  const [isCompiling, setIsCompiling] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeConsoleTab, setActiveConsoleTab] = useState<'testcases' | 'stdout' | 'custom'>('testcases');
+  const [selectedTestCaseIdx, setSelectedTestCaseIdx] = useState(0);
+  const [customStdin, setCustomStdin] = useState('');
+  const [compilerResult, setCompilerResult] = useState<{
+    success: boolean;
+    stdout?: string;
+    stderr?: string;
+    compile_output?: string;
+    executionTimeMs?: number;
+    status?: string;
+  } | null>(null);
 
   // Step 3: Room & Invite (Fresh random code generated on mount)
   const [roomCode, setRoomCode] = useState(
@@ -93,7 +120,7 @@ export function FullArenaExperience({
   const [javaCode, setJavaCode] = useState('');
   const [cppCode, setCppCode] = useState('');
 
-  const [userTestsPassed, setUserTestsPassed] = useState<number>(1);
+  const [userTestsPassed, setUserTestsPassed] = useState<number>(0);
   const [totalTests, setTotalTests] = useState<number>(3);
   const [testLog, setTestLog] = useState<string>('Ready to test code');
 
@@ -110,6 +137,12 @@ export function FullArenaExperience({
   // Relay Role in 2v2 (swaps every 2.5 mins)
   const [relayPlayer, setRelayPlayer] = useState<'Driver (You)' | 'Navigator (Teammate)'>('Driver (You)');
 
+  // Determine if active match uses Web View (Live Preview & Output) or Compiler Terminal View
+  const isWebMatch =
+    arena === 'web_dev' ||
+    (arena === 'bug_hunt' &&
+      (bugDomain === 'web' || activeQuestion.bugDomain === 'web' || !!activeQuestion.targetComponentHtml));
+
   // When changing arena, select sensible default tags
   const handleSelectArena = (newArena: ArenaCategory) => {
     setArena(newArena);
@@ -120,8 +153,8 @@ export function FullArenaExperience({
       setSelectedTags(['python']);
       setActiveTab('python');
     } else if (newArena === 'bug_hunt') {
-      setSelectedTags(['react']);
-      setActiveTab('react');
+      setSelectedTags([bugDomain === 'web' ? 'bug_web' : 'bug_logic']);
+      setActiveTab(bugDomain === 'web' ? 'html' : 'python');
     }
   };
 
@@ -294,7 +327,7 @@ export function FullArenaExperience({
     return () => clearInterval(oppInterval);
   }, [step, opponentTestsPassed, totalTests]);
 
-  // Run Tests Handler for Player
+  // Run Tests Handler for Player (Web Fallback)
   const handleRunTests = () => {
     playArcadeCoinSound();
     if (userTestsPassed < totalTests) {
@@ -312,6 +345,160 @@ export function FullArenaExperience({
       setWinnerTeam('Team Alpha');
       playVictorySound();
     }
+  };
+
+  // Real Backend Compiler Execution for Java, C++, Python (Compile & Run)
+  const handleCompileAndRun = async () => {
+    setIsCompiling(true);
+    setCompilerResult(null);
+    setActiveConsoleTab('testcases');
+
+    const activeLanguage = activeTab === 'python' ? 'python' : activeTab === 'java' ? 'java' : 'cpp';
+    const activeCode =
+      activeTab === 'python'
+        ? pythonCode
+        : activeTab === 'java'
+        ? javaCode
+        : activeTab === 'cpp'
+        ? cppCode
+        : pythonCode;
+
+    const currentTestCase = activeQuestion.testCases[selectedTestCaseIdx] || activeQuestion.testCases[0];
+    const testStdin = customStdin || currentTestCase?.input || '';
+
+    try {
+      const res = await fetch('/api/compiler/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: activeLanguage,
+          code: activeCode,
+          stdin: testStdin,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        const rawStdout = (data.stdout || '').trim();
+        const expected = (currentTestCase?.expectedOutput || '').trim();
+        const isPass =
+          rawStdout === expected ||
+          rawStdout.replace(/\s+/g, '') === expected.replace(/\s+/g, '') ||
+          rawStdout.includes(expected);
+
+        if (isPass) {
+          playCompileSuccessSound();
+          setUserTestsPassed((prev) => Math.min(totalTests, Math.max(prev, 1)));
+        } else {
+          playCompileErrorSound();
+        }
+
+        setCompilerResult({
+          success: true,
+          stdout: data.stdout || '(No output produced)',
+          stderr: data.stderr || '',
+          compile_output: data.compile_output || '',
+          executionTimeMs: data.executionTimeMs || 16,
+          status: isPass ? 'Accepted' : 'Wrong Answer',
+        });
+      } else {
+        playCompileErrorSound();
+        setCompilerResult({
+          success: false,
+          stdout: '',
+          stderr: data.error || data.stderr || 'Execution failed',
+          compile_output: data.compile_output || data.error || 'Compilation Error',
+          status: 'Compilation Error',
+        });
+      }
+    } catch (err: any) {
+      playCompileErrorSound();
+      setCompilerResult({
+        success: false,
+        stdout: '',
+        stderr: err?.message || 'Network error executing compiler',
+        status: 'Runtime Error',
+      });
+    } finally {
+      setIsCompiling(false);
+    }
+  };
+
+  // Real Submit Handler for Java, C++, Python (Submits to All Test Cases)
+  const handleSubmitCode = async () => {
+    setIsSubmitting(true);
+    const activeLanguage = activeTab === 'python' ? 'python' : activeTab === 'java' ? 'java' : 'cpp';
+    const activeCode =
+      activeTab === 'python'
+        ? pythonCode
+        : activeTab === 'java'
+        ? javaCode
+        : activeTab === 'cpp'
+        ? cppCode
+        : pythonCode;
+
+    let passedCount = 0;
+    const testCases = activeQuestion.testCases || [];
+    let firstFailed: { idx: number; input: string; expected: string; got: string } | null = null;
+
+    for (let i = 0; i < testCases.length; i++) {
+      const tc = testCases[i];
+      try {
+        const res = await fetch('/api/compiler/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            language: activeLanguage,
+            code: activeCode,
+            stdin: tc.input || '',
+          }),
+        });
+        const data = await res.json();
+        const rawOut = (data.stdout || '').trim();
+        const expected = (tc.expectedOutput || '').trim();
+        const pass =
+          rawOut === expected ||
+          rawOut.replace(/\s+/g, '') === expected.replace(/\s+/g, '') ||
+          rawOut.includes(expected);
+
+        if (pass) {
+          passedCount++;
+        } else if (!firstFailed) {
+          firstFailed = {
+            idx: i + 1,
+            input: tc.input,
+            expected: tc.expectedOutput,
+            got: rawOut || data.stderr || 'Execution failed',
+          };
+        }
+      } catch (e) {
+        if (!firstFailed) {
+          firstFailed = { idx: i + 1, input: tc.input, expected: tc.expectedOutput, got: 'Network Error' };
+        }
+      }
+    }
+
+    setUserTestsPassed(passedCount);
+    setIsSubmitting(false);
+
+    if (passedCount === testCases.length) {
+      playVictorySound();
+      setWinnerTeam('Team Alpha');
+      setStep(6);
+    } else {
+      playCompileErrorSound();
+      alert(
+        `✗ Submission Verdict: Wrong Answer\n\nPassed: ${passedCount} / ${testCases.length} Test Cases.\nFailed on Test ${firstFailed?.idx}: Expected "${firstFailed?.expected}", received "${firstFailed?.got}".`
+      );
+    }
+  };
+
+  // Submit Handler for Web Development (No compiler needed)
+  const handleWebSubmit = () => {
+    playVictorySound();
+    setUserTestsPassed(totalTests);
+    setWinnerTeam('Team Alpha');
+    setStep(6);
   };
 
   const formatTimer = (seconds: number) => {
@@ -628,51 +815,88 @@ export function FullArenaExperience({
               </div>
             )}
 
-            {/* 3. BUG HUNT CHECKBOXES */}
+            {/* 3. BUG HUNT DOMAIN SELECTOR (NO ARBITRARY REACT/JS/PYTHON TAGS - REPLACED WITH WEB VS LOGIC DOMAINS) */}
             {arena === 'bug_hunt' && (
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                    Bug Hunt Topics:
+                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Bug Hunt Domain (From Admin Control Center):</span>
                   </span>
-                  <span className="text-[11px] font-mono text-cyan-400">
-                    {selectedTags.length} selected
+                  <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase">
+                    {bugDomain === 'web' ? 'Web UI Bug' : 'Logic Code Bug'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'react', label: 'React', desc: 'Infinite renders & stale closures' },
-                    { id: 'javascript', label: 'JavaScript', desc: 'Async unhandled promises' },
-                    { id: 'python', label: 'Python / Java', desc: 'Memory & exception leaks' },
-                  ].map((hunt) => {
-                    const isChecked = selectedTags.includes(hunt.id);
-                    return (
-                      <div
-                        key={hunt.id}
-                        onClick={() => handleToggleTag(hunt.id)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
-                          isChecked
-                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                      >
-                        <div
-                          className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
-                            isChecked
-                              ? 'bg-cyan-500 border-cyan-400 text-slate-950'
-                              : 'border-slate-600'
-                          }`}
-                        >
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold font-mono text-white">{hunt.label}</p>
-                          <p className="text-[10px] text-slate-400">{hunt.desc}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
+                    onClick={() => {
+                      setBugDomain('web');
+                      setSelectedTags(['bug_web', 'css', 'html']);
+                    }}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
+                      bugDomain === 'web'
+                        ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-md mt-0.5 flex items-center justify-center shrink-0 border ${
+                        bugDomain === 'web'
+                          ? 'bg-cyan-500 border-cyan-400 text-slate-950 font-bold'
+                          : 'border-slate-600'
+                      }`}
+                    >
+                      {bugDomain === 'web' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Web UI Bug Hunt</span>
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        HTML, CSS & layout bugs. Includes live Target Component Preview & live Output render to visually verify fixes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => {
+                      setBugDomain('logic');
+                      setSelectedTags(['bug_logic', 'python', 'java', 'cpp']);
+                    }}
+                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
+                      bugDomain === 'logic'
+                        ? 'bg-rose-950/60 border-rose-400 text-white shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-md mt-0.5 flex items-center justify-center shrink-0 border ${
+                        bugDomain === 'logic'
+                          ? 'bg-rose-500 border-rose-400 text-white font-bold'
+                          : 'border-slate-600'
+                      }`}
+                    >
+                      {bugDomain === 'logic' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Logic & Code Bug Hunt</span>
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        Algorithms, memory, and boundary bugs in Python, Java, and C++. Includes real Judge0 compiler execution & test runner.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>
+                    Admins feed code with bugs directly in the Admin Center. Competitors must diagnose, edit, and fix the code to pass!
+                  </span>
                 </div>
               </div>
             )}
@@ -995,7 +1219,7 @@ export function FullArenaExperience({
               )}
             </div>
 
-            {/* Split Screen Grid: Left Studio & Opponent Telemetry, Right Preview & Output (Image 6 Parity) */}
+            {/* Split Screen Grid: Left Studio & Opponent Telemetry, Right Preview & Output / Compiler Terminal */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[560px]">
               
               {/* LEFT: Team Alpha (Code Studio + Live Opponent Telemetry HUD) */}
@@ -1003,120 +1227,136 @@ export function FullArenaExperience({
                 {/* Editor Header Bar */}
                 <div className="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-1.5 overflow-x-auto py-1">
-                    {/* Web Dev Tabs */}
-                    {arena === 'web_dev' && (
+                    {/* Web Dev Tabs (Only shown in Web mode) */}
+                    {isWebMatch && (
                       <>
-                        {selectedTags.includes('html') && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('html')}
-                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                              activeTab === 'html'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            index.html
-                          </button>
-                        )}
-                        {selectedTags.includes('css') && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('css')}
-                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                              activeTab === 'css'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            styles.css
-                          </button>
-                        )}
-                        {selectedTags.includes('javascript') && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('js')}
-                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                              activeTab === 'js'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            script.js
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('html')}
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                            activeTab === 'html'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          index.html
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('css')}
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                            activeTab === 'css'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          styles.css
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('js')}
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                            activeTab === 'js'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          script.js
+                        </button>
                       </>
                     )}
 
-                    {/* Algorithms Tabs */}
-                    {arena === 'algorithms' && (
+                    {/* Compiler Language Tabs (Python, Java, C++) */}
+                    {!isWebMatch && (
                       <>
-                        {selectedTags.includes('python') && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('python')}
-                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                              activeTab === 'python'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            solution.py
-                          </button>
-                        )}
-                        {selectedTags.includes('java') && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('java')}
-                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                              activeTab === 'java'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            Solution.java
-                          </button>
-                        )}
-                        {selectedTags.includes('cpp') && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('cpp')}
-                            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                              activeTab === 'cpp'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            solution.cpp
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('python')}
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                            activeTab === 'python'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <span>solution.py</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('java')}
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                            activeTab === 'java'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <span>Solution.java</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('cpp')}
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                            activeTab === 'cpp'
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <span>solution.cpp</span>
+                        </button>
                       </>
-                    )}
-
-                    {/* Bug Hunt Tab */}
-                    {arena === 'bug_hunt' && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('react')}
-                        className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                      >
-                        BugFix.tsx
-                      </button>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-mono text-cyan-400 font-bold">
-                      Tests: {userTestsPassed} / {totalTests}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleRunTests}
-                      className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
-                    >
-                      <Play className="w-3 h-3 fill-current" />
-                      <span>Run & Test Code</span>
-                    </button>
+                  {/* Right Actions: Real Compiler Actions for Java/C++/Python, or Web Submit for Web */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isWebMatch ? (
+                      <>
+                        <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
+                          Tests: {userTestsPassed} / {totalTests}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleWebSubmit}
+                          className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:brightness-110 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                        >
+                          <Send className="w-3 h-3 fill-current" />
+                          <span>Submit Challenge</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Option 1: Compile & Run (Judge0 Backend) */}
+                        <button
+                          type="button"
+                          disabled={isCompiling || isSubmitting}
+                          onClick={handleCompileAndRun}
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                          title="Compile source code and run against current test case input"
+                        >
+                          {isCompiling ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
+                          ) : (
+                            <Play className="w-3 h-3 fill-current text-cyan-400" />
+                          )}
+                          <span>{isCompiling ? 'Compiling...' : 'Compile & Run'}</span>
+                        </button>
+
+                        {/* Option 2: Submit Code (Evaluates All Test Cases) */}
+                        <button
+                          type="button"
+                          disabled={isCompiling || isSubmitting}
+                          onClick={handleSubmitCode}
+                          className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 hover:brightness-110 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                          title="Submit solution to evaluate against all hidden test cases"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-white" />
+                          ) : (
+                            <Send className="w-3 h-3 fill-current" />
+                          )}
+                          <span>{isSubmitting ? 'Evaluating...' : 'Submit'}</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -1136,7 +1376,7 @@ export function FullArenaExperience({
                         ? javaCode
                         : activeTab === 'cpp'
                         ? cppCode
-                        : jsCode
+                        : pythonCode
                     }
                     onChange={(e) => {
                       const val = e.target.value;
@@ -1146,9 +1386,13 @@ export function FullArenaExperience({
                       else if (activeTab === 'python') setPythonCode(val);
                       else if (activeTab === 'java') setJavaCode(val);
                       else if (activeTab === 'cpp') setCppCode(val);
-                      else setJsCode(val);
+                      else setPythonCode(val);
                     }}
-                    placeholder="// Type your solution here..."
+                    placeholder={
+                      isWebMatch
+                        ? '<!-- Write your HTML/CSS solution here (replicate the preview blueprint) -->'
+                        : '// Write your code solution here. Implement the required method / logic.'
+                    }
                     className="w-full h-full bg-transparent font-mono text-xs sm:text-sm text-cyan-200 resize-none focus:outline-none leading-relaxed"
                     spellCheck={false}
                   />
@@ -1212,100 +1456,376 @@ export function FullArenaExperience({
                 </div>
               </div>
 
-              {/* RIGHT: IMAGE 6 PARITY — PREVIEW & OUTPUT SPLIT VIEW */}
+              {/* RIGHT: DYNAMIC SPLIT VIEW — WEB PREVIEW/OUTPUT (FOR WEB) OR COMPILER TERMINAL (FOR JAVA/C++/PYTHON) */}
               <div className="flex flex-col gap-3 min-h-[500px]">
-                {/* TOP: PREVIEW CONTAINER (Target Component Blueprint) */}
-                {maximizedPane !== 'output' && (
-                  <div
-                    className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-200 ${
-                      maximizedPane === 'preview' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
-                    }`}
-                  >
-                    {/* Preview Title Bar (Image 6 Parity) */}
-                    <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
-                      <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
-                        preview
-                      </span>
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <button
-                          type="button"
-                          onClick={() => setRenderNonce((n) => n + 1)}
-                          className="hover:text-white transition-colors p-1"
-                          title="Refresh Target Blueprint"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setMaximizedPane(maximizedPane === 'preview' ? 'none' : 'preview')
-                          }
-                          className="hover:text-white transition-colors p-1"
-                          title={maximizedPane === 'preview' ? 'Restore View' : 'Maximize Preview'}
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Preview White Canvas Canvas (Image 6 Design) */}
-                    <div
-                      key={`preview-${renderNonce}`}
-                      className="flex-1 p-3 bg-white overflow-auto flex items-center justify-center"
-                    >
+                {/* ================= IF WEB MATCH: IMAGE 6 PARITY (PREVIEW ON TOP, OUTPUT ON BOTTOM) ================= */}
+                {isWebMatch ? (
+                  <>
+                    {/* TOP: PREVIEW CONTAINER (Target Component Blueprint) */}
+                    {maximizedPane !== 'output' && (
                       <div
-                        className="w-full"
-                        dangerouslySetInnerHTML={{
-                          __html: activeQuestion.targetComponentHtml || '<p>Target Preview</p>',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-200 ${
+                          maximizedPane === 'preview' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        }`}
+                      >
+                        {/* Preview Title Bar (Image 6 Parity) */}
+                        <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
+                          <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
+                            preview
+                          </span>
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <button
+                              type="button"
+                              onClick={() => setRenderNonce((n) => n + 1)}
+                              className="hover:text-white transition-colors p-1"
+                              title="Refresh Target Blueprint"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMaximizedPane(maximizedPane === 'preview' ? 'none' : 'preview')
+                              }
+                              className="hover:text-white transition-colors p-1"
+                              title={maximizedPane === 'preview' ? 'Restore View' : 'Maximize Preview'}
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
 
-                {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering) */}
-                {maximizedPane !== 'preview' && (
-                  <div
-                    className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
-                      maximizedPane === 'output' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
-                    }`}
-                  >
-                    {/* Output Title Bar (Image 6 Parity) */}
-                    <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
-                      <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
-                        output
-                      </span>
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <button
-                          type="button"
-                          onClick={() => setRenderNonce((n) => n + 1)}
-                          className="hover:text-white transition-colors p-1"
-                          title="Re-render Live Output"
+                        {/* Preview White Canvas (Image 6 Design) */}
+                        <div
+                          key={`preview-${renderNonce}`}
+                          className="flex-1 p-3 bg-white overflow-auto flex items-center justify-center"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setMaximizedPane(maximizedPane === 'output' ? 'none' : 'output')
-                          }
-                          className="hover:text-white transition-colors p-1"
-                          title={maximizedPane === 'output' ? 'Restore View' : 'Maximize Output'}
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                        </button>
+                          <div
+                            className="w-full"
+                            dangerouslySetInnerHTML={{
+                              __html: activeQuestion.targetComponentHtml || '<p>Target Preview</p>',
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Output White Canvas Canvas (Image 6 Live Render) */}
-                    <div
-                      key={`output-${renderNonce}`}
-                      className="flex-1 p-3 bg-white overflow-auto"
-                    >
-                      <style>{cssCode}</style>
-                      <div dangerouslySetInnerHTML={{ __html: htmlCode }} />
-                    </div>
-                  </div>
+                    {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering) */}
+                    {maximizedPane !== 'preview' && (
+                      <div
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
+                          maximizedPane === 'output' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        }`}
+                      >
+                        {/* Output Title Bar (Image 6 Parity) */}
+                        <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
+                          <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
+                            output
+                          </span>
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <button
+                              type="button"
+                              onClick={() => setRenderNonce((n) => n + 1)}
+                              className="hover:text-white transition-colors p-1"
+                              title="Re-render Live Output"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMaximizedPane(maximizedPane === 'output' ? 'none' : 'output')
+                              }
+                              className="hover:text-white transition-colors p-1"
+                              title={maximizedPane === 'output' ? 'Restore View' : 'Maximize Output'}
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Output White Canvas (Image 6 Live Render) */}
+                        <div
+                          key={`output-${renderNonce}`}
+                          className="flex-1 p-3 bg-white overflow-auto"
+                        >
+                          <style>{cssCode}</style>
+                          <div dangerouslySetInnerHTML={{ __html: htmlCode }} />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* ================= IF COMPILER MATCH (JAVA / C++ / PYTHON / LOGIC BUG HUNT) ================= */
+                  <>
+                    {/* TOP: PROBLEM STATEMENT, EXAMPLES & CONSTRAINTS */}
+                    {maximizedPane !== 'output' && (
+                      <div
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-200 ${
+                          maximizedPane === 'preview' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        }`}
+                      >
+                        {/* Problem Header Bar */}
+                        <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
+                          <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
+                            problem description
+                          </span>
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMaximizedPane(maximizedPane === 'preview' ? 'none' : 'preview')
+                              }
+                              className="hover:text-white transition-colors p-1"
+                              title={maximizedPane === 'preview' ? 'Restore View' : 'Maximize Problem'}
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Problem Details Body */}
+                        <div className="flex-1 p-4 bg-slate-950 overflow-y-auto space-y-3.5 font-sans">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-base font-bold text-white font-mono">
+                                {activeQuestion.title}
+                              </h3>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                {activeQuestion.difficulty}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-300 leading-relaxed font-mono">
+                              {activeQuestion.description}
+                            </p>
+                          </div>
+
+                          {/* Example Box */}
+                          <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono space-y-1.5">
+                            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                              Example 1:
+                            </span>
+                            <div className="text-slate-300">
+                              <span className="text-slate-500">Input: </span>
+                              <code>
+                                {activeQuestion.sampleInput || activeQuestion.testCases[0]?.input}
+                              </code>
+                            </div>
+                            <div className="text-slate-300">
+                              <span className="text-slate-500">Output: </span>
+                              <code className="text-emerald-400 font-bold">
+                                {activeQuestion.sampleOutput ||
+                                  activeQuestion.testCases[0]?.expectedOutput}
+                              </code>
+                            </div>
+                            {activeQuestion.explanation && (
+                              <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
+                                <span className="text-slate-500">Explanation: </span>
+                                {activeQuestion.explanation}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Constraints */}
+                          {activeQuestion.constraints && activeQuestion.constraints.length > 0 && (
+                            <div className="space-y-1 text-[11px] font-mono text-slate-400">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                Constraints:
+                              </span>
+                              <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+                                {activeQuestion.constraints.map((c, i) => (
+                                  <li key={i}>{c}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* BOTTOM: REAL COMPILER TERMINAL & TEST RESULTS */}
+                    {maximizedPane !== 'preview' && (
+                      <div
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
+                          maximizedPane === 'output' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        }`}
+                      >
+                        {/* Terminal Header Bar */}
+                        <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs flex items-center gap-1.5">
+                              <Terminal className="w-3 h-3" />
+                              <span>compiler terminal</span>
+                            </span>
+
+                            {/* Execution Verdict Pill */}
+                            {compilerResult && (
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                                  compilerResult.status === 'Accepted'
+                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                                    : compilerResult.status === 'Wrong Answer'
+                                    ? 'bg-rose-950 text-rose-300 border-rose-700'
+                                    : 'bg-amber-950 text-amber-300 border-amber-700'
+                                }`}
+                              >
+                                {compilerResult.status}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Console Tabs */}
+                          <div className="flex items-center gap-1 text-xs font-mono">
+                            <button
+                              type="button"
+                              onClick={() => setActiveConsoleTab('testcases')}
+                              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                                activeConsoleTab === 'testcases'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Test Cases
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveConsoleTab('stdout')}
+                              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                                activeConsoleTab === 'stdout'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Stdout
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveConsoleTab('custom')}
+                              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                                activeConsoleTab === 'custom'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Custom Stdin
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMaximizedPane(maximizedPane === 'output' ? 'none' : 'output')
+                              }
+                              className="hover:text-white transition-colors p-1 ml-1 text-slate-400"
+                              title={maximizedPane === 'output' ? 'Restore View' : 'Maximize Console'}
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Terminal Body */}
+                        <div className="flex-1 p-3 bg-[#050811] overflow-y-auto font-mono text-xs">
+                          {/* TAB 1: TEST CASES SELECTOR & COMPARISON */}
+                          {activeConsoleTab === 'testcases' && (
+                            <div className="space-y-2.5">
+                              {/* Case Tabs */}
+                              <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                                {activeQuestion.testCases.map((tc, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => setSelectedTestCaseIdx(idx)}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                      selectedTestCaseIdx === idx
+                                        ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                                    }`}
+                                  >
+                                    Case {idx + 1}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Selected Case I/O */}
+                              <div className="space-y-2">
+                                <div>
+                                  <span className="text-[10px] text-slate-500 uppercase font-bold">
+                                    Input:
+                                  </span>
+                                  <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs select-all">
+                                    {activeQuestion.testCases[selectedTestCaseIdx]?.input}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <span className="text-[10px] text-slate-500 uppercase font-bold">
+                                      Expected Output:
+                                    </span>
+                                    <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 text-xs font-bold">
+                                      {activeQuestion.testCases[selectedTestCaseIdx]?.expectedOutput}
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <span className="text-[10px] text-slate-500 uppercase font-bold">
+                                      Your Output:
+                                    </span>
+                                    <div
+                                      className={`p-2 rounded-lg border text-xs font-bold ${
+                                        compilerResult
+                                          ? compilerResult.status === 'Accepted'
+                                            ? 'bg-emerald-950/40 border-emerald-600 text-emerald-300'
+                                            : 'bg-rose-950/40 border-rose-600 text-rose-300'
+                                          : 'bg-slate-900 border-slate-800 text-slate-500'
+                                      }`}
+                                    >
+                                      {compilerResult
+                                        ? compilerResult.stdout || compilerResult.stderr || '(Empty)'
+                                        : 'Click [Compile & Run] to test'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* TAB 2: RAW COMPILER STDOUT */}
+                          {activeConsoleTab === 'stdout' && (
+                            <div className="space-y-2 text-xs">
+                              <div className="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-1.5">
+                                <span>Compiler Execution Standard Output</span>
+                                <span>
+                                  Runtime: {compilerResult?.executionTimeMs || 0} ms
+                                </span>
+                              </div>
+                              <pre className="text-cyan-300 whitespace-pre-wrap leading-relaxed select-all">
+                                {compilerResult?.stdout ||
+                                  compilerResult?.compile_output ||
+                                  compilerResult?.stderr ||
+                                  '// Press [Compile & Run] to compile code and view live stdout console logs.'}
+                              </pre>
+                            </div>
+                          )}
+
+                          {/* TAB 3: CUSTOM STDIN */}
+                          {activeConsoleTab === 'custom' && (
+                            <div className="space-y-1.5 h-full flex flex-col">
+                              <span className="text-[10px] text-slate-400 uppercase font-bold">
+                                Custom Stdin Input (Passes to main / input):
+                              </span>
+                              <textarea
+                                value={customStdin}
+                                onChange={(e) => setCustomStdin(e.target.value)}
+                                placeholder="Type custom input here to test edge cases..."
+                                className="w-full flex-1 min-h-[90px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-cyan-200 font-mono text-xs resize-none focus:outline-none"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

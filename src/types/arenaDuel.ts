@@ -11,19 +11,25 @@ export interface DuelQuestion {
   arena: ArenaCategory;
   title: string;
   description: string;
-  tags: string[]; // e.g. ['html', 'css'] or ['javascript'] or ['html', 'css', 'javascript']
+  tags: string[]; // e.g. ['html', 'css'] or ['python']
   difficulty: 'easy' | 'medium' | 'hard';
   timeLimitSeconds: number; // e.g. 300 (5 mins)
+  bugDomain?: 'web' | 'logic'; // For Bug Hunt: web UI bug or code/logic bug
+  codeWithBug?: string; // Buggy code snippet for bug hunt
   // For Web Dev:
   targetComponentHtml?: string;
   targetPreviewTitle?: string;
   starterHtml?: string;
   starterCss?: string;
   starterJs?: string;
-  // For Algorithms / Compiler:
+  // For Algorithms / Real Compiler:
   starterJava?: string;
   starterPython?: string;
   starterCpp?: string;
+  sampleInput?: string;
+  sampleOutput?: string;
+  explanation?: string;
+  constraints?: string[];
   testCases: {
     input: string;
     expectedOutput: string;
@@ -128,27 +134,11 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
       </div>
     `,
     starterHtml: `<div class="cards-grid">
-  <!-- Card 1 (Started) -->
-  <div class="card">
-    <div>
-      <div class="card-header">
-        <h3 class="card-title">Card<br/>1</h3>
-        <span class="badge">Active</span>
-      </div>
-      <p class="card-desc">Learn the fundamentals of modern web development.</p>
-    </div>
-    <button class="card-btn">Learn More</button>
-  </div>
+  <!-- Replicate the 3 cards matching the Preview blueprint above -->
+  <!-- Card 1: [Active], Card 2: [Featured] (#b9dced), Card 3: [New] -->
 
-  <!-- TODO: Build Card 2 (Featured with background #b9dced) and Card 3 (New) -->
 </div>`,
-    starterCss: `body {
-  font-family: system-ui, -apple-system, sans-serif;
-  margin: 0;
-  padding: 16px;
-  background: #ffffff;
-}
-
+    starterCss: `/* Write your CSS styles here to replicate the Preview */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -159,57 +149,9 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
 }
 
 .card {
+  /* Build card borders, padding, badges, and layout */
   border: 2px solid #222;
-  background: #ffffff;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 220px;
   box-sizing: border-box;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.card-title {
-  font-size: 22px;
-  font-weight: 900;
-  margin: 0;
-  line-height: 1.1;
-  color: #111;
-}
-
-.badge {
-  background: #e2e8f0;
-  color: #0f172a;
-  font-size: 12px;
-  font-weight: bold;
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-
-.card-desc {
-  font-size: 13px;
-  color: #334155;
-  line-height: 1.5;
-  margin: 0 0 16px 0;
-}
-
-.card-btn {
-  background: #333;
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  width: fit-content;
-  border-radius: 4px;
 }`,
     starterJs: ``,
     validationCriteria: [
@@ -404,6 +346,15 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
     tags: ['java', 'python', 'cpp', 'arrays', 'two_pointers'],
     difficulty: 'easy',
     timeLimitSeconds: 300,
+    sampleInput: 'nums = [3, 1, 2, 4]',
+    sampleOutput: '[2, 4, 3, 1]',
+    explanation: 'The numbers 2 and 4 are even, and 3 and 1 are odd. Any permutation with evens first is accepted.',
+    constraints: [
+      '1 <= nums.length <= 5000',
+      '0 <= nums[i] <= 5000',
+      'Time: O(N) linear scan',
+      'Space: O(1) in-place modification',
+    ],
     starterJava: `class Solution {\n    public int[] sortArrayByParity(int[] nums) {\n        // Your two-pointer in-place solution\n        return nums;\n    }\n}`,
     starterPython: `class Solution:\n    def sortArrayByParity(self, nums: list[int]) -> list[int]:\n        # Your two-pointer in-place solution\n        return nums`,
     starterCpp: `class Solution {\npublic:\n    vector<int> sortArrayByParity(vector<int>& nums) {\n        // Your solution\n        return nums;\n    }\n};`,
@@ -416,19 +367,95 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
     ],
   },
 
-  // 7. Bug Hunt: React State Mutation Emergency
+  // 7. Algorithms: Two Sum
   {
-    id: 'q-bughunt-1',
+    id: 'q-algo-two-sum',
+    arena: 'algorithms',
+    title: 'Two Sum Target Index Pair',
+    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. Each input has exactly one solution and you may not use the same element twice.',
+    tags: ['java', 'python', 'cpp', 'arrays', 'hashmap'],
+    difficulty: 'easy',
+    timeLimitSeconds: 300,
+    sampleInput: 'nums = [2, 7, 11, 15], target = 9',
+    sampleOutput: '[0, 1]',
+    explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].',
+    constraints: [
+      '2 <= nums.length <= 10^4',
+      '-10^9 <= nums[i] <= 10^9',
+      'Only one valid answer exists',
+      'Optimal Time: O(N) with Hash Map',
+    ],
+    starterJava: `import java.util.*;\n\nclass Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Return indices of the two numbers that sum to target\n        return new int[]{};\n    }\n}`,
+    starterPython: `class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        # Return indices of the two numbers that sum to target\n        return []`,
+    starterCpp: `#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Return indices of the two numbers that sum to target\n        return {};\n    }\n};`,
+    testCases: [
+      { input: 'nums = [2, 7, 11, 15], target = 9', expectedOutput: '[0, 1]', description: 'Basic consecutive pair' },
+      { input: 'nums = [3, 2, 4], target = 6', expectedOutput: '[1, 2]', description: 'Non-consecutive indices' },
+      { input: 'nums = [3, 3], target = 6', expectedOutput: '[0, 1]', description: 'Duplicate numbers pair' },
+      { input: 'nums = [1, 5, 8, 12, 19], target = 20', expectedOutput: '[0, 4]', description: 'First and last index pair', isHidden: true },
+    ],
+  },
+
+  // 8. Bug Hunt (Web UI): Broken Flexbox Responsive Grid
+  {
+    id: 'q-bughunt-web-flex',
     arena: 'bug_hunt',
-    title: 'Production Fix: Infinite Re-render in Cart',
-    description: 'A critical bug in the cart component causes an infinite re-render loop and crashes the browser whenever an item is added. Identify the missing dependency array and direct state mutation and fix it.',
-    tags: ['react'],
+    bugDomain: 'web',
+    title: 'Web Bug: Broken Responsive Grid Blowout',
+    description: 'The cards container is blowing out horizontally on smaller viewports because flex-wrap is disabled and overflow is hidden. Competitor must fix the CSS so cards wrap neatly into a responsive grid without horizontal cutoff.',
+    tags: ['bug_web', 'css', 'html'],
     difficulty: 'medium',
     timeLimitSeconds: 300,
-    starterJs: `import React, { useState, useEffect } from 'react';\n\nexport function ShoppingCart({ newArrivalItem }) {\n  const [items, setItems] = useState(['Laptop', 'Mouse']);\n  const [count, setCount] = useState(2);\n\n  // BUG 1: Missing dependency array / infinite render\n  useEffect(() => {\n    if (newArrivalItem) {\n      items.push(newArrivalItem); // BUG 2: Direct state mutation!\n      setItems(items);\n      setCount(items.length);\n    }\n  });\n\n  return <div>Count: {count}</div>;\n}`,
+    targetPreviewTitle: 'Expected Responsive Wrapping Layout',
+    targetComponentHtml: `
+      <div style="background:#ffffff;padding:20px;border-radius:12px;font-family:sans-serif;max-width:540px;box-sizing:border-box;">
+        <h4 style="margin:0 0 12px 0;color:#0f172a;font-size:16px;font-weight:800;">Target: Responsive Wrapped Cards</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          <div style="flex:1 1 140px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:14px;color:#0f172a;font-weight:bold;text-align:center;">Card Alpha</div>
+          <div style="flex:1 1 140px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:14px;color:#0369a1;font-weight:bold;text-align:center;">Card Beta</div>
+          <div style="flex:1 1 140px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;color:#b45309;font-weight:bold;text-align:center;">Card Gamma</div>
+        </div>
+      </div>
+    `,
+    starterHtml: `<div class="container">\n  <h3>Collegiate Hackathon Squads</h3>\n  <div class="cards-wrapper">\n    <div class="card">Card Alpha</div>\n    <div class="card">Card Beta</div>\n    <div class="card">Card Gamma</div>\n  </div>\n</div>`,
+    starterCss: `/* BUGGY CSS: Diagnose and fix the wrapping & overflow bugs below */\n.cards-wrapper {\n  display: flex;\n  flex-wrap: nowrap; /* BUG: Prevents wrapping on smaller viewports! */\n  overflow: hidden;\n  gap: 12px;\n}\n.card {\n  min-width: 160px;\n  padding: 16px;\n  background: #f1f5f9;\n  border: 1px solid #cbd5e1;\n  border-radius: 8px;\n  font-family: sans-serif;\n  color: #0f172a;\n  font-weight: bold;\n  text-align: center;\n}`,
+    starterJs: ``,
+    validationCriteria: [
+      'flex-wrap is set to wrap',
+      'cards wrap gracefully without horizontal scrollbar',
+    ],
     testCases: [
-      { input: 'renderCheck', expectedOutput: 'rendersOnce', description: 'Zero infinite loops' },
-      { input: 'immutabilityCheck', expectedOutput: 'immutableCloneUsed', description: 'State cloned with [...items]' },
+      { input: 'hasFlexWrap', expectedOutput: 'wrap', description: 'Container wraps cards responsively' },
+      { input: 'noOverflowClipping', expectedOutput: 'true', description: 'Cards not clipped horizontally' },
+    ],
+  },
+
+  // 9. Bug Hunt (Logic): Binary Search Infinite Loop
+  {
+    id: 'q-bughunt-logic-binary',
+    arena: 'bug_hunt',
+    bugDomain: 'logic',
+    title: 'Logic Bug: Binary Search Infinite Loop on Boundary',
+    description: 'The binary search algorithm hangs indefinitely on boundary cases because the left pointer is assigned `l = mid` instead of `l = mid + 1`. Fix the pointer calculation so it finishes in O(log N) time and returns the correct target index or -1.',
+    tags: ['bug_logic', 'python', 'java', 'cpp'],
+    difficulty: 'medium',
+    timeLimitSeconds: 300,
+    sampleInput: 'arr = [1, 3, 5, 7, 9], target = 5',
+    sampleOutput: '2',
+    explanation: '5 is at index 2. Target 4 would return -1.',
+    constraints: [
+      '1 <= arr.length <= 10^5',
+      'arr is sorted in ascending order',
+      'Must run in O(log N) time without infinite loop',
+    ],
+    starterPython: `def binary_search(arr: list[int], target: int) -> int:\n    l = 0\n    r = len(arr) - 1\n    while l <= r:\n        mid = (l + r) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            l = mid # BUG: Causes infinite loop when l == mid!\n        else:\n            r = mid - 1\n    return -1`,
+    starterJava: `class Solution {\n    public int binarySearch(int[] arr, int target) {\n        int l = 0, r = arr.length - 1;\n        while (l <= r) {\n            int mid = (l + r) / 2;\n            if (arr[mid] == target) return mid;\n            else if (arr[mid] < target) {\n                l = mid; // BUG!\n            } else {\n                r = mid - 1;\n            }\n        }\n        return -1;\n    }\n}`,
+    starterCpp: `class Solution {\npublic:\n    int binarySearch(vector<int>& arr, int target) {\n        int l = 0, r = arr.size() - 1;\n        while (l <= r) {\n            int mid = (l + r) / 2;\n            if (arr[mid] == target) return mid;\n            else if (arr[mid] < target) {\n                l = mid; // BUG!\n            } else {\n                r = mid - 1;\n            }\n        }\n        return -1;\n    }\n};`,
+    testCases: [
+      { input: 'arr = [1, 3, 5, 7, 9], target = 5', expectedOutput: '2', description: 'Target present at center' },
+      { input: 'arr = [1, 3, 5, 7, 9], target = 9', expectedOutput: '4', description: 'Target at right boundary' },
+      { input: 'arr = [1, 3, 5, 7, 9], target = 1', expectedOutput: '0', description: 'Target at left boundary' },
+      { input: 'arr = [1, 3, 5, 7, 9], target = 6', expectedOutput: '-1', description: 'Target missing returns -1' },
     ],
   },
 ];

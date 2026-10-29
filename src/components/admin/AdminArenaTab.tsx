@@ -49,9 +49,16 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const [newDifficulty, setNewDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [newTimeLimit, setNewTimeLimit] = useState(300);
   const [newDesc, setNewDesc] = useState('');
+  const [newBugDomain, setNewBugDomain] = useState<'web' | 'logic'>('web');
   const [newStarterHtml, setNewStarterHtml] = useState('<div class="hero-banner">\n  <!-- Build your component here -->\n</div>');
   const [newStarterCss, setNewStarterCss] = useState('.hero-banner {\n  /* Add styling here */\n}');
   const [newStarterJs, setNewStarterJs] = useState('// Event listener code\n');
+  const [newStarterPython, setNewStarterPython] = useState('# Python starter code\n');
+  const [newStarterJava, setNewStarterJava] = useState('// Java starter code\n');
+  const [newStarterCpp, setNewStarterCpp] = useState('// C++ starter code\n');
+  const [newSampleInput, setNewSampleInput] = useState('');
+  const [newSampleOutput, setNewSampleOutput] = useState('');
+  const [newCodeWithBug, setNewCodeWithBug] = useState('// Enter code with bug here\n');
   const [newTargetHtml, setNewTargetHtml] = useState('<div style="background:#0f172a;padding:20px;border-radius:12px;color:#fff;">Target Preview</div>');
 
   const fetchQuestions = async () => {
@@ -93,17 +100,23 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       tags: newTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean),
       difficulty: newDifficulty,
       timeLimitSeconds: Number(newTimeLimit) || 300,
+      bugDomain: newArena === 'bug_hunt' ? newBugDomain : undefined,
+      codeWithBug: newArena === 'bug_hunt' ? newCodeWithBug : undefined,
       targetPreviewTitle: newTitle.trim(),
       targetComponentHtml: newTargetHtml,
       starterHtml: newStarterHtml,
       starterCss: newStarterCss,
       starterJs: newStarterJs,
+      starterPython: newStarterPython,
+      starterJava: newStarterJava,
+      starterCpp: newStarterCpp,
+      sampleInput: newSampleInput,
+      sampleOutput: newSampleOutput,
       testCases: [
-        { input: 'render', expectedOutput: 'valid', description: 'Semantic structure rendered' },
-        { input: 'styles', expectedOutput: 'match', description: 'Visual layout & colors match target' },
-        { input: 'viewport', expectedOutput: 'responsive', description: 'Responsive behavior check' },
+        { input: 'test1', expectedOutput: 'valid', description: 'Primary test case check' },
+        { input: 'test2', expectedOutput: 'match', description: 'Boundary and logic check' },
       ],
-      validationCriteria: ['Clean semantic code', 'Zero overflow', 'Visual accuracy'],
+      validationCriteria: ['Clean code structure', 'Zero runtime crash', 'Test cases passed'],
     };
 
     try {
@@ -329,46 +342,151 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             />
           </div>
 
-          {/* Starter Codes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Starter HTML</label>
-              <textarea
-                rows={4}
-                value={newStarterHtml}
-                onChange={(e) => setNewStarterHtml(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Starter CSS</label>
-              <textarea
-                rows={4}
-                value={newStarterCss}
-                onChange={(e) => setNewStarterCss(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Target Component HTML (Visual Blueprint preview like Image 4) */}
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-slate-300 font-mono">
-              Target Component HTML (Rendered Blueprint for Students):
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <textarea
-                rows={5}
-                value={newTargetHtml}
-                onChange={(e) => setNewTargetHtml(e.target.value)}
-                placeholder="<div style='background:#fff;border:2px solid #222;...'>Target Card</div>"
-                className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-              />
-              <div className="rounded-xl border border-charcoal-750 bg-white p-3 overflow-auto max-h-36 flex items-center justify-center">
-                <div dangerouslySetInnerHTML={{ __html: newTargetHtml }} className="w-full" />
+          {/* Bug Hunt Domain Selector for Admin */}
+          {newArena === 'bug_hunt' && (
+            <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+              <label className="block text-xs font-medium text-rose-400 font-mono">
+                Bug Hunt Domain & Mode:
+              </label>
+              <div className="flex flex-wrap gap-4 text-xs font-mono">
+                <label className="flex items-center gap-2 cursor-pointer text-white">
+                  <input
+                    type="radio"
+                    name="bugDomain"
+                    value="web"
+                    checked={newBugDomain === 'web'}
+                    onChange={() => setNewBugDomain('web')}
+                    className="text-rose-500 focus:ring-rose-500"
+                  />
+                  <span>Web UI Bug (Visual layout with Target Preview & Output)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-white">
+                  <input
+                    type="radio"
+                    name="bugDomain"
+                    value="logic"
+                    checked={newBugDomain === 'logic'}
+                    onChange={() => setNewBugDomain('logic')}
+                    className="text-rose-500 focus:ring-rose-500"
+                  />
+                  <span>Logic & Code Bug (Python / Java / C++ with Real Compiler)</span>
+                </label>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Starter Codes for Web or Web Bug Hunt */}
+          {(newArena === 'web_dev' || (newArena === 'bug_hunt' && newBugDomain === 'web')) && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                    Starter HTML {newArena === 'bug_hunt' && '(Include Buggy HTML)'}
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={newStarterHtml}
+                    onChange={(e) => setNewStarterHtml(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                    Starter CSS {newArena === 'bug_hunt' && '(Include Buggy CSS)'}
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={newStarterCss}
+                    onChange={(e) => setNewStarterCss(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Target Component HTML (Visual Blueprint preview like Image 4) */}
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-300 font-mono">
+                  Target Component HTML (Rendered Blueprint for Students):
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <textarea
+                    rows={5}
+                    value={newTargetHtml}
+                    onChange={(e) => setNewTargetHtml(e.target.value)}
+                    placeholder="<div style='background:#fff;border:2px solid #222;...'>Target Card</div>"
+                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                  <div className="rounded-xl border border-charcoal-750 bg-white p-3 overflow-auto max-h-36 flex items-center justify-center">
+                    <div dangerouslySetInnerHTML={{ __html: newTargetHtml }} className="w-full" />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Starter Codes for Algorithms & Logic Bug Hunt */}
+          {(newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic')) && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                    Starter Python {newArena === 'bug_hunt' && '(With Bug)'}
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={newStarterPython}
+                    onChange={(e) => setNewStarterPython(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                    Starter Java {newArena === 'bug_hunt' && '(With Bug)'}
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={newStarterJava}
+                    onChange={(e) => setNewStarterJava(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                    Starter C++ {newArena === 'bug_hunt' && '(With Bug)'}
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={newStarterCpp}
+                    onChange={(e) => setNewStarterCpp(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-rose-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Sample Input</label>
+                  <input
+                    type="text"
+                    value={newSampleInput}
+                    onChange={(e) => setNewSampleInput(e.target.value)}
+                    placeholder="nums = [3, 1, 2, 4]"
+                    className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Sample Expected Output</label>
+                  <input
+                    type="text"
+                    value={newSampleOutput}
+                    onChange={(e) => setNewSampleOutput(e.target.value)}
+                    placeholder="[2, 4, 3, 1]"
+                    className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-400 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
