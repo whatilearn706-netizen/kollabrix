@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Swords, ChevronRight, AlertTriangle, ShieldAlert, Zap, Flame } from 'lucide-react';
+import { ChevronRight, Zap, Flame, ShieldCheck } from 'lucide-react';
 import {
   playGlassShatterBreachSound,
   playSubSonicBoomSound,
@@ -15,7 +15,7 @@ interface CinematicArenaTransitionProps {
   onAnimationComplete: () => void;
 }
 
-// 3D Voxel Cube representation
+// 3D Isometric Voxel Cube representation
 interface VoxelBlock {
   x: number;
   y: number;
@@ -23,87 +23,139 @@ interface VoxelBlock {
   vx: number;
   vy: number;
   vz: number;
-  rotX: number;
-  rotY: number;
-  rotZ: number;
-  vRotX: number;
-  vRotY: number;
-  vRotZ: number;
+  rx: number;
+  ry: number;
+  rz: number;
+  vrx: number;
+  vry: number;
+  vrz: number;
+  size: number;
+  hue: 'cyan' | 'crimson' | 'gold';
+  alpha: number;
+}
+
+// Warp star streak
+interface WarpStar {
+  x: number;
+  y: number;
+  z: number;
+  pz: number;
+  color: string;
+  speed: number;
+}
+
+// Impact spark particle
+interface SparkParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
   size: number;
   color: string;
-  glowColor: string;
   alpha: number;
+  decay: number;
 }
 
 export function CinematicArenaTransition({
   isActive,
   onAnimationComplete,
 }: CinematicArenaTransitionProps) {
-  const [phase, setPhase] = useState<'idle' | 'breach' | 'sword_clash' | 'matrix_hold' | 'warp_out'>('idle');
+  // Phases: 'idle' -> 'voxel_shatter' -> 'warp_acceleration' -> 'sword_clash' -> 'title_lock' -> 'warp_dive'
+  const [phase, setPhase] = useState<
+    'idle' | 'voxel_shatter' | 'warp_acceleration' | 'sword_clash' | 'title_lock' | 'warp_dive'
+  >('idle');
+
   const [screenRumble, setScreenRumble] = useState(false);
   const [chromaticGlitch, setChromaticGlitch] = useState(false);
   const [supernovaFlash, setSupernovaFlash] = useState(false);
+  const [progressPercent, setProgressPercent] = useState(0);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
 
+  // Esc key listener for instant skip
+  useEffect(() => {
+    if (!isActive) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onAnimationComplete();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, onAnimationComplete]);
+
+  // Main Choreography Timeline
   useEffect(() => {
     if (!isActive) {
       setPhase('idle');
       setScreenRumble(false);
       setChromaticGlitch(false);
       setSupernovaFlash(false);
+      setProgressPercent(0);
       return;
     }
 
-    // T = 0ms: Initial Shock Breach & Violent Camera Shake & Glass Crack
-    setPhase('breach');
+    // T = 0ms: Voxel Shatter Explosion & Reality Rift
+    setPhase('voxel_shatter');
     setScreenRumble(true);
     setChromaticGlitch(true);
     playGlassShatterBreachSound();
     playSubSonicBoomSound();
 
-    // T = 350ms: Electric arcs crackle
-    const tElectric = setTimeout(() => {
+    // T = 350ms: Hyperspace Warp Acceleration
+    const tWarp = setTimeout(() => {
+      setPhase('warp_acceleration');
       playLightningArcSound();
     }, 350);
 
-    // T = 850ms: Dual Plasma Swords Clash at Dead Center!
+    // T = 800ms: Dual Supersonic Plasma Blades Clash at Dead Center
     const tClash = setTimeout(() => {
       setPhase('sword_clash');
       setSupernovaFlash(true);
       setScreenRumble(true);
+      setChromaticGlitch(true);
       playCyberSwordClashSound();
       playVoxelShatterSound();
-      setTimeout(() => setSupernovaFlash(false), 200);
-    }, 850);
+      setTimeout(() => setSupernovaFlash(false), 220);
+    }, 800);
 
-    // T = 1350ms: Matrix Hold & Telemetry Lock
-    const tHold = setTimeout(() => {
-      setPhase('matrix_hold');
+    // T = 1200ms: Title Lock & Championship Hologram
+    const tTitle = setTimeout(() => {
+      setPhase('title_lock');
       setScreenRumble(false);
       setChromaticGlitch(false);
-    }, 1350);
+    }, 1200);
 
-    // T = 2100ms: Hyperspace Warp Out into Battleground
-    const tWarp = setTimeout(() => {
-      setPhase('warp_out');
-    }, 2100);
+    // Smooth Progress Bar
+    const interval = setInterval(() => {
+      setProgressPercent((prev) => {
+        if (prev >= 100) return 100;
+        return prev + 4;
+      });
+    }, 45);
 
-    // T = 2500ms: Complete and open Battle Arena Page
+    // T = 2200ms: Hyperspace Dive into Battlefield
+    const tDive = setTimeout(() => {
+      setPhase('warp_dive');
+    }, 2200);
+
+    // T = 2650ms: Complete and transition to Step 1
     const tDone = setTimeout(() => {
       onAnimationComplete();
-    }, 2500);
+    }, 2650);
 
     return () => {
-      clearTimeout(tElectric);
-      clearTimeout(tClash);
-      clearTimeout(tHold);
       clearTimeout(tWarp);
+      clearTimeout(tClash);
+      clearTimeout(tTitle);
+      clearTimeout(tDive);
       clearTimeout(tDone);
+      clearInterval(interval);
     };
   }, [isActive, onAnimationComplete]);
 
-  // Canvas Physics Engine: 3D Corner Voxels + Glass Fractures + Lightning Arcs
+  // High Performance Canvas 3D Engine (Voxels + Warp Tunnel + Sparks + Shockwave)
   useEffect(() => {
     if (!isActive || phase === 'idle') return;
     const canvas = canvasRef.current;
@@ -114,198 +166,317 @@ export function CinematicArenaTransition({
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Generate falling 3D voxels from all 4 corners (top-left, top-right, bottom-left, bottom-right)
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // 1. Generate 3D Falling Voxel Blocks (1cm / ~32px scale)
     const voxels: VoxelBlock[] = [];
-    const colors = [
-      { fill: '#06b6d4', glow: 'rgba(6, 182, 212, 0.8)' }, // Cyan
-      { fill: '#f43f5e', glow: 'rgba(244, 63, 94, 0.8)' }, // Crimson Rose
-      { fill: '#fbbf24', glow: 'rgba(251, 191, 36, 0.8)' }, // Amber
-      { fill: '#a855f7', glow: 'rgba(168, 85, 247, 0.8)' }, // Purple
-      { fill: '#38bdf8', glow: 'rgba(56, 189, 248, 0.8)' }, // Sky
+    const cornerSpawns = [
+      { x: 40, y: 40, vx: 5, vy: 3 },
+      { x: width - 40, y: 40, vx: -5, vy: 3 },
+      { x: 40, y: height - 40, vx: 5, vy: -3 },
+      { x: width - 40, y: height - 40, vx: -5, vy: -3 },
+      { x: cx, y: 30, vx: 0, vy: 5 },
+      { x: cx, y: height - 30, vx: 0, vy: -5 },
     ];
 
-    const corners = [
-      { x: 30, y: 30, dirX: 1, dirY: 1 }, // Top-Left
-      { x: width - 30, y: 30, dirX: -1, dirY: 1 }, // Top-Right
-      { x: 30, y: height - 30, dirX: 1, dirY: -1 }, // Bottom-Left
-      { x: width - 30, y: height - 30, dirX: -1, dirY: -1 }, // Bottom-Right
-    ];
-
-    corners.forEach((corner) => {
-      for (let i = 0; i < 28; i++) {
-        const palette = colors[Math.floor(Math.random() * colors.length)];
-        const spreadX = corner.x + (Math.random() * 80 - 40);
-        const spreadY = corner.y + (Math.random() * 80 - 40);
+    cornerSpawns.forEach((spawn) => {
+      for (let i = 0; i < 22; i++) {
+        const hueType: 'cyan' | 'crimson' | 'gold' =
+          i % 3 === 0 ? 'cyan' : i % 3 === 1 ? 'crimson' : 'gold';
         voxels.push({
-          x: spreadX,
-          y: spreadY,
-          z: Math.random() * 200 + 50,
-          vx: corner.dirX * (Math.random() * 9 + 4) + (Math.random() * 4 - 2),
-          vy: corner.dirY * (Math.random() * 7 + 2) + (Math.random() * 4 - 2),
-          vz: Math.random() * 4 - 2,
-          rotX: Math.random() * Math.PI * 2,
-          rotY: Math.random() * Math.PI * 2,
-          rotZ: Math.random() * Math.PI * 2,
-          vRotX: (Math.random() - 0.5) * 0.12,
-          vRotY: (Math.random() - 0.5) * 0.12,
-          vRotZ: (Math.random() - 0.5) * 0.12,
-          size: Math.random() * 16 + 14, // ~1cm to 1.5cm block visual scale
-          color: palette.fill,
-          glowColor: palette.glow,
+          x: spawn.x + (Math.random() * 120 - 60),
+          y: spawn.y + (Math.random() * 120 - 60),
+          z: Math.random() * 300 + 100,
+          vx: spawn.vx * (Math.random() * 1.5 + 0.8) + (Math.random() * 4 - 2),
+          vy: spawn.vy * (Math.random() * 1.5 + 0.8) + (Math.random() * 4 - 2),
+          vz: Math.random() * 6 - 3,
+          rx: Math.random() * Math.PI * 2,
+          ry: Math.random() * Math.PI * 2,
+          rz: Math.random() * Math.PI * 2,
+          vrx: (Math.random() - 0.5) * 0.1,
+          vry: (Math.random() - 0.5) * 0.1,
+          vrz: (Math.random() - 0.5) * 0.1,
+          size: Math.random() * 14 + 22, // 22px to 36px (~1cm block)
+          hue: hueType,
           alpha: 1,
         });
       }
     });
 
-    // Generate procedural glass fracture lines branching from corners & center
-    const cracks: { x1: number; y1: number; x2: number; y2: number; color: string; width: number }[] = [];
-    const makeCrackBranch = (
-      x: number,
-      y: number,
-      angle: number,
-      length: number,
-      depth: number,
-      color: string
-    ) => {
-      if (depth <= 0) return;
-      const endX = x + Math.cos(angle) * length;
-      const endY = y + Math.sin(angle) * length;
-      cracks.push({ x1: x, y1: y, x2: endX, y2: endY, color, width: Math.max(1, depth * 0.8) });
+    // 2. Generate 450+ 3D Relativistic Warp Star Streaks
+    const warpStars: WarpStar[] = [];
+    const starColors = ['#00f0ff', '#ffffff', '#ff0055', '#38bdf8', '#fbbf24'];
+    for (let i = 0; i < 450; i++) {
+      warpStars.push({
+        x: (Math.random() - 0.5) * width * 2,
+        y: (Math.random() - 0.5) * height * 2,
+        z: Math.random() * 1000 + 1,
+        pz: 1000,
+        color: starColors[Math.floor(Math.random() * starColors.length)],
+        speed: Math.random() * 18 + 12,
+      });
+    }
 
-      // Fork 1 or 2 sub-branches
-      const subAngle1 = angle + (Math.random() * 0.6 - 0.3);
-      makeCrackBranch(endX, endY, subAngle1, length * (Math.random() * 0.3 + 0.6), depth - 1, color);
+    // 3. Shockwave & Clash Sparks
+    let shockwaveR = 5;
+    let shockwaveAlpha = 1;
+    const sparks: SparkParticle[] = [];
 
-      if (Math.random() > 0.4) {
-        const subAngle2 = angle + (Math.random() * 1.2 - 0.6);
-        makeCrackBranch(endX, endY, subAngle2, length * (Math.random() * 0.3 + 0.5), depth - 1, color);
+    const spawnSparks = () => {
+      for (let i = 0; i < 180; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 26 + 6;
+        sparks.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 3.5 + 1.5,
+          color: i % 2 === 0 ? '#00f0ff' : '#ff0055',
+          alpha: 1,
+          decay: Math.random() * 0.02 + 0.015,
+        });
       }
     };
 
-    // Spawn cracks from corners toward center
-    corners.forEach((c, idx) => {
-      const angleToCenter = Math.atan2(height / 2 - c.y, width / 2 - c.x);
-      const color = idx % 2 === 0 ? 'rgba(6, 182, 212, 0.75)' : 'rgba(244, 63, 94, 0.75)';
-      makeCrackBranch(c.x, c.y, angleToCenter, 90, 4, color);
-      makeCrackBranch(c.x, c.y, angleToCenter + 0.5, 70, 3, color);
-      makeCrackBranch(c.x, c.y, angleToCenter - 0.5, 70, 3, color);
-    });
+    let clashSpawned = false;
+    let tick = 0;
 
-    // Center explosion cracks
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-      makeCrackBranch(
-        width / 2,
-        height / 2,
-        a + (Math.random() * 0.3 - 0.15),
-        80,
-        3,
-        'rgba(255, 255, 255, 0.85)'
-      );
-    }
-
-    let shockwaveRadius = 10;
-    let shockwaveAlpha = 1;
-
-    // Render loop
     const render = () => {
+      tick++;
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Draw glowing spiderweb glass fracture lines
-      cracks.forEach((crack) => {
-        ctx.save();
-        ctx.strokeStyle = crack.color;
-        ctx.lineWidth = crack.width;
-        ctx.shadowColor = crack.color;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.moveTo(crack.x1, crack.y1);
-        ctx.lineTo(crack.x2, crack.y2);
-        ctx.stroke();
-        ctx.restore();
+      // Deep space atmospheric background
+      const bgGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(width, height) * 0.85);
+      bgGrad.addColorStop(0, '#060a17');
+      bgGrad.addColorStop(0.5, '#040711');
+      bgGrad.addColorStop(1, '#020308');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // ================= 1. RELATIVISTIC WARP TUNNEL =================
+      const warpSpeedMultiplier =
+        phase === 'voxel_shatter'
+          ? 4
+          : phase === 'warp_acceleration' || phase === 'sword_clash'
+          ? 18
+          : phase === 'warp_dive'
+          ? 32
+          : 6;
+
+      ctx.save();
+      warpStars.forEach((star) => {
+        star.pz = star.z;
+        star.z -= star.speed * (warpSpeedMultiplier / 8);
+
+        if (star.z <= 0) {
+          star.z = 1000;
+          star.pz = 1000;
+          star.x = (Math.random() - 0.5) * width * 2;
+          star.y = (Math.random() - 0.5) * height * 2;
+        }
+
+        const k = 320 / star.z;
+        const px = star.x * k + cx;
+        const py = star.y * k + cy;
+
+        const pk = 320 / star.pz;
+        const prevX = star.x * pk + cx;
+        const prevY = star.y * pk + cy;
+
+        if (px >= 0 && px <= width && py >= 0 && py <= height) {
+          const alpha = Math.min(1, (1000 - star.z) / 400);
+          ctx.strokeStyle = star.color;
+          ctx.globalAlpha = alpha;
+          ctx.lineWidth = Math.max(1, (1 - star.z / 1000) * 3);
+          ctx.beginPath();
+          ctx.moveTo(prevX, prevY);
+          ctx.lineTo(px, py);
+          ctx.stroke();
+        }
       });
+      ctx.restore();
 
-      // 2. Draw shockwave plasma ring during sword clash
-      if (phase === 'sword_clash' || phase === 'matrix_hold') {
-        shockwaveRadius += 22;
-        shockwaveAlpha = Math.max(0, shockwaveAlpha - 0.025);
+      // ================= 2. ROTATING CYBER RINGS / PORTAL ACCELERATOR =================
+      ctx.save();
+      ctx.translate(cx, cy);
 
-        ctx.save();
-        ctx.strokeStyle = `rgba(244, 63, 94, ${shockwaveAlpha})`;
-        ctx.lineWidth = 5;
-        ctx.shadowColor = '#f43f5e';
-        ctx.shadowBlur = 25;
+      // Outer Portal Ring
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 220, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Spinning Tech Brackets
+      const ringRot = tick * 0.02;
+      ctx.save();
+      ctx.rotate(ringRot);
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 12;
+
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
         ctx.beginPath();
-        ctx.arc(width / 2, height / 2, shockwaveRadius, 0, Math.PI * 2);
+        ctx.arc(0, 0, 190, a, a + 0.35);
         ctx.stroke();
-
-        ctx.strokeStyle = `rgba(6, 182, 212, ${shockwaveAlpha * 0.9})`;
-        ctx.lineWidth = 3;
-        ctx.shadowColor = '#06b6d4';
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2, shockwaveRadius * 0.65, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
       }
+      ctx.restore();
 
-      // 3. Update & render 3D falling physical voxels
+      // Counter-rotating Inner Crimson Ring
+      ctx.save();
+      ctx.rotate(-ringRot * 1.4);
+      ctx.strokeStyle = '#ff0055';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#ff0055';
+      ctx.shadowBlur = 10;
+
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+        ctx.beginPath();
+        ctx.arc(0, 0, 140, a, a + 0.25);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.restore();
+
+      // ================= 3. 3D ISOMETRIC TUMBLING VOXELS =================
       voxels.forEach((v) => {
-        // Gravity & acceleration
-        v.vy += 0.42; // Gravity
         v.x += v.vx;
         v.y += v.vy;
         v.z += v.vz;
+        v.rx += v.vrx;
+        v.ry += v.vry;
+        v.rz += v.vrz;
 
-        v.rotX += v.vRotX;
-        v.rotY += v.vRotY;
-        v.rotZ += v.vRotZ;
+        // Gravity pull toward center vortex
+        const dx = cx - v.x;
+        const dy = cy - v.y;
+        v.vx += dx * 0.0008;
+        v.vy += dy * 0.0008;
 
-        // Render 3D isometric cube
-        const s = v.size * (150 / (150 + Math.max(0, v.z))); // Perspective scale
-        if (s <= 0) return;
+        if (phase === 'warp_acceleration' || phase === 'sword_clash' || phase === 'warp_dive') {
+          v.alpha = Math.max(0, v.alpha - 0.02);
+        }
 
+        if (v.alpha <= 0) return;
+
+        // Render 3D shaded isometric cube
         ctx.save();
         ctx.translate(v.x, v.y);
-        ctx.rotate(v.rotZ);
+        ctx.rotate(v.rz);
+        ctx.globalAlpha = v.alpha;
 
-        // Top face
-        ctx.fillStyle = v.color;
-        ctx.shadowColor = v.glowColor;
-        ctx.shadowBlur = 10;
+        const s = v.size * (200 / (v.z + 100));
+        const colorPalette =
+          v.hue === 'cyan'
+            ? { top: '#22d3ee', front: '#0891b2', side: '#0e7490', glow: '#00f0ff' }
+            : v.hue === 'crimson'
+            ? { top: '#fb7185', front: '#e11d48', side: '#be123c', glow: '#ff0055' }
+            : { top: '#fde047', front: '#eab308', side: '#ca8a04', glow: '#ffb700' };
+
+        // Front Face
+        ctx.fillStyle = colorPalette.front;
         ctx.beginPath();
-        ctx.moveTo(0, -s / 2);
-        ctx.lineTo(s / 2, -s / 4);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(-s / 2, -s / 4);
+        ctx.rect(-s / 2, -s / 2, s, s);
+        ctx.fill();
+
+        // Top Face
+        ctx.fillStyle = colorPalette.top;
+        ctx.beginPath();
+        ctx.moveTo(-s / 2, -s / 2);
+        ctx.lineTo(-s / 2 + s * 0.4, -s / 2 - s * 0.3);
+        ctx.lineTo(s / 2 + s * 0.4, -s / 2 - s * 0.3);
+        ctx.lineTo(s / 2, -s / 2);
         ctx.closePath();
         ctx.fill();
 
-        // Right face
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        // Right Side Face
+        ctx.fillStyle = colorPalette.side;
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(s / 2, -s / 4);
+        ctx.moveTo(s / 2, -s / 2);
+        ctx.lineTo(s / 2 + s * 0.4, -s / 2 - s * 0.3);
+        ctx.lineTo(s / 2 + s * 0.4, s / 2 - s * 0.3);
         ctx.lineTo(s / 2, s / 2);
-        ctx.lineTo(0, (3 * s) / 4);
         ctx.closePath();
         ctx.fill();
 
-        // Left face
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.beginPath();
-        ctx.moveTo(-s / 2, -s / 4);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(0, (3 * s) / 4);
-        ctx.lineTo(-s / 2, s / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        // Wireframe outline
-        ctx.strokeStyle = '#ffffff';
+        // Glowing Wireframe Edges
+        ctx.strokeStyle = colorPalette.glow;
         ctx.lineWidth = 1;
-        ctx.stroke();
+        ctx.shadowColor = colorPalette.glow;
+        ctx.shadowBlur = 8;
+        ctx.strokeRect(-s / 2, -s / 2, s, s);
 
         ctx.restore();
       });
+
+      // ================= 4. SWORD CLASH SHOCKWAVE & SPARKS =================
+      if ((phase === 'sword_clash' || phase === 'title_lock') && !clashSpawned) {
+        clashSpawned = true;
+        spawnSparks();
+      }
+
+      if (phase === 'sword_clash' || phase === 'title_lock' || phase === 'warp_dive') {
+        // Shockwave 1: Crimson Outer
+        shockwaveR += 24;
+        shockwaveAlpha = Math.max(0, shockwaveAlpha - 0.022);
+
+        if (shockwaveAlpha > 0) {
+          ctx.save();
+          ctx.strokeStyle = `rgba(255, 0, 85, ${shockwaveAlpha})`;
+          ctx.lineWidth = 5;
+          ctx.shadowColor = '#ff0055';
+          ctx.shadowBlur = 30;
+          ctx.beginPath();
+          ctx.arc(cx, cy, shockwaveR, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Shockwave 2: Cyan Inner
+          ctx.strokeStyle = `rgba(0, 240, 255, ${shockwaveAlpha * 0.9})`;
+          ctx.lineWidth = 3.5;
+          ctx.shadowColor = '#00f0ff';
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          ctx.arc(cx, cy, shockwaveR * 0.65, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Sparks Physics
+        for (let i = sparks.length - 1; i >= 0; i--) {
+          const sp = sparks[i];
+          sp.x += sp.vx;
+          sp.y += sp.vy;
+          sp.vx *= 0.94;
+          sp.vy *= 0.94;
+          sp.vy += 0.15; // gentle gravity
+          sp.alpha -= sp.decay;
+
+          if (sp.alpha <= 0) {
+            sparks.splice(i, 1);
+            continue;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = sp.alpha;
+          ctx.fillStyle = sp.color;
+          ctx.shadowColor = sp.color;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
 
       animFrameRef.current = requestAnimationFrame(render);
     };
@@ -313,190 +484,190 @@ export function CinematicArenaTransition({
     render();
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [isActive, phase]);
 
-  if (!isActive && phase === 'idle') return null;
+  if (!isActive) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center select-none bg-[#030509] ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-black select-none ${
         screenRumble ? 'animate-epic-rumble' : ''
       }`}
     >
-      <style jsx global>{`
-        @keyframes epicScreenRumble {
-          0% {
-            transform: translate3d(0, 0, 0) rotate(0deg);
-          }
-          10% {
-            transform: translate3d(-10px, 7px, 0) rotate(-1.5deg) scale(1.02);
-          }
-          20% {
-            transform: translate3d(9px, -8px, 0) rotate(1.2deg) scale(0.99);
-          }
-          30% {
-            transform: translate3d(-12px, 9px, 0) rotate(-1.8deg) scale(1.03);
-          }
-          40% {
-            transform: translate3d(10px, -7px, 0) rotate(1.4deg) scale(1.01);
-          }
-          55% {
-            transform: translate3d(-7px, 5px, 0) rotate(-0.9deg) scale(1.02);
-          }
-          70% {
-            transform: translate3d(5px, -4px, 0) rotate(0.6deg) scale(1.01);
-          }
-          85% {
-            transform: translate3d(-3px, 2px, 0) rotate(-0.3deg) scale(1.005);
-          }
-          100% {
-            transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
-          }
+      {/* Dynamic Keyframe Styles */}
+      <style>{`
+        @keyframes epicRumble {
+          0% { transform: translate3d(0, 0, 0); }
+          15% { transform: translate3d(-5px, 4px, 0) scale(1.008); }
+          30% { transform: translate3d(5px, -4px, 0) scale(0.996); }
+          45% { transform: translate3d(-4px, -3px, 0) scale(1.006); }
+          60% { transform: translate3d(4px, 3px, 0) scale(0.998); }
+          75% { transform: translate3d(-3px, 2px, 0) scale(1.004); }
+          100% { transform: translate3d(0, 0, 0) scale(1); }
         }
         .animate-epic-rumble {
-          animation: epicScreenRumble 0.75s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+          animation: epicRumble 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
         }
 
-        @keyframes swordSlashLeft {
+        @keyframes swordStrikeLeft {
           0% {
-            transform: translate3d(-120%, -50%, 0) rotate(-35deg) scale(1.8);
+            transform: translate3d(-140%, -100%, 0) rotate(-45deg) scale(2);
             opacity: 0;
           }
-          50% {
+          40% {
             opacity: 1;
           }
           100% {
-            transform: translate3d(-20%, -50%, 0) rotate(-15deg) scale(1);
+            transform: translate3d(-35%, -35%, 0) rotate(-20deg) scale(1);
             opacity: 1;
           }
         }
 
-        @keyframes swordSlashRight {
+        @keyframes swordStrikeRight {
           0% {
-            transform: translate3d(120%, -50%, 0) rotate(35deg) scale(1.8);
+            transform: translate3d(140%, 100%, 0) rotate(135deg) scale(2);
             opacity: 0;
           }
-          50% {
+          40% {
             opacity: 1;
           }
           100% {
-            transform: translate3d(20%, -50%, 0) rotate(15deg) scale(1);
+            transform: translate3d(35%, 35%, 0) rotate(160deg) scale(1);
             opacity: 1;
           }
         }
 
         .animate-sword-left {
-          animation: swordSlashLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: swordStrikeLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .animate-sword-right {
-          animation: swordSlashRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: swordStrikeRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes neonPulseGlow {
+          0%, 100% {
+            filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.9)) drop-shadow(0 0 50px rgba(255, 0, 85, 0.7));
+          }
+          50% {
+            filter: drop-shadow(0 0 45px rgba(0, 240, 255, 1)) drop-shadow(0 0 85px rgba(255, 0, 85, 0.9));
+          }
+        }
+        .animate-neon-pulse {
+          animation: neonPulseGlow 1.8s ease-in-out infinite;
         }
       `}</style>
 
-      {/* Background Physics Canvas */}
+      {/* Physics Canvas Background */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-10" />
 
-      {/* Chromatic Aberration RGB Glitch Overlay */}
+      {/* Chromatic Glitch RGB Displacement Overlay */}
       {chromaticGlitch && (
-        <div className="absolute inset-0 pointer-events-none z-20 mix-blend-screen opacity-50 bg-gradient-to-r from-cyan-500/10 via-transparent to-rose-500/10 animate-pulse" />
+        <div className="absolute inset-0 pointer-events-none z-20 mix-blend-screen opacity-60 bg-gradient-to-r from-cyan-500/15 via-transparent to-rose-500/15 animate-pulse" />
       )}
 
-      {/* Supernova Blinding Impact Flash */}
+      {/* Supernova Blinding Flash on Sword Contact */}
       {supernovaFlash && (
-        <div className="absolute inset-0 z-50 bg-white pointer-events-none animate-ping duration-300" />
+        <div className="absolute inset-0 z-50 bg-white pointer-events-none animate-ping duration-200" />
       )}
 
-      {/* TOP HUD: SYSTEM BREACH WARNING BANNER */}
-      <div className="absolute top-6 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none">
-        <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 rounded-xl bg-rose-950/80 border border-rose-500/80 shadow-[0_0_30px_rgba(244,63,94,0.6)] backdrop-blur-md text-white font-mono text-xs sm:text-sm uppercase tracking-widest font-black animate-bounce-short">
-          <AlertTriangle className="w-4 h-4 text-amber-400 animate-spin" />
-          <span className="text-rose-300">
-            WARNING: CODE MATRIX COMPROMISED // BATTLE PROTOCOL DETECTED
-          </span>
-          <AlertTriangle className="w-4 h-4 text-amber-400 animate-spin" />
-        </div>
-      </div>
-
-      {/* DUAL PLASMA SWORDS IMPACT SEQUENCE */}
-      {phase === 'sword_clash' && (
+      {/* ================= DUAL SUPERSONIC PLASMA BLADES ================= */}
+      {(phase === 'sword_clash' || phase === 'title_lock') && (
         <div className="absolute inset-0 z-25 pointer-events-none flex items-center justify-center overflow-hidden">
-          {/* Cyan Plasma Katana from Left */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-6 bg-gradient-to-r from-transparent via-cyan-400 to-white rounded-full shadow-[0_0_50px_#22d3ee] animate-sword-left transform origin-right" />
-          {/* Crimson Plasma Katana from Right */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-6 bg-gradient-to-l from-transparent via-rose-500 to-white rounded-full shadow-[0_0_50px_#f43f5e] animate-sword-right transform origin-left" />
+          {/* Team Alpha Cyan Plasma Beam */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-8 bg-gradient-to-r from-transparent via-cyan-400 to-white rounded-full shadow-[0_0_60px_#00f0ff] animate-sword-left origin-right" />
+          {/* Team Omega Crimson Plasma Beam */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-8 bg-gradient-to-l from-transparent via-rose-500 to-white rounded-full shadow-[0_0_60px_#ff0055] animate-sword-right origin-left" />
         </div>
       )}
 
-      {/* CENTER EPIC TITLE CORE */}
+      {/* ================= CENTER TITANIC TITLE CORE ================= */}
       <div
         className={`relative z-30 flex flex-col items-center justify-center text-center px-4 transition-all duration-500 ${
-          phase === 'breach'
-            ? 'scale-75 opacity-80 blur-xs'
-            : phase === 'sword_clash' || phase === 'matrix_hold'
+          phase === 'voxel_shatter'
+            ? 'scale-70 opacity-0 blur-md'
+            : phase === 'warp_acceleration'
+            ? 'scale-85 opacity-70 blur-xs'
+            : phase === 'sword_clash' || phase === 'title_lock'
             ? 'scale-100 opacity-100'
-            : 'scale-150 opacity-0 blur-lg duration-400'
+            : 'scale-160 opacity-0 blur-xl duration-500'
         }`}
       >
-        {/* Holographic Glowing Crest */}
-        <div className="relative mb-5 flex items-center justify-center">
-          <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-cyan-500 via-rose-500 to-amber-500 opacity-60 blur-3xl animate-pulse" />
+        {/* Holographic Arena Insignia */}
+        <div className="relative mb-6 flex items-center justify-center">
+          <div className="absolute -inset-14 rounded-full bg-gradient-to-r from-cyan-500 via-rose-500 to-amber-400 opacity-40 blur-3xl animate-pulse" />
 
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-slate-950/95 border-2 border-rose-500/90 shadow-[0_0_70px_rgba(244,63,94,0.9)] flex items-center justify-center">
-            <Swords className="w-14 h-14 sm:w-16 sm:h-16 text-rose-400 drop-shadow-[0_0_30px_rgba(244,63,94,1)] animate-pulse" />
+          {/* Dual Crest Shield */}
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-slate-950/95 border-2 border-cyan-400/80 shadow-[0_0_60px_rgba(0,240,255,0.7)] flex items-center justify-center backdrop-blur-xl">
+            <div className="relative">
+              <Zap className="w-12 h-12 text-cyan-300 drop-shadow-[0_0_20px_#00f0ff] animate-pulse" />
+              <Flame className="w-7 h-7 text-rose-500 absolute -bottom-1 -right-1 drop-shadow-[0_0_15px_#ff0055]" />
+            </div>
           </div>
-
-          {/* Orbiting Spark Spheres */}
-          <div className="absolute -top-3 -left-3 w-5 h-5 rounded-full bg-cyan-400 shadow-[0_0_20px_#22d3ee] animate-ping" />
-          <div className="absolute -bottom-3 -right-3 w-5 h-5 rounded-full bg-rose-400 shadow-[0_0_20px_#fb7185] animate-ping" />
         </div>
 
-        {/* Title: BATTLE ARENA */}
-        <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-white font-mono uppercase drop-shadow-[0_0_40px_rgba(6,182,212,0.8)]">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-rose-400">
-            BATTLE ARENA
-          </span>
-        </h1>
+        {/* Monumental 3D Title: BATTLE ARENA */}
+        <div className="relative">
+          <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tight text-white font-mono uppercase animate-neon-pulse select-none">
+            <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-200 to-cyan-500">
+              BATTLE
+            </span>{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-rose-300 to-rose-600">
+              ARENA
+            </span>
+          </h1>
 
-        {/* Formats Pill */}
-        <div className="mt-4 flex items-center gap-3 px-5 py-2 rounded-full bg-slate-900/90 border border-slate-700/80 text-xs sm:text-sm font-mono tracking-widest text-slate-200 shadow-2xl backdrop-blur-md">
-          <span className="text-cyan-400 font-bold flex items-center gap-1.5">
+          {/* Subtle Cyber Grid Scanline */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.5)_51%)] bg-[size:100%_4px] pointer-events-none opacity-40" />
+        </div>
+
+        {/* Format Selector Badges */}
+        <div className="mt-5 flex items-center gap-3 sm:gap-4 px-6 py-2.5 rounded-full bg-slate-950/90 border border-slate-700/80 text-xs sm:text-sm font-mono tracking-widest text-slate-200 shadow-2xl backdrop-blur-xl">
+          <span className="text-cyan-400 font-black flex items-center gap-1.5 drop-shadow-[0_0_10px_#00f0ff]">
             <Zap className="w-4 h-4 fill-current" />
-            1v1 SHOWDOWN
+            1v1 SOLO DUEL
           </span>
-          <span className="text-slate-600">&bull;</span>
-          <span className="text-rose-400 font-bold flex items-center gap-1.5">
+          <span className="text-slate-600 font-bold">&bull;</span>
+          <span className="text-rose-400 font-black flex items-center gap-1.5 drop-shadow-[0_0_10px_#ff0055]">
             <Flame className="w-4 h-4 fill-current" />
             2v2 SQUAD RELAY
           </span>
         </div>
 
-        {/* Live Diagnostics Terminal Readout */}
-        <div className="mt-6 font-mono text-[11px] sm:text-xs text-slate-400 space-y-1 tracking-wider uppercase">
-          <p className="text-cyan-400/90">&gt; JUDGE0 COMPILER CLUSTER: ONLINE [0.18ms]</p>
-          <p className="text-rose-400/90">&gt; FOG-OF-WAR ANTI-CHEAT SHIELD: ACTIVE</p>
-          <p className="text-amber-400/90">&gt; ENTERING TOURNAMENT COMBAT GROUND...</p>
+        {/* High-Tech Telemetry HUD */}
+        <div className="mt-6 flex items-center gap-3 text-[11px] sm:text-xs font-mono uppercase tracking-wider text-slate-400">
+          <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>JUDGE0 CLUSTER ONLINE</span>
+          </span>
+          <span className="text-slate-600">|</span>
+          <span className="text-cyan-400 flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            <span>FOG-OF-WAR ACTIVE</span>
+          </span>
         </div>
 
-        {/* Loading Matrix Bar */}
-        <div className="mt-5 w-64 sm:w-80 h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-700 shadow-inner">
+        {/* Glowing Matrix Charging Bar */}
+        <div className="mt-5 w-64 sm:w-80 h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-800 shadow-inner p-0.5">
           <div
-            className={`h-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 transition-all duration-1000 ease-out ${
-              phase === 'breach' ? 'w-1/4' : phase === 'sword_clash' ? 'w-3/4' : 'w-full'
-            }`}
+            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 shadow-[0_0_15px_#00f0ff] transition-all duration-75 ease-out"
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
-      {/* Skip Button */}
+      {/* Floating Skip Action (Bottom-Right) */}
       <button
         type="button"
         onClick={onAnimationComplete}
-        className="absolute bottom-6 right-6 z-40 px-4 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-xl"
+        className="absolute bottom-6 right-6 z-40 px-4 py-2 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-slate-700/80 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-2xl backdrop-blur-md"
+        title="Skip intro animation (Esc)"
       >
         <span>Skip Intro</span>
-        <ChevronRight className="w-4 h-4" />
+        <span className="text-[10px] text-slate-500 font-bold px-1 py-0.2 bg-slate-800 rounded">ESC</span>
+        <ChevronRight className="w-4 h-4 text-cyan-400" />
       </button>
     </div>
   );

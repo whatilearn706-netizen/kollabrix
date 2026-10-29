@@ -6,9 +6,10 @@ import { playArcadeCoinSound } from '@/lib/arena/soundEffects';
 interface MiniArcadeLaptopProps {
   onLaunchBattle: () => void;
   className?: string;
+  isLive?: boolean;
 }
 
-export function MiniArcadeLaptop({ onLaunchBattle, className = '' }: MiniArcadeLaptopProps) {
+export function MiniArcadeLaptop({ onLaunchBattle, className = '', isLive = true }: MiniArcadeLaptopProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -331,10 +332,10 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '' }: MiniArcadeL
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/12 to-transparent pointer-events-none" />
           </div>
 
-          {/* Live Indicator Pill on Laptop Top Corner */}
+          {/* Live / Offline Indicator Pill on Laptop Top Corner */}
           <div className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-black shadow-[0_0_8px_#f43f5e]"></span>
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLive ? 'bg-rose-400' : 'bg-amber-400'}`}></span>
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 border border-black ${isLive ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]'}`}></span>
           </div>
         </div>
 
@@ -344,17 +345,19 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '' }: MiniArcadeL
           <div className="w-4 h-0.5 rounded-full bg-slate-900/90 shadow-inner" />
           
           {/* Side USB / Charging LED Port */}
-          <div className="absolute left-1 top-0.5 w-1 h-0.5 rounded-[1px] bg-cyan-400/80 shadow-[0_0_4px_#22d3ee]" />
+          <div className={`absolute left-1 top-0.5 w-1 h-0.5 rounded-[1px] ${isLive ? 'bg-cyan-400/80 shadow-[0_0_4px_#22d3ee]' : 'bg-amber-400/80 shadow-[0_0_4px_#f59e0b]'}`} />
         </div>
       </div>
 
       {/* Floating Interactive Hover Tooltip */}
       {isHovered && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 rounded-xl bg-slate-950/95 border border-rose-500/60 text-[11px] font-mono font-bold text-white whitespace-nowrap shadow-[0_10px_30px_rgba(0,0,0,0.9)] z-50 pointer-events-none flex items-center gap-2 animate-fadeIn backdrop-blur-md">
-          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]" />
+          <span className={`w-2 h-2 rounded-full animate-pulse ${isLive ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]'}`} />
           <span className="text-cyan-300">⚔️ BATTLE ARENA</span>
           <span className="text-slate-500">&bull;</span>
-          <span className="text-rose-400">1v1 & 2v2 PLAY LIVE</span>
+          <span className={isLive ? 'text-rose-400' : 'text-amber-400'}>
+            {isLive ? '1v1 & 2v2 PLAY LIVE' : 'MAINTENANCE MODE (OFFLINE)'}
+          </span>
         </div>
       )}
     </div>

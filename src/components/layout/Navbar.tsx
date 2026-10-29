@@ -77,7 +77,21 @@ export function Navbar() {
       .catch(() => {});
   }, []);
 
-  const handleLaunchArena = () => {
+  const handleLaunchArena = async () => {
+    try {
+      const res = await fetch('/api/arena/status', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.isLive === false) {
+          setIsArenaLive(false);
+          router.push('/arena');
+          return;
+        } else {
+          setIsArenaLive(true);
+        }
+      }
+    } catch {}
+
     if (!isArenaLive) {
       router.push('/arena');
       return;
@@ -265,7 +279,11 @@ export function Navbar() {
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
           {/* Real-time Fighting Game Laptop Trigger (Left of Resources) */}
-          <MiniArcadeLaptop onLaunchBattle={handleLaunchArena} className="shrink-0" />
+          <MiniArcadeLaptop
+            onLaunchBattle={handleLaunchArena}
+            isLive={isArenaLive}
+            className="shrink-0"
+          />
 
           {/* Clean Resources Link (Opens in new tab) */}
           <Link

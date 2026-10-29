@@ -31,9 +31,36 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
 
   try {
     const authHeader = request.headers.get('authorization') || '';
-    const token = authHeader.startsWith('Bearer ')
+    let token = authHeader.startsWith('Bearer ')
       ? authHeader.slice(7).trim()
       : '';
+
+    // If Authorization header wasn't provided, check cookies for Supabase auth tokens
+    if (!token) {
+      try {
+        const cookies = request.cookies.getAll();
+        for (const c of cookies) {
+          if (c.name.includes('-auth-token') || c.name.startsWith('sb-')) {
+            try {
+              const raw = decodeURIComponent(c.value);
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed[0]) {
+                token = parsed[0];
+                break;
+              } else if (parsed && parsed.access_token) {
+                token = parsed.access_token;
+                break;
+              }
+            } catch {
+              if (c.value && c.value.length > 40) {
+                token = c.value;
+                break;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
 
     if (!token) {
       return {

@@ -216,6 +216,24 @@ export function FullArenaExperience({
   const [timeLeft, setTimeLeft] = useState<number>(300);
   const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(DEFAULT_ARENA_QUESTIONS[0]);
 
+  // Arena Live Status check
+  const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
+  const [maintenanceMsg, setMaintenanceMsg] = useState<string>(
+    'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
+  );
+
+  useEffect(() => {
+    fetch('/api/arena/status', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.isLive === 'boolean') {
+          setIsArenaLive(data.isLive);
+          if (data.maintenanceMessage) setMaintenanceMsg(data.maintenanceMessage);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Code editor tabs for active question
   const [activeTab, setActiveTab] = useState<string>('html');
   const [htmlCode, setHtmlCode] = useState('');
@@ -779,6 +797,35 @@ export function FullArenaExperience({
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // If Arena is taken offline by Administrator in Control Center:
+  if (!isArenaLive) {
+    return (
+      <div className="fixed inset-0 z-[9990] bg-[#05070e] text-slate-100 flex items-center justify-center p-4 select-none">
+        <div className="w-full max-w-lg p-6 sm:p-8 rounded-3xl bg-slate-900/95 border border-rose-500/40 shadow-[0_0_60px_rgba(244,63,94,0.3)] backdrop-blur-xl text-center space-y-5">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <ShieldAlert className="w-9 h-9 animate-pulse" />
+          </div>
+          <div>
+            <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              OFFLINE &bull; MAINTENANCE MODE
+            </span>
+            <h2 className="text-2xl font-black font-mono text-white mt-2">BATTLE ARENA SUSPENDED</h2>
+            <p className="text-xs text-slate-300 mt-2 leading-relaxed font-mono">
+              {maintenanceMsg}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:brightness-110 text-white font-mono font-bold text-xs shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
+          >
+            Exit Battle Arena
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[9990] bg-[#05070e] text-slate-100 flex flex-col overflow-hidden select-none">

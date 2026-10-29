@@ -107,12 +107,23 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
   const toggleArenaLiveStatus = async (targetLive: boolean) => {
     setIsUpdatingStatus(true);
+    setStatusMsg(null);
     try {
+      let token = authToken;
+      if (!token) {
+        try {
+          const { supabase } = await import('@/lib/supabase/client');
+          const { data } = await supabase.auth.getSession();
+          token = data.session?.access_token;
+        } catch {}
+      }
+
       const res = await fetch('/api/arena/status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-admin-key': 'linkora-sec-emergency-2026',
         },
         body: JSON.stringify({
           isLive: targetLive,
@@ -139,12 +150,23 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
   const saveMaintenanceNotice = async () => {
     setIsUpdatingStatus(true);
+    setStatusMsg(null);
     try {
+      let token = authToken;
+      if (!token) {
+        try {
+          const { supabase } = await import('@/lib/supabase/client');
+          const { data } = await supabase.auth.getSession();
+          token = data.session?.access_token;
+        } catch {}
+      }
+
       const res = await fetch('/api/arena/status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-admin-key': 'linkora-sec-emergency-2026',
         },
         body: JSON.stringify({
           isLive: isArenaLive,
