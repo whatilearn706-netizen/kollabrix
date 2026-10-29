@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/Button';
 export type AdminTab =
   | 'overview'
   | 'master'
+  | 'flight_recorder'
   | 'id_verifications'
   | 'resources'
   | 'feedback'
@@ -77,6 +78,7 @@ export function AdminHeader({
 
   const tabs: { id: AdminTab; label: string; icon: any; category: TabCategory }[] = [
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
+    { id: 'flight_recorder', label: '🛸 Flight Recorder & Passports', icon: Sparkles, category: 'master' },
     { id: 'id_verifications', label: '🎓 Student ID Verifications', icon: GraduationCap, category: 'campus' },
     { id: 'resources', label: '📚 Learning Resources Hub', icon: BookOpen, category: 'campus' },
     { id: 'hotpatch', label: '🤖 AI Hot-Patch & Code Desk', icon: Code2, category: 'code' },

@@ -15,6 +15,8 @@ import { GithubProfileCard } from '@/components/github/GithubProfileCard';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
+import { HolographicPassportCard } from '@/components/passport/HolographicPassportCard';
+import { SAMPLE_MAYANK_PASSPORT } from '@/types/flightRecorder';
 import {
   ArrowLeft,
   Edit3,
@@ -84,7 +86,7 @@ export default function PublicProfilePage() {
   );
   const [memberProjects, setMemberProjects] = useState<MemberProjectRecord[]>([]);
   const [completedTasks, setCompletedTasks] = useState<ProjectTask[]>([]);
-  const [activeTab, setActiveTab] = useState<'owned' | 'teams' | 'evidence' | 'github'>('owned');
+  const [activeTab, setActiveTab] = useState<'owned' | 'teams' | 'evidence' | 'github' | 'passport'>('owned');
   const [isLoading, setIsLoading] = useState(() => !Boolean(initialDemoProfile));
   const [error, setError] = useState<string | null>(null);
 
@@ -364,6 +366,18 @@ export default function PublicProfilePage() {
         >
           GitHub & Open Source
         </button>
+
+        <button
+          onClick={() => setActiveTab('passport')}
+          className={`pb-3 px-3 text-sm font-semibold transition-all relative flex items-center gap-1.5 ${
+            activeTab === 'passport'
+              ? 'text-rose-500 dark:text-rose-400 border-b-2 border-rose-500 font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+          <span>Holographic Passport</span>
+        </button>
       </div>
 
       {/* Tab: Founded Projects */}
@@ -581,6 +595,37 @@ export default function PublicProfilePage() {
             githubUrl={profile.github_url}
             username={profile.username}
             isOwner={isOwner}
+          />
+        </div>
+      )}
+
+      {/* Tab: Holographic Passport */}
+      {activeTab === 'passport' && (
+        <div className="flex flex-col items-center justify-center p-6 sm:p-10 rounded-3xl bg-charcoal-900/60 border border-charcoal-800 space-y-6">
+          <div className="text-center space-y-1.5 max-w-lg">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 border border-rose-500/30 text-rose-400">
+              <Sparkles className="w-3 h-3" />
+              <span>CRYPTOGRAPHICALLY MINTED &bull; 2026</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white">
+              Collegiate "Proof-of-Carry" Passport
+            </h3>
+            <p className="text-xs text-slate-400">
+              Interactive 3D flight record. Hover to tilt the holographic foil, or click to flip and review raw commit telemetry and blind peer sign-offs.
+            </p>
+          </div>
+
+          <HolographicPassportCard
+            passport={{
+              ...SAMPLE_MAYANK_PASSPORT,
+              displayName: profile.display_name,
+              username: profile.username,
+              avatarUrl: profile.avatar_url || SAMPLE_MAYANK_PASSPORT.avatarUrl,
+              college: profile.college || SAMPLE_MAYANK_PASSPORT.college,
+              roleTitle: profile.preferred_roles?.[0] || 'Full-Stack Developer',
+              verificationUrl: `https://kollabrix.in/p/${profile.username}`,
+            }}
+            interactive={true}
           />
         </div>
       )}

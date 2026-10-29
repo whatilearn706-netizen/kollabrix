@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Gift, Zap } from 'lucide-react';
+import { BookOpen, Gift, Zap, Sparkles } from 'lucide-react';
 
 export function ResourcesSubNav() {
   const pathname = usePathname() || '';
@@ -16,6 +16,14 @@ export function ResourcesSubNav() {
       badge: 'ROADMAPS',
       badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
       isActive: pathname === '/resources',
+    },
+    {
+      href: '/passport',
+      label: 'Holographic Passports',
+      icon: Sparkles,
+      badge: 'FLIGHT RECORDER',
+      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+      isActive: pathname === '/passport',
     },
     {
       href: '/perks',
