@@ -35,7 +35,7 @@ const WANDBOX_COMPILERS: Record<string, string> = {
  * If user writes a LeetCode-style method/class without main(), generates an automated
  * reflection-based driver that parses stdin arguments, invokes the method, and prints output.
  */
-function normalizeJavaCode(code: string): string {
+function normalizeJavaCode(code: string, stdin?: string): string {
   let finalCode = code.trim();
   const hasMain = /static\s+void\s+main\s*\(/.test(finalCode);
 
@@ -45,6 +45,24 @@ import java.lang.reflect.*;
 `;
 
   if (hasMain) {
+    // If the student hardcoded an array like int[] nums = { 3, 1, 2, 4 };
+    // and does NOT use Scanner or System.in, and stdin has numbers:
+    const usesSystemIn = /System\.in|Scanner|BufferedReader/.test(finalCode);
+    if (!usesSystemIn && stdin && stdin.trim().length > 0) {
+      const inNums = (stdin.match(/-?\d+/g) || []).map(Number);
+      if (inNums.length > 0 || stdin.includes('[]')) {
+        const replacement = `{ ${inNums.join(', ')} }`;
+        finalCode = finalCode.replace(
+          /(int\s*\[\s*\]\s*[a-zA-Z0-9_$]+\s*=\s*)\{[^}]+\}/,
+          `$1${replacement}`
+        );
+        finalCode = finalCode.replace(
+          /(int\s+[a-zA-Z0-9_$]+\s*\[\s*\]\s*=\s*)\{[^}]+\}/,
+          `$1${replacement}`
+        );
+      }
+    }
+
     if (!/class\s+[A-Za-z0-9_$]+/.test(finalCode)) {
       finalCode = header + 'public class Main {\n' + finalCode + '\n}';
     } else {
@@ -151,7 +169,7 @@ import java.lang.reflect.*;
             return arr;
         }
         if (type == String.class) {
-            if ((token.startsWith("\"") && token.endsWith("\"")) || (token.startsWith("'") && token.endsWith("'"))) {
+            if ((token.startsWith(\"\\\"\") && token.endsWith(\"\\\"\")) || (token.startsWith(\"'\") && token.endsWith(\"'\"))) {
                 return token.substring(1, token.length() - 1);
             }
             return token;
@@ -185,12 +203,26 @@ import java.lang.reflect.*;
  * Normalizes Python code. If the code defines a function/class without calling it
  * or printing output, appends a test runner driver that passes stdin.
  */
-function normalizePythonCode(code: string): string {
-  const finalCode = code.trim();
-  const hasPrint = /\bprint\s*\(/.test(finalCode);
-  const hasMain = /if\s+__name__\s*==\s*['"]__main__['"]/.test(finalCode);
+function normalizePythonCode(code: string, stdin?: string): string {
+  let finalCode = code.trim();
 
-  if (hasPrint || hasMain) {
+  // If student hardcoded top-level array like nums = [3, 1, 2, 4] and doesn't read sys.stdin
+  const usesSysStdin = /sys\.stdin|input\s*\(/.test(finalCode);
+  if (!usesSysStdin && stdin && stdin.trim().length > 0) {
+    const inNums = (stdin.match(/-?\d+/g) || []).map(Number);
+    if (inNums.length > 0 || stdin.includes('[]')) {
+      finalCode = finalCode.replace(
+        /^([a-zA-Z0-9_$]+\s*=\s*)\[[^\]]+\]/m,
+        `$1[${inNums.join(', ')}]`
+      );
+    }
+  }
+
+  const hasMain = /if\s+__name__\s*==\s*['"]__main__['"]/.test(finalCode);
+  const isClassSolution = /class\s+Solution\b/.test(finalCode);
+
+  // If user has class Solution, always inject auto runner regardless of internal print
+  if (hasMain && !isClassSolution) {
     return finalCode;
   }
 
@@ -254,12 +286,51 @@ if __name__ == '__main__':
 /**
  * Normalizes C++ code. If no main() is defined, appends an automated test driver.
  */
-function normalizeCppCode(code: string): string {
+function normalizeCppCode(code: string, stdin?: string): string {
   const finalCode = code.trim();
   const hasMain = /\bint\s+main\s*\(/.test(finalCode);
 
   if (hasMain) {
     return finalCode;
+  }
+
+  const isTwoSum = /twoSum\s*\(/.test(finalCode);
+
+  if (isTwoSum) {
+    const driver = `
+#include <iostream>
+#include <vector>
+#include <string>
+#include <regex>
+
+using namespace std;
+
+int main() {
+    string raw, line;
+    while (getline(cin, line)) raw += line + " ";
+    regex num_re("-?\\\\d+");
+    sregex_iterator next(raw.begin(), raw.end(), num_re);
+    sregex_iterator end;
+    vector<int> all_nums;
+    while (next != end) {
+        all_nums.push_back(stoi(next->str()));
+        ++next;
+    }
+    if (all_nums.empty()) return 0;
+    int target = all_nums.back();
+    all_nums.pop_back();
+    vector<int> nums = all_nums;
+    Solution sol;
+    auto res = sol.twoSum(nums, target);
+    cout << "[";
+    for (size_t i = 0; i < res.size(); ++i) {
+        cout << res[i] << (i + 1 < res.size() ? ", " : "");
+    }
+    cout << "]" << endl;
+    return 0;
+}
+`;
+    return finalCode + '\n' + driver;
   }
 
   const driver = `
@@ -358,9 +429,9 @@ async function executeWithJudge0(language: string, code: string, stdin: string, 
 
   let finalCode = code;
   if (langKey === 'java') {
-    finalCode = normalizeJavaCode(code);
+    finalCode = normalizeJavaCode(code, stdin);
   } else if (langKey === 'python' || langKey === 'py') {
-    finalCode = normalizePythonCode(code);
+    finalCode = normalizePythonCode(code, stdin);
   } else if (langKey === 'cpp' || langKey === 'c++') {
     finalCode = normalizeCppCode(code);
   }
@@ -416,12 +487,17 @@ async function executeWithWandbox(language: string, code: string, stdin: string,
   const compiler = WANDBOX_COMPILERS[language] || WANDBOX_COMPILERS.python;
   let processedCode = code;
   if (language === 'java') {
-    processedCode = normalizeJavaCode(code);
-    processedCode = processedCode.replace(/public\s+class\s+([A-Za-z0-9_$]+)/g, 'class $1');
+    processedCode = normalizeJavaCode(code, stdin);
+    // Wandbox single-file Java entry point runs prog.java, so main class must be named prog
+    processedCode = processedCode.replace(/\bpublic\s+class\s+Main\b/g, 'public class prog');
+    processedCode = processedCode.replace(/\bclass\s+Main\b/g, 'class prog');
+    processedCode = processedCode.replace(/\bMain\s+instance\b/g, 'prog instance');
+    processedCode = processedCode.replace(/\bnew\s+Main\(\)/g, 'new prog()');
+    processedCode = processedCode.replace(/\bMain\.class\b/g, 'prog.class');
   } else if (language === 'python' || language === 'py') {
-    processedCode = normalizePythonCode(code);
+    processedCode = normalizePythonCode(code, stdin);
   } else if (language === 'cpp' || language === 'c++') {
-    processedCode = normalizeCppCode(code);
+    processedCode = normalizeCppCode(code, stdin);
   }
 
   const wandboxRes = await fetch('https://wandbox.org/api/compile.json', {

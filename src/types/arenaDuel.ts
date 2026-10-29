@@ -355,9 +355,9 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
       'Time: O(N) linear scan',
       'Space: O(1) in-place modification',
     ],
-    starterJava: `class Solution {\n    public int[] sortArrayByParity(int[] nums) {\n        // Your two-pointer in-place solution\n        return nums;\n    }\n}`,
-    starterPython: `class Solution:\n    def sortArrayByParity(self, nums: list[int]) -> list[int]:\n        # Your two-pointer in-place solution\n        return nums`,
-    starterCpp: `class Solution {\npublic:\n    vector<int> sortArrayByParity(vector<int>& nums) {\n        // Your solution\n        return nums;\n    }\n};`,
+    starterJava: `// LeetCode-style: Implement the method below.\n// The judge passes each test case automatically!\nclass Solution {\n    public int[] sortArrayByParity(int[] nums) {\n        // Your two-pointer or parity sorting logic:\n        return nums;\n    }\n}`,
+    starterPython: `# LeetCode-style: Implement the method below.\n# The judge passes each test case automatically!\nclass Solution:\n    def sortArrayByParity(self, nums: list[int]) -> list[int]:\n        # Your two-pointer or parity sorting logic:\n        return nums`,
+    starterCpp: `// LeetCode-style: Implement the method below.\nclass Solution {\npublic:\n    vector<int> sortArrayByParity(vector<int>& nums) {\n        return nums;\n    }\n};`,
     testCases: [
       { input: '[3, 1, 2, 4]', expectedOutput: '[2, 4, 3, 1]', description: 'Basic parity split' },
       { input: '[0]', expectedOutput: '[0]', description: 'Single element zero' },

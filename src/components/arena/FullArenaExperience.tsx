@@ -189,6 +189,19 @@ export function FullArenaExperience({
     status?: string;
   } | null>(null);
 
+  // Per-test-case results map: stores { status, stdout, stderr, executionTimeMs } for each test case index
+  const [testCaseResults, setTestCaseResults] = useState<
+    Record<
+      number,
+      {
+        status: 'Accepted' | 'Wrong Answer' | 'Error';
+        stdout: string;
+        stderr?: string;
+        executionTimeMs?: number;
+      }
+    >
+  >({});
+
   // Step 3: Room & Invite (Fresh random code generated on mount)
   const [roomCode, setRoomCode] = useState(
     () => initialRoomCode || `KBX-${Math.floor(1000 + Math.random() * 9000)}`
@@ -338,6 +351,9 @@ export function FullArenaExperience({
 
     setTotalTests(chosen.testCases?.length || 3);
     setUserTestsPassed(0);
+    setTestCaseResults({});
+    setCompilerResult(null);
+    setSelectedTestCaseIdx(0);
     setWebEvaluation(null);
     setOpponentTestsPassed(0);
     setTimeLeft(chosen.timeLimitSeconds || 300);
@@ -410,8 +426,9 @@ export function FullArenaExperience({
     const oppInterval = setInterval(() => {
       setOpponentWpm(Math.floor(58 + Math.random() * 32));
 
+      // Realistic collegiate pacing: Bot solves tests at ~45s-60s intervals
       const roll = Math.random();
-      if (roll < 0.12 && opponentTestsPassed < totalTests) {
+      if (roll < 0.22 && opponentTestsPassed < totalTests) {
         setOpponentTestsPassed((prev) => {
           const next = prev + 1;
           setOpponentAlert(`🔥 Opponent Team Omega passed Test Case ${next}/${totalTests}!`);
@@ -427,7 +444,7 @@ export function FullArenaExperience({
         setOpponentAlert('⚠️ Opponent encountered a CSS Syntax Warning!');
         setTimeout(() => setOpponentAlert(''), 2800);
       }
-    }, 3200);
+    }, 7500);
 
     return () => clearInterval(oppInterval);
   }, [step, opponentTestsPassed, totalTests]);
@@ -453,9 +470,9 @@ export function FullArenaExperience({
   };
 
   // Real Backend Compiler Execution for Java, C++, Python (Compile & Run)
+  // Evaluates every test case so each tab (Case 1, Case 2, etc.) has its own live output and verdict!
   const handleCompileAndRun = async () => {
     setIsCompiling(true);
-    setCompilerResult(null);
     setActiveConsoleTab('testcases');
 
     const activeLanguage = activeTab === 'python' ? 'python' : activeTab === 'java' ? 'java' : 'cpp';
@@ -468,72 +485,150 @@ export function FullArenaExperience({
         ? cppCode
         : pythonCode;
 
-    const currentTestCase = activeQuestion.testCases[selectedTestCaseIdx] || activeQuestion.testCases[0];
-    const testStdin = customStdin || currentTestCase?.input || '';
-
-    try {
-      const res = await fetch('/api/compiler/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language: activeLanguage,
-          code: activeCode,
-          stdin: testStdin,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        const rawStdout = (data.stdout || '').trim();
-        const expected = (currentTestCase?.expectedOutput || '').trim();
-        const isPass = verifyTestOutput(
-          activeQuestion.id,
-          rawStdout,
-          expected,
-          currentTestCase?.input || testStdin
-        );
-
-        if (isPass) {
-          playCompileSuccessSound();
-          setUserTestsPassed((prev) => Math.min(totalTests, Math.max(prev, 1)));
-        } else {
-          playCompileErrorSound();
-        }
-
+    // Custom Stdin execution mode
+    if (activeConsoleTab === 'custom' && customStdin.trim()) {
+      try {
+        const res = await fetch('/api/compiler/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            language: activeLanguage,
+            code: activeCode,
+            stdin: customStdin,
+          }),
+        });
+        const data = await res.json();
         setCompilerResult({
-          success: true,
+          success: data.success,
           stdout: data.stdout || '(No output produced)',
           stderr: data.stderr || '',
           compile_output: data.compile_output || '',
-          executionTimeMs: data.executionTimeMs || 16,
-          status: isPass ? 'Accepted' : 'Wrong Answer',
+          executionTimeMs: data.executionTimeMs || 15,
+          status: data.success ? 'Accepted' : 'Compilation Error',
         });
-      } else {
-        playCompileErrorSound();
+      } catch (err: any) {
         setCompilerResult({
           success: false,
           stdout: '',
-          stderr: data.error || data.stderr || 'Execution failed',
-          compile_output: data.compile_output || data.error || 'Compilation Error',
-          status: 'Compilation Error',
+          stderr: err.message,
+          status: 'Runtime Error',
         });
+      } finally {
+        setIsCompiling(false);
       }
-    } catch (err: any) {
+      return;
+    }
+
+    const testCases = activeQuestion.testCases || [];
+    const results = await Promise.all(
+      testCases.map(async (tc, i) => {
+        try {
+          const res = await fetch('/api/compiler/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              language: activeLanguage,
+              code: activeCode,
+              stdin: tc.input || '',
+            }),
+          });
+
+          const data = await res.json();
+          if (!data.success) {
+            return {
+              idx: i,
+              status: 'Error' as const,
+              stdout: data.stderr || data.compile_output || 'Error during compilation/execution',
+              stderr: data.stderr,
+              compileOutput: data.compile_output,
+              executionTimeMs: data.executionTimeMs || 0,
+            };
+          }
+          const rawStdout = (data.stdout || '').trim();
+          const expected = (tc.expectedOutput || '').trim();
+          const isPass = verifyTestOutput(activeQuestion.id, rawStdout, expected, tc.input || '');
+          return {
+            idx: i,
+            status: (isPass ? 'Accepted' : 'Wrong Answer') as 'Accepted' | 'Wrong Answer',
+            stdout: rawStdout || '(No output produced)',
+            stderr: data.stderr,
+            executionTimeMs: data.executionTimeMs || 15,
+          };
+        } catch (err: any) {
+          return {
+            idx: i,
+            status: 'Error' as const,
+            stdout: err.message || 'Network error running test case',
+            executionTimeMs: 0,
+          };
+        }
+      })
+    );
+
+    const newResults: Record<
+      number,
+      {
+        status: 'Accepted' | 'Wrong Answer' | 'Error';
+        stdout: string;
+        stderr?: string;
+        executionTimeMs?: number;
+      }
+    > = {};
+
+    let totalPassed = 0;
+    let anyCompileError = false;
+    let globalStderr = '';
+    let globalCompileOutput = '';
+
+    results.forEach((r) => {
+      newResults[r.idx] = {
+        status: r.status,
+        stdout: r.stdout,
+        stderr: r.stderr,
+        executionTimeMs: r.executionTimeMs,
+      };
+      if (r.status === 'Accepted') totalPassed++;
+      if (r.status === 'Error') {
+        anyCompileError = true;
+        globalStderr = r.stderr || r.stdout || 'Compilation Error';
+        if (r.compileOutput) globalCompileOutput = r.compileOutput;
+      }
+    });
+
+    setTestCaseResults(newResults);
+    setUserTestsPassed(totalPassed);
+    setIsCompiling(false);
+
+    if (anyCompileError) {
       playCompileErrorSound();
       setCompilerResult({
         success: false,
         stdout: '',
-        stderr: err?.message || 'Network error executing compiler',
-        status: 'Runtime Error',
+        stderr: globalStderr,
+        compile_output: globalCompileOutput,
+        status: 'Compilation Error',
       });
-    } finally {
-      setIsCompiling(false);
+    } else if (totalPassed === testCases.length) {
+      playCompileSuccessSound();
+      setCompilerResult({
+        success: true,
+        stdout: newResults[selectedTestCaseIdx]?.stdout || '',
+        status: 'Accepted',
+      });
+    } else {
+      playCompileErrorSound();
+      setCompilerResult({
+        success: false,
+        stdout: newResults[selectedTestCaseIdx]?.stdout || '',
+        status: 'Wrong Answer',
+      });
     }
   };
 
-  // Real Submit Handler for Java, C++, Python (Submits to All Test Cases)
+  // Real Submit Handler for Java, C++, Python (Submits to All Test Cases in parallel)
   const handleSubmitCode = async () => {
     setIsSubmitting(true);
+    setActiveConsoleTab('testcases');
     const activeLanguage = activeTab === 'python' ? 'python' : activeTab === 'java' ? 'java' : 'cpp';
     const activeCode =
       activeTab === 'python'
@@ -544,61 +639,88 @@ export function FullArenaExperience({
         ? cppCode
         : pythonCode;
 
-    let passedCount = 0;
     const testCases = activeQuestion.testCases || [];
-    let firstFailed: { idx: number; input: string; expected: string; got: string } | null = null;
+    const results = await Promise.all(
+      testCases.map(async (tc, i) => {
+        try {
+          const res = await fetch('/api/compiler/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              language: activeLanguage,
+              code: activeCode,
+              stdin: tc.input || '',
+            }),
+          });
+          const data = await res.json();
+          const rawOut = (data.stdout || '').trim();
+          const expected = (tc.expectedOutput || '').trim();
+          const pass = data.success && verifyTestOutput(
+            activeQuestion.id,
+            rawOut,
+            expected,
+            tc.input || ''
+          );
 
-    for (let i = 0; i < testCases.length; i++) {
-      const tc = testCases[i];
-      try {
-        const res = await fetch('/api/compiler/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            language: activeLanguage,
-            code: activeCode,
-            stdin: tc.input || '',
-          }),
-        });
-        const data = await res.json();
-        const rawOut = (data.stdout || '').trim();
-        const expected = (tc.expectedOutput || '').trim();
-        const pass = verifyTestOutput(
-          activeQuestion.id,
-          rawOut,
-          expected,
-          tc.input || ''
-        );
-
-        if (pass) {
-          passedCount++;
-        } else if (!firstFailed) {
-          firstFailed = {
-            idx: i + 1,
-            input: tc.input,
-            expected: tc.expectedOutput,
-            got: rawOut || data.stderr || 'Execution failed',
+          return {
+            idx: i,
+            pass,
+            status: (pass ? 'Accepted' : 'Wrong Answer') as 'Accepted' | 'Wrong Answer',
+            stdout: rawOut || data.stderr || 'Execution failed',
+            executionTimeMs: data.executionTimeMs || 15,
+          };
+        } catch (e) {
+          return {
+            idx: i,
+            pass: false,
+            status: 'Error' as const,
+            stdout: 'Network Error',
+            executionTimeMs: 0,
           };
         }
-      } catch (e) {
-        if (!firstFailed) {
-          firstFailed = { idx: i + 1, input: tc.input, expected: tc.expectedOutput, got: 'Network Error' };
-        }
-      }
-    }
+      })
+    );
 
+    let passedCount = 0;
+    const newResults: Record<number, any> = {};
+    let firstFailedIdx = -1;
+
+    results.forEach((r) => {
+      newResults[r.idx] = {
+        status: r.status,
+        stdout: r.stdout,
+        executionTimeMs: r.executionTimeMs,
+      };
+      if (r.pass) {
+        passedCount++;
+      } else if (firstFailedIdx === -1) {
+        firstFailedIdx = r.idx;
+      }
+    });
+
+    setTestCaseResults(newResults);
     setUserTestsPassed(passedCount);
     setIsSubmitting(false);
 
     if (passedCount === testCases.length) {
       playVictorySound();
       setWinnerTeam('Team Alpha');
+      setCompilerResult({
+        success: true,
+        stdout: newResults[selectedTestCaseIdx]?.stdout || '',
+        status: 'Accepted',
+      });
       setStep(6);
     } else {
       playCompileErrorSound();
-      alert(
-        `✗ Submission Verdict: Wrong Answer\n\nPassed: ${passedCount} / ${testCases.length} Test Cases.\nFailed on Test ${firstFailed?.idx}: Expected "${firstFailed?.expected}", received "${firstFailed?.got}".`
-      );
+      if (firstFailedIdx !== -1) {
+        setSelectedTestCaseIdx(firstFailedIdx);
+      }
+      setCompilerResult({
+        success: false,
+        stdout: newResults[firstFailedIdx !== -1 ? firstFailedIdx : selectedTestCaseIdx]?.stdout || '',
+        status: 'Wrong Answer',
+      });
     }
   };
 
@@ -2160,7 +2282,19 @@ export function FullArenaExperience({
                             </span>
 
                             {/* Execution Verdict Pill */}
-                            {compilerResult && (
+                            {activeConsoleTab === 'testcases' && testCaseResults[selectedTestCaseIdx] ? (
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                                  testCaseResults[selectedTestCaseIdx].status === 'Accepted'
+                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                                    : testCaseResults[selectedTestCaseIdx].status === 'Wrong Answer'
+                                    ? 'bg-rose-950 text-rose-300 border-rose-700'
+                                    : 'bg-amber-950 text-amber-300 border-amber-700'
+                                }`}
+                              >
+                                Case {selectedTestCaseIdx + 1}: {testCaseResults[selectedTestCaseIdx].status}
+                              </span>
+                            ) : compilerResult ? (
                               <span
                                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
                                   compilerResult.status === 'Accepted'
@@ -2172,7 +2306,7 @@ export function FullArenaExperience({
                               >
                                 {compilerResult.status}
                               </span>
-                            )}
+                            ) : null}
                           </div>
 
                           {/* Console Tabs */}
@@ -2229,22 +2363,42 @@ export function FullArenaExperience({
                           {/* TAB 1: TEST CASES SELECTOR & COMPARISON */}
                           {activeConsoleTab === 'testcases' && (
                             <div className="space-y-2.5">
-                              {/* Case Tabs */}
-                              <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2">
-                                {activeQuestion.testCases.map((tc, idx) => (
-                                  <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => setSelectedTestCaseIdx(idx)}
-                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                                      selectedTestCaseIdx === idx
-                                        ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                                    }`}
-                                  >
-                                    Case {idx + 1}
-                                  </button>
-                                ))}
+                              {/* Case Tabs with live Per-Case Verdict Badges */}
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {activeQuestion.testCases.map((tc, idx) => {
+                                    const res = testCaseResults[idx];
+                                    return (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => setSelectedTestCaseIdx(idx)}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                                          selectedTestCaseIdx === idx
+                                            ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                                        }`}
+                                      >
+                                        <span>Case {idx + 1}</span>
+                                        {res && (
+                                          <span
+                                            className={`text-[10px] font-mono px-1 rounded ${
+                                              res.status === 'Accepted'
+                                                ? 'bg-emerald-500/30 text-emerald-300'
+                                                : 'bg-rose-500/30 text-rose-300'
+                                            }`}
+                                          >
+                                            {res.status === 'Accepted' ? '✓' : '✗'}
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  {userTestsPassed} / {activeQuestion.testCases.length} Passed
+                                </span>
                               </div>
 
                               {/* Selected Case I/O */}
@@ -2269,21 +2423,34 @@ export function FullArenaExperience({
                                   </div>
 
                                   <div>
-                                    <span className="text-[10px] text-slate-500 uppercase font-bold">
-                                      Your Output:
-                                    </span>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] text-slate-500 uppercase font-bold">
+                                        Your Output:
+                                      </span>
+                                      {testCaseResults[selectedTestCaseIdx] && (
+                                        <span
+                                          className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold uppercase ${
+                                            testCaseResults[selectedTestCaseIdx].status === 'Accepted'
+                                              ? 'text-emerald-300 bg-emerald-950/80 border border-emerald-700'
+                                              : 'text-rose-300 bg-rose-950/80 border border-rose-700'
+                                          }`}
+                                        >
+                                          {testCaseResults[selectedTestCaseIdx].status}
+                                        </span>
+                                      )}
+                                    </div>
                                     <div
                                       className={`p-2 rounded-lg border text-xs font-bold ${
-                                        compilerResult
-                                          ? compilerResult.status === 'Accepted'
+                                        testCaseResults[selectedTestCaseIdx]
+                                          ? testCaseResults[selectedTestCaseIdx].status === 'Accepted'
                                             ? 'bg-emerald-950/40 border-emerald-600 text-emerald-300'
                                             : 'bg-rose-950/40 border-rose-600 text-rose-300'
                                           : 'bg-slate-900 border-slate-800 text-slate-500'
                                       }`}
                                     >
-                                      {compilerResult
-                                        ? compilerResult.stdout || compilerResult.stderr || '(Empty)'
-                                        : 'Click [Compile & Run] to test'}
+                                      {testCaseResults[selectedTestCaseIdx]
+                                        ? testCaseResults[selectedTestCaseIdx].stdout || '(No output)'
+                                        : 'Click [Compile & Run] to test this case'}
                                     </div>
                                   </div>
                                 </div>

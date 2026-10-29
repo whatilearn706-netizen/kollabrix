@@ -20,8 +20,7 @@ export function verifyTestOutput(
 
   // 1. Direct equality or whitespace-normalized equality
   if (actual === expected) return true;
-  if (actual.replace(/\s+/g, '') === expected.replace(/\s+/g, '')) return true;
-  if (actual.includes(expected)) return true;
+  if (actual.replace(/[\s\r\n]+/g, '') === expected.replace(/[\s\r\n]+/g, '')) return true;
 
   // 2. Parity Sort Validator (Sort Array by Parity)
   if (questionId === 'q-algo-dsa-1') {
@@ -35,6 +34,8 @@ export function verifyTestOutput(
       const inNums = extractNumbers(input);
 
       if (outNums.length !== inNums.length) return false;
+      if (outNums.length === 0 && inNums.length === 0) return true;
+      if (outNums.length === 0) return false;
 
       // Verify same multiset of numbers
       const sortedIn = [...inNums].sort((a, b) => a - b);
@@ -58,6 +59,17 @@ export function verifyTestOutput(
     } catch {
       return false;
     }
+  }
+
+  // 3. Array elements match (e.g. [0, 1] vs [ 0 , 1 ])
+  const extractNums = (s: string) => {
+    const m = s.match(/-?\d+/g);
+    return m ? m.map(Number) : null;
+  };
+  const actArr = extractNums(actual);
+  const expArr = extractNums(expected);
+  if (actArr && expArr && actArr.length === expArr.length) {
+    if (actArr.every((v, i) => v === expArr[i])) return true;
   }
 
   return false;
