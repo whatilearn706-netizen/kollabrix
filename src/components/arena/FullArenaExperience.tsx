@@ -44,6 +44,8 @@ import {
   playCompileSuccessSound,
   playCompileErrorSound,
 } from '@/lib/arena/soundEffects';
+import { evaluateWebCoordinateGraph, WebGraphEvaluation } from '@/lib/arena/webCoordinateGraph';
+import { verifyTestOutput } from '@/lib/arena/testCaseVerifier';
 
 interface FullArenaExperienceProps {
   onClose: () => void;
@@ -123,6 +125,7 @@ export function FullArenaExperience({
   const [userTestsPassed, setUserTestsPassed] = useState<number>(0);
   const [totalTests, setTotalTests] = useState<number>(3);
   const [testLog, setTestLog] = useState<string>('Ready to test code');
+  const [webEvaluation, setWebEvaluation] = useState<WebGraphEvaluation | null>(null);
 
   // Opponent Team Omega (Fog of War)
   const [opponentTestsPassed, setOpponentTestsPassed] = useState<number>(0);
@@ -244,7 +247,8 @@ export function FullArenaExperience({
     setCppCode(chosen.starterCpp || '// Your C++ solution\n');
 
     setTotalTests(chosen.testCases?.length || 3);
-    setUserTestsPassed(1);
+    setUserTestsPassed(0);
+    setWebEvaluation(null);
     setOpponentTestsPassed(0);
     setTimeLeft(chosen.timeLimitSeconds || 300);
 
@@ -392,10 +396,12 @@ export function FullArenaExperience({
       if (data.success) {
         const rawStdout = (data.stdout || '').trim();
         const expected = (currentTestCase?.expectedOutput || '').trim();
-        const isPass =
-          rawStdout === expected ||
-          rawStdout.replace(/\s+/g, '') === expected.replace(/\s+/g, '') ||
-          rawStdout.includes(expected);
+        const isPass = verifyTestOutput(
+          activeQuestion.id,
+          rawStdout,
+          expected,
+          currentTestCase?.input || testStdin
+        );
 
         if (isPass) {
           playCompileSuccessSound();
@@ -467,10 +473,12 @@ export function FullArenaExperience({
         const data = await res.json();
         const rawOut = (data.stdout || '').trim();
         const expected = (tc.expectedOutput || '').trim();
-        const pass =
-          rawOut === expected ||
-          rawOut.replace(/\s+/g, '') === expected.replace(/\s+/g, '') ||
-          rawOut.includes(expected);
+        const pass = verifyTestOutput(
+          activeQuestion.id,
+          rawOut,
+          expected,
+          tc.input || ''
+        );
 
         if (pass) {
           passedCount++;
@@ -504,12 +512,54 @@ export function FullArenaExperience({
     }
   };
 
-  // Submit Handler for Web Development (No compiler needed)
+  // Test Layout Handler for Web Development (Evaluates layout coordinate graph in background)
+  const handleTestWebLayout = () => {
+    const evaluation = evaluateWebCoordinateGraph(
+      activeQuestion.id,
+      htmlCode,
+      cssCode,
+      activeQuestion.targetComponentHtml
+    );
+    setWebEvaluation(evaluation);
+    setUserTestsPassed(evaluation.testsPassed);
+
+    if (evaluation.passed) {
+      playCompileSuccessSound();
+    } else {
+      playCompileErrorSound();
+    }
+  };
+
+  // Submit Handler for Web Development (Evaluates layout coordinate graph & requires passing)
   const handleWebSubmit = () => {
-    playVictorySound();
-    setUserTestsPassed(totalTests);
-    setWinnerTeam('Team Alpha');
-    setStep(6);
+    setIsSubmitting(true);
+    const evaluation = evaluateWebCoordinateGraph(
+      activeQuestion.id,
+      htmlCode,
+      cssCode,
+      activeQuestion.targetComponentHtml
+    );
+    setWebEvaluation(evaluation);
+    setUserTestsPassed(evaluation.testsPassed);
+
+    if (evaluation.passed) {
+      playVictorySound();
+      setWinnerTeam('Team Alpha');
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setStep(6);
+      }, 500);
+    } else {
+      setIsSubmitting(false);
+      playCompileErrorSound();
+      const failed = evaluation.results.filter((r) => !r.passed);
+      const failMsg = failed.map((f, i) => `${i + 1}. ${f.testName}:\n   → ${f.message}`).join('\n\n');
+      alert(
+        `✗ Web Challenge Verdict: Incomplete (${evaluation.testsPassed} / ${evaluation.totalTests} Tests Passed)\n\n` +
+        `Coordinate graph does not match the Preview blueprint:\n\n${failMsg}\n\n` +
+        `Build the required HTML structure and layout CSS to pass all test cases!`
+      );
+    }
   };
 
   const formatTimer = (seconds: number) => {
@@ -1326,10 +1376,24 @@ export function FullArenaExperience({
                         </span>
                         <button
                           type="button"
-                          onClick={handleWebSubmit}
-                          className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:brightness-110 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                          onClick={handleTestWebLayout}
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                          title="Run layout coordinate graph verification against Preview blueprint"
                         >
-                          <Send className="w-3 h-3 fill-current" />
+                          <Play className="w-3 h-3 fill-current text-cyan-400" />
+                          <span>Test Layout</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={handleWebSubmit}
+                          className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:brightness-110 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-white" />
+                          ) : (
+                            <Send className="w-3 h-3 fill-current" />
+                          )}
                           <span>Submit Challenge</span>
                         </button>
                       </>
@@ -1530,9 +1594,22 @@ export function FullArenaExperience({
                       >
                         {/* Output Title Bar (Image 6 Parity) */}
                         <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
-                          <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
-                            output
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
+                              output
+                            </span>
+                            {webEvaluation && (
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                  webEvaluation.passed
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                }`}
+                              >
+                                Coordinate Graph: {webEvaluation.score}% ({webEvaluation.testsPassed}/{webEvaluation.totalTests} passed)
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-slate-400">
                             <button
                               type="button"
