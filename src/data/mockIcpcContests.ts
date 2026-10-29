@@ -64,7 +64,6 @@ export const CURATED_ICPC_CONTESTS: IcpcContest[] = [
         starterCode: {
           cpp: `#include <iostream>
 #include <vector>
-#include <unordered_map>
 
 using namespace std;
 
@@ -76,19 +75,8 @@ void solve() {
         cin >> a[i];
     }
 
-    // Write your O(N) prefix XOR solution here
-    long long ans = 0;
-    long long pref = 0;
-    unordered_map<long long, long long> freq;
-    freq[0] = 1;
-
-    for (int i = 0; i < n; i++) {
-        pref ^= a[i];
-        ans += freq[pref];
-        freq[pref]++;
-    }
-
-    cout << ans << "\\n";
+    // TODO: Write your algorithm here to count balanced subarrays where XOR sum is 0
+    // Print the result for this testcase on a new line
 }
 
 int main() {
@@ -115,20 +103,13 @@ public class Main {
         while (t-- > 0) {
             int n = Integer.parseInt(br.readLine().trim());
             StringTokenizer st = new StringTokenizer(br.readLine());
-            
-            long ans = 0;
-            long pref = 0;
-            Map<Long, Long> freq = new HashMap<>();
-            freq.put(0L, 1L);
-
+            long[] a = new long[n];
             for (int i = 0; i < n; i++) {
-                long val = Long.parseLong(st.nextToken());
-                pref ^= val;
-                ans += freq.getOrDefault(pref, 0L);
-                freq.put(pref, freq.getOrDefault(pref, 0L) + 1L);
+                a[i] = Long.parseLong(st.nextToken());
             }
 
-            System.out.println(ans);
+            // TODO: Write your algorithm here to count balanced subarrays where XOR sum is 0
+            // Print the answer for each testcase on a new line
         }
     }
 }`,
@@ -145,19 +126,11 @@ def solve():
     for _ in range(t):
         n = int(input_data[idx])
         idx += 1
+        a = [int(x) for x in input_data[idx : idx + n]]
+        idx += n
         
-        freq = {0: 1}
-        pref = 0
-        ans = 0
-        
-        for _ in range(n):
-            val = int(input_data[idx])
-            idx += 1
-            pref ^= val
-            ans += freq.get(pref, 0)
-            freq[pref] = freq.get(pref, 0) + 1
-            
-        print(ans)
+        # TODO: Write your algorithm here to count balanced subarrays where XOR sum is 0
+        # Print the answer for each testcase on a new line
 
 if __name__ == '__main__':
     solve()`,
@@ -241,38 +214,8 @@ int main() {
         starterCode: {
           cpp: `#include <iostream>
 #include <vector>
-#include <algorithm>
 
 using namespace std;
-
-struct Edge {
-    int u, v;
-    long long w;
-    bool operator<(const Edge& other) const {
-        return w < other.w;
-    }
-};
-
-struct DSU {
-    vector<int> parent;
-    DSU(int n) {
-        parent.resize(n + 1);
-        for (int i = 0; i <= n; i++) parent[i] = i;
-    }
-    int find(int i) {
-        if (parent[i] == i) return i;
-        return parent[i] = find(parent[i]);
-    }
-    bool unite(int i, int j) {
-        int root_i = find(i);
-        int root_j = find(j);
-        if (root_i != root_j) {
-            parent[root_i] = root_j;
-            return true;
-        }
-        return false;
-    }
-};
 
 int main() {
     ios_base::sync_with_stdio(false);
@@ -281,30 +224,8 @@ int main() {
     int n, m;
     if (!(cin >> n >> m)) return 0;
 
-    vector<Edge> edges(m);
-    for (int i = 0; i < m; i++) {
-        cin >> edges[i].u >> edges[i].v >> edges[i].w;
-    }
-
-    sort(edges.begin(), edges.end());
-
-    DSU dsu(n);
-    long long total_cost = 0;
-    int edges_used = 0;
-
-    for (const auto& edge : edges) {
-        if (dsu.unite(edge.u, edge.v)) {
-            total_cost += edge.w;
-            edges_used++;
-            if (edges_used == n - 1) break;
-        }
-    }
-
-    if (edges_used == n - 1) {
-        cout << total_cost << "\\n";
-    } else {
-        cout << -1 << "\\n";
-    }
+    // TODO: Read conduits and calculate the minimum total excavation cost
+    // Output the minimum cost, or -1 if the network cannot be fully connected
 
     return 0;
 }`,
@@ -312,40 +233,6 @@ int main() {
 import java.io.*;
 
 public class Main {
-    static class Edge implements Comparable<Edge> {
-        int u, v;
-        long w;
-        Edge(int u, int v, long w) {
-            this.u = u;
-            this.v = v;
-            this.w = w;
-        }
-        public int compareTo(Edge other) {
-            return Long.compare(this.w, other.w);
-        }
-    }
-
-    static class DSU {
-        int[] parent;
-        DSU(int n) {
-            parent = new int[n + 1];
-            for (int i = 0; i <= n; i++) parent[i] = i;
-        }
-        int find(int i) {
-            if (parent[i] == i) return i;
-            return parent[i] = find(parent[i]);
-        }
-        boolean unite(int i, int j) {
-            int root_i = find(i);
-            int root_j = find(j);
-            if (root_i != root_j) {
-                parent[root_i] = root_j;
-                return true;
-            }
-            return false;
-        }
-    }
-
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String line = br.readLine();
@@ -354,33 +241,8 @@ public class Main {
         int n = Integer.parseInt(st.nextToken());
         int m = Integer.parseInt(st.nextToken());
 
-        List<Edge> edges = new ArrayList<>(m);
-        for (int i = 0; i < m; i++) {
-            st = new StringTokenizer(br.readLine());
-            int u = Integer.parseInt(st.nextToken());
-            int v = Integer.parseInt(st.nextToken());
-            long w = Long.parseLong(st.nextToken());
-            edges.add(new Edge(u, v, w));
-        }
-
-        Collections.sort(edges);
-        DSU dsu = new DSU(n);
-        long totalCost = 0;
-        int edgesCount = 0;
-
-        for (Edge e : edges) {
-            if (dsu.unite(e.u, e.v)) {
-                totalCost += e.w;
-                edgesCount++;
-                if (edgesCount == n - 1) break;
-            }
-        }
-
-        if (edgesCount == n - 1) {
-            System.out.println(totalCost);
-        } else {
-            System.out.println(-1);
-        }
+        // TODO: Read conduits and calculate the minimum total excavation cost
+        // Output the minimum cost, or -1 if the network cannot be fully connected
     }
 }`,
           python: `import sys
@@ -393,47 +255,8 @@ def solve():
     n = int(input_data[0])
     m = int(input_data[1])
     
-    edges = []
-    idx = 2
-    for _ in range(m):
-        u = int(input_data[idx])
-        v = int(input_data[idx+1])
-        w = int(input_data[idx+2])
-        idx += 3
-        edges.append((w, u, v))
-        
-    edges.sort()
-    
-    parent = list(range(n + 1))
-    
-    def find(i):
-        if parent[i] == i:
-            return i
-        parent[i] = find(parent[i])
-        return parent[i]
-        
-    def unite(i, j):
-        root_i = find(i)
-        root_j = find(j)
-        if root_i != root_j:
-            parent[root_i] = root_j
-            return True
-        return False
-        
-    total_cost = 0
-    edges_used = 0
-    
-    for w, u, v in edges:
-        if unite(u, v):
-            total_cost += w
-            edges_used += 1
-            if edges_used == n - 1:
-                break
-                
-    if edges_used == n - 1:
-        print(total_cost)
-    else:
-        print(-1)
+    # TODO: Read conduits and calculate the minimum total excavation cost
+    # Print the minimum cost, or -1 if the network cannot be fully connected
 
 if __name__ == '__main__':
     solve()`,
@@ -543,26 +366,8 @@ int main() {
         starterCode: {
           cpp: `#include <iostream>
 #include <vector>
-#include <queue>
 
 using namespace std;
-
-const long long INF = 1e18;
-
-struct Edge {
-    int to;
-    long long time;
-    int energy;
-};
-
-struct State {
-    long long time;
-    int u;
-    int battery;
-    bool operator>(const State& other) const {
-        return time > other.time;
-    }
-};
 
 int main() {
     ios_base::sync_with_stdio(false);
@@ -571,62 +376,9 @@ int main() {
     int n, m, c;
     if (!(cin >> n >> m >> c)) return 0;
 
-    vector<bool> isRecharge(n + 1, false);
-    for (int i = 0; i < c; i++) {
-        int pad;
-        cin >> pad;
-        isRecharge[pad] = true;
-    }
-
-    vector<vector<Edge>> adj(n + 1);
-    for (int i = 0; i < m; i++) {
-        int u, v;
-        long long t;
-        int e;
-        cin >> u >> v >> t >> e;
-        adj[u].push_back({v, t, e});
-        adj[v].push_back({u, t, e});
-    }
-
-    // 2D Dijkstra: dist[u][battery]
-    vector<vector<long long>> dist(n + 1, vector<long long>(101, INF));
-    priority_queue<State, vector<State>, greater<State>> pq;
-
-    dist[1][100] = 0;
-    pq.push({0, 1, 100});
-
-    while (!pq.empty()) {
-        auto [d, u, bat] = pq.top();
-        pq.pop();
-
-        if (d > dist[u][bat]) continue;
-        if (u == n) {
-            cout << d << "\\n";
-            return 0;
-        }
-
-        int currBat = isRecharge[u] ? 100 : bat;
-
-        for (const auto& edge : adj[u]) {
-            if (currBat >= edge.energy) {
-                int nextBat = currBat - edge.energy;
-                if (isRecharge[edge.to]) nextBat = 100;
-
-                if (dist[u][bat] + edge.time < dist[edge.to][nextBat]) {
-                    dist[edge.to][nextBat] = dist[u][bat] + edge.time;
-                    pq.push({dist[edge.to][nextBat], edge.to, nextBat});
-                }
-            }
-        }
-    }
-
-    long long ans = INF;
-    for (int b = 0; b <= 100; b++) {
-        ans = min(ans, dist[n][b]);
-    }
-
-    if (ans >= INF) cout << -1 << "\\n";
-    else cout << ans << "\\n";
+    // TODO: Read recharge pads and flight corridors
+    // Implement shortest path with battery constraints from building 1 to N
+    // Print the minimum travel time, or -1 if unreachable
 
     return 0;
 }`,
@@ -634,31 +386,6 @@ int main() {
 import java.io.*;
 
 public class Main {
-    static class Edge {
-        int to;
-        long time;
-        int energy;
-        Edge(int to, long time, int energy) {
-            this.to = to;
-            this.time = time;
-            this.energy = energy;
-        }
-    }
-
-    static class State implements Comparable<State> {
-        long time;
-        int u;
-        int battery;
-        State(long time, int u, int battery) {
-            this.time = time;
-            this.u = u;
-            this.battery = battery;
-        }
-        public int compareTo(State other) {
-            return Long.compare(this.time, other.time);
-        }
-    }
-
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String line = br.readLine();
@@ -668,67 +395,12 @@ public class Main {
         int m = Integer.parseInt(st.nextToken());
         int c = Integer.parseInt(st.nextToken());
 
-        boolean[] isRecharge = new boolean[n + 1];
-        if (c > 0) {
-            st = new StringTokenizer(br.readLine());
-            for (int i = 0; i < c; i++) {
-                isRecharge[Integer.parseInt(st.nextToken())] = true;
-            }
-        }
-
-        List<List<Edge>> adj = new ArrayList<>();
-        for (int i = 0; i <= n; i++) adj.add(new ArrayList<>());
-
-        for (int i = 0; i < m; i++) {
-            st = new StringTokenizer(br.readLine());
-            int u = Integer.parseInt(st.nextToken());
-            int v = Integer.parseInt(st.nextToken());
-            long t = Long.parseLong(st.nextToken());
-            int e = Integer.parseInt(st.nextToken());
-            adj.get(u).add(new Edge(v, t, e));
-            adj.get(v).add(new Edge(u, t, e));
-        }
-
-        long INF = (long) 1e18;
-        long[][] dist = new long[n + 1][101];
-        for (long[] row : dist) Arrays.fill(row, INF);
-
-        PriorityQueue<State> pq = new PriorityQueue<>();
-        dist[1][100] = 0;
-        pq.add(new State(0, 1, 100));
-
-        while (!pq.isEmpty()) {
-            State curr = pq.poll();
-            if (curr.time > dist[curr.u][curr.battery]) continue;
-            if (curr.u == n) {
-                System.out.println(curr.time);
-                return;
-            }
-
-            int currBat = isRecharge[curr.u] ? 100 : curr.battery;
-
-            for (Edge edge : adj.get(curr.u)) {
-                if (currBat >= edge.energy) {
-                    int nextBat = isRecharge[edge.to] ? 100 : currBat - edge.energy;
-                    if (dist[curr.u][curr.battery] + edge.time < dist[edge.to][nextBat]) {
-                        dist[edge.to][nextBat] = dist[curr.u][curr.battery] + edge.time;
-                        pq.add(new State(dist[edge.to][nextBat], edge.to, nextBat));
-                    }
-                }
-            }
-        }
-
-        long ans = INF;
-        for (int b = 0; b <= 100; b++) {
-            ans = Math.min(ans, dist[n][b]);
-        }
-
-        if (ans >= INF) System.out.println(-1);
-        else System.out.println(ans);
+        // TODO: Read recharge pads and flight corridors
+        // Implement shortest path with battery constraints from building 1 to N
+        // Print the minimum travel time, or -1 if unreachable
     }
 }`,
           python: `import sys
-import heapq
 
 def solve():
     input_data = sys.stdin.read().split()
@@ -739,49 +411,9 @@ def solve():
     m = int(input_data[1])
     c = int(input_data[2])
     
-    idx = 3
-    is_recharge = [False] * (n + 1)
-    for _ in range(c):
-        pad = int(input_data[idx])
-        idx += 1
-        is_recharge[pad] = True
-        
-    adj = [[] for _ in range(n + 1)]
-    for _ in range(m):
-        u = int(input_data[idx])
-        v = int(input_data[idx+1])
-        t = int(input_data[idx+2])
-        e = int(input_data[idx+3])
-        idx += 4
-        adj[u].append((v, t, e))
-        adj[v].append((u, t, e))
-        
-    INF = float('inf')
-    dist = [[INF] * 101 for _ in range(n + 1)]
-    dist[1][100] = 0
-    pq = [(0, 1, 100)]
-    
-    while pq:
-        d, u, bat = heapq.heappop(pq)
-        if d > dist[u][bat]:
-            continue
-        if u == n:
-            print(d)
-            return
-            
-        curr_bat = 100 if is_recharge[u] else bat
-        for v, t, e in adj[u]:
-            if curr_bat >= e:
-                next_bat = 100 if is_recharge[v] else (curr_bat - e)
-                if d + t < dist[v][next_bat]:
-                    dist[v][next_bat] = d + t
-                    heapq.heappush(pq, (d + t, v, next_bat))
-                    
-    ans = min(dist[n])
-    if ans >= INF:
-        print(-1)
-    else:
-        print(ans)
+    # TODO: Read recharge pads and flight corridors
+    # Implement shortest path with battery constraints from building 1 to N
+    # Print the minimum travel time, or -1 if unreachable
 
 if __name__ == '__main__':
     solve()`,
@@ -903,7 +535,6 @@ int main() {
         starterCode: {
           cpp: `#include <iostream>
 #include <vector>
-#include <queue>
 
 using namespace std;
 
@@ -914,44 +545,8 @@ int main() {
     int n, m;
     if (!(cin >> n >> m)) return 0;
 
-    vector<vector<int>> adj(n);
-    vector<int> inDegree(n, 0);
-
-    for (int i = 0; i < m; i++) {
-        int a, b;
-        cin >> a >> b;
-        // b -> a
-        adj[b].push_back(a);
-        inDegree[a]++;
-    }
-
-    queue<int> q;
-    for (int i = 0; i < n; i++) {
-        if (inDegree[i] == 0) q.push(i);
-    }
-
-    vector<int> order;
-    while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-        order.push_back(u);
-
-        for (int v : adj[u]) {
-            inDegree[v]--;
-            if (inDegree[v] == 0) {
-                q.push(v);
-            }
-        }
-    }
-
-    if ((int)order.size() == n) {
-        for (int i = 0; i < n; i++) {
-            cout << order[i] << (i + 1 == n ? "" : " ");
-        }
-        cout << "\\n";
-    } else {
-        cout << "IMPOSSIBLE\\n";
-    }
+    // TODO: Read prerequisites and output a valid course order
+    // If impossible due to circular dependency, output IMPOSSIBLE
 
     return 0;
 }`,
@@ -967,46 +562,11 @@ public class Main {
         int n = Integer.parseInt(st.nextToken());
         int m = Integer.parseInt(st.nextToken());
 
-        List<List<Integer>> adj = new ArrayList<>();
-        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
-        int[] inDegree = new int[n];
-
-        for (int i = 0; i < m; i++) {
-            st = new StringTokenizer(br.readLine());
-            int a = Integer.parseInt(st.nextToken());
-            int b = Integer.parseInt(st.nextToken());
-            adj.get(b).add(a);
-            inDegree[a]++;
-        }
-
-        Queue<Integer> q = new LinkedList<>();
-        for (int i = 0; i < n; i++) {
-            if (inDegree[i] == 0) q.add(i);
-        }
-
-        List<Integer> order = new ArrayList<>();
-        while (!q.isEmpty()) {
-            int u = q.poll();
-            order.add(u);
-            for (int v : adj.get(u)) {
-                inDegree[v]--;
-                if (inDegree[v] == 0) q.add(v);
-            }
-        }
-
-        if (order.size() == n) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < n; i++) {
-                sb.append(order.get(i)).append(i + 1 == n ? "" : " ");
-            }
-            System.out.println(sb.toString());
-        } else {
-            System.out.println("IMPOSSIBLE");
-        }
+        // TODO: Read prerequisites and output a valid course order
+        // If impossible due to circular dependency, output IMPOSSIBLE
     }
 }`,
           python: `import sys
-from collections import deque
 
 def solve():
     input_data = sys.stdin.read().split()
@@ -1016,32 +576,8 @@ def solve():
     n = int(input_data[0])
     m = int(input_data[1])
     
-    adj = [[] for _ in range(n)]
-    in_degree = [0] * n
-    idx = 2
-    
-    for _ in range(m):
-        a = int(input_data[idx])
-        b = int(input_data[idx+1])
-        idx += 2
-        adj[b].append(a)
-        in_degree[a] += 1
-        
-    q = deque([i for i in range(n) if in_degree[i] == 0])
-    order = []
-    
-    while q:
-        u = q.popleft()
-        order.append(u)
-        for v in adj[u]:
-            in_degree[v] -= 1
-            if in_degree[v] == 0:
-                q.append(v)
-                
-    if len(order) == n:
-        print(*(order))
-    else:
-        print("IMPOSSIBLE")
+    # TODO: Read prerequisites and output a valid course order
+    # If impossible due to circular dependency, print IMPOSSIBLE
 
 if __name__ == '__main__':
     solve()`,
@@ -1125,7 +661,6 @@ int main() {
         starterCode: {
           cpp: `#include <iostream>
 #include <vector>
-#include <algorithm>
 
 using namespace std;
 
@@ -1140,20 +675,8 @@ int main() {
     vector<int> coins(n);
     for (int i = 0; i < n; i++) cin >> coins[i];
 
-    const int INF = 1e9;
-    vector<int> dp(v + 1, INF);
-    dp[0] = 0;
-
-    for (int c : coins) {
-        for (int i = c; i <= v; i++) {
-            if (dp[i - c] != INF) {
-                dp[i] = min(dp[i], dp[i - c] + 1);
-            }
-        }
-    }
-
-    if (dp[v] >= INF) cout << -1 << "\\n";
-    else cout << dp[v] << "\\n";
+    // TODO: Calculate the minimum number of currency notes to make up v
+    // Output the minimum notes required, or -1 if impossible
 
     return 0;
 }`,
@@ -1173,20 +696,8 @@ public class Main {
         int[] coins = new int[n];
         for (int i = 0; i < n; i++) coins[i] = Integer.parseInt(st.nextToken());
 
-        int INF = (int) 1e9;
-        int[] dp = new int[v + 1];
-        Arrays.fill(dp, INF);
-        dp[0] = 0;
-
-        for (int c : coins) {
-            for (int i = c; i <= v; i++) {
-                if (dp[i - c] != INF) {
-                    dp[i] = Math.min(dp[i], dp[i - c] + 1);
-                }
-            }
-        }
-
-        System.out.println(dp[v] >= INF ? -1 : dp[v]);
+        // TODO: Calculate the minimum number of currency notes to make up v
+        // Output the minimum notes required, or -1 if impossible
     }
 }`,
           python: `import sys
@@ -1198,19 +709,10 @@ def solve():
     
     n = int(input_data[0])
     v = int(input_data[1])
-    coins = [int(x) for x in input_data[2:2+n]]
+    coins = [int(x) for x in input_data[2 : 2 + n]]
     
-    INF = float('inf')
-    dp = [INF] * (v + 1)
-    dp[0] = 0
-    
-    for c in coins:
-        for i in range(c, v + 1):
-            if dp[i - c] + 1 < dp[i]:
-                dp[i] = dp[i - c] + 1
-                
-    ans = dp[v]
-    print(-1 if ans == INF else ans)
+    # TODO: Calculate the minimum number of currency notes to make up v
+    # Print the minimum notes required, or -1 if impossible
 
 if __name__ == '__main__':
     solve()`,
@@ -1290,39 +792,6 @@ int main() {
 
 using namespace std;
 
-long long mergeAndCount(vector<long long>& arr, vector<long long>& temp, int left, int mid, int right) {
-    int i = left;
-    int j = mid + 1;
-    int k = left;
-    long long inv_count = 0;
-
-    while ((i <= mid) && (j <= right)) {
-        if (arr[i] <= arr[j]) {
-            temp[k++] = arr[i++];
-        } else {
-            temp[k++] = arr[j++];
-            inv_count += (mid - i + 1);
-        }
-    }
-
-    while (i <= mid) temp[k++] = arr[i++];
-    while (j <= right) temp[k++] = arr[j++];
-    for (i = left; i <= right; i++) arr[i] = temp[i];
-
-    return inv_count;
-}
-
-long long mergeSortAndCount(vector<long long>& arr, vector<long long>& temp, int left, int right) {
-    long long inv_count = 0;
-    if (left < right) {
-        int mid = left + (right - left) / 2;
-        inv_count += mergeSortAndCount(arr, temp, left, mid);
-        inv_count += mergeSortAndCount(arr, temp, mid + 1, right);
-        inv_count += mergeAndCount(arr, temp, left, mid, right);
-    }
-    return inv_count;
-}
-
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
@@ -1333,49 +802,15 @@ int main() {
     vector<long long> a(n);
     for (int i = 0; i < n; i++) cin >> a[i];
 
-    vector<long long> temp(n);
-    long long ans = mergeSortAndCount(a, temp, 0, n - 1);
+    // TODO: Count total inversions in O(N log N) time
+    // Print the number of inversions on a new line
 
-    cout << ans << "\\n";
     return 0;
 }`,
           java: `import java.util.*;
 import java.io.*;
 
 public class Main {
-    static long mergeAndCount(long[] arr, long[] temp, int left, int mid, int right) {
-        int i = left;
-        int j = mid + 1;
-        int k = left;
-        long inv_count = 0;
-
-        while ((i <= mid) && (j <= right)) {
-            if (arr[i] <= arr[j]) {
-                temp[k++] = arr[i++];
-            } else {
-                temp[k++] = arr[j++];
-                inv_count += (mid - i + 1);
-            }
-        }
-
-        while (i <= mid) temp[k++] = arr[i++];
-        while (j <= right) temp[k++] = arr[j++];
-        for (i = left; i <= right; i++) arr[i] = temp[i];
-
-        return inv_count;
-    }
-
-    static long mergeSortAndCount(long[] arr, long[] temp, int left, int right) {
-        long inv_count = 0;
-        if (left < right) {
-            int mid = left + (right - left) / 2;
-            inv_count += mergeSortAndCount(arr, temp, left, mid);
-            inv_count += mergeSortAndCount(arr, temp, mid + 1, right);
-            inv_count += mergeAndCount(arr, temp, left, mid, right);
-        }
-        return inv_count;
-    }
-
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String line = br.readLine();
@@ -1386,61 +821,21 @@ public class Main {
         long[] a = new long[n];
         for (int i = 0; i < n; i++) a[i] = Long.parseLong(st.nextToken());
 
-        long[] temp = new long[n];
-        long ans = mergeSortAndCount(a, temp, 0, n - 1);
-        System.out.println(ans);
+        // TODO: Count total inversions in O(N log N) time
+        // Print the answer on a new line
     }
 }`,
           python: `import sys
-
-def merge_and_count(arr, temp, left, mid, right):
-    i = left
-    j = mid + 1
-    k = left
-    inv_count = 0
-    
-    while i <= mid and j <= right:
-        if arr[i] <= arr[j]:
-            temp[k] = arr[i]
-            i += 1
-        else:
-            temp[k] = arr[j]
-            inv_count += (mid - i + 1)
-            j += 1
-        k += 1
-        
-    while i <= mid:
-        temp[k] = arr[i]
-        i += 1
-        k += 1
-        
-    while j <= right:
-        temp[k] = arr[j]
-        j += 1
-        k += 1
-        
-    for idx in range(left, right + 1):
-        arr[idx] = temp[idx]
-        
-    return inv_count
-
-def merge_sort_and_count(arr, temp, left, right):
-    inv_count = 0
-    if left < right:
-        mid = (left + right) // 2
-        inv_count += merge_sort_and_count(arr, temp, left, mid)
-        inv_count += merge_sort_and_count(arr, temp, mid + 1, right)
-        inv_count += merge_and_count(arr, temp, left, mid, right)
-    return inv_count
 
 def solve():
     input_data = sys.stdin.read().split()
     if not input_data:
         return
     n = int(input_data[0])
-    arr = [int(x) for x in input_data[1:n+1]]
-    temp = [0] * n
-    print(merge_sort_and_count(arr, temp, 0, n - 1))
+    arr = [int(x) for x in input_data[1 : n + 1]]
+
+    # TODO: Count total inversions in O(N log N) time
+    # print(ans)
 
 if __name__ == '__main__':
     solve()`,

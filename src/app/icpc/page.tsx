@@ -76,6 +76,7 @@ export default function IcpcCollegiateArenaPage() {
   const [solverTab, setSolverTab] = useState<'editor' | 'solution'>('editor');
   const [selectedLanguage, setSelectedLanguage] = useState<'cpp' | 'python' | 'java'>('cpp');
   const [userCode, setUserCode] = useState('');
+  const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
   const [copiedSolution, setCopiedSolution] = useState(false);
   const [copiedContestId, setCopiedContestId] = useState<string | null>(null);
   const [consoleOutput, setConsoleOutput] = useState<{ status: 'idle' | 'running' | 'success' | 'error'; message: string }>({
@@ -83,6 +84,19 @@ export default function IcpcCollegiateArenaPage() {
     message: '',
   });
   const [submissions, setSubmissions] = useState<ContestSubmission[]>([]);
+  const [nextQuestionPrompt, setNextQuestionPrompt] = useState<{
+    show: boolean;
+    currentTitle: string;
+    nextLetter: string;
+    nextProblem: IcpcProblem;
+    secondsLeft: number;
+  } | null>(null);
+  const [contestCompletionModal, setContestCompletionModal] = useState<{
+    isOpen: boolean;
+    contestTitle: string;
+    totalSolved: number;
+    totalPoints: number;
+  } | null>(null);
 
   const userRole = (profile?.role as string) || '';
   const isFacultyUser =
@@ -104,6 +118,25 @@ export default function IcpcCollegiateArenaPage() {
       }
     } catch (e) {}
   }, []);
+
+  // Countdown timer to automatically advance to the next problem upon correct answer
+  useEffect(() => {
+    if (!nextQuestionPrompt || nextQuestionPrompt.secondsLeft <= 0) return;
+
+    const timer = setTimeout(() => {
+      if (nextQuestionPrompt.secondsLeft === 1) {
+        const target = nextQuestionPrompt.nextProblem;
+        setNextQuestionPrompt(null);
+        switchProblem(target);
+      } else {
+        setNextQuestionPrompt((prev) =>
+          prev ? { ...prev, secondsLeft: prev.secondsLeft - 1 } : null
+        );
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [nextQuestionPrompt]);
 
   // ICPC Exam Immersion Mode: hide global nav, banners, quick dock, lock page scroll
   useEffect(() => {
@@ -171,6 +204,43 @@ export default function IcpcCollegiateArenaPage() {
     setTimeout(() => setCopiedSolution(false), 2000);
   };
 
+  const switchProblem = (newProblem: IcpcProblem) => {
+    if (activeProblem) {
+      const currentKey = `${activeProblem.id}_${selectedLanguage}`;
+      setCodeDrafts((prev) => ({ ...prev, [currentKey]: userCode }));
+    }
+
+    setActiveProblem(newProblem);
+    setSolverTab('editor');
+    setConsoleOutput({ status: 'idle', message: '' });
+    setNextQuestionPrompt(null);
+
+    const targetKey = `${newProblem.id}_${selectedLanguage}`;
+    const existingDraft = codeDrafts[targetKey];
+    if (existingDraft !== undefined) {
+      setUserCode(existingDraft);
+    } else {
+      const starter = newProblem.starterCode?.[selectedLanguage] || getDefaultStarter(selectedLanguage);
+      setUserCode(starter);
+    }
+  };
+
+  const handleSelectLanguage = (lang: 'cpp' | 'python' | 'java') => {
+    if (!activeProblem) return;
+    const currentKey = `${activeProblem.id}_${selectedLanguage}`;
+    setCodeDrafts((prev) => ({ ...prev, [currentKey]: userCode }));
+
+    setSelectedLanguage(lang);
+    const targetKey = `${activeProblem.id}_${lang}`;
+    const existingDraft = codeDrafts[targetKey];
+    if (existingDraft !== undefined) {
+      setUserCode(existingDraft);
+    } else {
+      const starter = activeProblem.starterCode?.[lang] || getDefaultStarter(lang);
+      setUserCode(starter);
+    }
+  };
+
   const handleOpenProblem = (contest: IcpcContest, problem: IcpcProblem) => {
     try {
       if (typeof document !== 'undefined' && !document.fullscreenElement) {
@@ -186,8 +256,16 @@ export default function IcpcCollegiateArenaPage() {
     setActiveProblem(problem);
     setSolverTab('editor');
     setConsoleOutput({ status: 'idle', message: '' });
-    const starter = problem.starterCode?.[selectedLanguage] || getDefaultStarter(selectedLanguage);
-    setUserCode(starter);
+    setNextQuestionPrompt(null);
+
+    const targetKey = `${problem.id}_${selectedLanguage}`;
+    const existingDraft = codeDrafts[targetKey];
+    if (existingDraft !== undefined) {
+      setUserCode(existingDraft);
+    } else {
+      const starter = problem.starterCode?.[selectedLanguage] || getDefaultStarter(selectedLanguage);
+      setUserCode(starter);
+    }
   };
 
   const handleRunSample = async () => {
@@ -367,7 +445,35 @@ export default function IcpcCollegiateArenaPage() {
         };
 
         setSubmissions((prev) => [newSub, ...prev]);
+
+        // Auto-advance logic: If all questions in contest are answered, celebrate completion!
+        // Otherwise, advance to the next question in the contest (e.g. A -> B).
+        const contestProblems = selectedContest.problems;
+        const currentProblemIndex = contestProblems.findIndex((p) => p.id === activeProblem.id);
+        const hasNextProblem = currentProblemIndex >= 0 && currentProblemIndex + 1 < contestProblems.length;
+        const nextProblem = hasNextProblem ? contestProblems[currentProblemIndex + 1] : null;
+        const allContestProblemsSolved = contestProblems.every((p) => updatedSolved.includes(p.id));
+
+        if (allContestProblemsSolved) {
+          setNextQuestionPrompt(null);
+          setContestCompletionModal({
+            isOpen: true,
+            contestTitle: selectedContest.title,
+            totalSolved: contestProblems.length,
+            totalPoints: newTotalPoints,
+          });
+        } else if (nextProblem) {
+          const nextLetter = String.fromCharCode(65 + currentProblemIndex + 1);
+          setNextQuestionPrompt({
+            show: true,
+            currentTitle: activeProblem.title,
+            nextLetter,
+            nextProblem,
+            secondsLeft: 3,
+          });
+        }
       } else {
+        setNextQuestionPrompt(null);
         const tc = testCases[failedCaseIndex - 1];
         let details = '';
         if (failedResult.compile_output) {
@@ -926,21 +1032,23 @@ export default function IcpcCollegiateArenaPage() {
                   <div className="hidden md:flex items-center gap-1 shrink-0 ml-2">
                     {selectedContest.problems.map((prob, idx) => {
                       const isCurr = prob.id === activeProblem.id;
+                      const isSolved = progress.solvedProblemIds.includes(prob.id);
                       return (
                         <button
                           key={prob.id}
                           type="button"
-                          onClick={() => {
-                            setActiveProblem(prob);
-                            setConsoleOutput({ status: 'idle', message: '' });
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                          onClick={() => switchProblem(prob)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
                             isCurr
                               ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-xs'
+                              : isSolved
+                              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400'
                               : 'bg-charcoal-800/80 text-slate-400 hover:text-white border border-charcoal-700'
                           }`}
+                          title={`Problem ${String.fromCharCode(65 + idx)}: ${prob.title} ${isSolved ? '(Solved)' : ''}`}
                         >
-                          {String.fromCharCode(65 + idx)}
+                          {isSolved && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                          <span>{String.fromCharCode(65 + idx)}</span>
                         </button>
                       );
                     })}
@@ -1199,12 +1307,8 @@ export default function IcpcCollegiateArenaPage() {
                         <button
                           key={lang}
                           type="button"
-                          onClick={() => {
-                            setSelectedLanguage(lang);
-                            const starter = activeProblem?.starterCode?.[lang] || getDefaultStarter(lang);
-                            setUserCode(starter);
-                          }}
-                          className={`px-2.5 py-1 rounded-lg uppercase text-xs font-mono font-bold transition-all ${
+                          onClick={() => handleSelectLanguage(lang)}
+                          className={`px-2.5 py-1 rounded-lg uppercase text-xs font-mono font-bold transition-all cursor-pointer ${
                             selectedLanguage === lang
                               ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
                               : 'text-slate-400 hover:text-white border border-transparent'
@@ -1221,11 +1325,47 @@ export default function IcpcCollegiateArenaPage() {
                     </div>
                   </div>
 
+                  {/* Next Question Auto-Advance Toast / Banner */}
+                  {nextQuestionPrompt && (
+                    <div className="px-4 py-2.5 bg-emerald-950/90 border-b border-emerald-500/40 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200 backdrop-blur-sm select-none">
+                      <div className="flex items-center gap-2 text-emerald-300 font-mono">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>
+                          <strong>Correct! Solution Accepted!</strong> Advancing to Problem {nextQuestionPrompt.nextLetter} in {nextQuestionPrompt.secondsLeft}s...
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => switchProblem(nextQuestionPrompt.nextProblem)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                        >
+                          <span>Problem {nextQuestionPrompt.nextLetter} Now</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNextQuestionPrompt(null)}
+                          className="px-2 py-1 rounded-lg text-slate-400 hover:text-white text-xs cursor-pointer"
+                        >
+                          Stay Here
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Full-Height Code Editor Area */}
                   <div className="flex-1 relative min-h-0 bg-charcoal-950 flex flex-col">
                     <textarea
                       value={userCode}
-                      onChange={(e) => setUserCode(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setUserCode(val);
+                        if (activeProblem) {
+                          const k = `${activeProblem.id}_${selectedLanguage}`;
+                          setCodeDrafts((prev) => ({ ...prev, [k]: val }));
+                        }
+                      }}
                       onPaste={(e) => {
                         const pasted = e.clipboardData?.getData('text') || '';
                         const check = checkSuspiciousPaste(pasted);
@@ -1367,6 +1507,80 @@ export default function IcpcCollegiateArenaPage() {
                 className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs"
               >
                 Understood
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Contest Completion Celebration Modal (All questions answered) */}
+        <Modal
+          isOpen={contestCompletionModal?.isOpen || false}
+          onClose={() => setContestCompletionModal(null)}
+          title="Contest Completed"
+          maxWidth="md"
+        >
+          <div className="p-6 text-center space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400 shadow-md">
+              <Award className="w-9 h-9" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                100% CONTEST COMPLETE
+              </span>
+              <h3 className="text-xl font-bold text-white">
+                Magnificent! All Problems Solved!
+              </h3>
+              <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
+                You successfully solved all {contestCompletionModal?.totalSolved} questions in &quot;{contestCompletionModal?.contestTitle}&quot; with full testcase passes!
+              </p>
+            </div>
+
+            {/* Solved Problems checklist */}
+            {selectedContest && (
+              <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-2 text-left">
+                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold">
+                  Solved Problem Set:
+                </p>
+                <div className="space-y-1.5">
+                  {selectedContest.problems.map((p, idx) => (
+                    <div key={p.id} className="flex items-center justify-between text-xs font-mono py-1 px-2.5 rounded-lg bg-charcoal-900/80 border border-charcoal-800">
+                      <span className="text-slate-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate max-w-[240px]">Problem {String.fromCharCode(65 + idx)}: {p.title.split(': ')[1] || p.title}</span>
+                      </span>
+                      <span className="text-cyan-400 font-bold shrink-0">+{p.points} pts</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setContestCompletionModal(null)}
+                className="w-full text-xs font-mono border-charcoal-700 text-slate-300 hover:text-white"
+              >
+                Review My Solutions
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  setContestCompletionModal(null);
+                  setActiveProblem(null);
+                  setSelectedContest(null);
+                  try {
+                    if (typeof document !== 'undefined' && document.fullscreenElement) {
+                      document.exitFullscreen().catch(() => {});
+                    }
+                  } catch (e) {}
+                }}
+                className="w-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                Exit Arena
               </Button>
             </div>
           </div>
