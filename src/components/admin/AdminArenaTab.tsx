@@ -134,6 +134,12 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       if (res.ok && data.success) {
         setIsArenaLive(data.isLive);
         setStatusUpdatedAt(data.updatedAt);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('kollabrix:arena_status_changed', { detail: { isLive: data.isLive } }));
+          try {
+            localStorage.setItem('kollabrix_arena_is_live', String(data.isLive));
+          } catch {}
+        }
         setStatusMsg({
           text: data.message || `Arena status updated to ${data.isLive ? 'LIVE' : 'MAINTENANCE'}`,
           type: 'success',

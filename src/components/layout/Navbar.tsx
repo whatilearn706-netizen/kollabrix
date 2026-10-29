@@ -63,11 +63,16 @@ export function Navbar() {
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
   const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
-  const [isArenaLive, setIsArenaLive] = useState(false);
+  const [isArenaLive, setIsArenaLive] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetch('/api/arena/status', { cache: 'no-store' })
+  const isAdmin =
+    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+    (profile as any)?.is_admin === true ||
+    (profile as any)?.role === 'admin';
+
+  const checkArenaStatus = () => {
+    fetch(`/api/arena/status?_t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         if (data && typeof data.isLive === 'boolean') {
@@ -75,6 +80,34 @@ export function Navbar() {
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    checkArenaStatus();
+
+    const handleStatusEvent = (e: any) => {
+      if (e?.detail && typeof e.detail.isLive === 'boolean') {
+        setIsArenaLive(e.detail.isLive);
+      } else {
+        checkArenaStatus();
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'kollabrix_arena_is_live' && e.newValue !== null) {
+        setIsArenaLive(e.newValue === 'true');
+      }
+    };
+
+    window.addEventListener('kollabrix:arena_status_changed', handleStatusEvent);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', checkArenaStatus);
+
+    return () => {
+      window.removeEventListener('kollabrix:arena_status_changed', handleStatusEvent);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', checkArenaStatus);
+    };
   }, []);
 
   const handleLaunchArena = () => {
@@ -260,8 +293,8 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Real-time Fighting Game Laptop Trigger (Only visible when Battle Arena is set to LIVE in Admin Control Center) */}
-          {isArenaLive && (
+          {/* Real-time Fighting Game Laptop Trigger (Visible when LIVE in Admin Control Center or for platform admins) */}
+          {(isAdmin || isArenaLive) && (
             <MiniArcadeLaptop
               onLaunchBattle={handleLaunchArena}
               className="shrink-0"
@@ -476,7 +509,9 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          <MiniArcadeLaptop onLaunchBattle={handleLaunchArena} className="shrink-0" />
+          {(isAdmin || isArenaLive) && (
+            <MiniArcadeLaptop onLaunchBattle={handleLaunchArena} className="shrink-0" />
+          )}
           {mounted && user && <NotificationBell />}
 
           <button

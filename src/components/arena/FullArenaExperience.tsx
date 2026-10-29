@@ -71,13 +71,22 @@ export function FullArenaExperience({
   currentUser,
 }: FullArenaExperienceProps) {
   // Navigation Steps:
+  // 0: Arena Gateway (Create Private Room vs Join with Code/Link)
   // 1: Name & Team Size (1v1 / 2v2)
   // 2: Choose Arena & Topics (Web Dev / Algo / Bug Hunt)
   // 3: Room Code & Invite Link Lobby
   // 4: Countdown (3-2-1)
   // 5: Battling Split-Screen
   // 6: Match Finished & Fog of War Lifted
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  const [joinCodeInput, setJoinCodeInput] = useState(() => initialRoomCode || '');
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  // Multiplayer Server State
+  const [myPlayerId] = useState(() => currentUser?.username || `pilot-${Math.random().toString(36).substring(2, 9)}`);
+  const [isHost, setIsHost] = useState(true);
+  const [roomData, setRoomData] = useState<any>(null);
 
   // Step 1: Esports Tactical Pilot Dossier
   const COMBAT_AVATARS = [
@@ -310,51 +319,259 @@ export function FullArenaExperience({
     }
   };
 
+  // Join existing room by code or invite link
+  const handleJoinWithCodeOrLink = async (codeToJoin?: string) => {
+    let raw = (codeToJoin || joinCodeInput).trim();
+    if (!raw) {
+      setJoinError('Please enter a room code (e.g. KBX-4634) or paste an invite link.');
+      return;
+    }
+
+    if (raw.includes('room=')) {
+      const match = raw.match(/room=([A-Za-z0-9-]+)/);
+      if (match && match[1]) raw = match[1];
+    } else if (raw.includes('#join-')) {
+      raw = raw.split('#join-')[1];
+    }
+
+    raw = raw.toUpperCase();
+    setIsJoiningRoom(true);
+    setJoinError(null);
+
+    try {
+      const res = await fetch('/api/arena/rooms/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: raw,
+          player: {
+            id: myPlayerId,
+            name: playerName,
+            avatarIdx: selectedAvatarIdx,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.room) {
+        setIsHost(false);
+        setRoomData(data.room);
+        setRoomCode(data.room.code);
+        setTeamSize(data.room.format || '1v1');
+        setArena(data.room.arena || 'web_dev');
+        setSelectedTags(data.room.selectedTags || ['html', 'css']);
+
+        if (data.room.question) {
+          const q = data.room.question;
+          setActiveQuestion(q);
+          setHtmlCode(q.starterHtml || '');
+          setCssCode(q.starterCss || '');
+          setJsCode(q.starterJs || '');
+          setPythonCode(q.starterPython || '# Your python solution\n');
+          setJavaCode(q.starterJava || '// Your java solution\n');
+          setCppCode(q.starterCpp || '// Your C++ solution\n');
+          setTotalTests(q.testCases?.length || 3);
+          setTimeLeft(q.timeLimitSeconds || 300);
+        }
+
+        playTacticalSelectSound();
+        setStep(3); // Directly into Lobby!
+      } else {
+        setJoinError(data.error || `Room "${raw}" was not found or has expired. Please verify with your friend.`);
+      }
+    } catch (err: any) {
+      setJoinError(err.message || 'Network error attempting to connect to duel room.');
+    } finally {
+      setIsJoiningRoom(false);
+    }
+  };
+
+  // Host registers new room on server when advancing from Step 2 to Step 3
+  const handleHostCreateRoom = async () => {
+    setIsHost(true);
+    try {
+      const res = await fetch('/api/arena/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: roomCode,
+          hostName: playerName,
+          hostId: myPlayerId,
+          avatarIdx: selectedAvatarIdx,
+          format: teamSize,
+          arena,
+          selectedTags,
+          difficulty,
+          timeLimit,
+          question: activeQuestion,
+          isBotEnabled: isBotOpponentAdded,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.room) setRoomData(data.room);
+      }
+    } catch (err) {
+      console.warn('Failed to publish room to server:', err);
+    }
+    playArcadeCoinSound();
+    setStep(3);
+  };
+
+  // Realtime Polling Synchronization across both players in Room
+  useEffect(() => {
+    if (step !== 3 && step !== 5) return;
+
+    let isMounted = true;
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/arena/rooms?code=${roomCode}&_t=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data.room) return;
+
+        setRoomData(data.room);
+
+        // If in Lobby (Step 3) and Host started match, advance joiner to Step 4 (Countdown)!
+        if (step === 3 && (data.room.status === 'starting' || data.room.status === 'in_progress')) {
+          if (data.room.question) {
+            const q = data.room.question;
+            setActiveQuestion(q);
+            setHtmlCode(q.starterHtml || '');
+            setCssCode(q.starterCss || '');
+            setJsCode(q.starterJs || '');
+            setPythonCode(q.starterPython || '# Your python solution\n');
+            setJavaCode(q.starterJava || '// Your java solution\n');
+            setCppCode(q.starterCpp || '// Your C++ solution\n');
+            setTotalTests(q.testCases?.length || 3);
+            setTimeLeft(q.timeLimitSeconds || 300);
+
+            if (data.room.arena === 'web_dev') {
+              setActiveTab('html');
+            } else if (data.room.arena === 'algorithms') {
+              setActiveTab('python');
+            } else {
+              setActiveTab('html');
+            }
+          }
+          setStep(4);
+          setCountdownNum(3);
+          return;
+        }
+
+        // If in Battlefield (Step 5):
+        if (step === 5) {
+          if (data.room.status === 'finished') {
+            setWinnerTeam(data.room.winnerTeam || 'Team Alpha');
+            setStep(6);
+            return;
+          }
+
+          // Read real-time opponent test progress
+          const oppList = isHost ? data.room.omegaPlayers : data.room.alphaPlayers;
+          if (oppList && oppList.length > 0) {
+            const opp = oppList[0];
+            if (opp.testsPassed !== undefined) setOpponentTestsPassed(opp.testsPassed);
+            if (opp.wpm) setOpponentWpm(opp.wpm);
+          }
+        }
+      } catch (err) {}
+    }, 1500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+    };
+  }, [step, roomCode, isHost]);
+
+  // Sync test progress to server for opponent's Fog-of-War HUD
+  const syncProgressToServer = (passedCount: number) => {
+    if (!roomCode) return;
+    fetch('/api/arena/rooms/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: roomCode,
+        action: 'progress',
+        playerId: myPlayerId,
+        payload: {
+          testsPassed: passedCount,
+          wpm: 74,
+        },
+      }),
+    }).catch(() => {});
+  };
+
+  // Sync match completion to server
+  const syncMatchWonToServer = (winnerTeam: 'Team Alpha' | 'Team Omega') => {
+    if (!roomCode) return;
+    fetch('/api/arena/rooms/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: roomCode,
+        action: 'match_won',
+        payload: { winnerTeam },
+      }),
+    }).catch(() => {});
+  };
+
   // Launch Match: Pull random question matching arena & selected tags from database or fallback
   const handleStartBattle = async () => {
     // If bot opponent is not checked and no student joined yet:
-    if (!isBotOpponentAdded) {
+    const opponentList = roomData?.omegaPlayers || [];
+    const hasOpponent = opponentList.length > 0 || isBotOpponentAdded;
+
+    if (!hasOpponent) {
       const confirmBot = confirm(
         `No opponent has entered Room ${roomCode} yet!\n\nWould you like to turn ON the AI Practice Bot and start battling right now?\n\n(Click Cancel if you want to copy the room code / link and wait for a classmate.)`
       );
       if (confirmBot) {
         setIsBotOpponentAdded(true);
+        fetch('/api/arena/rooms/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: roomCode,
+            action: 'toggle_bot',
+            payload: { isBotEnabled: true },
+          }),
+        }).catch(() => {});
       } else {
         return;
       }
     }
 
-    let chosen: DuelQuestion | null = null;
-    try {
-      const res = await fetch(
-        `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}`,
-        { cache: 'no-store' }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.questions && data.questions.length > 0) {
-          // Truly random pick from matching questions
-          chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
-        }
-      }
-    } catch (e) {
-      // offline fallback
-    }
-
+    let chosen: DuelQuestion | null = roomData?.question || null;
     if (!chosen) {
-      const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
-        if (q.arena !== arena) return false;
-        if (arena === 'bug_hunt' && q.bugDomain && q.bugDomain !== bugDomain) return false;
-        return selectedTags.some((t) => q.tags.includes(t));
-      });
-      chosen =
-        matching.length > 0
-          ? matching[Math.floor(Math.random() * matching.length)]
-          : DEFAULT_ARENA_QUESTIONS.find(
-              (q) => q.arena === arena && (arena !== 'bug_hunt' || q.bugDomain === bugDomain)
-            ) ||
-            DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
-            DEFAULT_ARENA_QUESTIONS[0];
+      try {
+        const res = await fetch(
+          `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}`,
+          { cache: 'no-store' }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.questions && data.questions.length > 0) {
+            chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
+          }
+        }
+      } catch (e) {}
+
+      if (!chosen) {
+        const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
+          if (q.arena !== arena) return false;
+          if (arena === 'bug_hunt' && q.bugDomain && q.bugDomain !== bugDomain) return false;
+          return selectedTags.some((t) => q.tags.includes(t));
+        });
+        chosen =
+          matching.length > 0
+            ? matching[Math.floor(Math.random() * matching.length)]
+            : DEFAULT_ARENA_QUESTIONS.find(
+                (q) => q.arena === arena && (arena !== 'bug_hunt' || q.bugDomain === bugDomain)
+              ) ||
+              DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
+              DEFAULT_ARENA_QUESTIONS[0];
+      }
     }
 
     setActiveQuestion(chosen);
@@ -394,6 +611,19 @@ export function FullArenaExperience({
     } else {
       setActiveTab('python');
     }
+
+    // Tell server to trigger match start for ALL participants in this room!
+    try {
+      await fetch('/api/arena/rooms/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: roomCode,
+          action: 'start_match',
+          payload: { question: chosen },
+        }),
+      });
+    } catch {}
 
     // Advance to countdown
     setStep(4);
@@ -615,6 +845,7 @@ export function FullArenaExperience({
 
     setTestCaseResults(newResults);
     setUserTestsPassed(totalPassed);
+    syncProgressToServer(totalPassed);
     setIsCompiling(false);
 
     if (anyCompileError) {
@@ -628,6 +859,7 @@ export function FullArenaExperience({
       });
     } else if (totalPassed === testCases.length) {
       playCompileSuccessSound();
+      syncMatchWonToServer(isHost ? 'Team Alpha' : 'Team Omega');
       setCompilerResult({
         success: true,
         stdout: newResults[selectedTestCaseIdx]?.stdout || '',
@@ -718,11 +950,14 @@ export function FullArenaExperience({
 
     setTestCaseResults(newResults);
     setUserTestsPassed(passedCount);
+    syncProgressToServer(passedCount);
     setIsSubmitting(false);
 
     if (passedCount === testCases.length) {
       playVictorySound();
-      setWinnerTeam('Team Alpha');
+      const winner = isHost ? 'Team Alpha' : 'Team Omega';
+      setWinnerTeam(winner);
+      syncMatchWonToServer(winner);
       setCompilerResult({
         success: true,
         stdout: newResults[selectedTestCaseIdx]?.stdout || '',
@@ -752,6 +987,7 @@ export function FullArenaExperience({
     );
     setWebEvaluation(evaluation);
     setUserTestsPassed(evaluation.testsPassed);
+    syncProgressToServer(evaluation.testsPassed);
 
     if (evaluation.passed) {
       playCompileSuccessSound();
@@ -771,10 +1007,13 @@ export function FullArenaExperience({
     );
     setWebEvaluation(evaluation);
     setUserTestsPassed(evaluation.testsPassed);
+    syncProgressToServer(evaluation.testsPassed);
 
     if (evaluation.passed) {
       playVictorySound();
-      setWinnerTeam('Team Alpha');
+      const winner = isHost ? 'Team Alpha' : 'Team Omega';
+      setWinnerTeam(winner);
+      syncMatchWonToServer(winner);
       setTimeout(() => {
         setIsSubmitting(false);
         setStep(6);
@@ -880,6 +1119,192 @@ export function FullArenaExperience({
       {/* Main Arena Viewport */}
       <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-center items-center p-4 sm:p-6">
         
+        {/* ================= STEP 0: ARENA LOBBY GATEWAY (CREATE ROOM OR JOIN WITH CODE/LINK) ================= */}
+        {step === 0 && (
+          <div className="w-full max-w-4xl p-6 sm:p-8 md:p-10 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-fadeIn space-y-8">
+            {/* Top Gateway Header */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-mono text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span>ARENA PROTOCOL 00 // MULTIPLAYER GATEWAY</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-mono uppercase">
+                Choose Battle Entry Protocol
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+                Host a private multiplayer duel for your friends, or enter a room code or invite link to join an active squad.
+              </p>
+            </div>
+
+            {/* Prompt if initialRoomCode was provided in URL */}
+            {initialRoomCode && (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-400/50 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300">
+                    <Swords className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider">
+                      Duel Invitation Detected!
+                    </p>
+                    <p className="text-sm font-bold text-white">
+                      You were invited to battle in Room <span className="text-cyan-400 font-mono font-bold">{initialRoomCode}</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleJoinWithCodeOrLink(initialRoomCode)}
+                  disabled={isJoiningRoom}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  {isJoiningRoom ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                  <span>Join Room {initialRoomCode} Now</span>
+                </button>
+              </div>
+            )}
+
+            {/* Two Master Choice Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Option 1: Create Private Room */}
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-950 to-cyan-950/30 border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_40px_rgba(6,182,212,0.15)] flex flex-col justify-between space-y-6 transition-all hover:scale-[1.01]">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                      <Swords className="w-6 h-6" />
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                      HOST A MATCH
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-black text-white font-mono uppercase tracking-tight">
+                      Create Private Room
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                      Host a 1v1 duel or 2v2 relay match. Configure challenge topics (Web Dev, Algorithms, Bug Hunt), generate a unique room code &amp; invite link, or play solo against our AI Practice Bot.
+                    </p>
+                  </div>
+
+                  <ul className="space-y-2 text-xs font-mono text-slate-300">
+                    <li className="flex items-center gap-2 text-cyan-300">
+                      <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Custom 1v1 &amp; 2v2 Team Relay format</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-cyan-300">
+                      <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Instant room code &amp; shareable invite link</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-cyan-300">
+                      <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Anti-cheat live Fog of War protection</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playArcadeCoinSound();
+                    setIsHost(true);
+                    setStep(1);
+                  }}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>CONFIGURE PRIVATE ROOM</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Option 2: Join Existing Room with Code or Link */}
+              <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-950 to-rose-950/30 border border-rose-500/40 hover:border-rose-400 shadow-[0_0_40px_rgba(244,63,94,0.15)] flex flex-col justify-between space-y-6 transition-all hover:scale-[1.01]">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+                      <Users className="w-6 h-6" />
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                      MULTIPLAYER JOIN
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-black text-white font-mono uppercase tracking-tight">
+                      Join Existing Room
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                      Entering a match hosted by a classmate? Paste the full invite link or type their 4-digit duel code below to jump directly into their squad or opponent slot.
+                    </p>
+                  </div>
+
+                  {/* Room Code or Link Input */}
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1.5 block">
+                        Room Code or Invite Link:
+                      </label>
+                      <input
+                        type="text"
+                        value={joinCodeInput}
+                        onChange={(e) => setJoinCodeInput(e.target.value)}
+                        placeholder="e.g. KBX-4634 or https://kollabrix.in/arena?room=..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-sm focus:border-rose-400 focus:outline-none tracking-wider placeholder:text-slate-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Your Pilot Battle Tag:</span>
+                        <button
+                          type="button"
+                          onClick={rollRandomCallSign}
+                          className="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-normal cursor-pointer"
+                        >
+                          🎲 Randomize
+                        </button>
+                      </label>
+                      <input
+                        type="text"
+                        value={playerName}
+                        onChange={(e) => setPlayerName(e.target.value)}
+                        placeholder="Your display name"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:border-rose-400 focus:outline-none placeholder:text-slate-600"
+                      />
+                    </div>
+
+                    {joinError && (
+                      <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-mono flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{joinError}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isJoiningRoom || !joinCodeInput.trim()}
+                  onClick={() => handleJoinWithCodeOrLink()}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 hover:brightness-110 text-white font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {isJoiningRoom ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>CONNECTING TO DUEL...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>ENTER ROOM &amp; BATTLE</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ================= STEP 1: AAA ESPORTS TOURNAMENT COMMAND CONSOLE ================= */}
         {step === 1 && (
           <div className="w-full max-w-6xl p-4 sm:p-6 md:p-8 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-fadeIn space-y-6">
@@ -1289,18 +1714,29 @@ export function FullArenaExperience({
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  playArcadeCoinSound();
-                  setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
-                  setStep(2);
-                }}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-3"
-              >
-                <span>⚡ INITIALIZE ARENA COMBAT PROTOCOL</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setStep(0)}
+                  className="w-full sm:w-auto px-5 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Entry Gateway</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playArcadeCoinSound();
+                    setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                    setStep(2);
+                  }}
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-3 cursor-pointer"
+                >
+                  <span>⚡ INITIALIZE ARENA COMBAT PROTOCOL</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1608,11 +2044,8 @@ export function FullArenaExperience({
 
               <button
                 type="button"
-                onClick={() => {
-                  playArcadeCoinSound();
-                  setStep(3);
-                }}
-                className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 via-amber-500 to-cyan-500 text-slate-950 font-black font-mono text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2"
+                onClick={handleHostCreateRoom}
+                className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 via-amber-500 to-cyan-500 text-slate-950 font-black font-mono text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Next: Room & Invite Link</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1751,7 +2184,27 @@ export function FullArenaExperience({
                   </span>
                 </div>
 
-                {isBotOpponentAdded ? (
+                {roomData?.omegaPlayers && roomData.omegaPlayers.length > 0 ? (
+                  <div className="space-y-2">
+                    {roomData.omegaPlayers.map((opp: any, idx: number) => (
+                      <div
+                        key={opp.id || idx}
+                        className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/50 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(244,63,94,0.25)]"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                            {opp.id === 'bot-rival' ? <Bot className="w-3.5 h-3.5" /> : `P${idx + 2}`}
+                          </div>
+                          <span className="text-white font-bold">{opp.name}</span>
+                          <span className="text-[10px] text-rose-400 font-semibold">({opp.role || 'Driver'})</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
+                          READY
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : isBotOpponentAdded ? (
                   <div className="space-y-2">
                     <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
                       <div className="flex items-center gap-2">
@@ -1799,21 +2252,28 @@ export function FullArenaExperience({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setStep(2)}
-                className="py-3 px-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5"
+                onClick={() => setStep(isHost ? 2 : 0)}
+                className="py-3 px-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <span>{isHost ? 'Back' : 'Leave Room'}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={handleStartBattle}
-                className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-amber-500 to-cyan-500 text-slate-950 font-black font-mono text-base uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_30px_rgba(244,63,94,0.4)] flex items-center justify-center gap-2"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>START MATCH NOW</span>
-              </button>
+              {isHost ? (
+                <button
+                  type="button"
+                  onClick={handleStartBattle}
+                  className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-amber-500 to-cyan-500 text-slate-950 font-black font-mono text-base uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_30px_rgba(244,63,94,0.4)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  <span>START MATCH NOW</span>
+                </button>
+              ) : (
+                <div className="flex-1 py-4 px-6 rounded-2xl bg-slate-950/90 border border-cyan-500/40 flex items-center justify-center gap-3 text-cyan-300 font-mono text-xs font-bold shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                  <span>WAITING FOR HOST ({roomData?.hostName || 'HOST'}) TO LAUNCH MATCH...</span>
+                </div>
+              )}
             </div>
           </div>
         )}
