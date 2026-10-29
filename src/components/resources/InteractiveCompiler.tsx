@@ -44,9 +44,27 @@ export function InteractiveCompiler({
   const [stdout, setStdout] = useState<string>('');
   const [stderr, setStderr] = useState<string>('');
   const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<'passed' | 'failed' | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Live timer tick during code compilation
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isRunning) {
+      setElapsedSeconds(0);
+      const start = Date.now();
+      interval = setInterval(() => {
+        setElapsedSeconds((Date.now() - start) / 1000);
+      }, 100);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning]);
 
   // Sync when initialCode changes (e.g. step changed)
   useEffect(() => {
@@ -209,7 +227,7 @@ export function InteractiveCompiler({
             {isRunning ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Compiling...
+                Compiling ({elapsedSeconds.toFixed(1)}s)...
               </>
             ) : (
               <>
@@ -301,14 +319,16 @@ export function InteractiveCompiler({
             <span>Output Console</span>
           </div>
           {executionTime !== null && (
-            <span className="text-[11px] text-slate-500">Execution: {executionTime}ms</span>
+            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              ⚡ Completed in {executionTime < 1000 ? `${executionTime}ms` : `${(executionTime / 1000).toFixed(2)}s`}
+            </span>
           )}
         </div>
 
         {isRunning ? (
-          <div className="flex items-center gap-2 text-emerald-400/90 py-4 animate-pulse">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Executing code in secure collegiate sandbox...</span>
+          <div className="flex items-center gap-2 text-emerald-400 py-3">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
+            <span>Executing code in high-speed sandbox ({elapsedSeconds.toFixed(1)}s)...</span>
           </div>
         ) : stdout || stderr ? (
           <div className="space-y-2">
