@@ -44,7 +44,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache
-  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles');
+  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles_v3');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() => cachedProfiles || []);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
@@ -145,10 +145,10 @@ export default function TeammatesPage() {
           const combinedProfiles = [...activeProfs, ...seedFallback];
 
           setAllProfiles(combinedProfiles);
-          setPageCache('linkora_teammates_profiles', combinedProfiles);
+          setPageCache('linkora_teammates_profiles_v3', combinedProfiles);
         } else {
           setAllProfiles(DEMO_PROFILES);
-          setPageCache('linkora_teammates_profiles', DEMO_PROFILES);
+          setPageCache('linkora_teammates_profiles_v3', DEMO_PROFILES);
         }
 
         // 2. If logged in, fetch owned projects
