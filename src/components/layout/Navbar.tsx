@@ -245,7 +245,7 @@ export function Navbar() {
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
           {/* Real-time Fighting Game Laptop Trigger (Left of Resources) */}
-          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} />
+          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} className="shrink-0" />
 
           {/* Clean Resources Link (Opens in new tab) */}
           <Link
@@ -455,7 +455,7 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} />
+          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} className="shrink-0" />
           {mounted && user && <NotificationBell />}
 
           <button

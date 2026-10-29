@@ -220,12 +220,17 @@ export function FullArenaExperience({
     if (!chosen) {
       const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
         if (q.arena !== arena) return false;
+        if (arena === 'bug_hunt' && q.bugDomain && q.bugDomain !== bugDomain) return false;
         return selectedTags.some((t) => q.tags.includes(t));
       });
       chosen =
         matching.length > 0
           ? matching[Math.floor(Math.random() * matching.length)]
-          : DEFAULT_ARENA_QUESTIONS[0];
+          : DEFAULT_ARENA_QUESTIONS.find(
+              (q) => q.arena === arena && (arena !== 'bug_hunt' || q.bugDomain === bugDomain)
+            ) ||
+            DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
+            DEFAULT_ARENA_QUESTIONS[0];
     }
 
     setActiveQuestion(chosen);
@@ -252,8 +257,14 @@ export function FullArenaExperience({
       if (selectedTags.includes('python')) setActiveTab('python');
       else if (selectedTags.includes('java')) setActiveTab('java');
       else setActiveTab('cpp');
+    } else if (arena === 'bug_hunt') {
+      if (bugDomain === 'web' || isWebMatch) {
+        setActiveTab('css');
+      } else {
+        setActiveTab('python');
+      }
     } else {
-      setActiveTab('react');
+      setActiveTab('python');
     }
 
     // Advance to countdown

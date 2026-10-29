@@ -302,7 +302,7 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '' }: MiniArcadeL
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative group cursor-pointer select-none transition-all duration-300 hover:scale-105 active:scale-95 flex items-center ${className}`}
+      className={`relative group cursor-pointer select-none shrink-0 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center ${className}`}
       title="⚔️ Battle Arena: 1v1 & 2v2 Live Code Duels (Click to Enter)"
       role="button"
       tabIndex={0}
