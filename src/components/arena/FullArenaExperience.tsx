@@ -35,6 +35,13 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Dices,
+  Crosshair,
+  Activity,
+  Shield,
+  ShieldCheck,
+  Wifi,
+  UserCheck,
 } from 'lucide-react';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
@@ -43,6 +50,7 @@ import {
   playArcadeCoinSound,
   playCompileSuccessSound,
   playCompileErrorSound,
+  playTacticalSelectSound,
 } from '@/lib/arena/soundEffects';
 import { evaluateWebCoordinateGraph, WebGraphEvaluation } from '@/lib/arena/webCoordinateGraph';
 import { verifyTestOutput } from '@/lib/arena/testCaseVerifier';
@@ -71,11 +79,93 @@ export function FullArenaExperience({
   // 6: Match Finished & Fog of War Lifted
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
+  // Step 1: Esports Tactical Pilot Dossier
+  const COMBAT_AVATARS = [
+    {
+      id: 'ronin',
+      name: 'Binary Ronin',
+      emoji: '🗡️',
+      color: 'from-rose-500 via-rose-600 to-amber-600',
+      border: 'border-rose-500',
+      glow: 'shadow-[0_0_25px_rgba(244,63,94,0.5)]',
+      trait: 'Ultra-Fast Precision',
+      rank: 'Grandmaster #14',
+      badge: 'SPEED SLICER',
+    },
+    {
+      id: 'ghost',
+      name: 'Quantum Ghost',
+      emoji: '⚡',
+      color: 'from-cyan-400 via-sky-500 to-blue-600',
+      border: 'border-cyan-400',
+      glow: 'shadow-[0_0_25px_rgba(6,182,212,0.5)]',
+      trait: 'Zero-Latency DSA',
+      rank: 'Master #42',
+      badge: 'LOGIC PHANTOM',
+    },
+    {
+      id: 'architect',
+      name: 'Neural Titan',
+      emoji: '🧠',
+      color: 'from-emerald-400 via-teal-500 to-cyan-600',
+      border: 'border-emerald-400',
+      glow: 'shadow-[0_0_25px_rgba(16,185,129,0.5)]',
+      trait: 'Clean System Architecture',
+      rank: 'Challenger #08',
+      badge: 'NEURAL FORGE',
+    },
+    {
+      id: 'glitch',
+      name: 'Glitch Viper',
+      emoji: '🔮',
+      color: 'from-purple-500 via-fuchsia-600 to-pink-600',
+      border: 'border-purple-400',
+      glow: 'shadow-[0_0_25px_rgba(168,85,247,0.5)]',
+      trait: 'Deep Bug Exterminator',
+      rank: 'Elite #23',
+      badge: 'BUG TRACKER',
+    },
+    {
+      id: 'sentinel',
+      name: 'Iron Sentinel',
+      emoji: '🛡️',
+      color: 'from-amber-400 via-orange-500 to-rose-600',
+      border: 'border-amber-400',
+      glow: 'shadow-[0_0_25px_rgba(245,158,11,0.5)]',
+      trait: 'Bulletproof Test Suites',
+      rank: 'Champion #05',
+      badge: 'IRON DEFENSE',
+    },
+  ];
+
+  const RANDOM_CALLSIGNS = [
+    'CYBER_RONIN_99',
+    'NEO_DRIFTER_X',
+    'ZERO_COOL_7',
+    'BYTE_SLAYER',
+    'QUANTUM_VIPER',
+    'TITAN_LOGIC',
+    'MATRIX_SLICER',
+    'SYNTAX_REAPER',
+    'KRYPTIC_PULSE',
+    'NEXUS_GHOST',
+    'VOID_RUNNER',
+    'BINARY_FALCON',
+  ];
+
+  const [selectedAvatarIdx, setSelectedAvatarIdx] = useState(0);
+
   // Step 1: Identity & Mode
   const [playerName, setPlayerName] = useState(
-    currentUser?.displayName || currentUser?.username || 'CyberCoder'
+    currentUser?.displayName || currentUser?.username || 'CyberRonin'
   );
   const [teamSize, setTeamSize] = useState<'1v1' | '2v2'>('1v1');
+
+  const rollRandomCallSign = () => {
+    playTacticalSelectSound();
+    const random = RANDOM_CALLSIGNS[Math.floor(Math.random() * RANDOM_CALLSIGNS.length)];
+    setPlayerName(random);
+  };
 
   // Step 2: Arena & Topic Selection
   const [arena, setArena] = useState<ArenaCategory>('web_dev');
@@ -621,105 +711,428 @@ export function FullArenaExperience({
       {/* Main Arena Viewport */}
       <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-center items-center p-4 sm:p-6">
         
-        {/* ================= STEP 1: ENTER NAME & CHOOSE TEAM SIZE ================= */}
+        {/* ================= STEP 1: AAA ESPORTS TOURNAMENT COMMAND CONSOLE ================= */}
         {step === 1 && (
-          <div className="w-full max-w-xl p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-slate-700/80 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-fadeIn space-y-6">
-            <div className="text-center space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 inline-block">
-                Step 1 of 3 &bull; Player Tag & Match Format
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                Enter the Battleground
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-400">
-                Choose your alias and select your preferred code duel combat format.
-              </p>
-            </div>
-
-            {/* Input Name */}
-            <div className="space-y-2">
-              <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                Your Battle Alias / Tag:
-              </label>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Enter your battle tag..."
-                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 text-white font-mono text-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 shadow-inner"
-              />
-            </div>
-
-            {/* Select Team Size: 1v1 vs 2v2 */}
-            <div className="space-y-2">
-              <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                Select Team Combat Format:
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* 1v1 Option */}
-                <button
-                  type="button"
-                  onClick={() => setTeamSize('1v1')}
-                  className={`p-4 rounded-2xl border text-left transition-all relative ${
-                    teamSize === '1v1'
-                      ? 'bg-gradient-to-br from-cyan-950/60 to-slate-900 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.3)]'
-                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                      <Zap className="w-5 h-5" />
+          <div className="w-full max-w-6xl p-4 sm:p-6 md:p-8 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-fadeIn space-y-6">
+            {/* Top Command Status Strip */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                  <Swords className="w-6 h-6 animate-pulse" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
+                      KBX-ARENA-OS // PROTOCOL 01: PILOT INITIALIZATION
                     </span>
-                    {teamSize === '1v1' && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
-                    )}
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
                   </div>
-                  <h3 className="font-bold text-white text-base font-mono">1 v 1 Solo Duel</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Head-to-head coding clash. Pure speed, precision, and speedrun execution.
-                  </p>
-                </button>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-mono uppercase">
+                    Tournament Command Center
+                  </h2>
+                </div>
+              </div>
 
-                {/* 2v2 Option */}
-                <button
-                  type="button"
-                  onClick={() => setTeamSize('2v2')}
-                  className={`p-4 rounded-2xl border text-left transition-all relative ${
-                    teamSize === '2v2'
-                      ? 'bg-gradient-to-br from-rose-950/60 to-slate-900 border-rose-500 shadow-[0_0_25px_rgba(244,63,94,0.3)]'
-                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                      <Users className="w-5 h-5" />
-                    </span>
-                    {teamSize === '2v2' && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185]" />
-                    )}
-                  </div>
-                  <h3 className="font-bold text-white text-base font-mono">2 v 2 Relay Squad</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Tag-team pairing. Driver & Navigator with live keyboard swaps every 2.5 mins.
-                  </p>
-                </button>
+              {/* 3-Step Circuit Node Navigation */}
+              <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono font-bold tracking-wider">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/60 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  <span>01 PILOT SPEC</span>
+                </div>
+                <span className="text-slate-600">&bull;</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">
+                  <span>02 ARENA MATRIX</span>
+                </div>
+                <span className="text-slate-600">&bull;</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">
+                  <span>03 SQUAD LINK</span>
+                </div>
               </div>
             </div>
 
-            {/* Next Button */}
-            <button
-              type="button"
-              onClick={() => {
-                playArcadeCoinSound();
-                // Generate a fresh random room code for the match
-                setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
-                setStep(2);
-              }}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-amber-500 to-rose-500 text-slate-950 font-black font-mono text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2"
-            >
-              <span>Continue to Arena Setup</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {/* Main 3-Column Tactical Pod Matrix */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* Pod 1: Pilot Holographic Dossier (Col 1-3) */}
+              <div className="lg:col-span-3 p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>PILOT DOSSIER</span>
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                      LIVE
+                    </span>
+                  </div>
+
+                  {/* Holographic Avatar Pod */}
+                  <div
+                    className={`relative w-full aspect-square rounded-2xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-2 ${COMBAT_AVATARS[selectedAvatarIdx].border} ${COMBAT_AVATARS[selectedAvatarIdx].glow} flex flex-col items-center justify-center overflow-hidden transition-all duration-300`}
+                  >
+                    {/* Background Holographic Scanline Grid */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.5)_51%)] bg-[size:100%_4px] pointer-events-none opacity-40" />
+                    <div className="absolute inset-0 bg-radial-gradient from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
+
+                    {/* Avatar Emoji */}
+                    <span className="text-5xl sm:text-6xl select-none filter drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] animate-bounce-short">
+                      {COMBAT_AVATARS[selectedAvatarIdx].emoji}
+                    </span>
+
+                    {/* Avatar Title */}
+                    <span className="mt-2 text-xs font-mono font-black text-white tracking-widest uppercase">
+                      {COMBAT_AVATARS[selectedAvatarIdx].name}
+                    </span>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                      {COMBAT_AVATARS[selectedAvatarIdx].badge}
+                    </span>
+                  </div>
+
+                  {/* Persona Switcher Chips */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block font-bold">
+                      Select Persona Class:
+                    </label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {COMBAT_AVATARS.map((avatar, idx) => (
+                        <button
+                          key={avatar.id}
+                          type="button"
+                          onClick={() => {
+                            playTacticalSelectSound();
+                            setSelectedAvatarIdx(idx);
+                          }}
+                          className={`p-2 rounded-xl text-center text-sm sm:text-base border transition-all ${
+                            selectedAvatarIdx === idx
+                              ? `${avatar.border} bg-slate-800 scale-105 shadow-md`
+                              : 'border-slate-800 bg-slate-950 hover:border-slate-700 opacity-60 hover:opacity-100'
+                          }`}
+                          title={`${avatar.name} - ${avatar.trait}`}
+                        >
+                          {avatar.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Audio / Keystroke Visualizer Bars */}
+                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                      <span>KEYSTROKE FREQUENCY</span>
+                      <span className="text-emerald-400 font-bold">98.4% CADENCE</span>
+                    </div>
+                    <div className="flex items-end justify-between h-5 gap-1 px-1">
+                      {[40, 75, 55, 90, 60, 100, 45, 80, 65, 85, 50, 95].map((val, i) => (
+                        <div
+                          key={i}
+                          className="w-1 bg-gradient-to-t from-cyan-500 to-rose-500 rounded-full animate-pulse"
+                          style={{
+                            height: `${val}%`,
+                            animationDelay: `${i * 70}ms`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pilot Telemetry Footnote */}
+                <div className="pt-2 border-t border-slate-800/60 font-mono text-[10px] text-slate-400 space-y-1">
+                  <div className="flex justify-between">
+                    <span>RANKING:</span>
+                    <span className="text-amber-400 font-bold">
+                      {COMBAT_AVATARS[selectedAvatarIdx].rank}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>TRAIT:</span>
+                    <span className="text-slate-200">{COMBAT_AVATARS[selectedAvatarIdx].trait}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>STATUS:</span>
+                    <span className="text-emerald-400 font-bold">● ARMED &amp; READY</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pod 2: Engagement Specification & Mode Selection (Col 4-9) */}
+              <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex flex-col justify-between space-y-5">
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-rose-400" />
+                      <span>ENGAGEMENT SPECIFICATION</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      STEP 1 OF 3
+                    </span>
+                  </div>
+
+                  {/* Input Name / Call-Sign with Randomizer */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                      <span>Tactical Pilot Call-Sign / Battle Tag:</span>
+                      <span className="text-[10px] text-cyan-400">VISIBLE IN ARENA HUD</span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan-400 font-mono text-xs select-none">
+                          &gt;
+                        </span>
+                        <input
+                          type="text"
+                          value={playerName}
+                          onChange={(e) => setPlayerName(e.target.value)}
+                          placeholder="Enter your battle alias..."
+                          className="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-white font-mono text-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 shadow-inner"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={rollRandomCallSign}
+                        className="px-3.5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-mono font-bold text-slate-200 hover:text-white transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95"
+                        title="Roll a random tactical hacker call-sign"
+                      >
+                        <Dices className="w-4 h-4 text-amber-400" />
+                        <span className="hidden sm:inline">Randomize</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3D Combat Format Selection Cards: 1v1 vs 2v2 */}
+                  <div className="space-y-2.5">
+                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                      Select Code Duel Combat Format:
+                    </label>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {/* 1v1 Solo Duel Card */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setTeamSize('1v1');
+                        }}
+                        className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                          teamSize === '1v1'
+                            ? 'bg-gradient-to-br from-cyan-950/70 via-slate-900 to-slate-950 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.35)] scale-[1.01]'
+                            : 'bg-slate-950/70 border-slate-800/90 hover:border-slate-700 hover:bg-slate-900/60 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                              <Zap className="w-5 h-5" />
+                            </span>
+                            {teamSize === '1v1' ? (
+                              <span className="px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 text-[10px] font-mono font-bold">
+                                SELECTED
+                              </span>
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                            )}
+                          </div>
+                          <h3 className="font-bold text-white text-base font-mono flex items-center gap-1.5">
+                            <span>1 v 1 Solo Showdown</span>
+                          </h3>
+                          <p className="text-[11px] font-mono text-cyan-400/90 mt-0.5 font-bold">
+                            ULTRA LOW LATENCY DUEL
+                          </p>
+                          <ul className="text-xs text-slate-300 mt-2.5 space-y-1 font-sans">
+                            <li className="flex items-center gap-1.5">
+                              <span className="text-cyan-400">&bull;</span>
+                              <span>Pure 1-on-1 head-to-head clash</span>
+                            </li>
+                            <li className="flex items-center gap-1.5">
+                              <span className="text-cyan-400">&bull;</span>
+                              <span>Fog of War live code encryption</span>
+                            </li>
+                            <li className="flex items-center gap-1.5">
+                              <span className="text-cyan-400">&bull;</span>
+                              <span>0% interference &bull; Pure speedrun</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </button>
+
+                      {/* 2v2 Relay Squad Card */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setTeamSize('2v2');
+                        }}
+                        className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                          teamSize === '2v2'
+                            ? 'bg-gradient-to-br from-rose-950/70 via-slate-900 to-slate-950 border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.35)] scale-[1.01]'
+                            : 'bg-slate-950/70 border-slate-800/90 hover:border-slate-700 hover:bg-slate-900/60 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                              <Users className="w-5 h-5" />
+                            </span>
+                            {teamSize === '2v2' ? (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-mono font-bold">
+                                SELECTED
+                              </span>
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                            )}
+                          </div>
+                          <h3 className="font-bold text-white text-base font-mono flex items-center gap-1.5">
+                            <span>2 v 2 Relay Squad</span>
+                          </h3>
+                          <p className="text-[11px] font-mono text-rose-400/90 mt-0.5 font-bold">
+                            DUAL-PILOT CO-OP WARFARE
+                          </p>
+                          <ul className="text-xs text-slate-300 mt-2.5 space-y-1 font-sans">
+                            <li className="flex items-center gap-1.5">
+                              <span className="text-rose-400">&bull;</span>
+                              <span>Driver + Navigator tag-team pairing</span>
+                            </li>
+                            <li className="flex items-center gap-1.5">
+                              <span className="text-rose-400">&bull;</span>
+                              <span>Auto keyboard swap every 2.5 mins</span>
+                            </li>
+                            <li className="flex items-center gap-1.5">
+                              <span className="text-rose-400">&bull;</span>
+                              <span>Synchronized team test suite</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Match Pace Chips */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] font-mono text-slate-400 uppercase font-bold mr-1">
+                      PACING:
+                    </span>
+                    {[
+                      { label: 'Blitz (3m)', sec: 180 },
+                      { label: 'Competitive (5m)', sec: 300 },
+                      { label: 'Marathon (10m)', sec: 600 },
+                    ].map((p) => (
+                      <button
+                        key={p.sec}
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setTimeLimit(p.sec);
+                        }}
+                        className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                          timeLimit === p.sec
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
+                            : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pod 3: Tournament Telemetry & Integrity Gauntlet (Col 10-12) */}
+              <div className="lg:col-span-3 p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>ARENA TELEMETRY</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                      SHIELD ACTIVE
+                    </span>
+                  </div>
+
+                  {/* Live Security Specifications */}
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2.5 font-mono text-[11px]">
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <Shield className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <div>
+                        <span className="text-white font-bold block">Fog of War Shield</span>
+                        <span className="text-[10px] text-slate-400">Zero screen-peeking encryption</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <Activity className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      <div>
+                        <span className="text-white font-bold block">Anti-Cheat Proctor</span>
+                        <span className="text-[10px] text-slate-400">Keystroke cadence & paste lock</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <Cpu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <div>
+                        <span className="text-white font-bold block">Judge0 Multi-Language</span>
+                        <span className="text-[10px] text-slate-400">Java 21, Python 3.12, C++20, Web</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <Wifi className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <div>
+                        <span className="text-white font-bold block">Edge WebSocket Mesh</span>
+                        <span className="text-[10px] text-slate-400">Sub-15ms realtime sync</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Match Bounty Reward Card */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-950 border border-amber-500/30 space-y-1.5">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>MATCH BOUNTY STAKE</span>
+                    </span>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-lg font-mono font-black text-white">+150 ELO</span>
+                      <span className="text-xs font-mono font-bold text-amber-300">+500 XP</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Winner claimable immediately upon all test cases passed or sudden-death timeout.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Telemetry Status Bar */}
+                <div className="pt-2 border-t border-slate-800/60 font-mono text-[10px] text-slate-400 flex items-center justify-between">
+                  <span>SPECTATORS:</span>
+                  <span className="text-cyan-400 font-bold">1,842 CONNECTED</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Command Bar: High-Voltage CTA */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
+              <div className="flex items-center gap-3 font-mono text-xs text-slate-400">
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                  FORMAT: <strong className="text-white">{teamSize.toUpperCase()}</strong>
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                  DURATION: <strong className="text-white">{timeLimit / 60} MINS</strong>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  playArcadeCoinSound();
+                  setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                  setStep(2);
+                }}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-3"
+              >
+                <span>⚡ INITIALIZE ARENA COMBAT PROTOCOL</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
 

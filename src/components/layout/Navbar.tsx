@@ -63,7 +63,27 @@ export function Navbar() {
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
   const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
+  const [isArenaLive, setIsArenaLive] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/arena/status', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.isLive === 'boolean') {
+          setIsArenaLive(data.isLive);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleLaunchArena = () => {
+    if (!isArenaLive) {
+      router.push('/arena');
+      return;
+    }
+    setIsVoxelTransitionActive(true);
+  };
 
   useEffect(() => {
     const handleExam = (e: any) => {
@@ -245,7 +265,7 @@ export function Navbar() {
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
           {/* Real-time Fighting Game Laptop Trigger (Left of Resources) */}
-          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} className="shrink-0" />
+          <MiniArcadeLaptop onLaunchBattle={handleLaunchArena} className="shrink-0" />
 
           {/* Clean Resources Link (Opens in new tab) */}
           <Link
@@ -455,7 +475,7 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          <MiniArcadeLaptop onLaunchBattle={() => setIsVoxelTransitionActive(true)} className="shrink-0" />
+          <MiniArcadeLaptop onLaunchBattle={handleLaunchArena} className="shrink-0" />
           {mounted && user && <NotificationBell />}
 
           <button

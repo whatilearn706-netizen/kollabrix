@@ -20,6 +20,11 @@ import {
   HelpCircle,
   Trash2,
   Eye,
+  Power,
+  Radio,
+  CheckCircle2,
+  XCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
 import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
@@ -41,6 +46,14 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   // Live test transition states
   const [isTestTransitionActive, setIsTestTransitionActive] = useState(false);
   const [isTestLobbyOpen, setIsTestLobbyOpen] = useState(false);
+
+  // Arena Live / Maintenance Status
+  const [isArenaLive, setIsArenaLive] = useState(true);
+  const [maintenanceMsg, setMaintenanceMsg] = useState(
+    'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
+  );
+  const [statusUpdatedAt, setStatusUpdatedAt] = useState<string>('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // New question form state
   const [newTitle, setNewTitle] = useState('');
@@ -78,8 +91,82 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
     }
   };
 
+  const fetchArenaStatus = async () => {
+    try {
+      const res = await fetch('/api/arena/status', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setIsArenaLive(data.isLive !== false);
+        if (data.maintenanceMessage) setMaintenanceMsg(data.maintenanceMessage);
+        if (data.updatedAt) setStatusUpdatedAt(data.updatedAt);
+      }
+    } catch (err) {
+      console.error('Failed to load arena status:', err);
+    }
+  };
+
+  const toggleArenaLiveStatus = async (targetLive: boolean) => {
+    setIsUpdatingStatus(true);
+    try {
+      const res = await fetch('/api/arena/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          isLive: targetLive,
+          maintenanceMessage: maintenanceMsg,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsArenaLive(data.isLive);
+        setStatusUpdatedAt(data.updatedAt);
+        setStatusMsg({
+          text: data.message || `Arena status updated to ${data.isLive ? 'LIVE' : 'MAINTENANCE'}`,
+          type: 'success',
+        });
+      } else {
+        setStatusMsg({ text: data.error || 'Failed to update arena status', type: 'error' });
+      }
+    } catch (err: any) {
+      setStatusMsg({ text: err.message || 'Network error updating arena status', type: 'error' });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const saveMaintenanceNotice = async () => {
+    setIsUpdatingStatus(true);
+    try {
+      const res = await fetch('/api/arena/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          isLive: isArenaLive,
+          maintenanceMessage: maintenanceMsg,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatusMsg({ text: 'Maintenance message saved successfully!', type: 'success' });
+      } else {
+        setStatusMsg({ text: data.error || 'Failed to save maintenance message', type: 'error' });
+      }
+    } catch (err: any) {
+      setStatusMsg({ text: err.message || 'Network error saving notice', type: 'error' });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   useEffect(() => {
     fetchQuestions();
+    fetchArenaStatus();
   }, []);
 
   const handleSaveNewQuestion = async (e: React.FormEvent) => {
@@ -206,13 +293,118 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
           <button
             type="button"
-            onClick={fetchQuestions}
+            onClick={() => {
+              fetchQuestions();
+              fetchArenaStatus();
+            }}
             disabled={isLoading}
             className="p-2 rounded-xl bg-charcoal-800 border border-charcoal-700 text-slate-300 hover:text-white transition-colors"
-            title="Refresh questions"
+            title="Refresh questions & arena status"
           >
             <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
+        </div>
+      </div>
+
+      {/* ================= ARENA LIVE / MAINTENANCE MASTER CONTROLLER ================= */}
+      <div
+        className={`p-6 rounded-2xl border backdrop-blur-md transition-all shadow-xl ${
+          isArenaLive
+            ? 'bg-gradient-to-br from-emerald-950/30 via-slate-900/90 to-charcoal-900 border-emerald-500/40 shadow-emerald-950/30'
+            : 'bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-charcoal-900 border-rose-500/50 shadow-rose-950/40'
+        }`}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          {/* Left: Master Status Indicator & Action */}
+          <div className="space-y-3 max-w-xl">
+            <div className="flex items-center gap-3">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 ${
+                  isArenaLive
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                }`}
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    isArenaLive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500 animate-ping'
+                  }`}
+                />
+                {isArenaLive ? 'BATTLE ARENA: LIVE (PUBLIC)' : 'BATTLE ARENA: OFFLINE (MAINTENANCE)'}
+              </span>
+              {statusUpdatedAt && (
+                <span className="text-[11px] font-mono text-slate-400">
+                  Updated: {new Date(statusUpdatedAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                {isArenaLive
+                  ? 'Battle Arena is Live for All Students'
+                  : 'Battle Arena is Suspended in Maintenance Mode'}
+              </h3>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                {isArenaLive
+                  ? 'Students can launch 1v1 and 2v2 duels from the navbar arcade laptop and direct /arena link. Matchmaking and compiler clusters are publicly active.'
+                  : 'Public access is restricted. Visitors to /arena see the high-tech maintenance screen with your custom announcement message.'}
+              </p>
+            </div>
+
+            {/* Master Action Button */}
+            <div className="pt-1 flex items-center gap-3">
+              {isArenaLive ? (
+                <button
+                  type="button"
+                  disabled={isUpdatingStatus}
+                  onClick={() => toggleArenaLiveStatus(false)}
+                  className="px-4 py-2.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white font-mono text-xs font-bold transition-all flex items-center gap-2 shadow-lg hover:shadow-rose-500/20 active:scale-95 disabled:opacity-50"
+                >
+                  <Power className="w-4 h-4" />
+                  <span>{isUpdatingStatus ? 'Updating...' : 'Set Arena to Maintenance Mode (Take Offline)'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isUpdatingStatus}
+                  onClick={() => toggleArenaLiveStatus(true)}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-slate-950 font-mono text-xs font-black transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/30 active:scale-95 disabled:opacity-50"
+                >
+                  <Power className="w-4 h-4 fill-current" />
+                  <span>{isUpdatingStatus ? 'Updating...' : '⚡ Bring Battle Arena Live to Public Now'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Maintenance Notice Configuration */}
+          <div className="lg:w-96 p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Maintenance Notice</span>
+              </label>
+              <button
+                type="button"
+                disabled={isUpdatingStatus}
+                onClick={saveMaintenanceNotice}
+                className="px-2.5 py-1 rounded-lg bg-cyan-600/80 hover:bg-cyan-600 text-white font-mono text-[11px] font-bold transition-all disabled:opacity-50"
+              >
+                {isUpdatingStatus ? 'Saving...' : 'Save Notice'}
+              </button>
+            </div>
+            <textarea
+              rows={2}
+              value={maintenanceMsg}
+              onChange={(e) => setMaintenanceMsg(e.target.value)}
+              placeholder="Enter message shown to visitors when offline..."
+              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 font-mono focus:border-cyan-400 focus:outline-none resize-none"
+            />
+            <p className="text-[10px] text-slate-400 font-mono">
+              This message appears in the terminal modal when students attempt to access Battle Arena while offline.
+            </p>
+          </div>
         </div>
       </div>
 
