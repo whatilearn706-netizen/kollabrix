@@ -33,10 +33,10 @@ export function BrandLogo({
     <div className={`flex items-center gap-2.5 group select-none ${className}`}>
       {/* Official 3D Isometric Kollabrix Brix Emblem */}
       <div
-        className={`${iconSizes[size]} relative rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/30 bg-stone-900`}
+        className={`${iconSizes[size]} relative rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/40 bg-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.25)]`}
       >
         <img
-          src="/brand/kollabrix-k.png?v=20261028"
+          src="/brand/kollabrix-k.png?v=20261030b"
           alt="Kollabrix Emblem"
           className="w-full h-full object-cover"
         />
