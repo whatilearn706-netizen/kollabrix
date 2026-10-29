@@ -44,7 +44,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache
-  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles_v3');
+  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles_v4');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() => cachedProfiles || []);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
@@ -136,19 +136,14 @@ export default function TeammatesPage() {
               return { ...p, college_verified: isVerified };
             });
 
-          // Enrich with collegiate seed builder profiles when platform is starting up
-          const existingUserIds = new Set(activeProfs.map((p) => p.user_id));
-          const existingUsernames = new Set(activeProfs.map((p) => (p.username || '').toLowerCase()));
-          const seedFallback = DEMO_PROFILES.filter(
-            (dp) => !existingUserIds.has(dp.user_id) && !existingUsernames.has((dp.username || '').toLowerCase())
-          );
-          const combinedProfiles = [...activeProfs, ...seedFallback];
+          // Only display genuine collegiate builder profiles (Mayank Goyal, Viraj Bashishtha, Ayushman Sharma)
+          const finalProfiles = activeProfs.length > 0 ? activeProfs : DEMO_PROFILES;
 
-          setAllProfiles(combinedProfiles);
-          setPageCache('linkora_teammates_profiles_v3', combinedProfiles);
+          setAllProfiles(finalProfiles);
+          setPageCache('linkora_teammates_profiles_v4', finalProfiles);
         } else {
           setAllProfiles(DEMO_PROFILES);
-          setPageCache('linkora_teammates_profiles_v3', DEMO_PROFILES);
+          setPageCache('linkora_teammates_profiles_v4', DEMO_PROFILES);
         }
 
         // 2. If logged in, fetch owned projects

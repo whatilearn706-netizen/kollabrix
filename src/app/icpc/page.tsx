@@ -69,6 +69,7 @@ export default function IcpcCollegiateArenaPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const [isFacultyNoticeOpen, setIsFacultyNoticeOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Student ICPC Streak and Points progress
   const [progress, setProgress] = useState<StudentIcpcProgress>({
@@ -250,6 +251,10 @@ export default function IcpcCollegiateArenaPage() {
   };
 
   const handleOpenProblem = (contest: IcpcContest, problem: IcpcProblem) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     try {
       if (typeof document !== 'undefined' && !document.fullscreenElement) {
         const el = document.documentElement;
@@ -961,6 +966,10 @@ export default function IcpcCollegiateArenaPage() {
                       size="sm"
                       variant="primary"
                       onClick={() => {
+                        if (!user) {
+                          setShowAuthModal(true);
+                          return;
+                        }
                         if (contest.problems.length > 0) {
                           try {
                             if (typeof document !== 'undefined' && !document.fullscreenElement) {
@@ -970,10 +979,10 @@ export default function IcpcCollegiateArenaPage() {
                           handleOpenProblem(contest, contest.problems[0]);
                         }
                       }}
-                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                      rightIcon={user ? <ArrowRight className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-cyan-200" />}
                       className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
                     >
-                      Enter Arena
+                      {user ? 'Enter Arena' : 'Log In to Enter Arena'}
                     </Button>
                   </div>
                 </div>
@@ -986,7 +995,7 @@ export default function IcpcCollegiateArenaPage() {
         </section>
 
         {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}
-        {mounted && activeProblem && selectedContest && typeof document !== 'undefined' && createPortal(
+        {mounted && Boolean(user) && activeProblem && selectedContest && typeof document !== 'undefined' && createPortal(
           <div id="icpc-exam-proctor-portal" className="fixed inset-0 z-[99999] bg-charcoal-950 overflow-hidden">
             <IcpcProctorGuard
               contestId={selectedContest.id}
@@ -1612,6 +1621,44 @@ export default function IcpcCollegiateArenaPage() {
                 className="w-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white"
               >
                 Exit Arena
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Student Account Required Modal */}
+        <Modal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          title="Account Required"
+          maxWidth="md"
+        >
+          <div className="space-y-5 text-center p-2">
+            <div className="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mx-auto shadow-lg">
+              <Lock className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-black text-white">Log In to Enter Arena</h3>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+                You must be logged in with your student account to enter live ICPC contests, run proctored submissions, and rank on the collegiate leaderboard.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 pt-2">
+              <Link href="/login" className="w-full">
+                <Button
+                  variant="primary"
+                  className="w-full justify-center bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-cyan-600/20"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                >
+                  Log In / Create Account
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                onClick={() => setShowAuthModal(false)}
+                className="w-full justify-center border-charcoal-700 text-slate-400 hover:text-white"
+              >
+                Cancel
               </Button>
             </div>
           </div>
