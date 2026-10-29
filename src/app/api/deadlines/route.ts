@@ -10,10 +10,16 @@ export const runtime = 'nodejs';
 // GET: Public fetch of collegiate deadlines
 export async function GET() {
   try {
-    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
-    let deadlines: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
-      ? rawDeadlines
-      : [...DEFAULT_CAMPUS_DEADLINES];
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[] | null>('deadlines', null);
+    const rawDeletedIds = await getMasterControlSubkey<string[]>('deleted_deadline_ids', []);
+    const deletedSet = new Set<string>(Array.isArray(rawDeletedIds) ? rawDeletedIds : []);
+
+    let deadlines: CampusDeadlineItem[];
+    if (Array.isArray(rawDeadlines)) {
+      deadlines = rawDeadlines.filter((d) => !deletedSet.has(d.id));
+    } else {
+      deadlines = DEFAULT_CAMPUS_DEADLINES.filter((d) => !deletedSet.has(d.id));
+    }
 
     // Sort by deadline date ascending (earliest expiring first)
     deadlines.sort(
@@ -30,7 +36,7 @@ export async function GET() {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { deadlines: DEFAULT_CAMPUS_DEADLINES, error: err.message },
+      { deadlines: [], error: err.message },
       { status: 200 }
     );
   }
@@ -51,13 +57,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title and deadline date are required' }, { status: 400 });
     }
 
-    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
-    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
-      ? [...rawDeadlines]
-      : [...DEFAULT_CAMPUS_DEADLINES];
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[] | null>('deadlines', null);
+    const rawDeletedIds = await getMasterControlSubkey<string[]>('deleted_deadline_ids', []);
+    const deletedSet = new Set<string>(Array.isArray(rawDeletedIds) ? rawDeletedIds : []);
+
+    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines)
+      ? [...rawDeadlines].filter((d) => !deletedSet.has(d.id))
+      : [...DEFAULT_CAMPUS_DEADLINES].filter((d) => !deletedSet.has(d.id));
+
+    const newId = `dl-${Date.now()}`;
+    deletedSet.delete(newId);
 
     const newDeadline: CampusDeadlineItem = {
-      id: `dl-${Date.now()}`,
+      id: newId,
       title: title.trim(),
       organizer: (organizer || 'Kollabrix Campus').trim(),
       type: type || 'hackathon',
@@ -76,6 +88,8 @@ export async function POST(request: NextRequest) {
     );
 
     const result = await updateMasterControlSubkey('deadlines', currentList);
+    await updateMasterControlSubkey('deleted_deadline_ids', Array.from(deletedSet));
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to save to master database');
     }
@@ -106,10 +120,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Deadline ID required' }, { status: 400 });
     }
 
-    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
-    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
-      ? [...rawDeadlines]
-      : [...DEFAULT_CAMPUS_DEADLINES];
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[] | null>('deadlines', null);
+    const rawDeletedIds = await getMasterControlSubkey<string[]>('deleted_deadline_ids', []);
+    const deletedSet = new Set<string>(Array.isArray(rawDeletedIds) ? rawDeletedIds : []);
+
+    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines)
+      ? [...rawDeadlines].filter((d) => !deletedSet.has(d.id))
+      : [...DEFAULT_CAMPUS_DEADLINES].filter((d) => !deletedSet.has(d.id));
 
     const idx = currentList.findIndex((d) => d.id === id);
     if (idx === -1) {
@@ -157,14 +174,23 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Deadline ID required' }, { status: 400 });
     }
 
-    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[]>('deadlines', DEFAULT_CAMPUS_DEADLINES);
-    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines) && rawDeadlines.length > 0
+    const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[] | null>('deadlines', null);
+    const rawDeletedIds = await getMasterControlSubkey<string[]>('deleted_deadline_ids', []);
+    const deletedSet = new Set<string>(Array.isArray(rawDeletedIds) ? rawDeletedIds : []);
+
+    let currentList: CampusDeadlineItem[] = Array.isArray(rawDeadlines)
       ? [...rawDeadlines]
       : [...DEFAULT_CAMPUS_DEADLINES];
 
-    currentList = currentList.filter((d) => d.id !== id);
+    // Add to deleted blacklist permanently
+    deletedSet.add(id);
+
+    // Remove from active list
+    currentList = currentList.filter((d) => d.id !== id && !deletedSet.has(d.id));
 
     const result = await updateMasterControlSubkey('deadlines', currentList);
+    await updateMasterControlSubkey('deleted_deadline_ids', Array.from(deletedSet));
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to delete from master database');
     }

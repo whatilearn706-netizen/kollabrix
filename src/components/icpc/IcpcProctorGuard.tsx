@@ -1359,43 +1359,18 @@ export function IcpcProctorGuard({
                 <span>Move</span>
               </button>
 
-              {/* Feed Switcher: Camera vs Screen Share */}
+              {/* Mirror / Non-Mirror Orientation Toggle Button (Camera only) */}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setPipFeedMode((prev) => (prev === 'camera' ? 'screen' : 'camera'));
+                  setIsCameraMirrored((prev) => !prev);
                 }}
-                className="text-cyan-300 hover:text-white px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-[9px] font-mono border border-cyan-500/40 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Switch PiP preview between camera and screen share"
+                className="text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Toggle between non-mirrored and mirrored camera orientation"
               >
-                {pipFeedMode === 'camera' ? (
-                  <>
-                    <Monitor className="w-2.5 h-2.5 text-cyan-400" />
-                    <span>Screen</span>
-                  </>
-                ) : (
-                  <>
-                    <Camera className="w-2.5 h-2.5 text-cyan-400" />
-                    <span>Cam</span>
-                  </>
-                )}
+                <RefreshCw className="w-2.5 h-2.5" />
               </button>
-
-              {/* Mirror / Non-Mirror Orientation Toggle Button (Camera only) */}
-              {pipFeedMode === 'camera' && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsCameraMirrored((prev) => !prev);
-                  }}
-                  className="text-slate-300 hover:text-white px-1.5 py-0.5 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[9px] font-mono border border-charcoal-700 flex items-center gap-1 cursor-pointer transition-colors"
-                  title="Toggle between non-mirrored and mirrored camera orientation"
-                >
-                  <RefreshCw className="w-2.5 h-2.5" />
-                </button>
-              )}
 
               <button
                 type="button"

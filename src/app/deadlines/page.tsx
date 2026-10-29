@@ -53,7 +53,7 @@ export default function CollegiateDeadlinesPage() {
       try {
         const res = await fetch('/api/deadlines');
         const data = await res.json();
-        if (data.deadlines && Array.isArray(data.deadlines) && data.deadlines.length > 0) {
+        if (data.deadlines && Array.isArray(data.deadlines)) {
           setDeadlines(data.deadlines);
         }
       } catch (err) {
@@ -139,7 +139,16 @@ export default function CollegiateDeadlinesPage() {
 
         {/* Deadlines Radar Grid */}
         <div className="space-y-4">
-          {filteredDeadlines.map((item) => {
+          {filteredDeadlines.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 space-y-3">
+              <Clock className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">No Deadlines On Radar</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No active competition cutoffs, problem deadlines, or grant application windows found. Check back soon!
+              </p>
+            </div>
+          ) : (
+            filteredDeadlines.map((item) => {
             const countdown = formatCountdown(item.deadlineDate);
             const isUrgent =
               !countdown.expired &&
@@ -280,7 +289,7 @@ export default function CollegiateDeadlinesPage() {
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
     </div>

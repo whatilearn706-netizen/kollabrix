@@ -99,7 +99,10 @@ export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add deadline');
 
-      if (data.deadlines) setDeadlines(data.deadlines);
+      if (data.deadlines && Array.isArray(data.deadlines)) {
+        setDeadlines(data.deadlines);
+        try { localStorage.setItem('linkora_deadlines_cache', JSON.stringify(data.deadlines)); } catch {}
+      }
       setIsAddModalOpen(false);
       setTitle('');
       setOrganizer('');
@@ -119,7 +122,7 @@ export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-      const res = await fetch(`/api/deadlines?id=${id}`, {
+      const res = await fetch(`/api/deadlines?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers,
       });
@@ -127,8 +130,11 @@ export function AdminDeadlinesTab({ authToken }: AdminDeadlinesTabProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete');
 
-      if (data.deadlines) setDeadlines(data.deadlines);
-      else setDeadlines((prev) => prev.filter((d) => d.id !== id));
+      const updatedList = Array.isArray(data.deadlines) ? data.deadlines : deadlines.filter((d) => d.id !== id);
+      setDeadlines(updatedList);
+      try {
+        localStorage.setItem('linkora_deadlines_cache', JSON.stringify(updatedList));
+      } catch {}
 
       setActionSuccess(`Removed ${deadlineTitle} from Deadlines.`);
       setTimeout(() => setActionSuccess(''), 3000);
