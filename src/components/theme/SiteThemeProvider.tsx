@@ -46,8 +46,24 @@ export function isColorDark(colorStr?: string): boolean {
 }
 
 export function sanitizeTheme(t: SiteThemeConfig): SiteThemeConfig {
+  const isBgDark = isColorDark(t.backgroundColor);
+  const darkBg = isBgDark ? t.backgroundColor : '#090B10';
+  const darkSurface = isColorDark(t.surfaceColor) ? t.surfaceColor : '#12151F';
+  const darkBorder = isColorDark(t.borderColor) ? t.borderColor : '#1E2433';
+  const darkHeading = !isColorDark(t.headingColor) ? t.headingColor : '#F8FAFC';
+  const darkBodyText = !isColorDark(t.bodyTextColor) ? t.bodyTextColor : '#CBD5E1';
+  const darkMutedText = !isColorDark(t.mutedTextColor) ? t.mutedTextColor : '#94A3B8';
+
   return {
     ...t,
+    backgroundColor: darkBg,
+    surfaceColor: darkSurface,
+    borderColor: darkBorder,
+    headingColor: darkHeading,
+    bodyTextColor: darkBodyText,
+    mutedTextColor: darkMutedText,
+    navbarStyle: 'dark',
+    cardShadow: t.cardShadow === 'none' ? 'none' : 'glow',
     siteTitle: (!t.siteTitle || t.siteTitle.trim() === 'Linkora') ? 'Kollabrix' : t.siteTitle.replace(/Linkora/g, 'Kollabrix'),
     heroBadgeText: t.heroBadgeText ? t.heroBadgeText.replace(/Linkora/g, 'Kollabrix') : 'Kollabrix • Collegiate Innovation & Hackathon Network',
     announcementBannerText: t.announcementBannerText ? t.announcementBannerText.replace(/Linkora/g, 'Kollabrix') : t.announcementBannerText,
@@ -55,52 +71,27 @@ export function sanitizeTheme(t: SiteThemeConfig): SiteThemeConfig {
 }
 
 export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<SiteThemeConfig>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const userPref = localStorage.getItem('linkora_user_theme_mode');
-        if (userPref === 'dark') {
-          return sanitizeTheme({
-            ...DEFAULT_SITE_THEME,
-            backgroundColor: '#141210',
-            surfaceColor: '#1C1916',
-            borderColor: '#2E2822',
-            headingColor: '#FAF7F2',
-            bodyTextColor: '#D6CEC5',
-            mutedTextColor: '#8C8276',
-            brandColor: '#EA580C',
-            brandHoverColor: '#C2410C',
-            accentColor: '#F59E0B',
-            navbarStyle: 'dark',
-            cardShadow: 'glow',
-          });
-        }
-      } catch (e) {}
-    }
-    return sanitizeTheme(DEFAULT_SITE_THEME);
-  });
+  const [theme, setTheme] = useState<SiteThemeConfig>(() => sanitizeTheme(DEFAULT_SITE_THEME));
   const [isLoading, setIsLoading] = useState(true);
 
-  const isDark = isColorDark(theme.backgroundColor);
+  // Permanently Dark Mode across all pages and components
+  const isDark = true;
 
   const applyThemeToDocument = useCallback((currentTheme: SiteThemeConfig) => {
     if (typeof document === 'undefined') return;
 
     const root = document.documentElement;
-    const darkCanvas = isColorDark(currentTheme.backgroundColor);
 
-    // 1. Toggle document theme classes
-    if (darkCanvas) {
-      root.classList.add('site-theme-dark');
-      root.classList.add('dark');
-      root.classList.remove('site-theme-light');
-      root.setAttribute('data-theme', 'dark');
-    } else {
-      root.classList.add('site-theme-light');
-      root.classList.remove('site-theme-dark');
-      root.classList.remove('dark');
-      root.setAttribute('data-theme', 'light');
-    }
+    // 1. Force permanent dark theme classes & attributes
+    root.classList.add('site-theme-dark');
+    root.classList.add('dark');
+    root.classList.remove('site-theme-light');
+    root.setAttribute('data-theme', 'dark');
+    root.style.colorScheme = 'dark';
+
+    try {
+      localStorage.setItem('linkora_user_theme_mode', 'dark');
+    } catch (e) {}
 
     // 2. Apply CSS Variables
     root.style.setProperty('--site-bg', currentTheme.backgroundColor);
@@ -283,35 +274,6 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         border-color: var(--site-border) !important;
       }
 
-      /* Light Theme Global Warm Adaptations Across All Pages */
-      .site-theme-light .text-slate-900 {
-        color: var(--site-heading) !important;
-      }
-      .site-theme-light .text-slate-800 {
-        color: var(--site-heading) !important;
-      }
-      .site-theme-light .text-slate-700,
-      .site-theme-light .text-slate-600 {
-        color: var(--site-text) !important;
-      }
-      .site-theme-light .text-slate-500,
-      .site-theme-light .text-slate-400 {
-        color: var(--site-text-muted) !important;
-      }
-      .site-theme-light .border-slate-200,
-      .site-theme-light .border-slate-200\\/90,
-      .site-theme-light .border-slate-200\\/80,
-      .site-theme-light .border-slate-200\\/60,
-      .site-theme-light .border-slate-300 {
-        border-color: var(--site-border) !important;
-      }
-      .site-theme-light .bg-slate-50 {
-        background-color: #FAF4ED !important;
-      }
-      .site-theme-light .bg-slate-100 {
-        background-color: #F3ECE3 !important;
-      }
-
       /* Custom CSS Injection by Admin */
       ${currentTheme.customCss || ''}
     `;
@@ -321,43 +283,7 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/theme');
       const data = await res.json();
-      let activeTheme = data.theme || DEFAULT_SITE_THEME;
-
-      if (typeof window !== 'undefined') {
-        const userPref = localStorage.getItem('linkora_user_theme_mode');
-        if (userPref === 'dark') {
-          activeTheme = {
-            ...activeTheme,
-            backgroundColor: '#141210',
-            surfaceColor: '#1C1916',
-            borderColor: '#2E2822',
-            headingColor: '#FAF7F2',
-            bodyTextColor: '#D6CEC5',
-            mutedTextColor: '#8C8276',
-            brandColor: '#EA580C',
-            brandHoverColor: '#C2410C',
-            accentColor: '#F59E0B',
-            navbarStyle: 'dark',
-            cardShadow: 'glow',
-          };
-        } else if (userPref === 'light') {
-          activeTheme = {
-            ...activeTheme,
-            backgroundColor: '#FAF7F2',
-            surfaceColor: '#ffffff',
-            borderColor: '#E5DFD5',
-            headingColor: '#1C1917',
-            bodyTextColor: '#443E38',
-            mutedTextColor: '#78716C',
-            brandColor: '#C2410C',
-            brandHoverColor: '#9A3412',
-            accentColor: '#D97706',
-            navbarStyle: 'auto',
-            cardShadow: 'subtle',
-          };
-        }
-      }
-
+      const activeTheme = data.theme || DEFAULT_SITE_THEME;
       const sanitized = sanitizeTheme(activeTheme);
       setTheme(sanitized);
       applyThemeToDocument(sanitized);
@@ -369,52 +295,10 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
   }, [applyThemeToDocument]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const currentlyDark = isColorDark(prev.backgroundColor);
-      const nextIsDark = !currentlyDark;
-      let nextTheme: SiteThemeConfig;
-
-      if (nextIsDark) {
-        nextTheme = {
-          ...prev,
-          backgroundColor: '#141210',
-          surfaceColor: '#1C1916',
-          borderColor: '#2E2822',
-          headingColor: '#FAF7F2',
-          bodyTextColor: '#D6CEC5',
-          mutedTextColor: '#8C8276',
-          brandColor: '#EA580C',
-          brandHoverColor: '#C2410C',
-          accentColor: '#F59E0B',
-          navbarStyle: 'dark',
-          cardShadow: 'glow',
-        };
-        try {
-          localStorage.setItem('linkora_user_theme_mode', 'dark');
-        } catch (e) {}
-      } else {
-        nextTheme = {
-          ...prev,
-          backgroundColor: '#FAF7F2',
-          surfaceColor: '#ffffff',
-          borderColor: '#E5DFD5',
-          headingColor: '#1C1917',
-          bodyTextColor: '#443E38',
-          mutedTextColor: '#78716C',
-          brandColor: '#C2410C',
-          brandHoverColor: '#9A3412',
-          accentColor: '#D97706',
-          navbarStyle: 'auto',
-          cardShadow: 'subtle',
-        };
-        try {
-          localStorage.setItem('linkora_user_theme_mode', 'light');
-        } catch (e) {}
-      }
-
-      applyThemeToDocument(nextTheme);
-      return nextTheme;
-    });
+    // Permanent Dark Mode: maintain obsidian dark palette
+    const darkTheme = sanitizeTheme(DEFAULT_SITE_THEME);
+    setTheme(darkTheme);
+    applyThemeToDocument(darkTheme);
   }, [applyThemeToDocument]);
 
   useEffect(() => {

@@ -26,8 +26,6 @@ import {
   Sparkles,
   BookOpen,
   Shield,
-  Sun,
-  Moon,
   Lightbulb,
   Clock,
   MessageSquare,
@@ -257,29 +255,6 @@ export function Navbar() {
             <BookOpen className="w-3.5 h-3.5" />
             <span>Resources</span>
           </Link>
-
-          {/* Quick Theme Toggle Button */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            style={{
-              borderRadius: theme.borderRadius,
-            }}
-            className={clsx(
-              'p-2 text-xs font-bold transition-all border flex items-center justify-center shrink-0 shadow-2xs',
-              isNavbarDark
-                ? 'border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20'
-                : 'border-slate-200 bg-slate-100/90 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
-            )}
-            title={mounted && isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
-            aria-label="Toggle Site Theme"
-          >
-            {mounted && isDark ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-slate-700" />
-            )}
-          </button>
 
           {user ? (
             <div className="flex items-center gap-2.5">
@@ -668,29 +643,6 @@ export function Navbar() {
               />
             </div>
           )}
-
-          {/* Mobile Theme Toggle Button */}
-          <button
-            type="button"
-            onClick={() => {
-              toggleTheme();
-            }}
-            style={{
-              borderColor: theme.borderColor,
-            }}
-            className={clsx(
-              'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold border transition-colors',
-              isDark
-                ? 'bg-white/5 text-amber-300 border-white/10'
-                : 'bg-slate-100 text-slate-700 border-slate-200'
-            )}
-          >
-            <span className="flex items-center gap-2.5">
-              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
-              <span>{isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}</span>
-            </span>
-            <span className="text-[10px] font-mono opacity-60 uppercase">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
-          </button>
 
           {user ? (
             <button

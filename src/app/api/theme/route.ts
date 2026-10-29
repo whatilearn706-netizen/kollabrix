@@ -24,18 +24,29 @@ export async function GET() {
       ? { ...DEFAULT_SITE_THEME, ...settingData.value }
       : DEFAULT_SITE_THEME;
 
-    // Gracefully migrate legacy cold defaults to warm palette
-    if (theme.backgroundColor === '#fafbfc') theme.backgroundColor = '#FAF7F2';
-    if (theme.brandColor === '#6366F1' || theme.brandColor === '#6366f1') theme.brandColor = '#C2410C';
-    if (theme.brandHoverColor === '#4F46E5' || theme.brandHoverColor === '#4f46e5') theme.brandHoverColor = '#9A3412';
-    if (theme.accentColor === '#EC4899' || theme.accentColor === '#ec4899') theme.accentColor = '#D97706';
-    if (theme.borderColor === '#e2e8f0') theme.borderColor = '#E5DFD5';
-    if (theme.headingColor === '#0f172a') theme.headingColor = '#1C1917';
-    if (theme.bodyTextColor === '#334155') theme.bodyTextColor = '#443E38';
-    if (theme.mutedTextColor === '#64748b') theme.mutedTextColor = '#78716C';
-    if (theme.announcementBannerBg === '#6366F1' || theme.announcementBannerBg === '#6366f1') {
-      theme.announcementBannerBg = '#C2410C';
+    // Enforce permanent dark mode: convert any light/ivory background to sleek obsidian dark
+    const isLightBg =
+      !theme.backgroundColor ||
+      theme.backgroundColor === '#FAF7F2' ||
+      theme.backgroundColor === '#fafbfc' ||
+      theme.backgroundColor === '#ffffff' ||
+      theme.backgroundColor.toLowerCase().startsWith('#f') ||
+      theme.backgroundColor.toLowerCase().startsWith('#e');
+
+    if (isLightBg) {
+      theme.backgroundColor = '#090B10';
+      theme.surfaceColor = '#12151F';
+      theme.borderColor = '#1E2433';
+      theme.headingColor = '#F8FAFC';
+      theme.bodyTextColor = '#CBD5E1';
+      theme.mutedTextColor = '#94A3B8';
+      theme.navbarStyle = 'dark';
+      theme.cardShadow = 'glow';
     }
+
+    if (theme.brandColor === '#6366F1' || theme.brandColor === '#6366f1') theme.brandColor = '#EA580C';
+    if (theme.brandHoverColor === '#4F46E5' || theme.brandHoverColor === '#4f46e5') theme.brandHoverColor = '#C2410C';
+    if (theme.accentColor === '#EC4899' || theme.accentColor === '#ec4899') theme.accentColor = '#F59E0B';
 
     // Auto-migrate brand strings from legacy Linkora to Kollabrix
     if (!theme.siteTitle || theme.siteTitle === 'Linkora') {
