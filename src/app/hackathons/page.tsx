@@ -605,59 +605,47 @@ export default function HackathonsPage() {
         </div>
       </div>
 
-      {/* Scrollable Container with Blur-to-Focus Stack */}
-      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
-        {/* Blur Curtains for Upper & Lower Margins */}
-        <div className="scroll-blur-curtain-top" />
-        <div className="scroll-blur-curtain-bottom" />
-
-        {/* Hackathons Viewport with Blur-to-Focus Mask */}
-        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, n) => (
-                <HackathonCardSkeleton key={n} />
-              ))}
+      {/* Hackathons Grid / Content View */}
+      <div className="w-full py-2">
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, n) => (
+              <HackathonCardSkeleton key={n} />
+            ))}
+          </div>
+        ) : filteredHackathons.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredHackathons.map((hackathon) => (
+              <HackathonCard
+                key={hackathon.id}
+                hackathon={hackathon}
+                isSaved={savedIds.includes(hackathon.id)}
+                isEnrolled={enrolledIds.includes(hackathon.id) || hackathon.creator_id === user?.id}
+                onToggleSave={handleToggleSave}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="p-12 rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 text-center space-y-4 shadow-sm my-6 max-w-lg mx-auto">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 flex items-center justify-center mx-auto text-slate-500 dark:text-slate-400">
+              {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
             </div>
-          ) : filteredHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredHackathons.map((hackathon, idx) => (
-                <div
-                  key={hackathon.id}
-                  className="blur-to-focus-card"
-                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                >
-                  <HackathonCard
-                    hackathon={hackathon}
-                    isSaved={savedIds.includes(hackathon.id)}
-                    isEnrolled={enrolledIds.includes(hackathon.id) || hackathon.creator_id === user?.id}
-                    onToggleSave={handleToggleSave}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-12 rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 text-center space-y-4 shadow-sm my-6 max-w-lg mx-auto">
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 flex items-center justify-center mx-auto text-slate-500 dark:text-slate-400">
-                {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
-              </div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                {activeTab === 'private'
-                  ? 'No Private College Hackathons Found'
-                  : activeTab === 'my-events'
-                  ? 'You Haven\'t Enrolled in Any Hackathons Yet'
-                  : 'No Hackathons Matched'}
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
-                {activeTab === 'private'
-                  ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
-                  : activeTab === 'my-events'
-                  ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
-                  : 'Try adjusting your search query or reset the theme filters to view all upcoming collegiate events.'}
-              </p>
-            </div>
-          )}
-        </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">
+              {activeTab === 'private'
+                ? 'No Private College Hackathons Found'
+                : activeTab === 'my-events'
+                ? 'You Haven\'t Enrolled in Any Hackathons Yet'
+                : 'No Hackathons Matched'}
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
+              {activeTab === 'private'
+                ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
+                : activeTab === 'my-events'
+                ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
+                : 'Try adjusting your search query or reset the theme filters to view all upcoming collegiate events.'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Create / Host Hackathon Modal */}

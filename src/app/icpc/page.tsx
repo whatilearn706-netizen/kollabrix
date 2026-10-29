@@ -800,14 +800,8 @@ export default function IcpcCollegiateArenaPage() {
               </p>
             </div>
           ) : (
-            <div className="relative rounded-3xl border border-charcoal-800 bg-charcoal-950/40 p-2 sm:p-4 shadow-xs overflow-hidden">
-              {/* Blur Curtains for Upper & Lower Margins */}
-              <div className="scroll-blur-curtain-top" />
-              <div className="scroll-blur-curtain-bottom" />
-
-              {/* Contests Viewport with Blur-to-Focus Mask */}
-              <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="w-full py-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {filteredContests.map((contest, idx) => (
                     <div
                       key={contest.id}
@@ -981,8 +975,7 @@ export default function IcpcCollegiateArenaPage() {
             ))}
           </div>
         </div>
-      </div>
-    )}
+      )}
         </section>
 
         {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}

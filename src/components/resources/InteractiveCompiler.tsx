@@ -151,6 +151,11 @@ export function InteractiveCompiler({
     if (isRunning) return;
 
     if (checkCodeExpectsInput(code) && !currentInput.trim()) {
+      if (waitingForInput) {
+        // If already prompted and user clicks again, allow running directly
+        executeProgram('');
+        return;
+      }
       setWaitingForInput(true);
       setStdout('');
       setStderr('');
@@ -367,14 +372,23 @@ export function InteractiveCompiler({
               <span>Executing code in high-speed sandbox ({elapsedSeconds.toFixed(1)}s)...</span>
             </div>
           ) : waitingForInput ? (
-            <div className="py-2.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1 animate-in fade-in">
+            <div className="py-2.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5 animate-in fade-in">
               <div className="flex items-center gap-2 font-bold text-xs">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
                 <span>Program is waiting for user input (stdin)...</span>
               </div>
               <p className="text-[11px] text-amber-200/80">
-                Type your input in the box below and press <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-500/40 text-amber-200 font-mono">Enter ↵</kbd> to see the answer.
+                Type your input in the box below and press <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-500/40 text-amber-200 font-mono">Enter ↵</kbd> (e.g. <code className="text-amber-300 font-mono">2024</code>).
               </p>
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => executeProgram('')}
+                  className="text-[10px] text-slate-400 hover:text-amber-200 underline font-mono cursor-pointer transition-colors"
+                >
+                  Or click here to run with empty input
+                </button>
+              </div>
             </div>
           ) : stdout || stderr ? (
             <div className="space-y-2">
