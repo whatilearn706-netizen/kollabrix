@@ -44,12 +44,20 @@ import { IcpcProctorGuard, checkSuspiciousPaste } from '@/components/icpc/IcpcPr
 
 function getDefaultStarter(lang: 'cpp' | 'python' | 'java'): string {
   if (lang === 'cpp') {
-    return `#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    \n    // Read input and implement solution\n    \n    return 0;\n}`;
+    return `#include <iostream>\n\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    \n    return 0;\n}`;
   }
   if (lang === 'java') {
-    return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) throws IOException {\n        Scanner sc = new Scanner(System.in);\n        \n        // Read input and implement solution\n        \n    }\n}`;
+    return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n        \n    }\n}`;
   }
-  return `import sys\n\ndef solve():\n    input_data = sys.stdin.read().split()\n    if not input_data:\n        return\n    # Read input and implement solution\n\nif __name__ == '__main__':\n    solve()`;
+  return `import sys\n\n# Write your solution here\n`;
+}
+
+function getCleanStarter(problem: IcpcProblem | null, lang: 'cpp' | 'python' | 'java'): string {
+  const code = problem?.starterCode?.[lang];
+  if (code && !code.includes('TODO:') && !code.includes('cin >> a[i]') && !code.includes('cin >> n >> m') && !code.includes('coins')) {
+    return code;
+  }
+  return getDefaultStarter(lang);
 }
 
 export default function IcpcCollegiateArenaPage() {
@@ -220,7 +228,7 @@ export default function IcpcCollegiateArenaPage() {
     if (existingDraft !== undefined) {
       setUserCode(existingDraft);
     } else {
-      const starter = newProblem.starterCode?.[selectedLanguage] || getDefaultStarter(selectedLanguage);
+      const starter = getCleanStarter(newProblem, selectedLanguage);
       setUserCode(starter);
     }
   };
@@ -236,7 +244,7 @@ export default function IcpcCollegiateArenaPage() {
     if (existingDraft !== undefined) {
       setUserCode(existingDraft);
     } else {
-      const starter = activeProblem.starterCode?.[lang] || getDefaultStarter(lang);
+      const starter = getCleanStarter(activeProblem, lang);
       setUserCode(starter);
     }
   };
@@ -263,7 +271,7 @@ export default function IcpcCollegiateArenaPage() {
     if (existingDraft !== undefined) {
       setUserCode(existingDraft);
     } else {
-      const starter = problem.starterCode?.[selectedLanguage] || getDefaultStarter(selectedLanguage);
+      const starter = getCleanStarter(problem, selectedLanguage);
       setUserCode(starter);
     }
   };
@@ -997,7 +1005,7 @@ export default function IcpcCollegiateArenaPage() {
                 setActiveProblem(null);
               }}
             >
-              <div className="fixed inset-0 z-0 bg-charcoal-950 flex flex-col text-white w-screen h-screen overflow-hidden animate-in fade-in duration-150 select-none">
+              <div className="fixed inset-0 z-0 bg-charcoal-950 flex flex-col text-white w-full h-[100dvh] max-h-[100dvh] overflow-hidden animate-in fade-in duration-150 select-none">
               {/* Top Navigation Bar (56px) */}
               <header className="h-14 shrink-0 px-4 bg-charcoal-900 border-b border-charcoal-800 flex items-center justify-between gap-3 select-none">
                 {/* Left: Exit Arena, Contest Title, and Problem Switcher */}
@@ -1300,7 +1308,7 @@ export default function IcpcCollegiateArenaPage() {
                 {/* RIGHT COLUMN: Code Editor & Testbench */}
                 <div className="w-full lg:w-1/2 h-full flex flex-col bg-charcoal-900/40 overflow-hidden min-h-0">
                   {/* Editor Toolbar (h-11) */}
-                  <div className="h-11 shrink-0 px-4 border-b border-charcoal-800 flex items-center justify-between bg-charcoal-900 select-none">
+                  <div className="h-11 shrink-0 px-4 border-b border-charcoal-800 flex items-center justify-between bg-charcoal-900 select-none gap-2">
                     {/* Language switcher */}
                     <div className="flex items-center gap-1.5">
                       {(['cpp', 'python', 'java'] as const).map((lang) => (
@@ -1319,9 +1327,32 @@ export default function IcpcCollegiateArenaPage() {
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="hidden sm:inline">AI Anti-Cheat Paste Guard Active</span>
+                    {/* Action buttons (Run & Submit) right in the Editor Toolbar */}
+                    <div className="flex items-center gap-2">
+                      <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-mono text-slate-400 mr-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Anti-Cheat</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleRunSample}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 hover:text-white border border-charcoal-700 text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+                        title="Run sample testcase and compile code"
+                      >
+                        <Play className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
+                        <span>Run</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSubmitSolution}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                        title="Submit code against all testcases"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>Submit</span>
+                      </button>
                     </div>
                   </div>
 

@@ -1,5 +1,30 @@
 import { IcpcContest } from '@/types/icpc';
 
+export const BLANK_STARTER_CODE = {
+  cpp: `#include <iostream>
+
+using namespace std;
+
+int main() {
+    // Write your solution here
+    
+    return 0;
+}`,
+  java: `import java.util.*;
+import java.io.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Write your solution here
+        
+    }
+}`,
+  python: `import sys
+
+# Write your solution here
+`,
+};
+
 export const CURATED_ICPC_CONTESTS: IcpcContest[] = [
   {
     id: 'icpc-regional-collegiate-2026',
@@ -61,80 +86,7 @@ export const CURATED_ICPC_CONTESTS: IcpcContest[] = [
             isHidden: true,
           },
         ],
-        starterCode: {
-          cpp: `#include <iostream>
-#include <vector>
-
-using namespace std;
-
-void solve() {
-    int n;
-    if (!(cin >> n)) return;
-    vector<long long> a(n);
-    for (int i = 0; i < n; i++) {
-        cin >> a[i];
-    }
-
-    // TODO: Write your algorithm here to count balanced subarrays where XOR sum is 0
-    // Print the result for this testcase on a new line
-}
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-    int t = 1;
-    if (cin >> t) {
-        while (t--) {
-            solve();
-        }
-    }
-    return 0;
-}`,
-          java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String line = br.readLine();
-        if (line == null) return;
-        int t = Integer.parseInt(line.trim());
-
-        while (t-- > 0) {
-            int n = Integer.parseInt(br.readLine().trim());
-            StringTokenizer st = new StringTokenizer(br.readLine());
-            long[] a = new long[n];
-            for (int i = 0; i < n; i++) {
-                a[i] = Long.parseLong(st.nextToken());
-            }
-
-            // TODO: Write your algorithm here to count balanced subarrays where XOR sum is 0
-            // Print the answer for each testcase on a new line
-        }
-    }
-}`,
-          python: `import sys
-
-def solve():
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    
-    t = int(input_data[0])
-    idx = 1
-    
-    for _ in range(t):
-        n = int(input_data[idx])
-        idx += 1
-        a = [int(x) for x in input_data[idx : idx + n]]
-        idx += n
-        
-        # TODO: Write your algorithm here to count balanced subarrays where XOR sum is 0
-        # Print the answer for each testcase on a new line
-
-if __name__ == '__main__':
-    solve()`,
-        },
+        starterCode: BLANK_STARTER_CODE,
         solutionLanguage: 'cpp',
         solutionCode: `#include <iostream>
 #include <vector>
@@ -211,56 +163,7 @@ int main() {
             isHidden: true,
           },
         ],
-        starterCode: {
-          cpp: `#include <iostream>
-#include <vector>
-
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n, m;
-    if (!(cin >> n >> m)) return 0;
-
-    // TODO: Read conduits and calculate the minimum total excavation cost
-    // Output the minimum cost, or -1 if the network cannot be fully connected
-
-    return 0;
-}`,
-          java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String line = br.readLine();
-        if (line == null) return;
-        StringTokenizer st = new StringTokenizer(line);
-        int n = Integer.parseInt(st.nextToken());
-        int m = Integer.parseInt(st.nextToken());
-
-        // TODO: Read conduits and calculate the minimum total excavation cost
-        // Output the minimum cost, or -1 if the network cannot be fully connected
-    }
-}`,
-          python: `import sys
-
-def solve():
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    
-    n = int(input_data[0])
-    m = int(input_data[1])
-    
-    # TODO: Read conduits and calculate the minimum total excavation cost
-    # Print the minimum cost, or -1 if the network cannot be fully connected
-
-if __name__ == '__main__':
-    solve()`,
-        },
+        starterCode: BLANK_STARTER_CODE,
         solutionLanguage: 'cpp',
         solutionCode: `// Kruskal's MST algorithm with Disjoint Set Union (DSU)
 #include <iostream>
@@ -363,61 +266,7 @@ int main() {
             isHidden: true,
           },
         ],
-        starterCode: {
-          cpp: `#include <iostream>
-#include <vector>
-
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n, m, c;
-    if (!(cin >> n >> m >> c)) return 0;
-
-    // TODO: Read recharge pads and flight corridors
-    // Implement shortest path with battery constraints from building 1 to N
-    // Print the minimum travel time, or -1 if unreachable
-
-    return 0;
-}`,
-          java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String line = br.readLine();
-        if (line == null) return;
-        StringTokenizer st = new StringTokenizer(line);
-        int n = Integer.parseInt(st.nextToken());
-        int m = Integer.parseInt(st.nextToken());
-        int c = Integer.parseInt(st.nextToken());
-
-        // TODO: Read recharge pads and flight corridors
-        // Implement shortest path with battery constraints from building 1 to N
-        // Print the minimum travel time, or -1 if unreachable
-    }
-}`,
-          python: `import sys
-
-def solve():
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    
-    n = int(input_data[0])
-    m = int(input_data[1])
-    c = int(input_data[2])
-    
-    # TODO: Read recharge pads and flight corridors
-    # Implement shortest path with battery constraints from building 1 to N
-    # Print the minimum travel time, or -1 if unreachable
-
-if __name__ == '__main__':
-    solve()`,
-        },
+        starterCode: BLANK_STARTER_CODE,
         solutionLanguage: 'cpp',
         solutionCode: `// 2D Dijkstra shortest path on State graph (node, battery)
 #include <iostream>
@@ -532,56 +381,7 @@ int main() {
             isHidden: true,
           },
         ],
-        starterCode: {
-          cpp: `#include <iostream>
-#include <vector>
-
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n, m;
-    if (!(cin >> n >> m)) return 0;
-
-    // TODO: Read prerequisites and output a valid course order
-    // If impossible due to circular dependency, output IMPOSSIBLE
-
-    return 0;
-}`,
-          java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String line = br.readLine();
-        if (line == null) return;
-        StringTokenizer st = new StringTokenizer(line);
-        int n = Integer.parseInt(st.nextToken());
-        int m = Integer.parseInt(st.nextToken());
-
-        // TODO: Read prerequisites and output a valid course order
-        // If impossible due to circular dependency, output IMPOSSIBLE
-    }
-}`,
-          python: `import sys
-
-def solve():
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    
-    n = int(input_data[0])
-    m = int(input_data[1])
-    
-    # TODO: Read prerequisites and output a valid course order
-    # If impossible due to circular dependency, print IMPOSSIBLE
-
-if __name__ == '__main__':
-    solve()`,
-        },
+        starterCode: BLANK_STARTER_CODE,
         solutionLanguage: 'cpp',
         solutionCode: `// Kahn's Algorithm for Topological Sorting in O(V + E)
 #include <iostream>
@@ -658,65 +458,7 @@ int main() {
             isHidden: true,
           },
         ],
-        starterCode: {
-          cpp: `#include <iostream>
-#include <vector>
-
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n;
-    long long v;
-    if (!(cin >> n >> v)) return 0;
-
-    vector<int> coins(n);
-    for (int i = 0; i < n; i++) cin >> coins[i];
-
-    // TODO: Calculate the minimum number of currency notes to make up v
-    // Output the minimum notes required, or -1 if impossible
-
-    return 0;
-}`,
-          java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String line = br.readLine();
-        if (line == null) return;
-        StringTokenizer st = new StringTokenizer(line);
-        int n = Integer.parseInt(st.nextToken());
-        int v = Integer.parseInt(st.nextToken());
-
-        st = new StringTokenizer(br.readLine());
-        int[] coins = new int[n];
-        for (int i = 0; i < n; i++) coins[i] = Integer.parseInt(st.nextToken());
-
-        // TODO: Calculate the minimum number of currency notes to make up v
-        // Output the minimum notes required, or -1 if impossible
-    }
-}`,
-          python: `import sys
-
-def solve():
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    
-    n = int(input_data[0])
-    v = int(input_data[1])
-    coins = [int(x) for x in input_data[2 : 2 + n]]
-    
-    # TODO: Calculate the minimum number of currency notes to make up v
-    # Print the minimum notes required, or -1 if impossible
-
-if __name__ == '__main__':
-    solve()`,
-        },
+        starterCode: BLANK_STARTER_CODE,
         solutionLanguage: 'cpp',
         solutionCode: `// Bottom-up 1D DP in O(N * V)
 #include <iostream>
@@ -786,60 +528,7 @@ int main() {
             isHidden: true,
           },
         ],
-        starterCode: {
-          cpp: `#include <iostream>
-#include <vector>
-
-using namespace std;
-
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    int n;
-    if (!(cin >> n)) return 0;
-
-    vector<long long> a(n);
-    for (int i = 0; i < n; i++) cin >> a[i];
-
-    // TODO: Count total inversions in O(N log N) time
-    // Print the number of inversions on a new line
-
-    return 0;
-}`,
-          java: `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        String line = br.readLine();
-        if (line == null) return;
-        int n = Integer.parseInt(line.trim());
-
-        StringTokenizer st = new StringTokenizer(br.readLine());
-        long[] a = new long[n];
-        for (int i = 0; i < n; i++) a[i] = Long.parseLong(st.nextToken());
-
-        // TODO: Count total inversions in O(N log N) time
-        // Print the answer on a new line
-    }
-}`,
-          python: `import sys
-
-def solve():
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    n = int(input_data[0])
-    arr = [int(x) for x in input_data[1 : n + 1]]
-
-    # TODO: Count total inversions in O(N log N) time
-    # print(ans)
-
-if __name__ == '__main__':
-    solve()`,
-        },
+        starterCode: BLANK_STARTER_CODE,
         solutionLanguage: 'cpp',
         solutionCode: `// Enhanced Merge Sort Inversion Count in O(N log N)
 #include <iostream>

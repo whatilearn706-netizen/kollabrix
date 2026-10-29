@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CURATED_ICPC_CONTESTS } from '@/data/mockIcpcContests';
+import { CURATED_ICPC_CONTESTS, BLANK_STARTER_CODE } from '@/data/mockIcpcContests';
 import { IcpcContest } from '@/types/icpc';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
@@ -122,16 +122,22 @@ export async function GET(request: NextRequest) {
       const isContestLive = c.contestType !== 'practice' && (c.status === 'live' && new Date() < new Date(c.endTime));
 
       const sanitizedProblems = activeProblems.map((p) => {
+        const cleanStarter = (p.starterCode && p.starterCode.cpp && !p.starterCode.cpp.includes('TODO:') && !p.starterCode.cpp.includes('cin >> a[i]') && !p.starterCode.cpp.includes('cin >> n >> m'))
+          ? p.starterCode
+          : BLANK_STARTER_CODE;
+
         if (isContestLive) {
           // Mask solution code & explanation while live contest is actively underway
           const { solutionCode, solutionExplanation, ...rest } = p;
           return {
             ...rest,
+            starterCode: cleanStarter,
             isSolutionLocked: true,
           };
         }
         return {
           ...p,
+          starterCode: cleanStarter,
           isSolutionLocked: false,
         };
       });
