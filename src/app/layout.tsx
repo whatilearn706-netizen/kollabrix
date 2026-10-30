@@ -204,8 +204,23 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': 'https://kollabrix.in/#organization',
       name: 'Kollabrix',
+      legalName: 'Kollabrix',
       alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       url: 'https://kollabrix.in/',
+      foundingDate: '2026',
+      description:
+        'Kollabrix is the collegiate hackathon network, ICPC competitive arena, and student engineering collaboration platform.',
+      address: {
+        '@type': 'PostalAddress',
+        addressCountry: 'IN',
+      },
+      knowsAbout: [
+        'Collegiate Hackathons',
+        'ICPC Competitive Programming',
+        'Developer Collaboration',
+        'Student Engineering Portfolios',
+        'Peer Coding Battles',
+      ],
       logo: {
         '@type': 'ImageObject',
         '@id': 'https://kollabrix.in/#logo',
