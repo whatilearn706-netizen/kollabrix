@@ -126,7 +126,7 @@ const jsonLd = {
       '@id': 'https://kollabrix.in/#website',
       url: 'https://kollabrix.in/',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix', 'kollabrix.in', 'Kollabrix India', 'Kollabrix Platform', 'kollabrix.online', 'Linkora'],
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
       inLanguage: 'en-US',
       potentialAction: {
@@ -145,7 +145,7 @@ const jsonLd = {
       '@type': 'WebApplication',
       '@id': 'https://kollabrix.in/#app',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix Platform', 'kollabrix.in', 'Kollabrix India'],
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       applicationCategory: 'EducationalApplication, DeveloperApplication, CollaborationPlatform',
       operatingSystem: 'All Modern Web Browsers, iOS, Android, macOS, Windows',
       browserRequirements: 'Requires JavaScript. Requires HTML5.',
@@ -204,22 +204,20 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': 'https://kollabrix.in/#organization',
       name: 'Kollabrix',
-      alternateName: ['Kollabrix Platform', 'kollabrix.in', 'Linkora'],
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       url: 'https://kollabrix.in/',
       logo: {
         '@type': 'ImageObject',
         '@id': 'https://kollabrix.in/#logo',
-        url: 'https://kollabrix.in/brand/kollabrix-logo.png',
-        caption: 'Kollabrix Logo',
+        url: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261030_v2',
+        caption: 'Kollabrix Official Emblem',
         inLanguage: 'en-US',
-        width: 1024,
-        height: 1024,
+        width: 512,
+        height: 512,
       },
-      image: 'https://kollabrix.in/brand/kollabrix-logo.png',
+      image: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261030_v2',
       sameAs: [
         'https://kollabrix.in',
-        'https://kollabrix.in',
-        'https://linkora.in',
         'https://github.com/goyalmayank142-pixel/LinkOra',
       ],
     },
@@ -244,13 +242,13 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
-        <link rel="icon" href="/favicon.ico?v=20261030k" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261030k" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261030k" />
-        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261030k" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261030k" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261030k" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" href="/favicon.ico?v=20261030_v2" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261030_v2" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261030_v2" />
+        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261030_v2" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261030_v2" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261030_v2" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="Kollabrix" />
         <meta name="apple-mobile-web-app-title" content="Kollabrix" />
         <meta name="site_name" content="Kollabrix" />
