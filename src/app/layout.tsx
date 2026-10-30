@@ -53,17 +53,17 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon.ico?v=20261031_v2a', sizes: 'any' },
-      { url: '/favicon-v20261031.ico?v=20261031_v2a', sizes: 'any' },
-      { url: '/favicon-48x48.png?v=20261031_v2a', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-96x96.png?v=20261031_v2a', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-144x144.png?v=20261031_v2a', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png?v=20261031_v2a', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=20261031_v2a', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico?v=20261031_v3squircle', sizes: 'any' },
+      { url: '/favicon-v20261031.ico?v=20261031_v3squircle', sizes: 'any' },
+      { url: '/favicon-48x48.png?v=20261031_v3squircle', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png?v=20261031_v3squircle', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-144x144.png?v=20261031_v3squircle', sizes: '144x144', type: 'image/png' },
+      { url: '/icon-192.png?v=20261031_v3squircle', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=20261031_v3squircle', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico?v=20261031_v2a',
+    shortcut: '/favicon.ico?v=20261031_v3squircle',
     apple: [
-      { url: '/apple-touch-icon.png?v=20261031_v2a', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=20261031_v3squircle', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.json',
@@ -234,16 +234,16 @@ const jsonLd = {
       logo: {
         '@type': 'ImageObject',
         '@id': 'https://kollabrix.in/#logo',
-        url: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_v2a',
+        url: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_v3squircle',
         caption: 'Kollabrix Official Dual Ascent Aerospace Emblem',
         inLanguage: 'en-US',
         width: 512,
         height: 512,
       },
-      image: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_v2a',
+      image: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_v3squircle',
       sameAs: [
         'https://kollabrix.in',
-        'https://github.com/goyalmayank142-pixel/LinkOra',
+        'https://github.com/goyalmayank142-pixel/kollabrix',
       ],
     },
   ],
@@ -267,12 +267,12 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
-        <link rel="icon" href="/favicon.ico?v=20261031_v2a" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261031_v2a" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261031_v2a" />
-        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261031_v2a" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261031_v2a" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261031_v2a" />
+        <link rel="icon" href="/favicon.ico?v=20261031_v3squircle" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261031_v3squircle" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261031_v3squircle" />
+        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261031_v3squircle" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261031_v3squircle" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261031_v3squircle" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="Kollabrix" />
         <meta name="apple-mobile-web-app-title" content="Kollabrix" />

@@ -38,7 +38,7 @@ export function CreativeHeroShowcase() {
             <div className="flex items-center gap-3">
               <div className="relative w-11 h-11 rounded-2xl overflow-hidden border border-amber-500/40 shadow-lg bg-stone-900 flex items-center justify-center shrink-0">
                 <img
-                  src="/brand/kollabrix-logo.svg?v=20261031_v2a"
+                  src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
                   alt="Kollabrix Official Dual Ascent Aerospace Emblem"
                   className="w-full h-full object-contain p-1"
                 />

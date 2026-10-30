@@ -1217,7 +1217,7 @@ export function FullArenaExperience({
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 relative shrink-0 flex items-center justify-center">
             <img
-              src="/brand/kollabrix-logo.svg?v=20261031_v2a"
+              src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
               alt="Kollabrix Official Dual Ascent Aerospace Emblem"
               className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]"
             />
