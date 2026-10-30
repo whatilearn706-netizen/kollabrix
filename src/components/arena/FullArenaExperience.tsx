@@ -1179,7 +1179,7 @@ export function FullArenaExperience({
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 relative shrink-0 flex items-center justify-center">
             <img
-              src="/brand/kollabrix-k.png?v=20261030j"
+              src="/brand/kollabrix-k.png?v=20261030k"
               alt="Kollabrix"
               className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]"
             />

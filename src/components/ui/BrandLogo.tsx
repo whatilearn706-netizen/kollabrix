@@ -16,15 +16,15 @@ export function BrandLogo({
   title = 'Kollabrix',
 }: BrandLogoProps) {
   const iconSizes = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-12 h-12',
+    sm: 'w-9 h-9',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
   };
 
   const textSizes = {
     sm: 'text-sm tracking-[0.14em]',
-    md: 'text-base tracking-[0.16em]',
-    lg: 'text-xl tracking-[0.18em]',
+    md: 'text-lg tracking-[0.18em]',
+    lg: 'text-2xl tracking-[0.2em]',
   };
 
   // Check if title is Kollabrix or default
@@ -32,18 +32,18 @@ export function BrandLogo({
   const isKollabrixBrand = !cleanTitle || cleanTitle === 'kollabrix' || cleanTitle === 'linkora';
 
   return (
-    <div className={`flex items-center gap-2.5 group select-none ${className}`}>
-      {/* Official Standalone 3D Interlocking Molten Amber Model (Transparent Cutout, No Box Background) */}
+    <div className={`flex items-center gap-3 group select-none ${className}`}>
+      {/* Official Standalone 3D Interlocking Molten Amber Model (Refined Line-by-Line Cutout, Pure Transparency) */}
       <div
         className={`${iconSizes[size]} relative shrink-0 flex items-center justify-center group-hover:scale-108 transition-all duration-300 select-none`}
       >
-        {/* Subtle Ambient Radial Backlight Glow to Highlight the 3D Silhouette */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/25 via-orange-500/20 to-transparent blur-md pointer-events-none group-hover:from-amber-500/40 group-hover:via-orange-500/30 transition-all duration-300 scale-125" />
+        {/* Luminous Warm Amber Ambient Core Backlight */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/30 via-orange-500/25 to-transparent blur-md pointer-events-none group-hover:from-amber-500/50 group-hover:via-orange-500/35 transition-all duration-300 scale-125" />
 
         <img
-          src="/brand/kollabrix-k.png?v=20261030j"
+          src="/brand/kollabrix-k.png?v=20261030k"
           alt="Kollabrix 3D Model"
-          className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_2px_14px_rgba(245,158,11,0.65)] drop-shadow-[0_0_20px_rgba(251,191,36,0.25)] transition-all duration-300"
+          className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,158,11,0.7)] drop-shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all duration-300"
         />
       </div>
 
