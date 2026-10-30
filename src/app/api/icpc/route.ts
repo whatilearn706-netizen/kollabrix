@@ -476,6 +476,7 @@ export async function PATCH(request: NextRequest) {
 
     try {
       await saveIcpcMasterData({ isArenaLive });
+      await updateMasterControlSubkey('arena_is_live', isArenaLive);
     } catch (dbErr) {
       console.warn('Could not persist arena live toggle to master control:', dbErr);
     }

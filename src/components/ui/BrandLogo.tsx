@@ -16,9 +16,9 @@ export function BrandLogo({
   title = 'Kollabrix',
 }: BrandLogoProps) {
   const iconSizes = {
-    sm: 'w-7 h-7 rounded-lg',
-    md: 'w-9 h-9 rounded-xl',
-    lg: 'w-11 h-11 rounded-xl',
+    sm: 'w-7 h-7',
+    md: 'w-9 h-9',
+    lg: 'w-11 h-11',
   };
 
   const textSizes = {
@@ -33,14 +33,14 @@ export function BrandLogo({
 
   return (
     <div className={`flex items-center gap-2.5 group select-none ${className}`}>
-      {/* Official 3D Interlocking Molten Amber Kollabrix Emblem */}
+      {/* Official Standalone 3D Interlocking Molten Amber Model (No Artificial Box Container) */}
       <div
-        className={`${iconSizes[size]} relative overflow-hidden shadow-xl group-hover:scale-105 transition-all duration-200 shrink-0 flex items-center justify-center border border-amber-500/50 bg-[#07080c] shadow-[0_4px_20px_rgba(245,158,11,0.35)] ring-1 ring-amber-500/20`}
+        className={`${iconSizes[size]} relative shrink-0 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 select-none`}
       >
         <img
-          src="/brand/kollabrix-k.png?v=20261030g"
-          alt="Kollabrix 3D Emblem"
-          className="w-full h-full object-cover"
+          src="/brand/kollabrix-k.png?v=20261030i"
+          alt="Kollabrix 3D Model"
+          className="w-full h-full object-contain filter drop-shadow-[0_2px_14px_rgba(245,158,11,0.5)]"
         />
       </div>
 

@@ -1177,15 +1177,19 @@ export function FullArenaExperience({
       {/* Top Cyber Navigation Bar */}
       <header className="relative z-20 h-16 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-600 via-amber-500 to-cyan-500 p-0.5 shadow-[0_0_15px_rgba(244,63,94,0.4)]">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Swords className="w-5 h-5 text-rose-400" />
-            </div>
+          <div className="w-10 h-10 relative shrink-0 flex items-center justify-center">
+            <img
+              src="/brand/kollabrix-k.png?v=20261030i"
+              alt="Kollabrix"
+              className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]"
+            />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-white text-base tracking-wider uppercase">
-                BATTLE ARENA
+              <span className="font-mono font-black text-white text-base tracking-wider uppercase flex items-center gap-1.5">
+                <span className="text-amber-400">KOLLΛBRIX</span>
+                <span className="text-slate-500 font-normal">/</span>
+                <span>BATTLE ARENA</span>
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">
                 {teamSize === '1v1' ? '1v1 DUEL' : '2v2 RELAY'}

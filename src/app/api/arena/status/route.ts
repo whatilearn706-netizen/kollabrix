@@ -82,6 +82,10 @@ export async function POST(request: NextRequest) {
     await updateMasterControlSubkey('arena_is_live', isLive);
     await updateMasterControlSubkey('arena_maintenance_message', maintenanceMessage);
     await updateMasterControlSubkey('arena_status_updated_at', now);
+    try {
+      const icpcConfig = await getMasterControlSubkey<any>('icpc', {});
+      await updateMasterControlSubkey('icpc', { ...icpcConfig, isArenaLive: isLive });
+    } catch {}
 
     return NextResponse.json({
       success: true,
