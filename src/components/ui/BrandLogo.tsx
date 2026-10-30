@@ -41,7 +41,7 @@ export function BrandLogo({
         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/30 via-orange-500/25 to-transparent blur-md pointer-events-none group-hover:from-amber-500/50 group-hover:via-orange-500/35 transition-all duration-300 scale-125" />
 
         <img
-          src="/brand/kollabrix-k.png?v=20261030_v2"
+          src="/brand/kollabrix-k.png?v=20261030_v3"
           alt="Kollabrix 3D Model"
           className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,158,11,0.7)] drop-shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all duration-300"
         />
