@@ -119,9 +119,9 @@ export default function CertificateVerificationPage() {
               {copied ? 'Copied Link' : 'Copy Verification Link'}
             </Button>
 
-            <Link href="/projects">
+            <Link href="/explore">
               <Button variant="primary" size="sm" rightIcon={<ExternalLink className="w-4 h-4" />}>
-                View on Kollabrix
+                Explore on Kollabrix
               </Button>
             </Link>
           </div>
