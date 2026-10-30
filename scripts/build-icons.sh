@@ -40,4 +40,8 @@ echo "4. Generating Favicon ICO..."
 sips -s format ico "$PUBLIC/favicon-48x48.png" --out "$PUBLIC/favicon.ico" > /dev/null 2>&1 || cp "$PUBLIC/favicon-48x48.png" "$PUBLIC/favicon.ico"
 cp "$PUBLIC/favicon.ico" "$PUBLIC/favicon-v20261031.ico"
 
+echo "5. Syncing App Router metadata icons..."
+cp "$PUBLIC/icon-512.png" "$DIR/src/app/icon.png"
+cp "$PUBLIC/favicon.ico" "$DIR/src/app/favicon.ico"
+
 echo "✓ All icon assets successfully built!"

@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     'ICPC contest arena',
     'university software development',
   ],
-  authors: [{ name: 'Kollabrix Team' }],
-  creator: 'Kollabrix',
-  publisher: 'Kollabrix',
+  authors: [{ name: 'Mayank Goyal', url: 'https://github.com/goyalmayank142-pixel' }, { name: 'Kollabrix' }],
+  creator: 'Mayank Goyal',
+  publisher: 'Kollabrix Technologies',
   applicationName: 'Kollabrix',
   icons: {
     icon: [
@@ -58,12 +58,12 @@ export const metadata: Metadata = {
       { url: '/favicon-48x48.png?v=20261031_v2a', sizes: '48x48', type: 'image/png' },
       { url: '/favicon-96x96.png?v=20261031_v2a', sizes: '96x96', type: 'image/png' },
       { url: '/favicon-144x144.png?v=20261031_v2a', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png?v=20261031_opt1', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=20261031_opt1', sizes: '512x512', type: 'image/png' },
+      { url: '/icon-192.png?v=20261031_v2a', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=20261031_v2a', sizes: '512x512', type: 'image/png' },
     ],
     shortcut: '/favicon.ico?v=20261031_v2a',
     apple: [
-      { url: '/apple-touch-icon.png?v=20261031_opt1', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=20261031_v2a', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.json',
@@ -207,12 +207,19 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': 'https://kollabrix.in/#organization',
       name: 'Kollabrix',
-      legalName: 'Kollabrix',
-      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
+      legalName: 'Kollabrix Technologies',
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'Kollabrix India'],
       url: 'https://kollabrix.in/',
-      foundingDate: '2026',
+      foundingDate: '2024',
+      founder: {
+        '@type': 'Person',
+        name: 'Mayank Goyal',
+        url: 'https://github.com/goyalmayank142-pixel',
+      },
+      disambiguatingDescription:
+        'Kollabrix (kollabrix.in) is an Indian collegiate developer collaboration network and real-time coding arena founded by Mayank Goyal, independent of any European educational software.',
       description:
-        'Kollabrix is the collegiate hackathon network, ICPC competitive arena, and student engineering collaboration platform.',
+        'Kollabrix is the premier collegiate hackathon network, ICPC competitive arena, and student engineering collaboration platform founded by Mayank Goyal.',
       address: {
         '@type': 'PostalAddress',
         addressCountry: 'IN',
