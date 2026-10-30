@@ -44,7 +44,9 @@ import {
   Wifi,
   UserCheck,
   Laptop,
+  Lock,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
 import {
@@ -85,6 +87,10 @@ export function FullArenaExperience({
   const [joinCodeInput, setJoinCodeInput] = useState(() => initialRoomCode || '');
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [authGateError, setAuthGateError] = useState<string | null>(null);
+
+  // Authenticated Student Profile & RBAC
+  const { user, profile, openAuthModal } = useAuth();
 
   // Mobile Device Intelligence Banner
   const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -187,6 +193,26 @@ export function FullArenaExperience({
     currentUser?.displayName || currentUser?.username || 'CyberRonin'
   );
   const [teamSize, setTeamSize] = useState<'1v1' | '2v2'>('1v1');
+
+  // Synchronize player identity when user authenticates & guard steps
+  useEffect(() => {
+    if (user) {
+      const liveName =
+        profile?.display_name ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        profile?.username ||
+        user.email?.split('@')[0];
+      if (liveName) {
+        setPlayerName(liveName);
+      }
+      setAuthGateError(null);
+      setJoinError(null);
+    } else if (step > 0) {
+      // Security defense: Never allow unauthenticated users past Step 0
+      setStep(0);
+    }
+  }, [user, profile, step]);
 
   const rollRandomCallSign = () => {
     playTacticalSelectSound();
@@ -341,6 +367,12 @@ export function FullArenaExperience({
 
   // Join existing room by code or invite link
   const handleJoinWithCodeOrLink = async (codeToJoin?: string) => {
+    if (!user) {
+      setJoinError('Sign-in required: Please log in or sign up to join this duel.');
+      openAuthModal('login');
+      return;
+    }
+
     let raw = (codeToJoin || joinCodeInput).trim();
     if (!raw) {
       setJoinError('Please enter a room code (e.g. KBX-4634) or paste an invite link.');
@@ -409,6 +441,12 @@ export function FullArenaExperience({
 
   // Host registers new room on server when advancing from Step 2 to Step 3
   const handleHostCreateRoom = async () => {
+    if (!user) {
+      setAuthGateError('Sign in required: Please log in or sign up to create and host a duel room.');
+      setStep(0);
+      openAuthModal('login');
+      return;
+    }
     setIsHost(true);
     try {
       const res = await fetch('/api/arena/rooms', {
@@ -1286,6 +1324,39 @@ export function FullArenaExperience({
               </p>
             </div>
 
+            {/* Authentication Gate Notice if Student is Not Signed In */}
+            {!user && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_30px_rgba(245,158,11,0.15)] animate-pulse">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                        Collegiate Account Login Required
+                      </p>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                        Gate Active
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                      You must sign in to your Kollabrix account before entering or hosting live 1v1 Battle Arena matches.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('login')}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:brightness-110 active:scale-95 text-slate-950 font-black font-mono text-xs uppercase tracking-wider shrink-0 shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Log In / Sign Up</span>
+                </button>
+              </div>
+            )}
+
             {/* Prompt if initialRoomCode was provided in URL */}
             {initialRoomCode && (
               <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-400/50 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_30px_rgba(6,182,212,0.25)]">
@@ -1304,12 +1375,25 @@ export function FullArenaExperience({
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleJoinWithCodeOrLink(initialRoomCode)}
+                  onClick={() => {
+                    if (!user) {
+                      setJoinError('Sign in required: Please log in or sign up before joining this room.');
+                      openAuthModal('login');
+                      return;
+                    }
+                    handleJoinWithCodeOrLink(initialRoomCode);
+                  }}
                   disabled={isJoiningRoom}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-md flex items-center gap-2 cursor-pointer"
                 >
-                  {isJoiningRoom ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-                  <span>Join Room {initialRoomCode} Now</span>
+                  {isJoiningRoom ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : user ? (
+                    <Play className="w-4 h-4 fill-current" />
+                  ) : (
+                    <Lock className="w-4 h-4" />
+                  )}
+                  <span>{user ? `Join Room ${initialRoomCode} Now` : `Log In to Join Room ${initialRoomCode}`}</span>
                 </button>
               </div>
             )}
@@ -1351,19 +1435,40 @@ export function FullArenaExperience({
                       <span>Anti-cheat live Fog of War protection</span>
                     </li>
                   </ul>
+
+                  {authGateError && (
+                    <div className="p-3 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-mono flex items-center gap-2 animate-shake">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                      <span>{authGateError}</span>
+                    </div>
+                  )}
                 </div>
 
                 <button
                   type="button"
                   onClick={() => {
+                    if (!user) {
+                      setAuthGateError('Account required: Please log in or sign up before configuring a duel room.');
+                      openAuthModal('login');
+                      return;
+                    }
                     playArcadeCoinSound();
                     setIsHost(true);
                     setStep(1);
                   }}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>CONFIGURE PRIVATE ROOM</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {user ? (
+                    <>
+                      <span>CONFIGURE PRIVATE ROOM</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>LOG IN TO CONFIGURE ROOM</span>
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -1434,8 +1539,15 @@ export function FullArenaExperience({
 
                 <button
                   type="button"
-                  disabled={isJoiningRoom || !joinCodeInput.trim()}
-                  onClick={() => handleJoinWithCodeOrLink()}
+                  disabled={isJoiningRoom || (Boolean(user) && !joinCodeInput.trim())}
+                  onClick={() => {
+                    if (!user) {
+                      setJoinError('Sign in required: Please log in or sign up before joining a multiplayer duel.');
+                      openAuthModal('login');
+                      return;
+                    }
+                    handleJoinWithCodeOrLink();
+                  }}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500 hover:brightness-110 text-white font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isJoiningRoom ? (
@@ -1443,10 +1555,15 @@ export function FullArenaExperience({
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>CONNECTING TO DUEL...</span>
                     </>
-                  ) : (
+                  ) : user ? (
                     <>
                       <span>ENTER ROOM &amp; BATTLE</span>
                       <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>LOG IN TO ENTER ROOM</span>
                     </>
                   )}
                 </button>

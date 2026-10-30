@@ -16,10 +16,11 @@ export function AuthModal() {
       title={authModalView === 'login' ? 'Welcome back to Kollabrix' : 'Join Kollabrix'}
       description={
         authModalView === 'login'
-          ? 'Log in to publish project ideas, assemble your team, and customize your student profile.'
-          : 'Create your student account to discover collaborators and build standout projects.'
+          ? 'Log in to enter the battle arena, assemble your squad, and build verified engineering proof-of-work.'
+          : 'Create your collegiate account to enter the battle arena and compete in live 1v1 duels.'
       }
       maxWidth="md"
+      zIndex="z-[99999]"
     >
       {authModalView === 'login' ? (
         <LoginForm

@@ -11,6 +11,7 @@ export interface ModalProps {
   description?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+  zIndex?: string;
 }
 
 export function Modal({
@@ -20,6 +21,7 @@ export function Modal({
   description,
   children,
   maxWidth = 'md',
+  zIndex = 'z-50',
 }: ModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
@@ -51,7 +53,7 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div className={clsx('fixed inset-0 flex items-center justify-center p-3 sm:p-6 overflow-y-auto', zIndex)}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
