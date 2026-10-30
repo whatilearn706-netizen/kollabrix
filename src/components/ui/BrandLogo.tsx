@@ -41,7 +41,7 @@ export function BrandLogo({
         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/25 via-orange-500/20 to-transparent blur-md pointer-events-none group-hover:from-amber-500/40 group-hover:via-orange-500/30 transition-all duration-300 scale-125" />
 
         <img
-          src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
+          src="/brand/kollabrix-logo.svg?v=20261031_vbare_emblem"
           alt="Kollabrix Official Dual Ascent Aerospace Emblem"
           className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,158,11,0.6)] drop-shadow-[0_0_24px_rgba(251,191,36,0.3)] transition-all duration-300"
         />

@@ -45,9 +45,6 @@
     </filter>
   </defs>
 
-  <!-- Branded Dark Squircle Container (Eliminates white box in browser tabs!) -->
-  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#kb-bg)" stroke="#232A3D" stroke-width="8"/>
-
   <!-- Ambient Radiant Core Glow -->
   <circle cx="256" cy="240" r="160" fill="url(#kb-ambient-glow)"/>
 

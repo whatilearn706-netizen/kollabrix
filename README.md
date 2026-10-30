@@ -2,11 +2,11 @@
 
 ### The Central Platform for College-Wide Student Project Collaboration, Hackathon Team Building, and ICPC Arena
 
-[![Live Platform](https://img.shields.io/badge/Live%20Platform-linkora--link.online-10b981?style=for-the-badge&logo=vercel)](https://linkora-link.online)
-[![Explore Projects](https://img.shields.io/badge/Explore-Projects%20%26%20Teams-6366f1?style=for-the-badge)](https://linkora-link.online/explore)
-[![Hackathon Arena](https://img.shields.io/badge/Compete-Hackathon%20Arena-f59e0b?style=for-the-badge)](https://linkora-link.online/hackathons)
+[![Live Platform](https://img.shields.io/badge/Live%20Platform-kollabrix.in-10b981?style=for-the-badge&logo=vercel)](https://kollabrix.in)
+[![Explore Projects](https://img.shields.io/badge/Explore-Projects%20%26%20Teams-6366f1?style=for-the-badge)](https://kollabrix.in/explore)
+[![Hackathon Arena](https://img.shields.io/badge/Compete-Hackathon%20Arena-f59e0b?style=for-the-badge)](https://kollabrix.in/hackathons)
 
-🌐 **Official Kollabrix Platform**: [https://linkora-link.online](https://linkora-link.online)
+🌐 **Official Kollabrix Platform**: [https://kollabrix.in](https://kollabrix.in)
 
 ---
 
@@ -64,9 +64,9 @@ Every project on Kollabrix has its own private operations center:
 
 ## 🎨 The Design Philosophy: The Kollabrix Emblem
 
-The brand symbol of **Kollabrix** is an interlocking modular "K" constructed of 3D geometric isometric blocks ("Brix"). 
+The brand symbol of **Kollabrix** is the **Dual Ascent Aerospace Emblem**. 
 
-Each building block represents a fundamental pillar of collegiate engineering — code, design, algorithmic logic, and product architecture. When assembled seamlessly together, the individual bricks form the powerful, forward-pointing letter **K**, embodying interdisciplinary collaboration, structural strength, and collegiate innovation.
+The emblem portrays two monolithic aerospace wings — representing **Engineering (Code)** and **Product Architecture (Design)** — ascending in parallel trajectory. Igniting between them is a focused **Amber Plasma Thruster Flame**, symbolizing the unstoppable kinetic energy unleashed when collegiate creators unite to build and launch visionary technology together.
 
 ---
 
@@ -86,7 +86,7 @@ Each building block represents a fundamental pillar of collegiate engineering �
 
 Visit the live platform to explore active student projects, browse collegiate hackathons, or assemble your next team:
 
-👉 **[https://linkora-link.online](https://linkora-link.online)**
+👉 **[https://kollabrix.in](https://kollabrix.in)**
 
 ---
 
