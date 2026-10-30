@@ -292,6 +292,22 @@ export default function ProjectApplicationsPage() {
           message: `Your application to join "${project.title}" has been accepted as ${assignedRole || 'Contributor'}.`,
           link: `/projects/${projectId}/workspace`,
         });
+
+        // Trigger transactional email notification via Resend
+        fetch('/api/notifications/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientUserId: acceptingApp.applicant_id,
+            type: 'application_accepted',
+            subject: `🎉 Application Accepted! Welcome to ${project.title}`,
+            senderName: user?.user_metadata?.full_name || 'Project Squad Lead',
+            title: `You've been accepted into ${project.title}!`,
+            details: `Great news! Your application has been accepted for the role of ${assignedRole || 'Contributor'}. You now have full access to the project team workspace, live huddle, and shared tools.`,
+            actionText: 'Enter Project Workspace',
+            actionUrl: `/projects/${projectId}/workspace`,
+          }),
+        }).catch((e) => console.warn('Accept email trigger failed:', e));
       } catch {
         // Safe notification fallback
       }
@@ -365,6 +381,22 @@ export default function ProjectApplicationsPage() {
           message: `Your application to join "${project.title}" was not selected at this time.`,
           link: '/my-applications',
         });
+
+        // Trigger transactional email notification via Resend
+        fetch('/api/notifications/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientUserId: rejectingApp.applicant_id,
+            type: 'application_rejected',
+            subject: `Application Update: ${project.title}`,
+            senderName: user?.user_metadata?.full_name || 'Project Squad Lead',
+            title: `Update regarding your application to ${project.title}`,
+            details: `Thank you for your interest in joining ${project.title}. The squad lead was unable to move forward with your application for this specific cycle. We encourage you to explore other open projects and hackathon squads on Kollabrix!`,
+            actionText: 'Browse Open Projects',
+            actionUrl: '/explore',
+          }),
+        }).catch((e) => console.warn('Reject email trigger failed:', e));
       } catch {
         // Safe notification fallback
       }

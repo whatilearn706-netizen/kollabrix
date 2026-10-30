@@ -15,6 +15,7 @@ export interface TransactionalEmailPayload {
     | 'project_invitation'
     | 'application_received'
     | 'application_accepted'
+    | 'application_rejected'
     | 'arena_duel_invite'
     | 'general_alert';
   subject: string;

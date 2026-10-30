@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { sendTransactionalEmail } from '@/lib/email/emailDispatcher';
 
 export const runtime = 'nodejs';
 
@@ -161,7 +162,7 @@ export async function PATCH(request: NextRequest) {
         .eq('id', application_id);
     } catch {}
 
-    // Send in-app notification to the student applicant if Accepted or Rejected
+    // Send in-app notification & transactional email to the student applicant if Accepted or Rejected
     if (matchedApp && (status === 'Accepted' || status === 'Rejected')) {
       try {
         await defaultClient.from('notifications').insert({
@@ -174,6 +175,37 @@ export async function PATCH(request: NextRequest) {
         });
       } catch (notifErr) {
         console.warn('Notice sending review notification:', notifErr);
+      }
+
+      // Safe transactional email dispatch via server-side admin lookup
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      if (serviceKey && supabaseUrl && matchedApp.applicant_id) {
+        try {
+          const adminClient = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+          const { data: userRecord } = await adminClient.auth.admin.getUserById(matchedApp.applicant_id);
+          const applicantEmail = userRecord?.user?.email;
+          if (applicantEmail) {
+            sendTransactionalEmail({
+              to: applicantEmail,
+              type: status === 'Accepted' ? 'application_accepted' : 'application_rejected',
+              subject: status === 'Accepted' 
+                ? `🎉 Problem Challenge Accepted: ${matchedApp.problem_title || 'Faculty Problem'}`
+                : `Update on Challenge Application: ${matchedApp.problem_title || 'Faculty Problem'}`,
+              senderName: 'Faculty Mentor',
+              title: status === 'Accepted'
+                ? `Your application for "${matchedApp.problem_title || 'Faculty Problem'}" was Accepted!`
+                : `Application Update: "${matchedApp.problem_title || 'Faculty Problem'}"`,
+              details: status === 'Accepted'
+                ? `Congratulations! The faculty author reviewed your proposal and accepted your submission. You can now access full milestone reviews and project resources.`
+                : `Thank you for submitting your solution proposal. The faculty author has reviewed your application and was unable to accept it for this round. Keep building and exploring other problem statements on Kollabrix!`,
+              actionText: 'View Challenge',
+              actionUrl: `https://kollabrix.in/problems/${matchedApp.problem_statement_id}`,
+            }).catch((err) => console.warn('Challenge email dispatch failed:', err));
+          }
+        } catch (e) {
+          console.warn('Could not resolve student applicant email for challenge notice:', e);
+        }
       }
     }
 
