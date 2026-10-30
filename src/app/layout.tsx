@@ -15,8 +15,10 @@ import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGua
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+// Lazy‑load Vercel analytics and SpeedInsights to avoid blocking first paint
+import dynamic from 'next/dynamic';
+const Analytics = dynamic(() => import('@vercel/analytics/next').then(mod => mod.Analytics), { ssr: false });
+const SpeedInsights = dynamic(() => import('@vercel/speed-insights/next').then(mod => mod.SpeedInsights), { ssr: false });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.in';
 
@@ -51,16 +53,17 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon-v20261031.ico?v=20261031_v1', sizes: 'any' },
-      { url: '/favicon-48x48.png?v=20261030_v3', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-96x96.png?v=20261030_v3', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-144x144.png?v=20261030_v3', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png?v=20261030_v3', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=20261030_v3', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico?v=20261031_opt1', sizes: 'any' },
+      { url: '/favicon-v20261031.ico?v=20261031_opt1', sizes: 'any' },
+      { url: '/favicon-48x48.png?v=20261031_opt1', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png?v=20261031_opt1', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-144x144.png?v=20261031_opt1', sizes: '144x144', type: 'image/png' },
+      { url: '/icon-192.png?v=20261031_opt1', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=20261031_opt1', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico?v=20261030_v3',
+    shortcut: '/favicon.ico?v=20261031_opt1',
     apple: [
-      { url: '/apple-touch-icon.png?v=20261030_v3', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=20261031_opt1', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.json',
@@ -83,7 +86,7 @@ export const metadata: Metadata = {
         alt: 'Kollabrix Official Emblem',
       },
       {
-        url: `${siteUrl}/brand/kollabrix-logo.png`,
+        url: `${siteUrl}/brand/kollabrix-logo.min.svg`,
         width: 380,
         height: 380,
         alt: 'Kollabrix Brand Logo',
@@ -224,13 +227,13 @@ const jsonLd = {
       logo: {
         '@type': 'ImageObject',
         '@id': 'https://kollabrix.in/#logo',
-        url: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261030_v3',
-        caption: 'Kollabrix Official Emblem',
+        url: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_opt1',
+        caption: 'Kollabrix Official Bracket Handshake Emblem',
         inLanguage: 'en-US',
         width: 512,
         height: 512,
       },
-      image: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261030_v3',
+      image: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_opt1',
       sameAs: [
         'https://kollabrix.in',
         'https://github.com/goyalmayank142-pixel/LinkOra',

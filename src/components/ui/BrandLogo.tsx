@@ -38,12 +38,12 @@ export function BrandLogo({
         className={`${iconSizes[size]} relative shrink-0 flex items-center justify-center group-hover:scale-108 transition-all duration-300 select-none`}
       >
         {/* Luminous Warm Amber Ambient Core Backlight */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/30 via-orange-500/25 to-transparent blur-md pointer-events-none group-hover:from-amber-500/50 group-hover:via-orange-500/35 transition-all duration-300 scale-125" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500/25 via-orange-500/20 to-transparent blur-md pointer-events-none group-hover:from-amber-500/40 group-hover:via-orange-500/30 transition-all duration-300 scale-125" />
 
         <img
-          src="/brand/kollabrix-k.png?v=20261030_v3"
-          alt="Kollabrix 3D Model"
-          className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,158,11,0.7)] drop-shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all duration-300"
+          src="/brand/kollabrix-logo.svg?v=20261031_opt1"
+          alt="Kollabrix Official Bracket Handshake Emblem"
+          className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_16px_rgba(245,158,11,0.6)] drop-shadow-[0_0_24px_rgba(251,191,36,0.3)] transition-all duration-300"
         />
       </div>
 
