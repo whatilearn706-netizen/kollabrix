@@ -5,8 +5,8 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { DEFAULT_CAMPUS_RESOURCES } from '@/data/defaultResources';
 import { LearningResource } from '@/types/resources';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const runtime = 'nodejs';
+export const revalidate = 3600; // 1-hour edge cache for static campus resources
 
 let memoryResources: LearningResource[] = [...DEFAULT_CAMPUS_RESOURCES];
 
@@ -21,6 +21,12 @@ function getServiceSupabase() {
 export async function GET(req: NextRequest) {
   try {
     const sClient = getServiceSupabase();
+    const cacheHeaders = {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    };
+
     if (sClient) {
       const { data, error } = await sClient
         .from('platform_settings')
@@ -30,11 +36,11 @@ export async function GET(req: NextRequest) {
 
       if (!error && Array.isArray(data?.value) && data.value.length > 0) {
         memoryResources = data.value;
-        return NextResponse.json({ success: true, resources: data.value, source: 'database' });
+        return NextResponse.json({ success: true, resources: data.value, source: 'database' }, cacheHeaders);
       }
     }
 
-    return NextResponse.json({ success: true, resources: memoryResources, source: 'default' });
+    return NextResponse.json({ success: true, resources: memoryResources, source: 'default' }, cacheHeaders);
   } catch (err: any) {
     return NextResponse.json({ success: true, resources: memoryResources, source: 'memory_fallback' });
   }

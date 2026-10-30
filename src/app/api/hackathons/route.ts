@@ -6,9 +6,8 @@ import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons, DeletedHackathonsData } from '@/lib/admin/hackathonSettings';
 import { getMasterControlRecord } from '@/lib/admin/masterConfigStorage';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 export const runtime = 'nodejs';
+export const revalidate = 120; // 2-minute edge cache to protect database egress
 
 export async function GET(request: NextRequest) {
   try {
@@ -140,9 +139,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          Pragma: 'no-cache',
-          Expires: '0',
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
         },
       }
     );

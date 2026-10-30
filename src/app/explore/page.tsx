@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Project, ProjectFilterOptions, ExploreConfig } from '@/types/database';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -328,9 +328,18 @@ export default function ExploreProjectsPage() {
     }
   }, [filters, pageSize]);
 
+  const initialMountRef = useRef(true);
+
   useEffect(() => {
+    // If we already have fresh cached data on initial mount, skip immediate duplicate network query
+    if (initialMountRef.current) {
+      initialMountRef.current = false;
+      if (isDefaultView && cachedProjects && cachedProjects.length > 0) {
+        return;
+      }
+    }
     fetchProjects();
-  }, [fetchProjects]);
+  }, [fetchProjects, isDefaultView, cachedProjects]);
 
   // Total pages calculation
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));

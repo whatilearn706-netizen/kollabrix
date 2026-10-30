@@ -63,15 +63,24 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
     enabledRef.current = enabled;
   }, [enabled]);
 
-  // Sync latest restricted words from API with real-time reactivity
+  // Sync latest restricted words from API with intelligent caching & reduced polling
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchWords() {
+    async function fetchWords(force = false) {
+      // Check cache validity (10 minutes) unless forced by explicit update event
+      if (!force && typeof window !== 'undefined') {
+        try {
+          const lastFetched = sessionStorage.getItem('linkora_restricted_words_ts');
+          if (lastFetched && Date.now() - parseInt(lastFetched, 10) < 600000) {
+            return;
+          }
+        } catch (e) {}
+      }
+
       try {
-        const res = await fetch(`/api/restricted-words?_t=${Date.now()}`, {
-          cache: 'no-store',
-          headers: { Pragma: 'no-cache' },
+        const res = await fetch('/api/restricted-words', {
+          next: { revalidate: 600 },
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -81,6 +90,7 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
           setEnabled(data.enabled !== false);
           try {
             localStorage.setItem('linkora_restricted_words_v1', JSON.stringify(data.words));
+            sessionStorage.setItem('linkora_restricted_words_ts', String(Date.now()));
           } catch (e) {}
         }
       } catch (err) {
@@ -90,16 +100,12 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
 
     fetchWords();
 
-    // Re-check on window focus (e.g. user switches tabs)
-    const handleFocus = () => fetchWords();
-    window.addEventListener('focus', handleFocus);
-
-    // Cross-tab and same-tab instant sync event
+    // Cross-tab and same-tab instant sync event (only fires when an admin edits words)
     const handleCustomUpdate = (e: any) => {
       if (Array.isArray(e.detail)) {
         setWords(e.detail);
       } else {
-        fetchWords();
+        fetchWords(true);
       }
     };
     window.addEventListener('linkora-restricted-words-updated', handleCustomUpdate);
@@ -115,12 +121,11 @@ export function RestrictedWordsGuard({ children }: { children: React.ReactNode }
     };
     window.addEventListener('storage', handleStorage);
 
-    // Periodic background sync every 60 seconds
-    const intervalId = setInterval(fetchWords, 60000);
+    // Periodic low-frequency background sync (10 minutes instead of 60 seconds)
+    const intervalId = setInterval(() => fetchWords(false), 600000);
 
     return () => {
       cancelled = true;
-      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('linkora-restricted-words-updated', handleCustomUpdate);
       window.removeEventListener('storage', handleStorage);
       clearInterval(intervalId);

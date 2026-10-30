@@ -28,32 +28,40 @@ export function MaintenanceModeGate({ children }: { children: React.ReactNode })
       }
     } catch (e) {}
 
-    const checkMode = async () => {
+    const checkMode = async (force = false) => {
+      // Check cache validity (10 minutes) unless forced by explicit update event
+      if (!force && typeof window !== 'undefined') {
+        try {
+          const lastFetched = sessionStorage.getItem('linkora_maintenance_ts');
+          if (lastFetched && Date.now() - parseInt(lastFetched, 10) < 600000) {
+            return;
+          }
+        } catch (e) {}
+      }
+
       try {
-        const res = await fetch(`/api/master-control?_t=${Date.now()}`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+        const res = await fetch('/api/master-control', {
+          next: { revalidate: 300 },
         });
         if (res.ok) {
           const data = await res.json();
           if (data?.config?.maintenance) {
             setMaintenance(data.config.maintenance);
+            try {
+              sessionStorage.setItem('linkora_maintenance_ts', String(Date.now()));
+            } catch (e) {}
           }
         }
       } catch (e) {}
     };
 
     checkMode();
-    const interval = setInterval(checkMode, 60000);
+    const interval = setInterval(() => checkMode(false), 600000);
 
-    const handleUpdate = () => checkMode();
-    window.addEventListener('focus', checkMode);
-    window.addEventListener('visibilitychange', checkMode);
+    const handleUpdate = () => checkMode(true);
     window.addEventListener('linkora_master_control_updated', handleUpdate);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', checkMode);
-      window.removeEventListener('visibilitychange', checkMode);
       window.removeEventListener('linkora_master_control_updated', handleUpdate);
     };
   }, []);

@@ -506,9 +506,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
-    const suspensionInterval = setInterval(checkSuspensionRealtime, 60000);
-    window.addEventListener('focus', checkSuspensionRealtime);
-    window.addEventListener('visibilitychange', checkSuspensionRealtime);
+    // Cold backup poll every 15 minutes (Realtime websocket below handles instant live updates with 0 egress)
+    const suspensionInterval = setInterval(checkSuspensionRealtime, 900000);
 
     let realtimeChannel: any = null;
     const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('linkora_auth_user_id') : null);
@@ -541,8 +540,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
       clearInterval(suspensionInterval);
-      window.removeEventListener('focus', checkSuspensionRealtime);
-      window.removeEventListener('visibilitychange', checkSuspensionRealtime);
       if (realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }

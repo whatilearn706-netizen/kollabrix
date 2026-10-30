@@ -6,11 +6,14 @@ import {
   MasterControlConfig,
 } from '@/types/masterControl';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 export const runtime = 'nodejs';
+export const revalidate = 120; // 2-minute edge cache to protect database egress
 
 const MASTER_KEY = 'site_master_control_config';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+};
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
@@ -95,6 +98,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const isAdminRequest = request.nextUrl.searchParams.has('admin') || request.nextUrl.searchParams.has('_t');
+    const responseHeaders = isAdminRequest ? NO_CACHE_HEADERS : CACHE_HEADERS;
+
     return NextResponse.json(
       {
         success: true,
@@ -102,7 +108,7 @@ export async function GET(request: NextRequest) {
         config,
       },
       {
-        headers: NO_CACHE_HEADERS,
+        headers: responseHeaders,
       }
     );
   } catch (err: any) {

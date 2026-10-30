@@ -7,8 +7,7 @@ import {
 } from '@/lib/moderation/restrictedWords';
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 300; // 5-minute edge cache to protect database egress
 
 export async function GET(request: Request) {
   let words = DEFAULT_RESTRICTED_WORDS;
@@ -51,9 +50,7 @@ export async function GET(request: Request) {
     },
     {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     }
   );
