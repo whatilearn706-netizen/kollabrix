@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon.ico?v=20261030_v3', sizes: 'any' },
+      { url: '/favicon-v20261031.ico?v=20261031_v1', sizes: 'any' },
       { url: '/favicon-48x48.png?v=20261030_v3', sizes: '48x48', type: 'image/png' },
       { url: '/favicon-96x96.png?v=20261030_v3', sizes: '96x96', type: 'image/png' },
       { url: '/favicon-144x144.png?v=20261030_v3', sizes: '144x144', type: 'image/png' },

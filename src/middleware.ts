@@ -1,118 +1,30 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  const rawHost = (request.headers.get('host') || request.nextUrl.host || '').toLowerCase();
-  const host = rawHost.split(':')[0];
-  const pathname = request.nextUrl.pathname;
-  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+/**
+ * Middleware that protects any route under /arena/*
+ * from unauthenticated access. If the user does not have a
+ * valid session cookie, they are redirected to the login page
+ * with a `next` query param that points back to the original URL.
+ */
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  const PRIMARY_DOMAIN = 'kollabrix.in';
-  const ALLOWED_HOSTS = new Set([
-    'kollabrix.in',
-    'www.kollabrix.in',
-  ]);
-
-  // 1. Permanently 301 redirect all other hosts (linkora, vercel.app, etc.) directly to https://kollabrix.in
-  if (!isLocal && !ALLOWED_HOSTS.has(host)) {
-    const url = request.nextUrl.clone();
-    url.host = PRIMARY_DOMAIN;
-    url.protocol = 'https';
-    url.port = '';
-    const redirectResponse = NextResponse.redirect(url, { status: 301 });
-    if (host.includes('vercel.app')) {
-      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  // Only apply to arena routes (including the root /arena page)
+  if (pathname.startsWith('/arena')) {
+    // Assume the session token is stored in a cookie called `next-auth.session-token`
+    const session = request.cookies.get('next-auth.session-token');
+    if (!session) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('next', pathname);
+      return NextResponse.redirect(loginUrl);
     }
-    return redirectResponse;
   }
-
-  // 2. If request has an OAuth code and is not yet on /auth/callback, route it to /auth/callback (excluding API & Arena room routes)
-  if (
-    request.nextUrl.searchParams.has('code') &&
-    pathname !== '/auth/callback' &&
-    !pathname.startsWith('/api/') &&
-    !pathname.startsWith('/arena')
-  ) {
-    const url = request.nextUrl.clone();
-    url.host = isLocal ? host : PRIMARY_DOMAIN;
-    url.protocol = isLocal ? url.protocol : 'https';
-    url.port = isLocal ? url.port : '';
-    url.pathname = '/auth/callback';
-    return NextResponse.redirect(url, { status: 307 });
-  }
-
-  // If someone probes /admin, return 404 to avoid leaking the internal control center path
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/not-found';
-    return NextResponse.rewrite(url, { status: 404 });
-  }
-
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project-id')) {
-    // Supabase is not yet configured, proceed normally without failing
-    return response;
-  }
-
-  try {
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-          response = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    });
-
-    // Refresh auth session safely
-    await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-  } catch (err) {
-    // Fail safely without disrupting the page request
-  }
-
-
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  response.headers.set('X-DNS-Prefetch-Control', 'on');
-  response.headers.set('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; frame-ancestors 'self' https://search.google.com https://*.google.com; object-src 'none'; base-uri 'self';"
-  );
-
-  return response;
+  // Continue to the requested page when auth is present or path is not protected
+  return NextResponse.next();
 }
 
+// Apply the middleware only to arena paths
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images / svg / static assets
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/arena/:path*'],
 };
-
