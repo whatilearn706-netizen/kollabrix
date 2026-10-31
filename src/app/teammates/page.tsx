@@ -123,14 +123,29 @@ export default function TeammatesPage() {
         try {
           const { data: vData } = await supabase
             .from('platform_settings')
-            .select('value')
-            .eq('key', 'linkedin_college_verifications')
-            .maybeSingle();
-          if (Array.isArray(vData?.value)) {
-            vData.value.forEach((v: any) => {
-              if (v.userId) verifiedUserIds.add(v.userId);
-              if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
-            });
+            .select('key, value')
+            .in('key', ['student_id_verifications', 'linkedin_college_verifications']);
+
+          if (Array.isArray(vData)) {
+            for (const row of vData) {
+              if (!Array.isArray(row.value)) continue;
+              if (row.key === 'student_id_verifications') {
+                for (const v of row.value) {
+                  if (v.status === 'approved') {
+                    if (v.userId) verifiedUserIds.add(v.userId);
+                    if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+                  }
+                }
+              } else if (row.key === 'linkedin_college_verifications') {
+                for (const v of row.value) {
+                  const isApproved = v.status === 'approved' || v.collegeVerified === true || v.facultyVerified === true;
+                  if (isApproved && v.status !== 'pending' && v.status !== 'rejected') {
+                    if (v.userId) verifiedUserIds.add(v.userId);
+                    if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+                  }
+                }
+              }
+            }
           }
         } catch {}
 

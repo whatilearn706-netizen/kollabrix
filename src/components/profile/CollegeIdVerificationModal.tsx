@@ -187,7 +187,7 @@ export function CollegeIdVerificationModal({
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_DIM = 1024;
+        const MAX_DIM = 800;
         let w = img.width;
         let h = img.height;
 
@@ -204,7 +204,7 @@ export function CollegeIdVerificationModal({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, w, h);
-          const compressed = canvas.toDataURL('image/jpeg', 0.75);
+          const compressed = canvas.toDataURL('image/jpeg', 0.65);
           setIdCardPreview(compressed);
           setIsCompressing(false);
         } else {
@@ -288,32 +288,39 @@ export function CollegeIdVerificationModal({
       };
 
       // Authoritative write through secure server API route
-      try {
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        await fetch('/api/verify/college-id', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            collegeName: cleanCollege,
-            studentRollNumber: cleanRoll,
-            idCardImage: idCardPreview,
-            userId: currentUid,
-            username: currentUname,
-          }),
-        });
-      } catch (apiErr) {
-        console.warn('API route call warning:', apiErr);
+      const res = await fetch('/api/verify/college-id', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          collegeName: cleanCollege,
+          studentRollNumber: cleanRoll,
+          idCardImage: idCardPreview,
+          userId: currentUid,
+          username: currentUname,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Server could not record verification request. Please try again.');
       }
 
+      // Reset any local verified states until admin approves
+      setIsVerified(false);
+      try {
+        localStorage.removeItem('linkora_verified_registry_cache');
+      } catch (e) {}
+
       // 3. Update modal UI state to State 2 (Wait for Verified)
-      setExistingRequest(submissionRecord);
+      setExistingRequest(data.request || submissionRecord);
       setIsReuploading(false);
-      setSuccessMsg('Your Student ID card has been submitted! It will be verified within 24 hours.');
+      setSuccessMsg('Your Student ID card has been submitted! It will be verified by our administrative team within 24 hours.');
 
       try {
-        localStorage.setItem('linkora_student_id_status', JSON.stringify(submissionRecord));
+        localStorage.setItem('linkora_student_id_status', JSON.stringify(data.request || submissionRecord));
       } catch (e) {}
 
       if (onCollegeNameChange) {
@@ -321,7 +328,7 @@ export function CollegeIdVerificationModal({
       }
 
       if (onSubmitted) {
-        onSubmitted(submissionRecord);
+        onSubmitted(data.request || submissionRecord);
       }
 
       if (typeof window !== 'undefined') {

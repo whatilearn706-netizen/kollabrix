@@ -574,31 +574,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
-    // Cold backup poll every 15 minutes (Realtime websocket below handles instant live updates with 0 egress)
+    // Throttled suspension check every 15 minutes or tab focus (avoids consuming concurrent Supabase Realtime sockets)
     const suspensionInterval = setInterval(checkSuspensionRealtime, 900000);
-
-    let realtimeChannel: any = null;
-    const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('linkora_auth_user_id') : null);
-    if (currentUserId && isConfig) {
-      realtimeChannel = supabase
-        .channel(`user-suspension-live-${currentUserId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `user_id=eq.${currentUserId}`,
-          },
-          (payload: any) => {
-            const updated = payload?.new;
-            if (updated && (updated.is_suspended === true || updated.status === 'suspended')) {
-              performForcedSignOut(updated.suspension_reason || 'This account has been suspended.');
-            }
-          }
-        )
-        .subscribe();
-    }
 
     window.addEventListener('storage', syncAcrossTabs);
     window.addEventListener('focus', syncAcrossTabs);
@@ -608,9 +585,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
       clearInterval(suspensionInterval);
-      if (realtimeChannel) {
-        supabase.removeChannel(realtimeChannel);
-      }
       window.removeEventListener('storage', syncAcrossTabs);
       window.removeEventListener('focus', syncAcrossTabs);
       window.removeEventListener('visibilitychange', syncAcrossTabs);

@@ -200,10 +200,20 @@ export async function GET(request: NextRequest) {
             if (row.value.suspended_users) {
               suspendedUsersMap = row.value.suspended_users;
             }
+          } else if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
+            row.value.forEach((v: any) => {
+              if (v.status === 'approved') {
+                if (v.userId) verifiedUserIds.add(v.userId);
+                if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+              }
+            });
           } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
             row.value.forEach((v: any) => {
-              if (v.userId) verifiedUserIds.add(v.userId);
-              if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+              const isApproved = v.status === 'approved' || v.collegeVerified === true || v.facultyVerified === true;
+              if (isApproved && v.status !== 'pending' && v.status !== 'rejected') {
+                if (v.userId) verifiedUserIds.add(v.userId);
+                if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+              }
             });
           }
         }

@@ -42,14 +42,28 @@ export async function fetchVerifiedRegistry(force = false): Promise<Set<string>>
     try {
       const { data } = await supabase
         .from('platform_settings')
-        .select('value')
-        .eq('key', 'linkedin_college_verifications')
-        .maybeSingle();
+        .select('key, value')
+        .in('key', ['student_id_verifications', 'linkedin_college_verifications']);
 
-      if (Array.isArray(data?.value)) {
-        for (const item of data.value) {
-          if (item.userId) set.add(`uid:${item.userId}`);
-          if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          if (!Array.isArray(row.value)) continue;
+          if (row.key === 'student_id_verifications') {
+            for (const item of row.value) {
+              if (item.status === 'approved') {
+                if (item.userId) set.add(`uid:${item.userId}`);
+                if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
+              }
+            }
+          } else if (row.key === 'linkedin_college_verifications') {
+            for (const item of row.value) {
+              const isApproved = item.status === 'approved' || item.collegeVerified === true || item.facultyVerified === true;
+              if (isApproved && item.status !== 'pending' && item.status !== 'rejected') {
+                if (item.userId) set.add(`uid:${item.userId}`);
+                if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
+              }
+            }
+          }
         }
         directSuccess = true;
       }
