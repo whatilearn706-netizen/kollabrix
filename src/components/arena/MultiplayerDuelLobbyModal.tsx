@@ -637,7 +637,8 @@ export function MultiplayerDuelLobbyModal({
                         TARGET COMPONENT TO REPLICATE:
                       </span>
                     </div>
-                    <div className="max-w-[200px] max-h-[80px] overflow-hidden rounded-lg border border-charcoal-800 scale-75 origin-right">
+                    <div className="max-w-[200px] max-h-[80px] overflow-hidden rounded-lg border border-charcoal-800 scale-75 origin-right bg-white p-2 text-slate-900">
+                      <style>{activeQuestion.targetComponentCss || ''}</style>
                       <div dangerouslySetInnerHTML={{ __html: activeQuestion.targetComponentHtml }} />
                     </div>
                   </div>

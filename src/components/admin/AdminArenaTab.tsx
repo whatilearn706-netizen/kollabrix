@@ -72,7 +72,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const [newSampleInput, setNewSampleInput] = useState('');
   const [newSampleOutput, setNewSampleOutput] = useState('');
   const [newCodeWithBug, setNewCodeWithBug] = useState('// Enter code with bug here\n');
-  const [newTargetHtml, setNewTargetHtml] = useState('<div style="background:#0f172a;padding:20px;border-radius:12px;color:#fff;">Target Preview</div>');
+  const [newTargetHtml, setNewTargetHtml] = useState('<div class="target-card">\n  <h3>Target Card</h3>\n  <p>Design blueprint</p>\n</div>');
+  const [newTargetCss, setNewTargetCss] = useState('.target-card {\n  background: #0f172a;\n  padding: 16px;\n  border-radius: 10px;\n  color: #fff;\n}');
 
   const fetchQuestions = async () => {
     setIsLoading(true);
@@ -217,6 +218,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       codeWithBug: newArena === 'bug_hunt' ? newCodeWithBug : undefined,
       targetPreviewTitle: newTitle.trim(),
       targetComponentHtml: newTargetHtml,
+      targetComponentCss: newTargetCss,
       starterHtml: newStarterHtml,
       starterCss: newStarterCss,
       starterJs: newStarterJs,
@@ -310,11 +312,11 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
           {/* Test Trigger */}
           <button
             type="button"
-            onClick={() => setIsTestTransitionActive(true)}
+            onClick={() => setIsTestLobbyOpen(true)}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-mono text-xs font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center gap-2"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Test Voxel Shatter & Arena</span>
+            <span>Test Live Battle Arena</span>
           </button>
 
           <button
@@ -621,20 +623,41 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                 </div>
               </div>
 
-              {/* Target Component HTML (Visual Blueprint preview like Image 4) */}
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-slate-300 font-mono">
-                  Target Component HTML (Rendered Blueprint for Students):
-                </label>
+              {/* Target Component HTML & CSS (Visual Blueprint preview for Students) */}
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <textarea
-                    rows={5}
-                    value={newTargetHtml}
-                    onChange={(e) => setNewTargetHtml(e.target.value)}
-                    placeholder="<div style='background:#fff;border:2px solid #222;...'>Target Card</div>"
-                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
-                  <div className="rounded-xl border border-charcoal-750 bg-white p-3 overflow-auto max-h-36 flex items-center justify-center">
+                  <div>
+                    <label className="block text-xs font-medium text-emerald-400 mb-1 font-mono">
+                      Target Component HTML (Rendered Blueprint for Students):
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={newTargetHtml}
+                      onChange={(e) => setNewTargetHtml(e.target.value)}
+                      placeholder="<div class='dashboard'>\n  <aside class='sidebar'>...</aside>\n</div>"
+                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-cyan-400 mb-1 font-mono">
+                      Target Component CSS (Blueprint Styling):
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={newTargetCss}
+                      onChange={(e) => setNewTargetCss(e.target.value)}
+                      placeholder=".dashboard { display: flex; }\n.sidebar { width: 220px; background: #0f172a; }"
+                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1 font-mono">
+                    Live Blueprint Preview (Combined HTML + CSS output):
+                  </label>
+                  <div className="rounded-xl border border-charcoal-750 bg-white p-3 overflow-auto min-h-[90px] max-h-48 flex items-center justify-center text-slate-900">
+                    <style>{newTargetCss}</style>
                     <div dangerouslySetInnerHTML={{ __html: newTargetHtml }} className="w-full" />
                   </div>
                 </div>
@@ -789,15 +812,6 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
           </div>
         ))}
       </div>
-
-      {/* Cinematic Transition & Full Arena for Admin Live Testing */}
-      <CinematicArenaTransition
-        isActive={isTestTransitionActive}
-        onAnimationComplete={() => {
-          setIsTestTransitionActive(false);
-          setIsTestLobbyOpen(true);
-        }}
-      />
 
       {isTestLobbyOpen && (
         <FullArenaExperience

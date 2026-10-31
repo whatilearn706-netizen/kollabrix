@@ -30,7 +30,8 @@ export function evaluateWebCoordinateGraph(
   questionId: string,
   htmlCode: string,
   cssCode: string,
-  targetHtml?: string
+  targetHtml?: string,
+  targetCss?: string
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
   const cleanCss = (cssCode || '').trim();

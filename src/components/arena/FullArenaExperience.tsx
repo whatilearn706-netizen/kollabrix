@@ -1125,7 +1125,8 @@ export function FullArenaExperience({
       activeQuestion.id,
       htmlCode,
       cssCode,
-      activeQuestion.targetComponentHtml
+      activeQuestion.targetComponentHtml,
+      activeQuestion.targetComponentCss
     );
     setWebEvaluation(evaluation);
     setUserTestsPassed(evaluation.testsPassed);
@@ -1145,7 +1146,8 @@ export function FullArenaExperience({
       activeQuestion.id,
       htmlCode,
       cssCode,
-      activeQuestion.targetComponentHtml
+      activeQuestion.targetComponentHtml,
+      activeQuestion.targetComponentCss
     );
     setWebEvaluation(evaluation);
     setUserTestsPassed(evaluation.testsPassed);
@@ -2883,12 +2885,14 @@ export function FullArenaExperience({
                         {/* Preview White Canvas (Image 6 Design) */}
                         <div
                           key={`preview-${renderNonce}`}
-                          className="flex-1 p-3 bg-white overflow-auto flex items-center justify-center"
+                          className="flex-1 p-3 bg-white overflow-auto flex items-center justify-center text-slate-900"
                         >
                           <div
                             className="w-full"
                             dangerouslySetInnerHTML={{
-                              __html: activeQuestion.targetComponentHtml || '<p>Target Preview</p>',
+                              __html:
+                                (activeQuestion.targetComponentCss ? `<style>${activeQuestion.targetComponentCss}</style>` : '') +
+                                (activeQuestion.targetComponentHtml || '<p>Target Preview</p>'),
                             }}
                           />
                         </div>
@@ -3360,7 +3364,7 @@ export function FullArenaExperience({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
@@ -3368,6 +3372,18 @@ export function FullArenaExperience({
               >
                 Close Arena
               </button>
+
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                  `⚔️ I just played a 1v1 Battle Arena Duel on Kollabrix (${userTestsPassed}/${totalTests} tests passed)! Think you can beat me? Challenge me to a duel right now: https://kollabrix.in/arena?room=${roomCode}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-3 px-4 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Share2 className="w-4 h-4 text-emerald-400" />
+                <span>Share Victory on WhatsApp</span>
+              </a>
 
               <button
                 type="button"
