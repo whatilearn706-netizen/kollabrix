@@ -336,6 +336,8 @@ export async function prefetchTeammatesData(): Promise<void> {
       .eq('is_portfolio_public', true)
       .neq('is_suspended', true)
       .neq('status', 'suspended')
+      .not('college', 'is', null)
+      .neq('college', '')
       .order('updated_at', { ascending: false })
       .limit(60);
 
@@ -360,7 +362,9 @@ export async function prefetchTeammatesData(): Promise<void> {
           (p) =>
             !p.is_suspended &&
             p.status !== 'suspended' &&
-            !suspendedIds.includes(p.user_id)
+            !suspendedIds.includes(p.user_id) &&
+            Boolean(p.college && p.college.trim().length > 0) &&
+            Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0)
         )
         .map((p) => {
           const isVerified =

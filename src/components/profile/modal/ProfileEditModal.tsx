@@ -366,6 +366,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
       invalidatePageCache();
       window.dispatchEvent(new Event('linkora_auth_updated'));
+      window.dispatchEvent(new Event('linkora_teammates_updated'));
       await refreshProfile();
 
       setIsSuccess(true);

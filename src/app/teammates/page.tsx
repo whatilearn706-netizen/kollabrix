@@ -38,15 +38,26 @@ import Link from 'next/link';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { DEMO_PROFILES } from '@/data/mockProfiles';
 
+// Helper: Strictly verifies a student/builder has completed and saved their profile
+function isCompleteProfile(p: Profile | null | undefined): boolean {
+  if (!p) return false;
+  if (p.is_suspended || p.status === 'suspended') return false;
+  const hasCollege = Boolean(p.college && p.college.trim().length > 0);
+  const hasSkills = Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0);
+  return hasCollege && hasSkills;
+}
+
 export default function TeammatesPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache
-  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles_v4');
+  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles_v5');
 
-  const [allProfiles, setAllProfiles] = useState<Profile[]>(() => cachedProfiles || []);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
+    cachedProfiles ? cachedProfiles.filter(isCompleteProfile) : []
+  );
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('peer');
   const [existingMemberIds, setExistingMemberIds] = useState<string[]>([]);
@@ -102,6 +113,8 @@ export default function TeammatesPage() {
           .eq('is_portfolio_public', true)
           .neq('is_suspended', true)
           .neq('status', 'suspended')
+          .not('college', 'is', null)
+          .neq('college', '')
           .order('updated_at', { ascending: false })
           .limit(60);
 
@@ -127,7 +140,8 @@ export default function TeammatesPage() {
               (p) =>
                 !p.is_suspended &&
                 p.status !== 'suspended' &&
-                !suspendedIds.includes(p.user_id)
+                !suspendedIds.includes(p.user_id) &&
+                isCompleteProfile(p)
             )
             .map((p) => {
               const isVerified =
@@ -140,10 +154,10 @@ export default function TeammatesPage() {
           const finalProfiles = activeProfs.length > 0 ? activeProfs : DEMO_PROFILES;
 
           setAllProfiles(finalProfiles);
-          setPageCache('linkora_teammates_profiles_v4', finalProfiles);
+          setPageCache('linkora_teammates_profiles_v5', finalProfiles);
         } else {
           setAllProfiles(DEMO_PROFILES);
-          setPageCache('linkora_teammates_profiles_v4', DEMO_PROFILES);
+          setPageCache('linkora_teammates_profiles_v5', DEMO_PROFILES);
         }
 
         // 2. If logged in, fetch owned projects
@@ -204,6 +218,17 @@ export default function TeammatesPage() {
 
   useEffect(() => {
     loadData();
+
+    const handleRefresh = () => {
+      loadData();
+    };
+
+    window.addEventListener('linkora_auth_updated', handleRefresh);
+    window.addEventListener('linkora_teammates_updated', handleRefresh);
+    return () => {
+      window.removeEventListener('linkora_auth_updated', handleRefresh);
+      window.removeEventListener('linkora_teammates_updated', handleRefresh);
+    };
   }, [user]);
 
   // Load existing project members when selected project changes
@@ -263,11 +288,12 @@ export default function TeammatesPage() {
     const results: TeammateMatch[] = [];
 
     for (const cand of allProfiles) {
-      // Strictly exclude any suspended or non-active candidates
+      // Strictly exclude any suspended, non-active, or incomplete profiles
       if (
         cand.is_suspended ||
         cand.status === 'suspended' ||
-        suspendedUserIds.includes(cand.user_id)
+        suspendedUserIds.includes(cand.user_id) ||
+        !isCompleteProfile(cand)
       ) {
         continue;
       }
