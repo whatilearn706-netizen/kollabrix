@@ -1,5 +1,5 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { isSupabaseConfigured, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '@/lib/supabase/isConfigured';
 
 const MASTER_KEY = 'site_master_control_config';
 
@@ -15,11 +15,11 @@ export function invalidateMasterControlCache() {
 
 function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    '';
+    DEFAULT_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   return createSupabaseClient(url, key, {
     auth: { persistSession: false },
