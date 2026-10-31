@@ -81,6 +81,9 @@ export function LoginForm({ onSuccess, onSwitchToSignup, redirectUrl = '/explore
   }, []);
 
   const handleAuthSuccess = () => {
+    try {
+      sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+    } catch (e) {}
     if (onSuccess) {
       onSuccess();
     } else {

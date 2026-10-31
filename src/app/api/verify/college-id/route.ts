@@ -72,7 +72,7 @@ https://kollabrix.in/control-center-7x9?tab=id_verifications`;
   }
 }
 
-// Authoritative dual storage reader (dedicated platform_settings row + master subkey backup)
+// Authoritative dedicated storage reader
 async function loadAllIdVerifications(): Promise<StudentIdVerification[]> {
   const supabase = getSupabaseAdmin();
   try {
@@ -84,13 +84,6 @@ async function loadAllIdVerifications(): Promise<StudentIdVerification[]> {
 
     if (Array.isArray(dedicated?.value)) {
       return dedicated.value;
-    }
-  } catch (e) {}
-
-  try {
-    const subkeyData = await getMasterControlSubkey<StudentIdVerification[]>('student_id_verifications', []);
-    if (Array.isArray(subkeyData)) {
-      return subkeyData;
     }
   } catch (e) {}
 
@@ -115,10 +108,6 @@ async function saveAllIdVerifications(requests: StudentIdVerification[]): Promis
   } catch (e) {
     console.warn('Error saving to dedicated student_id_verifications row:', e);
   }
-
-  try {
-    await updateMasterControlSubkey('student_id_verifications', requests);
-  } catch (e) {}
 }
 
 // Helper: Authorize administrator access strictly & authoritatively

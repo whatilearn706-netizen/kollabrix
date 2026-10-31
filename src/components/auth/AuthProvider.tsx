@@ -337,19 +337,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentSession.user);
         persistSessionData(currentSession.user, currentSession, profile);
         fetchProfile(currentSession.user.id, currentSession.user).then((p) => {
-          if (p) persistSessionData(currentSession.user, currentSession, p);
+          if (p) {
+            const isTabActive = typeof window !== 'undefined' && sessionStorage.getItem('kollabrix_tab_active_session') === 'true';
+            const hasCollege = Boolean(p.college && p.college.trim().length > 0);
+            const hasSkills = Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0);
+            const isProfileComplete = hasCollege && hasSkills;
+
+            // If user closed the tab while onboarding was incomplete, evict session on next visit
+            if (!isProfileComplete && !isTabActive) {
+              performForcedSignOut();
+              return;
+            }
+
+            if (isProfileComplete && typeof window !== 'undefined') {
+              sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+            }
+            persistSessionData(currentSession.user, currentSession, p);
+          }
         }).finally(() => {
           setIsLoading(false);
         });
       } else {
-        // If Supabase has no active session returned yet, NEVER drop cached multi-tab session!
+        // If Supabase has no active session returned yet, inspect cached multi-tab session
         try {
           const cachedUser = localStorage.getItem('linkora_auth_user');
           const cachedProfile = localStorage.getItem('linkora_auth_profile');
           const cachedSession = localStorage.getItem('linkora_auth_session');
           if (cachedUser) {
+            const parsedProfile = cachedProfile ? JSON.parse(cachedProfile) : null;
+            const isTabActive = typeof window !== 'undefined' && sessionStorage.getItem('kollabrix_tab_active_session') === 'true';
+            const hasCollege = Boolean(parsedProfile?.college && parsedProfile.college.trim().length > 0);
+            const hasSkills = Boolean(parsedProfile?.skills && Array.isArray(parsedProfile.skills) && parsedProfile.skills.length > 0);
+            const isProfileComplete = hasCollege && hasSkills;
+
+            if (!isProfileComplete && !isTabActive) {
+              performForcedSignOut();
+              setIsLoading(false);
+              return;
+            }
+
             setUser(JSON.parse(cachedUser));
-            if (cachedProfile) setProfile(JSON.parse(cachedProfile));
+            if (cachedProfile) setProfile(parsedProfile);
+            if (isProfileComplete && typeof window !== 'undefined') {
+              sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+            }
             if (cachedSession) {
               const parsed = JSON.parse(cachedSession);
               setSession(parsed);

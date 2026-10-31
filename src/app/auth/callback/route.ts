@@ -83,22 +83,43 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${redirectBase}/explore?error=${encodeURIComponent(reason)}`);
         }
 
-        // 1-Year persistent session cookies
-        response.cookies.set('linkora_user_session', 'true', {
-          path: '/',
-          maxAge: 31536000,
-          sameSite: 'lax',
-        });
-        response.cookies.set('linkora_user_id', user.id, {
-          path: '/',
-          maxAge: 31536000,
-          sameSite: 'lax',
-        });
-        response.cookies.set('linkora_user_email', encodeURIComponent(user.email || ''), {
-          path: '/',
-          maxAge: 31536000,
-          sameSite: 'lax',
-        });
+        const isProfileComplete = Boolean(
+          profile?.college && profile.college.trim().length > 0 &&
+          profile?.skills && Array.isArray(profile.skills) && profile.skills.length > 0
+        );
+
+        if (isProfileComplete) {
+          // 1-Year persistent session cookies only for completed profiles
+          response.cookies.set('linkora_user_session', 'true', {
+            path: '/',
+            maxAge: 31536000,
+            sameSite: 'lax',
+          });
+          response.cookies.set('linkora_user_id', user.id, {
+            path: '/',
+            maxAge: 31536000,
+            sameSite: 'lax',
+          });
+          response.cookies.set('linkora_user_email', encodeURIComponent(user.email || ''), {
+            path: '/',
+            maxAge: 31536000,
+            sameSite: 'lax',
+          });
+        } else {
+          // Incomplete profile: Session-only cookie (cleared when browser closes)
+          response.cookies.set('linkora_user_session', 'true', {
+            path: '/',
+            sameSite: 'lax',
+          });
+          response.cookies.set('linkora_user_id', user.id, {
+            path: '/',
+            sameSite: 'lax',
+          });
+          response.cookies.set('linkora_user_email', encodeURIComponent(user.email || ''), {
+            path: '/',
+            sameSite: 'lax',
+          });
+        }
         // Clear any deprecated admin markers from cookies
         response.cookies.set('linkora_admin_session', '', { path: '/', maxAge: 0 });
 
@@ -129,15 +150,22 @@ export async function GET(request: Request) {
       localStorage.removeItem('linkora_explicit_signout');
       sessionStorage.removeItem('linkora_explicit_signout');
       sessionStorage.removeItem('linkora_signing_out');
+      sessionStorage.setItem('kollabrix_tab_active_session', 'true');
       localStorage.removeItem('linkora_admin_session');
       localStorage.setItem('linkora_auth_user', ${JSON.stringify(JSON.stringify(user))});
       localStorage.setItem('linkora_auth_session', ${JSON.stringify(JSON.stringify(session))});
       localStorage.setItem('linkora_auth_user_id', ${JSON.stringify(user.id)});
       localStorage.setItem('linkora_auth_user_email', ${JSON.stringify(user.email || '')});
       ${profile ? `localStorage.setItem('linkora_auth_profile', ${JSON.stringify(JSON.stringify(profile))});` : ''}
-      document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
-      document.cookie = 'linkora_user_id=' + ${JSON.stringify(user.id)} + '; path=/; max-age=31536000; SameSite=Lax';
-      document.cookie = 'linkora_user_email=' + encodeURIComponent(${JSON.stringify(user.email || '')}) + '; path=/; max-age=31536000; SameSite=Lax';
+      ${isProfileComplete ? `
+        document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
+        document.cookie = 'linkora_user_id=' + ${JSON.stringify(user.id)} + '; path=/; max-age=31536000; SameSite=Lax';
+        document.cookie = 'linkora_user_email=' + encodeURIComponent(${JSON.stringify(user.email || '')}) + '; path=/; max-age=31536000; SameSite=Lax';
+      ` : `
+        document.cookie = 'linkora_user_session=true; path=/; SameSite=Lax';
+        document.cookie = 'linkora_user_id=' + ${JSON.stringify(user.id)} + '; path=/; SameSite=Lax';
+        document.cookie = 'linkora_user_email=' + encodeURIComponent(${JSON.stringify(user.email || '')}) + '; path=/; SameSite=Lax';
+      `}
     } catch (e) {}
     window.location.replace(${JSON.stringify(targetUrl)});
   </script>

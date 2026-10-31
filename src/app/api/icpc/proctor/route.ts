@@ -4,6 +4,7 @@ import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/m
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 import { sendTelegramIcpcAlert } from '@/lib/security/telegramAlert';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,6 +12,14 @@ export const runtime = 'nodejs';
 
 let memoryIncidents: ProctorIncident[] = [];
 let memoryActiveSessions: Record<string, ActiveProctorSession> = {};
+let lastDbSessionFlush = 0;
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 async function getTelegramConfig(): Promise<{ botToken: string; chatId: string; configured: boolean }> {
   try {
@@ -35,14 +44,17 @@ async function getTelegramConfig(): Promise<{ botToken: string; chatId: string; 
 }
 
 async function loadProctorIncidents(): Promise<ProctorIncident[]> {
+  if (memoryIncidents.length > 0) return memoryIncidents;
   try {
-    const list = await getMasterControlSubkey<ProctorIncident[]>('icpc_proctor_incidents', []);
-    if (Array.isArray(list) && list.length > 0) {
-      memoryIncidents = list;
-      return list;
+    const client = getSupabaseAdmin();
+    if (!client) return memoryIncidents;
+    const { data } = await client.from('platform_settings').select('value').eq('key', 'icpc_proctor_incidents').maybeSingle();
+    if (Array.isArray(data?.value) && data.value.length > 0) {
+      memoryIncidents = data.value;
+      return memoryIncidents;
     }
   } catch (err) {
-    console.warn('Error reading icpc_proctor_incidents from master control:', err);
+    console.warn('Error reading icpc_proctor_incidents:', err);
   }
   return memoryIncidents;
 }
@@ -50,19 +62,28 @@ async function loadProctorIncidents(): Promise<ProctorIncident[]> {
 async function saveProctorIncidents(incidents: ProctorIncident[]): Promise<void> {
   memoryIncidents = incidents;
   try {
-    const trimmed = incidents.slice(0, 1000);
-    await updateMasterControlSubkey('icpc_proctor_incidents', trimmed);
+    const client = getSupabaseAdmin();
+    if (!client) return;
+    const trimmed = incidents.slice(0, 100); // Keep max 100 recent incidents to prevent DB egress bloat
+    await client.from('platform_settings').upsert({
+      key: 'icpc_proctor_incidents',
+      value: trimmed,
+      updated_at: new Date().toISOString(),
+    });
   } catch (err) {
-    console.warn('Error saving icpc_proctor_incidents to master control:', err);
+    console.warn('Error saving icpc_proctor_incidents to dedicated row:', err);
   }
 }
 
 async function loadActiveSessions(): Promise<Record<string, ActiveProctorSession>> {
+  if (Object.keys(memoryActiveSessions).length > 0) return memoryActiveSessions;
   try {
-    const map = await getMasterControlSubkey<Record<string, ActiveProctorSession>>('icpc_active_proctor_sessions', {});
-    if (map && typeof map === 'object') {
-      memoryActiveSessions = map;
-      return map;
+    const client = getSupabaseAdmin();
+    if (!client) return memoryActiveSessions;
+    const { data } = await client.from('platform_settings').select('value').eq('key', 'icpc_active_proctor_sessions').maybeSingle();
+    if (data?.value && typeof data.value === 'object') {
+      memoryActiveSessions = data.value;
+      return memoryActiveSessions;
     }
   } catch (err) {
     console.warn('Error reading icpc_active_proctor_sessions:', err);
@@ -70,17 +91,31 @@ async function loadActiveSessions(): Promise<Record<string, ActiveProctorSession
   return memoryActiveSessions;
 }
 
-async function saveActiveSessions(sessions: Record<string, ActiveProctorSession>): Promise<void> {
+async function saveActiveSessions(sessions: Record<string, ActiveProctorSession>, forceFlush = false): Promise<void> {
   memoryActiveSessions = sessions;
+  const now = Date.now();
+  // Throttle database persistence to at most once per 30 seconds to protect Supabase Egress & Log Ingestion
+  if (!forceFlush && (now - lastDbSessionFlush < 30_000)) {
+    return;
+  }
+  lastDbSessionFlush = now;
+
   try {
-    const now = Date.now();
+    const client = getSupabaseAdmin();
+    if (!client) return;
     const cleanMap: Record<string, ActiveProctorSession> = {};
     for (const [k, s] of Object.entries(sessions)) {
       if (now - new Date(s.lastHeartbeat).getTime() < 10 * 60 * 1000) {
-        cleanMap[k] = s;
+        // STRIP screenSnapshot so heavy Base64 images are NEVER written to Supabase!
+        const { screenSnapshot, ...rest } = s;
+        cleanMap[k] = rest as ActiveProctorSession;
       }
     }
-    await updateMasterControlSubkey('icpc_active_proctor_sessions', cleanMap);
+    await client.from('platform_settings').upsert({
+      key: 'icpc_active_proctor_sessions',
+      value: cleanMap,
+      updated_at: new Date().toISOString(),
+    });
   } catch (err) {
     console.warn('Error saving icpc_active_proctor_sessions:', err);
   }

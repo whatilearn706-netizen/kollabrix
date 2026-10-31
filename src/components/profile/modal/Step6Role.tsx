@@ -12,9 +12,7 @@ import {
   FileCheck,
   Building,
   Mail,
-  ExternalLink,
   KeyRound,
-  Sparkles,
 } from 'lucide-react';
 import { uploadFileToStorage } from '@/lib/supabase/storage';
 
@@ -176,29 +174,6 @@ export function Step6Role({
       ) : (
         /* TICKED STATE: Faculty Mentor Portal Configuration */
         <div className="space-y-4 p-4 rounded-2xl bg-white/[0.02] border border-amber-500/30 animate-fade-in">
-          {/* Header Banner */}
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-              <div>
-                <span className="text-xs font-bold text-white block">
-                  Faculty Mentor Portal Privileges
-                </span>
-                <span className="text-[10px] text-slate-300 block">
-                  Host Hackathons • Endorse Projects • Evaluate ICPC Contests • Mentor Student Teams
-                </span>
-              </div>
-            </div>
-            <a
-              href="/teacher/dashboard"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono flex items-center gap-1 shrink-0"
-            >
-              <span>Preview Portal</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
 
           {/* 1. Academic Designation with Custom Add Option */}
           <div>

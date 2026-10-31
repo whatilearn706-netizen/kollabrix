@@ -301,10 +301,14 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         }).catch((err) => console.warn('Admin queue notification note:', err));
       }
 
-      // Mark session complete
+      // Mark session complete & upgrade cookies to 1-year persistent
       try {
+        sessionStorage.setItem('kollabrix_tab_active_session', 'true');
         sessionStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
         localStorage.setItem('linkora_auth_profile', JSON.stringify({ ...profile, ...payload }));
+        document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
+        document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
+        document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
       } catch (e) {}
 
       invalidatePageCache();

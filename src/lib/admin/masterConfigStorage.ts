@@ -3,6 +3,16 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 
 const MASTER_KEY = 'site_master_control_config';
 
+// In-memory cache to prevent excessive Supabase Egress & Log Ingestion
+let cachedMasterRecord: Record<string, any> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 20_000; // 20 seconds TTL
+
+export function invalidateMasterControlCache() {
+  cachedMasterRecord = null;
+  cacheTimestamp = 0;
+}
+
 function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -18,11 +28,17 @@ function getSupabaseClient() {
 
 /**
  * Authoritative Master Configuration Reader
- * Fetches the entire site_master_control_config row from platform_settings
+ * Fetches the site_master_control_config row from platform_settings with 20s in-memory caching
  */
 export async function getMasterControlRecord(): Promise<Record<string, any>> {
+  // Check in-memory cache first to avoid repeated Supabase egress
+  const now = Date.now();
+  if (cachedMasterRecord && (now - cacheTimestamp < CACHE_TTL_MS)) {
+    return cachedMasterRecord;
+  }
+
   const client = getSupabaseClient();
-  if (!client) return {};
+  if (!client) return cachedMasterRecord || {};
 
   try {
     const { data, error } = await client
@@ -33,17 +49,19 @@ export async function getMasterControlRecord(): Promise<Record<string, any>> {
 
     if (error) {
       console.warn('Error reading site_master_control_config:', error.message);
-      return {};
+      return cachedMasterRecord || {};
     }
 
     if (data?.value && typeof data.value === 'object') {
+      cachedMasterRecord = data.value;
+      cacheTimestamp = now;
       return data.value;
     }
   } catch (err: any) {
     console.warn('Exception reading site_master_control_config:', err.message);
   }
 
-  return {};
+  return cachedMasterRecord || {};
 }
 
 /**
@@ -95,6 +113,10 @@ export async function updateMasterControlSubkey(
       return { success: false, error: error.message };
     }
 
+    // Refresh cache immediately
+    cachedMasterRecord = newMaster;
+    cacheTimestamp = Date.now();
+
     return { success: true, updatedRecord: newMaster };
   } catch (err: any) {
     console.warn(`Exception updating master control subkey "${subkey}":`, err.message);
@@ -132,6 +154,9 @@ export async function updateFullMasterControl(
       console.warn('Could not update full master control:', error.message);
       return { success: false, error: error.message };
     }
+
+    cachedMasterRecord = merged;
+    cacheTimestamp = Date.now();
 
     return { success: true };
   } catch (err: any) {

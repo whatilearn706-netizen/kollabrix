@@ -1,5 +1,12 @@
-import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
+import { createClient } from '@supabase/supabase-js';
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 export interface ArenaPlayer {
   id: string;
@@ -49,17 +56,23 @@ function cleanupStaleRooms(rooms: Record<string, ArenaRoom>): Record<string, Are
 }
 
 /**
- * Fetch all active rooms from Postgres platform_settings
+ * Fetch all active rooms from dedicated platform_settings row
  */
 export async function getAllActiveRooms(): Promise<Record<string, ArenaRoom>> {
   try {
-    const raw = await getMasterControlSubkey<Record<string, ArenaRoom>>('arena_active_rooms', {});
-    const rooms = typeof raw === 'object' && raw !== null ? raw : {};
+    const client = getSupabaseAdmin();
+    if (!client) {
+      const fallback: Record<string, ArenaRoom> = {};
+      MEMORY_ROOMS.forEach((val, key) => { fallback[key] = val; });
+      return fallback;
+    }
+    const { data } = await client.from('platform_settings').select('value').eq('key', 'arena_active_rooms').maybeSingle();
+    const rooms = typeof data?.value === 'object' && data.value !== null ? data.value : {};
     // Hydrate memory cache
     for (const [code, r] of Object.entries(rooms)) {
-      MEMORY_ROOMS.set(code.toUpperCase(), r);
+      MEMORY_ROOMS.set(code.toUpperCase(), r as ArenaRoom);
     }
-    return rooms;
+    return rooms as Record<string, ArenaRoom>;
   } catch (err) {
     console.warn('Failed reading active rooms from DB:', err);
     const fallback: Record<string, ArenaRoom> = {};
@@ -102,12 +115,19 @@ export async function saveRoom(room: ArenaRoom): Promise<ArenaRoom> {
   // Update memory
   MEMORY_ROOMS.set(cleanCode, updatedRoom);
 
-  // Persist to Postgres
+  // Persist to Postgres dedicated row
   try {
     const allRooms = await getAllActiveRooms();
     allRooms[cleanCode] = updatedRoom;
     const cleaned = cleanupStaleRooms(allRooms);
-    await updateMasterControlSubkey('arena_active_rooms', cleaned);
+    const client = getSupabaseAdmin();
+    if (client) {
+      await client.from('platform_settings').upsert({
+        key: 'arena_active_rooms',
+        value: cleaned,
+        updated_at: now,
+      });
+    }
   } catch (err) {
     console.warn('Failed writing room to DB:', err);
   }
