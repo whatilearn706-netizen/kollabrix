@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/Badge';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 import { HolographicPassportCard } from '@/components/passport/HolographicPassportCard';
 import { SAMPLE_MAYANK_PASSPORT } from '@/types/flightRecorder';
+import { openProfileEditModal } from '@/components/profile/MandatoryOnboardingModal';
 import {
   ArrowLeft,
   Edit3,
@@ -305,15 +306,14 @@ export default function PublicProfilePage() {
                 <span className="text-amber-400 font-medium">● Private Portfolio</span>
               )}
             </span>
-            <Link href="/settings/profile">
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Edit3 className="w-3.5 h-3.5 text-brand-400" />}
-              >
-                Edit Your Profile
-              </Button>
-            </Link>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => openProfileEditModal(1)}
+              leftIcon={<Edit3 className="w-3.5 h-3.5 text-brand-400" />}
+            >
+              Edit Your Profile
+            </Button>
           </div>
         )}
       </div>

@@ -12,6 +12,7 @@ import {
   AlertCircle,
   FolderGit2,
 } from 'lucide-react';
+import { openProfileEditModal } from '@/components/profile/MandatoryOnboardingModal';
 
 interface GithubProfileCardProps {
   githubUrl?: string | null;
@@ -76,13 +77,14 @@ export function GithubProfileCard({
         <p className="text-xs text-slate-400 max-w-sm mx-auto">
           Add your GitHub profile URL in Settings to show your public repositories, languages, and technical contributions on your portfolio.
         </p>
-        <a
-          href="/settings/profile"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-500/15 hover:bg-brand-500/25 border border-brand-500/30 text-xs font-semibold text-brand-300 transition-colors"
+        <button
+          type="button"
+          onClick={() => openProfileEditModal(5)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-500/15 hover:bg-brand-500/25 border border-brand-500/30 text-xs font-semibold text-brand-300 transition-colors cursor-pointer"
         >
           <span>Link GitHub Profile</span>
           <span>&rarr;</span>
-        </a>
+        </button>
       </div>
     );
   }

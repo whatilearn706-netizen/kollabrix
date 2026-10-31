@@ -43,6 +43,7 @@ import {
   StreakCelebrationToast,
   DailyStreakAutoPrompt,
 } from '@/components/gamification/DailyStreakHub';
+import { openProfileEditModal } from '@/components/profile/MandatoryOnboardingModal';
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
@@ -459,14 +460,17 @@ export function Navbar() {
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
-                    <Link
-                      href="/settings/profile"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        openProfileEditModal(1);
+                      }}
+                      className="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                     >
                       <Settings className="w-3.5 h-3.5 opacity-60" />
                       <span>Settings &amp; Skills</span>
-                    </Link>
+                    </button>
 
                     <button
                       type="button"
