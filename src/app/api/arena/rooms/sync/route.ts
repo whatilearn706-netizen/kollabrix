@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'close_room': {
+        room.status = 'closed';
+        break;
+      }
+
       case 'in_progress': {
         room.status = 'in_progress';
         break;

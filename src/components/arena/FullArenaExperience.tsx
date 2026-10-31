@@ -299,6 +299,54 @@ export function FullArenaExperience({
   const [maintenanceMsg, setMaintenanceMsg] = useState<string>(
     'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+
+  // Exit Arena with confirmation and mutual opponent termination
+  const handleExitArena = () => {
+    // If on Gateway (Step 0), Pilot Dossier (Step 1), Arena Picker (Step 2), or Victory (Step 6), exit immediately
+    if (step < 3 || step === 6 || !roomCode) {
+      onClose();
+      return;
+    }
+    // In Lobby (Step 3), Countdown (Step 4), or Battlefield (Step 5), ask confirmation
+    setShowExitConfirmModal(true);
+  };
+
+  const handleConfirmExit = async () => {
+    setShowExitConfirmModal(false);
+
+    // 1. Broadcast immediate arena_exit event to opponent via Supabase Realtime channel
+    if (channelRef.current) {
+      try {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'arena_exit',
+          payload: {
+            exitedBy: playerName,
+            message: `⚡ ${playerName} has exited the Battle Arena. The match has ended.`,
+          },
+        });
+      } catch {}
+    }
+
+    // 2. Update room on server to closed status
+    if (roomCode) {
+      try {
+        await fetch('/api/arena/rooms/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: roomCode,
+            action: 'close_room',
+            playerId: myPlayerId,
+            payload: { exitedBy: playerName },
+          }),
+        });
+      } catch {}
+    }
+
+    onClose();
+  };
 
   useEffect(() => {
     fetch('/api/arena/status', { cache: 'no-store' })
@@ -453,6 +501,21 @@ export function FullArenaExperience({
 
         playTacticalSelectSound();
         trackEvent('arena_room_joined', { code: data.room.code, format: data.room.format, arena: data.room.arena });
+
+        // Immediately send room_sync broadcast over WebSocket so host's screen updates in <40ms
+        try {
+          const joinChannel = supabase.channel(`arena_duel_${data.room.code}`);
+          joinChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              joinChannel.send({
+                type: 'broadcast',
+                event: 'room_sync',
+                payload: { room: data.room },
+              });
+            }
+          });
+        } catch {}
+
         setStep(3); // Directly into Lobby!
       } else {
         setJoinError(data.error || `Room "${raw}" was not found or has expired. Please verify with your friend.`);
@@ -509,6 +572,14 @@ export function FullArenaExperience({
   // Unified State Applicator for WebSocket & HTTP Sync
   const applyRoomDataState = (incomingRoom: any) => {
     if (!incomingRoom) return;
+
+    // If room is closed because a player exited
+    if (incomingRoom.status === 'closed') {
+      alert('The battle room has been closed because a player exited the arena.');
+      onClose();
+      return;
+    }
+
     setRoomData(incomingRoom);
 
     // If in Lobby (Step 3) and Host started match, advance joiner to Step 4 (Countdown) instantly!
@@ -556,7 +627,7 @@ export function FullArenaExperience({
     }
   };
 
-  // Realtime Supabase WebSocket Synchronization + Low-Frequency Failover Polling
+  // Realtime Supabase WebSocket Synchronization + High-Frequency Failover Polling
   useEffect(() => {
     if (step !== 3 && step !== 5) return;
     if (!roomCode) return;
@@ -574,6 +645,11 @@ export function FullArenaExperience({
           if (!isMounted || !payload?.room) return;
           applyRoomDataState(payload.room);
         })
+        .on('broadcast', { event: 'arena_exit' }, ({ payload }) => {
+          if (!isMounted) return;
+          alert(payload?.message || 'Opponent has exited the Battle Arena. The match has ended.');
+          onClose();
+        })
         .on('broadcast', { event: 'progress_sync' }, ({ payload }) => {
           if (!isMounted) return;
           if (payload?.playerId !== myPlayerId) {
@@ -588,7 +664,7 @@ export function FullArenaExperience({
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. Low-frequency background HTTP safety check (30s interval with inactive tab sleep)
+    // 2. High-frequency background HTTP safety check (2.5s in lobby, 6s in match)
     const pollInterval = setInterval(async () => {
       if (typeof document !== 'undefined' && document.hidden) return;
       try {
@@ -598,7 +674,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, 30000);
+    }, step === 3 ? 2500 : 6000);
 
     return () => {
       isMounted = false;
@@ -1283,8 +1359,8 @@ export function FullArenaExperience({
         {/* Exit Button */}
         <button
           type="button"
-          onClick={onClose}
-          className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono"
+          onClick={handleExitArena}
+          className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
           title="Exit Battle Arena"
         >
           <X className="w-4 h-4" />
@@ -2435,7 +2511,7 @@ export function FullArenaExperience({
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <span className="font-mono text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                    Team Alpha (Your Squad)
+                    {isHost ? 'Team Alpha (Your Squad)' : 'Team Alpha (Host Squad)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
                     {teamSize === '1v1' ? '1 Slot' : '2 Slots'}
@@ -2443,29 +2519,46 @@ export function FullArenaExperience({
                 </div>
 
                 <div className="space-y-2">
-                  {/* Slot 1: You */}
+                  {/* Slot 1: Host */}
                   <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
                         P1
                       </div>
-                      <span className="text-white font-bold">{playerName}</span>
-                      <span className="text-[10px] text-cyan-400 font-semibold">(Driver)</span>
+                      <span className="text-white font-bold">
+                        {roomData?.alphaPlayers?.[0]?.name || roomData?.hostName || (isHost ? playerName : 'Host')}
+                      </span>
+                      <span className="text-[10px] text-cyan-400 font-semibold">
+                        {isHost ? '(You - Driver)' : '(Host - Driver)'}
+                      </span>
                     </div>
                     <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                   </div>
 
                   {/* Slot 2: Teammate (in 2v2) */}
                   {teamSize === '2v2' && (
-                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-slate-700 flex items-center justify-between text-xs font-mono text-slate-400">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[11px]">
-                          P2
+                    roomData?.alphaPlayers?.[1] ? (
+                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                            P2
+                          </div>
+                          <span className="text-white font-bold">{roomData.alphaPlayers[1].name}</span>
+                          <span className="text-[10px] text-cyan-400 font-semibold">(Navigator)</span>
                         </div>
-                        <span className="italic">Waiting for teammate...</span>
+                        <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                       </div>
-                      <span className="text-[10px] text-amber-400 animate-pulse">INVITED</span>
-                    </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-slate-700 flex items-center justify-between text-xs font-mono text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[11px]">
+                            P2
+                          </div>
+                          <span className="italic">Waiting for teammate...</span>
+                        </div>
+                        <span className="text-[10px] text-amber-400 animate-pulse">INVITED</span>
+                      </div>
+                    )
                   )}
                 </div>
               </div>
@@ -2475,7 +2568,7 @@ export function FullArenaExperience({
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <span className="font-mono text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-rose-400" />
-                    Team Omega (Opponents)
+                    {isHost ? 'Team Omega (Opponents)' : 'Team Omega (Your Squad)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
                     {teamSize === '1v1' ? '1 Slot' : '2 Slots'}
@@ -2484,23 +2577,43 @@ export function FullArenaExperience({
 
                 {roomData?.omegaPlayers && roomData.omegaPlayers.length > 0 ? (
                   <div className="space-y-2">
-                    {roomData.omegaPlayers.map((opp: any, idx: number) => (
-                      <div
-                        key={opp.id || idx}
-                        className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/50 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(244,63,94,0.25)]"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                            {opp.id === 'bot-rival' ? <Bot className="w-3.5 h-3.5" /> : `P${idx + 2}`}
+                    {roomData.omegaPlayers.map((opp: any, idx: number) => {
+                      const isMe = !isHost && (opp.id === myPlayerId || opp.name === playerName);
+                      return (
+                        <div
+                          key={opp.id || idx}
+                          className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/50 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(244,63,94,0.25)]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                              {opp.id === 'bot-rival' ? <Bot className="w-3.5 h-3.5" /> : `P${idx + 2}`}
+                            </div>
+                            <span className="text-white font-bold">{opp.name}</span>
+                            <span className="text-[10px] text-rose-400 font-semibold">
+                              {isMe ? '(You - Driver)' : `(${opp.role || 'Driver'})`}
+                            </span>
                           </div>
-                          <span className="text-white font-bold">{opp.name}</span>
-                          <span className="text-[10px] text-rose-400 font-semibold">({opp.role || 'Driver'})</span>
+                          <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
+                            READY
+                          </span>
                         </div>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
-                          READY
-                        </span>
+                      );
+                    })}
+                  </div>
+                ) : !isHost ? (
+                  <div className="space-y-2">
+                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/50 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(244,63,94,0.25)]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                          P2
+                        </div>
+                        <span className="text-white font-bold">{playerName}</span>
+                        <span className="text-[10px] text-rose-400 font-semibold">(You - Driver)</span>
                       </div>
-                    ))}
+                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
+                        READY
+                      </span>
+                    </div>
                   </div>
                 ) : isBotOpponentAdded ? (
                   <div className="space-y-2">
@@ -2550,7 +2663,7 @@ export function FullArenaExperience({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setStep(isHost ? 2 : 0)}
+                onClick={handleExitArena}
                 className="py-3 px-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -3429,6 +3542,48 @@ export function FullArenaExperience({
           </div>
         )}
       </main>
+
+      {/* Exit Confirmation Dialog */}
+      {showExitConfirmModal && (
+        <div className="fixed inset-0 z-[10000] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-slate-900 border border-rose-500/50 shadow-[0_0_50px_rgba(244,63,94,0.3)] space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
+                <AlertCircle className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-base font-black font-mono text-white tracking-wide uppercase">
+                  Exit Battle Arena?
+                </h3>
+                <p className="text-xs text-rose-300/80 font-mono">
+                  Room: {roomCode}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed font-mono">
+              Are you sure you want to exit? Exiting will terminate the match and immediately close the arena for your opponent as well.
+            </p>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowExitConfirmModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs font-bold transition-all cursor-pointer"
+              >
+                No, Stay in Arena
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmExit}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:brightness-110 text-white font-mono text-xs font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+              >
+                Yes, Exit Arena
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
