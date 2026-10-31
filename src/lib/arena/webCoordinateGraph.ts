@@ -48,7 +48,7 @@ export function evaluateWebCoordinateGraph(
   const results: WebGraphTestResult[] = [];
 
   // ================= CHALLENGE 1: CARDS GRID (3 Cards Replication) =================
-  if (questionId === 'q-html-css-cards-grid' || cleanHtml.includes('cards-grid') || cleanHtml.includes('card')) {
+  if (questionId === 'q-html-css-cards-grid' || (cleanHtml.includes('cards-grid') && cleanHtml.includes('Card 1'))) {
     // Test 1: Structural Node Extraction (Must contain at least 3 cards/items)
     // Count card occurrences (divs, articles, or sections inside container)
     const cardMatches = cleanHtml.match(/<div[^>]*class=["'][^"']*\bcard\b[^"']*["'][\s\S]*?<\/div>/gi) ||
@@ -161,27 +161,75 @@ export function evaluateWebCoordinateGraph(
         : 'Failed: Missing styled CTA button at bottom of card.',
     });
   }
-  // ================= GENERAL / FALLBACK WEB CHALLENGE =================
+  // ================= GENERAL / CUSTOM CHALLENGES (e.g. Digital Counter, Profile Card, Login Card) =================
   else {
-    const hasContent = hasMeaningfulHtml && cleanHtml.length > 40;
-    const hasStyle = hasMeaningfulCss && cleanCss.length > 20;
+    const target = (targetHtml || '').toLowerCase();
+    const student = cleanHtml.toLowerCase();
+    const studentCss = cleanCss.toLowerCase();
+
+    // 1. Structure Test: Key elements from target blueprint
+    const needsButton = target.includes('<button') || target.includes('type="button"');
+    const hasButton = student.includes('<button') || student.includes('type="button"') || student.includes('class="btn');
+
+    const needsInput = target.includes('<input');
+    const hasInput = student.includes('<input') || student.includes('<textarea');
+
+    const needsImg = target.includes('<img');
+    const hasImg = student.includes('<img') || student.includes('avatar') || student.includes('image');
+
+    const needsHeading = /<h[1-4]/i.test(target);
+    const hasHeading = /<h[1-4]/i.test(student);
+
+    let structurePassed = hasMeaningfulHtml;
+    let structureMsg = 'Passed: Semantic HTML structure constructed.';
+
+    if (needsButton && !hasButton) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires interactive button(s).';
+    } else if (needsInput && !hasInput) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires input fields.';
+    } else if (needsImg && !hasImg) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires an image or avatar element.';
+    } else if (needsHeading && !hasHeading) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires heading elements (h1-h4).';
+    }
 
     results.push({
       testName: 'HTML Structure & Semantics',
-      passed: hasContent,
-      message: hasContent ? 'Passed: HTML elements constructed.' : 'Failed: Empty or incomplete HTML content.',
+      passed: structurePassed,
+      message: structureMsg,
     });
 
-    results.push({
-      testName: 'CSS Coordinates & Layout',
-      passed: hasStyle,
-      message: hasStyle ? 'Passed: CSS styling rules applied.' : 'Failed: CSS stylesheet is empty.',
-    });
+    // 2. CSS Styling & Layout Test
+    const hasStylingRules = hasMeaningfulCss && (
+      studentCss.includes('{') &&
+      studentCss.includes(':') &&
+      studentCss.length > 15
+    );
+
+    const hasLayoutProperties =
+      /display|padding|margin|border|border-radius|background|color|flex|grid|width|height|font|text-align/i.test(studentCss);
+
+    const stylingPassed = hasStylingRules && hasLayoutProperties;
 
     results.push({
-      testName: 'Visual Coordinate Match',
-      passed: hasContent && hasStyle,
-      message: hasContent && hasStyle ? 'Passed: Output matches target.' : 'Failed: Output incomplete.',
+      testName: 'CSS Coordinates & Styling',
+      passed: stylingPassed,
+      message: stylingPassed
+        ? 'Passed: CSS layout rules, borders, and spatial styling applied.'
+        : 'Failed: Apply CSS styling rules (padding, colors, borders, or layout) to match the blueprint.',
+    });
+
+    // 3. Blueprint Visual Fidelity
+    results.push({
+      testName: 'Blueprint Visual Alignment',
+      passed: structurePassed && stylingPassed,
+      message: structurePassed && stylingPassed
+        ? 'Passed: Live component matches target blueprint specifications.'
+        : 'Failed: Complete both the HTML structure and CSS styling to match the target preview.',
     });
   }
 

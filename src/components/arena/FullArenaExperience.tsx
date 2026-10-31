@@ -63,6 +63,7 @@ import { trackEvent } from '@/lib/analytics/tracker';
 interface FullArenaExperienceProps {
   onClose: () => void;
   initialRoomCode?: string;
+  initialQuestion?: DuelQuestion;
   currentUser?: {
     displayName?: string;
     username?: string;
@@ -73,6 +74,7 @@ interface FullArenaExperienceProps {
 export function FullArenaExperience({
   onClose,
   initialRoomCode,
+  initialQuestion,
   currentUser,
 }: FullArenaExperienceProps) {
   // Navigation Steps:
@@ -267,7 +269,30 @@ export function FullArenaExperience({
   // Step 4 & 5: Battlefield States
   const [countdownNum, setCountdownNum] = useState<number>(3);
   const [timeLeft, setTimeLeft] = useState<number>(300);
-  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(DEFAULT_ARENA_QUESTIONS[0]);
+  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(
+    initialQuestion || DEFAULT_ARENA_QUESTIONS[0]
+  );
+
+  useEffect(() => {
+    if (initialQuestion) {
+      setActiveQuestion(initialQuestion);
+      setArena(initialQuestion.arena);
+      if (initialQuestion.tags && initialQuestion.tags.length > 0) {
+        setSelectedTags(initialQuestion.tags);
+      }
+      setHtmlCode(initialQuestion.starterHtml || '');
+      setCssCode(initialQuestion.starterCss || '');
+      setJsCode(initialQuestion.starterJs || '');
+      setPythonCode(initialQuestion.starterPython || '# Your python solution\n');
+      setJavaCode(initialQuestion.starterJava || '// Your java solution\n');
+      setCppCode(initialQuestion.starterCpp || '// Your C++ solution\n');
+      setTotalTests(initialQuestion.testCases?.length || 3);
+      setTimeLeft(initialQuestion.timeLimitSeconds || 300);
+      setIsBotOpponentAdded(true);
+      setStep(4);
+      setCountdownNum(3);
+    }
+  }, [initialQuestion]);
 
   // Arena Live Status check
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
@@ -672,20 +697,24 @@ export function FullArenaExperience({
       }
     }
 
-    let chosen: DuelQuestion | null = roomData?.question || null;
-    if (!chosen) {
-      try {
-        const res = await fetch(
-          `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}`,
-          { cache: 'no-store' }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data.questions && data.questions.length > 0) {
-            chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
-          }
+    // Fetch fresh question matching arena & selected tags from database question bank
+    let chosen: DuelQuestion | null = null;
+    try {
+      const res = await fetch(
+        `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}`,
+        { cache: 'no-store' }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questions && data.questions.length > 0) {
+          chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
         }
-      } catch (e) {}
+      }
+    } catch (e) {}
+
+    if (!chosen && roomData?.question) {
+      chosen = roomData.question;
+    }
 
       if (!chosen) {
         const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
@@ -702,7 +731,6 @@ export function FullArenaExperience({
               DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
               DEFAULT_ARENA_QUESTIONS[0];
       }
-    }
 
     setActiveQuestion(chosen);
 

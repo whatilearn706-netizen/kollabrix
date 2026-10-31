@@ -46,6 +46,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   // Live test transition states
   const [isTestTransitionActive, setIsTestTransitionActive] = useState(false);
   const [isTestLobbyOpen, setIsTestLobbyOpen] = useState(false);
+  const [selectedTestQuestion, setSelectedTestQuestion] = useState<DuelQuestion | null>(null);
 
   // Arena Live / Maintenance Status
   const [isArenaLive, setIsArenaLive] = useState(true);
@@ -802,8 +803,20 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
               </span>
               <button
                 type="button"
+                onClick={() => {
+                  setSelectedTestQuestion(q);
+                  setIsTestLobbyOpen(true);
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+                title="Play & Test this specific question in Battle Arena"
+              >
+                <Play className="w-3 h-3 fill-current" />
+                <span>Play</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => handleDeleteQuestion(q.id)}
-                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 transition-colors flex items-center justify-center"
+                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 transition-colors flex items-center justify-center cursor-pointer"
                 title="Delete Question"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -815,7 +828,11 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
       {isTestLobbyOpen && (
         <FullArenaExperience
-          onClose={() => setIsTestLobbyOpen(false)}
+          onClose={() => {
+            setIsTestLobbyOpen(false);
+            setSelectedTestQuestion(null);
+          }}
+          initialQuestion={selectedTestQuestion || undefined}
           currentUser={{
             displayName: 'Admin Tester',
             username: 'admin',
