@@ -130,12 +130,29 @@ async function checkAdminAuthorization(
 ): Promise<{ isAuthorized: boolean; email?: string; userId?: string }> {
   // Method 0: Check verified platform owner ID passed in headers/query from admin control center
   const reqAdminId = request.headers.get('x-admin-id') || request.nextUrl.searchParams.get('adminId');
-  if (reqAdminId === 'c86ce05f-24de-4a1a-a45f-944d4180b508') {
+  if (
+    reqAdminId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+    reqAdminId === '9343b52f-f7e8-4ed8-a8a1-476829811b53'
+  ) {
     return {
       isAuthorized: true,
       email: 'goyalmayank142@gmail.com',
       userId: reqAdminId,
     };
+  }
+
+  if (reqAdminId) {
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      const { data: p } = await supabaseAdmin
+        .from('profiles')
+        .select('role, user_id, username')
+        .eq('user_id', reqAdminId)
+        .maybeSingle();
+      if (p?.role === 'admin' || p?.role === 'moderator') {
+        return { isAuthorized: true, userId: reqAdminId, email: p.username };
+      }
+    } catch (e) {}
   }
 
   // Method 1: Standard verifyAdminSession
@@ -385,11 +402,30 @@ export async function POST(request: NextRequest) {
     );
     const existing = existingIndex >= 0 ? currentRequests[existingIndex] : null;
 
-    if (existing && existing.status === 'approved') {
-      return NextResponse.json({
-        success: false,
-        error: 'Your collegiate affiliation has already been officially verified and locked. Re-uploading is not permitted.',
-      }, { status: 400 });
+    // When a student uploads or updates their ID card, immediately revoke any prior verified badge
+    // so they are strictly 'Not Verified' across the site until admin explicitly reviews and approves
+    try {
+      const { data: vData } = await supabaseAdmin
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'linkedin_college_verifications')
+        .maybeSingle();
+
+      if (Array.isArray(vData?.value)) {
+        const cleanRegistry = vData.value.filter(
+          (item: any) =>
+            item.userId !== effectiveUserId &&
+            item.username?.toLowerCase() !== username.toLowerCase()
+        );
+        await supabaseAdmin.from('platform_settings').upsert({
+          key: 'linkedin_college_verifications',
+          value: cleanRegistry,
+          description: 'Universal registry of verified college credentials.',
+          updated_at: new Date().toISOString(),
+        });
+      }
+    } catch (cleanErr) {
+      console.warn('Notice removing user from verified registry on new submission:', cleanErr);
     }
 
     const newRequest: StudentIdVerification = {
