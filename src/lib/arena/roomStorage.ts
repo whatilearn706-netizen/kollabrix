@@ -34,7 +34,7 @@ export interface ArenaRoom {
   difficulty: 'easy' | 'medium' | 'hard';
   timeLimit: number;
   question: DuelQuestion;
-  status: 'lobby' | 'starting' | 'in_progress' | 'finished';
+  status: 'lobby' | 'starting' | 'in_progress' | 'finished' | 'closed';
   winnerTeam?: 'Team Alpha' | 'Team Omega' | 'Draw';
   alphaPlayers: ArenaPlayer[];
   omegaPlayers: ArenaPlayer[];
@@ -94,14 +94,18 @@ export async function getRoom(code: string): Promise<ArenaRoom | null> {
   if (!code) return null;
   const cleanCode = code.trim().toUpperCase();
 
-  // Check memory cache first
+  // Always query database first to get authoritative shared state across all serverless containers
+  const allRooms = await getAllActiveRooms();
+  if (allRooms[cleanCode]) {
+    return allRooms[cleanCode];
+  }
+
+  // Fallback to memory cache
   if (MEMORY_ROOMS.has(cleanCode)) {
     return MEMORY_ROOMS.get(cleanCode)!;
   }
 
-  // Fallback to database
-  const allRooms = await getAllActiveRooms();
-  return allRooms[cleanCode] || null;
+  return null;
 }
 
 /**
