@@ -50,7 +50,7 @@ function GitHubIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
-export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/profile/setup' }: SignupFormProps) {
+export function SignupForm({ onSuccess, onSwitchToLogin, redirectUrl = '/explore' }: SignupFormProps) {
   const router = useRouter();
 
   // General States

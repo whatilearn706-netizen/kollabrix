@@ -43,7 +43,7 @@ export default function SignupPage() {
 
         {/* Signup Card */}
         <div className="rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xl relative overflow-hidden">
-          <SignupForm redirectUrl="/profile/setup" />
+          <SignupForm redirectUrl="/explore" />
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ export interface FileUploadProps {
   options?: UploadOptions;
   className?: string;
   accept?: string;
+  variant?: 'banner' | 'avatar' | 'square';
 }
 
 export function FileUpload({
@@ -22,6 +23,7 @@ export function FileUpload({
   options,
   className = '',
   accept = 'image/*',
+  variant = 'banner',
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -97,45 +99,106 @@ export function FileUpload({
       />
 
       {value ? (
-        /* Preview State */
-        <div className="relative group rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-hidden p-2 transition-all">
-          <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={value}
-              alt="Uploaded preview"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-1.5 rounded-lg bg-white/90 text-slate-900 text-xs font-bold hover:bg-white transition-colors shadow-sm"
-              >
-                Change Image
-              </button>
+        variant === 'avatar' ? (
+          /* Avatar Preview State (Clean Circle) */
+          <div className="flex items-center gap-4 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
+            <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-800 border-2 border-amber-500/40 shrink-0 shadow-md">
+              <img
+                src={value}
+                alt="Uploaded avatar"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/30 transition-colors shadow-xs"
+                >
+                  Change Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs hover:bg-red-500/20 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">{helperText}</p>
+            </div>
+          </div>
+        ) : (
+          /* Default Banner Preview State */
+          <div className="relative group rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-hidden p-2 transition-all">
+            <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={value}
+                alt="Uploaded preview"
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg bg-white/90 text-slate-900 text-xs font-bold hover:bg-white transition-colors shadow-sm"
+                >
+                  Change Image
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="p-1.5 rounded-lg bg-red-500/90 text-white hover:bg-red-600 transition-colors shadow-sm"
+                  title="Remove image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="pt-2 px-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Asset Ready</span>
+              </span>
               <button
                 type="button"
                 onClick={handleRemove}
-                className="p-1.5 rounded-lg bg-red-500/90 text-white hover:bg-red-600 transition-colors shadow-sm"
-                title="Remove image"
+                className="text-slate-400 hover:text-red-500 transition-colors"
               >
-                <X className="w-4 h-4" />
+                Remove
               </button>
             </div>
           </div>
-          <div className="pt-2 px-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Asset Ready</span>
-            </span>
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="text-slate-400 hover:text-red-500 transition-colors"
-            >
-              Remove
-            </button>
+        )
+      ) : variant === 'avatar' ? (
+        /* Avatar Dropzone Upload Box */
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`cursor-pointer border-2 border-dashed rounded-2xl p-4 flex items-center gap-4 transition-all ${
+            isDragging
+              ? 'border-amber-500 bg-amber-500/5 scale-[1.01]'
+              : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 hover:border-amber-500/40'
+          }`}
+        >
+          {isUploading ? (
+            <div className="w-16 h-16 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center shrink-0">
+              <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center shrink-0 text-slate-400">
+              <UploadCloud className="w-6 h-6 text-amber-400" />
+            </div>
+          )}
+          <div>
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Click to upload photo
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{helperText}</p>
           </div>
         </div>
       ) : (

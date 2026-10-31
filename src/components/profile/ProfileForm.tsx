@@ -462,7 +462,8 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
           helperText="Upload a photo (PNG, JPG, WebP up to 5MB) or keep empty for initials"
           value={avatarUrl}
           onChange={setAvatarUrl}
-          options={{ bucket: 'avatars', folder: 'profiles', maxSizeMB: 5 }}
+          variant="avatar"
+          options={{ bucket: 'platform-assets', folder: 'avatars', maxSizeMB: 5 }}
         />
 
         <Textarea
