@@ -18,6 +18,7 @@ export interface DuelQuestion {
   codeWithBug?: string; // Buggy code snippet for bug hunt
   // For Web Dev:
   targetComponentHtml?: string;
+  targetComponentCss?: string;
   targetPreviewTitle?: string;
   starterHtml?: string;
   starterCss?: string;

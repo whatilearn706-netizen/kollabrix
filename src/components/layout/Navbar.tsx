@@ -112,7 +112,7 @@ export function Navbar() {
   }, []);
 
   const handleLaunchArena = () => {
-    setIsVoxelTransitionActive(true);
+    setIsArenaModalOpen(true);
   };
 
   useEffect(() => {
@@ -758,15 +758,6 @@ export function Navbar() {
 
     {/* Floating Streak Celebration Toast */}
     <StreakCelebrationToast />
-
-    {/* Cinematic Cyber Warp Battle Arena Transition */}
-    <CinematicArenaTransition
-      isActive={isVoxelTransitionActive}
-      onAnimationComplete={() => {
-        setIsVoxelTransitionActive(false);
-        setIsArenaModalOpen(true);
-      }}
-    />
 
     {/* Full Screen Immersive Battle Arena Experience */}
     {isArenaModalOpen && (
