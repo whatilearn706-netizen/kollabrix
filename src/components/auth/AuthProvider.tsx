@@ -43,7 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [suspendedNotice, setSuspendedNotice] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        return sessionStorage.getItem('linkora_suspended_notice');
+        const cachedNotice = sessionStorage.getItem('linkora_suspended_notice');
+        const cachedProf = localStorage.getItem('linkora_auth_profile');
+        if (cachedProf) {
+          const parsed = JSON.parse(cachedProf);
+          if (parsed?.is_suspended === true || parsed?.status === 'suspended') {
+            return cachedNotice || parsed?.suspension_reason || 'This account has been suspended.';
+          }
+        }
+        // If not authenticated or not suspended in cache, purge any stale notice to avoid false alarms
+        sessionStorage.removeItem('linkora_suspended_notice');
+        localStorage.removeItem('linkora_suspended_notice');
       } catch (e) {}
     }
     return null;
@@ -178,6 +188,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (e) {}
   };
+
+  const performSilentSignOut = useCallback(async () => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('linkora_suspended_notice');
+        sessionStorage.removeItem('linkora_signing_out');
+        localStorage.removeItem('linkora_auth_user');
+        localStorage.removeItem('linkora_auth_user_id');
+        localStorage.removeItem('linkora_auth_user_email');
+        localStorage.removeItem('linkora_auth_session');
+        localStorage.removeItem('linkora_auth_profile');
+        const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+        document.cookie = 'linkora_user_session=' + expCookie;
+        document.cookie = 'linkora_user_email=' + expCookie;
+        document.cookie = 'linkora_user_id=' + expCookie;
+        window.dispatchEvent(new Event('linkora_auth_updated'));
+      } catch (e) {}
+    }
+
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut().catch(() => {});
+    }
+  }, []);
 
   const performForcedSignOut = useCallback(async (reason?: string) => {
     const notice = reason || 'Your account has been suspended. Access has been revoked.';
@@ -343,9 +380,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const hasSkills = Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0);
             const isProfileComplete = hasCollege && hasSkills;
 
-            // If user closed the tab while onboarding was incomplete, evict session on next visit
+            // If user closed the tab while onboarding was incomplete, silently evict session on next visit
             if (!isProfileComplete && !isTabActive) {
-              performForcedSignOut();
+              performSilentSignOut();
               return;
             }
 
@@ -371,7 +408,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isProfileComplete = hasCollege && hasSkills;
 
             if (!isProfileComplete && !isTabActive) {
-              performForcedSignOut();
+              performSilentSignOut();
               setIsLoading(false);
               return;
             }
@@ -737,6 +774,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setSuspendedNotice(null);
                 try {
                   sessionStorage.removeItem('linkora_suspended_notice');
+                  localStorage.removeItem('linkora_suspended_notice');
                 } catch (e) {}
               }}
               className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm transition-colors border border-slate-700 cursor-pointer"

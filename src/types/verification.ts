@@ -12,6 +12,10 @@ export interface StudentIdVerification {
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionReason?: string;
+  verificationType?: 'student_id' | 'faculty_id';
+  designation?: string;
+  department?: string;
+  facultyEmail?: string;
 }
 
 export interface StudentIdVerificationStats {

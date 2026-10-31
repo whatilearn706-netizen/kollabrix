@@ -251,7 +251,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       setErrorMessage(null);
 
       const cleanU = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      const assignedRole = isFaculty ? 'teacher' : (profile?.role || 'student');
+      // Only retain 'teacher' role if user is already verified by an admin in database
+      const alreadyVerifiedFaculty = profile?.role === 'teacher' && Boolean(profile?.faculty_verified);
+      const assignedRole = alreadyVerifiedFaculty ? 'teacher' : 'student';
 
       const payload = {
         user_id: user.id,
@@ -270,6 +272,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         portfolio_url: portfolioUrl.trim() || null,
         is_portfolio_public: isPortfolioPublic,
         role: assignedRole,
+        faculty_verified: alreadyVerifiedFaculty,
+        faculty_designation: isFaculty ? facultyDesignation.trim() : (profile?.faculty_designation || null),
+        faculty_department: isFaculty ? facultyDepartment.trim() : (profile?.faculty_department || null),
         verification_doc_type: isFaculty ? (facultyDocUrl || 'faculty_pending') : (studentIdUrl || null),
         updated_at: new Date().toISOString(),
       };
@@ -290,44 +295,14 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           const safePayload: Record<string, any> = { ...payload };
           delete safePayload.linkedin_url;
           delete safePayload.verification_doc_type;
+          delete safePayload.faculty_designation;
+          delete safePayload.faculty_department;
+          delete safePayload.faculty_verified;
           const retryRes = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
           upsertErr = retryRes.error;
         }
 
         if (upsertErr) throw upsertErr;
-      }
-
-      // Persist LinkedIn URL in platform registry so it is safely retained across accounts
-      if (linkedinUrl.trim()) {
-        try {
-          const { data: pData } = await supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'linkedin_college_verifications')
-            .maybeSingle();
-
-          const existingList = Array.isArray(pData?.value) ? pData.value : [];
-          const record = {
-            userId: user.id,
-            username: cleanU,
-            displayName: displayName.trim(),
-            college: college.trim(),
-            linkedinUrl: linkedinUrl.trim(),
-            verifiedAt: new Date().toISOString(),
-          };
-
-          const updatedList = [
-            record,
-            ...existingList.filter((item: any) => item.userId !== user.id),
-          ].slice(0, 500);
-
-          await supabase.from('platform_settings').upsert({
-            key: 'linkedin_college_verifications',
-            value: updatedList,
-            description: 'Registry of LinkedIn verified college affiliations and credentials.',
-            updated_at: new Date().toISOString(),
-          });
-        } catch (e) {}
       }
 
       // If student ID was uploaded, notify verification endpoint for Admin Control Center
@@ -336,6 +311,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            verificationType: 'student_id',
             collegeName: college.trim() || 'Collegiate Institution',
             studentRollNumber: studentRollNo.trim() || 'ROLL-PENDING',
             idCardImage: studentIdUrl,
@@ -346,7 +322,28 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             academicYear,
             email: user.email,
           }),
-        }).catch((err) => console.warn('Admin queue notification note:', err));
+        }).catch((err) => console.warn('Admin student queue notification note:', err));
+      }
+
+      // If faculty profile was chosen with credentials, route to Admin Control Center
+      if (isFaculty && facultyDocUrl) {
+        fetch('/api/verify/college-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            verificationType: 'faculty_id',
+            collegeName: college.trim() || 'Collegiate Institution',
+            studentRollNumber: facultyDesignation.trim() || 'Faculty Appointment',
+            idCardImage: facultyDocUrl,
+            userId: user.id,
+            username: cleanU,
+            studentName: displayName.trim(),
+            designation: facultyDesignation.trim(),
+            department: facultyDepartment.trim(),
+            facultyEmail: facultyEmail.trim() || user.email,
+            email: user.email,
+          }),
+        }).catch((err) => console.warn('Admin faculty queue notification note:', err));
       }
 
       // Mark session complete & upgrade cookies to 1-year persistent
@@ -357,9 +354,13 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
-        if (isFaculty) {
+
+        if (alreadyVerifiedFaculty) {
           localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
           localStorage.setItem('teamforge_verified_faculty', 'true');
+        } else {
+          localStorage.removeItem(`linkora_faculty_verified_${user.id}`);
+          localStorage.removeItem('teamforge_verified_faculty');
         }
       } catch (e) {}
 
@@ -405,13 +406,17 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.4)]">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-black text-white tracking-tight">Collegiate Profile Saved!</h3>
-            <p className="text-xs text-slate-300 max-w-sm">
-              {isFaculty
-                ? 'Your faculty profile is saved. You now have access to the Faculty Mentor Portal.'
+            <h3 className="text-xl font-black text-white tracking-tight">
+              {isFaculty && !(profile?.role === 'teacher' && Boolean(profile?.faculty_verified))
+                ? 'Faculty Verification Pending'
+                : 'Collegiate Profile Saved!'}
+            </h3>
+            <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
+              {isFaculty && !(profile?.role === 'teacher' && Boolean(profile?.faculty_verified))
+                ? 'Your faculty profile and credentials have been securely queued in the Admin Control Center. You have entered Kollabrix as a Student Builder until an administrator approves your faculty profile.'
                 : 'Your profile changes have synced across the campus network. Welcome to Kollabrix!'}
             </p>
-            {isFaculty && (
+            {isFaculty && profile?.role === 'teacher' && Boolean(profile?.faculty_verified) ? (
               <a
                 href="/teacher/dashboard"
                 className="mt-3 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/30"
@@ -419,6 +424,18 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 <span>Go to Faculty Portal</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsSuccess(false);
+                }}
+                className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/25"
+              >
+                <span>Enter Platform</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             )}
           </div>
         ) : (
