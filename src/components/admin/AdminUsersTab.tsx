@@ -241,6 +241,8 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
         const tIndex = curList.findIndex((r) => r.id === requestId);
         if (tIndex >= 0) {
           const t = { ...curList[tIndex] };
+          const isFacultyTarget = t.verificationType === 'faculty_id';
+
           if (action === 'approve') {
             t.status = 'approved';
             t.reviewedAt = now;
@@ -249,7 +251,29 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
 
             // Update profiles table
             try {
-              await supabase.from('profiles').update({ college: t.collegeName, updated_at: now }).eq('user_id', t.userId);
+              if (isFacultyTarget) {
+                await supabase
+                  .from('profiles')
+                  .update({
+                    role: 'teacher',
+                    faculty_verified: true,
+                    faculty_designation: t.designation || 'Faculty Mentor',
+                    faculty_department: t.department || 'Academic Department',
+                    college: t.collegeName,
+                    updated_at: now,
+                  })
+                  .eq('user_id', t.userId);
+              } else {
+                await supabase
+                  .from('profiles')
+                  .update({
+                    college: t.collegeName,
+                    college_verified: true,
+                    college_verified_at: now,
+                    updated_at: now,
+                  })
+                  .eq('user_id', t.userId);
+              }
             } catch (e) {}
 
             // Add to universal registry
@@ -257,9 +281,29 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
               const { data: pData } = await supabase.from('platform_settings').select('value').eq('key', 'linkedin_college_verifications').maybeSingle();
               const curReg: any[] = Array.isArray(pData?.value) ? pData.value : [];
               const cleanReg = curReg.filter((i: any) => i.userId !== t.userId && i.username !== t.username);
+              const newEntry = isFacultyTarget
+                ? {
+                    userId: t.userId,
+                    username: t.username,
+                    college: t.collegeName,
+                    verifiedAt: now,
+                    method: 'faculty_id_card',
+                    role: 'teacher',
+                    isFaculty: true,
+                    facultyVerified: true,
+                  }
+                : {
+                    userId: t.userId,
+                    username: t.username,
+                    college: t.collegeName,
+                    verifiedAt: now,
+                    method: 'student_id_card',
+                    collegeVerified: true,
+                  };
+
               await supabase.from('platform_settings').upsert({
                 key: 'linkedin_college_verifications',
-                value: [{ userId: t.userId, username: t.username, college: t.collegeName, verifiedAt: now, method: 'student_id_card' }, ...cleanReg],
+                value: [newEntry, ...cleanReg],
                 description: 'Universal registry of verified college credentials.',
                 updated_at: now,
               });
@@ -268,7 +312,29 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
             t.status = 'rejected';
             t.reviewedAt = now;
             t.reviewedBy = 'admin';
-            t.rejectionReason = reason || 'ID card photograph was unreadable or details did not match.';
+            t.rejectionReason = reason || (isFacultyTarget ? 'Faculty documentation could not be verified.' : 'ID card photograph was unreadable or details did not match.');
+
+            // Update profiles table on rejection
+            try {
+              if (isFacultyTarget) {
+                await supabase
+                  .from('profiles')
+                  .update({
+                    role: 'student',
+                    faculty_verified: false,
+                    updated_at: now,
+                  })
+                  .eq('user_id', t.userId);
+              } else {
+                await supabase
+                  .from('profiles')
+                  .update({
+                    college_verified: false,
+                    updated_at: now,
+                  })
+                  .eq('user_id', t.userId);
+              }
+            } catch (e) {}
 
             // Remove from registry
             try {
@@ -955,11 +1021,22 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                 <div className="flex-1 min-w-0 space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-base font-bold text-white flex items-center gap-2">
-                        {req.displayName}
-                        <span className="text-xs font-mono font-normal text-slate-400">@{req.username}</span>
-                      </h3>
-                      <p className="text-xs text-slate-400">{req.email}</p>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-white flex items-center gap-2">
+                          {req.displayName}
+                          <span className="text-xs font-mono font-normal text-slate-400">@{req.username}</span>
+                        </h3>
+                        {req.verificationType === 'faculty_id' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            👨‍🏫 Faculty Application
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                            🎓 Student ID Card
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{req.email}</p>
                     </div>
 
                     <div>
@@ -971,7 +1048,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                       ) : req.status === 'approved' ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          Verified Collegiate
+                          {req.verificationType === 'faculty_id' ? 'Verified Faculty Mentor' : 'Verified Collegiate'}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
@@ -982,19 +1059,39 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-charcoal-850/70 border border-charcoal-750 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[11px] mb-0.5">Claimed College / University:</span>
-                      <span className="font-semibold text-emerald-300 text-xs sm:text-sm flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 shrink-0 text-emerald-400" />
-                        {req.collegeName}
-                      </span>
+                  {req.verificationType === 'faculty_id' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-charcoal-850/70 border border-amber-500/20 text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[11px] mb-0.5">University / College:</span>
+                        <span className="font-semibold text-amber-300 text-xs sm:text-sm flex items-center gap-1.5">
+                          <GraduationCap className="w-4 h-4 shrink-0 text-amber-400" />
+                          {req.collegeName}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px] mb-0.5">Faculty Title / Designation:</span>
+                        <span className="font-bold text-white text-xs sm:text-sm">{req.designation || 'Faculty Member'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px] mb-0.5">Department / School:</span>
+                        <span className="font-mono text-slate-300 text-xs">{req.department || 'Academic Dept'}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-400 block text-[11px] mb-0.5">Student Roll Number / ID:</span>
-                      <span className="font-mono font-bold text-white text-xs sm:text-sm">{req.studentRollNumber}</span>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-charcoal-850/70 border border-charcoal-750 text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[11px] mb-0.5">Claimed College / University:</span>
+                        <span className="font-semibold text-emerald-300 text-xs sm:text-sm flex items-center gap-1.5">
+                          <GraduationCap className="w-4 h-4 shrink-0 text-emerald-400" />
+                          {req.collegeName}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px] mb-0.5">Student Roll Number / ID:</span>
+                        <span className="font-mono font-bold text-white text-xs sm:text-sm">{req.studentRollNumber}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
                     <span>Submitted: {new Date(req.submittedAt).toLocaleString()}</span>
@@ -1033,9 +1130,13 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                       disabled={isSubmitting}
                       onClick={() => handleModerateIdRequest(req.id, 'approve')}
                       leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                      className={`text-xs font-semibold ${
+                        req.verificationType === 'faculty_id'
+                          ? 'bg-amber-600 hover:bg-amber-500 text-slate-950'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                      }`}
                     >
-                      Approve
+                      {req.verificationType === 'faculty_id' ? 'Approve Faculty' : 'Approve'}
                     </Button>
                   )}
 
@@ -1539,26 +1640,37 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
           setInspectingRequest(null);
           setIsZoomed(false);
         }}
-        title={`Student ID Verification: ${inspectingRequest?.displayName || ''}`}
+        title={`${inspectingRequest?.verificationType === 'faculty_id' ? '👨‍🏫 Faculty ID Application' : '🎓 Student ID Verification'}: ${inspectingRequest?.displayName || ''}`}
         maxWidth="xl"
       >
         {inspectingRequest && (
           <div className="space-y-4 text-xs">
-            {/* Student Info Summary */}
+            {/* Applicant Info Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-charcoal-850 border border-charcoal-750">
               <div>
-                <span className="text-slate-400 block text-[11px]">Student Name:</span>
+                <span className="text-slate-400 block text-[11px]">
+                  {inspectingRequest.verificationType === 'faculty_id' ? 'Faculty Name:' : 'Student Name:'}
+                </span>
                 <span className="font-bold text-white text-sm">{inspectingRequest.displayName}</span>
                 <span className="text-slate-400 block font-mono text-[11px]">@{inspectingRequest.username}</span>
+                {inspectingRequest.verificationType === 'faculty_id' && inspectingRequest.designation && (
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium text-[10px]">
+                    {inspectingRequest.designation}
+                  </span>
+                )}
               </div>
               <div>
-                <span className="text-slate-400 block text-[11px]">College / University:</span>
+                <span className="text-slate-400 block text-[11px]">Institution / Campus:</span>
                 <span className="font-bold text-emerald-400 text-sm flex items-center gap-1">
                   <GraduationCap className="w-4 h-4 shrink-0" />
                   {inspectingRequest.collegeName}
                 </span>
-                <span className="text-slate-400 block text-[11px]">
-                  Roll: <strong className="text-white font-mono">{inspectingRequest.studentRollNumber}</strong>
+                <span className="text-slate-400 block text-[11px] mt-0.5">
+                  {inspectingRequest.verificationType === 'faculty_id' ? (
+                    <>Dept: <strong className="text-white">{inspectingRequest.department || 'N/A'}</strong></>
+                  ) : (
+                    <>Roll: <strong className="text-white font-mono">{inspectingRequest.studentRollNumber}</strong></>
+                  )}
                 </span>
               </div>
               <div>
@@ -1579,7 +1691,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                   )}
                 </div>
                 <span className="text-slate-500 block text-[10px] mt-1">
-                  Email: {inspectingRequest.email}
+                  Email: {inspectingRequest.facultyEmail || inspectingRequest.email}
                 </span>
               </div>
             </div>
@@ -1601,7 +1713,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
               <div className="w-full max-h-[60vh] overflow-auto flex items-center justify-center p-2">
                 <img
                   src={inspectingRequest.idCardImage}
-                  alt="Student ID Card Full View"
+                  alt={`${inspectingRequest.displayName} Document Full View`}
                   onClick={() => setIsZoomed(!isZoomed)}
                   className={`rounded-lg transition-all duration-200 ${
                     isZoomed
@@ -1649,7 +1761,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                     leftIcon={<XCircle className="w-3.5 h-3.5" />}
                     className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
                   >
-                    Reject ID
+                    Reject Application
                   </Button>
                 )}
 
@@ -1660,9 +1772,13 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                     disabled={isSubmitting}
                     onClick={() => handleModerateIdRequest(inspectingRequest.id, 'approve')}
                     leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                    className={`font-semibold ${
+                      inspectingRequest.verificationType === 'faculty_id'
+                        ? 'bg-amber-600 hover:bg-amber-500 text-slate-950'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    }`}
                   >
-                    Approve Student ID
+                    {inspectingRequest.verificationType === 'faculty_id' ? 'Approve Faculty Mentor' : 'Approve Student ID'}
                   </Button>
                 )}
               </div>

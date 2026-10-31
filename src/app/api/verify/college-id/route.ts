@@ -45,8 +45,21 @@ async function sendTelegramVerificationAlert(verification: StudentIdVerification
     if (!tg.configured) return;
 
     const time = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' });
-    const text = 
-`🎓 *NEW STUDENT COLLEGE ID VERIFICATION*
+    const isFaculty = verification.verificationType === 'faculty_id';
+
+    const text = isFaculty
+      ? `👨‍🏫 *NEW FACULTY ID VERIFICATION REQUEST*
+
+👤 *Faculty:* ${verification.displayName || verification.username}
+🏛️ *College / University:* ${verification.collegeName}
+🏢 *Department:* ${verification.department || 'N/A'}
+🏷️ *Designation:* ${verification.designation || 'Faculty'}
+📧 *Faculty Email:* ${verification.facultyEmail || verification.email || 'N/A'}
+🕒 *Submitted:* ${time} IST
+
+👉 *Review & Approve in Admin Control Center:*
+https://kollabrix.in/control-center-7x9?tab=id_verifications`
+      : `🎓 *NEW STUDENT COLLEGE ID VERIFICATION*
 
 👤 *Student:* ${verification.displayName || verification.username}
 🏫 *College:* ${verification.collegeName}
@@ -296,7 +309,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { collegeName, studentRollNumber, idCardImage, userId: bodyUserId, username: bodyUsername } = body;
+    const {
+      collegeName,
+      studentRollNumber,
+      idCardImage,
+      userId: bodyUserId,
+      username: bodyUsername,
+      verificationType,
+      designation,
+      department,
+      facultyEmail,
+    } = body;
 
     let effectiveUserId = authUser?.id || bodyUserId;
     let email = authUser?.email || '';
@@ -336,12 +359,20 @@ export async function POST(request: NextRequest) {
       effectiveUserId = username && username !== 'student' ? `uid-${username}` : `uid-${Date.now().toString(36)}`;
     }
 
+    const isFaculty = verificationType === 'faculty_id';
     const cleanCollege = (collegeName || '').trim() || 'Collegiate Institution';
-    const cleanRoll = (studentRollNumber || '').trim() || 'ROLL-PENDING';
+    const cleanRoll = isFaculty
+      ? (designation?.trim() || 'Faculty Appointment')
+      : ((studentRollNumber || '').trim() || 'ROLL-PENDING');
     const cleanImage = (idCardImage || '').trim();
 
     if (!cleanImage || (!cleanImage.startsWith('data:image/') && !cleanImage.startsWith('http'))) {
-      return NextResponse.json({ success: false, error: 'Please upload a clear photograph of your physical or digital College ID Card.' }, { status: 400 });
+      return NextResponse.json({
+        success: false,
+        error: isFaculty
+          ? 'Please upload a clear photograph or document of your Faculty ID Card or Appointment Slip.'
+          : 'Please upload a clear photograph of your physical or digital College ID Card.',
+      }, { status: 400 });
     }
 
     const currentRequests = await loadAllIdVerifications();
@@ -372,6 +403,10 @@ export async function POST(request: NextRequest) {
       idCardImage: cleanImage,
       status: 'pending',
       submittedAt: new Date().toISOString(),
+      verificationType: isFaculty ? 'faculty_id' : 'student_id',
+      designation: designation?.trim() || undefined,
+      department: department?.trim() || undefined,
+      facultyEmail: facultyEmail?.trim() || undefined,
       rejectionReason: undefined,
       reviewedAt: undefined,
       reviewedBy: undefined,
@@ -392,11 +427,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Student ID card submitted successfully! Our administrative team will review your credentials within 24 hours.',
+      message: isFaculty
+        ? 'Faculty verification credentials submitted! Your profile is active as a student builder until an admin approves your faculty credentials.'
+        : 'Student ID card submitted successfully! Our administrative team will review your credentials within 24 hours.',
       request: newRequest,
     });
   } catch (err: any) {
-    console.warn('Failed to submit student ID verification:', err);
+    console.warn('Failed to submit verification request:', err);
     return NextResponse.json({ success: false, error: err.message || 'Error submitting ID verification.' }, { status: 500 });
   }
 }
@@ -434,6 +471,7 @@ export async function PATCH(request: NextRequest) {
 
     const target = { ...currentRequests[targetIndex] };
     const now = new Date().toISOString();
+    const isFacultyTarget = target.verificationType === 'faculty_id';
 
     if (action === 'approve') {
       target.status = 'approved';
@@ -443,15 +481,31 @@ export async function PATCH(request: NextRequest) {
 
       // 1. Update profiles table in Supabase
       try {
-        await supabaseAdmin
-          .from('profiles')
-          .update({
-            college: target.collegeName,
-            updated_at: now,
-          })
-          .eq('user_id', target.userId);
+        if (isFacultyTarget) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              role: 'teacher',
+              faculty_verified: true,
+              faculty_designation: target.designation || 'Faculty Mentor',
+              faculty_department: target.department || 'Academic Department',
+              college: target.collegeName,
+              updated_at: now,
+            })
+            .eq('user_id', target.userId);
+        } else {
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              college: target.collegeName,
+              college_verified: true,
+              college_verified_at: now,
+              updated_at: now,
+            })
+            .eq('user_id', target.userId);
+        }
       } catch (e) {
-        console.warn('Could not update profile college column:', e);
+        console.warn('Could not update profile verification fields:', e);
       }
 
       // 2. Add to universal verified registry (so all badges reflect immediately)
@@ -469,7 +523,11 @@ export async function PATCH(request: NextRequest) {
           username: target.username,
           college: target.collegeName,
           verifiedAt: now,
-          method: 'student_id_card',
+          method: isFacultyTarget ? 'faculty_id_card' : 'student_id_card',
+          role: isFacultyTarget ? 'teacher' : 'student',
+          isFaculty: isFacultyTarget,
+          facultyVerified: isFacultyTarget,
+          collegeVerified: !isFacultyTarget,
         };
 
         await supabaseAdmin.from('platform_settings').upsert({
@@ -485,16 +543,28 @@ export async function PATCH(request: NextRequest) {
       target.status = 'rejected';
       target.reviewedAt = now;
       target.reviewedBy = adminEmail;
-      target.rejectionReason = (rejectionReason || '').trim() || 'College ID card was unreadable or details did not match.';
+      target.rejectionReason = (rejectionReason || '').trim() || (isFacultyTarget ? 'Faculty documentation could not be verified.' : 'College ID card was unreadable or details did not match.');
 
-      // 1. Update profiles table to refresh timestamp
+      // 1. Update profiles table to refresh timestamp and ensure role is student
       try {
-        await supabaseAdmin
-          .from('profiles')
-          .update({
-            updated_at: now,
-          })
-          .eq('user_id', target.userId);
+        if (isFacultyTarget) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              role: 'student',
+              faculty_verified: false,
+              updated_at: now,
+            })
+            .eq('user_id', target.userId);
+        } else {
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              college_verified: false,
+              updated_at: now,
+            })
+            .eq('user_id', target.userId);
+        }
       } catch (e) {}
 
       // 2. Remove from universal verified registry
@@ -527,7 +597,9 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: action === 'approve' ? `Verification approved for ${target.displayName}!` : `Verification rejected for ${target.displayName}.`,
+      message: action === 'approve'
+        ? (isFacultyTarget ? `Faculty appointment approved for ${target.displayName}!` : `Student verification approved for ${target.displayName}!`)
+        : `Verification rejected for ${target.displayName}.`,
       request: target,
     });
   } catch (err: any) {

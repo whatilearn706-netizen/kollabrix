@@ -67,6 +67,8 @@ export interface Profile {
   suspension_reason?: string | null;
   is_portfolio_public?: boolean;
   faculty_verified?: boolean;
+  faculty_designation?: string | null;
+  faculty_department?: string | null;
   verification_doc_type?: string | null;
   birth_year?: number | null;
   skills: string[];
