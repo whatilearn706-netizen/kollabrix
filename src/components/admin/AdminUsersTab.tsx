@@ -182,10 +182,10 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
   useEffect(() => {
     if (activeSubTab === 'id_verifications') {
       fetchIdVerifications();
-      // Auto-poll every 4s for fresh student submissions
+      // Auto-poll every 30s to keep DB load light while maintaining fresh queue
       const timer = setInterval(() => {
         fetchIdVerifications();
-      }, 4000);
+      }, 30000);
       return () => clearInterval(timer);
     }
   }, [activeSubTab, fetchIdVerifications]);
@@ -967,6 +967,17 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                 {tab.label}
               </button>
             ))}
+
+            <button
+              type="button"
+              onClick={() => fetchIdVerifications()}
+              disabled={isIdLoading}
+              title="Refresh student ID verification queue"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-charcoal-800 text-slate-300 hover:text-white hover:bg-charcoal-750 transition-colors disabled:opacity-50 shrink-0 ml-1"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isIdLoading ? 'animate-spin text-emerald-400' : ''}`} />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
       </div>

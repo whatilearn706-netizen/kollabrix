@@ -63,7 +63,33 @@ export async function uploadFileToStorage(
     };
   }
 
-  // 3. Attempt direct Supabase Storage upload
+  // 3. Attempt unified Server Upload API (Cloudflare R2 / Supabase fallback)
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+    formData.append('bucket', bucket);
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.url) {
+        return {
+          success: true,
+          url: data.url,
+          isFallback: Boolean(data.isFallback),
+        };
+      }
+    }
+  } catch (apiErr) {
+    console.warn('API upload route notice, attempting direct fallback:', apiErr);
+  }
+
+  // 4. Direct Supabase Storage fallback (if client configured)
   if (isSupabaseConfigured()) {
     try {
       const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -86,15 +112,13 @@ export async function uploadFileToStorage(
             isFallback: false,
           };
         }
-      } else if (uploadErr) {
-        console.warn('Supabase storage bucket upload notice (falling back to Data URI):', uploadErr.message);
       }
     } catch (storageErr) {
-      console.warn('Storage connection notice:', storageErr);
+      console.warn('Direct storage connection notice:', storageErr);
     }
   }
 
-  // 4. Client-side Base64 Fallback (guarantees preview & persistence without bucket dependency)
+  // 5. Client-side Base64 Fallback (guarantees preview & persistence without bucket dependency)
   try {
     const base64Url = await fileToBase64(file);
     return {

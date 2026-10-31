@@ -71,38 +71,16 @@ export function NotificationBell() {
 
     fetchUnreadCount();
 
-    let channelInstance: ReturnType<typeof supabase.channel> | null = null;
-    try {
-      channelInstance = supabase
-        .channel(channelRef.current)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `recipient_id=eq.${user.id}`,
-          },
-          () => {
-            fetchUnreadCount();
-            fetchRecentNotifications();
-          }
-        )
-        .subscribe();
-    } catch (err) {
-      console.warn('Realtime notifications channel unavailable:', err);
-    }
+    // Lightweight periodic check (every 60s) and on tab focus — avoids burning persistent Supabase Realtime sockets
+    const interval = setInterval(fetchUnreadCount, 60000);
+    const handleFocus = () => fetchUnreadCount();
+    window.addEventListener('focus', handleFocus);
 
     return () => {
-      if (channelInstance) {
-        try {
-          supabase.removeChannel(channelInstance);
-        } catch {
-          // ignore
-        }
-      }
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [user, fetchUnreadCount, fetchRecentNotifications]);
+  }, [user, fetchUnreadCount]);
 
   // Handle click outside to close dropdown
   useEffect(() => {

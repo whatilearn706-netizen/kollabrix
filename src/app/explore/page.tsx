@@ -245,10 +245,20 @@ export default function ExploreProjectsPage() {
               [...ids, ...titles].forEach((s: string) => {
                 if (s) deletedSet.add(s.trim().toLowerCase());
               });
+            } else if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
+              row.value.forEach((v: any) => {
+                if (v.status === 'approved') {
+                  if (v.userId) verifiedUserSet.add(v.userId);
+                  if (v.username) verifiedUserSet.add(v.username.toLowerCase().trim());
+                }
+              });
             } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
               row.value.forEach((v: any) => {
-                if (v.userId) verifiedUserSet.add(v.userId);
-                if (v.username) verifiedUserSet.add(v.username.toLowerCase().trim());
+                const isApproved = v.status === 'approved' || v.collegeVerified === true || v.facultyVerified === true;
+                if (isApproved && v.status !== 'pending' && v.status !== 'rejected') {
+                  if (v.userId) verifiedUserSet.add(v.userId);
+                  if (v.username) verifiedUserSet.add(v.username.toLowerCase().trim());
+                }
               });
             }
           }
