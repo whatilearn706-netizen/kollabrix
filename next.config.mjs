@@ -5,10 +5,10 @@ const nextConfig = {
   compress: true,
   env: {
     NEXT_PUBLIC_SUPABASE_URL:
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bmiwmlfraaridbekuily.supabase.co',
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.kollabrix.in',
     NEXT_PUBLIC_SUPABASE_ANON_KEY:
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtaXdtbGZyYWFyaWRiZWt1aWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjU4ODksImV4cCI6MjEwNzY0MTg4OX0.V6stfUC5ruqUZNHp0kOxeE0fBhBUmjka8GMWteESDGA',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjE3OTk1MzU2MDB9.lfKjrWCz1QIVeItdz3Cs5UxitvcEenG8O9NPFVYlsjg',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://kollabrix.in',
     TELEGRAM_BOT_TOKEN:
       process.env.TELEGRAM_BOT_TOKEN || '8576371651:AAFwsq298GDouxiqP5te1rxbULvA2NOVlMU',
