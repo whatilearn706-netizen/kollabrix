@@ -16,6 +16,7 @@ import { AlertCircle, CheckCircle2, Save, ArrowLeft, Users, GraduationCap, Shiel
 import Link from 'next/link';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { recordDailyStreakActivity } from '@/components/gamification/DailyStreakHub';
+import { invalidatePageCache } from '@/lib/cache/pageDataCache';
 
 export interface ProjectFormProps {
   initialData?: Project;
@@ -357,6 +358,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         }
 
         setSuccess('Project successfully updated!');
+        invalidatePageCache();
         setTimeout(() => {
           router.push(`/projects/${initialData.id}`);
           router.refresh();
@@ -364,6 +366,8 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       } else {
         // Insert new project
         let createdProblemId: string | null = null;
+
+        invalidatePageCache();
 
         if (creatorRole === 'teacher') {
           // 1. Create entry in Teacher section (problem_statements)
@@ -419,6 +423,8 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         } catch (e) {
           console.warn('Streak activity record error:', e);
         }
+
+        invalidatePageCache();
 
         if (creatorRole === 'teacher') {
           setSuccess('Faculty Challenge & Project published successfully to the Teacher Section!');
