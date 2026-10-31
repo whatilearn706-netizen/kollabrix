@@ -275,11 +275,59 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       };
 
       if (isSupabaseConfigured()) {
-        const { error: upsertErr } = await supabase
+        let { error: upsertErr } = await supabase
           .from('profiles')
           .upsert(payload, { onConflict: 'user_id' });
 
+        // Graceful schema-resilient fallback if custom columns (like linkedin_url) are not yet in Supabase schema cache
+        if (
+          upsertErr &&
+          (upsertErr.message.includes('column') ||
+            upsertErr.message.includes('schema cache') ||
+            upsertErr.code === '42703' ||
+            upsertErr.code === 'PGRST204')
+        ) {
+          const safePayload: Record<string, any> = { ...payload };
+          delete safePayload.linkedin_url;
+          delete safePayload.verification_doc_type;
+          const retryRes = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
+          upsertErr = retryRes.error;
+        }
+
         if (upsertErr) throw upsertErr;
+      }
+
+      // Persist LinkedIn URL in platform registry so it is safely retained across accounts
+      if (linkedinUrl.trim()) {
+        try {
+          const { data: pData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'linkedin_college_verifications')
+            .maybeSingle();
+
+          const existingList = Array.isArray(pData?.value) ? pData.value : [];
+          const record = {
+            userId: user.id,
+            username: cleanU,
+            displayName: displayName.trim(),
+            college: college.trim(),
+            linkedinUrl: linkedinUrl.trim(),
+            verifiedAt: new Date().toISOString(),
+          };
+
+          const updatedList = [
+            record,
+            ...existingList.filter((item: any) => item.userId !== user.id),
+          ].slice(0, 500);
+
+          await supabase.from('platform_settings').upsert({
+            key: 'linkedin_college_verifications',
+            value: updatedList,
+            description: 'Registry of LinkedIn verified college affiliations and credentials.',
+            updated_at: new Date().toISOString(),
+          });
+        } catch (e) {}
       }
 
       // If student ID was uploaded, notify verification endpoint for Admin Control Center
@@ -309,6 +357,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
+        if (isFaculty) {
+          localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
+          localStorage.setItem('teamforge_verified_faculty', 'true');
+        }
       } catch (e) {}
 
       invalidatePageCache();
