@@ -12,13 +12,8 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  User,
-  GraduationCap,
-  BookOpen,
-  Code2,
-  Globe,
-  Award,
   ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 
 import { Step1Identity } from './Step1Identity';
@@ -41,13 +36,13 @@ interface ProfileEditModalProps {
   mode?: 'onboarding' | 'edit';
 }
 
-const STEPS = [
-  { id: 1, name: 'Identity', icon: User },
-  { id: 2, name: 'Campus & ID', icon: GraduationCap },
-  { id: 3, name: 'Degree & Year', icon: BookOpen },
-  { id: 4, name: 'Skills & Focus', icon: Code2 },
-  { id: 5, name: 'Online Links', icon: Globe },
-  { id: 6, name: 'Role & Complete', icon: Award },
+const STEP_TITLES = [
+  { id: 1, tag: 'Identity', title: 'Profile Photo & Identity', subtitle: 'Choose how other collegiate builders will identify you' },
+  { id: 2, tag: 'Campus', title: 'College Affiliation & Student ID', subtitle: 'Specify your campus and attach your student verification badge' },
+  { id: 3, tag: 'Academics', title: 'Academic Year & Degree', subtitle: 'Select your study year and search your engineering or tech degree' },
+  { id: 4, tag: 'Skills', title: 'Technical Stack & Interests', subtitle: 'Select or write your primary skills and preferred project roles' },
+  { id: 5, tag: 'Online', title: 'Developer Links & Presence', subtitle: 'Connect GitHub, LinkedIn, and personal portfolio showcases' },
+  { id: 6, tag: 'Role', title: 'Account Role & Faculty Portal', subtitle: 'Confirm student builder access or activate the Faculty Mentor Portal' },
 ];
 
 export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: ProfileEditModalProps) {
@@ -83,7 +78,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
   const [isFaculty, setIsFaculty] = useState(false);
   const [facultyDesignation, setFacultyDesignation] = useState('Assistant Professor');
-  const [facultyDepartment, setFacultyDepartment] = useState('');
+  const [facultyDepartment, setFacultyDepartment] = useState('Computer Science & Engineering');
   const [facultyEmail, setFacultyEmail] = useState('');
   const [facultyDocUrl, setFacultyDocUrl] = useState<string | null>(null);
 
@@ -115,7 +110,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       return;
     }
 
-    // Check completeness
     const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
     const hasSkills = Boolean(profile?.skills && Array.isArray(profile.skills) && profile.skills.length > 0);
     const hasUsername = Boolean(profile?.username && profile.username.trim().length > 0);
@@ -128,7 +122,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
     }
   }, [user, profile, isLoading, forceOpen]);
 
-  // 3. Hydrate form fields when user or profile changes
+  // 3. Hydrate form fields from profile
   useEffect(() => {
     if (!user) return;
 
@@ -180,7 +174,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
     }
   }, [user, profile]);
 
-  // Can this modal be dismissed?
   const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
   const hasSkills = Boolean(profile?.skills && profile.skills.length > 0);
   const isProfileComplete = hasCollege && hasSkills;
@@ -221,6 +214,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
     } else if (step === 6 && isFaculty) {
       if (!facultyDepartment.trim()) {
         setErrorMessage('Please specify your academic department/school.');
+        return false;
+      }
+      if (!facultyDesignation.trim()) {
+        setErrorMessage('Please specify your faculty designation/title.');
         return false;
       }
     }
@@ -285,14 +282,14 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         if (upsertErr) throw upsertErr;
       }
 
-      // If student ID was uploaded, optionally record in verification endpoint
+      // If student ID was uploaded, notify verification endpoint for Admin Control Center
       if (studentIdUrl) {
         fetch('/api/verify/college-id', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            collegeName: college.trim(),
-            studentRollNumber: studentRollNo.trim() || 'ID_ATTACHED',
+            collegeName: college.trim() || 'Collegiate Institution',
+            studentRollNumber: studentRollNo.trim() || 'ROLL-PENDING',
             idCardImage: studentIdUrl,
             userId: user.id,
             username: cleanU,
@@ -301,7 +298,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             academicYear,
             email: user.email,
           }),
-        }).catch((err) => console.warn('Could not notify verification endpoint:', err));
+        }).catch((err) => console.warn('Admin queue notification note:', err));
       }
 
       // Mark session complete
@@ -322,7 +319,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         if (typeof window !== 'undefined' && window.location.pathname.startsWith('/profile/setup')) {
           window.location.replace('/explore');
         }
-      }, 1000);
+      }, 1200);
     } catch (err: any) {
       console.error('Failed to save collegiate profile:', err);
       setErrorMessage(err?.message || 'Could not save profile details. Please try again.');
@@ -333,10 +330,12 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
   if (!isOpen) return null;
 
+  const currentStepMeta = STEP_TITLES[currentStep - 1];
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/85 backdrop-blur-2xl animate-fade-in select-none">
       {/* Sleek Floating Modal Window */}
-      <div className="relative w-full max-w-2xl my-auto rounded-3xl bg-[#080C14] border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.9)] p-6 sm:p-8 text-white overflow-hidden">
+      <div className="relative w-full max-w-2xl my-auto rounded-3xl bg-[#080C14] border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.95)] p-6 sm:p-8 text-white overflow-hidden">
         {/* Top Radiant Amber Edge Glow */}
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-[0_0_18px_rgba(245,158,11,0.85)]" />
 
@@ -352,68 +351,75 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             </div>
             <h3 className="text-xl font-black text-white tracking-tight">Collegiate Profile Saved!</h3>
             <p className="text-xs text-slate-300 max-w-sm">
-              Your profile changes have synced across the campus network. Welcome to Kollabrix!
+              {isFaculty
+                ? 'Your faculty profile is saved. You now have access to the Faculty Mentor Portal.'
+                : 'Your profile changes have synced across the campus network. Welcome to Kollabrix!'}
             </p>
+            {isFaculty && (
+              <a
+                href="/teacher/dashboard"
+                className="mt-3 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/30"
+              >
+                <span>Go to Faculty Portal</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
           </div>
         ) : (
           <div className="space-y-6 relative z-10">
-            {/* Modal Header & Step Indicator */}
-            <div>
-              <div className="flex items-center justify-between pb-3">
+            {/* Header: Clean Segmented Progress Bar & Title (No Cluttered Market Pills!) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                    {mode === 'edit' || isProfileComplete ? 'Profile Settings' : 'Collegiate Onboarding'}
+                    Step {currentStep} of {STEP_TITLES.length}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
-                    Step {currentStep} of {STEPS.length}
+                    {currentStepMeta.tag}
                   </span>
                 </div>
 
-                {/* Close Button (Enabled in edit mode or when profile is complete) */}
+                {/* Minimal Close Button */}
                 {canClose && (
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
                     className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                    title="Close"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
-              {/* Step Navigation Tabs */}
-              <div className="grid grid-cols-6 gap-1.5 pt-1">
-                {STEPS.map((s) => {
+              {/* Ultra-Clean Segmented Progress Line */}
+              <div className="grid grid-cols-6 gap-1.5">
+                {STEP_TITLES.map((s) => {
                   const isCurrent = currentStep === s.id;
                   const isPast = currentStep > s.id;
-                  const StepIcon = s.icon;
                   return (
-                    <button
+                    <div
                       key={s.id}
-                      type="button"
-                      onClick={() => {
-                        if (isPast || validateCurrentStep(currentStep)) {
-                          setCurrentStep(s.id);
-                        }
-                      }}
-                      className={`h-9 rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs font-mono ${
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
                         isCurrent
-                          ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/25'
+                          ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
                           : isPast
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-white/[0.02] text-slate-500 border border-white/5'
+                          ? 'bg-amber-500/40'
+                          : 'bg-white/10'
                       }`}
-                      title={s.name}
-                    >
-                      {isPast ? (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      ) : (
-                        <StepIcon className="w-3.5 h-3.5" />
-                      )}
-                      <span className="hidden md:inline text-[11px] truncate">{s.name}</span>
-                    </button>
+                    />
                   );
                 })}
+              </div>
+
+              {/* Step Title & Subtitle */}
+              <div className="pt-1">
+                <h3 className="text-lg font-black text-white tracking-tight">
+                  {currentStepMeta.title}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {currentStepMeta.subtitle}
+                </p>
               </div>
             </div>
 
@@ -425,7 +431,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               </div>
             )}
 
-            {/* Step Content */}
+            {/* Step Body */}
             <div className="min-h-[280px]">
               {currentStep === 1 && (
                 <Step1Identity
@@ -448,6 +454,8 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                   setStudentIdUrl={setStudentIdUrl}
                   studentRollNo={studentRollNo}
                   setStudentRollNo={setStudentRollNo}
+                  displayName={displayName}
+                  username={username}
                 />
               )}
 
@@ -535,7 +543,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     onClick={handleNext}
                     className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/25 transition-all"
                   >
-                    <span>Next: {STEPS[currentStep].name}</span>
+                    <span>Next: {STEP_TITLES[currentStep].tag}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 ) : (

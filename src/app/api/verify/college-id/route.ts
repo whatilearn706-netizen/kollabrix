@@ -347,17 +347,9 @@ export async function POST(request: NextRequest) {
       effectiveUserId = username && username !== 'student' ? `uid-${username}` : `uid-${Date.now().toString(36)}`;
     }
 
-    const cleanCollege = (collegeName || '').trim();
-    const cleanRoll = (studentRollNumber || '').trim();
+    const cleanCollege = (collegeName || '').trim() || 'Collegiate Institution';
+    const cleanRoll = (studentRollNumber || '').trim() || 'ROLL-PENDING';
     const cleanImage = (idCardImage || '').trim();
-
-    if (!cleanCollege) {
-      return NextResponse.json({ success: false, error: 'Please enter your official College or University name.' }, { status: 400 });
-    }
-
-    if (!cleanRoll) {
-      return NextResponse.json({ success: false, error: 'Please provide your Student Roll Number or University ID code.' }, { status: 400 });
-    }
 
     if (!cleanImage || (!cleanImage.startsWith('data:image/') && !cleanImage.startsWith('http'))) {
       return NextResponse.json({ success: false, error: 'Please upload a clear photograph of your physical or digital College ID Card.' }, { status: 400 });
@@ -372,13 +364,6 @@ export async function POST(request: NextRequest) {
         (username && username !== 'student' && r.username?.toLowerCase() === username.toLowerCase())
     );
     const existing = existingIndex >= 0 ? currentRequests[existingIndex] : null;
-
-    if (existing && existing.status === 'pending') {
-      return NextResponse.json({
-        success: false,
-        error: 'You have already submitted your Student ID card. Your submission is currently waiting for verification by an administrator. Re-uploading is not permitted.',
-      }, { status: 400 });
-    }
 
     if (existing && existing.status === 'approved') {
       return NextResponse.json({

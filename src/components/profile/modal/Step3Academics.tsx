@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { BookOpen, Calendar, Search, Sparkles, Check, ChevronDown } from 'lucide-react';
-import { DEGREE_CATALOG, ACADEMIC_YEARS, DegreeItem } from './degreeCatalog';
+import React, { useState, useMemo } from 'react';
+import { BookOpen, Calendar, Search, Sparkles, Check, Plus, Edit2 } from 'lucide-react';
+import { DEGREE_CATALOG, ACADEMIC_YEARS } from './degreeCatalog';
 
 interface Step3AcademicsProps {
   academicYear: string;
@@ -17,55 +17,40 @@ export function Step3Academics({
   course,
   setCourse,
 }: Step3AcademicsProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [degreeSearch, setDegreeSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('B.Tech');
+  const [isCustomMode, setIsCustomMode] = useState(false);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Filter degrees dynamically based on input and category
+  // Filter degrees dynamically based on search and selected category
   const filteredDegrees = useMemo(() => {
-    const q = course.trim().toLowerCase();
+    const q = degreeSearch.trim().toLowerCase();
     return DEGREE_CATALOG.filter((item) => {
-      // Category filter
-      if (selectedCategory !== 'All' && item.category !== selectedCategory) {
-        return false;
+      if (q) {
+        // If searching, search everywhere (degree, tags, category)
+        const matchDegree = item.degree.toLowerCase().includes(q);
+        const matchCategory = item.category.toLowerCase().includes(q);
+        const matchTags = item.tags.some((t) => t.includes(q) || q.includes(t));
+        return matchDegree || matchCategory || matchTags;
       }
-      // If query is empty, show all in category
-      if (!q) return true;
-
-      // Smart match against degree name, category, or tags
-      const matchDegree = item.degree.toLowerCase().includes(q);
-      const matchCategory = item.category.toLowerCase().includes(q);
-      const matchTags = item.tags.some((t) => t.includes(q) || q.includes(t));
-
-      return matchDegree || matchCategory || matchTags;
+      // If not typing in search, filter by active category
+      if (activeCategory === 'All') return true;
+      return item.category === activeCategory;
     });
-  }, [course, selectedCategory]);
+  }, [degreeSearch, activeCategory]);
 
   const categories = ['All', 'B.Tech', 'BCA/MCA', 'M.Tech', 'B.Sc/M.Sc', 'Design', 'Dual Degree'];
 
   return (
-    <div className="space-y-6 animate-fade-in" ref={dropdownRef}>
-      {/* Academic Year Selection */}
+    <div className="space-y-6 animate-fade-in">
+      {/* 1. Academic Year Cards */}
       <div>
-        <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+        <label className="block text-xs font-bold text-slate-200 mb-2 flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-amber-400" />
           <span>Academic Year <span className="text-amber-400">*</span></span>
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {ACADEMIC_YEARS.map((yr) => {
             const isSelected = academicYear === yr;
-            // Short label
             const shortLabel = yr.split('(')[0].trim();
             const subtitle = yr.includes('(') ? yr.split('(')[1].replace(')', '') : '';
             return (
@@ -84,7 +69,7 @@ export function Step3Academics({
                   <div className="text-[10px] text-amber-400/80 font-mono truncate">{subtitle}</div>
                 )}
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400" />
+                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
                 )}
               </button>
             );
@@ -92,102 +77,144 @@ export function Step3Academics({
         </div>
       </div>
 
-      {/* Degree / Course with Smart Autocomplete */}
-      <div className="relative">
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+      {/* 2. Degree & Branch Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5 text-amber-400" />
             <span>Degree &amp; Specialization <span className="text-amber-400">*</span></span>
           </label>
-          <span className="text-[10px] text-slate-400 font-mono">
-            Smart suggestions while typing
-          </span>
-        </div>
-
-        <div className="relative">
-          <input
-            type="text"
-            required
-            value={course}
-            onFocus={() => setIsDropdownOpen(true)}
-            onChange={(e) => {
-              setCourse(e.target.value);
-              setIsDropdownOpen(true);
-            }}
-            placeholder="Type 'btech', 'cse', 'mca', 'mtech' to see suggestions..."
-            className="w-full h-11 px-3.5 pl-9 pr-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-medium"
-          />
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
           <button
             type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="absolute right-3 top-3.5 text-slate-400 hover:text-white"
+            onClick={() => setIsCustomMode(!isCustomMode)}
+            className="text-[11px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1 transition-colors"
           >
-            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <Edit2 className="w-3 h-3" />
+            <span>{isCustomMode ? 'Pick from catalog' : 'Write custom degree'}</span>
           </button>
         </div>
 
-        {/* Quick Degree Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => {
-                setSelectedCategory(cat);
-                setIsDropdownOpen(true);
-              }}
-              className={`text-[10px] px-2.5 py-1 rounded-lg border font-mono whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                  : 'bg-white/[0.02] text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Selected Degree Preview Card */}
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-[10px] text-amber-400 uppercase tracking-wider font-mono block">
+              Currently Selected Degree:
+            </span>
+            <div className="text-xs font-black text-white truncate mt-0.5">
+              {course || 'None selected'}
+            </div>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+            Active
+          </span>
         </div>
 
-        {/* Dynamic Dropdown Suggestion List */}
-        {isDropdownOpen && (
-          <div className="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-2xl bg-[#0d121f] border border-white/15 shadow-2xl p-1.5 space-y-1 backdrop-blur-xl">
-            <div className="px-3 py-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-white/5 flex items-center justify-between">
-              <span>Suggested Degrees &amp; Branches ({filteredDegrees.length})</span>
-              <span className="text-amber-400/80">Click to select</span>
+        {isCustomMode ? (
+          /* Custom Degree Freeform Input */
+          <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.02] border border-white/10 animate-fade-in">
+            <label className="block text-[11px] font-semibold text-slate-300">
+              Type Your Exact Degree &amp; Branch:
+            </label>
+            <input
+              type="text"
+              required
+              value={course}
+              onChange={(e) => setCourse(e.target.value)}
+              placeholder="e.g. B.Tech Computer Science (Cybersecurity) or B.Sc Physics"
+              className="w-full h-10 px-3 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+            />
+          </div>
+        ) : (
+          /* Autocomplete & Category Browser */
+          <div className="space-y-2 p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            {/* Live Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={degreeSearch}
+                onChange={(e) => setDegreeSearch(e.target.value)}
+                placeholder="Search degrees (e.g. 'btech', 'cse', 'mca', 'aiml', 'data')..."
+                className="w-full h-10 px-3 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+              />
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              {degreeSearch && (
+                <button
+                  type="button"
+                  onClick={() => setDegreeSearch('')}
+                  className="absolute right-3 top-3 text-xs text-slate-400 hover:text-white"
+                >
+                  Clear
+                </button>
+              )}
             </div>
 
-            {filteredDegrees.length > 0 ? (
-              filteredDegrees.map((item) => {
-                const isSelected = course.toLowerCase() === item.degree.toLowerCase();
-                return (
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setDegreeSearch('');
+                  }}
+                  className={`text-[10px] px-2.5 py-1 rounded-lg border font-mono whitespace-nowrap transition-all ${
+                    activeCategory === cat && !degreeSearch
+                      ? 'bg-amber-500/25 text-amber-200 border-amber-500/50 font-bold'
+                      : 'bg-white/[0.02] text-slate-400 border-white/5 hover:border-white/20 hover:text-white'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* List of Matching Degrees */}
+            <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+              {filteredDegrees.length > 0 ? (
+                filteredDegrees.map((item) => {
+                  const isSelected = course.toLowerCase() === item.degree.toLowerCase();
+                  return (
+                    <button
+                      key={item.degree}
+                      type="button"
+                      onClick={() => setCourse(item.degree)}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors ${
+                        isSelected
+                          ? 'bg-amber-500/25 text-amber-200 border border-amber-500/50 font-bold shadow-xs'
+                          : 'text-slate-300 hover:bg-white/[0.06] hover:text-white border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isSelected ? (
+                          <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        )}
+                        <span className="truncate">{item.degree}</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 shrink-0 ml-2">
+                        {item.category}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="p-3 text-center text-xs text-slate-400">
+                  <p>No matching degrees found for &quot;{degreeSearch}&quot;.</p>
                   <button
-                    key={item.degree}
                     type="button"
                     onClick={() => {
-                      setCourse(item.degree);
-                      setIsDropdownOpen(false);
+                      setCourse(degreeSearch);
+                      setIsCustomMode(true);
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors ${
-                      isSelected
-                        ? 'bg-amber-500/20 text-amber-200 border border-amber-500/30'
-                        : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
-                    }`}
+                    className="mt-1 text-xs text-amber-400 underline"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="truncate">{item.degree}</span>
-                    </div>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 shrink-0 ml-2">
-                      {item.category}
-                    </span>
+                    Use &quot;{degreeSearch}&quot; as custom degree
                   </button>
-                );
-              })
-            ) : (
-              <div className="p-3 text-center text-xs text-slate-400">
-                No matching degrees in catalogue. You can write your custom degree in the input above.
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
