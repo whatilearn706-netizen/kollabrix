@@ -76,6 +76,31 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const [newTargetHtml, setNewTargetHtml] = useState('<div class="target-card">\n  <h3>Target Card</h3>\n  <p>Design blueprint</p>\n</div>');
   const [newTargetCss, setNewTargetCss] = useState('.target-card {\n  background: #0f172a;\n  padding: 16px;\n  border-radius: 10px;\n  color: #fff;\n}');
 
+  // Dynamic interactive test cases list
+  const [testCasesList, setTestCasesList] = useState<Array<{ input: string; expectedOutput: string; description: string }>>([
+    { input: 'nums = [3, 1, 2, 4]', expectedOutput: '[2, 4, 3, 1]', description: 'Even and odd parity separation' },
+    { input: 'nums = [0, 1, 2]', expectedOutput: '[0, 2, 1]', description: 'Boundary and single digit check' },
+  ]);
+
+  const handleAddTestCase = () => {
+    setTestCasesList((prev) => [
+      ...prev,
+      { input: '', expectedOutput: '', description: `Test Case ${prev.length + 1}` },
+    ]);
+  };
+
+  const handleRemoveTestCase = (index: number) => {
+    setTestCasesList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateTestCase = (index: number, field: 'input' | 'expectedOutput' | 'description', val: string) => {
+    setTestCasesList((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: val };
+      return updated;
+    });
+  };
+
   const fetchQuestions = async () => {
     setIsLoading(true);
     try {
@@ -228,10 +253,16 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       starterCpp: newStarterCpp,
       sampleInput: newSampleInput,
       sampleOutput: newSampleOutput,
-      testCases: [
-        { input: 'test1', expectedOutput: 'valid', description: 'Primary test case check' },
-        { input: 'test2', expectedOutput: 'match', description: 'Boundary and logic check' },
-      ],
+      testCases:
+        testCasesList.filter((tc) => tc.input.trim() || tc.expectedOutput.trim()).length > 0
+          ? testCasesList.filter((tc) => tc.input.trim() || tc.expectedOutput.trim())
+          : [
+              {
+                input: newSampleInput || 'sampleInput',
+                expectedOutput: newSampleOutput || 'sampleOutput',
+                description: 'Automated evaluation check',
+              },
+            ],
       validationCriteria: ['Clean code structure', 'Zero runtime crash', 'Test cases passed'],
     };
 
@@ -563,35 +594,83 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             />
           </div>
 
-          {/* Bug Hunt Domain Selector for Admin */}
+          {/* Bug Hunt Domain & Language Selector for Admin */}
           {newArena === 'bug_hunt' && (
-            <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-2">
-              <label className="block text-xs font-medium text-rose-400 font-mono">
-                Bug Hunt Domain & Mode:
-              </label>
-              <div className="flex flex-wrap gap-4 text-xs font-mono">
-                <label className="flex items-center gap-2 cursor-pointer text-white">
-                  <input
-                    type="radio"
-                    name="bugDomain"
-                    value="web"
-                    checked={newBugDomain === 'web'}
-                    onChange={() => setNewBugDomain('web')}
-                    className="text-rose-500 focus:ring-rose-500"
-                  />
-                  <span>Web UI Bug (Visual layout with Target Preview & Output)</span>
+            <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-rose-400 font-mono mb-1">
+                  Bug Hunt Domain & Mode:
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-white">
-                  <input
-                    type="radio"
-                    name="bugDomain"
-                    value="logic"
-                    checked={newBugDomain === 'logic'}
-                    onChange={() => setNewBugDomain('logic')}
-                    className="text-rose-500 focus:ring-rose-500"
-                  />
-                  <span>Logic & Code Bug (Python / Java / C++ with Real Compiler)</span>
+                <div className="flex flex-wrap gap-4 text-xs font-mono">
+                  <label className="flex items-center gap-2 cursor-pointer text-white">
+                    <input
+                      type="radio"
+                      name="bugDomain"
+                      value="web"
+                      checked={newBugDomain === 'web'}
+                      onChange={() => {
+                        setNewBugDomain('web');
+                        setNewTags('css');
+                      }}
+                      className="text-rose-500 focus:ring-rose-500"
+                    />
+                    <span>Web UI Bug (Visual layout with Target Preview & Output)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-white">
+                    <input
+                      type="radio"
+                      name="bugDomain"
+                      value="logic"
+                      checked={newBugDomain === 'logic'}
+                      onChange={() => {
+                        setNewBugDomain('logic');
+                        setNewTags('java');
+                      }}
+                      className="text-rose-500 focus:ring-rose-500"
+                    />
+                    <span>Logic & Code Bug (Python / Java / C++ with Real Compiler)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Specific Bug Language Selection */}
+              <div className="pt-2 border-t border-charcoal-800">
+                <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1.5">
+                  Target Language Bug to Fix ({newBugDomain === 'web' ? 'Web UI' : 'Logic Code'}):
                 </label>
+                <div className="flex flex-wrap gap-2 text-xs font-mono">
+                  {(newBugDomain === 'web'
+                    ? [
+                        { id: 'html', label: 'HTML' },
+                        { id: 'css', label: 'CSS' },
+                        { id: 'javascript', label: 'JavaScript' },
+                      ]
+                    : [
+                        { id: 'java', label: 'Java' },
+                        { id: 'python', label: 'Python' },
+                        { id: 'cpp', label: 'C++' },
+                      ]
+                  ).map((lang) => {
+                    const isSelected = newTags
+                      .split(',')
+                      .map((t) => t.trim().toLowerCase())
+                      .includes(lang.id);
+                    return (
+                      <button
+                        key={lang.id}
+                        type="button"
+                        onClick={() => setNewTags(lang.id)}
+                        className={`px-3 py-1.5 rounded-lg border font-mono text-xs uppercase font-bold transition-all ${
+                          isSelected
+                            ? 'bg-rose-500 text-white border-rose-400 shadow-sm'
+                            : 'bg-charcoal-900 text-slate-400 border-charcoal-750 hover:text-white'
+                        }`}
+                      >
+                        {lang.label} {isSelected && '✓'}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -655,18 +734,22 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
                 <div>
                   <label className="block text-[11px] font-medium text-slate-400 mb-1 font-mono">
-                    Live Blueprint Preview (Combined HTML + CSS output):
+                    Live Blueprint Preview (Sandboxed Isolated Iframe - No CSS Leak):
                   </label>
-                  <div className="rounded-xl border border-charcoal-750 bg-white p-3 overflow-auto min-h-[90px] max-h-48 flex items-center justify-center text-slate-900">
-                    <style>{newTargetCss}</style>
-                    <div dangerouslySetInnerHTML={{ __html: newTargetHtml }} className="w-full" />
+                  <div className="rounded-xl border border-charcoal-750 bg-white overflow-hidden min-h-[140px] max-h-56">
+                    <iframe
+                      title="Admin Blueprint Preview"
+                      srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${newTargetCss || ''}</style></head><body>${newTargetHtml || '<p>Target Preview</p>'}</body></html>`}
+                      className="w-full h-full min-h-[140px] border-0 block"
+                      sandbox="allow-scripts"
+                    />
                   </div>
                 </div>
               </div>
             </>
           )}
 
-          {/* Starter Codes for Algorithms & Logic Bug Hunt */}
+          {/* Starter Codes & Interactive Test Cases for Algorithms & Logic Bug Hunt */}
           {(newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic')) && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -705,26 +788,88 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Sample Input</label>
-                  <input
-                    type="text"
-                    value={newSampleInput}
-                    onChange={(e) => setNewSampleInput(e.target.value)}
-                    placeholder="nums = [3, 1, 2, 4]"
-                    className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
+              {/* Dynamic Interactive Test Cases Builder */}
+              <div className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                      Automated Verification Test Cases ({testCasesList.length})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddTestCase}
+                    className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Test Case</span>
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Sample Expected Output</label>
-                  <input
-                    type="text"
-                    value={newSampleOutput}
-                    onChange={(e) => setNewSampleOutput(e.target.value)}
-                    placeholder="[2, 4, 3, 1]"
-                    className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-400 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
+
+                <div className="space-y-3">
+                  {testCasesList.map((tc, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-mono font-bold text-slate-300">
+                          Test Case #{idx + 1}
+                        </span>
+                        {testCasesList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTestCase(idx)}
+                            className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                            title="Remove test case"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                            Input (Arguments / Data):
+                          </label>
+                          <input
+                            type="text"
+                            value={tc.input}
+                            onChange={(e) => handleUpdateTestCase(idx, 'input', e.target.value)}
+                            placeholder="e.g. nums = [3, 1, 2, 4]"
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-white text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                            Expected Output:
+                          </label>
+                          <input
+                            type="text"
+                            value={tc.expectedOutput}
+                            onChange={(e) => handleUpdateTestCase(idx, 'expectedOutput', e.target.value)}
+                            placeholder="e.g. [2, 4, 3, 1]"
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-emerald-400 text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                          Objective / Description:
+                        </label>
+                        <input
+                          type="text"
+                          value={tc.description}
+                          onChange={(e) => handleUpdateTestCase(idx, 'description', e.target.value)}
+                          placeholder="e.g. Verifies even numbers are placed before odds"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-300 text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

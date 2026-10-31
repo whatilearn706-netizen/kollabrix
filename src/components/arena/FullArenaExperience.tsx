@@ -664,7 +664,7 @@ export function FullArenaExperience({
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. High-frequency background HTTP safety check (2.5s in lobby, 6s in match)
+    // 2. High-frequency background HTTP safety check (1.2s in lobby, 5s in match)
     const pollInterval = setInterval(async () => {
       if (typeof document !== 'undefined' && document.hidden) return;
       try {
@@ -674,7 +674,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, step === 3 ? 2500 : 6000);
+    }, step === 3 ? 1200 : 5000);
 
     return () => {
       isMounted = false;
@@ -2285,7 +2285,7 @@ export function FullArenaExperience({
                   <div
                     onClick={() => {
                       setBugDomain('web');
-                      setSelectedTags(['bug_web', 'css', 'html']);
+                      setSelectedTags(['css']);
                     }}
                     className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
                       bugDomain === 'web'
@@ -2316,7 +2316,7 @@ export function FullArenaExperience({
                   <div
                     onClick={() => {
                       setBugDomain('logic');
-                      setSelectedTags(['bug_logic', 'python', 'java', 'cpp']);
+                      setSelectedTags(['java']);
                     }}
                     className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
                       bugDomain === 'logic'
@@ -2342,6 +2342,55 @@ export function FullArenaExperience({
                         Algorithms, memory, and boundary bugs in Python, Java, and C++. Includes real Judge0 compiler execution & test runner.
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Sub-language selector for chosen Bug Hunt Domain */}
+                <div className="pt-2 border-t border-slate-800">
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">
+                    Select Language to Hunt Bug ({bugDomain === 'web' ? 'Web UI' : 'Logic & Code'}):
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(bugDomain === 'web'
+                      ? [
+                          { id: 'html', label: 'HTML', desc: 'Structure Bugs' },
+                          { id: 'css', label: 'CSS', desc: 'Styling & Layout' },
+                          { id: 'javascript', label: 'JavaScript', desc: 'DOM & Click Bugs' },
+                        ]
+                      : [
+                          { id: 'java', label: 'Java', desc: 'Enterprise Java Bugs' },
+                          { id: 'python', label: 'Python', desc: 'Syntax & Logic Bugs' },
+                          { id: 'cpp', label: 'C++', desc: 'Memory & Pointer Bugs' },
+                        ]
+                    ).map((lang) => {
+                      const isSelected = selectedTags.includes(lang.id);
+                      return (
+                        <button
+                          key={lang.id}
+                          type="button"
+                          onClick={() => setSelectedTags([lang.id])}
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? 'bg-rose-950/60 border-rose-400 text-white shadow-sm'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="font-mono font-bold text-xs text-white">{lang.label}</span>
+                            <span
+                              className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${
+                                isSelected
+                                  ? 'border-rose-400 bg-rose-500 text-slate-950 font-bold'
+                                  : 'border-slate-700'
+                              }`}
+                            >
+                              {isSelected ? '✓' : ''}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400">{lang.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -3023,24 +3072,22 @@ export function FullArenaExperience({
                           </div>
                         </div>
 
-                        {/* Preview White Canvas (Image 6 Design) */}
+                        {/* Preview White Canvas - Isolated Sandboxed Iframe (Zero CSS Leak to Output) */}
                         <div
                           key={`preview-${renderNonce}`}
-                          className="flex-1 p-3 bg-white overflow-auto flex items-center justify-center text-slate-900"
+                          className="flex-1 bg-white overflow-hidden relative"
                         >
-                          <div
-                            className="w-full"
-                            dangerouslySetInnerHTML={{
-                              __html:
-                                (activeQuestion.targetComponentCss ? `<style>${activeQuestion.targetComponentCss}</style>` : '') +
-                                (activeQuestion.targetComponentHtml || '<p>Target Preview</p>'),
-                            }}
+                          <iframe
+                            title="Target Component Preview"
+                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${activeQuestion.targetComponentCss || ''}</style></head><body>${activeQuestion.targetComponentHtml || '<p>Target Preview</p>'}</body></html>`}
+                            className="w-full h-full border-0 block"
+                            sandbox="allow-scripts"
                           />
                         </div>
                       </div>
                     )}
 
-                    {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering) */}
+                    {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering in Sandboxed Iframe) */}
                     {maximizedPane !== 'preview' && (
                       <div
                         className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
@@ -3087,13 +3134,17 @@ export function FullArenaExperience({
                           </div>
                         </div>
 
-                        {/* Output White Canvas (Image 6 Live Render) */}
+                        {/* Output White Canvas - Sandboxed Compiler Iframe (Raw HTML only renders raw unstyled HTML; styles only appear when student writes CSS) */}
                         <div
                           key={`output-${renderNonce}`}
-                          className="flex-1 p-3 bg-white overflow-auto"
+                          className="flex-1 bg-white overflow-hidden relative"
                         >
-                          <style>{cssCode}</style>
-                          <div dangerouslySetInnerHTML={{ __html: htmlCode }} />
+                          <iframe
+                            title="Student Code Output"
+                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${cssCode || ''}</style></head><body>${htmlCode || ''}<script>try{${jsCode || ''}}catch(e){console.error(e);}<\/script></body></html>`}
+                            className="w-full h-full border-0 block"
+                            sandbox="allow-scripts"
+                          />
                         </div>
                       </div>
                     )}

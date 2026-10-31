@@ -70,8 +70,21 @@ export async function getAllActiveRooms(): Promise<Record<string, ArenaRoom>> {
       MEMORY_ROOMS.forEach((val, key) => { fallback[key] = val; });
       return fallback;
     }
-    const { data } = await client.from('platform_settings').select('value').eq('key', 'arena_active_rooms').maybeSingle();
-    const rooms = typeof data?.value === 'object' && data.value !== null ? data.value : {};
+    const { data, error } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'arena_active_rooms')
+      .order('updated_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.warn('DB error fetching arena_active_rooms:', error.message);
+    }
+
+    const rooms = (data && data[0] && typeof data[0].value === 'object' && data[0].value !== null)
+      ? data[0].value
+      : {};
+
     // Hydrate memory cache
     for (const [code, r] of Object.entries(rooms)) {
       MEMORY_ROOMS.set(code.toUpperCase(), r as ArenaRoom);
@@ -130,11 +143,27 @@ export async function saveRoom(room: ArenaRoom): Promise<ArenaRoom> {
     const cleaned = cleanupStaleRooms(allRooms);
     const client = getSupabaseAdmin();
     if (client) {
-      await client.from('platform_settings').upsert({
-        key: 'arena_active_rooms',
-        value: cleaned,
-        updated_at: now,
-      });
+      const { data: existingRows } = await client
+        .from('platform_settings')
+        .select('key')
+        .eq('key', 'arena_active_rooms')
+        .limit(1);
+
+      if (existingRows && existingRows.length > 0) {
+        await client
+          .from('platform_settings')
+          .update({
+            value: cleaned,
+            updated_at: now,
+          })
+          .eq('key', 'arena_active_rooms');
+      } else {
+        await client.from('platform_settings').insert({
+          key: 'arena_active_rooms',
+          value: cleaned,
+          updated_at: now,
+        });
+      }
     }
   } catch (err) {
     console.warn('Failed writing room to DB:', err);
@@ -162,27 +191,33 @@ export async function joinPlayerToRoom(
   const cleanCode = roomCode.trim().toUpperCase();
   const now = new Date().toISOString();
 
-  // Check if player is already in room
-  const existingAlpha = room.alphaPlayers.find((p) => p.id === player.id || p.name === player.name);
-  const existingOmega = room.omegaPlayers.find((p) => p.id === player.id || p.name === player.name);
+  // If host is rejoining or updating:
+  const isHostPlayer =
+    room.alphaPlayers.length > 0 &&
+    (room.alphaPlayers[0].id === player.id ||
+      (player.name && room.alphaPlayers[0].name.toLowerCase() === player.name.toLowerCase() && room.hostName.toLowerCase() === player.name.toLowerCase()));
 
-  if (existingAlpha || existingOmega) {
-    // Player re-joining, refresh activity
-    if (existingAlpha) {
-      existingAlpha.lastActive = now;
-      existingAlpha.avatarIdx = player.avatarIdx;
-    }
-    if (existingOmega) {
-      existingOmega.lastActive = now;
-      existingOmega.avatarIdx = player.avatarIdx;
-    }
-    await saveRoom(room);
-    return { success: true, room };
+  if (isHostPlayer) {
+    room.alphaPlayers[0].lastActive = now;
+    room.alphaPlayers[0].avatarIdx = player.avatarIdx;
+    const saved = await saveRoom(room);
+    return { success: true, room: saved };
+  }
+
+  // Check if player is already in omegaPlayers:
+  const existingOmega = room.omegaPlayers.find(
+    (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
+  );
+  if (existingOmega) {
+    existingOmega.lastActive = now;
+    existingOmega.avatarIdx = player.avatarIdx;
+    const saved = await saveRoom(room);
+    return { success: true, room: saved };
   }
 
   // New Player Joining Slot Assignment:
   if (room.format === '1v1') {
-    // In 1v1, slot 1 is Host (Team Alpha). The joiner is Team Omega (Opponent).
+    // In 1v1, slot 1 is Host (Team Alpha). The joiner is ALWAYS Team Omega (Opponent).
     const newOpponent: ArenaPlayer = {
       id: player.id || `p-${Date.now()}`,
       name: player.name || 'RivalCoder',
@@ -234,6 +269,6 @@ export async function joinPlayerToRoom(
     }
   }
 
-  const updated = await saveRoom(room);
-  return { success: true, room: updated };
+  const saved = await saveRoom(room);
+  return { success: true, room: saved };
 }
