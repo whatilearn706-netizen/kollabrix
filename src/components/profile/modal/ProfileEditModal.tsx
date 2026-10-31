@@ -21,7 +21,6 @@ import { Step2College } from './Step2College';
 import { Step3Academics } from './Step3Academics';
 import { Step4Skills } from './Step4Skills';
 import { Step5Links } from './Step5Links';
-import { Step6Role } from './Step6Role';
 
 export function openProfileEditModal(initialStep: number = 1) {
   if (typeof window !== 'undefined') {
@@ -42,7 +41,6 @@ const STEP_TITLES = [
   { id: 3, tag: 'Academics', title: 'Academic Year & Degree', subtitle: 'Select your study year and search your engineering or tech degree' },
   { id: 4, tag: 'Skills', title: 'Technical Stack & Interests', subtitle: 'Select or write your primary skills and preferred project roles' },
   { id: 5, tag: 'Online', title: 'Developer Links & Presence', subtitle: 'Connect GitHub, LinkedIn, and personal portfolio showcases' },
-  { id: 6, tag: 'Role', title: 'Account Role & Faculty Portal', subtitle: 'Confirm student builder access or activate the Faculty Mentor Portal' },
 ];
 
 export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: ProfileEditModalProps) {
@@ -75,12 +73,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [isPortfolioPublic, setIsPortfolioPublic] = useState(true);
-
-  const [isFaculty, setIsFaculty] = useState(false);
-  const [facultyDesignation, setFacultyDesignation] = useState('Assistant Professor');
-  const [facultyDepartment, setFacultyDepartment] = useState('Computer Science & Engineering');
-  const [facultyEmail, setFacultyEmail] = useState('');
-  const [facultyDocUrl, setFacultyDocUrl] = useState<string | null>(null);
 
   // 1. Listen for global open triggers
   useEffect(() => {
@@ -169,9 +161,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       setIsPortfolioPublic(profile.is_portfolio_public);
     }
 
-    if (profile?.role === 'teacher') {
-      setIsFaculty(true);
-    }
   }, [user, profile]);
 
   const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
@@ -211,22 +200,13 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         setErrorMessage('Please select at least 2 primary technical skills.');
         return false;
       }
-    } else if (step === 6 && isFaculty) {
-      if (!facultyDepartment.trim()) {
-        setErrorMessage('Please specify your academic department/school.');
-        return false;
-      }
-      if (!facultyDesignation.trim()) {
-        setErrorMessage('Please specify your faculty designation/title.');
-        return false;
-      }
     }
     return true;
   };
 
   const handleNext = () => {
     if (validateCurrentStep(currentStep)) {
-      if (currentStep < 6) {
+      if (currentStep < 5) {
         setCurrentStep((prev) => prev + 1);
       } else {
         handleSaveProfile();
@@ -243,7 +223,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
   // Submit and save profile
   const handleSaveProfile = async () => {
-    if (!validateCurrentStep(6)) return;
+    if (!validateCurrentStep(5)) return;
     if (!user) return;
 
     try {
@@ -251,9 +231,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       setErrorMessage(null);
 
       const cleanU = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      // Only retain 'teacher' role if user is already verified by an admin in database
-      const alreadyVerifiedFaculty = profile?.role === 'teacher' && Boolean(profile?.faculty_verified);
-      const assignedRole = alreadyVerifiedFaculty ? 'teacher' : 'student';
+      const assignedRole = profile?.role || 'student';
 
       const payload = {
         user_id: user.id,
@@ -272,10 +250,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         portfolio_url: portfolioUrl.trim() || null,
         is_portfolio_public: isPortfolioPublic,
         role: assignedRole,
-        faculty_verified: alreadyVerifiedFaculty,
-        faculty_designation: isFaculty ? facultyDesignation.trim() : (profile?.faculty_designation || null),
-        faculty_department: isFaculty ? facultyDepartment.trim() : (profile?.faculty_department || null),
-        verification_doc_type: isFaculty ? (facultyDocUrl || 'faculty_pending') : (studentIdUrl || null),
+        verification_doc_type: studentIdUrl || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -284,7 +259,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           .from('profiles')
           .upsert(payload, { onConflict: 'user_id' });
 
-        // Graceful schema-resilient fallback if custom columns (like linkedin_url) are not yet in Supabase schema cache
+        // Graceful schema-resilient fallback if custom columns are not yet in Supabase schema cache
         if (
           upsertErr &&
           (upsertErr.message.includes('column') ||
@@ -295,9 +270,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           const safePayload: Record<string, any> = { ...payload };
           delete safePayload.linkedin_url;
           delete safePayload.verification_doc_type;
-          delete safePayload.faculty_designation;
-          delete safePayload.faculty_department;
-          delete safePayload.faculty_verified;
           const retryRes = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
           upsertErr = retryRes.error;
         }
@@ -305,7 +277,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         if (upsertErr) throw upsertErr;
       }
 
-      // If student ID was uploaded, notify verification endpoint for Admin Control Center
+      // If student ID was uploaded in Step 2, notify verification endpoint for Admin Control Center
       if (studentIdUrl) {
         fetch('/api/verify/college-id', {
           method: 'POST',
@@ -325,27 +297,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         }).catch((err) => console.warn('Admin student queue notification note:', err));
       }
 
-      // If faculty profile was chosen with credentials, route to Admin Control Center
-      if (isFaculty && facultyDocUrl) {
-        fetch('/api/verify/college-id', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            verificationType: 'faculty_id',
-            collegeName: college.trim() || 'Collegiate Institution',
-            studentRollNumber: facultyDesignation.trim() || 'Faculty Appointment',
-            idCardImage: facultyDocUrl,
-            userId: user.id,
-            username: cleanU,
-            studentName: displayName.trim(),
-            designation: facultyDesignation.trim(),
-            department: facultyDepartment.trim(),
-            facultyEmail: facultyEmail.trim() || user.email,
-            email: user.email,
-          }),
-        }).catch((err) => console.warn('Admin faculty queue notification note:', err));
-      }
-
       // Mark session complete & upgrade cookies to 1-year persistent
       try {
         sessionStorage.setItem('kollabrix_tab_active_session', 'true');
@@ -354,14 +305,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
         document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
-
-        if (alreadyVerifiedFaculty) {
-          localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
-          localStorage.setItem('teamforge_verified_faculty', 'true');
-        } else {
-          localStorage.removeItem(`linkora_faculty_verified_${user.id}`);
-          localStorage.removeItem('teamforge_verified_faculty');
-        }
       } catch (e) {}
 
       invalidatePageCache();
@@ -408,36 +351,22 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-black text-white tracking-tight">
-              {isFaculty && !(profile?.role === 'teacher' && Boolean(profile?.faculty_verified))
-                ? 'Faculty Verification Pending'
-                : 'Collegiate Profile Saved!'}
+              Collegiate Profile Saved!
             </h3>
             <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
-              {isFaculty && !(profile?.role === 'teacher' && Boolean(profile?.faculty_verified))
-                ? 'Your faculty profile and credentials have been securely queued in the Admin Control Center. You have entered Kollabrix as a Student Builder until an administrator approves your faculty profile.'
-                : 'Your profile changes have synced across the campus network. Welcome to Kollabrix!'}
+              Your profile changes have synced across the campus network. Welcome to Kollabrix!
             </p>
-            {isFaculty && profile?.role === 'teacher' && Boolean(profile?.faculty_verified) ? (
-              <a
-                href="/teacher/dashboard"
-                className="mt-3 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/30"
-              >
-                <span>Go to Faculty Portal</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  setIsSuccess(false);
-                }}
-                className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/25"
-              >
-                <span>Enter Platform</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                setIsSuccess(false);
+              }}
+              className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/25"
+            >
+              <span>Enter Platform</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         ) : (
           <div className="space-y-6 relative z-10">
@@ -467,7 +396,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               </div>
 
               {/* Ultra-Clean Segmented Progress Line */}
-              <div className="grid grid-cols-6 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 {STEP_TITLES.map((s) => {
                   const isCurrent = currentStep === s.id;
                   const isPast = currentStep > s.id;
@@ -566,20 +495,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 />
               )}
 
-              {currentStep === 6 && (
-                <Step6Role
-                  isFaculty={isFaculty}
-                  setIsFaculty={setIsFaculty}
-                  facultyDesignation={facultyDesignation}
-                  setFacultyDesignation={setFacultyDesignation}
-                  facultyDepartment={facultyDepartment}
-                  setFacultyDepartment={setFacultyDepartment}
-                  facultyEmail={facultyEmail}
-                  setFacultyEmail={setFacultyEmail}
-                  facultyDocUrl={facultyDocUrl}
-                  setFacultyDocUrl={setFacultyDocUrl}
-                />
-              )}
             </div>
 
             {/* Bottom Footer Actions */}
@@ -611,7 +526,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               </div>
 
               <div>
-                {currentStep < 6 ? (
+                {currentStep < 5 ? (
                   <button
                     type="button"
                     onClick={handleNext}
@@ -632,7 +547,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>{isFaculty ? 'Submit Faculty Profile' : 'Save & Complete Profile'}</span>
+                        <span>Save &amp; Complete Profile</span>
                       </>
                     )}
                   </button>
