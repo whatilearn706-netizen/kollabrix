@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'start_match': {
         room.status = 'starting';
+        if (payload?.question) {
+          room.question = payload.question;
+        }
         break;
       }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRoom, saveRoom, ArenaRoom, ArenaPlayer } from '@/lib/arena/roomStorage';
-import { DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
+import { DEFAULT_ARENA_QUESTIONS, DuelQuestion } from '@/types/arenaDuel';
+import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -72,7 +73,37 @@ export async function POST(request: NextRequest) {
       lastActive: now,
     };
 
-    const finalQuestion = question || DEFAULT_ARENA_QUESTIONS[0];
+    let finalQuestion = question;
+    if (!finalQuestion) {
+      try {
+        const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
+          'arena_duel_questions',
+          DEFAULT_ARENA_QUESTIONS
+        );
+        const list = Array.isArray(storedQuestions) && storedQuestions.length > 0
+          ? storedQuestions
+          : DEFAULT_ARENA_QUESTIONS;
+
+        const matching = list.filter((q) => {
+          if (q.arena !== arena) return false;
+          if (selectedTags && Array.isArray(selectedTags) && selectedTags.length > 0) {
+            return selectedTags.some((t: string) => q.tags?.includes(t));
+          }
+          return true;
+        });
+
+        if (matching.length > 0) {
+          finalQuestion = matching[Math.floor(Math.random() * matching.length)];
+        } else {
+          const arenaMatching = list.filter((q) => q.arena === arena);
+          finalQuestion = arenaMatching.length > 0
+            ? arenaMatching[Math.floor(Math.random() * arenaMatching.length)]
+            : list[0];
+        }
+      } catch {
+        finalQuestion = DEFAULT_ARENA_QUESTIONS[0];
+      }
+    }
 
     // Build or update room
     const newRoom: ArenaRoom = {
