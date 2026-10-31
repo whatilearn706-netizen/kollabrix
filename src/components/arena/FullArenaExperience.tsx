@@ -563,8 +563,9 @@ export function FullArenaExperience({
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. Low-frequency background HTTP safety check (10s interval, reducing DB load by >85%)
+    // 2. Low-frequency background HTTP safety check (30s interval with inactive tab sleep)
     const pollInterval = setInterval(async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       try {
         const res = await fetch(`/api/arena/rooms?code=${roomCode}&_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
@@ -572,7 +573,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, 10000);
+    }, 30000);
 
     return () => {
       isMounted = false;

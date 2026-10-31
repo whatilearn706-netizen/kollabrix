@@ -550,13 +550,15 @@ export function IcpcProctorGuard({
     }
   }, [hasCameraPermission, hasScreenPermission, initWebcam, initScreenShare, requestArenaFullscreen]);
 
-  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 8 SECONDS) ──
+  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 60 SECONDS - EVENT DRIVEN) ──
   useEffect(() => {
     if (!isActive || showEntranceModal || isTerminated) return;
 
     const sendHeartbeat = async () => {
+      // Idle tab protection: skip heartbeat if window is hidden/minimized to preserve server CPU
+      if (typeof document !== 'undefined' && document.hidden) return;
+
       try {
-        const snap = captureScreenSnapshot();
         const res = await fetch('/api/icpc/proctor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -570,7 +572,7 @@ export function IcpcProctorGuard({
             contestTitle,
             problemTitle,
             warningCount: warningCountRef.current,
-            screenSnapshot: snap,
+            // Screen sharing is streamed via peer-to-peer WebRTC, not heavy HTTP Base64 payloads
           }),
         });
         const data = await res.json();
@@ -588,7 +590,8 @@ export function IcpcProctorGuard({
     };
 
     sendHeartbeat();
-    const heartbeatTimer = setInterval(sendHeartbeat, 2500);
+    // 60s interval: exactly 1 ping per minute instead of 24 pings per minute (96% CPU reduction)
+    const heartbeatTimer = setInterval(sendHeartbeat, 60000);
     return () => clearInterval(heartbeatTimer);
   }, [
     isActive,
@@ -601,7 +604,6 @@ export function IcpcProctorGuard({
     contestId,
     contestTitle,
     problemTitle,
-    captureScreenSnapshot,
     playAlertSound,
   ]);
 
@@ -892,7 +894,7 @@ export function IcpcProctorGuard({
       }
     };
 
-    const poller = setInterval(checkFocusAndVisibility, 150);
+    const poller = setInterval(checkFocusAndVisibility, 1000);
 
     const handleWindowBlur = () => {
       setIsFocusLost(true);
