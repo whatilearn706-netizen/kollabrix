@@ -2,17 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion } from '@/types/arenaDuel';
+import { filterAndRankQuestions } from '@/lib/arena/questionSelector';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-// GET: Fetch questions filtered by arena & tags
+// GET: Fetch questions filtered by arena, difficulty, duration & tags
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const arena = searchParams.get('arena');
-    const bugDomain = searchParams.get('bugDomain');
+    const arena = searchParams.get('arena') || undefined;
+    const bugDomain = (searchParams.get('bugDomain') as 'web' | 'logic') || undefined;
+    const difficulty = (searchParams.get('difficulty') as 'easy' | 'medium' | 'hard') || undefined;
+    const timeLimit = searchParams.get('timeLimit') ? Number(searchParams.get('timeLimit')) : undefined;
     const tagsParam = searchParams.get('tags');
     const requestedTags = tagsParam ? tagsParam.split(',').map((t) => t.trim().toLowerCase()) : [];
 
@@ -21,19 +24,22 @@ export async function GET(request: NextRequest) {
       DEFAULT_ARENA_QUESTIONS
     );
 
-    let filtered = Array.isArray(storedQuestions) ? storedQuestions : DEFAULT_ARENA_QUESTIONS;
-
-    if (arena) {
-      filtered = filtered.filter((q) => q.arena === arena);
+    const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
+    // Prioritize admin questions, then append default questions (deduped)
+    const combined = [...adminList];
+    for (const defQ of DEFAULT_ARENA_QUESTIONS) {
+      if (!combined.some((q) => q.id === defQ.id)) {
+        combined.push(defQ);
+      }
     }
 
-    if (bugDomain) {
-      filtered = filtered.filter((q) => !q.bugDomain || q.bugDomain === bugDomain);
-    }
-
-    if (requestedTags.length > 0) {
-      filtered = filtered.filter((q) => requestedTags.some((t) => q.tags.includes(t)));
-    }
+    const filtered = filterAndRankQuestions(combined, {
+      arena: arena || '',
+      bugDomain,
+      selectedTags: requestedTags,
+      difficulty,
+      timeLimit,
+    });
 
     return NextResponse.json(
       {
@@ -81,6 +87,7 @@ export async function POST(request: NextRequest) {
       targetPreviewTitle: body.targetPreviewTitle,
       targetComponentHtml: body.targetComponentHtml,
       targetComponentCss: body.targetComponentCss,
+      targetComponentJs: body.targetComponentJs,
       starterHtml: body.starterHtml,
       starterCss: body.starterCss,
       starterJs: body.starterJs,

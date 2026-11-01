@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabase as defaultClient } from '@/lib/supabase/client';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { isSupabaseConfigured, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '@/lib/supabase/isConfigured';
 import { Profile } from '@/types/database';
 
 export interface AdminAuthResult {
@@ -70,8 +70,8 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       };
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
     if (!url || !anonKey) {
       return {

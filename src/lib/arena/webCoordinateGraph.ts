@@ -29,8 +29,16 @@ export interface WebGraphEvaluation {
   results: WebGraphTestResult[];
 }
 
+export interface WordSpellingResult {
+  passed: boolean;
+  matchPercent: number;
+  missingWords: string[];
+  missingHeadingWords: string[];
+  missingDetails?: string;
+}
+
 /**
- * Extracts distinct visible words and headings from HTML (stripping tags and attributes)
+ * Extracts distinct visible words from HTML (stripping tags and attributes)
  */
 export function extractTargetTextTokens(html: string): string[] {
   const stripped = (html || '')
@@ -51,35 +59,54 @@ export function extractTargetTextTokens(html: string): string[] {
     .map((w) => w.trim().toLowerCase())
     .filter(
       (w) =>
-        w.length >= 3 &&
-        !['the', 'and', 'for', 'with', 'this', 'that', 'your', 'from', 'into', 'have', 'more', 'about'].includes(w)
+        w.length >= 2 &&
+        !['the', 'and', 'for', 'with', 'this', 'that', 'into', 'have'].includes(w)
     );
 
   return Array.from(new Set(words));
 }
 
 /**
- * Verifies that the student's HTML matches the spelling and key words of the target blueprint
+ * Extracts all words specifically inside heading tags (<h1> to <h6>)
+ */
+export function extractHeadingTokens(html: string): string[] {
+  const headingMatches = (html || '').match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi) || [];
+  const text = headingMatches.join(' ');
+  return extractTargetTextTokens(text);
+}
+
+/**
+ * Verifies that the student's HTML matches the spelling, headings, and key words of the target blueprint
  */
 export function verifyWordSpellingAndContent(
   studentHtml: string,
   targetHtml: string
-): { passed: boolean; matchPercent: number; missingWords: string[] } {
+): WordSpellingResult {
   if (!targetHtml || targetHtml.trim().length === 0) {
-    return { passed: true, matchPercent: 100, missingWords: [] };
+    return { passed: true, matchPercent: 100, missingWords: [], missingHeadingWords: [] };
   }
 
   const targetWords = extractTargetTextTokens(targetHtml);
   if (targetWords.length === 0) {
-    return { passed: true, matchPercent: 100, missingWords: [] };
+    return { passed: true, matchPercent: 100, missingWords: [], missingHeadingWords: [] };
   }
 
-  const studentClean = studentHtml.toLowerCase();
+  const studentWords = new Set(extractTargetTextTokens(studentHtml));
+  const targetHeadingWords = extractHeadingTokens(targetHtml);
+
+  // 1. Mandatory check: All heading words (h1-h6) MUST match exactly (100% heading accuracy)
+  const missingHeadingWords: string[] = [];
+  for (const hWord of targetHeadingWords) {
+    if (!studentWords.has(hWord)) {
+      missingHeadingWords.push(hWord);
+    }
+  }
+
+  // 2. Check all distinct target words
   const matchedWords: string[] = [];
   const missingWords: string[] = [];
-
   for (const word of targetWords) {
-    if (studentClean.includes(word)) {
+    if (studentWords.has(word)) {
       matchedWords.push(word);
     } else {
       missingWords.push(word);
@@ -87,10 +114,32 @@ export function verifyWordSpellingAndContent(
   }
 
   const matchPercent = Math.round((matchedWords.length / targetWords.length) * 100);
-  // Passing threshold: at least 65% of distinctive words match with exact spelling
-  const passed = matchPercent >= 65;
 
-  return { passed, matchPercent, missingWords };
+  // Criteria for passing:
+  // - 0 heading words can be missing
+  // - If target has <= 5 words, 100% of words must match
+  // - If target has > 5 words, at least 90% must match with no more than 1 minor omission
+  let passed = true;
+  let missingDetails = '';
+
+  if (missingHeadingWords.length > 0) {
+    passed = false;
+    missingDetails = `Heading text is incomplete or misspelled: missing "${missingHeadingWords.join('", "')}".`;
+  } else if (targetWords.length <= 5 && missingWords.length > 0) {
+    passed = false;
+    missingDetails = `Missing required word(s) or spelling mismatch: "${missingWords.join('", "')}".`;
+  } else if (matchPercent < 90 || missingWords.length > 1) {
+    passed = false;
+    missingDetails = `Content or spelling mismatch (${matchPercent}% match). Missing word(s): "${missingWords.slice(0, 5).join('", "')}".`;
+  }
+
+  return {
+    passed,
+    matchPercent,
+    missingWords,
+    missingHeadingWords,
+    missingDetails,
+  };
 }
 
 export function evaluateWebCoordinateGraph(
@@ -102,23 +151,31 @@ export function evaluateWebCoordinateGraph(
   options?: {
     tags?: string[];
     jsCode?: string;
+    targetJs?: string;
   }
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
   const cleanCss = (cssCode || '').trim();
   const cleanJs = (options?.jsCode || '').trim();
+  const cleanTargetJs = (options?.targetJs || '').trim();
 
-  // Determine mode based on tags or target requirements
-  const rawTags = (options?.tags || []).map((t) => t.toLowerCase().trim());
-  const isHtmlOnly =
-    (rawTags.length > 0 && rawTags.includes('html') && !rawTags.includes('css') && !rawTags.includes('javascript')) ||
-    (!cleanCss && !targetCss && rawTags.includes('html'));
+  // Determine mode strictly based on question tags, fallback to target content
+  const rawTags = (options?.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+  const hasExplicitTags = rawTags.some((t) =>
+    ['html', 'css', 'js', 'javascript'].includes(t)
+  );
 
-  const isHtmlCss =
-    (rawTags.includes('css') && !rawTags.includes('javascript')) ||
-    (Boolean(targetCss && targetCss.trim().length > 10) && !rawTags.includes('javascript') && !isHtmlOnly);
+  const hasHtmlTest = hasExplicitTags
+    ? rawTags.includes('html')
+    : true;
 
-  const isHtmlCssJs = rawTags.includes('javascript') || Boolean(cleanJs && cleanJs.length > 10);
+  const hasCssTest = hasExplicitTags
+    ? rawTags.includes('css')
+    : Boolean(targetCss && targetCss.trim().length > 10);
+
+  const hasJsTest = hasExplicitTags
+    ? (rawTags.includes('javascript') || rawTags.includes('js'))
+    : Boolean(cleanTargetJs && cleanTargetJs.length > 25 && !cleanTargetJs.startsWith('//'));
 
   // 1. Immediate rejection if student code is virtually empty or just initial comment skeleton
   const strippedCode = cleanHtml
@@ -131,63 +188,69 @@ export function evaluateWebCoordinateGraph(
 
   const results: WebGraphTestResult[] = [];
 
-  // ================= TEST 1: HTML STRUCTURE & SPELLING / WORD FIDELITY (Always Evaluated) =================
-  const target = (targetHtml || '').toLowerCase();
-  const student = cleanHtml.toLowerCase();
+  // ================= TEST 1: HTML STRUCTURE & SPELLING / WORD FIDELITY =================
+  if (hasHtmlTest) {
+    const target = (targetHtml || '').toLowerCase();
+    const student = cleanHtml.toLowerCase();
 
-  // Check structural elements
-  const needsButton = target.includes('<button') || target.includes('type="button"');
-  const hasButton = student.includes('<button') || student.includes('type="button"') || student.includes('class="btn');
+    // Check structural elements
+    const needsButton = target.includes('<button') || target.includes('type="button"');
+    const hasButton = student.includes('<button') || student.includes('type="button"') || student.includes('class="btn');
 
-  const needsInput = target.includes('<input');
-  const hasInput = student.includes('<input') || student.includes('<textarea');
+    const needsInput = target.includes('<input');
+    const hasInput = student.includes('<input') || student.includes('<textarea');
 
-  const needsImg = target.includes('<img');
-  const hasImg = student.includes('<img') || student.includes('avatar') || student.includes('image');
+    const needsImg = target.includes('<img');
+    const hasImg = student.includes('<img') || student.includes('avatar') || student.includes('image');
 
-  const needsHeading = /<h[1-6]/i.test(target);
-  const hasHeading = /<h[1-6]/i.test(student);
+    const needsHeading = /<h[1-6]/i.test(target);
+    const hasHeading = /<h[1-6]/i.test(student);
 
-  const needsList = target.includes('<ul') || target.includes('<ol') || target.includes('<li');
-  const hasList = student.includes('<ul') || student.includes('<ol') || student.includes('<li');
+    const needsList = target.includes('<ul') || target.includes('<ol') || target.includes('<li');
+    const hasList = student.includes('<ul') || student.includes('<ol') || student.includes('<li');
 
-  // Verify text content and spelling match
-  const spellingCheck = verifyWordSpellingAndContent(cleanHtml, targetHtml || '');
+    // Verify text content and spelling match
+    const spellingCheck = verifyWordSpellingAndContent(cleanHtml, targetHtml || '');
 
-  let structurePassed = hasMeaningfulHtml && (spellingCheck.passed || targetWordsCount(targetHtml || '') === 0);
-  let structureMsg = `Passed: Semantic HTML structure constructed and target content/spelling matches (${spellingCheck.matchPercent}% word match).`;
+    let structurePassed = hasMeaningfulHtml && (spellingCheck.passed || targetWordsCount(targetHtml || '') === 0);
+    let structureMsg = `Passed: Semantic HTML structure constructed and target content/spelling matches (${spellingCheck.matchPercent}% word match).`;
 
-  if (!hasMeaningfulHtml) {
-    structurePassed = false;
-    structureMsg = 'Failed: Code is empty. Write your HTML solution replicating the target component.';
-  } else if (needsButton && !hasButton) {
-    structurePassed = false;
-    structureMsg = 'Failed: Target blueprint requires interactive button element(s) (<button>).';
-  } else if (needsInput && !hasInput) {
-    structurePassed = false;
-    structureMsg = 'Failed: Target blueprint requires input field(s) (<input>).';
-  } else if (needsImg && !hasImg) {
-    structurePassed = false;
-    structureMsg = 'Failed: Target blueprint requires an image element (<img>).';
-  } else if (needsHeading && !hasHeading) {
-    structurePassed = false;
-    structureMsg = 'Failed: Target blueprint requires heading elements (<h1> to <h6>).';
-  } else if (needsList && !hasList) {
-    structurePassed = false;
-    structureMsg = 'Failed: Target blueprint requires list elements (<ul>, <ol>, or <li>).';
-  } else if (!spellingCheck.passed) {
-    structurePassed = false;
-    structureMsg = `Failed: Content or spelling mismatch (${spellingCheck.matchPercent}% match). Check word spelling: ${spellingCheck.missingWords.slice(0, 4).join(', ')}.`;
+    if (!hasMeaningfulHtml) {
+      structurePassed = false;
+      structureMsg = 'Failed: Code is empty. Write your HTML solution replicating the target component.';
+    } else if (needsButton && !hasButton) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires interactive button element(s) (<button>).';
+    } else if (needsInput && !hasInput) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires input field(s) (<input>).';
+    } else if (needsImg && !hasImg) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires an image element (<img>).';
+    } else if (needsHeading && !hasHeading) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires heading elements (<h1> to <h6>).';
+    } else if (needsList && !hasList) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires list elements (<ul>, <ol>, or <li>).';
+    } else if (!spellingCheck.passed) {
+      structurePassed = false;
+      structureMsg = `Failed: ${
+        spellingCheck.missingDetails ||
+        `Content or spelling mismatch (${spellingCheck.matchPercent}% match). Check word spelling: ${spellingCheck.missingWords.slice(0, 4).join(', ')}.`
+      }`;
+    }
+
+    results.push({
+      testName: 'HTML Structure & Content / Word Spelling Alignment',
+      passed: structurePassed,
+      message: structureMsg,
+    });
   }
 
-  results.push({
-    testName: 'HTML Structure & Content / Word Spelling Alignment',
-    passed: structurePassed,
-    message: structureMsg,
-  });
-
-  // ================= TEST 2: CSS COORDINATE GRAPH & LAYOUT (Only for HTML + CSS or Full Web) =================
-  if (!isHtmlOnly) {
+  // ================= TEST 2: CSS COORDINATE GRAPH & LAYOUT =================
+  if (hasCssTest) {
+    const target = (targetHtml || '').toLowerCase();
     const studentCss = cleanCss.toLowerCase();
 
     // Check if question has specific layout geometry requirements
@@ -230,33 +293,69 @@ export function evaluateWebCoordinateGraph(
     });
   }
 
-  // ================= TEST 3: JAVASCRIPT DOM LOGIC & INTERACTION (Only for HTML + CSS + JS) =================
-  if (isHtmlCssJs) {
+  // ================= TEST 3: JAVASCRIPT DOM LOGIC & INTERACTION =================
+  if (hasJsTest) {
     const studentJs = cleanJs.toLowerCase();
     const hasJsCode = cleanJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim().length > 10;
+    
+    // Support all standard JavaScript DOM interaction patterns (format-agnostic)
     const hasEventListeners =
       studentJs.includes('addeventlistener') ||
       studentJs.includes('onclick') ||
+      studentJs.includes('onchange') ||
+      studentJs.includes('onsubmit') ||
       studentJs.includes('queryselector') ||
-      studentJs.includes('getelementbyid');
+      studentJs.includes('getelementbyid') ||
+      studentJs.includes('getelementsby') ||
+      studentJs.includes('.value') ||
+      studentJs.includes('.innertext') ||
+      studentJs.includes('.innerhtml') ||
+      studentJs.includes('.classlist') ||
+      studentJs.includes('.style') ||
+      studentJs.includes('.setattribute');
 
-    const jsPassed = hasJsCode && hasEventListeners;
+    // If target JavaScript is defined by admin, ensure core DOM triggers match
+    let matchesTargetBehavior = true;
+    if (cleanTargetJs && cleanTargetJs.length > 15) {
+      const targetTokens = cleanTargetJs
+        .toLowerCase()
+        .match(/([a-zA-Z0-9_-]{4,})/g) || [];
+      const criticalTokens = targetTokens.filter(
+        (t) => !['const', 'let', 'var', 'function', 'return', 'true', 'false', 'document'].includes(t)
+      );
+      if (criticalTokens.length > 0) {
+        const matched = criticalTokens.filter((t) => studentJs.includes(t));
+        // Pass if at least 30% of key semantic identifiers/event targets are engaged
+        matchesTargetBehavior = matched.length / criticalTokens.length >= 0.3;
+      }
+    }
+
+    const jsPassed = hasJsCode && hasEventListeners && matchesTargetBehavior;
 
     results.push({
       testName: 'JavaScript DOM Interactivity & Event Handlers',
       passed: jsPassed,
       message: jsPassed
-        ? 'Passed: DOM event listeners and interactive logic verified.'
-        : 'Failed: Implement JavaScript DOM event listeners (e.g. click handler, addEventListener) to complete interaction.',
+        ? 'Passed: Dynamic DOM event handling and interactive script logic verified.'
+        : 'Failed: JavaScript interaction incomplete. Attach DOM event handlers (e.g. click, input) to update the component.',
+    });
+  }
+
+  // Fallback: Ensure at least one test case is present
+  if (results.length === 0) {
+    results.push({
+      testName: 'HTML Structure & Content / Word Spelling Alignment',
+      passed: Boolean(cleanHtml && cleanHtml.length > 20),
+      message: 'Verified component structure and baseline tags.',
     });
   }
 
   const testsPassed = results.filter((r) => r.passed).length;
   const totalTests = results.length;
-  const score = Math.round((testsPassed / totalTests) * 100);
+  const score = totalTests > 0 ? Math.round((testsPassed / totalTests) * 100) : 100;
 
   return {
-    passed: testsPassed === totalTests,
+    passed: testsPassed === totalTests && totalTests > 0,
     testsPassed,
     totalTests,
     score,

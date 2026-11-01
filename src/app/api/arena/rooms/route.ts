@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRoom, saveRoom, ArenaRoom, ArenaPlayer } from '@/lib/arena/roomStorage';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion } from '@/types/arenaDuel';
 import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
+import { selectBestQuestion } from '@/lib/arena/questionSelector';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
       lastActive: now,
     };
 
+    const matchDuration = Number(timeLimit) || 300;
     let finalQuestion = question;
     if (!finalQuestion) {
       try {
@@ -81,30 +83,33 @@ export async function POST(request: NextRequest) {
           'arena_duel_questions',
           DEFAULT_ARENA_QUESTIONS
         );
-        const list = Array.isArray(storedQuestions) && storedQuestions.length > 0
-          ? storedQuestions
-          : DEFAULT_ARENA_QUESTIONS;
-
-        const matching = list.filter((q) => {
-          if (q.arena !== arena) return false;
-          if (arena === 'bug_hunt' && bugDomain && q.bugDomain && q.bugDomain !== bugDomain) return false;
-          if (selectedTags && Array.isArray(selectedTags) && selectedTags.length > 0) {
-            return selectedTags.some((t: string) => q.tags?.includes(t));
+        const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
+        // Combine admin questions with default questions (deduping by ID)
+        const combined = [...adminList];
+        for (const defQ of DEFAULT_ARENA_QUESTIONS) {
+          if (!combined.some((q) => q.id === defQ.id)) {
+            combined.push(defQ);
           }
-          return true;
-        });
-
-        if (matching.length > 0) {
-          finalQuestion = matching[Math.floor(Math.random() * matching.length)];
-        } else {
-          const arenaMatching = list.filter((q) => q.arena === arena && (arena !== 'bug_hunt' || !bugDomain || q.bugDomain === bugDomain));
-          finalQuestion = arenaMatching.length > 0
-            ? arenaMatching[Math.floor(Math.random() * arenaMatching.length)]
-            : list[0];
         }
+
+        finalQuestion = selectBestQuestion(combined, {
+          arena,
+          bugDomain,
+          selectedTags,
+          difficulty,
+          timeLimit: matchDuration,
+        });
       } catch {
-        finalQuestion = DEFAULT_ARENA_QUESTIONS[0];
+        finalQuestion = {
+          ...DEFAULT_ARENA_QUESTIONS[0],
+          timeLimitSeconds: matchDuration,
+        };
       }
+    } else {
+      finalQuestion = {
+        ...finalQuestion,
+        timeLimitSeconds: matchDuration,
+      };
     }
 
     // Build or update room
@@ -115,7 +120,7 @@ export async function POST(request: NextRequest) {
       arena,
       selectedTags,
       difficulty,
-      timeLimit: Number(timeLimit) || 300,
+      timeLimit: matchDuration,
       question: finalQuestion,
       status: 'lobby',
       alphaPlayers: [hostPlayer],
