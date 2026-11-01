@@ -36,6 +36,7 @@ export const CURATED_ICPC_CONTESTS: IcpcContest[] = [
     startTime: new Date(Date.now() - 3600000 * 1).toISOString(), // 1 hour ago (Live)
     endTime: new Date(Date.now() + 3600000 * 4).toISOString(), // 4 hours left
     contestType: 'contest',
+    category: 'icpc',
     durationMinutes: 300,
     status: 'live',
     visibility: 'public',
@@ -332,6 +333,7 @@ int main() {
     startTime: new Date(Date.now() - 3600000 * 48).toISOString(),
     endTime: new Date(Date.now() + 3600000 * 720).toISOString(),
     contestType: 'practice',
+    category: 'icpc',
     durationMinutes: 1440,
     status: 'live',
     visibility: 'public',
@@ -574,6 +576,286 @@ int main() {
 }`,
         solutionExplanation:
           'Using the divide-and-conquer paradigm of Merge Sort, while merging two sorted halves L and R, whenever an element in R is smaller than an element in L, it forms an inversion pair with all remaining elements in L (mid - i + 1 elements). Overall time complexity: O(N log N), space complexity: O(N). Max possible inversions is N*(N-1)/2 which exceeds 32-bit signed integer, so we accumulate into a 64-bit long long.',
+      },
+    ],
+  },
+  // 3. Company Placement Practice: Amazon SDE-1 OA Simulation
+  {
+    id: 'placement-amazon-sde-oa',
+    title: 'Amazon SDE-1 Online Assessment Simulation',
+    subtitle: 'Official 2-Problem Algorithmic OA • Sliding Window, HashMaps & Two Pointers (90 Mins)',
+    organizer: 'Campus Recruitment Cell & Amazon Alumni Network',
+    organizerRole: 'Senior SDE Review Board',
+    college: 'Amazon Tech Careers Placement Drive',
+    startTime: new Date(Date.now() - 3600000 * 2).toISOString(),
+    endTime: new Date(Date.now() + 3600000 * 72).toISOString(),
+    contestType: 'contest',
+    category: 'placement',
+    companyTag: 'Amazon',
+    durationMinutes: 90,
+    status: 'live',
+    visibility: 'public',
+    bannerGradient: 'from-amber-500 via-orange-600 to-yellow-600',
+    participantCount: 624,
+    scoringType: 'leetcode',
+    rules: [
+      'Amazon SDE-1 OA Pattern: 2 DSA challenges to be completed in 90 minutes.',
+      'Hidden edge-case testbenches verify time limit constraints (O(N) or O(N log N)).',
+      'Anti-cheat active: Background tab switches and clipboard injections are recorded.',
+    ],
+    problems: [
+      {
+        id: 'amazon-longest-substring',
+        title: 'Problem A: Longest Substring Without Repeating Characters',
+        difficulty: 'Medium',
+        points: 150,
+        timeLimit: '1.0s',
+        memoryLimit: '256MB',
+        tags: ['Sliding Window', 'Hash Map', 'Strings'],
+        description:
+          'Given a string s, find the length of the longest substring without duplicate characters. Output the integer length.',
+        inputFormat: 'A single line containing the string s.',
+        outputFormat: 'Print a single integer representing the maximum length of unique substring.',
+        constraints: '0 <= s.length <= 10^5\ns consists of English letters, digits, symbols and spaces.',
+        sampleInput: 'abcabcbb',
+        sampleOutput: '3',
+        explanation: 'The answer is "abc", with length of 3.',
+        testCases: [
+          { input: 'abcabcbb', output: '3', isHidden: false },
+          { input: 'bbbbb', output: '1', isHidden: false },
+          { input: 'pwwkew', output: '3', isHidden: false },
+          { input: 'abcdefg', output: '7', isHidden: true },
+        ],
+        starterCode: BLANK_STARTER_CODE,
+        solutionLanguage: 'cpp',
+        solutionCode: `#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int main() {
+    string s;
+    if (!(cin >> s)) {
+        cout << 0 << endl;
+        return 0;
+    }
+    vector<int> lastIndex(256, -1);
+    int maxLen = 0, start = 0;
+    for (int i = 0; i < (int)s.length(); i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (lastIndex[c] >= start) {
+            start = lastIndex[c] + 1;
+        }
+        lastIndex[c] = i;
+        maxLen = max(maxLen, i - start + 1);
+    }
+    cout << maxLen << endl;
+    return 0;
+}`,
+        solutionExplanation: 'Sliding window with character index hash map in O(N) time and O(1) extra space.',
+      },
+      {
+        id: 'amazon-two-sum-target',
+        title: 'Problem B: Logistics Item Pair Weight Optimizer (Two Sum)',
+        difficulty: 'Easy',
+        points: 100,
+        timeLimit: '1.0s',
+        memoryLimit: '256MB',
+        tags: ['Hash Map', 'Arrays'],
+        description:
+          'Given an array of integer package weights and an integer truck capacity target, find the 0-indexed positions of the two packages whose sum matches target exactly.',
+        inputFormat: 'First line contains integer N and integer target.\nSecond line contains N integers representing package weights.',
+        outputFormat: 'Print the two 0-based indices separated by a space.',
+        constraints: '2 <= N <= 10^5\n-10^9 <= target <= 10^9',
+        sampleInput: '4 9\n2 7 11 15',
+        sampleOutput: '0 1',
+        explanation: 'nums[0] + nums[1] = 2 + 7 = 9. Output indices 0 1.',
+        testCases: [
+          { input: '4 9\n2 7 11 15', output: '0 1', isHidden: false },
+          { input: '3 6\n3 2 4', output: '1 2', isHidden: false },
+        ],
+        starterCode: BLANK_STARTER_CODE,
+        solutionLanguage: 'cpp',
+        solutionCode: `#include <iostream>
+#include <vector>
+#include <unordered_map>
+
+using namespace std;
+
+int main() {
+    int n;
+    long long target;
+    if (!(cin >> n >> target)) return 0;
+    vector<long long> nums(n);
+    unordered_map<long long, int> seen;
+    for (int i = 0; i < n; i++) cin >> nums[i];
+    for (int i = 0; i < n; i++) {
+        long long complement = target - nums[i];
+        if (seen.find(complement) != seen.end()) {
+            cout << seen[complement] << " " << i << endl;
+            return 0;
+        }
+        seen[nums[i]] = i;
+    }
+    return 0;
+}`,
+        solutionExplanation: 'Single-pass hash table with O(N) time and O(N) space.',
+      },
+    ],
+  },
+  // 4. Company Placement Practice: TCS CodeVita & Digital Hiring
+  {
+    id: 'placement-tcs-codevita',
+    title: 'TCS CodeVita & Digital Hiring Qualifier',
+    subtitle: 'National Collegiate Qualifier • Dynamic Programming, Math & Bracket Matching (60 Mins)',
+    organizer: 'TCS Campus Talent Cell',
+    organizerRole: 'Campus Recruitment Lead',
+    college: 'Tata Consultancy Services Campus Drive',
+    startTime: new Date(Date.now() - 3600000 * 5).toISOString(),
+    endTime: new Date(Date.now() + 3600000 * 96).toISOString(),
+    contestType: 'contest',
+    category: 'placement',
+    companyTag: 'TCS',
+    durationMinutes: 60,
+    status: 'live',
+    visibility: 'public',
+    bannerGradient: 'from-blue-600 via-cyan-600 to-teal-700',
+    participantCount: 890,
+    scoringType: 'leetcode',
+    rules: [
+      'TCS Digital pattern: Solve 2 algorithmic problems to qualify for the 7+ LPA package tier.',
+      'Clean memory allocation and boundary case handling are strictly evaluated.',
+    ],
+    problems: [
+      {
+        id: 'tcs-balanced-brackets',
+        title: 'Problem A: Balanced Code Bracket Syntax Validator',
+        difficulty: 'Easy',
+        points: 100,
+        timeLimit: '1.0s',
+        memoryLimit: '256MB',
+        tags: ['Stack', 'Strings'],
+        description:
+          'Given a code snippet string containing just the characters "(", ")", "{", "}", "[" and "]", determine if the input string has valid balanced brackets. Print "YES" if valid or "NO" otherwise.',
+        inputFormat: 'A single line containing the bracket string.',
+        outputFormat: 'Print YES or NO.',
+        constraints: '1 <= s.length <= 10^5',
+        sampleInput: '()[]{}',
+        sampleOutput: 'YES',
+        explanation: 'All brackets are closed in the exact order.',
+        testCases: [
+          { input: '()[]{}', output: 'YES', isHidden: false },
+          { input: '(]', output: 'NO', isHidden: false },
+          { input: '([{}])', output: 'YES', isHidden: true },
+        ],
+        starterCode: BLANK_STARTER_CODE,
+        solutionLanguage: 'cpp',
+        solutionCode: `#include <iostream>
+#include <string>
+#include <stack>
+
+using namespace std;
+
+int main() {
+    string s;
+    if (!(cin >> s)) {
+        cout << "YES" << endl;
+        return 0;
+    }
+    stack<char> st;
+    for (char c : s) {
+        if (c == '(' || c == '{' || c == '[') {
+            st.push(c);
+        } else {
+            if (st.empty()) { cout << "NO" << endl; return 0; }
+            char top = st.top();
+            if ((c == ')' && top != '(') ||
+                (c == '}' && top != '{') ||
+                (c == ']' && top != '[')) {
+                cout << "NO" << endl;
+                return 0;
+            }
+            st.pop();
+        }
+    }
+    cout << (st.empty() ? "YES" : "NO") << endl;
+    return 0;
+}`,
+        solutionExplanation: 'Using standard stack in O(N) time and O(N) space.',
+      },
+    ],
+  },
+  // 5. College & Faculty Private Assessment (Passcode Required)
+  {
+    id: 'faculty-cse-internal-lab',
+    title: 'CSE Department: Data Structures Weekly Lab Assessment',
+    subtitle: 'Prof. Arvind Krishnamurthy • Passcode Required (LAB2026) • Anti-Cheat Telemetry Active',
+    organizer: 'Prof. Arvind Krishnamurthy',
+    organizerRole: 'CSE Department Lead & Senior Professor',
+    college: 'Apex Institute of Engineering & Technology',
+    startTime: new Date(Date.now() - 3600000 * 1).toISOString(),
+    endTime: new Date(Date.now() + 3600000 * 24).toISOString(),
+    contestType: 'contest',
+    category: 'faculty',
+    durationMinutes: 45,
+    status: 'live',
+    visibility: 'passcode',
+    passcode: 'LAB2026',
+    hasPasscode: true,
+    bannerGradient: 'from-violet-600 via-purple-700 to-indigo-800',
+    participantCount: 68,
+    scoringType: 'leetcode',
+    rules: [
+      'Official Internal Lab Test: Marks count towards Continuous Assessment (CA) scores.',
+      'Anti-Cheat Monitoring: Tab switches, full-screen exits, and clipboard paste events are logged.',
+      'Enter Passcode LAB2026 to unlock.',
+    ],
+    problems: [
+      {
+        id: 'faculty-palindrome-num',
+        title: 'Problem 1: Palindrome Number Integer Verification',
+        difficulty: 'Easy',
+        points: 100,
+        timeLimit: '1.0s',
+        memoryLimit: '256MB',
+        tags: ['Math', 'Algorithms'],
+        description:
+          'Given an integer x, return true if x is a palindrome integer, and false otherwise. Print "true" or "false". Do not convert to string if solving in optimal space.',
+        inputFormat: 'A single integer x.',
+        outputFormat: 'Print true or false.',
+        constraints: '-2^31 <= x <= 2^31 - 1',
+        sampleInput: '121',
+        sampleOutput: 'true',
+        explanation: '121 reads as 121 from left to right and from right to left.',
+        testCases: [
+          { input: '121', output: 'true', isHidden: false },
+          { input: '-121', output: 'false', isHidden: false },
+          { input: '10', output: 'false', isHidden: false },
+        ],
+        starterCode: BLANK_STARTER_CODE,
+        solutionLanguage: 'cpp',
+        solutionCode: `#include <iostream>
+
+using namespace std;
+
+int main() {
+    long long x;
+    if (!(cin >> x)) return 0;
+    if (x < 0) {
+        cout << "false" << endl;
+        return 0;
+    }
+    long long original = x, reversed = 0;
+    while (x > 0) {
+        reversed = reversed * 10 + (x % 10);
+        x /= 10;
+    }
+    cout << (original == reversed ? "true" : "false") << endl;
+    return 0;
+}`,
+        solutionExplanation: 'Math reversal in O(log10(N)) time with O(1) space.',
       },
     ],
   },

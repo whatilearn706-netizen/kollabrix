@@ -22,7 +22,7 @@ import {
   Lock,
   Layers,
 } from 'lucide-react';
-import { IcpcContest, IcpcProblem, ProblemDifficulty, ContestType } from '@/types/icpc';
+import { IcpcContest, IcpcProblem, ProblemDifficulty, ContestType, ContestCategory } from '@/types/icpc';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 
@@ -81,9 +81,11 @@ export function CreateIcpcContestModal({
 }: CreateIcpcContestModalProps) {
   const { user, profile } = useAuth();
   const [contestType, setContestType] = useState<ContestType>('contest');
+  const [category, setCategory] = useState<ContestCategory>('placement');
+  const [companyTag, setCompanyTag] = useState('Amazon');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState(180);
+  const [durationMinutes, setDurationMinutes] = useState(90);
   const [visibility, setVisibility] = useState<'public' | 'passcode'>('public');
   const [passcode, setPasscode] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
@@ -228,6 +230,8 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           title,
           subtitle,
           contestType,
+          category,
+          companyTag: category === 'placement' ? companyTag : undefined,
           durationMinutes,
           visibility,
           passcode: visibility === 'passcode' ? passcode : undefined,
@@ -297,11 +301,95 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
         )}
 
         {/* Contest Category / Type Selector */}
-        <div className="space-y-2">
-          <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Select Destination & Mode *
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Arena Category & Target Track *
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div
+                onClick={() => {
+                  setCategory('placement');
+                  setVisibility('public');
+                }}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                  category === 'placement'
+                    ? 'bg-amber-500/15 border-amber-500/50 shadow-sm'
+                    : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                  <span>🏢 Placement OA Mock</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Amazon, TCS, Infosys hiring round simulations.</p>
+              </div>
+
+              <div
+                onClick={() => {
+                  setCategory('faculty');
+                  setVisibility('passcode');
+                  if (!passcode) setPasscode('LAB2026');
+                }}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                  category === 'faculty'
+                    ? 'bg-violet-500/15 border-violet-500/50 shadow-sm'
+                    : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                  <span>🎓 Faculty Private Lab</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Classroom assessment with passcode & anti-cheat.</p>
+              </div>
+
+              <div
+                onClick={() => {
+                  setCategory('icpc');
+                  setVisibility('public');
+                }}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                  category === 'icpc'
+                    ? 'bg-cyan-500/15 border-cyan-500/50 shadow-sm'
+                    : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                  <span>⚡ ICPC & Collegiate</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Official algorithmic speedrun championship.</p>
+              </div>
+            </div>
+
+            {category === 'placement' && (
+              <div className="pt-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
+                  Company Target Brand
+                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {['Amazon', 'TCS', 'Infosys', 'Google', 'Microsoft', 'Cognizant', 'Flipkart'].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCompanyTag(c)}
+                      className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                        companyTag === c
+                          ? 'bg-amber-500 text-slate-950 shadow-xs'
+                          : 'bg-charcoal-800 text-slate-300 hover:text-white border border-charcoal-700'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Select Mode *
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div
               onClick={() => setContestType('contest')}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
@@ -358,6 +446,7 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Contest Metadata */}
