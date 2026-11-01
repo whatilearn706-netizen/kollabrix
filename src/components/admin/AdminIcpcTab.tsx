@@ -38,6 +38,7 @@ import {
   Settings,
   X,
   Lock,
+  Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -54,8 +55,10 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const [adminCategoryFilter, setAdminCategoryFilter] = useState<'all' | 'placement' | 'faculty' | 'icpc'>('all');
   const [contests, setContests] = useState<IcpcContest[]>([]);
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
+  const [isLeaderboardLive, setIsLeaderboardLive] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isTogglingLive, setIsTogglingLive] = useState<boolean>(false);
+  const [isTogglingLeaderboard, setIsTogglingLeaderboard] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedContests, setExpandedContests] = useState<Record<string, boolean>>({});
   const [deleteTargetProblem, setDeleteTargetProblem] = useState<{ contestId: string; problem: IcpcProblem } | null>(null);
@@ -143,6 +146,9 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         if (typeof data.isArenaLive === 'boolean') {
           setIsArenaLive(data.isArenaLive);
         }
+        if (typeof data.isLeaderboardLive === 'boolean') {
+          setIsLeaderboardLive(data.isLeaderboardLive);
+        }
         // Expand all contests by default for easy inspection
         const initExpanded: Record<string, boolean> = {};
         data.contests.forEach((c: IcpcContest) => {
@@ -189,6 +195,36 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       setStatusMessage({ type: 'error', text: err.message || 'Network error updating arena status.' });
     } finally {
       setIsTogglingLive(false);
+    }
+  };
+
+  const handleToggleLeaderboard = async () => {
+    setIsTogglingLeaderboard(true);
+    const newStatus = !isLeaderboardLive;
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch('/api/icpc', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ isLeaderboardLive: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsLeaderboardLive(newStatus);
+        setStatusMessage({
+          type: 'success',
+          text: newStatus
+            ? '🏆 Campus Champions Leaderboard is now LIVE on Arena for all students!'
+            : '🔒 Campus Champions Leaderboard is now HIDDEN from public arena.',
+        });
+      } else {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to update leaderboard status.' });
+      }
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: err.message || 'Network error updating leaderboard status.' });
+    } finally {
+      setIsTogglingLeaderboard(false);
     }
   };
 
@@ -980,7 +1016,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
 
       {icpcAdminView === 'contests' && (
         <div className="space-y-6">
-          {/* MASTER TOGGLE: LIVE VS OFFLINE */}
+          {/* MASTER TOGGLE 1: LIVE VS OFFLINE */}
       <div className="p-5 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-elevated">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1014,6 +1050,44 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             }`}
           >
             {isArenaLive ? 'Switch Arena to OFFLINE' : 'Switch Arena to LIVE'}
+          </Button>
+        </div>
+      </div>
+
+      {/* MASTER TOGGLE 2: CAMPUS CHAMPIONS LEADERBOARD LIVE VS HIDDEN */}
+      <div className="p-5 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-elevated">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-2xl border ${isLeaderboardLive ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-slate-700/30 text-slate-400 border-slate-700'}`}>
+              <Trophy className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-white">Campus Champions Leaderboard:</span>
+                <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${isLeaderboardLive ? 'bg-amber-500/25 border-amber-500/40 text-amber-300' : 'bg-slate-700/40 border-slate-600 text-slate-300'}`}>
+                  {isLeaderboardLive ? '🟢 LIVE (Visible on /icpc)' : '🔴 HIDDEN / NOT LIVE (Hidden from Students)'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                {isLeaderboardLive
+                  ? 'The Weekly & All-Time Champions Leaderboard is actively displayed to all students.'
+                  : 'Leaderboard is hidden from public arena because active user base is growing. Turn on when ready!'}
+              </p>
+            </div>
+          </div>
+
+          <Button
+            size="md"
+            variant="primary"
+            onClick={handleToggleLeaderboard}
+            isLoading={isTogglingLeaderboard}
+            className={`font-black text-xs px-5 py-2.5 rounded-xl shrink-0 ${
+              isLeaderboardLive
+                ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                : 'bg-amber-600 hover:bg-amber-500 text-white'
+            }`}
+          >
+            {isLeaderboardLive ? 'Hide Leaderboard from Public' : 'Make Leaderboard LIVE'}
           </Button>
         </div>
       </div>

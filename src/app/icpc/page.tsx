@@ -80,6 +80,7 @@ export default function IcpcCollegiateArenaPage() {
   const { user, profile } = useAuth();
   const [contests, setContests] = useState<IcpcContest[]>([]);
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
+  const [isLeaderboardLive, setIsLeaderboardLive] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTrack, setSelectedTrack] = useState<'all' | 'placement' | 'faculty' | 'icpc'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'upcoming' | 'ended'>('all');
@@ -204,6 +205,9 @@ export default function IcpcCollegiateArenaPage() {
         if (typeof data.isArenaLive === 'boolean') {
           setIsArenaLive(data.isArenaLive);
         }
+        if (typeof data.isLeaderboardLive === 'boolean') {
+          setIsLeaderboardLive(data.isLeaderboardLive);
+        }
       } catch (err) {
         console.warn('Could not load live contests:', err);
       } finally {
@@ -321,6 +325,18 @@ export default function IcpcCollegiateArenaPage() {
     if (expected && actual !== expected) {
       setPasscodeError(`Invalid room passcode. Check with your professor (Demo code: ${passcodeModalContest.passcode || 'LAB2026'}).`);
       return;
+    }
+
+    const studentCollege = ((profile as any)?.college || (user as any)?.user_metadata?.college || '').trim().toLowerCase();
+    const contestCollege = (passcodeModalContest.college || '').trim().toLowerCase();
+    const uRole = (profile?.role || '').toLowerCase();
+    const isAdminOrFaculty = uRole === 'admin' || uRole === 'teacher' || uRole === 'faculty' || uRole === 'professor' || isFacultyUser;
+
+    if (!isAdminOrFaculty && contestCollege && contestCollege !== 'partner collegiate network' && contestCollege !== 'all campuses') {
+      if (studentCollege && !studentCollege.includes(contestCollege) && !contestCollege.includes(studentCollege)) {
+        setPasscodeError(`🔒 College Restriction: This lab is exclusively restricted to students of "${passcodeModalContest.college}". Your profile is registered under "${(profile as any)?.college}".`);
+        return;
+      }
     }
 
     const contestToOpen = passcodeModalContest;
@@ -611,6 +627,28 @@ export default function IcpcCollegiateArenaPage() {
   };
 
   const filteredContests = contests.filter((c) => {
+    // 🎓 College Isolation Gate for Faculty Private Labs
+    const isFacultyLab = c.category === 'faculty' || c.visibility === 'passcode';
+    if (isFacultyLab && c.college && c.college !== 'Partner Collegiate Network' && c.college !== 'All Campuses') {
+      const uRole = (profile?.role || '').toLowerCase();
+      const isAdminOrFaculty = uRole === 'admin' || uRole === 'teacher' || uRole === 'faculty' || uRole === 'professor' || isFacultyUser;
+      const isUnlocked = unlockedContests[c.id];
+
+      if (!isAdminOrFaculty && !isUnlocked) {
+        if (!user) {
+          // Unauthenticated visitors do not see private college labs
+          return false;
+        }
+        const studentCollege = ((profile as any)?.college || (user as any)?.user_metadata?.college || '').trim().toLowerCase();
+        const contestCollege = c.college.trim().toLowerCase();
+
+        // If student has no college registered or it doesn't match the contest college, hide it
+        if (!studentCollege || (!studentCollege.includes(contestCollege) && !contestCollege.includes(studentCollege))) {
+          return false;
+        }
+      }
+    }
+
     if (selectedTrack !== 'all') {
       const cat = c.category || (c.companyTag ? 'placement' : c.visibility === 'passcode' ? 'faculty' : 'icpc');
       if (cat !== selectedTrack) return false;
@@ -804,143 +842,145 @@ export default function IcpcCollegiateArenaPage() {
           </div>
         </section>
 
-        {/* Campus Champions Leaderboard Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-          <div className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 p-5 sm:p-7 shadow-elevated relative overflow-hidden backdrop-blur-md">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/10 via-cyan-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+        {/* Campus Champions Leaderboard Section (Controlled via Admin Control Center Toggle) */}
+        {isLeaderboardLive && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 animate-fadeIn">
+            <div className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 p-5 sm:p-7 shadow-elevated relative overflow-hidden backdrop-blur-md">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/10 via-cyan-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md">
-                  <Trophy className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-black text-white">Campus Champions Leaderboard</h2>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                      LIVE
-                    </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md">
+                    <Trophy className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-slate-400">
-                    Top placement contenders &amp; competitive coders ranked by problem solves and streak
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-black text-white">Campus Champions Leaderboard</h2>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        LIVE
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Top placement contenders &amp; competitive coders ranked by problem solves and streak
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Weekly vs Overall Tab Switcher */}
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-charcoal-950 border border-charcoal-800 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setLeaderboardTab('weekly')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    leaderboardTab === 'weekly'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Weekly (Resets Mon)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLeaderboardTab('all-time')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    leaderboardTab === 'all-time'
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Trophy className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>All-Time Overall</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Leaderboard Grid */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-              {(leaderboardTab === 'weekly' ? WEEKLY_LEADERBOARD : OVERALL_LEADERBOARD).map((champ) => {
-                const isGold = champ.rank === 1;
-                const isSilver = champ.rank === 2;
-                const isBronze = champ.rank === 3;
-                return (
-                  <div
-                    key={champ.name}
-                    className={`p-3.5 rounded-2xl border transition-all ${
-                      isGold
-                        ? 'bg-gradient-to-b from-amber-500/15 to-charcoal-950 border-amber-500/40 shadow-lg shadow-amber-500/5'
-                        : isSilver
-                        ? 'bg-gradient-to-b from-slate-400/10 to-charcoal-950 border-slate-400/30'
-                        : isBronze
-                        ? 'bg-gradient-to-b from-amber-700/10 to-charcoal-950 border-amber-700/30'
-                        : 'bg-charcoal-950/70 border-charcoal-800'
+                {/* Weekly vs Overall Tab Switcher */}
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-charcoal-950 border border-charcoal-800 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardTab('weekly')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      leaderboardTab === 'weekly'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
+                        : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span
-                        className={`text-xs font-mono font-black px-2 py-0.5 rounded-md ${
-                          isGold
-                            ? 'bg-amber-400 text-charcoal-950'
-                            : isSilver
-                            ? 'bg-slate-300 text-charcoal-950'
-                            : isBronze
-                            ? 'bg-amber-700 text-white'
-                            : 'bg-charcoal-800 text-slate-300'
-                        }`}
-                      >
-                        #{champ.rank}
-                      </span>
-                      <span className="text-base">{champ.avatar}</span>
-                    </div>
-                    <div className="font-bold text-white text-xs truncate" title={champ.name}>
-                      {champ.name}
-                    </div>
-                    <div className="text-[10px] text-slate-400 truncate mb-2" title={champ.college}>
-                      {champ.college}
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] font-mono pt-2 border-t border-charcoal-800/80">
-                      <span className="text-amber-300 font-bold">{champ.points} pts</span>
-                      <span className="text-orange-400 flex items-center gap-0.5">
-                        <Flame className="w-3 h-3" />
-                        <span>{champ.streak}d</span>
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Weekly (Resets Mon)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardTab('all-time')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      leaderboardTab === 'all-time'
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>All-Time Overall</span>
+                  </button>
+                </div>
+              </div>
 
-            {/* Current User Standing Banner */}
-            <div className="mt-4 p-3 rounded-2xl bg-charcoal-950/80 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center font-bold text-xs">
-                  #1
-                </div>
-                <div>
-                  <span className="font-bold text-white">Your Standing: </span>
-                  <span className="text-cyan-300 font-mono font-bold">
-                    {profile?.display_name || user?.email?.split('@')[0] || 'You'} ({progress.totalPoints} pts • 🔥 {progress.streak}d streak)
-                  </span>
-                </div>
+              {/* Leaderboard Grid */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+                {(leaderboardTab === 'weekly' ? WEEKLY_LEADERBOARD : OVERALL_LEADERBOARD).map((champ) => {
+                  const isGold = champ.rank === 1;
+                  const isSilver = champ.rank === 2;
+                  const isBronze = champ.rank === 3;
+                  return (
+                    <div
+                      key={champ.name}
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        isGold
+                          ? 'bg-gradient-to-b from-amber-500/15 to-charcoal-950 border-amber-500/40 shadow-lg shadow-amber-500/5'
+                          : isSilver
+                          ? 'bg-gradient-to-b from-slate-400/10 to-charcoal-950 border-slate-400/30'
+                          : isBronze
+                          ? 'bg-gradient-to-b from-amber-700/10 to-charcoal-950 border-amber-700/30'
+                          : 'bg-charcoal-950/70 border-charcoal-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span
+                          className={`text-xs font-mono font-black px-2 py-0.5 rounded-md ${
+                            isGold
+                              ? 'bg-amber-400 text-charcoal-950'
+                              : isSilver
+                              ? 'bg-slate-300 text-charcoal-950'
+                              : isBronze
+                              ? 'bg-amber-700 text-white'
+                              : 'bg-charcoal-800 text-slate-300'
+                          }`}
+                        >
+                          #{champ.rank}
+                        </span>
+                        <span className="text-base">{champ.avatar}</span>
+                      </div>
+                      <div className="font-bold text-white text-xs truncate" title={champ.name}>
+                        {champ.name}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate mb-2" title={champ.college}>
+                        {champ.college}
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] font-mono pt-2 border-t border-charcoal-800/80">
+                        <span className="text-amber-300 font-bold">{champ.points} pts</span>
+                        <span className="text-orange-400 flex items-center gap-0.5">
+                          <Flame className="w-3 h-3" />
+                          <span>{champ.streak}d</span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
-                <span className="text-emerald-400 font-bold">✓ Daily streak active</span>
-                <span>•</span>
-                <span>Solve questions below to increase your rank</span>
+
+              {/* Current User Standing Banner */}
+              <div className="mt-4 p-3 rounded-2xl bg-charcoal-950/80 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center font-bold text-xs">
+                    #1
+                  </div>
+                  <div>
+                    <span className="font-bold text-white">Your Standing: </span>
+                    <span className="text-cyan-300 font-mono font-bold">
+                      {profile?.display_name || user?.email?.split('@')[0] || 'You'} ({progress.totalPoints} pts • 🔥 {progress.streak}d streak)
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold">✓ Daily streak active</span>
+                  <span>•</span>
+                  <span>Solve questions below to increase your rank</span>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Filter Bar & Contests Feed */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
-          {/* Controls Header */}
-          <div className="space-y-4">
+          {/* Controls Header: Category Track Tabs on Left & Search Bar on Right */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Category Track Selector */}
-            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 overflow-x-auto select-none">
+            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 overflow-x-auto select-none scrollbar-none">
               <button
                 type="button"
                 onClick={() => setSelectedTrack('all')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   selectedTrack === 'all'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -951,7 +991,7 @@ export default function IcpcCollegiateArenaPage() {
               <button
                 type="button"
                 onClick={() => setSelectedTrack('placement')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'placement'
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -965,7 +1005,7 @@ export default function IcpcCollegiateArenaPage() {
               <button
                 type="button"
                 onClick={() => setSelectedTrack('faculty')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'faculty'
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -979,7 +1019,7 @@ export default function IcpcCollegiateArenaPage() {
               <button
                 type="button"
                 onClick={() => setSelectedTrack('icpc')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'icpc'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -992,69 +1032,25 @@ export default function IcpcCollegiateArenaPage() {
               </button>
             </div>
 
-            {/* Sub-Filters: Status Tabs & Search */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              {/* Status Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-charcoal-900 border border-charcoal-750 select-none overflow-x-auto">
+            {/* Search Input */}
+            <div className="relative w-full lg:w-80">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search company (Amazon, TCS), topic, or professor..."
+                className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono transition-colors shadow-inner"
+              />
+              {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setFilterStatus('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    filterStatus === 'all'
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold"
                 >
-                  All Status
+                  ✕
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterStatus('live')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    filterStatus === 'live'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span>Live Now</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterStatus('upcoming')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    filterStatus === 'upcoming'
-                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span>Upcoming</span>
-                  <Clock className="w-3 h-3 text-indigo-400" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterStatus('ended')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    filterStatus === 'ended'
-                      ? 'bg-slate-700/50 text-slate-200 border border-slate-600 shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Practice &amp; Past 🏁
-                </button>
-              </div>
-
-              {/* Search Input */}
-              <div className="relative w-full md:w-80">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search company (Amazon, TCS), topic, or professor..."
-                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono transition-colors"
-                />
-              </div>
+              )}
             </div>
           </div>
 
