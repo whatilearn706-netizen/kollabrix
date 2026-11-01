@@ -38,7 +38,7 @@ interface ProfileEditModalProps {
 const STEP_TITLES = [
   { id: 1, tag: 'Identity', title: 'Profile Photo & Identity', subtitle: 'Choose how other collegiate builders will identify you' },
   { id: 2, tag: 'Campus', title: 'College Affiliation & Student ID', subtitle: 'Specify your campus and attach your student verification badge' },
-  { id: 3, tag: 'Academics', title: 'Academic Year & Degree', subtitle: 'Select your study year and search your engineering or tech degree' },
+  { id: 3, tag: 'Academics', title: 'Academic Year & Degree', subtitle: 'Select your study year and enter your degree or field of study' },
   { id: 4, tag: 'Skills', title: 'Technical Stack & Interests', subtitle: 'Select or write your primary skills and preferred project roles' },
   { id: 5, tag: 'Online', title: 'Developer Links & Presence', subtitle: 'Connect GitHub, LinkedIn, and personal portfolio showcases' },
 ];
@@ -63,7 +63,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [studentRollNo, setStudentRollNo] = useState('');
 
   const [academicYear, setAcademicYear] = useState('2nd Year (Sophomore)');
-  const [course, setCourse] = useState('B.Tech Computer Science & Engineering (CSE)');
+  const [course, setCourse] = useState(profile?.course || '');
 
   const [skills, setSkills] = useState<string[]>(['React', 'Next.js']);
   const [interests, setInterests] = useState<string[]>(['Hackathons', 'Open Source']);
@@ -254,7 +254,27 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         updated_at: new Date().toISOString(),
       };
 
-      if (isSupabaseConfigured()) {
+      let savedSuccessfully = false;
+
+      // 1. Primary: Save via dedicated server route using service role key (bypasses RLS)
+      try {
+        const srvRes = await fetch('/api/profile/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (srvRes.ok) {
+          const srvData = await srvRes.json();
+          if (srvData.success) {
+            savedSuccessfully = true;
+          }
+        }
+      } catch (srvErr) {
+        console.warn('Server profile save attempt noticed:', srvErr);
+      }
+
+      // 2. Client-side fallback if server route was unreachable
+      if (!savedSuccessfully && isSupabaseConfigured()) {
         let { error: upsertErr } = await supabase
           .from('profiles')
           .upsert(payload, { onConflict: 'user_id' });

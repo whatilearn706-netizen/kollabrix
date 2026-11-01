@@ -324,26 +324,48 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
         is_portfolio_public: isPortfolioPublic,
       };
 
-      let { error: upsertError } = await supabase
-        .from('profiles')
-        .upsert(payload, { onConflict: 'user_id' });
+      let savedSuccessfully = false;
 
-      if (upsertError && (upsertError.message.includes('column') || upsertError.code === '42703')) {
-        // Fallback gracefully without newly added columns
-        const safePayload = { ...payload };
-        delete safePayload.college_verified;
-        delete safePayload.linkedin_url;
-        const res = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
-        upsertError = res.error;
+      // 1. Primary: Save via server route using service role key to bypass client RLS policies
+      try {
+        const srvRes = await fetch('/api/profile/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (srvRes.ok) {
+          const srvData = await srvRes.json();
+          if (srvData.success) {
+            savedSuccessfully = true;
+          }
+        }
+      } catch (srvErr) {
+        console.warn('Server profile save attempt noticed:', srvErr);
       }
 
-      if (upsertError) {
-        if (upsertError.message.includes('profiles_username_key') || upsertError.code === '23505') {
-          setError('This username is already taken. Please choose another unique username.');
-        } else {
-          setError(upsertError.message);
+      // 2. Client fallback if server route was unreachable
+      if (!savedSuccessfully) {
+        let { error: upsertError } = await supabase
+          .from('profiles')
+          .upsert(payload, { onConflict: 'user_id' });
+
+        if (upsertError && (upsertError.message.includes('column') || upsertError.code === '42703')) {
+          // Fallback gracefully without newly added columns
+          const safePayload = { ...payload };
+          delete safePayload.college_verified;
+          delete safePayload.linkedin_url;
+          const res = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
+          upsertError = res.error;
         }
-        return;
+
+        if (upsertError) {
+          if (upsertError.message.includes('profiles_username_key') || upsertError.code === '23505') {
+            setError('This username is already taken. Please choose another unique username.');
+          } else {
+            setError(upsertError.message);
+          }
+          return;
+        }
       }
 
       // Sync verification to platform_settings registry so universally visible across accounts

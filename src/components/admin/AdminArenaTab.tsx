@@ -27,6 +27,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
+import { supabase } from '@/lib/supabase/client';
 import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
 import { FullArenaExperience } from '@/components/arena/FullArenaExperience';
 
@@ -75,6 +76,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const [newCodeWithBug, setNewCodeWithBug] = useState('// Enter code with bug here\n');
   const [newTargetHtml, setNewTargetHtml] = useState('<div class="target-card">\n  <h3>Target Card</h3>\n  <p>Design blueprint</p>\n</div>');
   const [newTargetCss, setNewTargetCss] = useState('.target-card {\n  background: #0f172a;\n  padding: 16px;\n  border-radius: 10px;\n  color: #fff;\n}');
+  const [newTargetJs, setNewTargetJs] = useState('// Target interaction or event handler\n');
 
   // Dynamic interactive test cases list
   const [testCasesList, setTestCasesList] = useState<Array<{ input: string; expectedOutput: string; description: string }>>([
@@ -232,43 +234,104 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
     setIsSaving(true);
     setStatusMsg(null);
 
+    const isWeb = newArena === 'web_dev' || (newArena === 'bug_hunt' && newBugDomain === 'web');
+    const parsedTags = newTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const hasAnyWebTag = parsedTags.some((t) => ['html', 'css', 'javascript', 'js'].includes(t));
+    const showHtml = hasAnyWebTag ? parsedTags.includes('html') : true;
+    const showCss = hasAnyWebTag ? parsedTags.includes('css') : true;
+    const showJs = hasAnyWebTag ? (parsedTags.includes('javascript') || parsedTags.includes('js')) : false;
+
+    const hasAnyAlgoTag = parsedTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
+    const showPython = hasAnyAlgoTag ? parsedTags.includes('python') : true;
+    const showJava = hasAnyAlgoTag ? parsedTags.includes('java') : true;
+    const showCpp = hasAnyAlgoTag ? (parsedTags.includes('cpp') || parsedTags.includes('c++')) : true;
+
+    // For Web Dev, automated test cases are derived strictly from active tags
+    let finalTestCases = testCasesList.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
+    if (isWeb) {
+      finalTestCases = [];
+      if (showHtml) {
+        finalTestCases.push({
+          input: 'htmlWordsAndStructure',
+          expectedOutput: 'true',
+          description: 'Semantic HTML Structure & Content / Word Spelling Alignment',
+        });
+      }
+      if (showCss) {
+        finalTestCases.push({
+          input: 'cssCoordinatesAndLayout',
+          expectedOutput: 'true',
+          description: 'CSS Spatial Coordinates & Layout Graph (±30% Tolerance)',
+        });
+      }
+      if (showJs) {
+        finalTestCases.push({
+          input: 'jsInteractiveBehavior',
+          expectedOutput: 'true',
+          description: 'JavaScript DOM Interactivity & Event Handlers',
+        });
+      }
+      if (finalTestCases.length === 0) {
+        finalTestCases.push({
+          input: 'htmlWordsAndStructure',
+          expectedOutput: 'true',
+          description: 'Semantic HTML Structure & Content / Word Spelling Alignment',
+        });
+      }
+    } else if (finalTestCases.length === 0) {
+      finalTestCases = [
+        {
+          input: newSampleInput || 'sampleInput',
+          expectedOutput: newSampleOutput || 'sampleOutput',
+          description: 'Automated evaluation check',
+        },
+      ];
+    }
+
     const questionPayload: DuelQuestion = {
       id: `q-${Date.now()}`,
       arena: newArena,
       title: newTitle.trim(),
       description: newDesc.trim(),
-      tags: newTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean),
+      tags: parsedTags,
       difficulty: newDifficulty,
       timeLimitSeconds: Number(newTimeLimit) || 300,
       bugDomain: newArena === 'bug_hunt' ? newBugDomain : undefined,
       codeWithBug: newArena === 'bug_hunt' ? newCodeWithBug : undefined,
       targetPreviewTitle: newTitle.trim(),
-      targetComponentHtml: newTargetHtml,
-      targetComponentCss: newTargetCss,
-      starterHtml: newStarterHtml,
-      starterCss: newStarterCss,
-      starterJs: newStarterJs,
-      starterPython: newStarterPython,
-      starterJava: newStarterJava,
-      starterCpp: newStarterCpp,
+      targetComponentHtml: showHtml ? newTargetHtml : '',
+      targetComponentCss: showCss ? newTargetCss : '',
+      targetComponentJs: showJs ? newTargetJs : '',
+      starterHtml: showHtml ? newStarterHtml : '',
+      starterCss: showCss ? newStarterCss : '',
+      starterJs: showJs ? newStarterJs : '',
+      starterPython: showPython ? newStarterPython : '',
+      starterJava: showJava ? newStarterJava : '',
+      starterCpp: showCpp ? newStarterCpp : '',
       sampleInput: newSampleInput,
       sampleOutput: newSampleOutput,
-      testCases:
-        testCasesList.filter((tc) => tc.input.trim() || tc.expectedOutput.trim()).length > 0
-          ? testCasesList.filter((tc) => tc.input.trim() || tc.expectedOutput.trim())
-          : [
-              {
-                input: newSampleInput || 'sampleInput',
-                expectedOutput: newSampleOutput || 'sampleOutput',
-                description: 'Automated evaluation check',
-              },
-            ],
-      validationCriteria: ['Clean code structure', 'Zero runtime crash', 'Test cases passed'],
+      testCases: finalTestCases,
+      validationCriteria: isWeb
+        ? [
+            showHtml && 'Word & spelling fidelity',
+            showCss && 'Bounding box coordinate match (±30%)',
+            showJs && 'Interactive DOM event execution',
+            'Zero console syntax crash',
+          ].filter(Boolean) as string[]
+        : ['Clean code structure', 'Zero runtime crash', 'Test cases passed'],
     };
 
     try {
+      let activeToken = authToken;
+      if (!activeToken) {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          activeToken = sessionData?.session?.access_token;
+        } catch {}
+      }
+
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
       const res = await fetch('/api/arena/questions', {
         method: 'POST',
@@ -296,8 +359,16 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const handleDeleteQuestion = async (questionId: string) => {
     if (!confirm('Are you sure you want to permanently delete this duel question from the server?')) return;
     try {
+      let activeToken = authToken;
+      if (!activeToken) {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          activeToken = sessionData?.session?.access_token;
+        } catch {}
+      }
+
       const headers: Record<string, string> = {};
-      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
       const res = await fetch(`/api/arena/questions?id=${questionId}`, {
         method: 'DELETE',
@@ -512,7 +583,56 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       </div>
 
       {/* New Question Form */}
-      {isAddingNew && (
+      {isAddingNew && (() => {
+        const isWebAdminMode = newArena === 'web_dev' || (newArena === 'bug_hunt' && newBugDomain === 'web');
+        const isAlgoAdminMode = newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic');
+
+        const parsedCurrentTags = newTags
+          .split(',')
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+
+        const hasAnyWebTag = parsedCurrentTags.some((t) => ['html', 'css', 'javascript', 'js'].includes(t));
+        const showWebHtml = hasAnyWebTag ? parsedCurrentTags.includes('html') : true;
+        const showWebCss = hasAnyWebTag ? parsedCurrentTags.includes('css') : true;
+        const showWebJs = hasAnyWebTag ? (parsedCurrentTags.includes('javascript') || parsedCurrentTags.includes('js')) : false;
+
+        const hasAnyAlgoTag = parsedCurrentTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
+        const showAlgoPython = hasAnyAlgoTag ? parsedCurrentTags.includes('python') : true;
+        const showAlgoJava = hasAnyAlgoTag ? parsedCurrentTags.includes('java') : true;
+        const showAlgoCpp = hasAnyAlgoTag ? (parsedCurrentTags.includes('cpp') || parsedCurrentTags.includes('c++')) : true;
+
+        const visibleWebFieldsCount = (showWebHtml ? 1 : 0) + (showWebCss ? 1 : 0) + (showWebJs ? 1 : 0);
+        const webFieldsGridClass =
+          visibleWebFieldsCount === 1
+            ? 'grid-cols-1'
+            : visibleWebFieldsCount === 2
+            ? 'grid-cols-1 md:grid-cols-2'
+            : 'grid-cols-1 md:grid-cols-3';
+
+        const visibleAlgoFieldsCount = (showAlgoPython ? 1 : 0) + (showAlgoJava ? 1 : 0) + (showAlgoCpp ? 1 : 0);
+        const algoFieldsGridClass =
+          visibleAlgoFieldsCount === 1
+            ? 'grid-cols-1'
+            : visibleAlgoFieldsCount === 2
+            ? 'grid-cols-1 md:grid-cols-2'
+            : 'grid-cols-1 md:grid-cols-3';
+
+        const handleToggleTag = (tag: string) => {
+          const list = newTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+          let nextList: string[];
+          if (list.includes(tag.toLowerCase())) {
+            nextList = list.filter((t) => t !== tag.toLowerCase());
+            if (nextList.length === 0) {
+              nextList = [tag.toLowerCase()];
+            }
+          } else {
+            nextList = [...list, tag.toLowerCase()];
+          }
+          setNewTags(nextList.join(', '));
+        };
+
+        return (
         <form onSubmit={handleSaveNewQuestion} className="p-5 rounded-2xl bg-charcoal-900 border border-rose-500/30 space-y-4 animate-fadeIn">
           <div className="flex items-center justify-between pb-3 border-b border-charcoal-800">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -551,7 +671,10 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Tags (comma-separated)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-slate-300">Tags (comma-separated)</label>
+                <span className="text-[10px] font-mono text-cyan-400">Controls visible fields</span>
+              </div>
               <input
                 type="text"
                 value={newTags}
@@ -559,6 +682,83 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                 placeholder="html,css,javascript"
                 className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs font-mono focus:border-rose-500 focus:outline-none"
               />
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="text-[10px] font-mono text-slate-400">Quick Tags:</span>
+                {isWebAdminMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTag('html')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        showWebHtml
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
+                      }`}
+                    >
+                      {showWebHtml ? '✓' : '+'} html
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTag('css')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        showWebCss
+                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
+                      }`}
+                    >
+                      {showWebCss ? '✓' : '+'} css
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTag('javascript')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        showWebJs
+                          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
+                      }`}
+                    >
+                      {showWebJs ? '✓' : '+'} javascript
+                    </button>
+                  </>
+                )}
+                {isAlgoAdminMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTag('python')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        showAlgoPython
+                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
+                      }`}
+                    >
+                      {showAlgoPython ? '✓' : '+'} python
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTag('java')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        showAlgoJava
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
+                      }`}
+                    >
+                      {showAlgoJava ? '✓' : '+'} java
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTag('cpp')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        showAlgoCpp
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
+                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
+                      }`}
+                    >
+                      {showAlgoCpp ? '✓' : '+'} c++
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">Difficulty</label>
@@ -610,7 +810,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                       checked={newBugDomain === 'web'}
                       onChange={() => {
                         setNewBugDomain('web');
-                        setNewTags('css');
+                        setNewTags('html,css');
                       }}
                       className="text-rose-500 focus:ring-rose-500"
                     />
@@ -635,9 +835,16 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
               {/* Specific Bug Language Selection */}
               <div className="pt-2 border-t border-charcoal-800">
-                <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1.5">
-                  Target Language Bug to Fix ({newBugDomain === 'web' ? 'Web UI' : 'Logic Code'}):
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider">
+                    Target Language Bug to Fix ({newBugDomain === 'web' ? 'Web UI' : 'Logic Code'}):
+                  </label>
+                  {newBugDomain === 'web' && (
+                    <span className="text-[10px] font-mono text-cyan-400">
+                      Multi-select: Tick 1, 2, or all 3
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2 text-xs font-mono">
                   {(newBugDomain === 'web'
                     ? [
@@ -651,22 +858,54 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                         { id: 'cpp', label: 'C++' },
                       ]
                   ).map((lang) => {
-                    const isSelected = newTags
+                    const currentTagsList = newTags
                       .split(',')
                       .map((t) => t.trim().toLowerCase())
-                      .includes(lang.id);
+                      .filter(Boolean);
+                    const isSelected = currentTagsList.includes(lang.id);
                     return (
                       <button
                         key={lang.id}
                         type="button"
-                        onClick={() => setNewTags(lang.id)}
-                        className={`px-3 py-1.5 rounded-lg border font-mono text-xs uppercase font-bold transition-all ${
+                        onClick={() => {
+                          if (newBugDomain === 'web') {
+                            // Multi-select for Web UI Bug Hunt (can tick 1, 2, or 3)
+                            let updated: string[];
+                            if (isSelected) {
+                              if (currentTagsList.length > 1) {
+                                updated = currentTagsList.filter((t) => t !== lang.id);
+                              } else {
+                                updated = currentTagsList; // keep at least 1
+                              }
+                            } else {
+                              updated = [...currentTagsList, lang.id];
+                            }
+                            setNewTags(updated.join(', '));
+                          } else {
+                            // Single-select for Logic Bug Hunt (only 1 tick)
+                            setNewTags(lang.id);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border font-mono text-xs uppercase font-bold transition-all flex items-center gap-1.5 ${
                           isSelected
-                            ? 'bg-rose-500 text-white border-rose-400 shadow-sm'
+                            ? newBugDomain === 'web'
+                              ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
+                              : 'bg-rose-500 text-white border-rose-400 shadow-sm'
                             : 'bg-charcoal-900 text-slate-400 border-charcoal-750 hover:text-white'
                         }`}
                       >
-                        {lang.label} {isSelected && '✓'}
+                        <span
+                          className={`w-3.5 h-3.5 ${
+                            newBugDomain === 'web' ? 'rounded-xs' : 'rounded-full'
+                          } border flex items-center justify-center text-[9px] ${
+                            isSelected
+                              ? 'border-white bg-white/20 text-white font-bold'
+                              : 'border-slate-600'
+                          }`}
+                        >
+                          {isSelected ? '✓' : ''}
+                        </span>
+                        <span>{lang.label}</span>
                       </button>
                     );
                   })}
@@ -675,61 +914,115 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             </div>
           )}
 
-          {/* Starter Codes for Web or Web Bug Hunt */}
-          {(newArena === 'web_dev' || (newArena === 'bug_hunt' && newBugDomain === 'web')) && (
+          {/* Starter Codes for Web or Web Bug Hunt (Dynamically filtered by tags) */}
+          {isWebAdminMode && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                    Starter HTML {newArena === 'bug_hunt' && '(Include Buggy HTML)'}
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={newStarterHtml}
-                    onChange={(e) => setNewStarterHtml(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Starter Code Fields (Active Tags: {newTags || 'none'})
+                  </span>
+                  <span className="text-[10px] font-mono text-cyan-400">
+                    Showing {visibleWebFieldsCount} field{visibleWebFieldsCount > 1 ? 's' : ''} based on tags
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                    Starter CSS {newArena === 'bug_hunt' && '(Include Buggy CSS)'}
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={newStarterCss}
-                    onChange={(e) => setNewStarterCss(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
+                <div className={`grid ${webFieldsGridClass} gap-3`}>
+                  {showWebHtml && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                        Starter HTML {newArena === 'bug_hunt' && '(Include Buggy HTML)'}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={newStarterHtml}
+                        onChange={(e) => setNewStarterHtml(e.target.value)}
+                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  {showWebCss && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                        Starter CSS {newArena === 'bug_hunt' && '(Include Buggy CSS)'}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={newStarterCss}
+                        onChange={(e) => setNewStarterCss(e.target.value)}
+                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  {showWebJs && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                        Starter JavaScript {newArena === 'bug_hunt' && '(Include Buggy JS)'}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={newStarterJs}
+                        onChange={(e) => setNewStarterJs(e.target.value)}
+                        placeholder="// Optional starter JS..."
+                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-yellow-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Target Component HTML & CSS (Visual Blueprint preview for Students) */}
+              {/* Target Component HTML, CSS & JavaScript (Visual Blueprint preview for Students) */}
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-emerald-400 mb-1 font-mono">
-                      Target Component HTML (Rendered Blueprint for Students):
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={newTargetHtml}
-                      onChange={(e) => setNewTargetHtml(e.target.value)}
-                      placeholder="<div class='dashboard'>\n  <aside class='sidebar'>...</aside>\n</div>"
-                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-cyan-400 mb-1 font-mono">
-                      Target Component CSS (Blueprint Styling):
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={newTargetCss}
-                      onChange={(e) => setNewTargetCss(e.target.value)}
-                      placeholder=".dashboard { display: flex; }\n.sidebar { width: 220px; background: #0f172a; }"
-                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Target Blueprint Fields (Active Tags: {newTags || 'none'})
+                  </span>
+                  <span className="text-[10px] font-mono text-cyan-400">
+                    Showing {visibleWebFieldsCount} blueprint{visibleWebFieldsCount > 1 ? 's' : ''} based on tags
+                  </span>
+                </div>
+                <div className={`grid ${webFieldsGridClass} gap-3`}>
+                  {showWebHtml && (
+                    <div>
+                      <label className="block text-xs font-medium text-emerald-400 mb-1 font-mono">
+                        Target HTML (Blueprint Structure):
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={newTargetHtml}
+                        onChange={(e) => setNewTargetHtml(e.target.value)}
+                        placeholder="<div class='dashboard'>\n  <aside class='sidebar'>...</aside>\n</div>"
+                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  {showWebCss && (
+                    <div>
+                      <label className="block text-xs font-medium text-cyan-400 mb-1 font-mono">
+                        Target CSS (Blueprint Styling):
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={newTargetCss}
+                        onChange={(e) => setNewTargetCss(e.target.value)}
+                        placeholder=".dashboard { display: flex; }\n.sidebar { width: 220px; background: #0f172a; }"
+                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  {showWebJs && (
+                    <div>
+                      <label className="block text-xs font-medium text-amber-400 mb-1 font-mono">
+                        Target JavaScript (Interactive Logic):
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={newTargetJs}
+                        onChange={(e) => setNewTargetJs(e.target.value)}
+                        placeholder="// Target DOM interaction or click logic (optional)"
+                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -739,7 +1032,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                   <div className="rounded-xl border border-charcoal-750 bg-white overflow-hidden min-h-[140px] max-h-56">
                     <iframe
                       title="Admin Blueprint Preview"
-                      srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${newTargetCss || ''}</style></head><body>${newTargetHtml || '<p>Target Preview</p>'}</body></html>`}
+                      srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${showWebCss ? newTargetCss : ''}</style></head><body>${showWebHtml ? newTargetHtml : '<p>Blueprint Preview</p>'}<script>${showWebJs ? newTargetJs : ''}</script></body></html>`}
                       className="w-full h-full min-h-[140px] border-0 block"
                       sandbox="allow-scripts"
                     />
@@ -749,131 +1042,204 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             </>
           )}
 
-          {/* Starter Codes & Interactive Test Cases for Algorithms & Logic Bug Hunt */}
-          {(newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic')) && (
+          {/* Starter Codes for Algorithms & Logic Bug Hunt (Dynamically filtered by tags) */}
+          {isAlgoAdminMode && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                    Starter Python {newArena === 'bug_hunt' && '(With Bug)'}
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={newStarterPython}
-                    onChange={(e) => setNewStarterPython(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                    Starter Java {newArena === 'bug_hunt' && '(With Bug)'}
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={newStarterJava}
-                    onChange={(e) => setNewStarterJava(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                    Starter C++ {newArena === 'bug_hunt' && '(With Bug)'}
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={newStarterCpp}
-                    onChange={(e) => setNewStarterCpp(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-rose-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Starter Code Fields (Active Tags: {newTags || 'none'})
+                </span>
+                <span className="text-[10px] font-mono text-cyan-400">
+                  Showing {visibleAlgoFieldsCount} field{visibleAlgoFieldsCount > 1 ? 's' : ''} based on tags
+                </span>
+              </div>
+              <div className={`grid ${algoFieldsGridClass} gap-3`}>
+                {showAlgoPython && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                      Starter Python {newArena === 'bug_hunt' && '(With Bug)'}
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={newStarterPython}
+                      onChange={(e) => setNewStarterPython(e.target.value)}
+                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                )}
+                {showAlgoJava && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                      Starter Java {newArena === 'bug_hunt' && '(With Bug)'}
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={newStarterJava}
+                      onChange={(e) => setNewStarterJava(e.target.value)}
+                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                )}
+                {showAlgoCpp && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
+                      Starter C++ {newArena === 'bug_hunt' && '(With Bug)'}
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={newStarterCpp}
+                      onChange={(e) => setNewStarterCpp(e.target.value)}
+                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-rose-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Dynamic Interactive Test Cases Builder (Available for All Categories: Web Dev, Algorithms, Bug Hunt) */}
-          <div className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  Automated Verification Test Cases ({testCasesList.length})
+          {/* FOR WEB DEV: Automated Spatial Coordinate Graph & Content Grading Specification */}
+          {isWebAdminMode && (
+            <div className="p-4 rounded-xl bg-charcoal-950 border border-cyan-500/30 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    Automated Spatial Coordinate Graph & Content Grading Contract
+                  </span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 border border-cyan-500/40 text-cyan-300">
+                  {visibleWebFieldsCount} Dynamic Auto Test{visibleWebFieldsCount > 1 ? 's' : ''} Active
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleAddTestCase}
-                className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Add Test Case</span>
-              </button>
+              <p className="text-xs text-slate-300 font-mono leading-relaxed">
+                Test cases strictly match tags ({newTags}). Students must pass all {visibleWebFieldsCount} test{visibleWebFieldsCount > 1 ? 's' : ''} to submit and claim victory:
+              </p>
+              <div className={`grid ${webFieldsGridClass} gap-2 text-xs font-mono`}>
+                {showWebHtml && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30 space-y-1">
+                    <div className="flex items-center justify-between text-amber-400 font-bold">
+                      <span>Test Case #1</span>
+                      <span className="text-[10px] uppercase bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30">HTML Words & Tags</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Validates semantic HTML tags, DOM hierarchy, and exact word spelling alignment against the blueprint.
+                    </p>
+                  </div>
+                )}
+
+                {showWebCss && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-1">
+                    <div className="flex items-center justify-between text-cyan-400 font-bold">
+                      <span>Test Case #{showWebHtml ? 2 : 1}</span>
+                      <span className="text-[10px] uppercase bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">CSS Coordinates</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Calculates spatial bounding box coordinates (width, height, flex/grid positions) with lenient ±30% tolerance.
+                    </p>
+                  </div>
+                )}
+
+                {showWebJs && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-1">
+                    <div className="flex items-center justify-between text-emerald-400 font-bold">
+                      <span>Test Case #{(showWebHtml ? 1 : 0) + (showWebCss ? 1 : 0) + 1}</span>
+                      <span className="text-[10px] uppercase bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">JS DOM Logic</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Runs DOM interaction and event handlers to verify dynamic behavior matches the target script.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
+          )}
 
-            <div className="space-y-3">
-              {testCasesList.map((tc, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 space-y-2.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono font-bold text-slate-300">
-                      Test Case #{idx + 1}
-                    </span>
-                    {testCasesList.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTestCase(idx)}
-                        className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                        title="Remove test case"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                        Input (Arguments / Data / DOM Selector):
-                      </label>
-                      <input
-                        type="text"
-                        value={tc.input}
-                        onChange={(e) => handleUpdateTestCase(idx, 'input', e.target.value)}
-                        placeholder={newArena === 'web_dev' ? 'e.g. .cards-grid or hasButton' : 'e.g. nums = [3, 1, 2, 4]'}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-white text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                        Expected Output / Assertion:
-                      </label>
-                      <input
-                        type="text"
-                        value={tc.expectedOutput}
-                        onChange={(e) => handleUpdateTestCase(idx, 'expectedOutput', e.target.value)}
-                        placeholder={newArena === 'web_dev' ? 'e.g. 3 or true' : 'e.g. [2, 4, 3, 1]'}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-emerald-400 text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                      Objective / Description:
-                    </label>
-                    <input
-                      type="text"
-                      value={tc.description}
-                      onChange={(e) => handleUpdateTestCase(idx, 'description', e.target.value)}
-                      placeholder="e.g. Verifies cards layout and component styling"
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-300 text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                    />
-                  </div>
+          {/* FOR ALGORITHMS & LOGIC BUG HUNT: Manual Compiler Test Cases Builder */}
+          {(newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic')) && (
+            <div className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    Automated Verification Test Cases ({testCasesList.length})
+                  </span>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={handleAddTestCase}
+                  className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Add Test Case</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {testCasesList.map((tc, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold text-slate-300">
+                        Test Case #{idx + 1}
+                      </span>
+                      {testCasesList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTestCase(idx)}
+                          className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                          title="Remove test case"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                          Input (Arguments / Stdin Data):
+                        </label>
+                        <input
+                          type="text"
+                          value={tc.input}
+                          onChange={(e) => handleUpdateTestCase(idx, 'input', e.target.value)}
+                          placeholder="e.g. nums = [3, 1, 2, 4]"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-cyan-300 text-xs font-mono focus:border-rose-500 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                          Expected Output / Assertion:
+                        </label>
+                        <input
+                          type="text"
+                          value={tc.expectedOutput}
+                          onChange={(e) => handleUpdateTestCase(idx, 'expectedOutput', e.target.value)}
+                          placeholder="e.g. [2, 4, 3, 1]"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-emerald-400 text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                        Objective / Description:
+                      </label>
+                      <input
+                        type="text"
+                        value={tc.description}
+                        onChange={(e) => handleUpdateTestCase(idx, 'description', e.target.value)}
+                        placeholder="e.g. Even and odd parity separation"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-300 text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -893,7 +1259,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             </button>
           </div>
         </form>
-      )}
+        );
+      })()}
 
       {/* Questions List */}
       <div className="space-y-3">

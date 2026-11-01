@@ -49,6 +49,7 @@ import {
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
+import { selectBestQuestion } from '@/lib/arena/questionSelector';
 import {
   playVictorySound,
   playArcadeCoinSound,
@@ -69,6 +70,31 @@ interface FullArenaExperienceProps {
     username?: string;
     avatarUrl?: string;
   };
+}
+
+function computeExpectedQuestionTests(q: DuelQuestion): number {
+  if (Array.isArray(q.testCases) && q.testCases.length > 0) {
+    return q.testCases.length;
+  }
+  const tags = (q.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+  const isWebQ =
+    q.arena === 'web_dev' ||
+    (q.arena === 'bug_hunt' && (q.bugDomain === 'web' || Boolean(q.targetComponentHtml)));
+
+  if (isWebQ) {
+    const hasExplicitTags = tags.some((t) => ['html', 'css', 'js', 'javascript'].includes(t));
+    if (hasExplicitTags) {
+      let count = 0;
+      if (tags.includes('html')) count++;
+      if (tags.includes('css')) count++;
+      if (tags.includes('javascript') || tags.includes('js')) count++;
+      return count > 0 ? count : 2;
+    }
+    return Boolean(q.targetComponentJs && q.targetComponentJs.length > 25 && !q.targetComponentJs.startsWith('//'))
+      ? 3
+      : 2;
+  }
+  return q.testCases?.length || 3;
 }
 
 export function FullArenaExperience({
@@ -297,11 +323,11 @@ export function FullArenaExperience({
       setPythonCode(initialQuestion.starterPython || '# Your python solution\n');
       setJavaCode(initialQuestion.starterJava || '// Your java solution\n');
       setCppCode(initialQuestion.starterCpp || '// Your C++ solution\n');
-      const isHtmlOnly = (initialQuestion.tags?.length === 1 && initialQuestion.tags.includes('html')) || (!initialQuestion.tags?.includes('css') && !initialQuestion.tags?.includes('javascript') && initialQuestion.tags?.includes('html'));
-      const isHtmlCss = initialQuestion.tags?.includes('css') && !initialQuestion.tags?.includes('javascript');
-      const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
-      setTotalTests(initialQuestion.arena === 'web_dev' ? expectedWebTests : (initialQuestion.testCases?.length || 3));
-      setTimeLeft(initialQuestion.timeLimitSeconds || 300);
+      const expectedTests = computeExpectedQuestionTests(initialQuestion);
+      setTotalTests(expectedTests);
+      const initTime = initialQuestion.timeLimitSeconds || 300;
+      setTimeLimit(initTime);
+      setTimeLeft(initTime);
       setIsBotOpponentAdded(true);
       setStep(4);
       setCountdownNum(3);
@@ -314,11 +340,140 @@ export function FullArenaExperience({
     'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+  const [activityNotification, setActivityNotification] = useState<{
+    message: string;
+    type: 'join' | 'leave';
+    id: number;
+  } | null>(null);
+  const prevPlayersRef = useRef<string[]>([]);
+
+  // Auto-dismiss activity notifications after 4.5 seconds
+  useEffect(() => {
+    if (!activityNotification) return;
+    const timer = setTimeout(() => setActivityNotification(null), 4500);
+    return () => clearTimeout(timer);
+  }, [activityNotification]);
+
+  // Session Restoration across Page Refreshes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check URL query param or sessionStorage
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlRoom = searchParams.get('room');
+    let savedSession: any = null;
+    try {
+      const raw = sessionStorage.getItem('kollabrix_arena_session');
+      if (raw) savedSession = JSON.parse(raw);
+    } catch {}
+
+    const targetRoomCode = urlRoom || savedSession?.roomCode || initialRoomCode;
+    if (!targetRoomCode) return;
+
+    fetch(`/api/arena/rooms?code=${targetRoomCode}&_t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data?.room || data.room.status === 'closed') {
+          sessionStorage.removeItem('kollabrix_arena_session');
+          return;
+        }
+
+        const rm = data.room;
+        setRoomData(rm);
+        setRoomCode(rm.code);
+        setTeamSize(rm.format || '1v1');
+        setArena(rm.arena || 'web_dev');
+        if (rm.selectedTags) setSelectedTags(rm.selectedTags);
+
+        // Determine host role
+        const isHostPlayer = Boolean(
+          rm.hostId === myPlayerId ||
+          rm.alphaPlayers?.[0]?.id === myPlayerId ||
+          (playerName && rm.hostName && rm.hostName.toLowerCase() === playerName.toLowerCase())
+        );
+        setIsHost(isHostPlayer);
+
+        if (rm.question) {
+          const q = rm.question;
+          const matchTime = Number(rm.timeLimit) || Number(q.timeLimitSeconds) || 300;
+          setTimeLimit(matchTime);
+          setTimeLeft(matchTime);
+          setActiveQuestion(q);
+          setHtmlCode(q.starterHtml || '');
+          setCssCode(q.starterCss || '');
+          setJsCode(q.starterJs || '');
+          setPythonCode(q.starterPython || '# Your python solution\n');
+          setJavaCode(q.starterJava || '// Your java solution\n');
+          setCppCode(q.starterCpp || '// Your C++ solution\n');
+          const expectedTests = computeExpectedQuestionTests(q);
+          setTotalTests(expectedTests);
+        }
+
+        // Restore user's code from sessionStorage if preserved
+        try {
+          const savedCodeRaw = sessionStorage.getItem(`arena_code_${rm.code}`);
+          if (savedCodeRaw) {
+            const sc = JSON.parse(savedCodeRaw);
+            if (sc.htmlCode) setHtmlCode(sc.htmlCode);
+            if (sc.cssCode) setCssCode(sc.cssCode);
+            if (sc.jsCode) setJsCode(sc.jsCode);
+            if (sc.pythonCode) setPythonCode(sc.pythonCode);
+            if (sc.javaCode) setJavaCode(sc.javaCode);
+            if (sc.cppCode) setCppCode(sc.cppCode);
+          }
+        } catch {}
+
+        // Restore active step
+        if (rm.status === 'in_progress') {
+          setStep(5);
+        } else if (rm.status === 'starting') {
+          setStep(4);
+          setCountdownNum(3);
+        } else if (savedSession?.step === 3 || urlRoom || initialRoomCode) {
+          setStep(3);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to restore arena session:', err);
+      });
+  }, [initialRoomCode, myPlayerId, playerName]);
+
+  // Sync active session and URL parameter whenever in active room or battlefield
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (step >= 3 && roomCode) {
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.get('room') !== roomCode) {
+        currentUrl.searchParams.set('room', roomCode);
+        window.history.replaceState(null, '', currentUrl.toString());
+      }
+      try {
+        sessionStorage.setItem(
+          'kollabrix_arena_session',
+          JSON.stringify({
+            roomCode,
+            step,
+            isHost,
+            myPlayerId,
+            playerName,
+          })
+        );
+      } catch {}
+    } else if (step === 0) {
+      try {
+        sessionStorage.removeItem('kollabrix_arena_session');
+      } catch {}
+    }
+  }, [step, roomCode, isHost, myPlayerId, playerName]);
 
   // Exit Arena with confirmation and mutual opponent termination
   const handleExitArena = () => {
     // If on Gateway (Step 0), Pilot Dossier (Step 1), Arena Picker (Step 2), or Victory (Step 6), exit immediately
     if (step < 3 || step === 6 || !roomCode) {
+      try {
+        sessionStorage.removeItem('kollabrix_arena_session');
+        window.history.replaceState(null, '', '/arena');
+      } catch {}
       onClose();
       return;
     }
@@ -329,7 +484,40 @@ export function FullArenaExperience({
   const handleConfirmExit = async () => {
     setShowExitConfirmModal(false);
 
-    // 1. Broadcast immediate arena_exit event to opponent via Supabase Realtime channel
+    // If non-host player is in Lobby (Step 3), simply leave the room without shutting it down for host
+    if (step === 3 && !isHost) {
+      if (channelRef.current) {
+        try {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'player_left',
+            payload: { name: playerName, playerId: myPlayerId },
+          });
+        } catch {}
+      }
+      if (roomCode) {
+        try {
+          await fetch('/api/arena/rooms/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: roomCode,
+              action: 'leave_room',
+              playerId: myPlayerId,
+              payload: { playerName },
+            }),
+          });
+        } catch {}
+      }
+      try {
+        sessionStorage.removeItem('kollabrix_arena_session');
+        window.history.replaceState(null, '', '/arena');
+      } catch {}
+      setStep(0);
+      return;
+    }
+
+    // Host leaving or match in progress: broadcast exit and close room
     if (channelRef.current) {
       try {
         channelRef.current.send({
@@ -343,7 +531,6 @@ export function FullArenaExperience({
       } catch {}
     }
 
-    // 2. Update room on server to closed status
     if (roomCode) {
       try {
         await fetch('/api/arena/rooms/sync', {
@@ -358,6 +545,12 @@ export function FullArenaExperience({
         });
       } catch {}
     }
+
+    try {
+      sessionStorage.removeItem('kollabrix_arena_session');
+      if (roomCode) sessionStorage.removeItem(`arena_code_${roomCode}`);
+      window.history.replaceState(null, '', '/arena');
+    } catch {}
 
     onClose();
   };
@@ -383,6 +576,17 @@ export function FullArenaExperience({
   const [javaCode, setJavaCode] = useState('');
   const [cppCode, setCppCode] = useState('');
 
+  // Persist user code in battle (Step 5) so refresh never wipes out work
+  useEffect(() => {
+    if (typeof window === 'undefined' || step !== 5 || !roomCode) return;
+    try {
+      sessionStorage.setItem(
+        `arena_code_${roomCode}`,
+        JSON.stringify({ htmlCode, cssCode, jsCode, pythonCode, javaCode, cppCode })
+      );
+    } catch {}
+  }, [step, roomCode, htmlCode, cssCode, jsCode, pythonCode, javaCode, cppCode]);
+
   const [userTestsPassed, setUserTestsPassed] = useState<number>(0);
   const [totalTests, setTotalTests] = useState<number>(3);
   const [testLog, setTestLog] = useState<string>('Ready to test code');
@@ -390,9 +594,21 @@ export function FullArenaExperience({
 
   // Opponent Team Omega (Fog of War)
   const [opponentTestsPassed, setOpponentTestsPassed] = useState<number>(0);
-  const [opponentWpm, setOpponentWpm] = useState<number>(64);
+  const [opponentWpm, setOpponentWpm] = useState<number>(0);
   const [opponentAlert, setOpponentAlert] = useState<string>('');
   const [winnerTeam, setWinnerTeam] = useState<'Team Alpha' | 'Team Omega' | null>(null);
+
+  // Real-time Keystrokes & Cadence Tracking
+  const [myWpm, setMyWpm] = useState<number>(0);
+  const recentKeystrokesRef = useRef<number[]>([]);
+  const lastKeystrokeTimeRef = useRef<number>(0);
+  const lastOpponentActivityTimeRef = useRef<number>(0);
+
+  const handleUserKeystroke = () => {
+    const now = Date.now();
+    lastKeystrokeTimeRef.current = now;
+    recentKeystrokesRef.current.push(now);
+  };
 
   // Image 6 Parity: Maximize pane state for Preview and Output
   const [maximizedPane, setMaximizedPane] = useState<'none' | 'preview' | 'output'>('none');
@@ -401,11 +617,105 @@ export function FullArenaExperience({
   // Relay Role in 2v2 (swaps every 2.5 mins)
   const [relayPlayer, setRelayPlayer] = useState<'Driver (You)' | 'Navigator (Teammate)'>('Driver (You)');
 
+  // Dynamic Squad & Opponent Identification (1v1 duel & 2v2 relay aware)
+  const isUserInAlpha = Boolean(
+    roomData?.alphaPlayers?.some(
+      (p: any) => p.id === myPlayerId || (playerName && p.name?.toLowerCase() === playerName.toLowerCase())
+    )
+  );
+  const mySquad: 'alpha' | 'omega' = isUserInAlpha ? 'alpha' : isHost ? 'alpha' : 'omega';
+
+  // Opponent player is ALWAYS the opposing squad (Omega if I am Alpha; Alpha if I am Omega)
+  const opponentPlayer = mySquad === 'alpha'
+    ? (roomData?.omegaPlayers?.[0] || null)
+    : (roomData?.alphaPlayers?.[0] || null);
+
+  const isRealOpponentPresent = Boolean(
+    opponentPlayer && opponentPlayer.id !== 'bot-rival'
+  );
+
+  const isBotDuel = Boolean(
+    !isRealOpponentPresent &&
+    mySquad === 'alpha' &&
+    (isBotOpponentAdded || roomData?.isBotEnabled || opponentPlayer?.id === 'bot-rival')
+  );
+
+  const opponentDisplayName = isBotDuel
+    ? 'ByteRival Bot (Practice AI)'
+    : opponentPlayer?.name
+      ? `${opponentPlayer.name} (Opponent)`
+      : mySquad === 'alpha'
+        ? (isBotOpponentAdded ? 'ByteRival Bot (Practice AI)' : 'Waiting for Opponent...')
+        : (roomData?.hostName ? `${roomData.hostName} (Host)` : 'Classmate Opponent');
+
   // Determine if active match uses Web View (Live Preview & Output) or Compiler Terminal View
   const isWebMatch =
     arena === 'web_dev' ||
     (arena === 'bug_hunt' &&
       (bugDomain === 'web' || activeQuestion.bugDomain === 'web' || !!activeQuestion.targetComponentHtml));
+
+  // Automatically adjust activeTab to a visible tab based on question tags
+  useEffect(() => {
+    if (!activeQuestion) return;
+    const qTags = (activeQuestion.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+    if (isWebMatch) {
+      const hasExplicitWeb = qTags.some((t) => ['html', 'css', 'js', 'javascript'].includes(t));
+      const showHtml = hasExplicitWeb ? qTags.includes('html') : true;
+      const showCss = hasExplicitWeb ? qTags.includes('css') : true;
+      const showJs = hasExplicitWeb ? (qTags.includes('javascript') || qTags.includes('js')) : false;
+
+      if (activeTab === 'html' && !showHtml) {
+        if (showCss) setActiveTab('css');
+        else if (showJs) setActiveTab('js');
+      } else if (activeTab === 'css' && !showCss) {
+        if (showHtml) setActiveTab('html');
+        else if (showJs) setActiveTab('js');
+      } else if (activeTab === 'js' && !showJs) {
+        if (showHtml) setActiveTab('html');
+        else if (showCss) setActiveTab('css');
+      }
+    } else {
+      const hasExplicitAlgo = qTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
+      const showPy = hasExplicitAlgo ? qTags.includes('python') : true;
+      const showJava = hasExplicitAlgo ? qTags.includes('java') : true;
+      const showCpp = hasExplicitAlgo ? (qTags.includes('cpp') || qTags.includes('c++')) : true;
+
+      if (activeTab === 'python' && !showPy) {
+        if (showJava) setActiveTab('java');
+        else if (showCpp) setActiveTab('cpp');
+      } else if (activeTab === 'java' && !showJava) {
+        if (showPy) setActiveTab('python');
+        else if (showCpp) setActiveTab('cpp');
+      } else if (activeTab === 'cpp' && !showCpp) {
+        if (showPy) setActiveTab('python');
+        else if (showJava) setActiveTab('java');
+      }
+    }
+  }, [activeQuestion, isWebMatch, activeTab]);
+
+  // Auto-evaluate Web Dev layout coordinate graph & word spelling in background as user writes code
+  useEffect(() => {
+    if (step !== 5 || !isWebMatch || !activeQuestion) return;
+    const timer = setTimeout(() => {
+      const evaluation = evaluateWebCoordinateGraph(
+        activeQuestion.id,
+        htmlCode,
+        cssCode,
+        activeQuestion.targetComponentHtml,
+        activeQuestion.targetComponentCss,
+        {
+          tags: activeQuestion.tags || selectedTags,
+          jsCode,
+          targetJs: activeQuestion.targetComponentJs,
+        }
+      );
+      setWebEvaluation(evaluation);
+      setTotalTests(evaluation.totalTests);
+      setUserTestsPassed(evaluation.testsPassed);
+      syncProgressToServer(evaluation.testsPassed, myWpm);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [step, isWebMatch, activeQuestion, htmlCode, cssCode, jsCode, selectedTags, myWpm]);
 
   // When changing arena, select sensible default tags
   const handleSelectArena = (newArena: ArenaCategory) => {
@@ -502,6 +812,9 @@ export function FullArenaExperience({
 
         if (data.room.question) {
           const q = data.room.question;
+          const matchTime = Number(data.room.timeLimit) || Number(q.timeLimitSeconds) || 300;
+          setTimeLimit(matchTime);
+          setTimeLeft(matchTime);
           setActiveQuestion(q);
           setHtmlCode(q.starterHtml || '');
           setCssCode(q.starterCss || '');
@@ -509,21 +822,26 @@ export function FullArenaExperience({
           setPythonCode(q.starterPython || '# Your python solution\n');
           setJavaCode(q.starterJava || '// Your java solution\n');
           setCppCode(q.starterCpp || '// Your C++ solution\n');
-          const isHtmlOnly = (q.tags?.length === 1 && q.tags.includes('html')) || (!q.tags?.includes('css') && !q.tags?.includes('javascript') && q.tags?.includes('html'));
-          const isHtmlCss = q.tags?.includes('css') && !q.tags?.includes('javascript');
-          const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
-          setTotalTests(data.room.arena === 'web_dev' ? expectedWebTests : (q.testCases?.length || 3));
-          setTimeLeft(q.timeLimitSeconds || 300);
+          const expectedTests = computeExpectedQuestionTests(q);
+          setTotalTests(expectedTests);
         }
 
         playTacticalSelectSound();
         trackEvent('arena_room_joined', { code: data.room.code, format: data.room.format, arena: data.room.arena });
 
-        // Immediately send room_sync broadcast over WebSocket so host's screen updates in <40ms
+        // Immediately send player_joined and room_sync broadcast over WebSocket so host's screen updates in <40ms
         try {
           const joinChannel = supabase.channel(`arena_duel_${data.room.code}`);
           joinChannel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
+              joinChannel.send({
+                type: 'broadcast',
+                event: 'player_joined',
+                payload: {
+                  name: playerName,
+                  team: data.room.alphaPlayers?.some((p: any) => p.name === playerName) ? 'alpha' : 'omega',
+                },
+              });
               joinChannel.send({
                 type: 'broadcast',
                 event: 'room_sync',
@@ -573,7 +891,24 @@ export function FullArenaExperience({
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.room) setRoomData(data.room);
+        if (data.room) {
+          setRoomData(data.room);
+          if (data.room.question) {
+            const q = data.room.question;
+            const matchTime = Number(data.room.timeLimit) || Number(q.timeLimitSeconds) || 300;
+            setTimeLimit(matchTime);
+            setTimeLeft(matchTime);
+            setActiveQuestion(q);
+            setHtmlCode(q.starterHtml || '');
+            setCssCode(q.starterCss || '');
+            setJsCode(q.starterJs || '');
+            setPythonCode(q.starterPython || '# Your python solution\n');
+            setJavaCode(q.starterJava || '// Your java solution\n');
+            setCppCode(q.starterCpp || '// Your C++ solution\n');
+            const expectedTests = computeExpectedQuestionTests(q);
+            setTotalTests(expectedTests);
+          }
+        }
         trackEvent('arena_room_created', { code: roomCode, format: teamSize, arena, difficulty });
       }
     } catch (err) {
@@ -597,12 +932,51 @@ export function FullArenaExperience({
       return;
     }
 
+    // Dynamic player join/leave change detection across syncs
+    const currentRoster: string[] = [
+      ...(incomingRoom.alphaPlayers || []).map((p: any) => p.name),
+      ...(incomingRoom.omegaPlayers || []).filter((p: any) => p.id !== 'bot-rival').map((p: any) => p.name),
+    ].filter(Boolean);
+
+    if (prevPlayersRef.current.length > 0) {
+      const joined = currentRoster.filter((n) => !prevPlayersRef.current.includes(n) && n !== playerName);
+      const left = prevPlayersRef.current.filter((n) => !currentRoster.includes(n) && n !== playerName);
+
+      if (joined.length > 0) {
+        setActivityNotification({
+          message: `⚡ ${joined.join(', ')} joined the squad!`,
+          type: 'join',
+          id: Date.now(),
+        });
+        playArcadeCoinSound();
+      } else if (left.length > 0) {
+        setActivityNotification({
+          message: `⚠️ ${left.join(', ')} left the room.`,
+          type: 'leave',
+          id: Date.now(),
+        });
+      }
+    }
+    prevPlayersRef.current = currentRoster;
+
     setRoomData(incomingRoom);
 
     // If in Lobby (Step 3) and Host started match, advance joiner to Step 4 (Countdown) instantly!
     if (step === 3 && (incomingRoom.status === 'starting' || incomingRoom.status === 'in_progress')) {
       if (incomingRoom.question) {
         const q = incomingRoom.question;
+        const matchTime = Number(incomingRoom.timeLimit) || Number(q.timeLimitSeconds) || 300;
+        setTimeLimit(matchTime);
+
+        // Lockstep time synchronization based on server startedAt
+        if (incomingRoom.startedAt) {
+          const startTime = new Date(incomingRoom.startedAt).getTime();
+          const elapsed = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+          setTimeLeft(Math.max(0, matchTime - elapsed));
+        } else {
+          setTimeLeft(matchTime);
+        }
+
         setActiveQuestion(q);
         setHtmlCode(q.starterHtml || '');
         setCssCode(q.starterCss || '');
@@ -610,11 +984,8 @@ export function FullArenaExperience({
         setPythonCode(q.starterPython || '# Your python solution\n');
         setJavaCode(q.starterJava || '// Your java solution\n');
         setCppCode(q.starterCpp || '// Your C++ solution\n');
-        const isHtmlOnly = (q.tags?.length === 1 && q.tags.includes('html')) || (!q.tags?.includes('css') && !q.tags?.includes('javascript') && q.tags?.includes('html'));
-        const isHtmlCss = q.tags?.includes('css') && !q.tags?.includes('javascript');
-        const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
-        setTotalTests(incomingRoom.arena === 'web_dev' ? expectedWebTests : (q.testCases?.length || 3));
-        setTimeLeft(q.timeLimitSeconds || 300);
+        const expectedTests = computeExpectedQuestionTests(q);
+        setTotalTests(expectedTests);
 
         if (incomingRoom.arena === 'web_dev') {
           setActiveTab('html');
@@ -629,6 +1000,34 @@ export function FullArenaExperience({
       return;
     }
 
+    // Question & Clock resync safety: If client is in countdown (Step 4) or battlefield (Step 5)
+    // and room's authoritative question or clock is updated, synchronize immediately
+    if ((step === 4 || step === 5) && incomingRoom.question) {
+      const q = incomingRoom.question;
+      const matchTime = Number(incomingRoom.timeLimit) || Number(q.timeLimitSeconds) || 300;
+      setTimeLimit(matchTime);
+
+      if (incomingRoom.startedAt) {
+        const startTime = new Date(incomingRoom.startedAt).getTime();
+        const elapsed = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+        setTimeLeft(Math.max(0, matchTime - elapsed));
+      } else if (step === 4) {
+        setTimeLeft(matchTime);
+      }
+
+      if (activeQuestion?.id !== q.id) {
+        setActiveQuestion(q);
+        setHtmlCode(q.starterHtml || '');
+        setCssCode(q.starterCss || '');
+        setJsCode(q.starterJs || '');
+        setPythonCode(q.starterPython || '# Your python solution\n');
+        setJavaCode(q.starterJava || '// Your java solution\n');
+        setCppCode(q.starterCpp || '// Your C++ solution\n');
+        const expectedTests = computeExpectedQuestionTests(q);
+        setTotalTests(expectedTests);
+      }
+    }
+
     // If in Battlefield (Step 5):
     if (step === 5) {
       if (incomingRoom.status === 'finished') {
@@ -637,20 +1036,26 @@ export function FullArenaExperience({
         return;
       }
 
-      // Read real-time opponent test progress
-      const oppList = isHost ? incomingRoom.omegaPlayers : incomingRoom.alphaPlayers;
+      // Read real-time opponent test progress & real cadence
+      const oppList = mySquad === 'alpha' ? incomingRoom.omegaPlayers : incomingRoom.alphaPlayers;
       if (oppList && oppList.length > 0) {
         const opp = oppList[0];
         if (opp.testsPassed !== undefined) setOpponentTestsPassed(opp.testsPassed);
-        if (opp.wpm) setOpponentWpm(opp.wpm);
+        if (opp.wpm !== undefined) {
+          setOpponentWpm(opp.wpm);
+          if (opp.wpm > 0) {
+            lastOpponentActivityTimeRef.current = Date.now();
+          }
+        }
       }
     }
   };
 
   // Realtime Supabase WebSocket Synchronization + High-Frequency Failover Polling
+  // Stays connected across Lobby (3), Countdown (4), and Battlefield (5)
+  const inActiveArenaRoom = step >= 3 && step <= 5;
   useEffect(() => {
-    if (step !== 3 && step !== 5) return;
-    if (!roomCode) return;
+    if (!inActiveArenaRoom || !roomCode) return;
 
     let isMounted = true;
 
@@ -665,6 +1070,27 @@ export function FullArenaExperience({
           if (!isMounted || !payload?.room) return;
           applyRoomDataState(payload.room);
         })
+        .on('broadcast', { event: 'player_joined' }, ({ payload }) => {
+          if (!isMounted) return;
+          if (payload?.name && payload.name !== playerName) {
+            setActivityNotification({
+              message: `⚡ ${payload.name} joined the squad!`,
+              type: 'join',
+              id: Date.now(),
+            });
+            playArcadeCoinSound();
+          }
+        })
+        .on('broadcast', { event: 'player_left' }, ({ payload }) => {
+          if (!isMounted) return;
+          if (payload?.name && payload.name !== playerName) {
+            setActivityNotification({
+              message: `⚠️ ${payload.name} left the room.`,
+              type: 'leave',
+              id: Date.now(),
+            });
+          }
+        })
         .on('broadcast', { event: 'arena_exit' }, ({ payload }) => {
           if (!isMounted) return;
           alert(payload?.message || 'Opponent has exited the Battle Arena. The match has ended.');
@@ -674,7 +1100,12 @@ export function FullArenaExperience({
           if (!isMounted) return;
           if (payload?.playerId !== myPlayerId) {
             if (payload?.testsPassed !== undefined) setOpponentTestsPassed(payload.testsPassed);
-            if (payload?.wpm !== undefined) setOpponentWpm(payload.wpm);
+            if (payload?.wpm !== undefined) {
+              setOpponentWpm(payload.wpm);
+              if (payload.wpm > 0) {
+                lastOpponentActivityTimeRef.current = Date.now();
+              }
+            }
           }
         })
         .subscribe();
@@ -684,10 +1115,10 @@ export function FullArenaExperience({
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. High-frequency background HTTP safety check (1s in lobby, 5s in match)
+    // 2. High-frequency background HTTP safety check (1s in lobby & countdown, 3s in match)
     const pollInterval = setInterval(async () => {
-      // In Step 3 (Lobby waiting), DO NOT skip when document.hidden so background tab updates immediately!
-      if (step !== 3 && typeof document !== 'undefined' && document.hidden) return;
+      // In Step 3 & 4 (Lobby waiting & Countdown), DO NOT skip when document.hidden
+      if (step > 4 && typeof document !== 'undefined' && document.hidden) return;
       try {
         const res = await fetch(`/api/arena/rooms?code=${roomCode}&_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
@@ -695,7 +1126,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, step === 3 ? 1000 : 5000);
+    }, step <= 4 ? 1000 : 3000);
 
     // Instant sync when user switches tabs or focuses the window
     const handleFocusSync = async () => {
@@ -722,11 +1153,12 @@ export function FullArenaExperience({
         channelRef.current = null;
       }
     };
-  }, [step, roomCode, isHost, myPlayerId]);
+  }, [inActiveArenaRoom, roomCode, isHost, myPlayerId]);
 
-  // Sync test progress to server for opponent's Fog-of-War HUD
-  const syncProgressToServer = (passedCount: number) => {
+  // Sync test progress and typing cadence to server for opponent's Fog-of-War HUD
+  const syncProgressToServer = (passedCount: number, currentWpm?: number) => {
     if (!roomCode) return;
+    const activeWpm = currentWpm !== undefined ? currentWpm : myWpm;
 
     // Immediate WebSocket broadcast to opponent (<40ms)
     if (channelRef.current) {
@@ -734,7 +1166,7 @@ export function FullArenaExperience({
         channelRef.current.send({
           type: 'broadcast',
           event: 'progress_sync',
-          payload: { playerId: myPlayerId, testsPassed: passedCount, wpm: 74 },
+          payload: { playerId: myPlayerId, testsPassed: passedCount, wpm: activeWpm },
         });
       } catch {}
     }
@@ -749,7 +1181,7 @@ export function FullArenaExperience({
         playerId: myPlayerId,
         payload: {
           testsPassed: passedCount,
-          wpm: 74,
+          wpm: activeWpm,
         },
       }),
     }).catch(() => {});
@@ -809,62 +1241,68 @@ export function FullArenaExperience({
       }
     }
 
-    // Fetch fresh random question matching the player's exact arena, bugDomain & selected language tags
+    const matchDuration = Number(timeLimit) || Number(roomData?.timeLimit) || 300;
     let chosen: DuelQuestion | null = null;
-    try {
-      const res = await fetch(
-        `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}${arena === 'bug_hunt' && bugDomain ? `&bugDomain=${bugDomain}` : ''}&_rnd=${Date.now()}`,
-        { cache: 'no-store' }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.questions && data.questions.length > 0) {
-          const matchingPool = data.questions.filter((q: DuelQuestion) => {
-            if (arena === 'bug_hunt' && q.bugDomain && bugDomain && q.bugDomain !== bugDomain) return false;
-            if (selectedTags.length > 0 && q.tags && q.tags.length > 0) {
-              return selectedTags.some((t) => q.tags.includes(t));
-            }
-            return true;
-          });
-          const pool = matchingPool.length > 0 ? matchingPool : data.questions;
-          chosen = pool[Math.floor(Math.random() * pool.length)];
-        }
-      }
-    } catch (e) {}
 
-    if (!chosen) {
-      const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
-        if (q.arena !== arena) return false;
-        if (arena === 'bug_hunt' && q.bugDomain && bugDomain && q.bugDomain !== bugDomain) return false;
-        if (selectedTags.length > 0 && q.tags && q.tags.length > 0) {
-          return selectedTags.some((t) => q.tags.includes(t));
+    // 1. If room already has a verified question matching the arena, reuse it for 100% host/joiner parity!
+    if (
+      roomData?.question &&
+      roomData.question.arena === arena &&
+      (arena !== 'bug_hunt' || !bugDomain || !roomData.question.bugDomain || roomData.question.bugDomain === bugDomain)
+    ) {
+      chosen = {
+        ...roomData.question,
+        timeLimitSeconds: matchDuration,
+      };
+    } else {
+      // 2. Fetch question matching exact arena, tags, difficulty, and duration
+      try {
+        const queryParams = new URLSearchParams({
+          arena,
+          difficulty,
+          tags: selectedTags.join(','),
+          timeLimit: String(matchDuration),
+          _rnd: String(Date.now()),
+        });
+        if (arena === 'bug_hunt' && bugDomain) queryParams.set('bugDomain', bugDomain);
+
+        const res = await fetch(`/api/arena/questions?${queryParams.toString()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.questions && data.questions.length > 0) {
+            chosen = data.questions[0];
+          }
         }
-        return true;
-      });
-      chosen =
-        matching.length > 0
-          ? matching[Math.floor(Math.random() * matching.length)]
-          : DEFAULT_ARENA_QUESTIONS.find(
-              (q) => q.arena === arena && (arena !== 'bug_hunt' || q.bugDomain === bugDomain)
-            ) ||
-            DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
-            DEFAULT_ARENA_QUESTIONS[0];
+      } catch (e) {}
+
+      if (!chosen) {
+        chosen = selectBestQuestion(DEFAULT_ARENA_QUESTIONS, {
+          arena,
+          bugDomain,
+          selectedTags,
+          difficulty,
+          timeLimit: matchDuration,
+        });
+      }
     }
 
-    setActiveQuestion(chosen);
+    const finalChosen: DuelQuestion = {
+      ...(chosen || DEFAULT_ARENA_QUESTIONS[0]),
+      timeLimitSeconds: matchDuration,
+    };
+
+    setActiveQuestion(finalChosen);
 
     // Initialize starter code
-    setHtmlCode(chosen.starterHtml || '');
-    setCssCode(chosen.starterCss || '');
-    setJsCode(chosen.starterJs || '');
-    setPythonCode(chosen.starterPython || '# Your python solution\n');
-    setJavaCode(chosen.starterJava || '// Your java solution\n');
-    setCppCode(chosen.starterCpp || '// Your C++ solution\n');
+    setHtmlCode(finalChosen.starterHtml || '');
+    setCssCode(finalChosen.starterCss || '');
+    setJsCode(finalChosen.starterJs || '');
+    setPythonCode(finalChosen.starterPython || '# Your python solution\n');
+    setJavaCode(finalChosen.starterJava || '// Your java solution\n');
+    setCppCode(finalChosen.starterCpp || '// Your C++ solution\n');
 
-    const isHtmlOnly = (chosen.tags?.length === 1 && chosen.tags.includes('html')) || (!chosen.tags?.includes('css') && !chosen.tags?.includes('javascript') && chosen.tags?.includes('html'));
-    const isHtmlCss = chosen.tags?.includes('css') && !chosen.tags?.includes('javascript');
-    const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
-    setTotalTests(chosen.arena === 'web_dev' ? expectedWebTests : (chosen.testCases?.length || 3));
+    const expectedTests = computeExpectedQuestionTests(finalChosen);
+    setTotalTests(expectedTests);
 
     setUserTestsPassed(0);
     setTestCaseResults({});
@@ -872,7 +1310,8 @@ export function FullArenaExperience({
     setSelectedTestCaseIdx(0);
     setWebEvaluation(null);
     setOpponentTestsPassed(0);
-    setTimeLeft(chosen.timeLimitSeconds || 300);
+    setTimeLimit(matchDuration);
+    setTimeLeft(matchDuration);
 
     // Set active tab based on arena and tags
     if (arena === 'web_dev') {
@@ -893,6 +1332,15 @@ export function FullArenaExperience({
       setActiveTab('python');
     }
 
+    const updatedRoom = {
+      ...roomData,
+      status: 'starting',
+      question: finalChosen,
+      timeLimit: matchDuration,
+      difficulty,
+    };
+    setRoomData(updatedRoom);
+
     // Tell server to trigger match start for ALL participants in this room!
     try {
       // Immediate Sub-50ms WebSocket broadcast to opponent
@@ -901,7 +1349,7 @@ export function FullArenaExperience({
           channelRef.current.send({
             type: 'broadcast',
             event: 'room_sync',
-            payload: { room: { ...roomData, status: 'starting', question: chosen } },
+            payload: { room: updatedRoom },
           });
         } catch {}
       }
@@ -912,10 +1360,10 @@ export function FullArenaExperience({
         body: JSON.stringify({
           code: roomCode,
           action: 'start_match',
-          payload: { question: chosen },
+          payload: { question: finalChosen, timeLimit: matchDuration },
         }),
       });
-      trackEvent('arena_match_started', { code: roomCode, format: teamSize, arena });
+      trackEvent('arena_match_started', { code: roomCode, format: teamSize, arena, difficulty });
     } catch {}
 
     // Advance to countdown
@@ -935,44 +1383,122 @@ export function FullArenaExperience({
     }
   }, [step, countdownNum]);
 
-  // Battle Clock
+  // Battle Clock - Synchronized across all duelists via roomData.startedAt
   useEffect(() => {
     if (step !== 5) return;
 
     const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
+      if (roomData?.startedAt) {
+        const startTime = new Date(roomData.startedAt).getTime();
+        const now = Date.now();
+        const matchDuration = Number(timeLimit) || Number(roomData?.timeLimit) || 300;
+        const elapsed = Math.max(0, Math.floor((now - startTime) / 1000));
+        const remaining = Math.max(0, matchDuration - elapsed);
+
+        setTimeLeft(remaining);
+
+        if (remaining <= 0) {
+          clearInterval(interval);
           setStep(6);
-          setWinnerTeam(userTestsPassed >= opponentTestsPassed ? 'Team Alpha' : 'Team Omega');
+          if (userTestsPassed === 0 && opponentTestsPassed === 0) {
+            setWinnerTeam(null);
+          } else if (userTestsPassed === opponentTestsPassed) {
+            setWinnerTeam(null);
+          } else {
+            const iWon = userTestsPassed > opponentTestsPassed;
+            const winningTeam = iWon
+              ? (isHost ? 'Team Alpha' : 'Team Omega')
+              : (isHost ? 'Team Omega' : 'Team Alpha');
+            setWinnerTeam(winningTeam);
+          }
           playVictorySound();
-          return 0;
+          return;
         }
 
         // Relay swap at 2.5 minutes remaining in 2v2
-        if (teamSize === '2v2' && prev === 150) {
+        if (teamSize === '2v2' && remaining === 150) {
           setRelayPlayer('Navigator (Teammate)');
         }
+      } else {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setStep(6);
+            if (userTestsPassed === 0 && opponentTestsPassed === 0) {
+              setWinnerTeam(null); // Draw: neither player passed any tests before time expired
+            } else if (userTestsPassed === opponentTestsPassed) {
+              setWinnerTeam(null); // Tie
+            } else {
+              const iWon = userTestsPassed > opponentTestsPassed;
+              const winningTeam = iWon
+                ? (isHost ? 'Team Alpha' : 'Team Omega')
+                : (isHost ? 'Team Omega' : 'Team Alpha');
+              setWinnerTeam(winningTeam);
+            }
+            playVictorySound();
+            return 0;
+          }
 
-        return prev - 1;
-      });
+          // Relay swap at 2.5 minutes remaining in 2v2
+          if (teamSize === '2v2' && prev === 150) {
+            setRelayPlayer('Navigator (Teammate)');
+          }
+
+          return prev - 1;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [step, userTestsPassed, opponentTestsPassed, teamSize]);
+  }, [step, roomData?.startedAt, roomData?.timeLimit, timeLimit, userTestsPassed, opponentTestsPassed, teamSize, isHost]);
 
-  // Opponent Telemetry Simulator (Fog of War)
+  // Real-time Local Typing Cadence Tracker & Opponent Idle Watchdog
   useEffect(() => {
     if (step !== 5) return;
 
-    const oppInterval = setInterval(() => {
-      setOpponentWpm(Math.floor(58 + Math.random() * 32));
+    const cadenceInterval = setInterval(() => {
+      const now = Date.now();
+      let calculatedWpm = 0;
+      if (now - lastKeystrokeTimeRef.current <= 2500 && recentKeystrokesRef.current.length > 0) {
+        recentKeystrokesRef.current = recentKeystrokesRef.current.filter((t) => now - t <= 6000);
+        const chars = recentKeystrokesRef.current.length;
+        // Standard formula: (characters / 5) / (minutes) => chars * 2 for 6-sec rolling window
+        calculatedWpm = Math.min(180, Math.round(chars * 2));
+      } else {
+        recentKeystrokesRef.current = [];
+      }
 
-      // Realistic collegiate pacing: Bot solves tests at ~45s-60s intervals
+      setMyWpm((prev) => {
+        if (prev !== calculatedWpm) {
+          syncProgressToServer(userTestsPassed, calculatedWpm);
+        }
+        return calculatedWpm;
+      });
+
+      // Opponent idle check: if opponent hasn't typed in 4 seconds, opponent cadence resets to 0
+      if (now - lastOpponentActivityTimeRef.current > 4000) {
+        setOpponentWpm(0);
+      }
+    }, 1000);
+
+    return () => clearInterval(cadenceInterval);
+  }, [step, userTestsPassed]);
+
+  // Opponent Telemetry Simulator (Fog of War) - STRICTLY for Solo Practice vs AI Bot
+  useEffect(() => {
+    if (step !== 5) return;
+    // CRITICAL: NEVER run simulation during real human vs human multiplayer duels!
+    if (!isBotDuel) return;
+
+    const oppInterval = setInterval(() => {
+      // In practice mode, simulated bot types at variable pacing
+      setOpponentWpm(Math.floor(45 + Math.random() * 25));
+
+      // Bot solves tests slowly during solo practice
       const roll = Math.random();
-      if (roll < 0.22 && opponentTestsPassed < totalTests) {
+      if (roll < 0.15 && opponentTestsPassed < totalTests) {
         setOpponentTestsPassed((prev) => {
           const next = prev + 1;
-          setOpponentAlert(`🔥 Opponent Team Omega passed Test Case ${next}/${totalTests}!`);
+          setOpponentAlert(`🔥 ByteRival Bot passed Test Case ${next}/${totalTests}!`);
           setTimeout(() => setOpponentAlert(''), 3500);
           if (next >= totalTests) {
             setStep(6);
@@ -981,34 +1507,11 @@ export function FullArenaExperience({
           }
           return next;
         });
-      } else if (roll > 0.88) {
-        setOpponentAlert('⚠️ Opponent encountered a CSS Syntax Warning!');
-        setTimeout(() => setOpponentAlert(''), 2800);
       }
-    }, 7500);
+    }, 9000);
 
     return () => clearInterval(oppInterval);
-  }, [step, opponentTestsPassed, totalTests]);
-
-  // Run Tests Handler for Player (Web Fallback)
-  const handleRunTests = () => {
-    playArcadeCoinSound();
-    if (userTestsPassed < totalTests) {
-      const next = userTestsPassed + 1;
-      setUserTestsPassed(next);
-      setTestLog(`✓ Test Case ${next}/${totalTests} Passed!`);
-      if (next >= totalTests) {
-        setStep(6);
-        setWinnerTeam('Team Alpha');
-        playVictorySound();
-      }
-    } else {
-      setTestLog('All tests verified! Submitting solution...');
-      setStep(6);
-      setWinnerTeam('Team Alpha');
-      playVictorySound();
-    }
-  };
+  }, [step, isBotDuel, opponentTestsPassed, totalTests]);
 
   // Real Backend Compiler Execution for Java, C++, Python (Compile & Run)
   // Evaluates every test case so each tab (Case 1, Case 2, etc.) has its own live output and verdict!
@@ -1152,7 +1655,6 @@ export function FullArenaExperience({
       });
     } else if (totalPassed === testCases.length) {
       playCompileSuccessSound();
-      syncMatchWonToServer(isHost ? 'Team Alpha' : 'Team Omega');
       setCompilerResult({
         success: true,
         stdout: newResults[selectedTestCaseIdx]?.stdout || '',
@@ -1243,10 +1745,10 @@ export function FullArenaExperience({
 
     setTestCaseResults(newResults);
     setUserTestsPassed(passedCount);
-    syncProgressToServer(passedCount);
+    syncProgressToServer(passedCount, myWpm);
     setIsSubmitting(false);
 
-    if (passedCount === testCases.length) {
+    if (passedCount === testCases.length && testCases.length > 0) {
       playVictorySound();
       const winner = isHost ? 'Team Alpha' : 'Team Omega';
       setWinnerTeam(winner);
@@ -1267,6 +1769,11 @@ export function FullArenaExperience({
         stdout: newResults[firstFailedIdx !== -1 ? firstFailedIdx : selectedTestCaseIdx]?.stdout || '',
         status: 'Wrong Answer',
       });
+      alert(
+        `⛔ Submission Blocked: All ${testCases.length} test cases must pass before submitting!\n\n` +
+        `Current Status: ${passedCount} / ${testCases.length} Tests Passed.\n\n` +
+        `Inspect the test cases in the console below and fix your code to pass all tests before submitting.`
+      );
     }
   };
 
@@ -1281,21 +1788,36 @@ export function FullArenaExperience({
       {
         tags: activeQuestion.tags || selectedTags,
         jsCode,
+        targetJs: activeQuestion.targetComponentJs,
       }
     );
     setWebEvaluation(evaluation);
     setTotalTests(evaluation.totalTests);
     setUserTestsPassed(evaluation.testsPassed);
-    syncProgressToServer(evaluation.testsPassed);
+    syncProgressToServer(evaluation.testsPassed, myWpm);
+
+    const testSummary = evaluation.results
+      .map((r, i) => `[Test Case #${i + 1}] ${r.testName}\nStatus: ${r.passed ? '✓ PASSED' : '✗ FAILED'}\nDetails: ${r.message}`)
+      .join('\n\n');
 
     if (evaluation.passed) {
       playCompileSuccessSound();
+      alert(
+        `🎉 All ${evaluation.totalTests} Test Cases Passed!\n\n` +
+        `${testSummary}\n\n` +
+        `Your layout matches the Preview blueprint coordinates and words. Click "Submit Challenge" to claim victory!`
+      );
     } else {
       playCompileErrorSound();
+      alert(
+        `🔍 Test Results: ${evaluation.testsPassed} / ${evaluation.totalTests} Passed\n\n` +
+        `${testSummary}\n\n` +
+        `Refine your HTML tags, word spelling, and layout CSS to pass all test cases.`
+      );
     }
   };
 
-  // Submit Handler for Web Development (Evaluates layout coordinate graph & requires passing)
+  // Submit Handler for Web Development (Evaluates layout coordinate graph & requires passing all test cases)
   const handleWebSubmit = () => {
     setIsSubmitting(true);
     const evaluation = evaluateWebCoordinateGraph(
@@ -1307,12 +1829,17 @@ export function FullArenaExperience({
       {
         tags: activeQuestion.tags || selectedTags,
         jsCode,
+        targetJs: activeQuestion.targetComponentJs,
       }
     );
     setWebEvaluation(evaluation);
     setTotalTests(evaluation.totalTests);
     setUserTestsPassed(evaluation.testsPassed);
-    syncProgressToServer(evaluation.testsPassed);
+    syncProgressToServer(evaluation.testsPassed, myWpm);
+
+    const testSummary = evaluation.results
+      .map((r, i) => `[Test Case #${i + 1}] ${r.testName}\nStatus: ${r.passed ? '✓ PASSED' : '✗ FAILED'}\nDetails: ${r.message}`)
+      .join('\n\n');
 
     if (evaluation.passed) {
       playVictorySound();
@@ -1326,12 +1853,11 @@ export function FullArenaExperience({
     } else {
       setIsSubmitting(false);
       playCompileErrorSound();
-      const failed = evaluation.results.filter((r) => !r.passed);
-      const failMsg = failed.map((f, i) => `${i + 1}. ${f.testName}:\n   → ${f.message}`).join('\n\n');
       alert(
-        `✗ Web Challenge Verdict: Incomplete (${evaluation.testsPassed} / ${evaluation.totalTests} Tests Passed)\n\n` +
-        `Coordinate graph does not match the Preview blueprint:\n\n${failMsg}\n\n` +
-        `Build the required HTML structure and layout CSS to pass all test cases!`
+        `⛔ Submission Blocked: All ${evaluation.totalTests} test cases must pass before you can submit!\n\n` +
+        `Current Status: ${evaluation.testsPassed} / ${evaluation.totalTests} Tests Passed.\n\n` +
+        `${testSummary}\n\n` +
+        `Ensure all word spellings, CSS spatial coordinates (within ±30%), and interactive scripts pass before submitting!`
       );
     }
   };
@@ -2271,7 +2797,7 @@ export function FullArenaExperience({
                   <div
                     onClick={() => {
                       setBugDomain('web');
-                      setSelectedTags(['css']);
+                      setSelectedTags(['html', 'css']);
                     }}
                     className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
                       bugDomain === 'web'
@@ -2333,9 +2859,16 @@ export function FullArenaExperience({
 
                 {/* Sub-language selector for chosen Bug Hunt Domain */}
                 <div className="pt-2 border-t border-slate-800">
-                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">
-                    Select Language to Hunt Bug ({bugDomain === 'web' ? 'Web UI' : 'Logic & Code'}):
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                      Select Language to Hunt Bug ({bugDomain === 'web' ? 'Web UI' : 'Logic & Code'}):
+                    </label>
+                    {bugDomain === 'web' && (
+                      <span className="text-[11px] font-mono text-cyan-400 font-bold">
+                        {selectedTags.length}/3 selected (tick 1, 2, or 3)
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     {(bugDomain === 'web'
                       ? [
@@ -2354,20 +2887,40 @@ export function FullArenaExperience({
                         <button
                           key={lang.id}
                           type="button"
-                          onClick={() => setSelectedTags([lang.id])}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                          onClick={() => {
+                            if (bugDomain === 'web') {
+                              // Multi-select for Web UI: can tick 1, 2, or 3!
+                              if (isSelected) {
+                                if (selectedTags.length > 1) {
+                                  setSelectedTags(selectedTags.filter((t) => t !== lang.id));
+                                }
+                              } else {
+                                setSelectedTags([...selectedTags, lang.id]);
+                              }
+                            } else {
+                              // Single-select for Logic & Code Bug Hunt (only 1 tick: Java, Python, or C++)
+                              setSelectedTags([lang.id]);
+                            }
+                          }}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-rose-950/60 border-rose-400 text-white shadow-sm'
+                              ? bugDomain === 'web'
+                                ? 'bg-cyan-950/70 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                                : 'bg-rose-950/70 border-rose-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.2)]'
                               : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="font-mono font-bold text-xs text-white">{lang.label}</span>
                             <span
-                              className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${
+                              className={`w-4 h-4 ${
+                                bugDomain === 'web' ? 'rounded-md' : 'rounded-full'
+                              } border flex items-center justify-center text-[10px] ${
                                 isSelected
-                                  ? 'border-rose-400 bg-rose-500 text-slate-950 font-bold'
-                                  : 'border-slate-700'
+                                  ? bugDomain === 'web'
+                                    ? 'border-cyan-400 bg-cyan-500 text-slate-950 font-bold'
+                                    : 'border-rose-400 bg-rose-500 text-slate-950 font-bold'
+                                  : 'border-slate-700 bg-slate-950/50'
                               }`}
                             >
                               {isSelected ? '✓' : ''}
@@ -2539,6 +3092,33 @@ export function FullArenaExperience({
               />
             </label>
 
+            {/* Real-time Join/Leave In-Arena Activity Notification Toast */}
+            {activityNotification && (
+              <div
+                className={`px-4 py-2.5 rounded-2xl border text-xs font-mono font-bold flex items-center justify-between gap-3 shadow-lg animate-fadeIn ${
+                  activityNotification.type === 'join'
+                    ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                    : 'bg-rose-950/80 border-rose-500/50 text-rose-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      activityNotification.type === 'join' ? 'bg-emerald-400' : 'bg-rose-400'
+                    } animate-ping`}
+                  />
+                  <span>{activityNotification.message}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActivityNotification(null)}
+                  className="opacity-70 hover:opacity-100 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* Roster Slots based on 1v1 vs 2v2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Team Alpha (Cyan) */}
@@ -2546,7 +3126,7 @@ export function FullArenaExperience({
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <span className="font-mono text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                    {isHost ? 'Team Alpha (Your Squad)' : 'Team Alpha (Host Squad)'}
+                    {mySquad === 'alpha' ? 'Team Alpha (Your Squad)' : 'Team Alpha (Host Squad)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
                     {teamSize === '1v1' ? '1 Slot' : '2 Slots'}
@@ -2555,34 +3135,52 @@ export function FullArenaExperience({
 
                 <div className="space-y-2">
                   {/* Slot 1: Host */}
-                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                        P1
+                  {(() => {
+                    const hostName =
+                      roomData?.alphaPlayers?.[0]?.name || roomData?.hostName || (isHost ? playerName : 'Host');
+                    const isP1Me =
+                      roomData?.alphaPlayers?.[0]?.id === myPlayerId ||
+                      (playerName && roomData?.alphaPlayers?.[0]?.name?.toLowerCase() === playerName.toLowerCase()) ||
+                      isHost;
+                    return (
+                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                            P1
+                          </div>
+                          <span className="text-white font-bold">{hostName}</span>
+                          <span className="text-[10px] text-cyan-400 font-semibold">
+                            {isP1Me ? '(You - Host)' : '(Host)'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                       </div>
-                      <span className="text-white font-bold">
-                        {roomData?.alphaPlayers?.[0]?.name || roomData?.hostName || (isHost ? playerName : 'Host')}
-                      </span>
-                      <span className="text-[10px] text-cyan-400 font-semibold">
-                        {isHost ? '(You - Host)' : '(Opponent - Host)'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-bold">READY</span>
-                  </div>
+                    );
+                  })()}
 
                   {/* Slot 2: Teammate (in 2v2) */}
                   {teamSize === '2v2' && (
                     roomData?.alphaPlayers?.[1] ? (
-                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                            P2
+                      (() => {
+                        const p2 = roomData.alphaPlayers[1];
+                        const isP2Me =
+                          p2.id === myPlayerId ||
+                          (playerName && p2.name?.toLowerCase() === playerName.toLowerCase());
+                        return (
+                          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                                P2
+                              </div>
+                              <span className="text-white font-bold">{p2.name}</span>
+                              <span className="text-[10px] text-cyan-400 font-semibold">
+                                {isP2Me ? '(You - Navigator)' : '(Navigator)'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                           </div>
-                          <span className="text-white font-bold">{roomData.alphaPlayers[1].name}</span>
-                          <span className="text-[10px] text-cyan-400 font-semibold">(Navigator)</span>
-                        </div>
-                        <span className="text-[10px] text-emerald-400 font-bold">READY</span>
-                      </div>
+                        );
+                      })()
                     ) : (
                       <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-slate-700 flex items-center justify-between text-xs font-mono text-slate-400">
                         <div className="flex items-center gap-2">
@@ -2603,7 +3201,7 @@ export function FullArenaExperience({
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <span className="font-mono text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-rose-400" />
-                    {isHost ? 'Team Omega (Opponents)' : 'Team Omega (Your Squad)'}
+                    {mySquad === 'omega' ? 'Team Omega (Your Squad)' : 'Team Omega (Opponents)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
                     {teamSize === '1v1' ? '1 Slot' : '2 Slots'}
@@ -2613,7 +3211,9 @@ export function FullArenaExperience({
                 {roomData?.omegaPlayers && roomData.omegaPlayers.length > 0 ? (
                   <div className="space-y-2">
                     {roomData.omegaPlayers.map((opp: any, idx: number) => {
-                      const isMe = !isHost;
+                      const isOppMe =
+                        opp.id === myPlayerId ||
+                        (playerName && opp.name?.toLowerCase() === playerName.toLowerCase());
                       return (
                         <div
                           key={opp.id || idx}
@@ -2621,11 +3221,11 @@ export function FullArenaExperience({
                         >
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                              {opp.id === 'bot-rival' ? <Bot className="w-3.5 h-3.5" /> : `P${idx + 2}`}
+                              {opp.id === 'bot-rival' ? <Bot className="w-3.5 h-3.5" /> : `P${idx + (teamSize === '2v2' ? 3 : 2)}`}
                             </div>
                             <span className="text-white font-bold">{opp.name}</span>
                             <span className="text-[10px] text-rose-400 font-semibold">
-                              {isMe ? '(You)' : '(Opponent)'}
+                              {isOppMe ? '(You)' : opp.id === 'bot-rival' ? '(Practice AI)' : '(Opponent)'}
                             </span>
                           </div>
                           <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
@@ -2634,21 +3234,19 @@ export function FullArenaExperience({
                         </div>
                       );
                     })}
-                  </div>
-                ) : !isHost ? (
-                  <div className="space-y-2">
-                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/50 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(244,63,94,0.25)]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                          P2
+
+                    {/* In 2v2: If Omega has only 1 player, show Slot 4 waiting */}
+                    {teamSize === '2v2' && roomData.omegaPlayers.length < 2 && (
+                      <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-rose-800/60 flex items-center justify-between text-xs font-mono text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[11px]">
+                            P4
+                          </div>
+                          <span className="italic text-rose-400/80">Waiting for opponent #2...</span>
                         </div>
-                        <span className="text-white font-bold">{playerName}</span>
-                        <span className="text-[10px] text-rose-400 font-semibold">(You)</span>
+                        <span className="text-[10px] text-amber-400 animate-pulse">OPEN</span>
                       </div>
-                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
-                        READY
-                      </span>
-                    </div>
+                    )}
                   </div>
                 ) : isBotOpponentAdded ? (
                   <div className="space-y-2">
@@ -2776,96 +3374,132 @@ export function FullArenaExperience({
                 {/* Editor Header Bar */}
                 <div className="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-1.5 overflow-x-auto py-1">
-                    {/* Web Dev Tabs (Only shown in Web mode) */}
-                    {isWebMatch && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('html')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                            activeTab === 'html'
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          index.html
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('css')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                            activeTab === 'css'
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          styles.css
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('js')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                            activeTab === 'js'
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          script.js
-                        </button>
-                      </>
-                    )}
+                    {/* Web Dev Tabs (Dynamically filtered by question tags) */}
+                    {isWebMatch && (() => {
+                      const qTags = (activeQuestion?.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+                      const hasExplicitWeb = qTags.some((t) => ['html', 'css', 'js', 'javascript'].includes(t));
+                      const showHtmlTab = hasExplicitWeb ? qTags.includes('html') : true;
+                      const showCssTab = hasExplicitWeb ? qTags.includes('css') : true;
+                      const showJsTab = hasExplicitWeb
+                        ? (qTags.includes('javascript') || qTags.includes('js'))
+                        : Boolean(activeQuestion?.targetComponentJs && activeQuestion.targetComponentJs.trim().length > 25 && !activeQuestion.targetComponentJs.startsWith('//'));
 
-                    {/* Compiler Language Tabs (Python, Java, C++) */}
-                    {!isWebMatch && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('python')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
-                            activeTab === 'python'
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          <span>solution.py</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('java')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
-                            activeTab === 'java'
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          <span>Solution.java</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('cpp')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
-                            activeTab === 'cpp'
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          <span>solution.cpp</span>
-                        </button>
-                      </>
-                    )}
+                      return (
+                        <>
+                          {showHtmlTab && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('html')}
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                                activeTab === 'html'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              index.html
+                            </button>
+                          )}
+                          {showCssTab && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('css')}
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                                activeTab === 'css'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              styles.css
+                            </button>
+                          )}
+                          {showJsTab && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('js')}
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                                activeTab === 'js'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              script.js
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
+
+                    {/* Compiler Language Tabs (Python, Java, C++) (Filtered by tags if specified) */}
+                    {!isWebMatch && (() => {
+                      const qTags = (activeQuestion?.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+                      const hasExplicitAlgo = qTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
+                      const showPyTab = hasExplicitAlgo ? qTags.includes('python') : true;
+                      const showJavaTab = hasExplicitAlgo ? qTags.includes('java') : true;
+                      const showCppTab = hasExplicitAlgo ? (qTags.includes('cpp') || qTags.includes('c++')) : true;
+
+                      return (
+                        <>
+                          {showPyTab && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('python')}
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                                activeTab === 'python'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              <span>solution.py</span>
+                            </button>
+                          )}
+                          {showJavaTab && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('java')}
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                                activeTab === 'java'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              <span>Solution.java</span>
+                            </button>
+                          )}
+                          {showCppTab && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('cpp')}
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                                activeTab === 'cpp'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              <span>solution.cpp</span>
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Right Actions: Real Compiler Actions for Java/C++/Python, or Web Submit for Web */}
                   <div className="flex items-center gap-2 shrink-0">
                     {isWebMatch ? (
                       <>
-                        <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
-                          Tests: {userTestsPassed} / {totalTests}
-                        </span>
+                        <div className="flex items-center gap-2 mr-1">
+                          <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
+                            Tests: {userTestsPassed} / {totalTests}
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400 hidden md:inline-flex items-center gap-1">
+                            <Flame className={`w-3 h-3 text-cyan-400 ${myWpm > 0 ? 'animate-pulse' : 'opacity-40'}`} />
+                            <span>{myWpm} WPM</span>
+                          </span>
+                        </div>
                         <button
                           type="button"
                           onClick={handleTestWebLayout}
-                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                           title="Run layout coordinate graph verification against Preview blueprint"
                         >
                           <Play className="w-3 h-3 fill-current text-cyan-400" />
@@ -2875,7 +3509,16 @@ export function FullArenaExperience({
                           type="button"
                           disabled={isSubmitting}
                           onClick={handleWebSubmit}
-                          className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:brightness-110 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                          className={`px-3.5 py-1 rounded-lg text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${
+                            userTestsPassed === totalTests && totalTests > 0
+                              ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 hover:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400'
+                              : 'bg-gradient-to-r from-cyan-600 to-emerald-600 hover:brightness-110'
+                          }`}
+                          title={
+                            userTestsPassed === totalTests && totalTests > 0
+                              ? 'All test cases passed! Submit solution to claim victory'
+                              : `Submit Challenge (${userTestsPassed}/${totalTests} tests passed)`
+                          }
                         >
                           {isSubmitting ? (
                             <Loader2 className="w-3 h-3 animate-spin text-white" />
@@ -2887,12 +3530,21 @@ export function FullArenaExperience({
                       </>
                     ) : (
                       <>
+                        <div className="flex items-center gap-2 mr-1">
+                          <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
+                            Tests: {userTestsPassed} / {activeQuestion.testCases?.length || 3}
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-400 hidden md:inline-flex items-center gap-1">
+                            <Flame className={`w-3 h-3 text-cyan-400 ${myWpm > 0 ? 'animate-pulse' : 'opacity-40'}`} />
+                            <span>{myWpm} WPM</span>
+                          </span>
+                        </div>
                         {/* Option 1: Compile & Run (Judge0 Backend) */}
                         <button
                           type="button"
                           disabled={isCompiling || isSubmitting}
                           onClick={handleCompileAndRun}
-                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
                           title="Compile source code and run against current test case input"
                         >
                           {isCompiling ? (
@@ -2908,7 +3560,11 @@ export function FullArenaExperience({
                           type="button"
                           disabled={isCompiling || isSubmitting}
                           onClick={handleSubmitCode}
-                          className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 hover:brightness-110 text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                          className={`px-3.5 py-1 rounded-lg text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${
+                            userTestsPassed === (activeQuestion.testCases?.length || 3) && userTestsPassed > 0
+                              ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 hover:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400'
+                              : 'bg-gradient-to-r from-emerald-600 to-cyan-600 hover:brightness-110'
+                          }`}
                           title="Submit solution to evaluate against all hidden test cases"
                         >
                           {isSubmitting ? (
@@ -2943,6 +3599,7 @@ export function FullArenaExperience({
                     }
                     onChange={(e) => {
                       const val = e.target.value;
+                      handleUserKeystroke();
                       if (activeTab === 'html') setHtmlCode(val);
                       else if (activeTab === 'css') setCssCode(val);
                       else if (activeTab === 'js') setJsCode(val);
@@ -2979,8 +3636,8 @@ export function FullArenaExperience({
                   {/* Opponent Progress Bar */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-slate-400 text-[11px]">
-                        {isBotOpponentAdded ? 'ByteRival Bot (Practice AI)' : 'Classmate Opponent'}
+                      <span className="text-slate-400 text-[11px] font-semibold">
+                        {opponentDisplayName}
                       </span>
                       <span className="text-rose-400 font-bold text-[11px]">
                         {opponentTestsPassed} / {totalTests} Tests Passed
@@ -3001,13 +3658,15 @@ export function FullArenaExperience({
                     <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
                       <span className="text-[10px] text-slate-400 font-semibold uppercase">Cadence:</span>
                       <div className="font-black text-rose-400 flex items-center gap-1">
-                        <Flame className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                        <Flame className={`w-3.5 h-3.5 text-rose-500 ${opponentWpm > 0 ? 'animate-pulse' : 'opacity-30'}`} />
                         <span>{opponentWpm} WPM</span>
                       </div>
                     </div>
                     <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Compile:</span>
-                      <span className="font-black text-cyan-400">Active</span>
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Status:</span>
+                      <span className={`font-black ${opponentWpm > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {opponentWpm > 0 ? 'Typing' : 'Idle'}
+                      </span>
                     </div>
                   </div>
 
@@ -3065,9 +3724,81 @@ export function FullArenaExperience({
                         >
                           <iframe
                             title="Target Component Preview"
-                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${activeQuestion.targetComponentCss || ''}</style></head><body>${activeQuestion.targetComponentHtml || '<p>Target Preview</p>'}</body></html>`}
+                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;overflow-y:auto;}*,*:before,*:after{box-sizing:inherit;}${activeQuestion.targetComponentCss || ''}</style></head><body>${activeQuestion.targetComponentHtml || '<p>Target Preview</p>'}<script>
+window.onerror = function(msg) { console.warn('Preview script error:', msg); return true; };
+</script>
+<script>
+(function() {
+  function runTargetScript() {
+    try {
+      ${(activeQuestion.targetComponentJs || '').replace(/<\/script/gi, '<\\/script')}
+    } catch (e) {
+      console.warn('Target JS error:', e);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runTargetScript);
+  } else {
+    runTargetScript();
+  }
+})();
+</script>
+<script>
+(function() {
+  function initInteractivePreview() {
+    var buttons = Array.from(document.querySelectorAll('button, [role="button"], .btn'));
+    if (buttons.length === 0) return;
+
+    var displayEl = document.querySelector('#counter-val, #counter, #count, #display, #value, #number, .count-number, .count, .counter, .value, .number');
+    if (!displayEl) {
+      var candidates = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, div, span, p'));
+      for (var i = 0; i < candidates.length; i++) {
+        var el = candidates[i];
+        if (el.children.length === 0 && /^\\s*-?\\d+\\s*$/.test(el.textContent || '')) {
+          displayEl = el;
+          break;
+        }
+      }
+    }
+
+    if (!displayEl) return;
+
+    buttons.forEach(function(btn) {
+      var text = (btn.textContent || '').trim().toLowerCase();
+      var id = (btn.id || '').toLowerCase();
+      var cls = (btn.className || '').toLowerCase();
+
+      var isInc = text.includes('increase') || text.includes('increment') || text.includes('add') || text === '+' || id.includes('inc') || cls.includes('inc');
+      var isDec = text.includes('decrease') || text.includes('decrement') || text.includes('sub') || text === '-' || id.includes('dec') || cls.includes('dec');
+      var isReset = text.includes('reset') || text.includes('clear') || id.includes('reset') || cls.includes('reset');
+
+      btn.addEventListener('click', function(e) {
+        var currentVal = parseInt(displayEl.textContent ? displayEl.textContent.trim() : '0', 10);
+        if (isNaN(currentVal)) currentVal = 0;
+
+        if (isInc) {
+          e.preventDefault();
+          displayEl.textContent = String(currentVal + 1);
+        } else if (isDec) {
+          e.preventDefault();
+          displayEl.textContent = String(Math.max(0, currentVal - 1));
+        } else if (isReset) {
+          e.preventDefault();
+          displayEl.textContent = '0';
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInteractivePreview);
+  } else {
+    initInteractivePreview();
+  }
+})();
+<\/script></body></html>`}
                             className="w-full h-full border-0 block"
-                            sandbox="allow-scripts"
+                            sandbox="allow-scripts allow-modals"
                           />
                         </div>
                       </div>
@@ -3127,9 +3858,17 @@ export function FullArenaExperience({
                         >
                           <iframe
                             title="Student Code Output"
-                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${cssCode || ''}</style></head><body>${htmlCode || ''}<script>try{${jsCode || ''}}catch(e){console.error(e);}<\/script></body></html>`}
+                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${cssCode || ''}</style></head><body>${htmlCode || ''}<script>
+window.onerror = function(msg, url, line) {
+  console.warn("Script error: " + msg + " at line " + line);
+  return true;
+};
+</script>
+<script>
+${jsCode || ''}
+</script></body></html>`}
                             className="w-full h-full border-0 block"
-                            sandbox="allow-scripts"
+                            sandbox="allow-scripts allow-modals"
                           />
                         </div>
                       </div>
@@ -3465,10 +4204,16 @@ export function FullArenaExperience({
                 <Trophy className="w-8 h-8" />
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tight">
-                {winnerTeam === 'Team Alpha' ? 'VICTORY! SQUAD TRIUMPH' : 'MATCH COMPLETE'}
+                {winnerTeam === (isHost ? 'Team Alpha' : 'Team Omega')
+                  ? 'VICTORY! SQUAD TRIUMPH'
+                  : winnerTeam === null
+                  ? 'MATCH TIED • TIME EXPIRED'
+                  : 'MATCH COMPLETE'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 font-mono">
-                Fog of War has dissolved. Both solutions are now unlocked and revealed!
+                {winnerTeam === null
+                  ? 'Time expired without completing all test cases. Well fought duel!'
+                  : 'Fog of War has dissolved. Both solutions are now unlocked and revealed!'}
               </p>
             </div>
 
@@ -3483,7 +4228,7 @@ export function FullArenaExperience({
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
-                    Team Alpha (You)
+                    Team Alpha {isHost ? '(You)' : '(Host)'}
                   </span>
                   {winnerTeam === 'Team Alpha' && (
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500 text-slate-950">
@@ -3492,10 +4237,10 @@ export function FullArenaExperience({
                   )}
                 </div>
                 <div className="text-2xl font-mono font-black text-white">
-                  {userTestsPassed} / {totalTests} Tests
+                  {isHost ? userTestsPassed : opponentTestsPassed} / {totalTests} Tests
                 </div>
                 <p className="text-xs text-slate-400 mt-1 font-mono">
-                  Completed in {formatTimer(timeLimit - timeLeft)}
+                  {isHost ? `Cadence: ${myWpm} WPM` : `Cadence: ${opponentWpm} WPM`}
                 </p>
               </div>
 
@@ -3508,7 +4253,7 @@ export function FullArenaExperience({
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-mono font-bold text-rose-400 uppercase">
-                    Team Omega (Opponent)
+                    Team Omega {!isHost ? '(You)' : '(Opponent)'}
                   </span>
                   {winnerTeam === 'Team Omega' && (
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500 text-slate-950">
@@ -3517,9 +4262,11 @@ export function FullArenaExperience({
                   )}
                 </div>
                 <div className="text-2xl font-mono font-black text-white">
-                  {opponentTestsPassed} / {totalTests} Tests
+                  {!isHost ? userTestsPassed : opponentTestsPassed} / {totalTests} Tests
                 </div>
-                <p className="text-xs text-slate-400 mt-1 font-mono">Cadence: {opponentWpm} WPM</p>
+                <p className="text-xs text-slate-400 mt-1 font-mono">
+                  {!isHost ? `Cadence: ${myWpm} WPM` : `Cadence: ${opponentWpm} WPM`}
+                </p>
               </div>
             </div>
 

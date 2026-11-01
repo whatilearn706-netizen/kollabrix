@@ -28,6 +28,7 @@ export interface ArenaPlayer {
 export interface ArenaRoom {
   code: string; // e.g. "KBX-4634"
   hostName: string;
+  hostId?: string;
   format: '1v1' | '2v2';
   arena: 'web_dev' | 'algorithms' | 'bug_hunt';
   selectedTags: string[];
@@ -35,6 +36,7 @@ export interface ArenaRoom {
   timeLimit: number;
   question: DuelQuestion;
   status: 'lobby' | 'starting' | 'in_progress' | 'finished' | 'closed';
+  startedAt?: string;
   winnerTeam?: 'Team Alpha' | 'Team Omega' | 'Draw';
   alphaPlayers: ArenaPlayer[];
   omegaPlayers: ArenaPlayer[];
@@ -191,37 +193,51 @@ export async function joinPlayerToRoom(
   const cleanCode = roomCode.trim().toUpperCase();
   const now = new Date().toISOString();
 
+  // Deduplication check: Is player already in alpha or omega?
+  const existingInAlpha = room.alphaPlayers.find(
+    (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
+  );
+  if (existingInAlpha) {
+    existingInAlpha.lastActive = now;
+    existingInAlpha.avatarIdx = player.avatarIdx ?? existingInAlpha.avatarIdx;
+    existingInAlpha.name = player.name || existingInAlpha.name;
+    const saved = await saveRoom(room);
+    return { success: true, room: saved };
+  }
+
+  const existingInOmega = room.omegaPlayers.find(
+    (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
+  );
+  if (existingInOmega) {
+    existingInOmega.lastActive = now;
+    existingInOmega.avatarIdx = player.avatarIdx ?? existingInOmega.avatarIdx;
+    existingInOmega.name = player.name || existingInOmega.name;
+    const saved = await saveRoom(room);
+    return { success: true, room: saved };
+  }
+
   // In 1v1: the joining player is ALWAYS assigned to Team Omega (Opponent Slot)
   if (room.format === '1v1') {
-    const existingOpponent = room.omegaPlayers.find(
-      (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
-    );
-    if (existingOpponent) {
-      existingOpponent.lastActive = now;
-      existingOpponent.avatarIdx = player.avatarIdx;
-      existingOpponent.name = player.name || existingOpponent.name;
-    } else {
-      const newOpponent: ArenaPlayer = {
-        id: player.id || `p-${Date.now()}`,
-        name: player.name || 'Challenger',
-        avatarIdx: player.avatarIdx ?? 1,
-        team: 'omega',
-        role: 'driver',
-        isReady: true,
-        isHost: false,
-        testsPassed: 0,
-        wpm: 0,
-        lastActive: now,
-      };
-      room.omegaPlayers = [newOpponent];
-      room.isBotEnabled = false; // Real student joined, turn off bot!
-    }
+    const newOpponent: ArenaPlayer = {
+      id: player.id || `p-${Date.now()}`,
+      name: player.name || 'Challenger',
+      avatarIdx: player.avatarIdx ?? 1,
+      team: 'omega',
+      role: 'driver',
+      isReady: true,
+      isHost: false,
+      testsPassed: 0,
+      wpm: 0,
+      lastActive: now,
+    };
+    room.omegaPlayers = [newOpponent];
+    room.isBotEnabled = false; // Real student joined, turn off bot!
     const saved = await saveRoom(room);
     return { success: true, room: saved };
   } else {
     // In 2v2:
+    // 1st joiner (player #2 in match) goes to Host squad (Team Alpha Navigator)
     if (room.alphaPlayers.length < 2) {
-      // Fill Team Alpha Navigator
       room.alphaPlayers.push({
         id: player.id || `p-${Date.now()}`,
         name: player.name || 'Teammate',
@@ -234,25 +250,54 @@ export async function joinPlayerToRoom(
         wpm: 0,
         lastActive: now,
       });
-    } else if (room.omegaPlayers.length < 2) {
-      // Fill Team Omega Driver or Navigator
-      const isDriver = room.omegaPlayers.length === 0;
-      room.omegaPlayers.push({
-        id: player.id || `p-${Date.now()}`,
-        name: player.name || 'Challenger',
-        avatarIdx: player.avatarIdx ?? 3,
-        team: 'omega',
-        role: isDriver ? 'driver' : 'navigator',
-        isReady: true,
-        isHost: false,
-        testsPassed: 0,
-        wpm: 0,
-        lastActive: now,
-      });
-      room.isBotEnabled = false;
     } else {
-      return { success: false, error: 'This battle room is already full (max 4 players for 2v2).' };
+      // 2nd and 3rd joiners (players #3 and #4 in match) go to Team Omega
+      // Filter out practice bots if real students are joining
+      room.omegaPlayers = room.omegaPlayers.filter((p) => p.id !== 'bot-rival');
+      if (room.omegaPlayers.length < 2) {
+        const isDriver = room.omegaPlayers.length === 0;
+        room.omegaPlayers.push({
+          id: player.id || `p-${Date.now()}`,
+          name: player.name || 'Challenger',
+          avatarIdx: player.avatarIdx ?? 3,
+          team: 'omega',
+          role: isDriver ? 'driver' : 'navigator',
+          isReady: true,
+          isHost: false,
+          testsPassed: 0,
+          wpm: 0,
+          lastActive: now,
+        });
+        room.isBotEnabled = false;
+      } else {
+        return { success: false, error: 'This battle room is already full (max 4 players for 2v2).' };
+      }
     }
+  }
+
+  const saved = await saveRoom(room);
+  return { success: true, room: saved };
+}
+
+// Remove a player cleanly when leaving the room
+export async function leaveRoomPlayer(
+  roomCode: string,
+  playerId: string,
+  playerName?: string
+): Promise<{ success: boolean; room?: ArenaRoom; error?: string }> {
+  const room = await getRoom(roomCode);
+  if (!room) return { success: false, error: 'Room not found' };
+
+  // If host leaves, close room
+  if (room.hostId === playerId || room.alphaPlayers[0]?.id === playerId || room.alphaPlayers[0]?.name === playerName) {
+    room.status = 'closed';
+  } else {
+    room.alphaPlayers = room.alphaPlayers.filter(
+      (p) => p.id !== playerId && (!playerName || p.name.toLowerCase() !== playerName.toLowerCase())
+    );
+    room.omegaPlayers = room.omegaPlayers.filter(
+      (p) => p.id !== playerId && (!playerName || p.name.toLowerCase() !== playerName.toLowerCase())
+    );
   }
 
   const saved = await saveRoom(room);

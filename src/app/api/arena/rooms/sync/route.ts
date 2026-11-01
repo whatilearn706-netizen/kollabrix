@@ -25,14 +25,44 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'start_match': {
         room.status = 'starting';
+        if (!room.startedAt) {
+          // Synchronize room start: allow 3.5s for the 3-2-1 countdown so match battle clock starts exactly at battlefield entry
+          room.startedAt = new Date(Date.now() + 3500).toISOString();
+        }
+        if (payload?.timeLimit) {
+          room.timeLimit = Number(payload.timeLimit);
+        }
         if (payload?.question) {
-          room.question = payload.question;
+          room.question = {
+            ...payload.question,
+            timeLimitSeconds: room.timeLimit || Number(payload.question.timeLimitSeconds) || 300,
+          };
+        } else if (room.question && room.timeLimit) {
+          room.question.timeLimitSeconds = room.timeLimit;
         }
         break;
       }
 
       case 'close_room': {
         room.status = 'closed';
+        break;
+      }
+
+      case 'leave_room': {
+        const isHostPlayer =
+          (room.hostId && room.hostId === playerId) ||
+          room.alphaPlayers[0]?.id === playerId ||
+          (payload?.playerName && room.hostName.toLowerCase() === payload.playerName.toLowerCase());
+        if (isHostPlayer) {
+          room.status = 'closed';
+        } else {
+          room.alphaPlayers = room.alphaPlayers.filter(
+            (p) => p.id !== playerId && (!payload?.playerName || p.name.toLowerCase() !== payload.playerName.toLowerCase())
+          );
+          room.omegaPlayers = room.omegaPlayers.filter(
+            (p) => p.id !== playerId && (!payload?.playerName || p.name.toLowerCase() !== payload.playerName.toLowerCase())
+          );
+        }
         break;
       }
 
