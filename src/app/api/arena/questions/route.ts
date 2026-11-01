@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const arena = searchParams.get('arena');
+    const bugDomain = searchParams.get('bugDomain');
     const tagsParam = searchParams.get('tags');
     const requestedTags = tagsParam ? tagsParam.split(',').map((t) => t.trim().toLowerCase()) : [];
 
@@ -24,6 +25,10 @@ export async function GET(request: NextRequest) {
 
     if (arena) {
       filtered = filtered.filter((q) => q.arena === arena);
+    }
+
+    if (bugDomain) {
+      filtered = filtered.filter((q) => !q.bugDomain || q.bugDomain === bugDomain);
     }
 
     if (requestedTags.length > 0) {

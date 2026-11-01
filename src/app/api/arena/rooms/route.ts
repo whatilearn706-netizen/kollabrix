@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       hostName,
       format = '1v1',
       arena = 'web_dev',
+      bugDomain,
       selectedTags = ['html', 'css'],
       difficulty = 'medium',
       timeLimit = 300,
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
 
         const matching = list.filter((q) => {
           if (q.arena !== arena) return false;
+          if (arena === 'bug_hunt' && bugDomain && q.bugDomain && q.bugDomain !== bugDomain) return false;
           if (selectedTags && Array.isArray(selectedTags) && selectedTags.length > 0) {
             return selectedTags.some((t: string) => q.tags?.includes(t));
           }
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
         if (matching.length > 0) {
           finalQuestion = matching[Math.floor(Math.random() * matching.length)];
         } else {
-          const arenaMatching = list.filter((q) => q.arena === arena);
+          const arenaMatching = list.filter((q) => q.arena === arena && (arena !== 'bug_hunt' || !bugDomain || q.bugDomain === bugDomain));
           finalQuestion = arenaMatching.length > 0
             ? arenaMatching[Math.floor(Math.random() * arenaMatching.length)]
             : list[0];

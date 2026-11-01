@@ -558,10 +558,10 @@ export function FullArenaExperience({
           avatarIdx: selectedAvatarIdx,
           format: teamSize,
           arena,
+          bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
           selectedTags,
           difficulty,
           timeLimit,
-          question: activeQuestion,
           isBotEnabled: isBotOpponentAdded,
         }),
       });
@@ -800,40 +800,47 @@ export function FullArenaExperience({
       }
     }
 
-    // Fetch fresh question matching arena & selected tags from database question bank
+    // Fetch fresh random question matching the player's exact arena, bugDomain & selected language tags
     let chosen: DuelQuestion | null = null;
     try {
       const res = await fetch(
-        `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}`,
+        `/api/arena/questions?arena=${arena}&tags=${selectedTags.join(',')}${arena === 'bug_hunt' && bugDomain ? `&bugDomain=${bugDomain}` : ''}&_rnd=${Date.now()}`,
         { cache: 'no-store' }
       );
       if (res.ok) {
         const data = await res.json();
         if (data.questions && data.questions.length > 0) {
-          chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
+          const matchingPool = data.questions.filter((q: DuelQuestion) => {
+            if (arena === 'bug_hunt' && q.bugDomain && bugDomain && q.bugDomain !== bugDomain) return false;
+            if (selectedTags.length > 0 && q.tags && q.tags.length > 0) {
+              return selectedTags.some((t) => q.tags.includes(t));
+            }
+            return true;
+          });
+          const pool = matchingPool.length > 0 ? matchingPool : data.questions;
+          chosen = pool[Math.floor(Math.random() * pool.length)];
         }
       }
     } catch (e) {}
 
-    if (!chosen && roomData?.question) {
-      chosen = roomData.question;
-    }
-
-      if (!chosen) {
-        const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
-          if (q.arena !== arena) return false;
-          if (arena === 'bug_hunt' && q.bugDomain && q.bugDomain !== bugDomain) return false;
+    if (!chosen) {
+      const matching = DEFAULT_ARENA_QUESTIONS.filter((q) => {
+        if (q.arena !== arena) return false;
+        if (arena === 'bug_hunt' && q.bugDomain && bugDomain && q.bugDomain !== bugDomain) return false;
+        if (selectedTags.length > 0 && q.tags && q.tags.length > 0) {
           return selectedTags.some((t) => q.tags.includes(t));
-        });
-        chosen =
-          matching.length > 0
-            ? matching[Math.floor(Math.random() * matching.length)]
-            : DEFAULT_ARENA_QUESTIONS.find(
-                (q) => q.arena === arena && (arena !== 'bug_hunt' || q.bugDomain === bugDomain)
-              ) ||
-              DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
-              DEFAULT_ARENA_QUESTIONS[0];
-      }
+        }
+        return true;
+      });
+      chosen =
+        matching.length > 0
+          ? matching[Math.floor(Math.random() * matching.length)]
+          : DEFAULT_ARENA_QUESTIONS.find(
+              (q) => q.arena === arena && (arena !== 'bug_hunt' || q.bugDomain === bugDomain)
+            ) ||
+            DEFAULT_ARENA_QUESTIONS.find((q) => q.arena === arena) ||
+            DEFAULT_ARENA_QUESTIONS[0];
+    }
 
     setActiveQuestion(chosen);
 
@@ -1745,10 +1752,10 @@ export function FullArenaExperience({
               </div>
             </div>
 
-            {/* Main 3-Column Tactical Pod Matrix */}
+            {/* Main Balanced Tactical Pod Matrix (Clean 2-Column Cyber Grid) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              {/* Pod 1: Pilot Holographic Dossier (Col 1-3) */}
-              <div className="lg:col-span-3 p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex flex-col justify-between space-y-4">
+              {/* Pod 1: Pilot Holographic Dossier (Col 1-5) */}
+              <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-4 shadow-xl">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
@@ -1849,8 +1856,8 @@ export function FullArenaExperience({
                 </div>
               </div>
 
-              {/* Pod 2: Engagement Specification & Mode Selection (Col 4-9) */}
-              <div className="lg:col-span-6 p-5 sm:p-6 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex flex-col justify-between space-y-5">
+              {/* Pod 2: Engagement Specification & Mode Selection (Col 6-12) */}
+              <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-5 shadow-xl">
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
@@ -2029,77 +2036,6 @@ export function FullArenaExperience({
                       </button>
                     ))}
                   </div>
-                </div>
-              </div>
-
-              {/* Pod 3: Tournament Telemetry & Integrity Gauntlet (Col 10-12) */}
-              <div className="lg:col-span-3 p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>ARENA TELEMETRY</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                      SHIELD ACTIVE
-                    </span>
-                  </div>
-
-                  {/* Live Security Specifications */}
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2.5 font-mono text-[11px]">
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Shield className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      <div>
-                        <span className="text-white font-bold block">Fog of War Shield</span>
-                        <span className="text-[10px] text-slate-400">Zero screen-peeking encryption</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Activity className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                      <div>
-                        <span className="text-white font-bold block">Anti-Cheat Proctor</span>
-                        <span className="text-[10px] text-slate-400">Keystroke cadence & paste lock</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Cpu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <div>
-                        <span className="text-white font-bold block">Judge0 Multi-Language</span>
-                        <span className="text-[10px] text-slate-400">Java 21, Python 3.12, C++20, Web</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Wifi className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <div>
-                        <span className="text-white font-bold block">Edge WebSocket Mesh</span>
-                        <span className="text-[10px] text-slate-400">Sub-15ms realtime sync</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Match Bounty Reward Card */}
-                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-950 border border-amber-500/30 space-y-1.5">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                      <Trophy className="w-3.5 h-3.5" />
-                      <span>MATCH BOUNTY STAKE</span>
-                    </span>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-lg font-mono font-black text-white">+150 ELO</span>
-                      <span className="text-xs font-mono font-bold text-amber-300">+500 XP</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400">
-                      Winner claimable immediately upon all test cases passed or sudden-death timeout.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Telemetry Status Bar */}
-                <div className="pt-2 border-t border-slate-800/60 font-mono text-[10px] text-slate-400 flex items-center justify-between">
-                  <span>SPECTATORS:</span>
-                  <span className="text-cyan-400 font-bold">1,842 CONNECTED</span>
                 </div>
               </div>
             </div>
