@@ -544,7 +544,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
               >
                 <option value="web_dev">Web Development (HTML / CSS / JS)</option>
                 <option value="algorithms">Algorithms & DSA (Java / Python / C++)</option>
-                <option value="bug_hunt">React Bug Hunt (State / Performance)</option>
+                <option value="bug_hunt">Bug Hunt (Web UI / Logic & Code)</option>
               </select>
             </div>
           </div>
@@ -787,93 +787,93 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                   />
                 </div>
               </div>
-
-              {/* Dynamic Interactive Test Cases Builder */}
-              <div className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                      Automated Verification Test Cases ({testCasesList.length})
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddTestCase}
-                    className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ Add Test Case</span>
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {testCasesList.map((tc, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 space-y-2.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-mono font-bold text-slate-300">
-                          Test Case #{idx + 1}
-                        </span>
-                        {testCasesList.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTestCase(idx)}
-                            className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                            title="Remove test case"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                            Input (Arguments / Data):
-                          </label>
-                          <input
-                            type="text"
-                            value={tc.input}
-                            onChange={(e) => handleUpdateTestCase(idx, 'input', e.target.value)}
-                            placeholder="e.g. nums = [3, 1, 2, 4]"
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-white text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                            Expected Output:
-                          </label>
-                          <input
-                            type="text"
-                            value={tc.expectedOutput}
-                            onChange={(e) => handleUpdateTestCase(idx, 'expectedOutput', e.target.value)}
-                            placeholder="e.g. [2, 4, 3, 1]"
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-emerald-400 text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                          Objective / Description:
-                        </label>
-                        <input
-                          type="text"
-                          value={tc.description}
-                          onChange={(e) => handleUpdateTestCase(idx, 'description', e.target.value)}
-                          placeholder="e.g. Verifies even numbers are placed before odds"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-300 text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
+
+          {/* Dynamic Interactive Test Cases Builder (Available for All Categories: Web Dev, Algorithms, Bug Hunt) */}
+          <div className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                  Automated Verification Test Cases ({testCasesList.length})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddTestCase}
+                className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Test Case</span>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {testCasesList.map((tc, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono font-bold text-slate-300">
+                      Test Case #{idx + 1}
+                    </span>
+                    {testCasesList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTestCase(idx)}
+                        className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
+                        title="Remove test case"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                        Input (Arguments / Data / DOM Selector):
+                      </label>
+                      <input
+                        type="text"
+                        value={tc.input}
+                        onChange={(e) => handleUpdateTestCase(idx, 'input', e.target.value)}
+                        placeholder={newArena === 'web_dev' ? 'e.g. .cards-grid or hasButton' : 'e.g. nums = [3, 1, 2, 4]'}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-white text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                        Expected Output / Assertion:
+                      </label>
+                      <input
+                        type="text"
+                        value={tc.expectedOutput}
+                        onChange={(e) => handleUpdateTestCase(idx, 'expectedOutput', e.target.value)}
+                        placeholder={newArena === 'web_dev' ? 'e.g. 3 or true' : 'e.g. [2, 4, 3, 1]'}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-emerald-400 text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                      Objective / Description:
+                    </label>
+                    <input
+                      type="text"
+                      value={tc.description}
+                      onChange={(e) => handleUpdateTestCase(idx, 'description', e.target.value)}
+                      placeholder="e.g. Verifies cards layout and component styling"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-300 text-xs font-mono focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <button
