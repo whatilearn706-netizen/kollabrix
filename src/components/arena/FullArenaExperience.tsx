@@ -109,8 +109,19 @@ export function FullArenaExperience({
     }
   }, []);
 
-  // Multiplayer Server State
-  const [myPlayerId] = useState(() => currentUser?.username || `pilot-${Math.random().toString(36).substring(2, 9)}`);
+  // Multiplayer Server State - Unique session per browser tab so 2 tabs/devices never collide
+  const [myPlayerId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('kollabrix_arena_pid');
+        if (stored) return stored;
+        const fresh = `pilot-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        sessionStorage.setItem('kollabrix_arena_pid', fresh);
+        return fresh;
+      } catch {}
+    }
+    return `pilot-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  });
   const [isHost, setIsHost] = useState(true);
   const [roomData, setRoomData] = useState<any>(null);
 
@@ -664,9 +675,10 @@ export function FullArenaExperience({
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. High-frequency background HTTP safety check (1.2s in lobby, 5s in match)
+    // 2. High-frequency background HTTP safety check (1s in lobby, 5s in match)
     const pollInterval = setInterval(async () => {
-      if (typeof document !== 'undefined' && document.hidden) return;
+      // In Step 3 (Lobby waiting), DO NOT skip when document.hidden so background tab updates immediately!
+      if (step !== 3 && typeof document !== 'undefined' && document.hidden) return;
       try {
         const res = await fetch(`/api/arena/rooms?code=${roomCode}&_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
@@ -674,11 +686,26 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, step === 3 ? 1200 : 5000);
+    }, step === 3 ? 1000 : 5000);
+
+    // Instant sync when user switches tabs or focuses the window
+    const handleFocusSync = async () => {
+      try {
+        const res = await fetch(`/api/arena/rooms?code=${roomCode}&_t=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isMounted && data.room) applyRoomDataState(data.room);
+      } catch {}
+    };
+
+    window.addEventListener('focus', handleFocusSync);
+    window.addEventListener('visibilitychange', handleFocusSync);
 
     return () => {
       isMounted = false;
       clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocusSync);
+      window.removeEventListener('visibilitychange', handleFocusSync);
       if (channelRef.current) {
         try {
           supabase.removeChannel(channelRef.current);
@@ -2578,7 +2605,7 @@ export function FullArenaExperience({
                         {roomData?.alphaPlayers?.[0]?.name || roomData?.hostName || (isHost ? playerName : 'Host')}
                       </span>
                       <span className="text-[10px] text-cyan-400 font-semibold">
-                        {isHost ? '(You - Driver)' : '(Host - Driver)'}
+                        {isHost ? '(You - Host)' : '(Opponent - Host)'}
                       </span>
                     </div>
                     <span className="text-[10px] text-emerald-400 font-bold">READY</span>
@@ -2627,7 +2654,7 @@ export function FullArenaExperience({
                 {roomData?.omegaPlayers && roomData.omegaPlayers.length > 0 ? (
                   <div className="space-y-2">
                     {roomData.omegaPlayers.map((opp: any, idx: number) => {
-                      const isMe = !isHost && (opp.id === myPlayerId || opp.name === playerName);
+                      const isMe = !isHost;
                       return (
                         <div
                           key={opp.id || idx}
@@ -2639,7 +2666,7 @@ export function FullArenaExperience({
                             </div>
                             <span className="text-white font-bold">{opp.name}</span>
                             <span className="text-[10px] text-rose-400 font-semibold">
-                              {isMe ? '(You - Driver)' : `(${opp.role || 'Driver'})`}
+                              {isMe ? '(You)' : '(Opponent)'}
                             </span>
                           </div>
                           <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
@@ -2657,7 +2684,7 @@ export function FullArenaExperience({
                           P2
                         </div>
                         <span className="text-white font-bold">{playerName}</span>
-                        <span className="text-[10px] text-rose-400 font-semibold">(You - Driver)</span>
+                        <span className="text-[10px] text-rose-400 font-semibold">(You)</span>
                       </div>
                       <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
                         READY
