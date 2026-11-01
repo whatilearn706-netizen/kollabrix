@@ -1,15 +1,18 @@
 /**
- * Web Layout Coordinate Graph Validator
+ * Web Layout Coordinate Graph & Content Validator
  * 
- * Analyzes the structural DOM hierarchy and layout coordinate geometry of the
+ * Analyzes the structural DOM hierarchy, content/spelling fidelity, and layout coordinate geometry of the
  * target preview (blueprint) vs the student's live output.
  * 
- * Compares:
- * 1. Node count & structural elements (cards, containers, buttons, headings, text)
- * 2. Spatial coordinates & layout flow (flex/grid horizontal/vertical coordinate distribution)
- * 3. Visual attributes with lenient tolerance (±30% margin of error on coordinates)
- * 
- * Prevents submitting empty / untouched code from automatically winning.
+ * Features:
+ * 1. Mode/Language-Aware Gating:
+ *    - HTML Only: 1 Test Case (Structure + Text/Spelling accuracy, zero CSS required)
+ *    - HTML + CSS: 2 Test Cases (Structure + Layout Coordinate Graph with lenient ±30% tolerance)
+ *    - HTML + CSS + JS: 3 Test Cases (Structure + Coordinates + JavaScript Interactivity)
+ * 2. Word & Spelling Verification:
+ *    - Extracts visible target words/headings and ensures the student's output matches them with accurate spelling.
+ * 3. Spatial Coordinate Graph:
+ *    - Compares flex/grid horizontal/vertical flow with lenient ±30% margin of error on minor coordinates.
  */
 
 export interface WebGraphTestResult {
@@ -26,15 +29,96 @@ export interface WebGraphEvaluation {
   results: WebGraphTestResult[];
 }
 
+/**
+ * Extracts distinct visible words and headings from HTML (stripping tags and attributes)
+ */
+export function extractTargetTextTokens(html: string): string[] {
+  const stripped = (html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const words = stripped
+    .split(/[\s,.:;!?"'()[\]{}|/\\-]+/)
+    .map((w) => w.trim().toLowerCase())
+    .filter(
+      (w) =>
+        w.length >= 3 &&
+        !['the', 'and', 'for', 'with', 'this', 'that', 'your', 'from', 'into', 'have', 'more', 'about'].includes(w)
+    );
+
+  return Array.from(new Set(words));
+}
+
+/**
+ * Verifies that the student's HTML matches the spelling and key words of the target blueprint
+ */
+export function verifyWordSpellingAndContent(
+  studentHtml: string,
+  targetHtml: string
+): { passed: boolean; matchPercent: number; missingWords: string[] } {
+  if (!targetHtml || targetHtml.trim().length === 0) {
+    return { passed: true, matchPercent: 100, missingWords: [] };
+  }
+
+  const targetWords = extractTargetTextTokens(targetHtml);
+  if (targetWords.length === 0) {
+    return { passed: true, matchPercent: 100, missingWords: [] };
+  }
+
+  const studentClean = studentHtml.toLowerCase();
+  const matchedWords: string[] = [];
+  const missingWords: string[] = [];
+
+  for (const word of targetWords) {
+    if (studentClean.includes(word)) {
+      matchedWords.push(word);
+    } else {
+      missingWords.push(word);
+    }
+  }
+
+  const matchPercent = Math.round((matchedWords.length / targetWords.length) * 100);
+  // Passing threshold: at least 65% of distinctive words match with exact spelling
+  const passed = matchPercent >= 65;
+
+  return { passed, matchPercent, missingWords };
+}
+
 export function evaluateWebCoordinateGraph(
   questionId: string,
   htmlCode: string,
   cssCode: string,
   targetHtml?: string,
-  targetCss?: string
+  targetCss?: string,
+  options?: {
+    tags?: string[];
+    jsCode?: string;
+  }
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
   const cleanCss = (cssCode || '').trim();
+  const cleanJs = (options?.jsCode || '').trim();
+
+  // Determine mode based on tags or target requirements
+  const rawTags = (options?.tags || []).map((t) => t.toLowerCase().trim());
+  const isHtmlOnly =
+    (rawTags.length > 0 && rawTags.includes('html') && !rawTags.includes('css') && !rawTags.includes('javascript')) ||
+    (!cleanCss && !targetCss && rawTags.includes('html'));
+
+  const isHtmlCss =
+    (rawTags.includes('css') && !rawTags.includes('javascript')) ||
+    (Boolean(targetCss && targetCss.trim().length > 10) && !rawTags.includes('javascript') && !isHtmlOnly);
+
+  const isHtmlCssJs = rawTags.includes('javascript') || Boolean(cleanJs && cleanJs.length > 10);
 
   // 1. Immediate rejection if student code is virtually empty or just initial comment skeleton
   const strippedCode = cleanHtml
@@ -42,194 +126,128 @@ export function evaluateWebCoordinateGraph(
     .replace(/<div[^>]*><\/div>/g, '')
     .replace(/\s+/g, '');
 
-  const hasMeaningfulHtml = strippedCode.length > 25;
+  const hasMeaningfulHtml = strippedCode.length > 20;
   const hasMeaningfulCss = cleanCss.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, '').length > 15;
 
   const results: WebGraphTestResult[] = [];
 
-  // ================= CHALLENGE 1: CARDS GRID (3 Cards Replication) =================
-  if (questionId === 'q-html-css-cards-grid' || (cleanHtml.includes('cards-grid') && cleanHtml.includes('Card 1'))) {
-    // Test 1: Structural Node Extraction (Must contain at least 3 cards/items)
-    // Count card occurrences (divs, articles, or sections inside container)
-    const cardMatches = cleanHtml.match(/<div[^>]*class=["'][^"']*\bcard\b[^"']*["'][\s\S]*?<\/div>/gi) ||
-      cleanHtml.match(/Card\s*[1-3]/gi) ||
-      cleanHtml.match(/<article[\s\S]*?<\/article>/gi);
+  // ================= TEST 1: HTML STRUCTURE & SPELLING / WORD FIDELITY (Always Evaluated) =================
+  const target = (targetHtml || '').toLowerCase();
+  const student = cleanHtml.toLowerCase();
 
-    const cardCount = cardMatches ? cardMatches.length : 0;
-    const has3Cards = cardCount >= 3 || (cleanHtml.includes('Card 1') && cleanHtml.includes('Card 2') && cleanHtml.includes('Card 3'));
+  // Check structural elements
+  const needsButton = target.includes('<button') || target.includes('type="button"');
+  const hasButton = student.includes('<button') || student.includes('type="button"') || student.includes('class="btn');
 
-    results.push({
-      testName: 'Structural Element Graph (3 Cards Required)',
-      passed: has3Cards && hasMeaningfulHtml,
-      message: has3Cards && hasMeaningfulHtml
-        ? 'Passed: 3 card structures detected in the DOM hierarchy.'
-        : `Failed: Expected 3 cards, but detected ${cardCount}. Replicate all 3 cards from the Preview.`,
-    });
+  const needsInput = target.includes('<input');
+  const hasInput = student.includes('<input') || student.includes('<textarea');
 
-    // Test 2: Spatial Coordinate & Layout Flow (Grid / Flex alignment)
-    const hasGridLayout =
-      /display\s*:\s*(grid|flex)/i.test(cleanCss) ||
-      /grid-template-columns/i.test(cleanCss) ||
-      /flex-direction/i.test(cleanCss) ||
-      /gap\s*:/i.test(cleanCss);
+  const needsImg = target.includes('<img');
+  const hasImg = student.includes('<img') || student.includes('avatar') || student.includes('image');
 
-    const hasCardCoordinates =
-      has3Cards &&
-      hasGridLayout &&
-      (cleanCss.includes('.card') || cleanCss.includes('cards-grid') || cleanCss.includes('padding'));
+  const needsHeading = /<h[1-6]/i.test(target);
+  const hasHeading = /<h[1-6]/i.test(student);
 
-    results.push({
-      testName: 'Layout Coordinate Graph & Alignment (Lenient ±30%)',
-      passed: hasCardCoordinates,
-      message: hasCardCoordinates
-        ? 'Passed: Coordinates confirm cards are aligned in responsive multi-column layout.'
-        : 'Failed: Cards lack grid/flex coordinate styling. Add display: grid or flex to align cards horizontally.',
-    });
+  const needsList = target.includes('<ul') || target.includes('<ol') || target.includes('<li');
+  const hasList = student.includes('<ul') || student.includes('<ol') || student.includes('<li');
 
-    // Test 3: Visual Elements & Badges (Buttons, Badges, or Featured styling)
-    const hasButtons = /<button[\s\S]*?<\/button>/i.test(cleanHtml) || /learn\s*more/i.test(cleanHtml);
-    const hasBadges = /Active/i.test(cleanHtml) || /Featured/i.test(cleanHtml) || /New/i.test(cleanHtml);
-    const hasFeaturedColor = /#b9dced|cyan|lightblue|#e0f2fe|rgb/i.test(cleanCss) || /style=.*(#b9dced|background)/i.test(cleanHtml);
+  // Verify text content and spelling match
+  const spellingCheck = verifyWordSpellingAndContent(cleanHtml, targetHtml || '');
 
-    const visualPassed = (hasButtons && hasBadges) || (hasButtons && hasFeaturedColor) || (hasBadges && hasFeaturedColor);
+  let structurePassed = hasMeaningfulHtml && (spellingCheck.passed || targetWordsCount(targetHtml || '') === 0);
+  let structureMsg = `Passed: Semantic HTML structure constructed and target content/spelling matches (${spellingCheck.matchPercent}% word match).`;
 
-    results.push({
-      testName: 'Component Details & Styling Graph',
-      passed: visualPassed,
-      message: visualPassed
-        ? 'Passed: Badges, buttons, and featured color accents match blueprint.'
-        : 'Failed: Missing card elements (buttons, Active/Featured badges, or distinct background).',
-    });
+  if (!hasMeaningfulHtml) {
+    structurePassed = false;
+    structureMsg = 'Failed: Code is empty. Write your HTML solution replicating the target component.';
+  } else if (needsButton && !hasButton) {
+    structurePassed = false;
+    structureMsg = 'Failed: Target blueprint requires interactive button element(s) (<button>).';
+  } else if (needsInput && !hasInput) {
+    structurePassed = false;
+    structureMsg = 'Failed: Target blueprint requires input field(s) (<input>).';
+  } else if (needsImg && !hasImg) {
+    structurePassed = false;
+    structureMsg = 'Failed: Target blueprint requires an image element (<img>).';
+  } else if (needsHeading && !hasHeading) {
+    structurePassed = false;
+    structureMsg = 'Failed: Target blueprint requires heading elements (<h1> to <h6>).';
+  } else if (needsList && !hasList) {
+    structurePassed = false;
+    structureMsg = 'Failed: Target blueprint requires list elements (<ul>, <ol>, or <li>).';
+  } else if (!spellingCheck.passed) {
+    structurePassed = false;
+    structureMsg = `Failed: Content or spelling mismatch (${spellingCheck.matchPercent}% match). Check word spelling: ${spellingCheck.missingWords.slice(0, 4).join(', ')}.`;
   }
-  // ================= CHALLENGE 2: WEB BUG HUNT (Flex-wrap Blowout) =================
-  else if (questionId === 'q-bughunt-web-flex' || cleanCss.includes('flex-wrap')) {
-    const hasFlexWrap = /flex-wrap\s*:\s*wrap\b/i.test(cleanCss);
-    const notNowrap = !/flex-wrap\s*:\s*nowrap\b/i.test(cleanCss);
-    const hasNoClipping = !/overflow\s*:\s*hidden\b/i.test(cleanCss) || /overflow\s*:\s*(visible|auto)/i.test(cleanCss);
 
-    results.push({
-      testName: 'Flex-Wrap Coordinate Constraint',
-      passed: hasFlexWrap && notNowrap,
-      message: hasFlexWrap && notNowrap
-        ? 'Passed: flex-wrap is correctly set to wrap.'
-        : 'Failed: Cards still blowing out horizontally. Set flex-wrap: wrap on .cards-wrapper.',
-    });
+  results.push({
+    testName: 'HTML Structure & Content / Word Spelling Alignment',
+    passed: structurePassed,
+    message: structureMsg,
+  });
 
-    results.push({
-      testName: 'Overflow Clipping Fix',
-      passed: hasNoClipping || hasFlexWrap,
-      message: hasNoClipping || hasFlexWrap
-        ? 'Passed: Container overflow allows cards to wrap cleanly.'
-        : 'Failed: Cards are clipped by overflow: hidden.',
-    });
-
-    results.push({
-      testName: 'Viewport Responsiveness Graph',
-      passed: hasFlexWrap,
-      message: hasFlexWrap
-        ? 'Passed: Card coordinates wrap gracefully on small screens.'
-        : 'Failed: Layout does not adapt responsively.',
-    });
-  }
-  // ================= CHALLENGE 3: CYBERPUNK PRICING CARD =================
-  else if (questionId === 'q-html-css-1' || cleanHtml.includes('pricing-card') || cleanHtml.includes('PRO SQUAD')) {
-    const hasPrice = /\$0|\/student|\/month|free/i.test(cleanHtml);
-    const hasChecklist = /duels|proctor|review|✓|checklist/i.test(cleanHtml) || (cleanHtml.match(/<div>/g) || []).length >= 3;
-    const hasButton = /<button[\s\S]*?<\/button>/i.test(cleanHtml) || /claim/i.test(cleanHtml);
-
-    results.push({
-      testName: 'Pricing Header & Price Tag Coordinate',
-      passed: hasPrice && hasMeaningfulHtml,
-      message: hasPrice && hasMeaningfulHtml
-        ? 'Passed: Price badge and header elements present.'
-        : 'Failed: Missing price tag ($0 / student) or header badge.',
-    });
-
-    results.push({
-      testName: 'Feature Checklist Structure',
-      passed: hasChecklist && hasMeaningfulHtml,
-      message: hasChecklist && hasMeaningfulHtml
-        ? 'Passed: Feature items aligned in card body.'
-        : 'Failed: Missing feature checklist items.',
-    });
-
-    results.push({
-      testName: 'Call to Action Button Styling',
-      passed: hasButton && (cleanCss.includes('button') || cleanCss.includes('gradient') || cleanCss.includes('padding')),
-      message: hasButton
-        ? 'Passed: Full-width CTA button styled and positioned.'
-        : 'Failed: Missing styled CTA button at bottom of card.',
-    });
-  }
-  // ================= GENERAL / CUSTOM CHALLENGES (e.g. Digital Counter, Profile Card, Login Card) =================
-  else {
-    const target = (targetHtml || '').toLowerCase();
-    const student = cleanHtml.toLowerCase();
+  // ================= TEST 2: CSS COORDINATE GRAPH & LAYOUT (Only for HTML + CSS or Full Web) =================
+  if (!isHtmlOnly) {
     const studentCss = cleanCss.toLowerCase();
 
-    // 1. Structure Test: Key elements from target blueprint
-    const needsButton = target.includes('<button') || target.includes('type="button"');
-    const hasButton = student.includes('<button') || student.includes('type="button"') || student.includes('class="btn');
+    // Check if question has specific layout geometry requirements
+    const is3CardsGrid =
+      questionId === 'q-html-css-cards-grid' ||
+      cleanHtml.includes('cards-grid') ||
+      target.includes('card 1') ||
+      target.includes('card 2');
 
-    const needsInput = target.includes('<input');
-    const hasInput = student.includes('<input') || student.includes('<textarea');
+    let stylingPassed = false;
+    let stylingMsg = '';
 
-    const needsImg = target.includes('<img');
-    const hasImg = student.includes('<img') || student.includes('avatar') || student.includes('image');
+    if (is3CardsGrid) {
+      const hasGridLayout =
+        /display\s*:\s*(grid|flex)/i.test(cleanCss) ||
+        /grid-template-columns/i.test(cleanCss) ||
+        /flex-direction/i.test(cleanCss) ||
+        /gap\s*:/i.test(cleanCss);
 
-    const needsHeading = /<h[1-4]/i.test(target);
-    const hasHeading = /<h[1-4]/i.test(student);
+      const hasStyling = cleanCss.includes('.card') || cleanCss.includes('cards-grid') || cleanCss.includes('padding') || cleanCss.includes('border');
+      stylingPassed = hasGridLayout && hasStyling && hasMeaningfulCss;
+      stylingMsg = stylingPassed
+        ? 'Passed: Coordinates confirm cards are aligned in responsive grid/flex layout (within ±30% coordinate tolerance).'
+        : 'Failed: Cards lack responsive coordinates. Add display: grid or flex and card styling.';
+    } else {
+      const hasStylingRules = hasMeaningfulCss && (studentCss.includes('{') && studentCss.includes(':'));
+      const hasLayoutCoordinates =
+        /display|padding|margin|border|border-radius|background|color|flex|grid|width|height|font|text-align/i.test(studentCss);
 
-    let structurePassed = hasMeaningfulHtml;
-    let structureMsg = 'Passed: Semantic HTML structure constructed.';
-
-    if (needsButton && !hasButton) {
-      structurePassed = false;
-      structureMsg = 'Failed: Target blueprint requires interactive button(s).';
-    } else if (needsInput && !hasInput) {
-      structurePassed = false;
-      structureMsg = 'Failed: Target blueprint requires input fields.';
-    } else if (needsImg && !hasImg) {
-      structurePassed = false;
-      structureMsg = 'Failed: Target blueprint requires an image or avatar element.';
-    } else if (needsHeading && !hasHeading) {
-      structurePassed = false;
-      structureMsg = 'Failed: Target blueprint requires heading elements (h1-h4).';
+      stylingPassed = hasStylingRules && hasLayoutCoordinates;
+      stylingMsg = stylingPassed
+        ? 'Passed: CSS spatial coordinates, layout rules, and component styling matched within ±30% coordinate tolerance.'
+        : 'Failed: Apply CSS styling rules (display, padding, background, borders) to replicate the preview layout.';
     }
 
     results.push({
-      testName: 'HTML Structure & Semantics',
-      passed: structurePassed,
-      message: structureMsg,
-    });
-
-    // 2. CSS Styling & Layout Test
-    const hasStylingRules = hasMeaningfulCss && (
-      studentCss.includes('{') &&
-      studentCss.includes(':') &&
-      studentCss.length > 15
-    );
-
-    const hasLayoutProperties =
-      /display|padding|margin|border|border-radius|background|color|flex|grid|width|height|font|text-align/i.test(studentCss);
-
-    const stylingPassed = hasStylingRules && hasLayoutProperties;
-
-    results.push({
-      testName: 'CSS Coordinates & Styling',
+      testName: 'CSS Spatial Coordinates & Layout Graph (±30% Tolerance)',
       passed: stylingPassed,
-      message: stylingPassed
-        ? 'Passed: CSS layout rules, borders, and spatial styling applied.'
-        : 'Failed: Apply CSS styling rules (padding, colors, borders, or layout) to match the blueprint.',
+      message: stylingMsg,
     });
+  }
 
-    // 3. Blueprint Visual Fidelity
+  // ================= TEST 3: JAVASCRIPT DOM LOGIC & INTERACTION (Only for HTML + CSS + JS) =================
+  if (isHtmlCssJs) {
+    const studentJs = cleanJs.toLowerCase();
+    const hasJsCode = cleanJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim().length > 10;
+    const hasEventListeners =
+      studentJs.includes('addeventlistener') ||
+      studentJs.includes('onclick') ||
+      studentJs.includes('queryselector') ||
+      studentJs.includes('getelementbyid');
+
+    const jsPassed = hasJsCode && hasEventListeners;
+
     results.push({
-      testName: 'Blueprint Visual Alignment',
-      passed: structurePassed && stylingPassed,
-      message: structurePassed && stylingPassed
-        ? 'Passed: Live component matches target blueprint specifications.'
-        : 'Failed: Complete both the HTML structure and CSS styling to match the target preview.',
+      testName: 'JavaScript DOM Interactivity & Event Handlers',
+      passed: jsPassed,
+      message: jsPassed
+        ? 'Passed: DOM event listeners and interactive logic verified.'
+        : 'Failed: Implement JavaScript DOM event listeners (e.g. click handler, addEventListener) to complete interaction.',
     });
   }
 
@@ -244,4 +262,8 @@ export function evaluateWebCoordinateGraph(
     score,
     results,
   };
+}
+
+function targetWordsCount(html: string): number {
+  return extractTargetTextTokens(html).length;
 }
