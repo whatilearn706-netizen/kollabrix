@@ -37,6 +37,7 @@ import {
   Play,
   Settings,
   X,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -50,6 +51,7 @@ interface AdminIcpcTabProps {
 
 export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const [icpcAdminView, setIcpcAdminView] = useState<'contests' | 'proctor'>('contests');
+  const [adminCategoryFilter, setAdminCategoryFilter] = useState<'all' | 'placement' | 'faculty' | 'icpc'>('all');
   const [contests, setContests] = useState<IcpcContest[]>([]);
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -848,12 +850,17 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   const totalParticipants = contests.reduce((acc, c) => acc + (c.participantCount || 0), 0);
 
   const filteredContests = contests.filter((c) => {
+    if (adminCategoryFilter !== 'all') {
+      const cat = c.category || (c.companyTag ? 'placement' : c.visibility === 'passcode' ? 'faculty' : 'icpc');
+      if (cat !== adminCategoryFilter) return false;
+    }
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       c.title.toLowerCase().includes(q) ||
       c.organizer.toLowerCase().includes(q) ||
       (c.college || '').toLowerCase().includes(q) ||
+      (c.companyTag || '').toLowerCase().includes(q) ||
       c.problems.some((p) => p.title.toLowerCase().includes(q))
     );
   });
@@ -1058,6 +1065,44 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         </Button>
       </div>
 
+      {/* Category Filter Tabs */}
+      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-charcoal-900 border border-charcoal-800 overflow-x-auto select-none">
+        {[
+          { id: 'all', label: 'All Tracks', count: contests.length },
+          {
+            id: 'placement',
+            label: '🏢 Company Placement Mocks',
+            count: contests.filter((c) => c.category === 'placement' || Boolean(c.companyTag)).length,
+          },
+          {
+            id: 'faculty',
+            label: '🎓 Faculty Private Labs',
+            count: contests.filter((c) => c.category === 'faculty' || c.visibility === 'passcode').length,
+          },
+          {
+            id: 'icpc',
+            label: '⚡ ICPC & Collegiate',
+            count: contests.filter((c) => c.category === 'icpc' || (!c.category && !c.companyTag && c.visibility !== 'passcode')).length,
+          },
+        ].map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setAdminCategoryFilter(t.id as any)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              adminCategoryFilter === t.id
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>{t.label}</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-charcoal-800 border border-charcoal-700 text-slate-300">
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Contests & Problems List */}
       <div className="space-y-4">
         {filteredContests.length === 0 ? (
@@ -1085,6 +1130,17 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                       >
                         {contest.status.toUpperCase()}
                       </span>
+                      {contest.companyTag && (
+                        <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          🏢 {contest.companyTag} OA
+                        </span>
+                      )}
+                      {contest.visibility === 'passcode' && (
+                        <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40 flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" />
+                          <span>Passcode: {contest.passcode || 'LAB2026'}</span>
+                        </span>
+                      )}
                       <span className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded-md bg-charcoal-800 border border-charcoal-700">
                         {contest.problems.length} Problem{contest.problems.length === 1 ? '' : 's'}
                       </span>

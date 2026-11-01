@@ -279,6 +279,8 @@ export async function POST(request: NextRequest) {
       organizerRole: body.organizerRole || 'Faculty Mentor & Contest Director',
       college: college || 'Partner Collegiate Network',
       contestType: isPractice ? 'practice' : 'contest',
+      category: body.category || (body.companyTag ? 'placement' : visibility === 'passcode' ? 'faculty' : 'icpc'),
+      companyTag: body.companyTag || undefined,
       startTime: body.startTime || new Date().toISOString(),
       endTime: body.endTime || (isPractice ? new Date().toISOString() : new Date(Date.now() + (durationMinutes || 180) * 60000).toISOString()),
       durationMinutes: Number(durationMinutes) || 180,

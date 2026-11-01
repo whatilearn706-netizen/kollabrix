@@ -60,12 +60,35 @@ function getCleanStarter(problem: IcpcProblem | null, lang: 'cpp' | 'python' | '
   return getDefaultStarter(lang);
 }
 
+const WEEKLY_LEADERBOARD = [
+  { rank: 1, name: 'mayankgoyal335', points: 640, streak: 12, accuracy: 98, college: 'Apex Institute of Tech', avatar: '👑' },
+  { rank: 2, name: 'arjun_sharma', points: 510, streak: 9, accuracy: 94, college: 'SRM University', avatar: '🥈' },
+  { rank: 3, name: 'priya_patel', points: 460, streak: 7, accuracy: 91, college: 'VIT Vellore', avatar: '🥉' },
+  { rank: 4, name: 'rohit_kumar', points: 390, streak: 5, accuracy: 89, college: 'DTU Delhi', avatar: '⚡' },
+  { rank: 5, name: 'sneha_rao', points: 340, streak: 4, accuracy: 86, college: 'BMS College of Engg', avatar: '🎯' },
+];
+
+const OVERALL_LEADERBOARD = [
+  { rank: 1, name: 'mayankgoyal335', points: 2840, streak: 12, accuracy: 98, college: 'Apex Institute of Tech', avatar: '👑' },
+  { rank: 2, name: 'vikas_coder', points: 2410, streak: 18, accuracy: 96, college: 'IIT Roorkee Network', avatar: '🥈' },
+  { rank: 3, name: 'arjun_sharma', points: 2120, streak: 9, accuracy: 94, college: 'SRM University', avatar: '🥉' },
+  { rank: 4, name: 'dev_ansh', points: 1890, streak: 14, accuracy: 92, college: 'BITS Pilani', avatar: '⚡' },
+  { rank: 5, name: 'priya_patel', points: 1650, streak: 7, accuracy: 91, college: 'VIT Vellore', avatar: '🎯' },
+];
+
 export default function IcpcCollegiateArenaPage() {
   const { user, profile } = useAuth();
   const [contests, setContests] = useState<IcpcContest[]>([]);
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTrack, setSelectedTrack] = useState<'all' | 'placement' | 'faculty' | 'icpc'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'upcoming' | 'ended'>('all');
+  const [leaderboardTab, setLeaderboardTab] = useState<'weekly' | 'all-time'>('weekly');
+  const [passcodeModalContest, setPasscodeModalContest] = useState<IcpcContest | null>(null);
+  const [pendingProblem, setPendingProblem] = useState<IcpcProblem | null>(null);
+  const [enteredPasscode, setEnteredPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
+  const [unlockedContests, setUnlockedContests] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const [isFacultyNoticeOpen, setIsFacultyNoticeOpen] = useState(false);
@@ -255,6 +278,13 @@ export default function IcpcCollegiateArenaPage() {
       setShowAuthModal(true);
       return;
     }
+    if (contest.visibility === 'passcode' && !unlockedContests[contest.id]) {
+      setPasscodeModalContest(contest);
+      setPendingProblem(problem);
+      setEnteredPasscode('');
+      setPasscodeError('');
+      return;
+    }
     try {
       if (typeof document !== 'undefined' && !document.fullscreenElement) {
         const el = document.documentElement;
@@ -278,6 +308,55 @@ export default function IcpcCollegiateArenaPage() {
     } else {
       const starter = getCleanStarter(problem, selectedLanguage);
       setUserCode(starter);
+    }
+  };
+
+  const handleUnlockPasscode = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!passcodeModalContest) return;
+
+    const expected = passcodeModalContest.passcode?.trim().toUpperCase();
+    const actual = enteredPasscode.trim().toUpperCase();
+
+    if (expected && actual !== expected) {
+      setPasscodeError(`Invalid room passcode. Check with your professor (Demo code: ${passcodeModalContest.passcode || 'LAB2026'}).`);
+      return;
+    }
+
+    const contestToOpen = passcodeModalContest;
+    const problemToOpen = pendingProblem || contestToOpen.problems[0];
+
+    setUnlockedContests((prev) => ({ ...prev, [contestToOpen.id]: true }));
+    setPasscodeModalContest(null);
+    setPendingProblem(null);
+    setEnteredPasscode('');
+    setPasscodeError('');
+
+    if (problemToOpen) {
+      try {
+        if (typeof document !== 'undefined' && !document.fullscreenElement) {
+          const el = document.documentElement;
+          if (el.requestFullscreen) {
+            el.requestFullscreen().catch(() => {});
+          } else if ((el as any).webkitRequestFullscreen) {
+            (el as any).webkitRequestFullscreen();
+          }
+        }
+      } catch (err) {}
+      setSelectedContest(contestToOpen);
+      setActiveProblem(problemToOpen);
+      setSolverTab('editor');
+      setConsoleOutput({ status: 'idle', message: '' });
+      setNextQuestionPrompt(null);
+
+      const targetKey = `${problemToOpen.id}_${selectedLanguage}`;
+      const existingDraft = codeDrafts[targetKey];
+      if (existingDraft !== undefined) {
+        setUserCode(existingDraft);
+      } else {
+        const starter = getCleanStarter(problemToOpen, selectedLanguage);
+        setUserCode(starter);
+      }
     }
   };
 
@@ -532,20 +611,18 @@ export default function IcpcCollegiateArenaPage() {
   };
 
   const filteredContests = contests.filter((c) => {
-    if (filterStatus === 'live') {
-      if (c.contestType === 'practice' || c.status !== 'live') return false;
-    } else if (filterStatus === 'upcoming') {
-      if (c.status !== 'upcoming') return false;
-    } else if (filterStatus === 'ended') {
-      if (c.status !== 'ended' && c.contestType !== 'practice') return false;
+    if (selectedTrack !== 'all') {
+      const cat = c.category || (c.companyTag ? 'placement' : c.visibility === 'passcode' ? 'faculty' : 'icpc');
+      if (cat !== selectedTrack) return false;
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = c.title.toLowerCase().includes(q);
       const matchOrganizer = c.organizer.toLowerCase().includes(q);
+      const matchCompany = (c.companyTag || '').toLowerCase().includes(q);
       const matchProblems = c.problems.some((p) => p.title.toLowerCase().includes(q) || p.tags.some((t) => t.toLowerCase().includes(q)));
-      if (!matchTitle && !matchOrganizer && !matchProblems) return false;
+      if (!matchTitle && !matchOrganizer && !matchCompany && !matchProblems) return false;
     }
     return true;
   });
@@ -599,18 +676,18 @@ export default function IcpcCollegiateArenaPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
                   </span>
-                  <span>COLLEGIATE ALGORITHMIC ARENA // ICPC & LEETCODE-STYLE CONTESTS</span>
+                  <span>COMPETITIVE PRACTICE &amp; PLACEMENT ARENA // SPEEDRUN DSA &amp; CAMPUS RECRUITMENT</span>
                 </div>
 
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-                  ICPC Collegiate{' '}
+                  Competitive Practice &amp;{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-violet-400">
-                    Arena.
+                    Placement Arena.
                   </span>
                 </h1>
 
                 <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal max-w-2xl">
-                  Solve live algorithm briefs published by college professors, enter speedrun programming contests, submit code against rigorous testbenches, and prove your algorithmic mastery.
+                  Solve official company placement OA mocks (Amazon, TCS, Infosys), enter speedrun programming contests, take private faculty lab assessments, and climb the campus leaderboard.
                 </p>
 
                 {/* Host Contest Button Gated for Faculty */}
@@ -630,15 +707,19 @@ export default function IcpcCollegiateArenaPage() {
                 <div className="flex flex-wrap items-center gap-3 pt-2 text-xs font-mono text-slate-400">
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
                     <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>LeetCode-Style Testbench</span>
+                    <span>🏢 Company OA Mocks (Amazon, TCS, Infosys)</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
                     <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
-                    <span>Professor-Authored Contests</span>
+                    <span>🎓 Private Faculty Labs with Anti-Cheat</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Real-time ICPC Leaderboards</span>
+                    <Flame className="w-3.5 h-3.5 text-amber-400" />
+                    <span>🔥 Daily Placement DSA Streak</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
+                    <Trophy className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>🏆 Weekly &amp; All-Time Campus Leaderboard</span>
                   </div>
                 </div>
               </div>
@@ -653,18 +734,18 @@ export default function IcpcCollegiateArenaPage() {
                       <Flame className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-xs font-bold text-white">Student ICPC Tracker</h3>
+                      <h3 className="text-xs font-bold text-white">Student Placement Tracker</h3>
                       <p className="text-[10px] font-mono text-slate-400">Daily Algorithmic Momentum</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                     {progress.totalPoints >= 1500
-                      ? 'ICPC Grandmaster'
+                      ? 'Placement Grandmaster'
                       : progress.totalPoints >= 800
-                      ? 'National Contender'
+                      ? 'Tier-1 OA Specialist'
                       : progress.totalPoints >= 300
-                      ? 'Regional Specialist'
-                      : 'Collegiate Cadet'}
+                      ? 'Campus Contender'
+                      : 'Placement Rookie'}
                   </span>
                 </div>
 
@@ -691,7 +772,7 @@ export default function IcpcCollegiateArenaPage() {
                   <div className="p-3.5 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 space-y-1">
                     <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
                       <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <span>ICPC Points</span>
+                      <span>Arena Points</span>
                     </div>
                     <div className="text-xl font-black text-amber-300">
                       {progress.totalPoints} <span className="text-[11px] font-mono text-slate-400">pts</span>
@@ -723,70 +804,257 @@ export default function IcpcCollegiateArenaPage() {
           </div>
         </section>
 
+        {/* Campus Champions Leaderboard Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 p-5 sm:p-7 shadow-elevated relative overflow-hidden backdrop-blur-md">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/10 via-cyan-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md">
+                  <Trophy className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black text-white">Campus Champions Leaderboard</h2>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      LIVE
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Top placement contenders &amp; competitive coders ranked by problem solves and streak
+                  </p>
+                </div>
+              </div>
+
+              {/* Weekly vs Overall Tab Switcher */}
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-charcoal-950 border border-charcoal-800 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setLeaderboardTab('weekly')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    leaderboardTab === 'weekly'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Weekly (Resets Mon)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLeaderboardTab('all-time')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    leaderboardTab === 'all-time'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>All-Time Overall</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Leaderboard Grid */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+              {(leaderboardTab === 'weekly' ? WEEKLY_LEADERBOARD : OVERALL_LEADERBOARD).map((champ) => {
+                const isGold = champ.rank === 1;
+                const isSilver = champ.rank === 2;
+                const isBronze = champ.rank === 3;
+                return (
+                  <div
+                    key={champ.name}
+                    className={`p-3.5 rounded-2xl border transition-all ${
+                      isGold
+                        ? 'bg-gradient-to-b from-amber-500/15 to-charcoal-950 border-amber-500/40 shadow-lg shadow-amber-500/5'
+                        : isSilver
+                        ? 'bg-gradient-to-b from-slate-400/10 to-charcoal-950 border-slate-400/30'
+                        : isBronze
+                        ? 'bg-gradient-to-b from-amber-700/10 to-charcoal-950 border-amber-700/30'
+                        : 'bg-charcoal-950/70 border-charcoal-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        className={`text-xs font-mono font-black px-2 py-0.5 rounded-md ${
+                          isGold
+                            ? 'bg-amber-400 text-charcoal-950'
+                            : isSilver
+                            ? 'bg-slate-300 text-charcoal-950'
+                            : isBronze
+                            ? 'bg-amber-700 text-white'
+                            : 'bg-charcoal-800 text-slate-300'
+                        }`}
+                      >
+                        #{champ.rank}
+                      </span>
+                      <span className="text-base">{champ.avatar}</span>
+                    </div>
+                    <div className="font-bold text-white text-xs truncate" title={champ.name}>
+                      {champ.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mb-2" title={champ.college}>
+                      {champ.college}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-mono pt-2 border-t border-charcoal-800/80">
+                      <span className="text-amber-300 font-bold">{champ.points} pts</span>
+                      <span className="text-orange-400 flex items-center gap-0.5">
+                        <Flame className="w-3 h-3" />
+                        <span>{champ.streak}d</span>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Current User Standing Banner */}
+            <div className="mt-4 p-3 rounded-2xl bg-charcoal-950/80 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center font-bold text-xs">
+                  #1
+                </div>
+                <div>
+                  <span className="font-bold text-white">Your Standing: </span>
+                  <span className="text-cyan-300 font-mono font-bold">
+                    {profile?.display_name || user?.email?.split('@')[0] || 'You'} ({progress.totalPoints} pts • 🔥 {progress.streak}d streak)
+                  </span>
+                </div>
+              </div>
+              <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                <span className="text-emerald-400 font-bold">✓ Daily streak active</span>
+                <span>•</span>
+                <span>Solve questions below to increase your rank</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Filter Bar & Contests Feed */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
           {/* Controls Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Status Tabs */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-charcoal-900 border border-charcoal-750 select-none overflow-x-auto">
+          <div className="space-y-4">
+            {/* Category Track Selector */}
+            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 overflow-x-auto select-none">
               <button
                 type="button"
-                onClick={() => setFilterStatus('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  filterStatus === 'all'
+                onClick={() => setSelectedTrack('all')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  selectedTrack === 'all'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                All Contests
+                All Tracks ({contests.length})
               </button>
               <button
                 type="button"
-                onClick={() => setFilterStatus('live')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  filterStatus === 'live'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
+                onClick={() => setSelectedTrack('placement')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                  selectedTrack === 'placement'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>Live Now</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>🏢 Company Placement Mocks</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200">
+                  {contests.filter((c) => c.category === 'placement' || Boolean(c.companyTag)).length}
+                </span>
               </button>
               <button
                 type="button"
-                onClick={() => setFilterStatus('upcoming')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  filterStatus === 'upcoming'
-                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs'
+                onClick={() => setSelectedTrack('faculty')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                  selectedTrack === 'faculty'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>Upcoming</span>
-                <Clock className="w-3 h-3 text-indigo-400" />
+                <span>🎓 Faculty Private Labs</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200">
+                  {contests.filter((c) => c.category === 'faculty' || c.visibility === 'passcode').length}
+                </span>
               </button>
               <button
                 type="button"
-                onClick={() => setFilterStatus('ended')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  filterStatus === 'ended'
-                    ? 'bg-slate-700/50 text-slate-200 border border-slate-600 shadow-xs'
+                onClick={() => setSelectedTrack('icpc')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                  selectedTrack === 'icpc'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Practice & Past 🏁
+                <span>⚡ ICPC &amp; Speedrun Contests</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/30 text-cyan-200">
+                  {contests.filter((c) => c.category === 'icpc' || (!c.category && !c.companyTag && c.visibility !== 'passcode')).length}
+                </span>
               </button>
             </div>
 
-            {/* Search Input */}
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by topic, professor, or tag..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono transition-colors"
-              />
+            {/* Sub-Filters: Status Tabs & Search */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Status Tabs */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-charcoal-900 border border-charcoal-750 select-none overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    filterStatus === 'all'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  All Status
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('live')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    filterStatus === 'live'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Live Now</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('upcoming')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    filterStatus === 'upcoming'
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Upcoming</span>
+                  <Clock className="w-3 h-3 text-indigo-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('ended')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    filterStatus === 'ended'
+                      ? 'bg-slate-700/50 text-slate-200 border border-slate-600 shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Practice &amp; Past 🏁
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search company (Amazon, TCS), topic, or professor..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono transition-colors"
+                />
+              </div>
             </div>
           </div>
 
@@ -823,7 +1091,22 @@ export default function IcpcCollegiateArenaPage() {
                         <div className="space-y-4">
                           {/* Badge Row */}
                           <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Category Track Badge */}
+                              {contest.category === 'placement' || contest.companyTag ? (
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider flex items-center gap-1">
+                                  <span>🏢 {contest.companyTag || 'Placement'} Mock</span>
+                                </span>
+                              ) : contest.category === 'faculty' || contest.visibility === 'passcode' ? (
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider flex items-center gap-1">
+                                  <span>🎓 Faculty Lab</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider flex items-center gap-1">
+                                  <span>⚡ ICPC &amp; Speedrun</span>
+                                </span>
+                              )}
+
                               <span
                                 className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
                                   contest.status === 'live'
@@ -837,8 +1120,9 @@ export default function IcpcCollegiateArenaPage() {
                               </span>
                               {contest.visibility === 'passcode' && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] font-mono text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                                    🔒 Private Room
+                                  <span className="text-[10px] font-mono text-purple-300 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center gap-1">
+                                    <Lock className="w-3 h-3 text-purple-400" />
+                                    <span>Private Room</span>
                                   </span>
                                   <button
                                     type="button"
@@ -846,7 +1130,7 @@ export default function IcpcCollegiateArenaPage() {
                                       e.stopPropagation();
                                       handleCopyRoomLink(contest);
                                     }}
-                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-[10px] font-mono font-bold text-amber-300 transition-colors cursor-pointer shadow-xs"
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 transition-colors cursor-pointer shadow-xs"
                                     title="Copy Direct Classroom Invite Link"
                                   >
                                     {copiedContestId === contest.id ? (
@@ -865,11 +1149,11 @@ export default function IcpcCollegiateArenaPage() {
                               )}
                             </div>
 
-                      <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{contest.participantCount} Registered</span>
-                      </span>
-                    </div>
+                            <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>{contest.participantCount} Registered</span>
+                            </span>
+                          </div>
 
                     {/* Title & Subtitle */}
                     <div>
@@ -979,10 +1263,26 @@ export default function IcpcCollegiateArenaPage() {
                           handleOpenProblem(contest, contest.problems[0]);
                         }
                       }}
-                      rightIcon={user ? <ArrowRight className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-cyan-200" />}
-                      className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                      rightIcon={
+                        !user ? (
+                          <Lock className="w-3.5 h-3.5 text-cyan-200" />
+                        ) : contest.visibility === 'passcode' && !unlockedContests[contest.id] ? (
+                          <Lock className="w-3.5 h-3.5 text-purple-200" />
+                        ) : (
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        )
+                      }
+                      className={
+                        contest.visibility === 'passcode' && !unlockedContests[contest.id]
+                          ? 'bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs'
+                          : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs'
+                      }
                     >
-                      {user ? 'Enter Arena' : 'Log In to Enter Arena'}
+                      {!user
+                        ? 'Log In to Enter Arena'
+                        : contest.visibility === 'passcode' && !unlockedContests[contest.id]
+                        ? 'Enter with Passcode'
+                        : 'Enter Arena'}
                     </Button>
                   </div>
                 </div>
@@ -1662,6 +1962,100 @@ export default function IcpcCollegiateArenaPage() {
               </Button>
             </div>
           </div>
+        </Modal>
+
+        {/* Passcode Unlock Modal for Private Faculty Assessments */}
+        <Modal
+          isOpen={Boolean(passcodeModalContest)}
+          onClose={() => {
+            setPasscodeModalContest(null);
+            setPendingProblem(null);
+            setEnteredPasscode('');
+            setPasscodeError('');
+          }}
+          title="Classroom Lab Passcode Required"
+          maxWidth="md"
+        >
+          {passcodeModalContest && (
+            <form onSubmit={handleUnlockPasscode} className="p-3 space-y-5">
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center mx-auto shadow-md">
+                  <Lock className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-black text-white">{passcodeModalContest.title}</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Authored by <span className="text-white font-semibold">{passcodeModalContest.organizer}</span> ({passcodeModalContest.college}).
+                  This private assessment is protected by live Anti-Cheat Proctoring.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Anti-Cheat Mode:</span>
+                  <span className="font-mono text-emerald-400 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Active Telemetry Watchdog</span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Demo Classroom Code:</span>
+                  <button
+                    type="button"
+                    onClick={() => setEnteredPasscode(passcodeModalContest.passcode || 'LAB2026')}
+                    className="font-mono text-cyan-300 font-bold hover:underline cursor-pointer"
+                  >
+                    Click to insert &quot;{passcodeModalContest.passcode || 'LAB2026'}&quot;
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono font-bold text-slate-300 block">
+                  ENTER ROOM PASSCODE
+                </label>
+                <input
+                  type="text"
+                  value={enteredPasscode}
+                  onChange={(e) => {
+                    setEnteredPasscode(e.target.value.toUpperCase());
+                    setPasscodeError('');
+                  }}
+                  placeholder="e.g. LAB2026"
+                  className="w-full px-4 py-3 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white font-mono text-center tracking-widest text-lg focus:outline-none focus:border-cyan-400"
+                  autoFocus
+                />
+                {passcodeError && (
+                  <p className="text-xs text-rose-400 font-mono flex items-center gap-1 pt-1 justify-center">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{passcodeError}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setPasscodeModalContest(null);
+                    setPendingProblem(null);
+                    setEnteredPasscode('');
+                    setPasscodeError('');
+                  }}
+                  className="border-charcoal-700 text-slate-300 hover:text-white text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs"
+                >
+                  Unlock &amp; Start Lab
+                </Button>
+              </div>
+            </form>
+          )}
         </Modal>
       </main>
     </div>

@@ -112,6 +112,15 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    if (finalQuestion) {
+      const match = DEFAULT_ARENA_QUESTIONS.find(
+        (d) => d.id === finalQuestion.id || d.title.toLowerCase().trim() === finalQuestion.title.toLowerCase().trim()
+      );
+      if (match?.targetComponentJs && (!finalQuestion.targetComponentJs || finalQuestion.targetComponentJs.trim().length < 20)) {
+        finalQuestion.targetComponentJs = match.targetComponentJs;
+      }
+    }
+
     // Build or update room
     const newRoom: ArenaRoom = {
       code: cleanCode,

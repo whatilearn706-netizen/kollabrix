@@ -35,6 +35,7 @@ export interface IcpcProblem {
 
 export type ContestStatus = 'live' | 'upcoming' | 'ended';
 export type ContestType = 'contest' | 'practice';
+export type ContestCategory = 'placement' | 'faculty' | 'icpc';
 
 export interface IcpcContest {
   id: string;
@@ -45,6 +46,8 @@ export interface IcpcContest {
   college?: string;
   authorId?: string;
   contestType?: ContestType;
+  category?: ContestCategory;
+  companyTag?: string;
   startTime: string;
   endTime: string;
   durationMinutes: number;

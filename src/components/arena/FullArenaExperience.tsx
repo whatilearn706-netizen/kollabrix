@@ -97,6 +97,22 @@ function computeExpectedQuestionTests(q: DuelQuestion): number {
   return q.testCases?.length || 3;
 }
 
+function enrichQuestion(q: DuelQuestion | null | undefined): DuelQuestion {
+  if (!q) return DEFAULT_ARENA_QUESTIONS[0];
+  const match = DEFAULT_ARENA_QUESTIONS.find(
+    (d) => d.id === q.id || d.title.toLowerCase().trim() === q.title.toLowerCase().trim()
+  );
+  return {
+    ...q,
+    targetComponentJs:
+      q.targetComponentJs && q.targetComponentJs.trim().length > 20
+        ? q.targetComponentJs
+        : match?.targetComponentJs || '',
+    targetComponentHtml: q.targetComponentHtml || match?.targetComponentHtml || '',
+    targetComponentCss: q.targetComponentCss || match?.targetComponentCss || '',
+  };
+}
+
 export function FullArenaExperience({
   onClose,
   initialRoomCode,
@@ -112,6 +128,16 @@ export function FullArenaExperience({
   // 5: Battling Split-Screen
   // 6: Match Finished & Fog of War Lifted
   const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  const stepRef = useRef<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+
+  const transitionStep = (next: 0 | 1 | 2 | 3 | 4 | 5 | 6) => {
+    stepRef.current = next;
+    setStep(next);
+  };
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
   const [joinCodeInput, setJoinCodeInput] = useState(() => initialRoomCode || '');
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -306,26 +332,27 @@ export function FullArenaExperience({
   // Step 4 & 5: Battlefield States
   const [countdownNum, setCountdownNum] = useState<number>(3);
   const [timeLeft, setTimeLeft] = useState<number>(300);
-  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(
-    initialQuestion || DEFAULT_ARENA_QUESTIONS[0]
+  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(() =>
+    enrichQuestion(initialQuestion || DEFAULT_ARENA_QUESTIONS[0])
   );
 
   useEffect(() => {
     if (initialQuestion) {
-      setActiveQuestion(initialQuestion);
-      setArena(initialQuestion.arena);
-      if (initialQuestion.tags && initialQuestion.tags.length > 0) {
-        setSelectedTags(initialQuestion.tags);
+      const q = enrichQuestion(initialQuestion);
+      setActiveQuestion(q);
+      setArena(q.arena);
+      if (q.tags && q.tags.length > 0) {
+        setSelectedTags(q.tags);
       }
-      setHtmlCode(initialQuestion.starterHtml || '');
-      setCssCode(initialQuestion.starterCss || '');
-      setJsCode(initialQuestion.starterJs || '');
-      setPythonCode(initialQuestion.starterPython || '# Your python solution\n');
-      setJavaCode(initialQuestion.starterJava || '// Your java solution\n');
-      setCppCode(initialQuestion.starterCpp || '// Your C++ solution\n');
-      const expectedTests = computeExpectedQuestionTests(initialQuestion);
+      setHtmlCode(q.starterHtml || '');
+      setCssCode(q.starterCss || '');
+      setJsCode(q.starterJs || '');
+      setPythonCode(q.starterPython || '# Your python solution\n');
+      setJavaCode(q.starterJava || '// Your java solution\n');
+      setCppCode(q.starterCpp || '// Your C++ solution\n');
+      const expectedTests = computeExpectedQuestionTests(q);
       setTotalTests(expectedTests);
-      const initTime = initialQuestion.timeLimitSeconds || 300;
+      const initTime = q.timeLimitSeconds || 300;
       setTimeLimit(initTime);
       setTimeLeft(initTime);
       setIsBotOpponentAdded(true);
@@ -394,7 +421,7 @@ export function FullArenaExperience({
         setIsHost(isHostPlayer);
 
         if (rm.question) {
-          const q = rm.question;
+          const q = enrichQuestion(rm.question);
           const matchTime = Number(rm.timeLimit) || Number(q.timeLimitSeconds) || 300;
           setTimeLimit(matchTime);
           setTimeLeft(matchTime);
@@ -423,14 +450,18 @@ export function FullArenaExperience({
           }
         } catch {}
 
-        // Restore active step
+        // Restore active step safely
         if (rm.status === 'in_progress') {
-          setStep(5);
+          transitionStep(5);
         } else if (rm.status === 'starting') {
-          setStep(4);
-          setCountdownNum(3);
+          if (stepRef.current < 4) {
+            transitionStep(4);
+            setCountdownNum(3);
+          }
         } else if (savedSession?.step === 3 || urlRoom || initialRoomCode) {
-          setStep(3);
+          if (stepRef.current < 3) {
+            transitionStep(3);
+          }
         }
       })
       .catch((err) => {
@@ -811,7 +842,7 @@ export function FullArenaExperience({
         setSelectedTags(data.room.selectedTags || ['html', 'css']);
 
         if (data.room.question) {
-          const q = data.room.question;
+          const q = enrichQuestion(data.room.question);
           const matchTime = Number(data.room.timeLimit) || Number(q.timeLimitSeconds) || 300;
           setTimeLimit(matchTime);
           setTimeLeft(matchTime);
@@ -882,16 +913,17 @@ export function FullArenaExperience({
       });
 
       if (initialChosen) {
-        setActiveQuestion(initialChosen);
+        const enriched = enrichQuestion(initialChosen);
+        setActiveQuestion(enriched);
         setTimeLimit(matchTime);
         setTimeLeft(matchTime);
-        setHtmlCode(initialChosen.starterHtml || '');
-        setCssCode(initialChosen.starterCss || '');
-        setJsCode(initialChosen.starterJs || '');
-        setPythonCode(initialChosen.starterPython || '# Your python solution\n');
-        setJavaCode(initialChosen.starterJava || '// Your java solution\n');
-        setCppCode(initialChosen.starterCpp || '// Your C++ solution\n');
-        setTotalTests(computeExpectedQuestionTests(initialChosen));
+        setHtmlCode(enriched.starterHtml || '');
+        setCssCode(enriched.starterCss || '');
+        setJsCode(enriched.starterJs || '');
+        setPythonCode(enriched.starterPython || '# Your python solution\n');
+        setJavaCode(enriched.starterJava || '// Your java solution\n');
+        setCppCode(enriched.starterCpp || '// Your C++ solution\n');
+        setTotalTests(computeExpectedQuestionTests(enriched));
       }
     } catch (e) {
       console.warn('Local question pre-selection notice:', e);
@@ -921,7 +953,7 @@ export function FullArenaExperience({
         if (data.room) {
           setRoomData(data.room);
           if (data.room.question) {
-            const q = data.room.question;
+            const q = enrichQuestion(data.room.question);
             const matchTime = Number(data.room.timeLimit) || Number(q.timeLimitSeconds) || 300;
             setTimeLimit(matchTime);
             setTimeLeft(matchTime);
@@ -986,10 +1018,12 @@ export function FullArenaExperience({
 
     setRoomData(incomingRoom);
 
-    // If in Lobby (Step 3) and Host started match, advance joiner to Step 4 (Countdown) instantly!
-    if (step === 3 && (incomingRoom.status === 'starting' || incomingRoom.status === 'in_progress')) {
+    const currentStep = stepRef.current;
+
+    // If in Lobby (Step 3) and Host started match, advance joiner to Step 4 (Countdown) or Step 5 (Battlefield)
+    if (currentStep === 3 && (incomingRoom.status === 'starting' || incomingRoom.status === 'in_progress')) {
       if (incomingRoom.question) {
-        const q = incomingRoom.question;
+        const q = enrichQuestion(incomingRoom.question);
         const matchTime = Number(incomingRoom.timeLimit) || Number(q.timeLimitSeconds) || 300;
         setTimeLimit(matchTime);
 
@@ -1020,15 +1054,24 @@ export function FullArenaExperience({
           setActiveTab('html');
         }
       }
-      setStep(4);
-      setCountdownNum(3);
+
+      if (incomingRoom.status === 'in_progress') {
+        transitionStep(5);
+      } else {
+        transitionStep(4);
+        setCountdownNum(3);
+      }
       return;
     }
 
     // Question & Clock resync safety: If client is in countdown (Step 4) or battlefield (Step 5)
     // and room's authoritative question or clock is updated, synchronize immediately
-    if ((step === 4 || step === 5) && incomingRoom.question) {
-      const q = incomingRoom.question;
+    if ((currentStep === 4 || currentStep === 5) && incomingRoom.question) {
+      if (currentStep === 4 && incomingRoom.status === 'in_progress') {
+        transitionStep(5);
+      }
+
+      const q = enrichQuestion(incomingRoom.question);
       const matchTime = Number(incomingRoom.timeLimit) || Number(q.timeLimitSeconds) || 300;
       setTimeLimit(matchTime);
 
@@ -1036,7 +1079,7 @@ export function FullArenaExperience({
         const startTime = new Date(incomingRoom.startedAt).getTime();
         const elapsed = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
         setTimeLeft(Math.max(0, matchTime - elapsed));
-      } else if (step === 4) {
+      } else if (currentStep === 4) {
         setTimeLeft(matchTime);
       }
 
@@ -1054,10 +1097,10 @@ export function FullArenaExperience({
     }
 
     // If in Battlefield (Step 5):
-    if (step === 5) {
+    if (currentStep === 5) {
       if (incomingRoom.status === 'finished') {
         setWinnerTeam(incomingRoom.winnerTeam || 'Team Alpha');
-        setStep(6);
+        transitionStep(6);
         return;
       }
 
@@ -1143,7 +1186,7 @@ export function FullArenaExperience({
     // 2. High-frequency background HTTP safety check (1s in lobby & countdown, 3s in match)
     const pollInterval = setInterval(async () => {
       // In Step 3 & 4 (Lobby waiting & Countdown), DO NOT skip when document.hidden
-      if (step > 4 && typeof document !== 'undefined' && document.hidden) return;
+      if (stepRef.current > 4 && typeof document !== 'undefined' && document.hidden) return;
       try {
         const res = await fetch(`/api/arena/rooms?code=${roomCode}&_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
@@ -1151,7 +1194,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, step <= 4 ? 1000 : 3000);
+    }, stepRef.current <= 4 ? 1000 : 3000);
 
     // Instant sync when user switches tabs or focuses the window
     const handleFocusSync = async () => {
@@ -1311,10 +1354,10 @@ export function FullArenaExperience({
       }
     }
 
-    const finalChosen: DuelQuestion = {
+    const finalChosen: DuelQuestion = enrichQuestion({
       ...(chosen || DEFAULT_ARENA_QUESTIONS[0]),
       timeLimitSeconds: matchDuration,
-    };
+    });
 
     setActiveQuestion(finalChosen);
 
@@ -1392,21 +1435,46 @@ export function FullArenaExperience({
     } catch {}
 
     // Advance to countdown
-    setStep(4);
+    transitionStep(4);
     setCountdownNum(3);
   };
 
   // 3-2-1 Countdown Timer
   useEffect(() => {
     if (step !== 4) return;
+
     if (countdownNum > 1) {
-      const timer = setTimeout(() => setCountdownNum(countdownNum - 1), 1000);
+      const timer = setTimeout(() => {
+        setCountdownNum((prev) => prev - 1);
+      }, 1000);
       return () => clearTimeout(timer);
     } else {
-      const timer = setTimeout(() => setStep(5), 1000);
+      // Countdown finished: Transition to Battlefield (Step 5)
+      const timer = setTimeout(() => {
+        transitionStep(5);
+
+        // Authoritatively notify server and all peers that match is in progress!
+        if (roomCode) {
+          fetch('/api/arena/rooms/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: roomCode, action: 'in_progress' }),
+          }).catch(() => {});
+
+          if (channelRef.current) {
+            try {
+              channelRef.current.send({
+                type: 'broadcast',
+                event: 'room_sync',
+                payload: { room: { ...roomData, status: 'in_progress' } },
+              });
+            } catch {}
+          }
+        }
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [step, countdownNum]);
+  }, [step, countdownNum, roomCode, roomData]);
 
   // Battle Clock - Synchronized across all duelists via roomData.startedAt
   useEffect(() => {

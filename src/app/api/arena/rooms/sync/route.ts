@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRoom, saveRoom } from '@/lib/arena/roomStorage';
+import { DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,6 +41,14 @@ export async function POST(request: NextRequest) {
         } else if (room.question && room.timeLimit) {
           room.question.timeLimitSeconds = room.timeLimit;
         }
+        if (room.question) {
+          const match = DEFAULT_ARENA_QUESTIONS.find(
+            (d) => d.id === room.question.id || d.title.toLowerCase().trim() === room.question.title.toLowerCase().trim()
+          );
+          if (match?.targetComponentJs && (!room.question.targetComponentJs || room.question.targetComponentJs.trim().length < 20)) {
+            room.question.targetComponentJs = match.targetComponentJs;
+          }
+        }
         break;
       }
 
@@ -68,6 +77,9 @@ export async function POST(request: NextRequest) {
 
       case 'in_progress': {
         room.status = 'in_progress';
+        if (!room.startedAt) {
+          room.startedAt = now;
+        }
         break;
       }
 
