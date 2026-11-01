@@ -864,20 +864,47 @@ export function FullArenaExperience({
 
   // Host registers new room on server when advancing from Step 2 to Step 3
   const handleHostCreateRoom = async () => {
-    if (!user) {
-      setAuthGateError('Sign in required: Please log in or sign up to create and host a duel room.');
-      setStep(0);
-      openAuthModal('login');
-      return;
-    }
     setIsHost(true);
+    playArcadeCoinSound();
+
+    // 1. Advance immediately to Step 3 for instant 0ms transition without awaiting network roundtrip
+    setStep(3);
+
+    // 2. Select initial best matching question locally so question & starter code are ready instantly
+    try {
+      const matchTime = Number(timeLimit) || 300;
+      const initialChosen = selectBestQuestion(DEFAULT_ARENA_QUESTIONS, {
+        arena,
+        bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
+        selectedTags,
+        difficulty,
+        timeLimit: matchTime,
+      });
+
+      if (initialChosen) {
+        setActiveQuestion(initialChosen);
+        setTimeLimit(matchTime);
+        setTimeLeft(matchTime);
+        setHtmlCode(initialChosen.starterHtml || '');
+        setCssCode(initialChosen.starterCss || '');
+        setJsCode(initialChosen.starterJs || '');
+        setPythonCode(initialChosen.starterPython || '# Your python solution\n');
+        setJavaCode(initialChosen.starterJava || '// Your java solution\n');
+        setCppCode(initialChosen.starterCpp || '// Your C++ solution\n');
+        setTotalTests(computeExpectedQuestionTests(initialChosen));
+      }
+    } catch (e) {
+      console.warn('Local question pre-selection notice:', e);
+    }
+
+    // 3. Register authoritative room on server asynchronously
     try {
       const res = await fetch('/api/arena/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code: roomCode,
-          hostName: playerName,
+          hostName: playerName || profile?.display_name || user?.user_metadata?.full_name || 'SquadLeader',
           hostId: myPlayerId,
           avatarIdx: selectedAvatarIdx,
           format: teamSize,
@@ -914,8 +941,6 @@ export function FullArenaExperience({
     } catch (err) {
       console.warn('Failed to publish room to server:', err);
     }
-    playArcadeCoinSound();
-    setStep(3);
   };
 
   // Realtime Supabase WebSocket Channel Ref
