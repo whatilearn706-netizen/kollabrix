@@ -297,7 +297,10 @@ export function FullArenaExperience({
       setPythonCode(initialQuestion.starterPython || '# Your python solution\n');
       setJavaCode(initialQuestion.starterJava || '// Your java solution\n');
       setCppCode(initialQuestion.starterCpp || '// Your C++ solution\n');
-      setTotalTests(initialQuestion.testCases?.length || 3);
+      const isHtmlOnly = (initialQuestion.tags?.length === 1 && initialQuestion.tags.includes('html')) || (!initialQuestion.tags?.includes('css') && !initialQuestion.tags?.includes('javascript') && initialQuestion.tags?.includes('html'));
+      const isHtmlCss = initialQuestion.tags?.includes('css') && !initialQuestion.tags?.includes('javascript');
+      const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
+      setTotalTests(initialQuestion.arena === 'web_dev' ? expectedWebTests : (initialQuestion.testCases?.length || 3));
       setTimeLeft(initialQuestion.timeLimitSeconds || 300);
       setIsBotOpponentAdded(true);
       setStep(4);
@@ -506,7 +509,10 @@ export function FullArenaExperience({
           setPythonCode(q.starterPython || '# Your python solution\n');
           setJavaCode(q.starterJava || '// Your java solution\n');
           setCppCode(q.starterCpp || '// Your C++ solution\n');
-          setTotalTests(q.testCases?.length || 3);
+          const isHtmlOnly = (q.tags?.length === 1 && q.tags.includes('html')) || (!q.tags?.includes('css') && !q.tags?.includes('javascript') && q.tags?.includes('html'));
+          const isHtmlCss = q.tags?.includes('css') && !q.tags?.includes('javascript');
+          const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
+          setTotalTests(data.room.arena === 'web_dev' ? expectedWebTests : (q.testCases?.length || 3));
           setTimeLeft(q.timeLimitSeconds || 300);
         }
 
@@ -604,7 +610,10 @@ export function FullArenaExperience({
         setPythonCode(q.starterPython || '# Your python solution\n');
         setJavaCode(q.starterJava || '// Your java solution\n');
         setCppCode(q.starterCpp || '// Your C++ solution\n');
-        setTotalTests(q.testCases?.length || 3);
+        const isHtmlOnly = (q.tags?.length === 1 && q.tags.includes('html')) || (!q.tags?.includes('css') && !q.tags?.includes('javascript') && q.tags?.includes('html'));
+        const isHtmlCss = q.tags?.includes('css') && !q.tags?.includes('javascript');
+        const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
+        setTotalTests(incomingRoom.arena === 'web_dev' ? expectedWebTests : (q.testCases?.length || 3));
         setTimeLeft(q.timeLimitSeconds || 300);
 
         if (incomingRoom.arena === 'web_dev') {
@@ -852,7 +861,11 @@ export function FullArenaExperience({
     setJavaCode(chosen.starterJava || '// Your java solution\n');
     setCppCode(chosen.starterCpp || '// Your C++ solution\n');
 
-    setTotalTests(chosen.testCases?.length || 3);
+    const isHtmlOnly = (chosen.tags?.length === 1 && chosen.tags.includes('html')) || (!chosen.tags?.includes('css') && !chosen.tags?.includes('javascript') && chosen.tags?.includes('html'));
+    const isHtmlCss = chosen.tags?.includes('css') && !chosen.tags?.includes('javascript');
+    const expectedWebTests = isHtmlOnly ? 1 : isHtmlCss ? 2 : 3;
+    setTotalTests(chosen.arena === 'web_dev' ? expectedWebTests : (chosen.testCases?.length || 3));
+
     setUserTestsPassed(0);
     setTestCaseResults({});
     setCompilerResult(null);
@@ -1257,16 +1270,21 @@ export function FullArenaExperience({
     }
   };
 
-  // Test Layout Handler for Web Development (Evaluates layout coordinate graph in background)
+  // Test Layout Handler for Web Development (Evaluates layout coordinate graph & spelling in background)
   const handleTestWebLayout = () => {
     const evaluation = evaluateWebCoordinateGraph(
       activeQuestion.id,
       htmlCode,
       cssCode,
       activeQuestion.targetComponentHtml,
-      activeQuestion.targetComponentCss
+      activeQuestion.targetComponentCss,
+      {
+        tags: activeQuestion.tags || selectedTags,
+        jsCode,
+      }
     );
     setWebEvaluation(evaluation);
+    setTotalTests(evaluation.totalTests);
     setUserTestsPassed(evaluation.testsPassed);
     syncProgressToServer(evaluation.testsPassed);
 
@@ -1285,9 +1303,14 @@ export function FullArenaExperience({
       htmlCode,
       cssCode,
       activeQuestion.targetComponentHtml,
-      activeQuestion.targetComponentCss
+      activeQuestion.targetComponentCss,
+      {
+        tags: activeQuestion.tags || selectedTags,
+        jsCode,
+      }
     );
     setWebEvaluation(evaluation);
+    setTotalTests(evaluation.totalTests);
     setUserTestsPassed(evaluation.testsPassed);
     syncProgressToServer(evaluation.testsPassed);
 
