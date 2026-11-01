@@ -191,47 +191,33 @@ export async function joinPlayerToRoom(
   const cleanCode = roomCode.trim().toUpperCase();
   const now = new Date().toISOString();
 
-  // If host is rejoining or updating:
-  const isHostPlayer =
-    room.alphaPlayers.length > 0 &&
-    (room.alphaPlayers[0].id === player.id ||
-      (player.name && room.alphaPlayers[0].name.toLowerCase() === player.name.toLowerCase() && room.hostName.toLowerCase() === player.name.toLowerCase()));
-
-  if (isHostPlayer) {
-    room.alphaPlayers[0].lastActive = now;
-    room.alphaPlayers[0].avatarIdx = player.avatarIdx;
-    const saved = await saveRoom(room);
-    return { success: true, room: saved };
-  }
-
-  // Check if player is already in omegaPlayers:
-  const existingOmega = room.omegaPlayers.find(
-    (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
-  );
-  if (existingOmega) {
-    existingOmega.lastActive = now;
-    existingOmega.avatarIdx = player.avatarIdx;
-    const saved = await saveRoom(room);
-    return { success: true, room: saved };
-  }
-
-  // New Player Joining Slot Assignment:
+  // In 1v1: the joining player is ALWAYS assigned to Team Omega (Opponent Slot)
   if (room.format === '1v1') {
-    // In 1v1, slot 1 is Host (Team Alpha). The joiner is ALWAYS Team Omega (Opponent).
-    const newOpponent: ArenaPlayer = {
-      id: player.id || `p-${Date.now()}`,
-      name: player.name || 'RivalCoder',
-      avatarIdx: player.avatarIdx ?? 1,
-      team: 'omega',
-      role: 'driver',
-      isReady: true,
-      isHost: false,
-      testsPassed: 0,
-      wpm: 0,
-      lastActive: now,
-    };
-    room.omegaPlayers = [newOpponent];
-    room.isBotEnabled = false; // Disable bot since real student joined!
+    const existingOpponent = room.omegaPlayers.find(
+      (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
+    );
+    if (existingOpponent) {
+      existingOpponent.lastActive = now;
+      existingOpponent.avatarIdx = player.avatarIdx;
+      existingOpponent.name = player.name || existingOpponent.name;
+    } else {
+      const newOpponent: ArenaPlayer = {
+        id: player.id || `p-${Date.now()}`,
+        name: player.name || 'Challenger',
+        avatarIdx: player.avatarIdx ?? 1,
+        team: 'omega',
+        role: 'driver',
+        isReady: true,
+        isHost: false,
+        testsPassed: 0,
+        wpm: 0,
+        lastActive: now,
+      };
+      room.omegaPlayers = [newOpponent];
+      room.isBotEnabled = false; // Real student joined, turn off bot!
+    }
+    const saved = await saveRoom(room);
+    return { success: true, room: saved };
   } else {
     // In 2v2:
     if (room.alphaPlayers.length < 2) {
