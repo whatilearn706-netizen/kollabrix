@@ -16,18 +16,21 @@ let memoryContests: IcpcContest[] = [];
 let memoryDeletedProblemIds: Set<string> = new Set();
 let memoryDeletedContestIds: Set<string> = new Set();
 let memoryIsArenaLive: boolean = true;
+let memoryIsLeaderboardLive: boolean = false;
 
 async function loadIcpcMasterData() {
   try {
     const data = await getMasterControlSubkey<any>('icpc', {
       contests: [],
       isArenaLive: true,
+      isLeaderboardLive: false,
       deletedProblemIds: [],
       deletedContestIds: [],
     });
     return {
       contests: Array.isArray(data?.contests) ? (data.contests as IcpcContest[]) : [],
       isArenaLive: typeof data?.isArenaLive === 'boolean' ? data.isArenaLive : true,
+      isLeaderboardLive: typeof data?.isLeaderboardLive === 'boolean' ? data.isLeaderboardLive : false,
       deletedProblemIds: Array.isArray(data?.deletedProblemIds) ? (data.deletedProblemIds as string[]) : [],
       deletedContestIds: Array.isArray(data?.deletedContestIds) ? (data.deletedContestIds as string[]) : [],
     };
@@ -35,6 +38,7 @@ async function loadIcpcMasterData() {
     return {
       contests: [],
       isArenaLive: true,
+      isLeaderboardLive: false,
       deletedProblemIds: [],
       deletedContestIds: [],
     };
@@ -44,6 +48,7 @@ async function loadIcpcMasterData() {
 async function saveIcpcMasterData(updated: {
   contests?: IcpcContest[];
   isArenaLive?: boolean;
+  isLeaderboardLive?: boolean;
   deletedProblemIds?: string[];
   deletedContestIds?: string[];
 }) {
@@ -73,6 +78,7 @@ export async function GET(request: NextRequest) {
 
     let dbContests: IcpcContest[] = [];
     let isArenaLive = memoryIsArenaLive;
+    let isLeaderboardLive = memoryIsLeaderboardLive;
     let deletedProblemIds = new Set<string>(memoryDeletedProblemIds);
     let deletedContestIds = new Set<string>(memoryDeletedContestIds);
 
@@ -85,6 +91,10 @@ export async function GET(request: NextRequest) {
       if (typeof masterData.isArenaLive === 'boolean') {
         isArenaLive = masterData.isArenaLive;
         memoryIsArenaLive = isArenaLive;
+      }
+      if (typeof masterData.isLeaderboardLive === 'boolean') {
+        isLeaderboardLive = masterData.isLeaderboardLive;
+        memoryIsLeaderboardLive = isLeaderboardLive;
       }
       masterData.deletedProblemIds.forEach((id) => {
         deletedProblemIds.add(id);
@@ -156,13 +166,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       isArenaLive,
+      isLeaderboardLive,
       contests: uniqueContests,
       count: uniqueContests.length,
     });
   } catch (error: any) {
     console.error('Error fetching ICPC contests:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to load contests', contests: [], isArenaLive: true },
+      { success: false, error: error.message || 'Failed to load contests', contests: [], isArenaLive: true, isLeaderboardLive: false },
       { status: 500 }
     );
   }
@@ -269,7 +280,27 @@ export async function POST(request: NextRequest) {
     }
 
     const isPractice = contestType === 'practice';
-    const computedStatus = isPractice ? 'ended' : 'live';
+    let computedStatus: 'live' | 'upcoming' | 'ended' = isPractice ? 'ended' : 'live';
+
+    let startTimeIso = body.startTime || new Date().toISOString();
+    let endTimeIso = body.endTime || (isPractice ? new Date().toISOString() : new Date(Date.now() + (durationMinutes || 180) * 60000).toISOString());
+    let computedDuration = Number(durationMinutes) || 180;
+
+    if (!isPractice && body.startTime && body.endTime) {
+      const s = new Date(body.startTime).getTime();
+      const e = new Date(body.endTime).getTime();
+      if (!isNaN(s) && !isNaN(e) && e > s) {
+        computedDuration = Math.max(15, Math.round((e - s) / 60000));
+        const now = Date.now();
+        if (now < s) {
+          computedStatus = 'upcoming';
+        } else if (now > e) {
+          computedStatus = 'ended';
+        } else {
+          computedStatus = 'live';
+        }
+      }
+    }
 
     const newContest: IcpcContest = {
       id: `icpc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -281,9 +312,9 @@ export async function POST(request: NextRequest) {
       contestType: isPractice ? 'practice' : 'contest',
       category: body.category || (body.companyTag ? 'placement' : visibility === 'passcode' ? 'faculty' : 'icpc'),
       companyTag: body.companyTag || undefined,
-      startTime: body.startTime || new Date().toISOString(),
-      endTime: body.endTime || (isPractice ? new Date().toISOString() : new Date(Date.now() + (durationMinutes || 180) * 60000).toISOString()),
-      durationMinutes: Number(durationMinutes) || 180,
+      startTime: startTimeIso,
+      endTime: endTimeIso,
+      durationMinutes: computedDuration,
       status: computedStatus,
       visibility: visibility === 'passcode' ? 'passcode' : 'public',
       passcode: passcode?.trim() || undefined,
@@ -456,7 +487,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH: Toggle ICPC Arena Live / Offline or update settings (Admin Only)
+// PATCH: Toggle ICPC Arena Live / Offline or Leaderboard Visibility (Admin Only)
 export async function PATCH(request: NextRequest) {
   try {
     const auth = await verifyAdminSession(request);
@@ -468,25 +499,41 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { isArenaLive } = body;
+    const { isArenaLive, isLeaderboardLive } = body;
 
-    if (typeof isArenaLive !== 'boolean') {
-      return NextResponse.json({ success: false, error: 'isArenaLive boolean required' }, { status: 400 });
+    if (typeof isArenaLive !== 'boolean' && typeof isLeaderboardLive !== 'boolean') {
+      return NextResponse.json({ success: false, error: 'isArenaLive or isLeaderboardLive boolean required' }, { status: 400 });
     }
 
-    memoryIsArenaLive = isArenaLive;
+    const updatePayload: { isArenaLive?: boolean; isLeaderboardLive?: boolean } = {};
+    let message = 'Arena settings updated.';
+
+    if (typeof isArenaLive === 'boolean') {
+      memoryIsArenaLive = isArenaLive;
+      updatePayload.isArenaLive = isArenaLive;
+      message = isArenaLive ? 'ICPC Collegiate Arena is now LIVE!' : 'ICPC Collegiate Arena is now OFFLINE (Maintenance Mode).';
+    }
+
+    if (typeof isLeaderboardLive === 'boolean') {
+      memoryIsLeaderboardLive = isLeaderboardLive;
+      updatePayload.isLeaderboardLive = isLeaderboardLive;
+      message = isLeaderboardLive ? 'Campus Leaderboard is now LIVE on Arena!' : 'Campus Leaderboard is now HIDDEN from public arena.';
+    }
 
     try {
-      await saveIcpcMasterData({ isArenaLive });
-      await updateMasterControlSubkey('arena_is_live', isArenaLive);
+      await saveIcpcMasterData(updatePayload);
+      if (typeof isArenaLive === 'boolean') {
+        await updateMasterControlSubkey('arena_is_live', isArenaLive);
+      }
     } catch (dbErr) {
-      console.warn('Could not persist arena live toggle to master control:', dbErr);
+      console.warn('Could not persist arena toggle to master control:', dbErr);
     }
 
     return NextResponse.json({
       success: true,
-      isArenaLive,
-      message: isArenaLive ? 'ICPC Collegiate Arena is now LIVE!' : 'ICPC Collegiate Arena is now OFFLINE (Maintenance Mode).',
+      isArenaLive: memoryIsArenaLive,
+      isLeaderboardLive: memoryIsLeaderboardLive,
+      message,
     });
   } catch (error: any) {
     console.error('Error toggling arena live status:', error);

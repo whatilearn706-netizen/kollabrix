@@ -21,6 +21,7 @@ import {
   BookOpen,
   Lock,
   Layers,
+  GraduationCap,
 } from 'lucide-react';
 import { IcpcContest, IcpcProblem, ProblemDifficulty, ContestType, ContestCategory } from '@/types/icpc';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -83,9 +84,33 @@ export function CreateIcpcContestModal({
   const [contestType, setContestType] = useState<ContestType>('contest');
   const [category, setCategory] = useState<ContestCategory>('placement');
   const [companyTag, setCompanyTag] = useState('Amazon');
+  const [customCompanyInput, setCustomCompanyInput] = useState('');
+  const [targetCollege, setTargetCollege] = useState(collegeName || (profile as any)?.college || '');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(90);
+
+  // Date + Time scheduling for live ICPC contest (default start: +15 mins, end: +135 mins)
+  const [startTimeLocal, setStartTimeLocal] = useState(() => {
+    const d = new Date(Date.now() + 15 * 60000);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  });
+  const [endTimeLocal, setEndTimeLocal] = useState(() => {
+    const d = new Date(Date.now() + 135 * 60000);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  });
+
+  const calculatedDuration = (() => {
+    try {
+      const s = new Date(startTimeLocal).getTime();
+      const e = new Date(endTimeLocal).getTime();
+      if (!isNaN(s) && !isNaN(e) && e > s) {
+        return Math.max(15, Math.round((e - s) / 60000));
+      }
+    } catch (e) {}
+    return durationMinutes || 90;
+  })();
+
   const [visibility, setVisibility] = useState<'public' | 'passcode'>('public');
   const [passcode, setPasscode] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
@@ -179,6 +204,20 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
       return;
     }
 
+    if (category === 'faculty' && !targetCollege.trim()) {
+      setErrorMsg('Please specify the College Name for this Faculty Private Lab so only students from that college can enter.');
+      return;
+    }
+
+    if (contestType === 'contest') {
+      const sEpoch = new Date(startTimeLocal).getTime();
+      const eEpoch = new Date(endTimeLocal).getTime();
+      if (isNaN(sEpoch) || isNaN(eEpoch) || eEpoch <= sEpoch) {
+        setErrorMsg('Please enter valid Live Contest Start and End times (End must be after Start).');
+        return;
+      }
+    }
+
     if (problems.some((p) => !p.title.trim() || !p.description.trim())) {
       setErrorMsg('All problems must have a title and problem statement.');
       return;
@@ -223,6 +262,9 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
       if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
       if (user?.id) reqHeaders['x-user-id'] = user.id;
 
+      const finalCompany = category === 'placement' ? (customCompanyInput.trim() || companyTag || 'Company') : undefined;
+      const finalCollege = (category === 'faculty' ? targetCollege.trim() : (targetCollege.trim() || collegeName || (profile as any)?.college)) || 'Partner Collegiate Network';
+
       const res = await fetch('/api/icpc', {
         method: 'POST',
         headers: reqHeaders,
@@ -231,14 +273,16 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           subtitle,
           contestType,
           category,
-          companyTag: category === 'placement' ? companyTag : undefined,
-          durationMinutes,
+          companyTag: finalCompany,
+          durationMinutes: calculatedDuration,
+          startTime: contestType === 'contest' ? new Date(startTimeLocal).toISOString() : new Date().toISOString(),
+          endTime: contestType === 'contest' ? new Date(endTimeLocal).toISOString() : new Date().toISOString(),
           visibility,
           passcode: visibility === 'passcode' ? passcode : undefined,
           rules,
           problems: formattedProblems,
           organizer: organizerName || profile?.display_name || user?.user_metadata?.display_name || 'Verified Faculty Mentor',
-          college: collegeName || (profile as any)?.college || 'Partner Collegiate Network',
+          college: finalCollege,
           creatorId: user?.id,
           userRole: profile?.role,
           facultyVerified: profile?.faculty_verified || Boolean(profile?.college) || profile?.role === 'teacher',
@@ -361,8 +405,8 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
             </div>
 
             {category === 'placement' && (
-              <div className="pt-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
+              <div className="pt-2 space-y-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                   Company Target Brand
                 </label>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -370,9 +414,12 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
                     <button
                       key={c}
                       type="button"
-                      onClick={() => setCompanyTag(c)}
+                      onClick={() => {
+                        setCompanyTag(c);
+                        setCustomCompanyInput('');
+                      }}
                       className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                        companyTag === c
+                        companyTag === c && !customCompanyInput
                           ? 'bg-amber-500 text-slate-950 shadow-xs'
                           : 'bg-charcoal-800 text-slate-300 hover:text-white border border-charcoal-700'
                       }`}
@@ -381,6 +428,39 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
                     </button>
                   ))}
                 </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">Or other company:</span>
+                  <input
+                    type="text"
+                    value={customCompanyInput}
+                    onChange={(e) => {
+                      setCustomCompanyInput(e.target.value);
+                      if (e.target.value) setCompanyTag(e.target.value);
+                    }}
+                    placeholder="e.g. Atlassian, Adobe, Oracle, Accenture..."
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+
+            {category === 'faculty' && (
+              <div className="pt-2 p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
+                  <label className="text-xs font-bold text-purple-200">
+                    Target College / Institution (Only students of this College can enter) *
+                  </label>
+                </div>
+                <Input
+                  placeholder="e.g., Apex Institute of Technology, VIT, SRM, DTU..."
+                  value={targetCollege}
+                  onChange={(e) => setTargetCollege(e.target.value)}
+                  required
+                />
+                <p className="text-[11px] text-purple-300/80 leading-relaxed font-mono">
+                  🔒 Campus-Gated Private Arena: Only students registered under this exact college name will see and be permitted to enter this private lab test.
+                </p>
               </div>
             )}
           </div>
@@ -478,19 +558,58 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
-                Duration (Minutes)
-              </label>
-              <Input
-                type="number"
-                min={30}
-                max={600}
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-              />
+          {/* Live Contest Date + Time Window (Only for Live ICPC Contests) */}
+          {contestType === 'contest' && (
+            <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-400" />
+                <h5 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  Live Contest Schedule (From Date &amp; Time to End Date &amp; Time) *
+                </h5>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Live From (Start Date &amp; Time) *
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    value={startTimeLocal}
+                    onChange={(e) => setStartTimeLocal(e.target.value)}
+                    required
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Live Until (End Date &amp; Time) *
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    value={endTimeLocal}
+                    onChange={(e) => setEndTimeLocal(e.target.value)}
+                    required
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 pt-1 border-t border-cyan-500/20">
+                <span>
+                  ⏱️ Calculated Contest Duration: <strong className="text-cyan-300">{calculatedDuration} minutes</strong>
+                </span>
+                <span className="text-cyan-400/90 font-bold">
+                  {new Date(startTimeLocal) > new Date()
+                    ? '🕒 Will appear as Upcoming'
+                    : new Date(endTimeLocal) < new Date()
+                    ? '🏁 Will appear as Ended'
+                    : '🟢 Will appear Live Now'}
+                </span>
+              </div>
             </div>
+          )}
+
+          {/* Access Visibility and Classroom Passcode */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                 Access Visibility
