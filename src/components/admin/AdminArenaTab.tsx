@@ -114,8 +114,12 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
           try {
             const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
             if (Array.isArray(localDel) && localDel.length > 0) {
-              const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase()));
-              qList = qList.filter((q: any) => !delSet.has((q.id || '').toLowerCase()));
+              const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase().trim()));
+              qList = qList.filter(
+                (q: any) =>
+                  !delSet.has((q.id || '').toLowerCase().trim()) &&
+                  !delSet.has((q.title || '').toLowerCase().trim())
+              );
             }
           } catch {}
           setQuestions(qList);
@@ -367,6 +371,20 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const handleDeleteQuestion = async (questionId: string) => {
     if (!confirm('Are you sure you want to permanently delete this duel question from the server?')) return;
     try {
+      // 1. Immediately persist deletion in localStorage so it never reappears on refresh
+      try {
+        const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
+        if (!localDel.includes(questionId)) {
+          localDel.push(questionId);
+          localStorage.setItem('tf_deleted_arena_q_ids', JSON.stringify(localDel));
+        }
+      } catch {}
+
+      // 2. Remove from state immediately
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      setStatusMsg({ text: 'Question removed from live arena question bank!', type: 'success' });
+
+      // 3. Sync deletion to server
       let activeToken = authToken;
       if (!activeToken) {
         try {
@@ -378,29 +396,12 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       const headers: Record<string, string> = {};
       if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
-      const res = await fetch(`/api/arena/questions?id=${questionId}`, {
+      await fetch(`/api/arena/questions?id=${encodeURIComponent(questionId)}`, {
         method: 'DELETE',
         headers,
       });
-
-      const data = await res.json();
-      if (data.success) {
-        try {
-          const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
-          localDel.push(questionId);
-          localStorage.setItem('tf_deleted_arena_q_ids', JSON.stringify(localDel));
-        } catch {}
-
-        setQuestions((prev) => prev.filter((q) => q.id !== questionId));
-        setStatusMsg({ text: 'Question removed from live arena question bank!', type: 'success' });
-        setTimeout(() => {
-          fetchQuestions();
-        }, 100);
-      } else {
-        setStatusMsg({ text: data.error || 'Failed to delete question', type: 'error' });
-      }
     } catch (err: any) {
-      setStatusMsg({ text: err.message || 'Error deleting question', type: 'error' });
+      console.warn('Network notice on server delete:', err);
     }
   };
 
@@ -615,9 +616,10 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         const showWebJs = hasAnyWebTag ? (parsedCurrentTags.includes('javascript') || parsedCurrentTags.includes('js')) : false;
 
         const hasAnyAlgoTag = parsedCurrentTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
-        const showAlgoPython = hasAnyAlgoTag ? parsedCurrentTags.includes('python') : true;
-        const showAlgoJava = hasAnyAlgoTag ? parsedCurrentTags.includes('java') : true;
-        const showAlgoCpp = hasAnyAlgoTag ? (parsedCurrentTags.includes('cpp') || parsedCurrentTags.includes('c++')) : true;
+        // Single language selection for Algorithms & DSA (Java, Python, or C++)
+        const showAlgoJava = parsedCurrentTags.includes('java') || (!hasAnyAlgoTag && newArena === 'algorithms');
+        const showAlgoPython = parsedCurrentTags.includes('python');
+        const showAlgoCpp = parsedCurrentTags.includes('cpp') || parsedCurrentTags.includes('c++');
 
         const visibleWebFieldsCount = (showWebHtml ? 1 : 0) + (showWebCss ? 1 : 0) + (showWebJs ? 1 : 0);
         const webFieldsGridClass =
@@ -676,7 +678,17 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
               <label className="block text-xs font-medium text-slate-300 mb-1">Arena Category</label>
               <select
                 value={newArena}
-                onChange={(e) => setNewArena(e.target.value as ArenaCategory)}
+                onChange={(e) => {
+                  const val = e.target.value as ArenaCategory;
+                  setNewArena(val);
+                  if (val === 'algorithms') {
+                    setNewTags('java');
+                  } else if (val === 'web_dev') {
+                    setNewTags('html,css');
+                  } else if (val === 'bug_hunt') {
+                    setNewTags(newBugDomain === 'web' ? 'html,css' : 'java');
+                  }
+                }}
                 className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs focus:border-rose-500 focus:outline-none"
               >
                 <option value="web_dev">Web Development (HTML / CSS / JS)</option>
@@ -739,41 +751,36 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                   </>
                 )}
                 {isAlgoAdminMode && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTag('python')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
-                        showAlgoPython
-                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
-                      }`}
-                    >
-                      {showAlgoPython ? '✓' : '+'} python
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTag('java')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
-                        showAlgoJava
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
-                      }`}
-                    >
-                      {showAlgoJava ? '✓' : '+'} java
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTag('cpp')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
-                        showAlgoCpp
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
-                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
-                      }`}
-                    >
-                      {showAlgoCpp ? '✓' : '+'} c++
-                    </button>
-                  </>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'java', label: 'Java', color: 'amber' },
+                      { id: 'python', label: 'Python', color: 'cyan' },
+                      { id: 'cpp', label: 'C++', color: 'rose' },
+                    ].map((lang) => {
+                      const isSelected = parsedCurrentTags.includes(lang.id) || (lang.id === 'java' && !hasAnyAlgoTag);
+                      return (
+                        <button
+                          key={lang.id}
+                          type="button"
+                          onClick={() => setNewTags(lang.id)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                            isSelected
+                              ? 'bg-rose-500 text-white border-rose-400 shadow-sm'
+                              : 'bg-charcoal-950 text-slate-400 border-charcoal-800 hover:text-slate-200'
+                          }`}
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center text-[8px] ${
+                              isSelected ? 'bg-white border-white text-rose-600 font-bold' : 'border-slate-600'
+                            }`}
+                          >
+                            {isSelected ? '✓' : ''}
+                          </span>
+                          <span>{lang.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>

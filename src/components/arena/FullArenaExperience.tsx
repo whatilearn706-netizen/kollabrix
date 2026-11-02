@@ -995,8 +995,8 @@ export function FullArenaExperience({
       setSelectedTags(['html', 'css']);
       setActiveTab('html');
     } else if (newArena === 'algorithms') {
-      setSelectedTags(['python']);
-      setActiveTab('python');
+      setSelectedTags(['java']);
+      setActiveTab('java');
     } else if (newArena === 'bug_hunt') {
       setSelectedTags([bugDomain === 'web' ? 'bug_web' : 'bug_logic']);
       setActiveTab(bugDomain === 'web' ? 'html' : 'python');
@@ -3134,49 +3134,54 @@ export function FullArenaExperience({
               </div>
             )}
 
-            {/* 2. ALGORITHMS / DSA LANGUAGE CHECKBOXES */}
+            {/* 2. ALGORITHMS / DSA LANGUAGE (SINGLE SELECT - CHOOSE 1: JAVA, PYTHON, OR C++) */}
             {arena === 'algorithms' && (
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                    Algorithms Languages (Choose 1, 2, or All 3):
+                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Select Language (Choose 1):</span>
                   </span>
-                  <span className="text-[11px] font-mono text-cyan-400">
-                    {selectedTags.length} selected
+                  <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase">
+                    {selectedTags[0] ? selectedTags[0].toUpperCase() : 'JAVA'}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
-                    { id: 'python', label: 'Python', desc: 'Python 3.12 - Fast prototyping' },
                     { id: 'java', label: 'Java', desc: 'Java 21 OpenJDK - Enterprise DSA' },
+                    { id: 'python', label: 'Python', desc: 'Python 3.12 - Fast prototyping' },
                     { id: 'cpp', label: 'C++', desc: 'Modern C++ 20 - Ultra-fast competitive' },
                   ].map((lang) => {
-                    const isChecked = selectedTags.includes(lang.id);
+                    const isSelected = selectedTags[0] === lang.id || (selectedTags.length === 1 && selectedTags.includes(lang.id));
                     return (
-                      <div
+                      <button
                         key={lang.id}
-                        onClick={() => handleToggleTag(lang.id)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
-                          isChecked
-                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm'
+                        type="button"
+                        onClick={() => {
+                          setSelectedTags([lang.id]);
+                          setActiveTab(lang.id as any);
+                        }}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none text-left w-full ${
+                          isSelected
+                            ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                         }`}
                       >
                         <div
-                          className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
-                            isChecked
+                          className={`w-4 h-4 rounded-full mt-0.5 flex items-center justify-center shrink-0 border ${
+                            isSelected
                               ? 'bg-cyan-500 border-cyan-400 text-slate-950'
                               : 'border-slate-600'
                           }`}
                         >
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
                         </div>
                         <div>
                           <p className="text-xs font-bold font-mono text-white">{lang.label}</p>
                           <p className="text-[10px] text-slate-400">{lang.desc}</p>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
