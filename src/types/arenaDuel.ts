@@ -269,6 +269,240 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
       { input: 'hasStatsAndRestart', expectedOutput: 'pass', description: 'Time, WPM stats and Restart button present' },
     ],
   },
+  // 0c. Web Dev (HTML + CSS + JS Easy): Kanban Project Management Board
+  {
+    id: 'q-web-kanban-board',
+    arena: 'web_dev',
+    title: 'Kanban Project Management Board',
+    description: 'Build a Kanban board that allows users to organize project tasks into three stages: To Do, In Progress, and Completed.\n\nUsers should be able to:\n- Add new tasks with a title and description.\n- Display tasks in the correct column.\n- Move tasks between the three columns.\n- Delete tasks.\n- Show the number of tasks in each column.\n- Update the board automatically whenever a task changes.',
+    tags: ['html', 'css', 'javascript'],
+    difficulty: 'easy',
+    timeLimitSeconds: 600,
+    targetPreviewTitle: 'Kanban Project Management Board Blueprint',
+    targetComponentHtml: `
+      <div class="board">
+        <h2>Project Task Board</h2>
+
+        <form id="taskForm">
+          <input id="taskTitle" placeholder="Task title" required>
+          <input id="taskDescription" placeholder="Task description">
+          <button type="submit" id="addTask">Add Task</button>
+        </form>
+
+        <div class="columns">
+          <section class="column">
+            <h3>To Do (<span id="todoCount">1</span>)</h3>
+            <div id="todo"></div>
+          </section>
+
+          <section class="column">
+            <h3>In Progress (<span id="progressCount">1</span>)</h3>
+            <div id="progress"></div>
+          </section>
+
+          <section class="column">
+            <h3>Completed (<span id="completedCount">1</span>)</h3>
+            <div id="completed"></div>
+          </section>
+        </div>
+      </div>
+    `,
+    targetComponentCss: `
+      body {
+        font-family: Arial, sans-serif;
+        background: #111827;
+        color: white;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .board {
+        max-width: 900px;
+        margin: auto;
+      }
+      .columns {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .column {
+        background: #1f2937;
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 220px;
+        border: 1px solid #374151;
+      }
+      .column h3 {
+        margin: 0 0 12px 0;
+        font-size: 15px;
+        color: #93c5fd;
+      }
+      .task {
+        background: #374151;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 1px solid #4b5563;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      }
+      .task strong {
+        display: block;
+        font-size: 13px;
+        color: #f3f4f6;
+        margin-bottom: 4px;
+      }
+      .task p {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+        color: #9ca3af;
+        line-height: 1.4;
+      }
+      .task button {
+        padding: 4px 8px;
+        font-size: 11px;
+        background: #4b5563;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 4px;
+      }
+      .task button.del-btn {
+        background: #ef4444;
+      }
+      input, button {
+        padding: 9px 12px;
+        margin: 4px;
+        border-radius: 6px;
+        border: 1px solid #4b5563;
+        background: #1e293b;
+        color: white;
+        font-size: 13px;
+      }
+      #addTask {
+        background: #2563eb;
+        border-color: #2563eb;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      @media (max-width: 700px) {
+        .columns {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+    targetComponentJs: `
+      let tasks = [
+        { id: 1, title: "Design Sprint Mockup", description: "Create wireframes in Figma", status: "todo" },
+        { id: 2, title: "API Authentication", description: "Implement JWT login flow", status: "progress" },
+        { id: 3, title: "Database Migration", description: "Set up schema & indexes", status: "completed" }
+      ];
+
+      const columns = ["todo", "progress", "completed"];
+
+      function renderBoard() {
+        columns.forEach(function(column) {
+          const columnTasks = tasks.filter(function(task) { return task.status === column; });
+          const colEl = document.getElementById(column);
+          if (colEl) {
+            colEl.innerHTML = columnTasks.map(function(task) {
+              return '<div class="task">' +
+                '<strong>' + task.title + '</strong>' +
+                '<p>' + (task.description || '') + '</p>' +
+                '<button type="button" onclick="moveTask(' + task.id + ', -1)">←</button>' +
+                '<button type="button" onclick="moveTask(' + task.id + ', 1)">→</button>' +
+                '<button type="button" class="del-btn" onclick="deleteTask(' + task.id + ')">Delete</button>' +
+              '</div>';
+            }).join("");
+          }
+
+          const countId = column === "todo" ? "todoCount" :
+            column === "progress" ? "progressCount" : "completedCount";
+          const countEl = document.getElementById(countId);
+          if (countEl) {
+            countEl.textContent = String(columnTasks.length);
+          }
+        });
+      }
+
+      function moveTask(id, direction) {
+        const order = ["todo", "progress", "completed"];
+        tasks = tasks.map(function(task) {
+          if (task.id === id) {
+            const currentIdx = order.indexOf(task.status);
+            const nextIdx = currentIdx + direction;
+            if (nextIdx >= 0 && nextIdx < order.length) {
+              task.status = order[nextIdx];
+            }
+          }
+          return task;
+        });
+        renderBoard();
+      }
+
+      function deleteTask(id) {
+        tasks = tasks.filter(function(task) { return task.id !== id; });
+        renderBoard();
+      }
+
+      window.moveTask = moveTask;
+      window.deleteTask = deleteTask;
+
+      function setupKanban() {
+        const form = document.getElementById("taskForm");
+        const addBtn = document.getElementById("addTask") || document.querySelector("button[type='submit']");
+        
+        function handleAddTask() {
+          const titleInput = document.getElementById("taskTitle") || document.querySelector("input[placeholder*='title' i]");
+          const descInput = document.getElementById("taskDescription") || document.querySelector("input[placeholder*='desc' i]");
+          const titleVal = titleInput ? titleInput.value.trim() : "";
+          const descVal = descInput ? descInput.value.trim() : "";
+          if (!titleVal) return;
+
+          tasks.push({
+            id: Date.now(),
+            title: titleVal,
+            description: descVal,
+            status: "todo"
+          });
+
+          if (titleInput) titleInput.value = "";
+          if (descInput) descInput.value = "";
+          renderBoard();
+        }
+
+        if (form) {
+          form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            handleAddTask();
+          });
+        }
+
+        if (addBtn && !form) {
+          addBtn.addEventListener("click", function(event) {
+            event.preventDefault();
+            handleAddTask();
+          });
+        }
+
+        renderBoard();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", setupKanban);
+      } else {
+        setupKanban();
+      }
+    `,
+    starterHtml: `<div class="board">\n  <h2>Project Task Board</h2>\n\n  <form id="taskForm">\n    <input id="taskTitle" placeholder="Task title" required>\n    <input id="taskDescription" placeholder="Task description">\n    <button type="submit" id="addTask">Add Task</button>\n  </form>\n\n  <div class="columns">\n    <section class="column">\n      <h3>To Do (<span id="todoCount">0</span>)</h3>\n      <div id="todo"></div>\n    </section>\n\n    <section class="column">\n      <h3>In Progress (<span id="progressCount">0</span>)</h3>\n      <div id="progress"></div>\n    </section>\n\n    <section class="column">\n      <h3>Completed (<span id="completedCount">0</span>)</h3>\n      <div id="completed"></div>\n    </section>\n  </div>\n</div>`,
+    starterCss: `/* Style your Kanban board here */\nbody {\n  font-family: Arial, sans-serif;\n  background: #111827;\n  color: white;\n  padding: 20px;\n}\n\n.columns {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 15px;\n  margin-top: 20px;\n}\n\n.column {\n  background: #1f2937;\n  padding: 15px;\n  border-radius: 10px;\n  min-height: 220px;\n}`,
+    starterJs: `// Build your Kanban task management logic here:\n// 1. Array of tasks: { id, title, description, status: 'todo' | 'progress' | 'completed' }\n// 2. Add new tasks on form submit\n// 3. Render tasks into the corresponding column container\n// 4. Update task count badges on changes`,
+    testCases: [
+      { input: 'htmlWordsAndStructure', expectedOutput: 'true', description: 'Semantic HTML Structure & Content / Word Spelling Alignment' },
+      { input: 'cssCoordinatesAndLayout', expectedOutput: 'true', description: 'CSS Spatial Coordinates & Layout Graph (±30% Tolerance)' },
+      { input: 'jsInteractiveBehavior', expectedOutput: 'true', description: 'JavaScript DOM Interactivity & Event Handlers' },
+    ],
+  },
   // 1. Web Dev: HTML + CSS 3-Card Responsive Grid (Image 4 Flagship Challenge)
   {
     id: 'q-html-css-cards-grid',

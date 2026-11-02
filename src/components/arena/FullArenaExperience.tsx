@@ -104,12 +104,124 @@ function enrichQuestion(q: DuelQuestion | null | undefined): DuelQuestion {
   const match = DEFAULT_ARENA_QUESTIONS.find(
     (d) => d.id === q.id || d.title.toLowerCase().trim() === q.title.toLowerCase().trim()
   );
+
+  let targetJs =
+    q.targetComponentJs && q.targetComponentJs.trim().length > 20
+      ? q.targetComponentJs
+      : match?.targetComponentJs || '';
+
+  // Ensure Kanban Board question has pre-loaded tasks and global window.moveTask / window.deleteTask
+  if (q.title && q.title.toLowerCase().includes('kanban')) {
+    targetJs = `
+let tasks = [
+  { id: 1, title: "Design Sprint Mockup", description: "Create wireframes in Figma", status: "todo" },
+  { id: 2, title: "API Authentication", description: "Implement JWT login flow", status: "progress" },
+  { id: 3, title: "Database Migration", description: "Set up schema & indexes", status: "completed" }
+];
+
+const columns = ["todo", "progress", "completed"];
+
+function renderBoard() {
+  columns.forEach(function(column) {
+    const columnTasks = tasks.filter(function(task) { return task.status === column; });
+    const colEl = document.getElementById(column);
+    if (colEl) {
+      colEl.innerHTML = columnTasks.map(function(task) {
+        return '<div class="task" style="background:#374151;padding:12px;margin:10px 0;border-radius:8px;border:1px solid #4b5563;box-shadow:0 4px 12px rgba(0,0,0,0.3);">' +
+          '<strong style="display:block;font-size:13px;color:#f3f4f6;margin-bottom:4px;">' + task.title + '</strong>' +
+          '<p style="margin:0 0 8px 0;font-size:12px;color:#9ca3af;line-height:1.4;">' + (task.description || '') + '</p>' +
+          '<div style="display:flex;gap:6px;align-items:center;">' +
+            '<button type="button" onclick="moveTask(' + task.id + ', -1)" style="padding:4px 8px;font-size:11px;background:#4b5563;color:white;border:none;border-radius:4px;cursor:pointer;">←</button>' +
+            '<button type="button" onclick="moveTask(' + task.id + ', 1)" style="padding:4px 8px;font-size:11px;background:#4b5563;color:white;border:none;border-radius:4px;cursor:pointer;">→</button>' +
+            '<button type="button" onclick="deleteTask(' + task.id + ')" style="padding:4px 8px;font-size:11px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+    }
+
+    const countId = column === "todo" ? "todoCount" :
+      column === "progress" ? "progressCount" : "completedCount";
+    const countEl = document.getElementById(countId);
+    if (countEl) {
+      countEl.textContent = String(columnTasks.length);
+    }
+  });
+}
+
+function moveTask(id, direction) {
+  const order = ["todo", "progress", "completed"];
+  tasks = tasks.map(function(task) {
+    if (task.id === id) {
+      const currentIdx = order.indexOf(task.status);
+      const nextIdx = currentIdx + direction;
+      if (nextIdx >= 0 && nextIdx < order.length) {
+        task.status = order[nextIdx];
+      }
+    }
+    return task;
+  });
+  renderBoard();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(function(task) { return task.id !== id; });
+  renderBoard();
+}
+
+window.moveTask = moveTask;
+window.deleteTask = deleteTask;
+
+function setupKanban() {
+  const form = document.getElementById("taskForm");
+  const addBtn = document.getElementById("addTask") || document.querySelector("button[type='submit']");
+  
+  function handleAddTask() {
+    const titleInput = document.getElementById("taskTitle") || document.querySelector("input[placeholder*='title' i]");
+    const descInput = document.getElementById("taskDescription") || document.querySelector("input[placeholder*='desc' i]");
+    const titleVal = titleInput ? titleInput.value.trim() : "";
+    const descVal = descInput ? descInput.value.trim() : "";
+    if (!titleVal) return;
+
+    tasks.push({
+      id: Date.now(),
+      title: titleVal,
+      description: descVal,
+      status: "todo"
+    });
+
+    if (titleInput) titleInput.value = "";
+    if (descInput) descInput.value = "";
+    renderBoard();
+  }
+
+  if (form) {
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+      handleAddTask();
+    });
+  }
+
+  if (addBtn && !form) {
+    addBtn.addEventListener("click", function(event) {
+      event.preventDefault();
+      handleAddTask();
+    });
+  }
+
+  renderBoard();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupKanban);
+} else {
+  setupKanban();
+}
+`;
+  }
+
   return {
     ...q,
-    targetComponentJs:
-      q.targetComponentJs && q.targetComponentJs.trim().length > 20
-        ? q.targetComponentJs
-        : match?.targetComponentJs || '',
+    targetComponentJs: targetJs,
     targetComponentHtml: q.targetComponentHtml || match?.targetComponentHtml || '',
     targetComponentCss: q.targetComponentCss || match?.targetComponentCss || '',
   };
@@ -4023,52 +4135,35 @@ export function FullArenaExperience({
                           <iframe
                             title="Target Component Preview"
                             srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;overflow-y:auto;}*,*:before,*:after{box-sizing:inherit;}${activeQuestion.targetComponentCss || ''}</style></head><body>${activeQuestion.targetComponentHtml || '<p>Target Preview</p>'}<script>
-window.onerror = function(msg) { console.warn('Preview script error:', msg); return true; };
+window.onerror = function(msg, url, line) { console.warn('Preview script error: ' + msg + ' at line ' + line); return true; };
 </script>
 <script>
-(function() {
-  function runTargetScript() {
-    try {
-      ${(activeQuestion.targetComponentJs || '').replace(/<\/script/gi, '<\\/script')}
-    } catch (e) {
-      console.warn('Target JS error:', e);
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runTargetScript);
-  } else {
-    runTargetScript();
-  }
-})();
+try {
+  ${(activeQuestion.targetComponentJs || '').replace(/<\/script/gi, '<\\/script')}
+} catch (e) {
+  console.warn('Target JS error:', e);
+}
 </script>
-<script>
+${
+  (!activeQuestion.targetComponentJs || activeQuestion.targetComponentJs.trim().length <= 10)
+    ? `<script>
 (function() {
   function initInteractivePreview() {
     var buttons = Array.from(document.querySelectorAll('button, [role="button"], .btn'));
     if (buttons.length === 0) return;
 
-    var displayEl = document.querySelector('#counter-val, #counter, #count, #display, #value, #number, .count-number, .count, .counter, .value, .number');
-    if (!displayEl) {
-      var candidates = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, div, span, p'));
-      for (var i = 0; i < candidates.length; i++) {
-        var el = candidates[i];
-        if (el.children.length === 0 && /^\\s*-?\\d+\\s*$/.test(el.textContent || '')) {
-          displayEl = el;
-          break;
-        }
-      }
-    }
-
+    var displayEl = document.querySelector('#counter-val, #counter, #count-val, .count-number');
     if (!displayEl) return;
 
     buttons.forEach(function(btn) {
       var text = (btn.textContent || '').trim().toLowerCase();
       var id = (btn.id || '').toLowerCase();
-      var cls = (btn.className || '').toLowerCase();
 
-      var isInc = text.includes('increase') || text.includes('increment') || text.includes('add') || text === '+' || id.includes('inc') || cls.includes('inc');
-      var isDec = text.includes('decrease') || text.includes('decrement') || text.includes('sub') || text === '-' || id.includes('dec') || cls.includes('dec');
-      var isReset = text.includes('reset') || text.includes('clear') || id.includes('reset') || cls.includes('reset');
+      var isInc = text === 'increase' || text === 'increment' || text === '+' || id === 'increase' || id === 'btn-increase';
+      var isDec = text === 'decrease' || text === 'decrement' || text === '-' || id === 'decrease' || id === 'btn-decrease';
+      var isReset = text === 'reset' || text === 'clear' || id === 'reset' || id === 'btn-reset';
+
+      if (!isInc && !isDec && !isReset) return;
 
       btn.addEventListener('click', function(e) {
         var currentVal = parseInt(displayEl.textContent ? displayEl.textContent.trim() : '0', 10);
@@ -4094,7 +4189,9 @@ window.onerror = function(msg) { console.warn('Preview script error:', msg); ret
     initInteractivePreview();
   }
 })();
-<\/script></body></html>`}
+<\\/script>`
+    : ''
+}</body></html>`}
                             className="w-full h-full border-0 block"
                             sandbox="allow-scripts allow-modals"
                           />
