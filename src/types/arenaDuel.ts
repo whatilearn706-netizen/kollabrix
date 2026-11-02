@@ -292,17 +292,41 @@ export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
         <div class="columns">
           <section class="column">
             <h3>To Do (<span id="todoCount">1</span>)</h3>
-            <div id="todo"></div>
+            <div id="todo">
+              <div class="task">
+                <strong>Design Sprint Mockup</strong>
+                <p>Create wireframes in Figma</p>
+                <button type="button" onclick="window.moveTask(1, -1)">←</button>
+                <button type="button" onclick="window.moveTask(1, 1)">→</button>
+                <button type="button" class="del-btn" onclick="window.deleteTask(1)">Delete</button>
+              </div>
+            </div>
           </section>
 
           <section class="column">
             <h3>In Progress (<span id="progressCount">1</span>)</h3>
-            <div id="progress"></div>
+            <div id="progress">
+              <div class="task">
+                <strong>API Authentication</strong>
+                <p>Implement JWT login flow</p>
+                <button type="button" onclick="window.moveTask(2, -1)">←</button>
+                <button type="button" onclick="window.moveTask(2, 1)">→</button>
+                <button type="button" class="del-btn" onclick="window.deleteTask(2)">Delete</button>
+              </div>
+            </div>
           </section>
 
           <section class="column">
             <h3>Completed (<span id="completedCount">1</span>)</h3>
-            <div id="completed"></div>
+            <div id="completed">
+              <div class="task">
+                <strong>Database Migration</strong>
+                <p>Set up schema & indexes</p>
+                <button type="button" onclick="window.moveTask(3, -1)">←</button>
+                <button type="button" onclick="window.moveTask(3, 1)">→</button>
+                <button type="button" class="del-btn" onclick="window.deleteTask(3)">Delete</button>
+              </div>
+            </div>
           </section>
         </div>
       </div>

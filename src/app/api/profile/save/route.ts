@@ -123,12 +123,34 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getAdminClient();
 
-    // Upsert directly using the service role client (bypasses client RLS safely on server)
-    let { data, error } = await supabaseAdmin
+    // Check if the profile already exists
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .upsert(sanitizedPayload, { onConflict: 'user_id' })
-      .select()
-      .single();
+      .select('user_id')
+      .eq('user_id', sanitizedPayload.user_id)
+      .maybeSingle();
+
+    let data: any = null;
+    let error: any = null;
+
+    if (existingProfile) {
+      const updateRes = await supabaseAdmin
+        .from('profiles')
+        .update(sanitizedPayload)
+        .eq('user_id', sanitizedPayload.user_id)
+        .select()
+        .maybeSingle();
+      data = updateRes.data;
+      error = updateRes.error;
+    } else {
+      const insertRes = await supabaseAdmin
+        .from('profiles')
+        .insert(sanitizedPayload)
+        .select()
+        .maybeSingle();
+      data = insertRes.data;
+      error = insertRes.error;
+    }
 
     // Schema resilience: if custom columns are not yet in the DB schema, strip them and retry
     if (
@@ -143,14 +165,24 @@ export async function POST(request: NextRequest) {
       delete safePayload.verification_doc_type;
       delete safePayload.college_verified;
 
-      const retryRes = await supabaseAdmin
-        .from('profiles')
-        .upsert(safePayload, { onConflict: 'user_id' })
-        .select()
-        .single();
-
-      error = retryRes.error;
-      data = retryRes.data;
+      if (existingProfile) {
+        const retryRes = await supabaseAdmin
+          .from('profiles')
+          .update(safePayload)
+          .eq('user_id', safePayload.user_id)
+          .select()
+          .maybeSingle();
+        error = retryRes.error;
+        data = retryRes.data;
+      } else {
+        const retryRes = await supabaseAdmin
+          .from('profiles')
+          .insert(safePayload)
+          .select()
+          .maybeSingle();
+        error = retryRes.error;
+        data = retryRes.data;
+      }
     }
 
     if (error) {

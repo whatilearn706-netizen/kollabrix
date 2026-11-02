@@ -153,7 +153,22 @@ export default function ProblemStatementDetailPage() {
           throw new Error(probError.message);
         }
       } else if (probData) {
-        setProblem(probData as unknown as ProblemStatement);
+        let enriched: any = { ...probData };
+        try {
+          const { data: metaRow } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'problem_statement_metadata')
+            .maybeSingle();
+
+          if (metaRow?.value && metaRow.value[id]) {
+            const m = metaRow.value[id];
+            enriched.team_size = m.team_size || enriched.team_size;
+            enriched.min_team_size = m.min_team_size || enriched.min_team_size;
+            enriched.max_team_size = m.max_team_size || enriched.max_team_size;
+          }
+        } catch {}
+        setProblem(enriched as unknown as ProblemStatement);
       }
 
       // Load student projects referencing this problem
@@ -186,6 +201,26 @@ export default function ProblemStatementDetailPage() {
         combinedProjects = projData as unknown as Project[];
       }
 
+      // Merge persistent problem squads from platform_settings
+      try {
+        const { data: regRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_teams_registry')
+          .maybeSingle();
+
+        if (Array.isArray(regRow?.value)) {
+          const matchingTeams = regRow.value.filter((p: any) => p && p.problem_statement_id === id);
+          const existingIds = new Set(combinedProjects.map((p) => p.id));
+          for (const mt of matchingTeams) {
+            if (!existingIds.has(mt.id)) {
+              combinedProjects.unshift(mt);
+              existingIds.add(mt.id);
+            }
+          }
+        }
+      } catch {}
+
       // Merge locally created problem teams
       if (typeof window !== 'undefined') {
         try {
@@ -213,10 +248,21 @@ export default function ProblemStatementDetailPage() {
     if (!id) return;
     try {
       setIsLoadingSolutions(true);
+      let token: string | null = null;
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: sess } = await supabase.auth.getSession();
+          token = sess?.session?.access_token || null;
+        } catch {}
+      }
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const url = user?.id
         ? `/api/problems/solutions?problem_id=${id}&viewer_id=${user.id}`
         : `/api/problems/solutions?problem_id=${id}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { headers });
       const data = await res.json();
       if (res.ok && Array.isArray(data.solutions)) {
         setSolutions(data.solutions);

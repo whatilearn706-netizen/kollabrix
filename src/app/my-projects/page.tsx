@@ -88,13 +88,56 @@ function MyProjectsContent() {
         .eq('owner_id', currentUserId)
         .order('created_at', { ascending: false });
 
+      let permProjects: Project[] = [];
       if (ownedData) {
         // Only permanent projects belong here (exclude hackathon sprint projects)
-        const permProjects = (ownedData as Project[]).filter(
+        permProjects = (ownedData as Project[]).filter(
           (p) => p.category !== ('Hackathon Sprint' as any) && !p.summary?.startsWith('Hackathon Team Sprint')
         );
-        setLeadingProjects(permProjects);
       }
+
+      // Also merge problem teams owned by the user from registry
+      try {
+        const { data: regRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_teams_registry')
+          .maybeSingle();
+
+        if (Array.isArray(regRow?.value)) {
+          const userProblemTeams = regRow.value.filter((p: any) => p && p.owner_id === currentUserId);
+          const existingIds = new Set(permProjects.map((p) => p.id));
+          for (const pt of userProblemTeams) {
+            if (!existingIds.has(pt.id)) {
+              permProjects.push(pt);
+              existingIds.add(pt.id);
+            }
+          }
+        }
+      } catch {}
+
+      // Also merge problem teams from local storage
+      if (typeof window !== 'undefined') {
+        try {
+          const existingIds = new Set(permProjects.map((p) => p.id));
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('tf_problem_teams_')) {
+              const list = JSON.parse(localStorage.getItem(k) || '[]');
+              if (Array.isArray(list)) {
+                for (const t of list) {
+                  if (t && (t.owner_id === currentUserId || t.owner?.user_id === currentUserId) && !existingIds.has(t.id)) {
+                    permProjects.push(t);
+                    existingIds.add(t.id);
+                  }
+                }
+              }
+            }
+          }
+        } catch {}
+      }
+
+      setLeadingProjects(permProjects);
 
       // 2. Fetch permanent projects where user is a joined team member
       const { data: memberData } = await supabase

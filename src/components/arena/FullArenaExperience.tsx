@@ -4188,11 +4188,7 @@ export function FullArenaExperience({
 window.onerror = function(msg, url, line) { console.warn('Preview script error: ' + msg + ' at line ' + line); return true; };
 </script>
 <script>
-try {
-  ${(activeQuestion.targetComponentJs || '').replace(/<\/script/gi, '<\\/script')}
-} catch (e) {
-  console.warn('Target JS error:', e);
-}
+${(activeQuestion.targetComponentJs || '').replace(/<\/script/gi, '<\\/script')}
 </script>
 ${
   (!activeQuestion.targetComponentJs || activeQuestion.targetComponentJs.trim().length <= 10)

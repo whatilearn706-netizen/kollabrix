@@ -24,11 +24,23 @@ export async function GET(request: NextRequest) {
       DEFAULT_ARENA_QUESTIONS
     );
 
+    const rawDeleted = await getMasterControlSubkey<string[]>('deleted_arena_question_ids', []);
+    const deletedSet = new Set<string>(
+      Array.isArray(rawDeleted) ? rawDeleted.map((id) => String(id).trim().toLowerCase()) : []
+    );
+
     const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
-    // Prioritize admin questions, then append default questions (deduped)
-    const combined = [...adminList];
+    // Filter out deleted questions
+    const combined: DuelQuestion[] = [];
+    for (const q of adminList) {
+      if (q && q.id && !deletedSet.has(q.id.toLowerCase())) {
+        combined.push(q);
+      }
+    }
+
+    // Append non-deleted default questions (deduped)
     for (const defQ of DEFAULT_ARENA_QUESTIONS) {
-      if (!combined.some((q) => q.id === defQ.id)) {
+      if (!deletedSet.has(defQ.id.toLowerCase()) && !combined.some((q) => q.id === defQ.id)) {
         combined.push(defQ);
       }
     }
@@ -148,6 +160,10 @@ export async function DELETE(request: NextRequest) {
     const updatedList = currentList.filter((q) => q.id !== questionId);
 
     await updateMasterControlSubkey('arena_duel_questions', updatedList);
+
+    const deletedIds = await getMasterControlSubkey<string[]>('deleted_arena_question_ids', []);
+    const updatedDeletedIds = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), questionId]));
+    await updateMasterControlSubkey('deleted_arena_question_ids', updatedDeletedIds);
 
     return NextResponse.json({
       success: true,
