@@ -348,7 +348,17 @@ export default function JoinHackathonPage() {
 
   if (!hackathon) return null;
 
-  const isClosed = !hackathon.is_join_active || hackathon.status === 'Archived';
+  const now = Date.now();
+  const startDateMs = hackathon.start_date ? new Date(hackathon.start_date).getTime() : 0;
+  const regDeadlineMs = hackathon.registration_deadline ? new Date(hackathon.registration_deadline).getTime() : 0;
+
+  const isRegistrationClosed = Boolean(
+    !hackathon.is_join_active ||
+    hackathon.status === 'Archived' ||
+    (regDeadlineMs > 0 && now > regDeadlineMs)
+  );
+
+  const isBeforeKickoff = Boolean(startDateMs > 0 && now < startDateMs);
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-8">
@@ -437,32 +447,66 @@ export default function JoinHackathonPage() {
           {/* Action / Join Area */}
           <div className="pt-4 border-t border-slate-100">
             {isAlreadyEnrolled ? (
-              <div className="p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
+              isBeforeKickoff ? (
+                <div className="p-5 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-indigo-950">You Are Registered!</h4>
+                      <p className="text-xs text-indigo-800 font-medium">
+                        Live sprint kicks off on <strong>{new Date(hackathon.start_date).toLocaleDateString()}</strong>. Enter your preparation workspace to recruit teammates and review challenges.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-black text-emerald-950">You Are Registered!</h4>
-                    <p className="text-xs text-emerald-800 font-medium">
-                      Access the team registration, challenges, and submission portal inside the workspace.
-                    </p>
-                  </div>
-                </div>
 
-                <Link href={`/hackathons/${hackathon.id}/workspace`} className="w-full sm:w-auto">
-                  <Button
-                    variant="primary"
-                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-md border-0"
-                    rightIcon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    Enter Workspace
-                  </Button>
-                </Link>
-              </div>
-            ) : isClosed ? (
-              <div className="p-4 rounded-2xl bg-slate-100 text-center text-xs font-semibold text-slate-600">
-                Registration for this hackathon has been closed by the organizer.
+                  <Link href={`/hackathons/${hackathon.id}/workspace`} className="w-full sm:w-auto">
+                    <Button
+                      variant="primary"
+                      className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold shadow-md border-0"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Enter Prep Workspace
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-emerald-950">You Are Registered!</h4>
+                      <p className="text-xs text-emerald-800 font-medium">
+                        The coding sprint is live. Access your workspace to collaborate with your squad and submit deliverables.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link href={`/hackathons/${hackathon.id}/workspace`} className="w-full sm:w-auto">
+                    <Button
+                      variant="primary"
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-md border-0"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Enter Live Workspace
+                    </Button>
+                  </Link>
+                </div>
+              )
+            ) : isRegistrationClosed ? (
+              <div className="p-6 rounded-2xl bg-rose-50 border-2 border-rose-200 text-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-black text-rose-950">Registration Closed</h3>
+                <p className="text-xs text-rose-800 font-medium max-w-md mx-auto">
+                  The registration deadline for this collegiate hackathon was{' '}
+                  <strong>{new Date(hackathon.registration_deadline).toLocaleDateString()}</strong>.
+                  Late registrations are not accepted. Only previously enrolled participants can access this event.
+                </p>
               </div>
             ) : !user ? (
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
@@ -512,7 +556,9 @@ export default function JoinHackathonPage() {
                   isLoading={isJoining}
                   leftIcon={<Trophy className="w-4 h-4" />}
                 >
-                  Join College Hackathon
+                  {isBeforeKickoff
+                    ? `Register for Hackathon (Starts ${new Date(hackathon.start_date).toLocaleDateString()})`
+                    : 'Join Live Hackathon'}
                 </Button>
               </form>
             )}
