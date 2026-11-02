@@ -285,15 +285,9 @@ export function ProblemTeamModal({
               <h3 className="text-2xl font-black text-white">Team Registered!</h3>
               <p className="text-xs text-slate-200 max-w-md mx-auto leading-relaxed mt-1 font-normal">
                 Your squad <strong className="text-brand-300 font-bold">{createdProject.title}</strong> has been formed for this faculty challenge.
-                {postToExplore ? (
-                  <span className="block mt-1 text-emerald-300 font-semibold">
-                    ✓ Also published to Explore Projects so other students can discover and join your squad.
-                  </span>
-                ) : (
-                  <span className="block mt-1 text-slate-300 font-medium">
-                    Scoped specifically to this faculty problem challenge.
-                  </span>
-                )}
+                <span className="block mt-1 text-slate-300 font-medium">
+                  Scoped specifically to this faculty problem challenge (isolated from general Explore projects).
+                </span>
               </p>
             </div>
 
@@ -426,59 +420,17 @@ export function ProblemTeamModal({
               </div>
             </div>
 
-            {/* SPECIAL USER OPTION: Post this in Explore Project */}
-            <div className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-3">
-              <div className="flex items-center justify-between gap-3 cursor-pointer" onClick={() => setPostToExplore(!postToExplore)}>
-                <div className="flex items-start gap-2.5">
-                  <Globe className={`w-4 h-4 mt-0.5 shrink-0 ${postToExplore ? 'text-brand-400' : 'text-slate-400'}`} />
-                  <div>
-                    <span className="text-xs font-bold text-white block">
-                      Post this student team to Explore Projects
-                    </span>
-                    <span className="text-[11px] text-slate-300 block leading-relaxed mt-0.5">
-                      Enable this if you want other Kollabrix students browsing Explore &amp; Teammates to discover your squad and apply to join. If unchecked, your team stays exclusively within this faculty challenge.
-                    </span>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={postToExplore}
-                  onChange={(e) => setPostToExplore(e.target.checked)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 rounded text-brand-500 focus:ring-brand-500 bg-charcoal-800 border-charcoal-600 shrink-0 cursor-pointer"
-                />
+            {/* Scoped directly to faculty problem */}
+            <div className="p-3.5 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-1">
+              <div className="flex items-center gap-2 text-brand-400">
+                <GraduationCap className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-bold text-white">
+                  Scoped Exclusively to Faculty Problem Challenge
+                </span>
               </div>
-
-              {/* Expandable recruitment fields when checked */}
-              {postToExplore && (
-                <div className="pt-3 border-t border-charcoal-750/80 space-y-3 animate-fadeIn">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-brand-300 block">
-                      Public Recruitment Pitch (Optional)
-                    </label>
-                    <Input
-                      type="text"
-                      value={recruitmentHeadline}
-                      onChange={(e) => setRecruitmentHeadline(e.target.value)}
-                      placeholder="e.g. Looking for 1 frontend dev to tackle Professor Sharma's challenge with us!"
-                      className="text-xs bg-charcoal-800 border-charcoal-700 text-white placeholder-slate-500"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-300 block">
-                      Discord / WhatsApp Squad Invite Link (Optional)
-                    </label>
-                    <Input
-                      type="url"
-                      value={commsLink}
-                      onChange={(e) => setCommsLink(e.target.value)}
-                      placeholder="https://discord.gg/... or WhatsApp group link"
-                      className="text-xs bg-charcoal-800 border-charcoal-700 text-white placeholder-slate-500"
-                    />
-                  </div>
-                </div>
-              )}
+              <p className="text-[11px] text-slate-300 leading-relaxed pl-6">
+                This squad is registered directly under this faculty challenge and will be reviewed by the faculty mentor. It is kept private to this competition and will not appear in the general Explore page.
+              </p>
             </div>
 
             {/* Actions */}

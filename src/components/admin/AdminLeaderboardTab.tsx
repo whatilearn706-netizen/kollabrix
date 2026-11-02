@@ -29,6 +29,8 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [actionSuccess, setActionSuccess] = useState<string>('');
   const [actionError, setActionError] = useState<string>('');
+  const [isLeaderboardLive, setIsLeaderboardLive] = useState<boolean>(false);
+  const [isTogglingLive, setIsTogglingLive] = useState<boolean>(false);
 
   // Form states
   const [name, setName] = useState('');
@@ -50,10 +52,42 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
       if (data.colleges && Array.isArray(data.colleges)) {
         setColleges(data.colleges);
       }
+      if (typeof data.isLive === 'boolean') {
+        setIsLeaderboardLive(data.isLive);
+      }
     } catch (err: any) {
       setActionError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleLive = async () => {
+    setIsTogglingLive(true);
+    setActionError('');
+    try {
+      const nextStatus = !isLeaderboardLive;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/leaderboard', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'toggle_live', isLive: nextStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update live status');
+
+      setIsLeaderboardLive(nextStatus);
+      setActionSuccess(
+        `Leaderboard is now ${nextStatus ? 'LIVE for all students! 🟢' : 'DRAFT (Not Live). Hidden from students on the site. 🔴'}`
+      );
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to toggle status');
+    } finally {
+      setIsTogglingLive(false);
     }
   };
 
@@ -169,11 +203,27 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Live / Draft Toggle Button */}
+          <button
+            type="button"
+            onClick={handleToggleLive}
+            disabled={isTogglingLive}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+              isLeaderboardLive
+                ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25'
+                : 'bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/20'
+            }`}
+            title="Toggle whether the public leaderboard is visible or draft for students"
+          >
+            <span className={`w-2 h-2 rounded-full ${isLeaderboardLive ? 'bg-rose-400' : 'bg-white'} animate-pulse`} />
+            <span>{isLeaderboardLive ? 'Make Draft (Not Live)' : 'Publish Leaderboard Live'}</span>
+          </button>
+
           <button
             type="button"
             onClick={fetchColleges}
-            className="p-2 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 text-xs border border-charcoal-700 transition-all"
+            className="p-2 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 text-xs border border-charcoal-700 transition-all cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -188,6 +238,16 @@ export function AdminLeaderboardTab({ authToken }: AdminLeaderboardTabProps) {
           </button>
         </div>
       </div>
+
+      {/* Draft Warning Banner when not live */}
+      {!isLeaderboardLive && (
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+          <span>
+            <strong>Draft Mode (Not Live):</strong> The leaderboard is currently hidden from students on the public website. You can configure colleges, points, and standings freely. When you are ready for students to see it, click <strong>Publish Leaderboard Live</strong> above.
+          </span>
+        </div>
+      )}
 
       {actionSuccess && (
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">

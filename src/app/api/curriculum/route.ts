@@ -17,42 +17,67 @@ function getServiceSupabase() {
   return createSupabaseClient(url, key, { auth: { persistSession: false } });
 }
 
+async function loadCurriculaAndTombstones(sClient: any) {
+  let deletedIds = new Set<string>();
+  let dbCurricula: Record<string, LanguageCurriculum> | null = null;
+
+  if (sClient) {
+    try {
+      const { data: rows } = await sClient
+        .from('platform_settings')
+        .select('key, value')
+        .in('key', ['campus_curricula_registry', 'deleted_curricula_ids']);
+
+      if (Array.isArray(rows)) {
+        for (const row of rows) {
+          if (row.key === 'deleted_curricula_ids' && Array.isArray(row.value)) {
+            row.value.forEach((id: string) => {
+              if (id) deletedIds.add(String(id).trim().toLowerCase());
+            });
+          } else if (row.key === 'campus_curricula_registry' && row.value && typeof row.value === 'object') {
+            dbCurricula = row.value as Record<string, LanguageCurriculum>;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error loading curricula settings from Supabase:', e);
+    }
+  }
+
+  // Base state: If database registry exists, that is the primary source of truth!
+  // Otherwise start with DEFAULT_CURRICULA.
+  const base: Record<string, LanguageCurriculum> = dbCurricula
+    ? { ...dbCurricula }
+    : { ...DEFAULT_CURRICULA };
+
+  // Strictly remove all tombstoned/deleted curriculum IDs
+  for (const delId of Array.from(deletedIds)) {
+    delete base[delId];
+    // Also delete any key that matches case-insensitively
+    for (const key of Object.keys(base)) {
+      if (key.toLowerCase() === delId) {
+        delete base[key];
+      }
+    }
+  }
+
+  return { curricula: base, deletedIds };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const sClient = getServiceSupabase();
-    if (sClient) {
-      const { data, error } = await sClient
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'campus_curricula_registry')
-        .maybeSingle();
+    const { curricula } = await loadCurriculaAndTombstones(sClient);
+    memoryCurricula = curricula;
 
-      if (!error && data?.value && typeof data.value === 'object') {
-        const dbData = data.value as Record<string, LanguageCurriculum>;
-        const merged: Record<string, LanguageCurriculum> = { ...DEFAULT_CURRICULA };
-        for (const [key, curr] of Object.entries(dbData)) {
-          if (!merged[key]) {
-            merged[key] = curr;
-          } else {
-            const defCurr = merged[key];
-            const defSteps = defCurr.steps || [];
-            const dbSteps = curr.steps || [];
-            // Preserve full comprehensive steps from defaults if DB only has a truncated subset
-            const stepsToUse = dbSteps.length >= defSteps.length ? dbSteps : defSteps;
-            merged[key] = {
-              ...defCurr,
-              ...curr,
-              steps: stepsToUse,
-              stepsCount: stepsToUse.length,
-            };
-          }
-        }
-        memoryCurricula = merged;
-        return NextResponse.json({ success: true, curricula: memoryCurricula, source: 'database' });
+    return NextResponse.json(
+      { success: true, curricula: memoryCurricula, source: sClient ? 'database' : 'default' },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        },
       }
-    }
-
-    return NextResponse.json({ success: true, curricula: memoryCurricula, source: 'default' });
+    );
   } catch (err: any) {
     return NextResponse.json({ success: true, curricula: memoryCurricula, source: 'memory_fallback' });
   }
@@ -64,6 +89,8 @@ export async function POST(req: NextRequest) {
     const { action, curriculumId, stepNumber, video, videoId, question, questionId, studyMaterial, curricula } = body;
 
     const sClient = getServiceSupabase();
+    const { curricula: activeCurricula, deletedIds } = await loadCurriculaAndTombstones(sClient);
+    memoryCurricula = activeCurricula;
 
     // Action: Reset defaults
     if (action === 'reset_defaults') {
@@ -72,6 +99,11 @@ export async function POST(req: NextRequest) {
         await sClient.from('platform_settings').upsert({
           key: 'campus_curricula_registry',
           value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+        await sClient.from('platform_settings').upsert({
+          key: 'deleted_curricula_ids',
+          value: [],
           updated_at: new Date().toISOString(),
         });
       }
@@ -99,6 +131,9 @@ export async function POST(req: NextRequest) {
       if (memoryCurricula[newId]) {
         newId = `${newId}-${Date.now().toString().slice(-4)}`;
       }
+
+      // If this ID was previously deleted, remove it from tombstones
+      deletedIds.delete(newId);
 
       const initialStepTitle = c.initialStepTitle?.trim() || 'Step 1: Syntax & Environment Setup';
       const newCurriculumObj: LanguageCurriculum = {
@@ -187,6 +222,11 @@ export async function POST(req: NextRequest) {
           value: memoryCurricula,
           updated_at: new Date().toISOString(),
         });
+        await sClient.from('platform_settings').upsert({
+          key: 'deleted_curricula_ids',
+          value: Array.from(deletedIds),
+          updated_at: new Date().toISOString(),
+        });
       }
 
       return NextResponse.json({
@@ -197,17 +237,35 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Action: Delete Curriculum / Skill
+    // Action: Delete Curriculum / Skill Permanently
     if (action === 'delete_curriculum' && curriculumId) {
-      if (!memoryCurricula[curriculumId]) {
+      const targetId = String(curriculumId).trim();
+      const lowerTarget = targetId.toLowerCase();
+
+      // Find the key in memoryCurricula
+      const foundKey = Object.keys(memoryCurricula).find(
+        (k) => k === targetId || k.toLowerCase() === lowerTarget
+      );
+
+      if (!foundKey && !deletedIds.has(lowerTarget)) {
         return NextResponse.json({ success: false, error: 'Curriculum not found' }, { status: 404 });
       }
-      delete memoryCurricula[curriculumId];
+
+      if (foundKey) {
+        delete memoryCurricula[foundKey];
+      }
+      deletedIds.add(lowerTarget);
+      deletedIds.add(targetId);
 
       if (sClient) {
         await sClient.from('platform_settings').upsert({
           key: 'campus_curricula_registry',
           value: memoryCurricula,
+          updated_at: new Date().toISOString(),
+        });
+        await sClient.from('platform_settings').upsert({
+          key: 'deleted_curricula_ids',
+          value: Array.from(deletedIds),
           updated_at: new Date().toISOString(),
         });
       }

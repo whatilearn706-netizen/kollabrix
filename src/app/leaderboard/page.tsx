@@ -24,14 +24,18 @@ export default function CollegiateLeaderboardPage() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'iit_nit' | 'bits_iiit' | 'state_pvt'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLive, setIsLive] = useState<boolean>(true);
 
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const res = await fetch('/api/leaderboard');
+        const res = await fetch('/api/leaderboard', { cache: 'no-store' });
         const data = await res.json();
         if (data.colleges && Array.isArray(data.colleges) && data.colleges.length > 0) {
           setColleges(data.colleges);
+        }
+        if (typeof data.isLive === 'boolean') {
+          setIsLive(data.isLive);
         }
       } catch (err) {
         console.warn('Leaderboard fetch note:', err);
@@ -72,6 +76,42 @@ export default function CollegiateLeaderboardPage() {
           </p>
         </div>
 
+        {/* When Draft / Not Live */}
+        {!isLive ? (
+          <div className="p-8 sm:p-12 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-6 max-w-3xl mx-auto shadow-2xl animate-fadeIn my-6">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-lg">
+              <Trophy className="w-8 h-8 animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <span className="px-3.5 py-1 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 inline-block uppercase tracking-wider">
+                Rankings Calibrating (Draft Mode)
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white">
+                Inter-College Leaderboard Unlocking Soon
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl mx-auto">
+                Collegiate rankings are currently being calibrated as students register their colleges, start open projects, and assemble hackathon squads. Standings will go live with our inaugural campus sprint round!
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/explore"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <span>Explore Active Projects</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/projects/new"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 border border-charcoal-700 font-bold text-xs transition-all flex items-center justify-center gap-2"
+              >
+                <span>Start a Project</span>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Global Metric Chips */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 rounded-2xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 text-center space-y-1 shadow-2xs">
@@ -237,6 +277,8 @@ export default function CollegiateLeaderboardPage() {
             );
           })}
         </div>
+          </>
+        )}
 
         {/* CTA representing one's campus */}
         <div className="rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-xl">

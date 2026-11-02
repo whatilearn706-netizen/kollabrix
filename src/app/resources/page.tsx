@@ -75,10 +75,18 @@ export default function ResourcesPage() {
     // Fetch dynamic curricula from API
     async function loadCurricula() {
       try {
-        const res = await fetch('/api/curriculum');
+        const res = await fetch('/api/curriculum', { cache: 'no-store' });
         const data = await res.json();
         if (data.success && data.curricula && Object.keys(data.curricula).length > 0) {
           setCurriculaMap(data.curricula);
+          // Clean up local reference if the selected curriculum was deleted by admin
+          const localCurriculum = localStorage.getItem('linkora_active_curriculum');
+          if (localCurriculum && !data.curricula[localCurriculum]) {
+            try {
+              localStorage.removeItem('linkora_active_curriculum');
+            } catch {}
+            setActiveCurriculumId(null);
+          }
         }
       } catch (e) {
         console.warn('Using default curricula fallback:', e);

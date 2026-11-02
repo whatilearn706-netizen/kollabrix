@@ -102,10 +102,15 @@ export default function ExploreProjectsPage() {
       // Offline / Demo Fallback Mode
       let list = DEMO_PROJECTS.filter(
         (p) =>
+          !p.problem_statement_id &&
           p.category !== ('Hackathon Sprint' as any) &&
+          p.category !== ('Faculty Industry Problem' as any) &&
           !p.category?.toLowerCase().includes('hackathon') &&
-          !p.summary?.startsWith('Hackathon Team Sprint') &&
-          !p.title?.toLowerCase().includes('hackathon sprint')
+          !p.category?.toLowerCase().includes('faculty') &&
+          !p.summary?.toLowerCase().includes('hackathon') &&
+          !p.summary?.toLowerCase().includes('faculty challenge') &&
+          !p.summary?.toLowerCase().includes('tackling faculty') &&
+          !p.title?.toLowerCase().includes('hackathon')
       );
 
       if (filters.search && filters.search.trim()) {
@@ -161,7 +166,7 @@ export default function ExploreProjectsPage() {
 
     try {
       // Build dynamic database query with exact count
-      // Strictly exclude hackathon sprints so Explore ONLY displays user-created projects
+      // Strictly exclude hackathon sprints and faculty challenges so Explore ONLY displays open independent student projects
       let query = supabase
         .from('projects')
         .select(
@@ -178,8 +183,13 @@ export default function ExploreProjectsPage() {
         `,
           { count: 'exact' }
         )
+        .is('problem_statement_id', null)
         .neq('category', 'Hackathon Sprint')
-        .not('summary', 'ilike', 'Hackathon Team Sprint%');
+        .neq('category', 'Faculty Industry Problem')
+        .not('category', 'ilike', '%hackathon%')
+        .not('summary', 'ilike', 'Hackathon%')
+        .not('summary', 'ilike', '%faculty challenge%')
+        .not('summary', 'ilike', '%tackling faculty%');
 
       // Filters
       if (filters.category && filters.category !== 'All') {
@@ -275,15 +285,21 @@ export default function ExploreProjectsPage() {
               return false;
             }
           }
-          // Strictly exclude any hackathon sprint items from Explore
+          // Strictly exclude any hackathon sprint or faculty challenge items from Explore
           const cat = (p.category || '').toLowerCase();
           const sum = (p.summary || '').toLowerCase();
           const tit = (p.title || '').toLowerCase();
           if (
+            p.problem_statement_id ||
             cat === 'hackathon sprint' ||
+            cat === 'faculty industry problem' ||
             cat.includes('hackathon') ||
-            sum.startsWith('hackathon team sprint') ||
-            tit.includes('hackathon sprint')
+            cat.includes('faculty') ||
+            sum.includes('hackathon') ||
+            sum.includes('faculty challenge') ||
+            sum.includes('tackling faculty') ||
+            tit.includes('hackathon') ||
+            tit.includes('faculty')
           ) {
             return false;
           }

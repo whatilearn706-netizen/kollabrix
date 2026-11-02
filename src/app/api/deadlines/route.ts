@@ -7,31 +7,103 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-// GET: Public fetch of collegiate deadlines
+// GET: Public fetch of collegiate deadlines with auto-aggregation across hackathons, ICPC contests, and faculty challenges
 export async function GET() {
   try {
     const rawDeadlines = await getMasterControlSubkey<CampusDeadlineItem[] | null>('deadlines', null);
     const rawDeletedIds = await getMasterControlSubkey<string[]>('deleted_deadline_ids', []);
     const deletedSet = new Set<string>(Array.isArray(rawDeletedIds) ? rawDeletedIds : []);
 
-    let deadlines: CampusDeadlineItem[];
-    if (Array.isArray(rawDeadlines)) {
-      deadlines = rawDeadlines.filter((d) => !deletedSet.has(d.id));
-    } else {
-      deadlines = DEFAULT_CAMPUS_DEADLINES.filter((d) => !deletedSet.has(d.id));
+    let customDeadlines: CampusDeadlineItem[] = Array.isArray(rawDeadlines)
+      ? rawDeadlines.filter((d) => !deletedSet.has(d.id))
+      : [];
+
+    const aggregated: CampusDeadlineItem[] = [...customDeadlines];
+    const existingTitles = new Set(aggregated.map((d) => d.title.toLowerCase().trim()));
+
+    // 1. Auto-aggregate active Hackathons
+    try {
+      const rawHackathons = await getMasterControlSubkey<any[]>('hackathons', []);
+      if (Array.isArray(rawHackathons)) {
+        for (const h of rawHackathons) {
+          if (!h || !h.title || deletedSet.has(`hack-${h.id}`)) continue;
+          const targetDate = h.registration_deadline || h.end_date || h.start_date;
+          if (targetDate && !existingTitles.has(h.title.toLowerCase().trim())) {
+            existingTitles.add(h.title.toLowerCase().trim());
+            const diff = new Date(targetDate).getTime() - Date.now();
+            aggregated.push({
+              id: `hack-${h.id}`,
+              title: h.title,
+              organizer: h.organizer || 'Kollabrix Campus Hackathons',
+              type: 'hackathon',
+              deadlineDate: new Date(targetDate).toISOString(),
+              category: (Array.isArray(h.themes) && h.themes[0]) || 'Collegiate Hackathon',
+              description: h.description || 'Rapid collegiate hackathon sprint.',
+              link: `/hackathons/${h.id}`,
+              prize: h.prize_pool || undefined,
+              urgency: diff > 0 && diff < 3 * 86400000 ? 'urgent' : 'upcoming',
+              tags: ['Hackathon', ...(Array.isArray(h.themes) ? h.themes : ['Sprint'])],
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error aggregating hackathon deadlines:', e);
+    }
+
+    // 2. Auto-aggregate live ICPC & Competitive Contests
+    try {
+      const rawContests = await getMasterControlSubkey<any[]>('icpc_contests', []);
+      if (Array.isArray(rawContests)) {
+        for (const c of rawContests) {
+          if (!c || !c.title || deletedSet.has(`icpc-${c.id}`)) continue;
+          const targetDate = c.liveUntil || c.liveFrom;
+          if (targetDate && !existingTitles.has(c.title.toLowerCase().trim())) {
+            existingTitles.add(c.title.toLowerCase().trim());
+            const diff = new Date(targetDate).getTime() - Date.now();
+            aggregated.push({
+              id: `icpc-${c.id}`,
+              title: c.title,
+              organizer: c.author || 'Indian Collegiate Programming Consortium',
+              type: 'icpc',
+              deadlineDate: new Date(targetDate).toISOString(),
+              category: 'Competitive Programming',
+              description: c.subtitle || 'Competitive algorithmic contest with live scoring.',
+              link: '/icpc',
+              prize: '+400 Arena Rating',
+              urgency: diff > 0 && diff < 2 * 86400000 ? 'urgent' : 'upcoming',
+              tags: ['ICPC', 'DSA', 'Speedrun'],
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error aggregating ICPC contest deadlines:', e);
+    }
+
+    // 3. If zero or very few deadlines found, populate with live upcoming campus opportunities
+    if (aggregated.length === 0) {
+      const defaultsWithFreshDates = DEFAULT_CAMPUS_DEADLINES.filter((d) => !deletedSet.has(d.id)).map((d, index) => {
+        const daysFromNow = (index + 2) * 2;
+        return {
+          ...d,
+          deadlineDate: new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000).toISOString(),
+        };
+      });
+      aggregated.push(...defaultsWithFreshDates);
     }
 
     // Sort by deadline date ascending (earliest expiring first)
-    deadlines.sort(
+    aggregated.sort(
       (a, b) => new Date(a.deadlineDate).getTime() - new Date(b.deadlineDate).getTime()
     );
 
     return NextResponse.json(
       {
         success: true,
-        deadlines,
-        totalDeadlines: deadlines.length,
-        urgentCount: deadlines.filter(
+        deadlines: aggregated,
+        totalDeadlines: aggregated.length,
+        urgentCount: aggregated.filter(
           (d) => new Date(d.deadlineDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000
         ).length,
       },
