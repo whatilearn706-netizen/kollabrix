@@ -195,20 +195,20 @@ export default function HackathonWorkspacePage() {
     user && (isOrganizer || isEnrolledLocally || participants.some((p) => p.user_id === user.id))
   );
 
+  // Pre-kickoff sprint check
+  const isBeforeSprintStart = useMemo(() => {
+    if (!hackathon) return false;
+    const norm = normalizeHackathonDeadlines(hackathon);
+    if (!norm.start_date) return false;
+    return new Date(norm.start_date).getTime() > Date.now();
+  }, [hackathon]);
+
   // Submission deadline check
   const isSubmissionClosed = useMemo(() => {
     if (!hackathon) return false;
     const norm = normalizeHackathonDeadlines(hackathon);
     const now = Date.now();
 
-    // If registration is ongoing, submissions are definitely not closed
-    if (norm.registration_deadline && new Date(norm.registration_deadline).getTime() > now) {
-      return false;
-    }
-    // If hackathon hasn't started yet, submissions are definitely not closed
-    if (norm.start_date && new Date(norm.start_date).getTime() > now) {
-      return false;
-    }
     // Check normalized submission deadline or end date
     const subTime = norm.submission_deadline ? new Date(norm.submission_deadline).getTime() : 0;
     const endTime = norm.end_date ? new Date(norm.end_date).getTime() : 0;
@@ -1152,7 +1152,12 @@ export default function HackathonWorkspacePage() {
     setSubmissionError(null);
     setSubmissionFeedback(null);
 
-    if (isSubmissionClosed) {
+    if (isBeforeSprintStart) {
+      setSubmissionError(`The coding sprint officially starts on ${new Date(hackathon.start_date).toLocaleDateString()}. Deliverable submissions unlock when the sprint begins.`);
+      return;
+    }
+
+    if (isSubmissionClosed || isClosed) {
       setSubmissionError('The submission deadline has passed. Submissions are currently locked.');
       return;
     }
@@ -1338,6 +1343,13 @@ export default function HackathonWorkspacePage() {
                 <Lock className="w-4 h-4 text-rose-400 shrink-0" />
                 <span>
                   <strong>Hackathon Timeline Closed:</strong> The event deadline has passed. The active team workshop is now closed and in read-only archive mode.
+                </span>
+              </div>
+            ) : isBeforeSprintStart ? (
+              <div className="mt-3.5 p-2.5 px-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center gap-2 shadow-xs">
+                <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span>
+                  <strong>Preparation & Team Formation Phase:</strong> Coding sprint officially begins on <strong>{new Date(hackathon.start_date).toLocaleDateString()}</strong>. Assemble your student squad and review problem statements. Submissions unlock once the sprint starts.
                 </span>
               </div>
             ) : (
@@ -1647,6 +1659,15 @@ export default function HackathonWorkspacePage() {
                   {isClosed ? (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">
                       Archived
+                    </span>
+                  ) : isBeforeSprintStart ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-indigo-400" />
+                      Prep Phase
+                    </span>
+                  ) : isSubmissionClosed ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                      Submissions Closed
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
@@ -2758,21 +2779,33 @@ export default function HackathonWorkspacePage() {
                   </p>
                 </div>
 
-                {(isSubmissionClosed || isClosed) ? (
+                {isBeforeSprintStart ? (
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Unlocks at Kickoff</span>
+                  </span>
+                ) : (isSubmissionClosed || isClosed) ? (
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
                     🔒 Submissions Closed
                   </span>
                 ) : null}
               </div>
 
-              {(isSubmissionClosed || isClosed) && (
+              {isBeforeSprintStart ? (
+                <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-2.5 text-indigo-300 text-xs">
+                  <Clock className="w-4 h-4 shrink-0 text-indigo-400" />
+                  <span>
+                    🕒 <strong>Preparation Phase:</strong> Coding sprint officially begins on <strong>{new Date(hackathon.start_date).toLocaleDateString()}</strong>. Project deliverable submissions will unlock once the sprint starts. Use this time to collaborate with your team, plan your tech stack, and design your architecture.
+                  </span>
+                </div>
+              ) : (isSubmissionClosed || isClosed) ? (
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2.5 text-amber-300 text-xs">
                   <Lock className="w-4 h-4 shrink-0 text-amber-400" />
                   <span>
                     🔒 <strong>Hackathon Submissions Closed:</strong> Deliverables are locked in Read-Only Mode. Good luck during jury scoring!
                   </span>
                 </div>
-              )}
+              ) : null}
 
               {submissionFeedback && (
                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
@@ -2797,7 +2830,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="e.g. EcoRide Campus Mobility"
                     value={subTitle}
                     onChange={(e) => setSubTitle(e.target.value)}
-                    disabled={isSubmissionClosed || isClosed}
+                    disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                     required
                   />
                 </div>
@@ -2810,7 +2843,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="e.g. Decentralized on-campus bike sharing with zero emissions"
                     value={subPitch}
                     onChange={(e) => setSubPitch(e.target.value)}
-                    disabled={isSubmissionClosed || isClosed}
+                    disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                     required
                   />
                 </div>
@@ -2825,7 +2858,7 @@ export default function HackathonWorkspacePage() {
                   placeholder="Detail the specific friction or challenge your team set out to resolve..."
                   value={subProblem}
                   onChange={(e) => setSubProblem(e.target.value)}
-                  disabled={isSubmissionClosed || isClosed}
+                  disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                   required
                 />
               </div>
@@ -2839,7 +2872,7 @@ export default function HackathonWorkspacePage() {
                   placeholder="Explain your approach, design decisions, and how the prototype works..."
                   value={subSolution}
                   onChange={(e) => setSubSolution(e.target.value)}
-                  disabled={isSubmissionClosed || isClosed}
+                  disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                   required
                 />
               </div>
@@ -2852,7 +2885,7 @@ export default function HackathonWorkspacePage() {
                   placeholder="e.g. Next.js, FastAPI, PostgreSQL, Supabase, Tailwind"
                   value={subTechStack}
                   onChange={(e) => setSubTechStack(e.target.value)}
-                  disabled={isSubmissionClosed || isClosed}
+                  disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                 />
               </div>
 
@@ -2868,7 +2901,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://github.com/org/repo"
                     value={subRepoUrl}
                     onChange={(e) => setSubRepoUrl(e.target.value)}
-                    disabled={isSubmissionClosed || isClosed}
+                    disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                   />
                 </div>
 
@@ -2882,7 +2915,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://project.vercel.app"
                     value={subDemoUrl}
                     onChange={(e) => setSubDemoUrl(e.target.value)}
-                    disabled={isSubmissionClosed || isClosed}
+                    disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                   />
                 </div>
 
@@ -2896,7 +2929,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://youtube.com/watch?v=... or Loom"
                     value={subVideoUrl}
                     onChange={(e) => setSubVideoUrl(e.target.value)}
-                    disabled={isSubmissionClosed || isClosed}
+                    disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                   />
                 </div>
 
@@ -2910,12 +2943,38 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://docs.google.com/presentation/..."
                     value={subDocsUrl}
                     onChange={(e) => setSubDocsUrl(e.target.value)}
-                    disabled={isSubmissionClosed || isClosed}
+                    disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
                   />
                 </div>
               </div>
 
-              {!isSubmissionClosed && !isClosed && (
+              {isBeforeSprintStart ? (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-charcoal-800">
+                  <span className="text-xs text-indigo-300 font-medium flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
+                    Deliverable submissions unlock on {new Date(hackathon.start_date).toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled
+                      className="opacity-50 cursor-not-allowed"
+                    >
+                      Save Draft
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      disabled
+                      className="opacity-60 cursor-not-allowed bg-indigo-600/80 text-white font-bold"
+                      leftIcon={<Clock className="w-4 h-4" />}
+                    >
+                      Locked Until Kickoff ({new Date(hackathon.start_date).toLocaleDateString()})
+                    </Button>
+                  </div>
+                </div>
+              ) : !isSubmissionClosed && !isClosed && (
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-charcoal-800">
                   <Button
                     type="button"

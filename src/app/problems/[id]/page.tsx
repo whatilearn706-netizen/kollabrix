@@ -371,6 +371,38 @@ export default function ProblemStatementDetailPage() {
   const isExpired = problem?.deadline ? new Date(problem.deadline) < new Date() : false;
   const isResultsLive = Boolean(problemResult?.is_live);
 
+  // Derive whether the current student has formed or joined a squad for this specific problem
+  const userTeam = useMemo(() => {
+    if (!user) return null;
+    return (
+      tacklingProjects.find((t: any) => {
+        if (!t) return false;
+        const isOwner = t.owner_id === user.id || t.owner?.user_id === user.id || t.leader_id === user.id;
+        if (isOwner) return true;
+        if (Array.isArray(t.members) && t.members.some((m: any) => m && (m.user_id === user.id || m.id === user.id))) {
+          return true;
+        }
+        if (Array.isArray(t.team_members) && t.team_members.some((m: any) => m && (m.user_id === user.id || m.id === user.id))) {
+          return true;
+        }
+        return false;
+      }) || null
+    );
+  }, [user, tacklingProjects]);
+
+  const handleOpenApplyAnswer = () => {
+    if (!user) {
+      openAuthModal();
+      return;
+    }
+    if (!userTeam) {
+      setActionError('You must first form or join a student squad for this problem statement before applying an answer.');
+      setIsTeamModalOpen(true);
+      return;
+    }
+    setIsSolutionModalOpen(true);
+  };
+
   // Student Privacy / Answer Isolation:
   // Faculty author sees all submissions; students ONLY see their own team's submission
   const visibleSolutions = useMemo(() => {
@@ -712,10 +744,7 @@ export default function ProblemStatementDetailPage() {
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4"
                 leftIcon={<Sparkles className="w-4 h-4" />}
-                onClick={() => {
-                  if (!user) openAuthModal();
-                  else setIsSolutionModalOpen(true);
-                }}
+                onClick={handleOpenApplyAnswer}
               >
                 Apply the Answer
               </Button>
@@ -862,17 +891,44 @@ export default function ProblemStatementDetailPage() {
                   Applied
                 </Button>
               </div>
+            ) : !userTeam ? (
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                    <Users className="w-4 h-4 text-amber-400" />
+                    <span>Squad Required</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-200/90">
+                    You must first form or join a student squad for this problem statement before applying an answer.
+                  </p>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="w-full bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-bold shadow-md"
+                  leftIcon={<Users className="w-4 h-4" />}
+                  onClick={() => {
+                    if (!user) openAuthModal();
+                    else setIsTeamModalOpen(true);
+                  }}
+                >
+                  Form / Join Student Team
+                </Button>
+              </div>
             ) : (
               <div className="space-y-2.5">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300">
+                  <span className="truncate max-w-[170px]">Squad: <strong className="text-white">{userTeam.title}</strong></span>
+                  <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-mono text-emerald-300 border border-emerald-500/30 font-bold">Verified</span>
+                </div>
+
                 <Button
                   variant="primary"
                   size="md"
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md"
                   leftIcon={<Send className="w-4 h-4" />}
-                  onClick={() => {
-                    if (!user) openAuthModal();
-                    else setIsSolutionModalOpen(true);
-                  }}
+                  onClick={handleOpenApplyAnswer}
                 >
                   Apply the Answer
                 </Button>
@@ -880,14 +936,11 @@ export default function ProblemStatementDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full border-charcoal-700 text-slate-200 hover:text-white hover:bg-charcoal-800 font-semibold"
+                  className="w-full border-charcoal-700 text-slate-200 hover:text-white hover:bg-charcoal-800 font-semibold text-xs"
                   leftIcon={<Users className="w-3.5 h-3.5 text-brand-400" />}
-                  onClick={() => {
-                    if (!user) openAuthModal();
-                    else setIsTeamModalOpen(true);
-                  }}
+                  onClick={() => setIsTeamModalOpen(true)}
                 >
-                  Form a Student Team
+                  Manage Squad / Invite Peers
                 </Button>
               </div>
             )}
@@ -1238,10 +1291,7 @@ export default function ProblemStatementDetailPage() {
                   size="sm"
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
                   leftIcon={<Send className="w-3.5 h-3.5 text-white" />}
-                  onClick={() => {
-                    if (!user) openAuthModal();
-                    else setIsSolutionModalOpen(true);
-                  }}
+                  onClick={handleOpenApplyAnswer}
                 >
                   Apply the Answer
                 </Button>
@@ -1454,10 +1504,7 @@ export default function ProblemStatementDetailPage() {
                       size="sm"
                       className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md"
                       leftIcon={<Send className="w-3.5 h-3.5" />}
-                      onClick={() => {
-                        if (!user) openAuthModal();
-                        else setIsSolutionModalOpen(true);
-                      }}
+                      onClick={handleOpenApplyAnswer}
                     >
                       Apply the Answer
                     </Button>
@@ -1638,6 +1685,8 @@ export default function ProblemStatementDetailPage() {
         problemId={problem.id}
         problemTitle={problem.title}
         myProjects={myProjects}
+        userTeam={userTeam}
+        onOpenTeamModal={() => setIsTeamModalOpen(true)}
         onSuccess={() => {
           setHasApplied(true);
           loadSolutions();

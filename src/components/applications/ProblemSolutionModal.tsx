@@ -27,6 +27,8 @@ interface ProblemSolutionModalProps {
   problemId: string;
   problemTitle: string;
   myProjects?: Project[];
+  userTeam?: Project | null;
+  onOpenTeamModal?: () => void;
   onSuccess?: () => void;
 }
 
@@ -36,11 +38,13 @@ export function ProblemSolutionModal({
   problemId,
   problemTitle,
   myProjects = [],
+  userTeam = null,
+  onOpenTeamModal,
   onSuccess,
 }: ProblemSolutionModalProps) {
   const { user, profile } = useAuth();
 
-  const [teamName, setTeamName] = useState('');
+  const [teamName, setTeamName] = useState(() => userTeam?.title || '');
   const [title, setTitle] = useState('');
   const [solutionWriteup, setSolutionWriteup] = useState(
     `### Detailed Overview Solution\n\n1. Solution Architecture & Approach:\nExplain your core methodology and engineering decisions.\n\n2. Implementation Details:\nDescribe libraries, tools, pipelines, or models built.\n\n3. Key Deliverables & Results:\nDetail outcomes, performance benchmarks, and how faculty requirements are met.`
@@ -56,6 +60,13 @@ export function ProblemSolutionModal({
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Sync team name if userTeam changes
+  React.useEffect(() => {
+    if (userTeam?.title) {
+      setTeamName(userTeam.title);
+    }
+  }, [userTeam]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,12 +76,18 @@ export function ProblemSolutionModal({
       return;
     }
 
-    if (!teamName.trim()) {
-      setError('Please provide a team name.');
+    if (!userTeam) {
+      setError('You must first form or join a student squad for this challenge before submitting an answer.');
       return;
     }
 
-    const resolvedTitle = title.trim() || `${teamName.trim()} - Solution for ${problemTitle}`;
+    const resolvedTeamName = userTeam.title || teamName.trim();
+    if (!resolvedTeamName) {
+      setError('A valid student squad name is required.');
+      return;
+    }
+
+    const resolvedTitle = title.trim() || `${resolvedTeamName} - Solution for ${problemTitle}`;
 
     if (!solutionWriteup.trim() || solutionWriteup.trim().length < 20) {
       setError('Please provide a detailed overview solution (at least 20 characters).');
@@ -92,9 +109,9 @@ export function ProblemSolutionModal({
         body: JSON.stringify({
           problem_id: problemId,
           problem_title: problemTitle,
-          project_id: selectedProjectId || null,
+          project_id: userTeam.id || selectedProjectId || null,
           author_id: user.id,
-          team_name: teamName.trim(),
+          team_name: resolvedTeamName,
           title: resolvedTitle,
           solution_writeup: solutionWriteup.trim(),
           repo_url: repoUrl.trim() || null,
@@ -176,6 +193,35 @@ export function ProblemSolutionModal({
               </Button>
             </div>
           </div>
+        ) : !userTeam ? (
+          <div className="p-8 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-5 my-2">
+            <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center mx-auto border border-amber-500/40">
+              <Users className="w-7 h-7" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-white">Student Squad Required</h3>
+              <p className="text-xs text-amber-200/90 leading-relaxed max-w-sm mx-auto">
+                You cannot apply an answer individually. Faculty problems require a registered student engineering squad with an invite code.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white">
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  onClose();
+                  if (onOpenTeamModal) onOpenTeamModal();
+                }}
+                className="bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-bold shadow-md"
+                leftIcon={<Users className="w-4 h-4" />}
+              >
+                Form / Join Squad
+              </Button>
+            </div>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -185,21 +231,27 @@ export function ProblemSolutionModal({
               </div>
             )}
 
-            {/* Team Name: placeholder _-------- */}
+            {/* Verified Team Name */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-white block flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-brand-400" />
-                <span>Team Name</span>
-                <span className="text-red-400">*</span>
+                <Users className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Submitting Squad</span>
               </label>
-              <Input
-                type="text"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                placeholder="_--------"
-                required
-                className="bg-charcoal-850 border-charcoal-700 text-white placeholder-slate-500 font-mono text-sm"
-              />
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-xs font-mono">
+                    TEAM
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-mono block">Registered Challenge Squad</span>
+                    <span className="text-sm font-bold text-white">{userTeam.title}</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  Verified Squad
+                </span>
+              </div>
             </div>
 
             {/* Solution Deliverable Title */}

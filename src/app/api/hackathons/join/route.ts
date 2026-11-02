@@ -137,15 +137,7 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
-    // 2. Check if join access is active
-    if (hackathon.is_join_active === false || hackathon.status === 'Archived') {
-      return NextResponse.json(
-        { error: 'Registration and join access for this hackathon has been closed by the organizer.' },
-        { status: 403 }
-      );
-    }
-
-    // 3. Check if user is already enrolled
+    // 2. Check if user is already enrolled
     let existingParticipant: any = null;
     try {
       const { data: part } = await dbClient
@@ -161,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingParticipant) {
-      // Already a member! Return success
+      // Already a member! Return success immediately so enrolled students can enter
       return NextResponse.json({
         success: true,
         alreadyJoined: true,
@@ -169,6 +161,25 @@ export async function POST(request: NextRequest) {
         role: existingParticipant.role,
         message: 'You are already registered for this hackathon.',
       });
+    }
+
+    // 3. Check if join access is active and registration deadline has not passed
+    if (hackathon.is_join_active === false || hackathon.status === 'Archived') {
+      return NextResponse.json(
+        { error: 'Registration and join access for this hackathon has been closed by the organizer.' },
+        { status: 403 }
+      );
+    }
+
+    const regDeadline = hackathon.registration_deadline ? new Date(hackathon.registration_deadline).getTime() : 0;
+    if (regDeadline && Date.now() > regDeadline) {
+      return NextResponse.json(
+        {
+          error: `Registration for this hackathon closed on ${new Date(hackathon.registration_deadline).toLocaleDateString()}. Late entries are not permitted.`,
+          isRegistrationClosed: true,
+        },
+        { status: 403 }
+      );
     }
 
     // 4. If hackathon is private, verify password

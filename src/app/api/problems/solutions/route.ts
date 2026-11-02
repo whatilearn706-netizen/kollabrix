@@ -205,6 +205,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!team_name || !String(team_name).trim()) {
+      return NextResponse.json(
+        { error: 'A registered student team name is required. You must form or join a squad before submitting an answer.' },
+        { status: 400 }
+      );
+    }
+
     if (!title || !String(title).trim()) {
       return NextResponse.json(
         { error: 'Please enter a title for your solution / project deliverable.' },
