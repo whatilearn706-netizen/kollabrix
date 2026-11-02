@@ -998,8 +998,8 @@ export function FullArenaExperience({
       setSelectedTags(['java']);
       setActiveTab('java');
     } else if (newArena === 'bug_hunt') {
-      setSelectedTags([bugDomain === 'web' ? 'bug_web' : 'bug_logic']);
-      setActiveTab(bugDomain === 'web' ? 'html' : 'python');
+      setSelectedTags(bugDomain === 'web' ? ['html', 'css'] : ['java']);
+      setActiveTab(bugDomain === 'web' ? 'html' : 'java');
     }
   };
 
@@ -1153,6 +1153,13 @@ export function FullArenaExperience({
     setIsHost(true);
     playArcadeCoinSound();
 
+    const effectiveTags =
+      arena === 'web_dev' || (arena === 'bug_hunt' && bugDomain === 'web')
+        ? selectedTags.includes('html')
+          ? selectedTags
+          : ['html', ...selectedTags]
+        : selectedTags;
+
     // 1. Advance immediately to Step 3 for instant 0ms transition without awaiting network roundtrip
     setStep(3);
 
@@ -1162,7 +1169,7 @@ export function FullArenaExperience({
       const initialChosen = selectBestQuestion(DEFAULT_ARENA_QUESTIONS, {
         arena,
         bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
-        selectedTags,
+        selectedTags: effectiveTags,
         difficulty,
         timeLimit: matchTime,
       });
@@ -1199,7 +1206,7 @@ export function FullArenaExperience({
           format: teamSize,
           arena,
           bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
-          selectedTags,
+          selectedTags: effectiveTags,
           difficulty,
           timeLimit,
           isBotEnabled: isBotOpponentAdded,
@@ -3098,13 +3105,13 @@ export function FullArenaExperience({
             </div>
 
             {/* Arena-Specific Language / Topic Checkboxes */}
-            {/* 1. WEB DEV TOPICS (HTML REQUIRED / LOCKED • CAN TOGGLE CSS & JAVASCRIPT) */}
+            {/* 1. WEB DEV TOPICS (HTML REQUIRED / FIXED • CAN TOGGLE CSS & JAVASCRIPT) */}
             {arena === 'web_dev' && (
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Web Dev Topics (HTML Locked • Customize CSS & JS):</span>
+                    <span>Web Dev Topics:</span>
                   </span>
                   <span className="text-[11px] font-mono text-cyan-400 font-bold">
                     {selectedTags.includes('html') ? selectedTags.length : selectedTags.length + 1} selected
@@ -3143,14 +3150,7 @@ export function FullArenaExperience({
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
-                            {topic.isMandatory && (
-                              <span className="text-[9px] font-mono uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold">
-                                Locked
-                              </span>
-                            )}
-                          </div>
+                          <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
                           <p className="text-[10px] text-slate-400">{topic.desc}</p>
                         </div>
                       </div>
@@ -3299,44 +3299,46 @@ export function FullArenaExperience({
                     </label>
                     {bugDomain === 'web' && (
                       <span className="text-[11px] font-mono text-cyan-400 font-bold">
-                        {selectedTags.length}/3 selected (tick 1, 2, or 3)
+                        {(selectedTags.includes('html') ? selectedTags : ['html', ...selectedTags]).length} selected
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {(bugDomain === 'web'
                       ? [
-                          { id: 'html', label: 'HTML', desc: 'Structure Bugs' },
-                          { id: 'css', label: 'CSS', desc: 'Styling & Layout' },
-                          { id: 'javascript', label: 'JavaScript', desc: 'DOM & Click Bugs' },
+                          { id: 'html', label: 'HTML', desc: 'Structure Bugs', isMandatory: true },
+                          { id: 'css', label: 'CSS', desc: 'Styling & Layout', isMandatory: false },
+                          { id: 'javascript', label: 'JavaScript', desc: 'DOM & Click Bugs', isMandatory: false },
                         ]
                       : [
-                          { id: 'java', label: 'Java', desc: 'Enterprise Java Bugs' },
-                          { id: 'python', label: 'Python', desc: 'Syntax & Logic Bugs' },
-                          { id: 'cpp', label: 'C++', desc: 'Memory & Pointer Bugs' },
+                          { id: 'java', label: 'Java', desc: 'Enterprise Java Bugs', isMandatory: false },
+                          { id: 'python', label: 'Python', desc: 'Syntax & Logic Bugs', isMandatory: false },
+                          { id: 'cpp', label: 'C++', desc: 'Memory & Pointer Bugs', isMandatory: false },
                         ]
                     ).map((lang) => {
-                      const isSelected = selectedTags.includes(lang.id);
+                      const isMandatory = bugDomain === 'web' && lang.id === 'html';
+                      const isSelected = isMandatory || selectedTags.includes(lang.id);
                       return (
                         <button
                           key={lang.id}
                           type="button"
                           onClick={() => {
                             if (bugDomain === 'web') {
-                              // Multi-select for Web UI: can tick 1, 2, or 3!
-                              if (isSelected) {
-                                if (selectedTags.length > 1) {
-                                  setSelectedTags(selectedTags.filter((t) => t !== lang.id));
-                                }
+                              if (isMandatory) return; // Cannot untick HTML - permanently fixed
+                              if (selectedTags.includes(lang.id)) {
+                                setSelectedTags(selectedTags.filter((t) => t !== lang.id));
                               } else {
-                                setSelectedTags([...selectedTags, lang.id]);
+                                const next = [...selectedTags, lang.id];
+                                setSelectedTags(next.includes('html') ? next : ['html', ...next]);
                               }
                             } else {
                               // Single-select for Logic & Code Bug Hunt (only 1 tick: Java, Python, or C++)
                               setSelectedTags([lang.id]);
                             }
                           }}
-                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                            isMandatory ? 'cursor-default' : 'cursor-pointer'
+                          } ${
                             isSelected
                               ? bugDomain === 'web'
                                 ? 'bg-cyan-950/70 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
@@ -3365,13 +3367,6 @@ export function FullArenaExperience({
                       );
                     })}
                   </div>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] font-mono text-slate-400 flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>
-                    Admins feed code with bugs directly in the Admin Center. Competitors must diagnose, edit, and fix the code to pass!
-                  </span>
                 </div>
               </div>
             )}
