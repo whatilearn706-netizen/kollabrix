@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CURATED_ICPC_CONTESTS, BLANK_STARTER_CODE } from '@/data/mockIcpcContests';
 import { IcpcContest } from '@/types/icpc';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import {
+  isSupabaseConfigured,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
+} from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
@@ -63,8 +67,12 @@ async function saveIcpcMasterData(updated: {
 
 function getSupabaseClient() {
   if (!isSupabaseConfigured()) return null;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL || '';
+  const supabaseServiceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    '';
   if (!supabaseUrl || !supabaseServiceKey) return null;
   return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false },

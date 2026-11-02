@@ -1,5 +1,10 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { isSupabaseConfigured, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '@/lib/supabase/isConfigured';
+import {
+  isSupabaseConfigured,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_ANON_KEY,
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
+} from '@/lib/supabase/isConfigured';
 
 const MASTER_KEY = 'site_master_control_config';
 
@@ -18,6 +23,7 @@ function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     DEFAULT_SUPABASE_ANON_KEY;
   if (!url || !key) return null;

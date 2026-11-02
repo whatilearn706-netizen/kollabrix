@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import {
+  isSupabaseConfigured,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
+} from '@/lib/supabase/isConfigured';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 /** Sanitize text input — strip HTML, limit length */
@@ -236,8 +240,14 @@ export async function POST(request: NextRequest) {
 
     if (!insertError && created) {
       try {
-        const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-        const adminClient = createClient(supabaseUrl, adminKey, { auth: { persistSession: false } });
+        const adminKey =
+          process.env.SUPABASE_SERVICE_ROLE_KEY ||
+          DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+          '';
+        const adminClient = createClient(supabaseUrl || DEFAULT_SUPABASE_URL, adminKey, {
+          auth: { persistSession: false },
+        });
 
         const { data: metaRow } = await adminClient
           .from('platform_settings')
