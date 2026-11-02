@@ -1150,7 +1150,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           },
           {
             id: 'faculty',
-            label: '🎓 Faculty Private Labs',
+            label: '🎓 Faculty Labs',
             count: contests.filter((c) => c.category === 'faculty' || c.visibility === 'passcode').length,
           },
           {
@@ -2026,6 +2026,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         onClose={() => setIsCreateOpen(false)}
         organizerName="Kollabrix Master Admin"
         collegeName="Kollabrix Collegiate Platform"
+        isFacultyMode={false}
         onCreated={() => {
           setIsCreateOpen(false);
           loadData();

@@ -1877,6 +1877,7 @@ export default function TeacherDashboardPage() {
         onClose={() => setIsCreateIcpcOpen(false)}
         organizerName={profile?.display_name || 'Prof. Faculty'}
         collegeName={profile?.college || 'Kollabrix Collegiate Arena'}
+        isFacultyMode={true}
         onCreated={async () => {
           setIsCreateIcpcOpen(false);
           await loadDashboardData();
