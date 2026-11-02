@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -33,6 +33,7 @@ interface CreateIcpcContestModalProps {
   onCreated?: (contest: IcpcContest) => void;
   organizerName?: string;
   collegeName?: string;
+  isFacultyMode?: boolean;
 }
 
 interface ProblemDraft {
@@ -79,16 +80,29 @@ export function CreateIcpcContestModal({
   onCreated,
   organizerName = 'Faculty Mentor',
   collegeName = 'Collegiate Network',
+  isFacultyMode,
 }: CreateIcpcContestModalProps) {
   const { user, profile } = useAuth();
+  const uRole = (profile?.role || '').toLowerCase();
+  const isFacultyOnly = isFacultyMode ?? (uRole !== 'admin');
+
   const [contestType, setContestType] = useState<ContestType>('contest');
-  const [category, setCategory] = useState<ContestCategory>('placement');
+  const [category, setCategory] = useState<ContestCategory>(() => (isFacultyOnly ? 'faculty' : 'placement'));
   const [companyTag, setCompanyTag] = useState('Amazon');
   const [customCompanyInput, setCustomCompanyInput] = useState('');
+  const [isCollegeGated, setIsCollegeGated] = useState(false);
   const [targetCollege, setTargetCollege] = useState(collegeName || (profile as any)?.college || '');
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(90);
+
+  // Synchronize category if faculty only
+  useEffect(() => {
+    if (isOpen && isFacultyOnly) {
+      setCategory('faculty');
+      setVisibility('passcode');
+    }
+  }, [isOpen, isFacultyOnly]);
 
   // Authoritative Date + Time scheduling helpers for live ICPC contests
   function createLocalDate(dateStr: string, hour12Str: string, minStr: string, period: 'AM' | 'PM'): Date {
@@ -253,8 +267,10 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
       return;
     }
 
-    if (category === 'faculty' && !targetCollege.trim()) {
-      setErrorMsg('Please specify the College Name for this Faculty Private Lab so only students from that college can enter.');
+    const effectiveCategory = isFacultyOnly ? 'faculty' : category;
+
+    if (effectiveCategory === 'faculty' && isCollegeGated && !targetCollege.trim()) {
+      setErrorMsg('Please specify the College Name for this Faculty Lab, or untick the college restriction button.');
       return;
     }
 
@@ -311,8 +327,11 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
       if (token) reqHeaders['Authorization'] = `Bearer ${token}`;
       if (user?.id) reqHeaders['x-user-id'] = user.id;
 
-      const finalCompany = category === 'placement' ? (customCompanyInput.trim() || companyTag || 'Company') : undefined;
-      const finalCollege = (category === 'faculty' ? targetCollege.trim() : (targetCollege.trim() || collegeName || (profile as any)?.college)) || 'Partner Collegiate Network';
+      const finalCompany = effectiveCategory === 'placement' ? (customCompanyInput.trim() || companyTag || 'Company') : undefined;
+      const finalCollege =
+        effectiveCategory === 'faculty'
+          ? (isCollegeGated && targetCollege.trim() ? targetCollege.trim() : 'All Campuses')
+          : (targetCollege.trim() || collegeName || (profile as any)?.college || 'Partner Collegiate Network');
 
       const res = await fetch('/api/icpc', {
         method: 'POST',
@@ -321,7 +340,7 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           title,
           subtitle,
           contestType,
-          category,
+          category: effectiveCategory,
           companyTag: finalCompany,
           durationMinutes: calculatedDuration,
           startTime: contestType === 'contest' ? startObj.toISOString() : new Date().toISOString(),
@@ -399,61 +418,81 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
             <label className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Arena Category & Target Track *
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div
-                onClick={() => {
-                  setCategory('placement');
-                  setVisibility('public');
-                }}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
-                  category === 'placement'
-                    ? 'bg-amber-500/15 border-amber-500/50 shadow-sm'
-                    : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                  <span>🏢 Placement OA Practice</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Amazon, TCS, Infosys hiring round simulations.</p>
-              </div>
 
-              <div
-                onClick={() => {
-                  setCategory('faculty');
-                  setVisibility('passcode');
-                  if (!passcode) setPasscode('LAB2026');
-                }}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
-                  category === 'faculty'
-                    ? 'bg-violet-500/15 border-violet-500/50 shadow-sm'
-                    : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                  <span>🎓 Faculty Private Lab</span>
+            {isFacultyOnly ? (
+              /* Faculty Exclusive Mode: Only Faculty Lab is available */
+              <div className="p-3.5 rounded-2xl border bg-violet-500/15 border-violet-500/50 shadow-sm space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <GraduationCap className="w-4 h-4 text-violet-400" />
+                    <span>🎓 Faculty Lab</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
+                    FACULTY DESK
+                  </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Classroom assessment with passcode & anti-cheat.</p>
+                <p className="text-[11px] text-slate-400">
+                  Classroom assessment with passcode & proctor anti-cheat for students.
+                </p>
               </div>
-
-              <div
-                onClick={() => {
-                  setCategory('icpc');
-                  setVisibility('public');
-                }}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
-                  category === 'icpc'
-                    ? 'bg-cyan-500/15 border-cyan-500/50 shadow-sm'
-                    : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                  <span>⚡ ICPC & Collegiate</span>
+            ) : (
+              /* Admin Mode: Full choice across all 3 tracks */
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div
+                  onClick={() => {
+                    setCategory('placement');
+                    setVisibility('public');
+                  }}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                    category === 'placement'
+                      ? 'bg-amber-500/15 border-amber-500/50 shadow-sm'
+                      : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                    <span>🏢 Placement OA Practice</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Amazon, TCS, Infosys hiring round simulations.</p>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Official algorithmic speedrun championship.</p>
-              </div>
-            </div>
 
-            {category === 'placement' && (
+                <div
+                  onClick={() => {
+                    setCategory('faculty');
+                    setVisibility('passcode');
+                    if (!passcode) setPasscode('LAB2026');
+                  }}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                    category === 'faculty'
+                      ? 'bg-violet-500/15 border-violet-500/50 shadow-sm'
+                      : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                    <span>🎓 Faculty Lab</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Classroom assessment with passcode & anti-cheat.</p>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setCategory('icpc');
+                    setVisibility('public');
+                  }}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                    category === 'icpc'
+                      ? 'bg-cyan-500/15 border-cyan-500/50 shadow-sm'
+                      : 'bg-slate-50 dark:bg-charcoal-800/60 border-slate-200 dark:border-charcoal-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                    <span>⚡ ICPC & Collegiate</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Official algorithmic speedrun championship.</p>
+                </div>
+              </div>
+            )}
+
+            {!isFacultyOnly && category === 'placement' && (
               <div className="pt-2 space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                   Company Target Brand
@@ -493,23 +532,69 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
               </div>
             )}
 
-            {category === 'faculty' && (
-              <div className="pt-2 p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
-                  <label className="text-xs font-bold text-purple-200">
-                    Target College / Institution (Only students of this College can enter) *
-                  </label>
+            {(isFacultyOnly || category === 'faculty') && (
+              <div className="pt-2 space-y-2.5">
+                {/* 2nd Button: Tick Checkbox to choose whether to add a Target College or not */}
+                <div
+                  onClick={() => {
+                    const nextVal = !isCollegeGated;
+                    setIsCollegeGated(nextVal);
+                    if (nextVal && !targetCollege.trim()) {
+                      setTargetCollege(collegeName || (profile as any)?.college || '');
+                    }
+                  }}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-charcoal-900 border border-charcoal-750 cursor-pointer select-none hover:border-purple-500/50 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                        isCollegeGated
+                          ? 'bg-purple-600 border-purple-500 text-white shadow-xs'
+                          : 'border-charcoal-600 bg-charcoal-800 text-transparent'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block">
+                        Restrict access to a specific College / Campus
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Tick this if you want only students from your college to enter
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] font-mono px-2.5 py-1 rounded-full border font-bold ${
+                      isCollegeGated
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                        : 'bg-charcoal-800 text-slate-400 border-charcoal-700'
+                    }`}
+                  >
+                    {isCollegeGated ? '🔒 Campus-Gated' : '🌐 Open to All Campuses'}
+                  </span>
                 </div>
-                <Input
-                  placeholder="e.g., Apex Institute of Technology, VIT, SRM, DTU..."
-                  value={targetCollege}
-                  onChange={(e) => setTargetCollege(e.target.value)}
-                  required
-                />
-                <p className="text-[11px] text-purple-300/80 leading-relaxed font-mono">
-                  🔒 Campus-Gated Private Arena: Only students registered under this exact college name will see and be permitted to enter this private lab test.
-                </p>
+
+                {/* College Input Field (Only visible when tick is checked) */}
+                {isCollegeGated && (
+                  <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2 animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
+                      <label className="text-xs font-bold text-purple-200">
+                        Target College / Institution (Only students of this College can enter) *
+                      </label>
+                    </div>
+                    <Input
+                      placeholder="e.g., Apex Institute of Technology, VIT, SRM, DTU..."
+                      value={targetCollege}
+                      onChange={(e) => setTargetCollege(e.target.value)}
+                      required={isCollegeGated}
+                    />
+                    <p className="text-[11px] text-purple-300/80 leading-relaxed font-mono">
+                      🔒 Campus-Gated Lab: Only students registered under this exact college name will see and be permitted to enter this faculty lab.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

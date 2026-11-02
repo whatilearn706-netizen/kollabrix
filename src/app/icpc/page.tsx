@@ -791,7 +791,7 @@ export default function IcpcCollegiateArenaPage() {
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
                     <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
-                    <span>🎓 Private Faculty Labs with Anti-Cheat</span>
+                    <span>🎓 Faculty Labs with Anti-Cheat</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
                     <Flame className="w-3.5 h-3.5 text-amber-400" />
@@ -1042,7 +1042,7 @@ export default function IcpcCollegiateArenaPage() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>🎓 Faculty Private Labs</span>
+                <span>🎓 Faculty Labs</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200">
                   {contests.filter((c) => c.category === 'faculty' || c.visibility === 'passcode').length}
                 </span>
@@ -1878,6 +1878,7 @@ export default function IcpcCollegiateArenaPage() {
           onClose={() => setIsHostModalOpen(false)}
           organizerName={profile?.display_name || 'Faculty Mentor'}
           collegeName={profile?.college || 'Collegiate Network'}
+          isFacultyMode={profile?.role !== 'admin'}
           onCreated={(newContest) => {
             setContests((prev) => [newContest, ...prev]);
           }}
