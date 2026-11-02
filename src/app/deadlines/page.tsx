@@ -97,7 +97,7 @@ export default function CollegiateDeadlinesPage() {
             Upcoming Campus Opportunities & Cutoffs
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Never miss a hackathon team registration cutoff, faculty problem submission deadline, or ICPC arena round. Synchronized with live timers.
+            Never miss a hackathon team registration cutoff, faculty problem submission deadline, or Competitive Practice round. Synchronized with live timers.
           </p>
         </div>
 

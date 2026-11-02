@@ -92,7 +92,7 @@ export function CreativeHeroShowcase() {
               }`}
             >
               <Trophy className="w-3.5 h-3.5 text-cyan-500" />
-              <span>ICPC Arena</span>
+              <span>Competitive Practice</span>
             </button>
             <button
               type="button"
@@ -202,7 +202,7 @@ export function CreativeHeroShowcase() {
                   href="/icpc"
                   className="font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 flex items-center gap-1 group"
                 >
-                  <span>Enter ICPC Arena</span>
+                  <span>Enter Competitive Practice</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>

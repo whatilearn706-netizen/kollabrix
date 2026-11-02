@@ -60,8 +60,8 @@ const DOCK_ITEMS: DockItem[] = [
   },
   {
     id: 'icpc',
-    label: 'ICPC Arena',
-    sub: 'Live Speedrun & Testbench',
+    label: 'Competitive Practice',
+    sub: 'Placement OAs & Speedrun',
     href: '/icpc',
     icon: Terminal,
     tone: 'cyan',
@@ -186,7 +186,7 @@ const APPS_LIST: AppItem[] = [
   },
   {
     id: 'icpc',
-    name: 'ICPC Arena',
+    name: 'Competitive Practice',
     category: 'competitions',
     href: '/icpc',
     icon: Terminal,

@@ -26,11 +26,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.in';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+    default: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     template: '%s | Kollabrix',
   },
   description:
-    'Kollabrix is the official student innovation network to discover collegiate projects, assemble hackathon dream teams, compete in proctored ICPC arenas, and build game-changing engineering portfolios.',
+    'Kollabrix is the official student innovation network to discover collegiate projects, assemble hackathon dream teams, compete in proctored competitive practice arenas, and build game-changing engineering portfolios.',
   keywords: [
     'Kollabrix',
     'kollabrix',
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
-    title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+    title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     description:
       'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
     siteName: 'Kollabrix',
@@ -96,7 +96,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+    title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     description:
       'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
     images: [`${siteUrl}/icon-512.png`],
@@ -131,7 +131,7 @@ const jsonLd = {
       url: 'https://kollabrix.in/',
       name: 'Kollabrix',
       alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
-      description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+      description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',

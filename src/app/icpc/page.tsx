@@ -719,7 +719,7 @@ export default function IcpcCollegiateArenaPage() {
             <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
               ARENA OFFLINE // MAINTENANCE
             </span>
-            <h1 className="text-2xl font-black text-white">ICPC Arena Temporarily Paused</h1>
+            <h1 className="text-2xl font-black text-white">Competitive Practice Temporarily Paused</h1>
             <p className="text-xs text-slate-400 leading-relaxed">
               The collegiate competitive programming arena is undergoing scheduled maintenance or problem revisions.
             </p>
@@ -741,143 +741,77 @@ export default function IcpcCollegiateArenaPage() {
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
       <main className="flex-1 pb-20">
 
-        {/* Hero Section */}
-        <section className="relative pt-12 pb-16 overflow-hidden border-b border-charcoal-800 bg-gradient-to-b from-charcoal-950 via-slate-900 to-charcoal-900">
-          {/* Ambient Cyber Neon Orbs */}
-          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-cyan-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute top-1/3 right-4 w-[450px] h-[450px] bg-gradient-to-bl from-violet-600/15 via-purple-600/10 to-transparent rounded-full blur-[130px] pointer-events-none" />
+        {/* Minimal Hero Section */}
+        <section className="relative pt-10 pb-12 overflow-hidden border-b border-charcoal-800/80 bg-gradient-to-b from-charcoal-950 via-slate-900 to-charcoal-900">
+          {/* Subtle Ambient Orbs */}
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-1/3 right-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-              {/* Left Column: Title, Intro & Host CTA */}
-              <div className="lg:col-span-2 space-y-5">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold tracking-wider uppercase backdrop-blur-md">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              {/* Left Column: Clean Title, Intro & Host CTA */}
+              <div className="space-y-4 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono font-medium backdrop-blur-md">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
                   </span>
-                  <span>COMPETITIVE PRACTICE &amp; PLACEMENT ARENA // SPEEDRUN DSA &amp; CAMPUS RECRUITMENT</span>
+                  <span>COMPETITIVE PRACTICE</span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-                  Competitive Practice &amp;{' '}
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+                  Competitive{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-violet-400">
-                    Placement Arena.
+                    Practice.
                   </span>
                 </h1>
 
-                <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal max-w-2xl">
-                  Solve official company placement OA challenges (Amazon, TCS, Infosys), enter speedrun programming contests, take private faculty lab assessments, and climb the campus leaderboard.
+                <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-normal max-w-xl">
+                  Solve company placement OA challenges, take faculty lab assessments with anti-cheat, and sharpen your algorithmic skills.
                 </p>
 
-                {/* Host Contest Button Gated for Faculty */}
-                <div className="flex flex-wrap items-center gap-3 pt-2">
+                <div className="flex items-center gap-3 pt-1">
                   <Button
                     variant="primary"
-                    size="lg"
+                    size="md"
                     onClick={handleHostContestClick}
                     leftIcon={<Sparkles className="w-4 h-4 text-cyan-300" />}
-                    className="bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 hover:from-cyan-500 hover:to-violet-500 text-white font-bold px-6 shadow-lg border-0"
+                    className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md border-0 text-xs"
                   >
-                    Host / Upload Contest (Faculty)
+                    Host Faculty Lab
                   </Button>
-                </div>
-
-                {/* Telemetry Chips */}
-                <div className="flex flex-wrap items-center gap-3 pt-2 text-xs font-mono text-slate-400">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
-                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>🏢 Company Placement (Amazon, TCS, Infosys)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
-                    <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
-                    <span>🎓 Faculty Labs with Anti-Cheat</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
-                    <Flame className="w-3.5 h-3.5 text-amber-400" />
-                    <span>🔥 Daily Placement DSA Streak</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
-                    <Trophy className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>🏆 Weekly &amp; All-Time Campus Leaderboard</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Right Column: Student ICPC Daily Streak & Performance Card */}
-              <div className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 p-6 shadow-2xl backdrop-blur-md space-y-5 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-                <div className="flex items-center justify-between gap-2 border-b border-charcoal-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm">
-                      <Flame className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-white">Student Placement Tracker</h3>
-                      <p className="text-[10px] font-mono text-slate-400">Daily Algorithmic Momentum</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                    {progress.totalPoints >= 1500
-                      ? 'Placement Grandmaster'
-                      : progress.totalPoints >= 800
-                      ? 'Tier-1 OA Specialist'
-                      : progress.totalPoints >= 300
-                      ? 'Campus Contender'
-                      : 'Placement Rookie'}
-                  </span>
-                </div>
-
-                {/* Big Streak Display */}
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/30 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-[11px] font-mono font-bold text-amber-300 uppercase tracking-wider block">
-                      Daily Problem Streak
-                    </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-white">{progress.streak}</span>
-                      <span className="text-xs font-bold text-amber-400">
-                        Day{progress.streak > 1 ? 's' : ''} in a row
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 text-2xl animate-pulse">
+              {/* Right Column: Sleek, Minimal Student Stats Card */}
+              <div className="flex items-center gap-5 p-4 rounded-2xl bg-charcoal-900/80 border border-charcoal-750 backdrop-blur-md shadow-xl self-start lg:self-auto">
+                {/* Streak */}
+                <div className="flex items-center gap-3 pr-5 border-r border-charcoal-750">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg shadow-sm">
                     🔥
                   </div>
-                </div>
-
-                {/* Points & Solved Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Arena Points</span>
-                    </div>
-                    <div className="text-xl font-black text-amber-300">
-                      {progress.totalPoints} <span className="text-[11px] font-mono text-slate-400">pts</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                      <Target className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Problems Solved</span>
-                    </div>
-                    <div className="text-xl font-black text-emerald-300">
-                      {progress.solvedProblemIds.length} <span className="text-[11px] font-mono text-slate-400">solved</span>
+                  <div>
+                    <div className="text-xs font-mono text-slate-400">Streak</div>
+                    <div className="text-base font-black text-white">
+                      {progress.streak} <span className="text-xs font-medium text-amber-400">day{progress.streak > 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Daily Status Banner */}
-                <div className="p-2.5 rounded-xl bg-charcoal-950/50 border border-charcoal-800/80 text-[11px] text-slate-300 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-                  <span>
-                    {progress.lastSolvedDate === new Date().toISOString().split('T')[0]
-                      ? 'Streak active today! Solve another problem to gain extra points.'
-                      : 'Solve any contest problem today to build your streak and rank.'}
-                  </span>
+                {/* Points */}
+                <div className="pr-5 border-r border-charcoal-750">
+                  <div className="text-xs font-mono text-slate-400">Arena Points</div>
+                  <div className="text-base font-black text-amber-300 font-mono">
+                    {progress.totalPoints} <span className="text-[10px] text-slate-400 font-sans">pts</span>
+                  </div>
+                </div>
+
+                {/* Solved */}
+                <div>
+                  <div className="text-xs font-mono text-slate-400">Solved</div>
+                  <div className="text-base font-black text-emerald-400 font-mono">
+                    {progress.solvedProblemIds.length} <span className="text-[10px] text-slate-400 font-sans">probs</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1056,7 +990,7 @@ export default function IcpcCollegiateArenaPage() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>⚡ ICPC &amp; Speedrun Contests</span>
+                <span>⚡ Speedrun Contests</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/30 text-cyan-200">
                   {contests.filter((c) => c.category === 'icpc' || (!c.category && !c.companyTag && c.visibility !== 'passcode')).length}
                 </span>
@@ -1412,7 +1346,7 @@ export default function IcpcCollegiateArenaPage() {
                       {selectedContest.title}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0">
-                      ICPC Arena
+                      Competitive Practice
                     </span>
                   </div>
 

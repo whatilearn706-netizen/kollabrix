@@ -153,7 +153,7 @@ export function Step6Role({
             <span>Student Builder Account Confirmed</span>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Your collegiate account will be activated with full builder permissions: hackathon team formation, ICPC arena competitions, teammate search, and project showcase.
+            Your collegiate account will be activated with full builder permissions: hackathon team formation, competitive programming & practice, teammate search, and project showcase.
           </p>
           <div className="pt-2 flex items-center gap-2 text-[11px] text-emerald-400 font-mono">
             <CheckCircle2 className="w-3.5 h-3.5" />

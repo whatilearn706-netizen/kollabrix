@@ -49,11 +49,11 @@ export default function NotFound() {
         {/* Alternate Shortcut */}
         <div className="pt-4 border-t border-slate-800/80 flex items-center justify-center gap-6 text-xs text-slate-400">
           <Link
-            href="/arena"
+            href="/icpc"
             className="inline-flex items-center gap-1.5 hover:text-amber-400 transition-colors"
           >
             <Swords className="w-3.5 h-3.5 text-amber-500" />
-            <span>ICPC Arena</span>
+            <span>Competitive Practice</span>
           </Link>
           <span className="text-slate-700">•</span>
           <Link
