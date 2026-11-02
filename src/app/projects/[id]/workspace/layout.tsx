@@ -350,6 +350,43 @@ export default function WorkspaceLayout({
             }
           }
         }
+
+        // B. Check persistent problem teams registry in platform_settings
+        if (!projData) {
+          try {
+            const { data: regRow } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'problem_teams_registry')
+              .maybeSingle();
+
+            if (Array.isArray(regRow?.value)) {
+              const foundTeam = regRow.value.find((p: any) => p && p.id === projectId);
+              if (foundTeam) {
+                projData = foundTeam;
+                projError = null;
+              }
+            }
+          } catch {}
+        }
+
+        // C. Check local storage for problem teams
+        if (!projData && typeof window !== 'undefined') {
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && k.startsWith('tf_problem_teams_')) {
+                const teams = JSON.parse(localStorage.getItem(k) || '[]');
+                const found = Array.isArray(teams) ? teams.find((t: any) => t && t.id === projectId) : null;
+                if (found) {
+                  projData = found;
+                  projError = null;
+                  break;
+                }
+              }
+            }
+          } catch {}
+        }
       }
 
       setHackathonId(detectedHackathonId);
@@ -404,12 +441,32 @@ export default function WorkspaceLayout({
         if (suspendedIds.includes(m.user_id)) return false;
         return true;
       });
-      setMembers(memList);
-
-      const userMember = memList.find((m) => m.user_id === currentUserId) || null;
-      setCurrentUserMember(userMember);
 
       const isOwner = projData.owner_id === currentUserId;
+      let finalMemList = memList;
+      if (finalMemList.length === 0 && isOwner) {
+        finalMemList = [
+          {
+            id: `mem-${projData.id}-lead`,
+            project_id: projData.id,
+            user_id: currentUserId,
+            role: 'Team Lead',
+            joined_at: projData.created_at || new Date().toISOString(),
+            profile: {
+              user_id: currentUserId,
+              username: userRef.current?.user_metadata?.username || 'teamlead',
+              display_name: userRef.current?.user_metadata?.display_name || 'Team Lead',
+              college: 'Collegiate Institution',
+              role: 'student',
+            },
+          } as any,
+        ];
+      }
+
+      setMembers(finalMemList);
+
+      const userMember = finalMemList.find((m) => m.user_id === currentUserId) || null;
+      setCurrentUserMember(userMember);
       const isCurrentUserSuspended = suspendedIds.includes(currentUserId);
       const hasMembership = Boolean(userMember) && !isCurrentUserSuspended;
 

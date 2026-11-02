@@ -1812,7 +1812,7 @@ export default function IcpcCollegiateArenaPage() {
           onClose={() => setIsHostModalOpen(false)}
           organizerName={profile?.display_name || 'Faculty Mentor'}
           collegeName={profile?.college || 'Collegiate Network'}
-          isFacultyMode={profile?.role !== 'admin'}
+          isFacultyMode={true}
           onCreated={(newContest) => {
             setContests((prev) => [newContest, ...prev]);
           }}

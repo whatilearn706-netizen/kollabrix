@@ -329,9 +329,9 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
 
       const finalCompany = effectiveCategory === 'placement' ? (customCompanyInput.trim() || companyTag || 'Company') : undefined;
       const finalCollege =
-        effectiveCategory === 'faculty'
-          ? (isCollegeGated && targetCollege.trim() ? targetCollege.trim() : 'All Campuses')
-          : (targetCollege.trim() || collegeName || (profile as any)?.college || 'Partner Collegiate Network');
+        isCollegeGated && targetCollege.trim()
+          ? targetCollege.trim()
+          : 'All Campuses';
 
       const res = await fetch('/api/icpc', {
         method: 'POST',
@@ -532,71 +532,70 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
               </div>
             )}
 
-            {(isFacultyOnly || category === 'faculty') && (
-              <div className="pt-2 space-y-2.5">
-                {/* 2nd Button: Tick Checkbox to choose whether to add a Target College or not */}
-                <div
-                  onClick={() => {
-                    const nextVal = !isCollegeGated;
-                    setIsCollegeGated(nextVal);
-                    if (nextVal && !targetCollege.trim()) {
-                      setTargetCollege(collegeName || (profile as any)?.college || '');
-                    }
-                  }}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-charcoal-900 border border-charcoal-750 cursor-pointer select-none hover:border-purple-500/50 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
-                        isCollegeGated
-                          ? 'bg-purple-600 border-purple-500 text-white shadow-xs'
-                          : 'border-charcoal-600 bg-charcoal-800 text-transparent'
-                      }`}
-                    >
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-white block">
-                        Restrict access to a specific College / Campus
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        Tick this if you want only students from your college to enter
-                      </span>
-                    </div>
-                  </div>
-                  <span
-                    className={`text-[10px] font-mono px-2.5 py-1 rounded-full border font-bold ${
+            {/* Target College Restriction (Tick button available for Faculty and Admin Control Center) */}
+            <div className="pt-2 space-y-2.5">
+              {/* 2nd Button: Tick Checkbox to choose whether to add a Target College or not */}
+              <div
+                onClick={() => {
+                  const nextVal = !isCollegeGated;
+                  setIsCollegeGated(nextVal);
+                  if (nextVal && !targetCollege.trim()) {
+                    setTargetCollege(collegeName || (profile as any)?.college || '');
+                  }
+                }}
+                className="flex items-center justify-between p-3 rounded-2xl bg-charcoal-900 border border-charcoal-750 cursor-pointer select-none hover:border-purple-500/50 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
                       isCollegeGated
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                        : 'bg-charcoal-800 text-slate-400 border-charcoal-700'
+                        ? 'bg-purple-600 border-purple-500 text-white shadow-xs'
+                        : 'border-charcoal-600 bg-charcoal-800 text-transparent'
                     }`}
                   >
-                    {isCollegeGated ? '🔒 Campus-Gated' : '🌐 Open to All Campuses'}
-                  </span>
-                </div>
-
-                {/* College Input Field (Only visible when tick is checked) */}
-                {isCollegeGated && (
-                  <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2 animate-fadeIn">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
-                      <label className="text-xs font-bold text-purple-200">
-                        Target College / Institution (Only students of this College can enter) *
-                      </label>
-                    </div>
-                    <Input
-                      placeholder="e.g., Apex Institute of Technology, VIT, SRM, DTU..."
-                      value={targetCollege}
-                      onChange={(e) => setTargetCollege(e.target.value)}
-                      required={isCollegeGated}
-                    />
-                    <p className="text-[11px] text-purple-300/80 leading-relaxed font-mono">
-                      🔒 Campus-Gated Lab: Only students registered under this exact college name will see and be permitted to enter this faculty lab.
-                    </p>
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </div>
-                )}
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      Restrict access to a specific College / Campus
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Tick this if you want only students from your college to enter
+                    </span>
+                  </div>
+                </div>
+                <span
+                  className={`text-[10px] font-mono px-2.5 py-1 rounded-full border font-bold ${
+                    isCollegeGated
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                      : 'bg-charcoal-800 text-slate-400 border-charcoal-700'
+                  }`}
+                >
+                  {isCollegeGated ? '🔒 Campus-Gated' : '🌐 Open to All Campuses'}
+                </span>
               </div>
-            )}
+
+              {/* College Input Field (Only visible when tick is checked) */}
+              {isCollegeGated && (
+                <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2 animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
+                    <label className="text-xs font-bold text-purple-200">
+                      Target College / Institution (Only students of this College can enter) *
+                    </label>
+                  </div>
+                  <Input
+                    placeholder="e.g., Apex Institute of Technology, VIT, SRM, DTU..."
+                    value={targetCollege}
+                    onChange={(e) => setTargetCollege(e.target.value)}
+                    required={isCollegeGated}
+                  />
+                  <p className="text-[11px] text-purple-300/80 leading-relaxed font-mono">
+                    🔒 Campus-Gated Lab: Only students registered under this exact college name will see and be permitted to enter this faculty lab.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

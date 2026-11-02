@@ -285,9 +285,20 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
       // 2. Client-side fallback if server route was unreachable
       if (!savedSuccessfully && isSupabaseConfigured()) {
-        let { error: upsertErr } = await supabase
+        const { data: existingProf } = await supabase
           .from('profiles')
-          .upsert(payload, { onConflict: 'user_id' });
+          .select('user_id')
+          .eq('user_id', payload.user_id)
+          .maybeSingle();
+
+        let upsertErr: any = null;
+        if (existingProf) {
+          const updateRes = await supabase.from('profiles').update(payload).eq('user_id', payload.user_id);
+          upsertErr = updateRes.error;
+        } else {
+          const insertRes = await supabase.from('profiles').insert(payload);
+          upsertErr = insertRes.error;
+        }
 
         // Graceful schema-resilient fallback if custom columns are not yet in Supabase schema cache
         if (
@@ -301,8 +312,14 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           delete safePayload.linkedin_url;
           delete safePayload.verification_doc_type;
           delete safePayload.college_verified;
-          const retryRes = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
-          upsertErr = retryRes.error;
+
+          if (existingProf) {
+            const retryRes = await supabase.from('profiles').update(safePayload).eq('user_id', payload.user_id);
+            upsertErr = retryRes.error;
+          } else {
+            const retryRes = await supabase.from('profiles').insert(safePayload);
+            upsertErr = retryRes.error;
+          }
         }
 
         if (upsertErr) {

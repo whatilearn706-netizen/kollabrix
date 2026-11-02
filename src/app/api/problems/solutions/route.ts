@@ -67,6 +67,14 @@ export async function GET(request: NextRequest) {
       } catch {}
     }
 
+    if (!authUserId) {
+      authUserId =
+        request.cookies.get('linkora_user_id')?.value ||
+        request.headers.get('x-user-id') ||
+        searchParams.get('viewer_id') ||
+        null;
+    }
+
     if (authUserId) {
       if (
         authUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
@@ -84,6 +92,20 @@ export async function GET(request: NextRequest) {
             isFacultyOrAdmin = true;
           }
         } catch {}
+
+        // Also check if authUserId is the author of this problem statement
+        if (!isFacultyOrAdmin && problemId) {
+          try {
+            const { data: ps } = await defaultClient
+              .from('problem_statements')
+              .select('author_id')
+              .eq('id', problemId)
+              .maybeSingle();
+            if (ps && ps.author_id && ps.author_id.toLowerCase() === authUserId.toLowerCase()) {
+              isFacultyOrAdmin = true;
+            }
+          } catch {}
+        }
       }
     }
 

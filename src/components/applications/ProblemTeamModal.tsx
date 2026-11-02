@@ -45,6 +45,17 @@ const COMMON_ROLES = [
   'Research Analyst',
 ];
 
+function parseTeamSizeRange(expected?: string | null): { min: number; max: number } {
+  if (!expected) return { min: 2, max: 4 };
+  const numbers = (expected.match(/\d+/g) || []).map(Number);
+  if (numbers.length >= 2) {
+    return { min: Math.min(numbers[0], numbers[1]), max: Math.max(numbers[0], numbers[1]) };
+  } else if (numbers.length === 1) {
+    return { min: 1, max: numbers[0] };
+  }
+  return { min: 2, max: 4 };
+}
+
 export function ProblemTeamModal({
   isOpen,
   onClose,
@@ -58,15 +69,22 @@ export function ProblemTeamModal({
 }: ProblemTeamModalProps) {
   const { user, profile, openAuthModal } = useAuth();
 
+  const teamRange = React.useMemo(() => parseTeamSizeRange(expectedTeamSize), [expectedTeamSize]);
+  const allowedSizes = React.useMemo(() => {
+    const list: number[] = [];
+    for (let s = teamRange.min; s <= teamRange.max; s++) {
+      list.push(s);
+    }
+    return list.length > 0 ? list : [2, 3, 4];
+  }, [teamRange]);
+
   const [teamName, setTeamName] = useState('');
   const [concept, setConcept] = useState('');
-  const [targetTeamSize, setTargetTeamSize] = useState<number>(() => {
-    if (expectedTeamSize) {
-      const match = expectedTeamSize.match(/\d+/);
-      if (match) return Math.min(Math.max(parseInt(match[0], 10), 2), 6);
-    }
-    return 4;
-  });
+  const [targetTeamSize, setTargetTeamSize] = useState<number>(() => teamRange.max);
+
+  React.useEffect(() => {
+    setTargetTeamSize((prev) => Math.min(Math.max(prev, teamRange.min), teamRange.max));
+  }, [teamRange]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Frontend Developer', 'Backend Developer']);
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [postToExplore, setPostToExplore] = useState(false);
@@ -168,69 +186,54 @@ export function ProblemTeamModal({
 
       let finalProject = null;
 
-      if (isSupabaseConfigured()) {
-        // Ensure user profile exists
-        try {
-          await supabase.from('profiles').upsert(
-            {
-              user_id: user.id,
-              display_name: profile?.display_name || user?.user_metadata?.full_name || 'Student Builder',
-              username: profile?.username || `user_${user.id.slice(0, 8)}`,
-              role: profile?.role || 'student',
-            },
-            { onConflict: 'user_id' }
-          );
-        } catch {}
-
-        const { data: dbProj, error: dbErr } = await supabase
-          .from('projects')
-          .insert(projectPayload)
-          .select(`
-            *,
-            owner:profiles!projects_owner_id_fkey(
-              user_id,
-              display_name,
-              username,
-              avatar_url,
-              college
-            )
-          `)
-          .single();
-
-        if (dbErr) {
-          console.warn('Notice writing project to DB:', dbErr.message);
-          // Fallback to local memory / client project object
-          finalProject = {
-            id: `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            ...projectPayload,
-            created_at: new Date().toISOString(),
-            owner: {
-              user_id: user.id,
-              display_name: profile?.display_name || 'Team Lead',
-              avatar_url: profile?.avatar_url,
-            },
-          };
-        } else {
-          finalProject = dbProj;
-          // Add owner as accepted team lead in project_members
+      try {
+        let token: string | null = null;
+        if (isSupabaseConfigured()) {
           try {
-            await supabase.from('project_members').insert({
-              project_id: dbProj.id,
-              user_id: user.id,
-              role: 'Team Lead',
-              status: 'Accepted',
-            });
+            const { data: sess } = await supabase.auth.getSession();
+            token = sess?.session?.access_token || null;
           } catch {}
         }
-      } else {
-        // Demo mode
+
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/problems/team', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            problemId,
+            problemTitle,
+            teamName: teamName.trim(),
+            concept: concept.trim(),
+            category: problemCategory,
+            difficulty: problemDifficulty,
+            desiredTeamSize: targetTeamSize,
+            selectedRoles,
+            technologies: requiredSkills,
+            commsLink: commsLink.trim(),
+            postToExplore,
+            userId: user.id,
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.project) {
+          finalProject = data.project;
+        } else {
+          throw new Error(data.error || 'Server could not register student squad.');
+        }
+      } catch (srvErr: any) {
+        console.warn('Server problem team creation fallback note:', srvErr.message);
+
+        // Fallback to local memory / client project object
         finalProject = {
           id: `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           ...projectPayload,
           created_at: new Date().toISOString(),
           owner: {
             user_id: user.id,
-            display_name: profile?.display_name || 'Team Lead',
+            display_name: profile?.display_name || user?.user_metadata?.full_name || 'Team Lead',
             avatar_url: profile?.avatar_url,
           },
         };
@@ -344,11 +347,20 @@ export function ProblemTeamModal({
                   onChange={(e) => setTargetTeamSize(parseInt(e.target.value, 10))}
                   className="w-full px-3.5 py-2.5 bg-charcoal-850 border border-charcoal-700 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500 font-semibold"
                 >
-                  <option value={2}>2 Members (Pair)</option>
-                  <option value={3}>3 Members (Trio)</option>
-                  <option value={4}>4 Members (Squad)</option>
-                  <option value={5}>5 Members (Extended)</option>
-                  <option value={6}>6 Members (Full Team)</option>
+                  {allowedSizes.map((size) => {
+                    let label = `${size} Members`;
+                    if (size === 1) label = '1 Member (Solo Contender)';
+                    else if (size === 2) label = '2 Members (Pair / Duo)';
+                    else if (size === 3) label = '3 Members (Trio)';
+                    else if (size === 4) label = '4 Members (Squad)';
+                    else if (size === 5) label = '5 Members (Extended)';
+                    else if (size === 6) label = '6 Members (Full Team)';
+                    return (
+                      <option key={size} value={size}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             </div>

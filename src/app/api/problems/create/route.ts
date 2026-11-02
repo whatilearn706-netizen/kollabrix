@@ -229,6 +229,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (!insertError && created) {
+      try {
+        const { data: metaRow } = await defaultClient
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_statement_metadata')
+          .maybeSingle();
+
+        const currentMeta = (metaRow?.value && typeof metaRow.value === 'object') ? metaRow.value : {};
+        currentMeta[created.id] = {
+          team_size: resolvedTeamSize,
+          min_team_size: min_team_size || 1,
+          max_team_size: max_team_size || 2,
+        };
+
+        await defaultClient.from('platform_settings').upsert({
+          key: 'problem_statement_metadata',
+          value: currentMeta,
+          description: 'Problem statement metadata (team size ranges, faculty limits)',
+          updated_at: new Date().toISOString(),
+        });
+      } catch (metaErr) {
+        console.warn('Notice saving problem_statement_metadata:', metaErr);
+      }
+
       return NextResponse.json({
         success: true,
         problem: created,
