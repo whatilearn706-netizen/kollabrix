@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabase as defaultClient } from '@/lib/supabase/client';
-import { isSupabaseConfigured, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '@/lib/supabase/isConfigured';
+import {
+  isSupabaseConfigured,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_ANON_KEY,
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
+} from '@/lib/supabase/isConfigured';
 import { Profile } from '@/types/database';
 
 export interface AdminAuthResult {
@@ -111,7 +116,7 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       user.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
     // Read the authoritative profile server-side when possible.
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
     const profileClient = serviceRoleKey
       ? createClient(url, serviceRoleKey, {
           auth: {

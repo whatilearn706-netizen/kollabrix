@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import {
+  isSupabaseConfigured,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
+} from '@/lib/supabase/isConfigured';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import { LanguageCurriculum, LearningStep } from '@/types/curriculum';
@@ -11,59 +15,61 @@ let memoryCurricula: Record<string, LanguageCurriculum> = { ...DEFAULT_CURRICULA
 
 function getServiceSupabase() {
   if (!isSupabaseConfigured()) return null;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL || '';
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    '';
   if (!url || !key) return null;
   return createSupabaseClient(url, key, { auth: { persistSession: false } });
 }
 
 async function saveCurriculaSettings(sClient: any, curricula: any, deletedIds: Set<string>) {
   if (!sClient) return;
+  const delArray = Array.from(deletedIds);
+
   try {
-    const { error: err1 } = await sClient.from('platform_settings').upsert({
+    await sClient.from('platform_settings').upsert({
       key: 'campus_curricula_registry',
       value: curricula,
       updated_at: new Date().toISOString(),
     });
-    if (err1) {
-      const { error: updErr } = await sClient.from('platform_settings').update({
-        value: curricula,
-        updated_at: new Date().toISOString(),
-      }).eq('key', 'campus_curricula_registry');
-      if (updErr) {
-        await sClient.from('platform_settings').insert({
-          key: 'campus_curricula_registry',
-          value: curricula,
-          updated_at: new Date().toISOString(),
-        });
-      }
-    }
   } catch (e) {
     console.warn('Error saving campus_curricula_registry:', e);
   }
 
   try {
-    const delArray = Array.from(deletedIds);
-    const { error: err2 } = await sClient.from('platform_settings').upsert({
+    await sClient.from('platform_settings').upsert({
       key: 'deleted_curricula_ids',
       value: delArray,
       updated_at: new Date().toISOString(),
     });
-    if (err2) {
-      const { error: updErr } = await sClient.from('platform_settings').update({
-        value: delArray,
-        updated_at: new Date().toISOString(),
-      }).eq('key', 'deleted_curricula_ids');
-      if (updErr) {
-        await sClient.from('platform_settings').insert({
-          key: 'deleted_curricula_ids',
-          value: delArray,
-          updated_at: new Date().toISOString(),
-        });
-      }
-    }
   } catch (e) {
     console.warn('Error saving deleted_curricula_ids:', e);
+  }
+
+  // Also mirror into site_master_control_config for universal visibility across all client roles
+  try {
+    const { data: masterRow } = await sClient
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'site_master_control_config')
+      .maybeSingle();
+
+    const currentMaster = (masterRow?.value && typeof masterRow.value === 'object') ? masterRow.value : {};
+    const updatedMaster = {
+      ...currentMaster,
+      campus_curricula_registry: curricula,
+      deleted_curricula_ids: delArray,
+    };
+
+    await sClient.from('platform_settings').update({
+      value: updatedMaster,
+      updated_at: new Date().toISOString(),
+    }).eq('key', 'site_master_control_config');
+  } catch (mErr) {
+    console.warn('Error mirroring curricula to master config:', mErr);
   }
 }
 
@@ -76,7 +82,7 @@ async function loadCurriculaAndTombstones(sClient: any) {
       const { data: rows } = await sClient
         .from('platform_settings')
         .select('key, value')
-        .in('key', ['campus_curricula_registry', 'deleted_curricula_ids']);
+        .in('key', ['campus_curricula_registry', 'deleted_curricula_ids', 'site_master_control_config']);
 
       if (Array.isArray(rows)) {
         for (const row of rows) {
@@ -86,6 +92,15 @@ async function loadCurriculaAndTombstones(sClient: any) {
             });
           } else if (row.key === 'campus_curricula_registry' && row.value && typeof row.value === 'object') {
             dbCurricula = row.value as Record<string, LanguageCurriculum>;
+          } else if (row.key === 'site_master_control_config' && row.value && typeof row.value === 'object') {
+            if (!dbCurricula && row.value.campus_curricula_registry) {
+              dbCurricula = row.value.campus_curricula_registry;
+            }
+            if (Array.isArray(row.value.deleted_curricula_ids)) {
+              row.value.deleted_curricula_ids.forEach((id: string) => {
+                if (id) deletedIds.add(String(id).trim().toLowerCase());
+              });
+            }
           }
         }
       }

@@ -571,12 +571,41 @@ export default function HackathonWorkspacePage() {
 
       if (userIsOrganizer) {
         // Organizers manage teams — they do not have a participant builder team.
-        // Clean out any phantom auto-created organizer team.
+        // Clean out any phantom auto-created organizer team completely.
+        const phantomTeams = allTeams.filter(
+          (t) => t.leader_id === user?.id || t.members?.some((m) => m.user_id === user?.id)
+        );
+
         allTeams = allTeams.filter(
-          (t) => t.leader_id !== user?.id || !t.team_name.toLowerCase().includes((user?.email?.split('@')[0] || 'kollabrix').toLowerCase())
+          (t) => t.leader_id !== user?.id && !t.members?.some((m) => m.user_id === user?.id)
         );
         setTeams(allTeams);
         setMyTeam(null);
+
+        // Clean out local storage and asynchronously prune from database
+        if (typeof window !== 'undefined' && user?.id) {
+          try {
+            const k1 = `teamforge_teams_${canonicalHackId}`;
+            const k2 = `teamforge_teams_${hackathonId}`;
+            [k1, k2].forEach((k) => {
+              const raw = JSON.parse(localStorage.getItem(k) || '[]');
+              if (Array.isArray(raw)) {
+                const filtered = raw.filter((t: any) => t.leader_id !== user.id && !t.members?.some((m: any) => m.user_id === user.id));
+                localStorage.setItem(k, JSON.stringify(filtered));
+              }
+            });
+          } catch {}
+
+          if (phantomTeams.length > 0) {
+            phantomTeams.forEach((pt) => {
+              fetch('/api/hackathons/teams/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ teamId: pt.id }),
+              }).catch(() => {});
+            });
+          }
+        }
       } else {
         setTeams(allTeams);
         if (user) {
@@ -1986,16 +2015,23 @@ export default function HackathonWorkspacePage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <Link href={`/projects/${myTeam.id}/workspace`}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm"
-                      leftIcon={<LayoutDashboard className="w-4 h-4" />}
-                    >
-                      Open Team Workspace
-                    </Button>
-                  </Link>
+                  {!isClosed ? (
+                    <Link href={`/projects/${myTeam.id}/workspace`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm"
+                        leftIcon={<LayoutDashboard className="w-4 h-4" />}
+                      >
+                        Open Team Workspace
+                      </Button>
+                    </Link>
+                  ) : (
+                    <span className="text-xs px-3.5 py-1.5 rounded-xl bg-charcoal-950 text-slate-400 border border-charcoal-800 font-mono font-medium flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-rose-400" />
+                      Workshop Archived (Sprint Closed)
+                    </span>
+                  )}
 
                   {/* Team Invite Code */}
                   {myTeam.invite_code && (

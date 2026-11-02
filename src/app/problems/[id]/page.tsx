@@ -724,7 +724,7 @@ export default function ProblemStatementDetailPage() {
           <div className="flex items-center gap-1.5 text-xs text-brand-200 bg-brand-500/15 px-3 py-1.5 rounded-xl border border-brand-500/30 font-medium">
             <Users className="w-3.5 h-3.5 text-brand-400" />
             <span>
-              Expected Team Size: <strong className="text-white font-bold">{problem.team_size || '2 – 4 Students'}</strong>
+              Expected Team Size: <strong className="text-white font-bold">{problem.team_size || (problem.min_team_size && problem.max_team_size ? `${problem.min_team_size} – ${problem.max_team_size} Students` : '1 – 2 Students')}</strong>
             </span>
           </div>
 
@@ -1594,7 +1594,7 @@ export default function ProblemStatementDetailPage() {
         problemCategory={problem.category}
         problemDifficulty={problem.difficulty}
         requiredSkills={problem.required_skills}
-        expectedTeamSize={problem.team_size}
+        expectedTeamSize={problem.team_size || (problem.min_team_size && problem.max_team_size ? `${problem.min_team_size} – ${problem.max_team_size} Students` : '1 – 2 Students')}
         onSuccess={(createdTeam) => {
           setTacklingProjects((prev) => [createdTeam, ...prev]);
           setActionSuccess(`Team "${createdTeam.title}" formed for this challenge!`);
