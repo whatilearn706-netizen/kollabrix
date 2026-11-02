@@ -25,17 +25,25 @@ import {
   CheckCircle2,
   XCircle,
   ShieldCheck,
+  Trophy,
+  Swords,
+  Settings,
 } from 'lucide-react';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
 import { supabase } from '@/lib/supabase/client';
 import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
 import { FullArenaExperience } from '@/components/arena/FullArenaExperience';
+import { AdminTournamentGenerator } from './arena/AdminTournamentGenerator';
+import { AdminActiveDuelsList } from './arena/AdminActiveDuelsList';
+import { AdminSecretSpectatorView } from './arena/AdminSecretSpectatorView';
 
 interface AdminArenaTabProps {
   authToken?: string;
 }
 
 export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
+  const [arenaActiveSubTab, setArenaActiveSubTab] = useState<'tournament' | 'questions' | 'maintenance'>('tournament');
+  const [spectatingRoomCode, setSpectatingRoomCode] = useState<string | null>(null);
   const [questions, setQuestions] = useState<DuelQuestion[]>(DEFAULT_ARENA_QUESTIONS);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedArena, setSelectedArena] = useState<ArenaCategory | 'all'>('all');
@@ -455,9 +463,87 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         </div>
       </div>
 
-      {/* ================= ARENA LIVE / MAINTENANCE MASTER CONTROLLER ================= */}
+      {/* ================= SUB-NAVIGATION TABS ================= */}
+      <div className="flex items-center gap-2 border-b border-charcoal-800 pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setArenaActiveSubTab('tournament')}
+          className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            arenaActiveSubTab === 'tournament'
+              ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-md shadow-rose-950/40'
+              : 'bg-charcoal-900 text-slate-400 hover:text-white border border-charcoal-800'
+          }`}
+        >
+          <Trophy className="w-3.5 h-3.5" />
+          <span>🏆 Tournament Desk & Secret Spectator</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setArenaActiveSubTab('questions')}
+          className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            arenaActiveSubTab === 'questions'
+              ? 'bg-charcoal-800 text-white border border-charcoal-600 shadow-sm'
+              : 'bg-charcoal-900 text-slate-400 hover:text-white border border-charcoal-800'
+          }`}
+        >
+          <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+          <span>📝 Question & Challenge Engine</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setArenaActiveSubTab('maintenance')}
+          className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            arenaActiveSubTab === 'maintenance'
+              ? 'bg-charcoal-800 text-white border border-charcoal-600 shadow-sm'
+              : 'bg-charcoal-900 text-slate-400 hover:text-white border border-charcoal-800'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>⚙️ Platform Status & Maintenance</span>
+        </button>
+      </div>
+
+      {statusMsg && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 ${
+            statusMsg.type === 'success'
+              ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+              : 'bg-rose-950/50 border-rose-500/40 text-rose-300'
+          }`}
+        >
+          {statusMsg.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          <span>{statusMsg.text}</span>
+        </div>
+      )}
+
+      {/* ================= TAB 1: TOURNAMENT DESK & SECRET SPECTATOR ================= */}
+      {arenaActiveSubTab === 'tournament' && (
+        <div className="space-y-6 animate-fadeIn">
+          {spectatingRoomCode && (
+            <AdminSecretSpectatorView
+              roomCode={spectatingRoomCode}
+              onClose={() => setSpectatingRoomCode(null)}
+            />
+          )}
+
+          <AdminTournamentGenerator
+            questions={questions}
+            onSpectateRoom={(code) => setSpectatingRoomCode(code)}
+          />
+
+          <AdminActiveDuelsList
+            activeSpectatingCode={spectatingRoomCode}
+            onSpectateRoom={(code) => setSpectatingRoomCode(code)}
+          />
+        </div>
+      )}
+
+      {/* ================= TAB 3: ARENA LIVE / MAINTENANCE CONTROLLER ================= */}
+      {arenaActiveSubTab === 'maintenance' && (
       <div
-        className={`p-6 rounded-2xl border backdrop-blur-md transition-all shadow-xl ${
+        className={`p-6 rounded-2xl border backdrop-blur-md transition-all shadow-xl animate-fadeIn ${
           isArenaLive
             ? 'bg-gradient-to-br from-emerald-950/30 via-slate-900/90 to-charcoal-900 border-emerald-500/40 shadow-emerald-950/30'
             : 'bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-charcoal-900 border-rose-500/50 shadow-rose-950/40'
@@ -556,20 +642,11 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
           </div>
         </div>
       </div>
-
-      {statusMsg && (
-        <div
-          className={`p-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 ${
-            statusMsg.type === 'success'
-              ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
-              : 'bg-rose-950/50 border-rose-500/40 text-rose-300'
-          }`}
-        >
-          {statusMsg.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-          <span>{statusMsg.text}</span>
-        </div>
       )}
 
+      {/* ================= TAB 2: QUESTIONS & CHALLENGE ENGINE ================= */}
+      {arenaActiveSubTab === 'questions' && (
+        <div className="space-y-6 animate-fadeIn">
       {/* Filter and Add Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-charcoal-900 border border-charcoal-800">
         <div className="flex flex-wrap items-center gap-2">
@@ -1361,6 +1438,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
           </div>
         ))}
       </div>
+      </div>
+      )}
 
       {isTestLobbyOpen && (
         <FullArenaExperience

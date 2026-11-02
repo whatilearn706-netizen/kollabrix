@@ -41,6 +41,8 @@ export interface ArenaRoom {
   alphaPlayers: ArenaPlayer[];
   omegaPlayers: ArenaPlayer[];
   isBotEnabled?: boolean;
+  isTournamentRoom?: boolean;
+  matchTitle?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -214,6 +216,89 @@ export async function joinPlayerToRoom(
     existingInOmega.name = player.name || existingInOmega.name;
     const saved = await saveRoom(room);
     return { success: true, room: saved };
+  }
+
+  // If this is an Admin-Hosted Tournament Room, fill Player 1 (Alpha) and Player 2 (Omega)
+  if (room.isTournamentRoom) {
+    if (room.format === '1v1') {
+      if (!room.alphaPlayers || room.alphaPlayers.length === 0) {
+        const contenderAlpha: ArenaPlayer = {
+          id: player.id || `p-${Date.now()}`,
+          name: player.name || 'Contender Alpha',
+          avatarIdx: player.avatarIdx ?? 0,
+          team: 'alpha',
+          role: 'driver',
+          isReady: true,
+          isHost: true,
+          testsPassed: 0,
+          wpm: 0,
+          lastActive: now,
+        };
+        room.alphaPlayers = [contenderAlpha];
+        room.hostName = contenderAlpha.name;
+        const saved = await saveRoom(room);
+        return { success: true, room: saved };
+      } else if (!room.omegaPlayers || room.omegaPlayers.length === 0) {
+        const contenderOmega: ArenaPlayer = {
+          id: player.id || `p-${Date.now()}`,
+          name: player.name || 'Contender Omega',
+          avatarIdx: player.avatarIdx ?? 1,
+          team: 'omega',
+          role: 'driver',
+          isReady: true,
+          isHost: false,
+          testsPassed: 0,
+          wpm: 0,
+          lastActive: now,
+        };
+        room.omegaPlayers = [contenderOmega];
+        room.isBotEnabled = false;
+        const saved = await saveRoom(room);
+        return { success: true, room: saved };
+      } else {
+        return { success: false, error: 'Tournament 1v1 Room is already full (both contenders have joined).' };
+      }
+    } else if (room.format === '2v2') {
+      if (!room.alphaPlayers) room.alphaPlayers = [];
+      if (!room.omegaPlayers) room.omegaPlayers = [];
+      if (room.alphaPlayers.length < 2) {
+        const p: ArenaPlayer = {
+          id: player.id || `p-${Date.now()}`,
+          name: player.name || `Alpha Player ${room.alphaPlayers.length + 1}`,
+          avatarIdx: player.avatarIdx ?? room.alphaPlayers.length,
+          team: 'alpha',
+          role: room.alphaPlayers.length === 0 ? 'driver' : 'navigator',
+          isReady: true,
+          isHost: room.alphaPlayers.length === 0,
+          testsPassed: 0,
+          wpm: 0,
+          lastActive: now,
+        };
+        room.alphaPlayers.push(p);
+        if (room.alphaPlayers.length === 1) room.hostName = p.name;
+        const saved = await saveRoom(room);
+        return { success: true, room: saved };
+      } else if (room.omegaPlayers.length < 2) {
+        const p: ArenaPlayer = {
+          id: player.id || `p-${Date.now()}`,
+          name: player.name || `Omega Player ${room.omegaPlayers.length + 1}`,
+          avatarIdx: player.avatarIdx ?? (2 + room.omegaPlayers.length),
+          team: 'omega',
+          role: room.omegaPlayers.length === 0 ? 'driver' : 'navigator',
+          isReady: true,
+          isHost: false,
+          testsPassed: 0,
+          wpm: 0,
+          lastActive: now,
+        };
+        room.omegaPlayers.push(p);
+        room.isBotEnabled = false;
+        const saved = await saveRoom(room);
+        return { success: true, room: saved };
+      } else {
+        return { success: false, error: 'Tournament 2v2 Room is already full (all 4 players have joined).' };
+      }
+    }
   }
 
   // In 1v1: the joining player is ALWAYS assigned to Team Omega (Opponent Slot)
