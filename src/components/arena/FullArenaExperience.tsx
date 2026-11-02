@@ -45,6 +45,8 @@ import {
   UserCheck,
   Laptop,
   Lock,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
@@ -336,14 +338,24 @@ export function FullArenaExperience({
     enrichQuestion(initialQuestion || DEFAULT_ARENA_QUESTIONS[0])
   );
 
+  // Authoritative question & code initialization guards to prevent background polling from wiping user's code
+  const initializedQuestionIdRef = useRef<string | null>(initialQuestion ? initialQuestion.id : null);
+  const activeQuestionRef = useRef<DuelQuestion>(activeQuestion);
+
+  useEffect(() => {
+    activeQuestionRef.current = activeQuestion;
+  }, [activeQuestion]);
+
   useEffect(() => {
     if (initialQuestion) {
       const q = enrichQuestion(initialQuestion);
       setActiveQuestion(q);
+      activeQuestionRef.current = q;
       setArena(q.arena);
       if (q.tags && q.tags.length > 0) {
         setSelectedTags(q.tags);
       }
+      initializedQuestionIdRef.current = q.id;
       setHtmlCode(q.starterHtml || '');
       setCssCode(q.starterCss || '');
       setJsCode(q.starterJs || '');
@@ -426,12 +438,16 @@ export function FullArenaExperience({
           setTimeLimit(matchTime);
           setTimeLeft(matchTime);
           setActiveQuestion(q);
-          setHtmlCode(q.starterHtml || '');
-          setCssCode(q.starterCss || '');
-          setJsCode(q.starterJs || '');
-          setPythonCode(q.starterPython || '# Your python solution\n');
-          setJavaCode(q.starterJava || '// Your java solution\n');
-          setCppCode(q.starterCpp || '// Your C++ solution\n');
+          activeQuestionRef.current = q;
+          if (initializedQuestionIdRef.current !== q.id) {
+            initializedQuestionIdRef.current = q.id;
+            setHtmlCode(q.starterHtml || '');
+            setCssCode(q.starterCss || '');
+            setJsCode(q.starterJs || '');
+            setPythonCode(q.starterPython || '# Your python solution\n');
+            setJavaCode(q.starterJava || '// Your java solution\n');
+            setCppCode(q.starterCpp || '// Your C++ solution\n');
+          }
           const expectedTests = computeExpectedQuestionTests(q);
           setTotalTests(expectedTests);
         }
@@ -441,12 +457,12 @@ export function FullArenaExperience({
           const savedCodeRaw = sessionStorage.getItem(`arena_code_${rm.code}`);
           if (savedCodeRaw) {
             const sc = JSON.parse(savedCodeRaw);
-            if (sc.htmlCode) setHtmlCode(sc.htmlCode);
-            if (sc.cssCode) setCssCode(sc.cssCode);
-            if (sc.jsCode) setJsCode(sc.jsCode);
-            if (sc.pythonCode) setPythonCode(sc.pythonCode);
-            if (sc.javaCode) setJavaCode(sc.javaCode);
-            if (sc.cppCode) setCppCode(sc.cppCode);
+            if (typeof sc.htmlCode === 'string') setHtmlCode(sc.htmlCode);
+            if (typeof sc.cssCode === 'string') setCssCode(sc.cssCode);
+            if (typeof sc.jsCode === 'string') setJsCode(sc.jsCode);
+            if (typeof sc.pythonCode === 'string') setPythonCode(sc.pythonCode);
+            if (typeof sc.javaCode === 'string') setJavaCode(sc.javaCode);
+            if (typeof sc.cppCode === 'string') setCppCode(sc.cppCode);
           }
         } catch {}
 
@@ -639,6 +655,118 @@ export function FullArenaExperience({
     const now = Date.now();
     lastKeystrokeTimeRef.current = now;
     recentKeystrokesRef.current.push(now);
+  };
+
+  // Real IDE Code Editor Refs & Compiler Helpers
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+
+  const getCurrentCode = (): string => {
+    switch (activeTab) {
+      case 'html': return htmlCode;
+      case 'css': return cssCode;
+      case 'js': return jsCode;
+      case 'python': return pythonCode;
+      case 'java': return javaCode;
+      case 'cpp': return cppCode;
+      default: return pythonCode;
+    }
+  };
+
+  const setCurrentCode = (val: string) => {
+    handleUserKeystroke();
+    switch (activeTab) {
+      case 'html': setHtmlCode(val); break;
+      case 'css': setCssCode(val); break;
+      case 'js': setJsCode(val); break;
+      case 'python': setPythonCode(val); break;
+      case 'java': setJavaCode(val); break;
+      case 'cpp': setCppCode(val); break;
+      default: setPythonCode(val); break;
+    }
+  };
+
+  const handleResetCurrentTemplate = () => {
+    if (!activeQuestion) return;
+    if (activeTab === 'html') setHtmlCode(activeQuestion.starterHtml || '');
+    else if (activeTab === 'css') setCssCode(activeQuestion.starterCss || '');
+    else if (activeTab === 'js') setJsCode(activeQuestion.starterJs || '');
+    else if (activeTab === 'python') setPythonCode(activeQuestion.starterPython || '# Your python solution\n');
+    else if (activeTab === 'java') setJavaCode(activeQuestion.starterJava || '// Your java solution\n');
+    else if (activeTab === 'cpp') setCppCode(activeQuestion.starterCpp || '// Your C++ solution\n');
+  };
+
+  const handleClearCurrentCode = () => {
+    setCurrentCode('');
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const { selectionStart, selectionEnd, value } = textarea;
+
+    // 1. Tab and Shift+Tab indentation (2 spaces)
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+Tab: Unindent up to 2 leading spaces
+        const beforeCursor = value.substring(0, selectionStart);
+        const lineStart = beforeCursor.lastIndexOf('\n') + 1;
+        const line = value.substring(lineStart, selectionEnd);
+        if (line.startsWith('  ')) {
+          const nextVal = value.substring(0, lineStart) + value.substring(lineStart + 2);
+          setCurrentCode(nextVal);
+          requestAnimationFrame(() => {
+            textarea.selectionStart = Math.max(lineStart, selectionStart - 2);
+            textarea.selectionEnd = Math.max(lineStart, selectionEnd - 2);
+          });
+        } else if (line.startsWith(' ')) {
+          const nextVal = value.substring(0, lineStart) + value.substring(lineStart + 1);
+          setCurrentCode(nextVal);
+          requestAnimationFrame(() => {
+            textarea.selectionStart = Math.max(lineStart, selectionStart - 1);
+            textarea.selectionEnd = Math.max(lineStart, selectionEnd - 1);
+          });
+        }
+      } else {
+        // Tab: Insert 2 spaces at cursor
+        const nextVal = value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd);
+        setCurrentCode(nextVal);
+        requestAnimationFrame(() => {
+          textarea.selectionStart = selectionStart + 2;
+          textarea.selectionEnd = selectionStart + 2;
+        });
+      }
+      return;
+    }
+
+    // 2. Enter key: Auto-indent to match current line
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const beforeCursor = value.substring(0, selectionStart);
+      const lastNewline = beforeCursor.lastIndexOf('\n');
+      const currentLine = beforeCursor.substring(lastNewline + 1);
+      const leadingWhitespaceMatch = currentLine.match(/^(\s*)/);
+      let indent = leadingWhitespaceMatch ? leadingWhitespaceMatch[1] : '';
+
+      const trimmedLine = currentLine.trimEnd();
+      if (
+        trimmedLine.endsWith('{') ||
+        trimmedLine.endsWith('(') ||
+        trimmedLine.endsWith('[') ||
+        trimmedLine.endsWith(':') ||
+        (trimmedLine.endsWith('>') && !trimmedLine.endsWith('/>') && !trimmedLine.startsWith('</'))
+      ) {
+        indent += '  ';
+      }
+
+      const nextVal = value.substring(0, selectionStart) + '\n' + indent + value.substring(selectionEnd);
+      setCurrentCode(nextVal);
+      requestAnimationFrame(() => {
+        textarea.selectionStart = selectionStart + 1 + indent.length;
+        textarea.selectionEnd = selectionStart + 1 + indent.length;
+      });
+      return;
+    }
   };
 
   // Image 6 Parity: Maximize pane state for Preview and Output
@@ -847,6 +975,8 @@ export function FullArenaExperience({
           setTimeLimit(matchTime);
           setTimeLeft(matchTime);
           setActiveQuestion(q);
+          activeQuestionRef.current = q;
+          initializedQuestionIdRef.current = q.id;
           setHtmlCode(q.starterHtml || '');
           setCssCode(q.starterCss || '');
           setJsCode(q.starterJs || '');
@@ -915,6 +1045,8 @@ export function FullArenaExperience({
       if (initialChosen) {
         const enriched = enrichQuestion(initialChosen);
         setActiveQuestion(enriched);
+        activeQuestionRef.current = enriched;
+        initializedQuestionIdRef.current = enriched.id;
         setTimeLimit(matchTime);
         setTimeLeft(matchTime);
         setHtmlCode(enriched.starterHtml || '');
@@ -958,12 +1090,16 @@ export function FullArenaExperience({
             setTimeLimit(matchTime);
             setTimeLeft(matchTime);
             setActiveQuestion(q);
-            setHtmlCode(q.starterHtml || '');
-            setCssCode(q.starterCss || '');
-            setJsCode(q.starterJs || '');
-            setPythonCode(q.starterPython || '# Your python solution\n');
-            setJavaCode(q.starterJava || '// Your java solution\n');
-            setCppCode(q.starterCpp || '// Your C++ solution\n');
+            activeQuestionRef.current = q;
+            if (initializedQuestionIdRef.current !== q.id) {
+              initializedQuestionIdRef.current = q.id;
+              setHtmlCode(q.starterHtml || '');
+              setCssCode(q.starterCss || '');
+              setJsCode(q.starterJs || '');
+              setPythonCode(q.starterPython || '# Your python solution\n');
+              setJavaCode(q.starterJava || '// Your java solution\n');
+              setCppCode(q.starterCpp || '// Your C++ solution\n');
+            }
             const expectedTests = computeExpectedQuestionTests(q);
             setTotalTests(expectedTests);
           }
@@ -1037,12 +1173,16 @@ export function FullArenaExperience({
         }
 
         setActiveQuestion(q);
-        setHtmlCode(q.starterHtml || '');
-        setCssCode(q.starterCss || '');
-        setJsCode(q.starterJs || '');
-        setPythonCode(q.starterPython || '# Your python solution\n');
-        setJavaCode(q.starterJava || '// Your java solution\n');
-        setCppCode(q.starterCpp || '// Your C++ solution\n');
+        activeQuestionRef.current = q;
+        if (initializedQuestionIdRef.current !== q.id) {
+          initializedQuestionIdRef.current = q.id;
+          setHtmlCode(q.starterHtml || '');
+          setCssCode(q.starterCss || '');
+          setJsCode(q.starterJs || '');
+          setPythonCode(q.starterPython || '# Your python solution\n');
+          setJavaCode(q.starterJava || '// Your java solution\n');
+          setCppCode(q.starterCpp || '// Your C++ solution\n');
+        }
         const expectedTests = computeExpectedQuestionTests(q);
         setTotalTests(expectedTests);
 
@@ -1083,14 +1223,20 @@ export function FullArenaExperience({
         setTimeLeft(matchTime);
       }
 
-      if (activeQuestion?.id !== q.id) {
+      // CRITICAL GUARD: NEVER overwrite user's written code during live battlefield (Step 5)!
+      // In Countdown (Step 4), only populate if starter code was never loaded for this question ID.
+      if (activeQuestionRef.current?.id !== q.id) {
         setActiveQuestion(q);
-        setHtmlCode(q.starterHtml || '');
-        setCssCode(q.starterCss || '');
-        setJsCode(q.starterJs || '');
-        setPythonCode(q.starterPython || '# Your python solution\n');
-        setJavaCode(q.starterJava || '// Your java solution\n');
-        setCppCode(q.starterCpp || '// Your C++ solution\n');
+        activeQuestionRef.current = q;
+        if (currentStep === 4 && initializedQuestionIdRef.current !== q.id) {
+          initializedQuestionIdRef.current = q.id;
+          setHtmlCode(q.starterHtml || '');
+          setCssCode(q.starterCss || '');
+          setJsCode(q.starterJs || '');
+          setPythonCode(q.starterPython || '# Your python solution\n');
+          setJavaCode(q.starterJava || '// Your java solution\n');
+          setCppCode(q.starterCpp || '// Your C++ solution\n');
+        }
         const expectedTests = computeExpectedQuestionTests(q);
         setTotalTests(expectedTests);
       }
@@ -1360,6 +1506,8 @@ export function FullArenaExperience({
     });
 
     setActiveQuestion(finalChosen);
+    activeQuestionRef.current = finalChosen;
+    initializedQuestionIdRef.current = finalChosen.id;
 
     // Initialize starter code
     setHtmlCode(finalChosen.starterHtml || '');
@@ -3672,43 +3820,100 @@ export function FullArenaExperience({
                   </div>
                 </div>
 
-                {/* Code Textarea Studio */}
-                <div className="flex-1 min-h-[300px] sm:min-h-[350px] relative bg-[#060812] p-3 border-b border-slate-800">
-                  <textarea
-                    value={
-                      activeTab === 'html'
-                        ? htmlCode
-                        : activeTab === 'css'
-                        ? cssCode
-                        : activeTab === 'js'
-                        ? jsCode
-                        : activeTab === 'python'
-                        ? pythonCode
-                        : activeTab === 'java'
-                        ? javaCode
-                        : activeTab === 'cpp'
-                        ? cppCode
-                        : pythonCode
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      handleUserKeystroke();
-                      if (activeTab === 'html') setHtmlCode(val);
-                      else if (activeTab === 'css') setCssCode(val);
-                      else if (activeTab === 'js') setJsCode(val);
-                      else if (activeTab === 'python') setPythonCode(val);
-                      else if (activeTab === 'java') setJavaCode(val);
-                      else if (activeTab === 'cpp') setCppCode(val);
-                      else setPythonCode(val);
-                    }}
-                    placeholder={
-                      isWebMatch
-                        ? '<!-- Write your HTML/CSS solution here (replicate the preview blueprint) -->'
-                        : '// Write your code solution here. Implement the required method / logic.'
-                    }
-                    className="w-full h-full bg-transparent font-mono text-xs sm:text-sm text-cyan-200 resize-none focus:outline-none leading-relaxed"
-                    spellCheck={false}
-                  />
+                {/* Code Editor Studio with Line Numbers & Real Compiler Capabilities */}
+                <div className="flex-1 flex flex-col min-h-[340px] sm:min-h-[400px] bg-[#070a14] border-b border-slate-800/80">
+                  {/* Sub-header / IDE Utilities Bar */}
+                  <div className="h-7 bg-[#0b0f1d] px-3 border-b border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-cyan-400 font-bold flex items-center gap-1">
+                        <Code2 className="w-3 h-3" />
+                        {activeTab === 'html'
+                          ? 'index.html'
+                          : activeTab === 'css'
+                          ? 'styles.css'
+                          : activeTab === 'js'
+                          ? 'script.js'
+                          : activeTab === 'python'
+                          ? 'solution.py'
+                          : activeTab === 'java'
+                          ? 'Solution.java'
+                          : 'solution.cpp'}
+                      </span>
+                      <span className="text-slate-600">|</span>
+                      <span>{Math.max(1, (getCurrentCode() || '').split('\n').length)} lines</span>
+                      <span className="text-slate-600 hidden sm:inline">|</span>
+                      <span className="text-slate-500 hidden sm:inline">Tab: 2 spaces</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleResetCurrentTemplate}
+                        className="text-slate-400 hover:text-cyan-300 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Reset current tab to official starter template"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span className="hidden sm:inline">Reset Template</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearCurrentCode}
+                        className="text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Clear all text in current tab"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span className="hidden sm:inline">Clear All</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Main Editor Body: Gutter + Textarea */}
+                  <div className="flex-1 flex relative overflow-hidden bg-[#060812]">
+                    {/* Line Numbers Gutter */}
+                    <div
+                      ref={lineNumbersRef}
+                      className="w-9 sm:w-11 py-3 pr-2 text-right select-none bg-[#04060d] border-r border-slate-800/60 text-slate-600 font-mono text-xs overflow-hidden shrink-0"
+                      style={{ lineHeight: '1.5rem' }}
+                    >
+                      {Array.from(
+                        { length: Math.max(1, (getCurrentCode() || '').split('\n').length) },
+                        (_, i) => (
+                          <div key={i}>{i + 1}</div>
+                        )
+                      )}
+                    </div>
+
+                    {/* Textarea Code Canvas */}
+                    <textarea
+                      ref={textareaRef}
+                      value={getCurrentCode()}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCurrentCode(val);
+                      }}
+                      onKeyDown={handleEditorKeyDown}
+                      onScroll={() => {
+                        if (lineNumbersRef.current && textareaRef.current) {
+                          lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+                        }
+                      }}
+                      placeholder={
+                        isWebMatch
+                          ? activeTab === 'html'
+                            ? '<!-- Type or paste your HTML here. Delete all content anytime. -->'
+                            : activeTab === 'css'
+                            ? '/* Type or paste your CSS styles here. Delete all content anytime. */'
+                            : '// Type or paste your JavaScript here.'
+                          : '// Write your code solution here. Implement the required method / logic.'
+                      }
+                      className="flex-1 w-full h-full bg-transparent p-3 font-mono text-xs sm:text-sm text-cyan-200 placeholder-slate-600 resize-none focus:outline-none whitespace-pre overflow-auto"
+                      style={{ lineHeight: '1.5rem', tabSize: 2 }}
+                      spellCheck={false}
+                      autoCapitalize="off"
+                      autoComplete="off"
+                      autoCorrect="off"
+                    />
+                  </div>
                 </div>
 
                 {/* Integrated Opponent Fog of War Telemetry HUD */}
