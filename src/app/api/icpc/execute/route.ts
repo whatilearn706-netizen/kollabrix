@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -31,6 +32,21 @@ function cleanOutput(str?: string | null): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Anti-Abuse Rate Limit Gate: Max 30 compilations per 60 seconds per IP
+    const ip = getClientIp(request);
+    const rateCheck = checkIpRateLimit(`icpc-exec:${ip}`, 30, 60 * 1000, 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Rate limit reached: You are submitting code too rapidly. Please wait a few seconds before testing again.',
+          verdict: 'Rate Limited',
+          status: 'Rate Limited',
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const {
       code,

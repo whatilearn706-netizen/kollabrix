@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFeatures';
 import { SparkModelSettings, SparkScoringWeights } from '@/app/api/spark/settings/route';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -430,6 +431,22 @@ function synthesizeDynamicBlueprint(
 
 export async function POST(request: NextRequest) {
   try {
+    // Anti-Abuse Rate Limit Gate: Max 10 Spark generations per 5 minutes per IP
+    const ip = getClientIp(request);
+    const rateCheck = checkIpRateLimit(`ai-spark:${ip}`, 10, 5 * 60 * 1000, 5 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      const waitMinutes = Math.ceil((rateCheck.retryAfterMs || 300000) / 60000);
+      return NextResponse.json(
+        { error: `AI Rate Limit reached. Please wait ${waitMinutes} minute(s) before generating another blueprint to protect platform AI capacity.` },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateCheck.retryAfterMs || 60000) / 1000)),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const prompt = (body.prompt || '').trim();
     const track = (body.track || '').trim();
