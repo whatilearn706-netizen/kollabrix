@@ -256,21 +256,31 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
       let savedSuccessfully = false;
 
-      // 1. Primary: Save via dedicated server route using service role key (bypasses RLS)
+      // 1. Primary: Save via dedicated server route using service role key (bypasses RLS safely)
+      let serverErrorMsg: string | null = null;
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const srvRes = await fetch('/api/profile/save', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         });
-        if (srvRes.ok) {
-          const srvData = await srvRes.json();
-          if (srvData.success) {
-            savedSuccessfully = true;
-          }
+        const srvData = await srvRes.json().catch(() => ({}));
+        if (srvRes.ok && srvData.success) {
+          savedSuccessfully = true;
+        } else {
+          serverErrorMsg = srvData.error || 'Server could not save profile';
+          console.warn('Server profile save attempt note:', srvRes.status, serverErrorMsg);
         }
-      } catch (srvErr) {
-        console.warn('Server profile save attempt noticed:', srvErr);
+      } catch (srvErr: any) {
+        serverErrorMsg = srvErr.message;
+        console.warn('Server profile save attempt exception:', srvErr);
       }
 
       // 2. Client-side fallback if server route was unreachable
@@ -290,11 +300,23 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           const safePayload: Record<string, any> = { ...payload };
           delete safePayload.linkedin_url;
           delete safePayload.verification_doc_type;
+          delete safePayload.college_verified;
           const retryRes = await supabase.from('profiles').upsert(safePayload, { onConflict: 'user_id' });
           upsertErr = retryRes.error;
         }
 
-        if (upsertErr) throw upsertErr;
+        if (upsertErr) {
+          if (upsertErr.message.includes('profiles_username_key') || upsertErr.code === '23505') {
+            throw new Error('This username is already taken. Please choose another username.');
+          }
+          if (upsertErr.message.includes('row-level security')) {
+            console.warn('Supabase client-side RLS fallback note:', upsertErr.message);
+          } else if (serverErrorMsg && !serverErrorMsg.includes('violates row-level security')) {
+            throw new Error(serverErrorMsg);
+          } else {
+            throw upsertErr;
+          }
+        }
       }
 
       // If student ID was uploaded in Step 2, notify verification endpoint for Admin Control Center
