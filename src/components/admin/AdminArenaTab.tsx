@@ -106,11 +106,19 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const fetchQuestions = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/arena/questions', { cache: 'no-store' });
+      const res = await fetch(`/api/arena/questions?_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data.questions && Array.isArray(data.questions)) {
-          setQuestions(data.questions);
+          let qList = data.questions;
+          try {
+            const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
+            if (Array.isArray(localDel) && localDel.length > 0) {
+              const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase()));
+              qList = qList.filter((q: any) => !delSet.has((q.id || '').toLowerCase()));
+            }
+          } catch {}
+          setQuestions(qList);
         }
       }
     } catch (err) {
@@ -377,8 +385,17 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
       const data = await res.json();
       if (data.success) {
+        try {
+          const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
+          localDel.push(questionId);
+          localStorage.setItem('tf_deleted_arena_q_ids', JSON.stringify(localDel));
+        } catch {}
+
         setQuestions((prev) => prev.filter((q) => q.id !== questionId));
         setStatusMsg({ text: 'Question removed from live arena question bank!', type: 'success' });
+        setTimeout(() => {
+          fetchQuestions();
+        }, 100);
       } else {
         setStatusMsg({ text: data.error || 'Failed to delete question', type: 'error' });
       }

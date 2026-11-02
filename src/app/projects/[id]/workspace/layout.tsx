@@ -312,6 +312,27 @@ export default function WorkspaceLayout({
             detectedHackathonId = hData.id;
             detectedClosed = isHackathonClosed(hData);
 
+            // If current user is the hackathon organizer, redirect to hackathon workspace (do not auto-create a student team)
+            if (currentUserId === hData.creator_id) {
+              router.replace(`/hackathons/${hData.id}/workspace`);
+              return;
+            }
+
+            // If hackathon is closed and student does not have a team, redirect to hackathon workspace
+            if (detectedClosed) {
+              const { data: closedExistingTeam } = await supabase
+                .from('hackathon_teams')
+                .select('id')
+                .eq('hackathon_id', hackId)
+                .eq('leader_id', currentUserId)
+                .maybeSingle();
+
+              if (!closedExistingTeam) {
+                router.replace(`/hackathons/${hData.id}/workspace`);
+                return;
+              }
+            }
+
             const { data: existingTeam } = await supabase
               .from('hackathon_teams')
               .select('*')

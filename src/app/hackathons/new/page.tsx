@@ -58,6 +58,7 @@ export default function NewHackathonPage() {
   const [endDate, setEndDate] = useState('');
   const [registrationDeadline, setRegistrationDeadline] = useState('');
   const [submissionDeadline, setSubmissionDeadline] = useState('');
+  const [resultsDate, setResultsDate] = useState('');
   const [minTeamSize, setMinTeamSize] = useState(2);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
   const [themesInput, setThemesInput] = useState('AI/ML, Campus Life, FinTech, Sustainability, Web3');
@@ -138,6 +139,7 @@ export default function NewHackathonPage() {
           endDate: endDate || null,
           registrationDeadline,
           submissionDeadline,
+          resultsDate: resultsDate || null,
           accessType,
           password: password.trim(),
           minTeamSize,
@@ -167,6 +169,7 @@ export default function NewHackathonPage() {
             password_salt: resData.hackathon.password_salt,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
+            results_date: resultsDate ? new Date(resultsDate).toISOString() : null,
             banner_url: bannerUrl.trim() || null,
           })} -->`;
 
@@ -180,6 +183,7 @@ export default function NewHackathonPage() {
             start_date: new Date(startDate).toISOString(),
             end_date: endDate ? new Date(endDate).toISOString() : null,
             registration_deadline: new Date(registrationDeadline).toISOString(),
+            results_date: resultsDate ? new Date(resultsDate).toISOString() : null,
             eligibility: 'Open to all college students',
             themes,
             prize_pool: prizePool.trim() || null,
@@ -590,14 +594,14 @@ export default function NewHackathonPage() {
               </div>
             </div>
 
-            {/* Section 4: Timeline & Deadlines */}
+            {/* Section 4: Timeline, Deadlines & Results */}
             <div className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-4">
               <div className="flex items-center gap-2.5 text-base font-bold text-white border-b border-charcoal-800 pb-3">
                 <Calendar className="w-5 h-5 text-indigo-400" />
-                <span>4. Timeline &amp; Deadlines</span>
+                <span>4. Timeline, Deadlines &amp; Results Announcement</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1.5">
                     Registration Closes *
@@ -631,7 +635,20 @@ export default function NewHackathonPage() {
                     required
                   />
                 </div>
+                <div>
+                  <label className="text-xs font-semibold text-amber-300 block mb-1.5">
+                    Results Announcement Date
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    value={resultsDate}
+                    onChange={(e) => setResultsDate(e.target.value)}
+                  />
+                </div>
               </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed font-mono">
+                🔒 <strong>Lifecycle Rule:</strong> When submissions close, student deliverables lock into read-only mode. The hackathon will remain visible in the active directory until 24 hours after the <strong>Results Announcement Date</strong>, after which it safely archives.
+              </p>
             </div>
 
             {/* Section 5: Guidelines, Prizes & Support */}

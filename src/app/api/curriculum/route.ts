@@ -17,6 +17,56 @@ function getServiceSupabase() {
   return createSupabaseClient(url, key, { auth: { persistSession: false } });
 }
 
+async function saveCurriculaSettings(sClient: any, curricula: any, deletedIds: Set<string>) {
+  if (!sClient) return;
+  try {
+    const { error: err1 } = await sClient.from('platform_settings').upsert({
+      key: 'campus_curricula_registry',
+      value: curricula,
+      updated_at: new Date().toISOString(),
+    });
+    if (err1) {
+      const { error: updErr } = await sClient.from('platform_settings').update({
+        value: curricula,
+        updated_at: new Date().toISOString(),
+      }).eq('key', 'campus_curricula_registry');
+      if (updErr) {
+        await sClient.from('platform_settings').insert({
+          key: 'campus_curricula_registry',
+          value: curricula,
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Error saving campus_curricula_registry:', e);
+  }
+
+  try {
+    const delArray = Array.from(deletedIds);
+    const { error: err2 } = await sClient.from('platform_settings').upsert({
+      key: 'deleted_curricula_ids',
+      value: delArray,
+      updated_at: new Date().toISOString(),
+    });
+    if (err2) {
+      const { error: updErr } = await sClient.from('platform_settings').update({
+        value: delArray,
+        updated_at: new Date().toISOString(),
+      }).eq('key', 'deleted_curricula_ids');
+      if (updErr) {
+        await sClient.from('platform_settings').insert({
+          key: 'deleted_curricula_ids',
+          value: delArray,
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Error saving deleted_curricula_ids:', e);
+  }
+}
+
 async function loadCurriculaAndTombstones(sClient: any) {
   let deletedIds = new Set<string>();
   let dbCurricula: Record<string, LanguageCurriculum> | null = null;
@@ -96,16 +146,7 @@ export async function POST(req: NextRequest) {
     if (action === 'reset_defaults') {
       memoryCurricula = { ...DEFAULT_CURRICULA };
       if (sClient) {
-        await sClient.from('platform_settings').upsert({
-          key: 'campus_curricula_registry',
-          value: memoryCurricula,
-          updated_at: new Date().toISOString(),
-        });
-        await sClient.from('platform_settings').upsert({
-          key: 'deleted_curricula_ids',
-          value: [],
-          updated_at: new Date().toISOString(),
-        });
+        await saveCurriculaSettings(sClient, memoryCurricula, new Set<string>());
       }
       return NextResponse.json({ success: true, curricula: memoryCurricula });
     }
@@ -114,11 +155,7 @@ export async function POST(req: NextRequest) {
     if (action === 'set_all' && curricula) {
       memoryCurricula = { ...curricula };
       if (sClient) {
-        await sClient.from('platform_settings').upsert({
-          key: 'campus_curricula_registry',
-          value: memoryCurricula,
-          updated_at: new Date().toISOString(),
-        });
+        await saveCurriculaSettings(sClient, memoryCurricula, deletedIds);
       }
       return NextResponse.json({ success: true, curricula: memoryCurricula });
     }
@@ -217,16 +254,7 @@ export async function POST(req: NextRequest) {
       memoryCurricula[newId] = newCurriculumObj;
 
       if (sClient) {
-        await sClient.from('platform_settings').upsert({
-          key: 'campus_curricula_registry',
-          value: memoryCurricula,
-          updated_at: new Date().toISOString(),
-        });
-        await sClient.from('platform_settings').upsert({
-          key: 'deleted_curricula_ids',
-          value: Array.from(deletedIds),
-          updated_at: new Date().toISOString(),
-        });
+        await saveCurriculaSettings(sClient, memoryCurricula, deletedIds);
       }
 
       return NextResponse.json({
@@ -258,16 +286,7 @@ export async function POST(req: NextRequest) {
       deletedIds.add(targetId);
 
       if (sClient) {
-        await sClient.from('platform_settings').upsert({
-          key: 'campus_curricula_registry',
-          value: memoryCurricula,
-          updated_at: new Date().toISOString(),
-        });
-        await sClient.from('platform_settings').upsert({
-          key: 'deleted_curricula_ids',
-          value: Array.from(deletedIds),
-          updated_at: new Date().toISOString(),
-        });
+        await saveCurriculaSettings(sClient, memoryCurricula, deletedIds);
       }
 
       return NextResponse.json({

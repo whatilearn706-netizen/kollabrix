@@ -139,6 +139,24 @@ export default function ProblemStatementsPage() {
         );
       }
 
+      // Enrich metadata (team size, custom ranges)
+      list = list.map((p) => {
+        if (p.description?.includes('<!-- PROBLEM_META:')) {
+          try {
+            const metaStr = p.description.split('<!-- PROBLEM_META:')[1].split('-->')[0];
+            const meta = JSON.parse(metaStr);
+            return {
+              ...p,
+              team_size: meta.team_size || p.team_size,
+              min_team_size: meta.min_team_size || p.min_team_size,
+              max_team_size: meta.max_team_size || p.max_team_size,
+              description: p.description.replace(/\n\n<!-- PROBLEM_META:[\s\S]*?-->/g, '').trim(),
+            };
+          } catch {}
+        }
+        return p;
+      });
+
       setProblems(list);
     } catch {
       setProblems(DEMO_PROBLEMS);

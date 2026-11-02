@@ -10,6 +10,7 @@ import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { Hackathon, HackathonMode } from '@/types/database';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons } from '@/lib/admin/hackathonSettings';
+import { isHackathonArchivedFromFeed } from '@/lib/hackathons/hackathonStatus';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
 import { HackathonCardSkeleton } from '@/components/ui/Skeleton';
@@ -312,6 +313,9 @@ export default function HackathonsPage() {
       if (activeTab === 'private' && h.access_type !== 'private') return false;
       if (activeTab === 'my-events' && !enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
       if (activeTab === 'saved' && !savedIds.includes(h.id)) return false;
+
+      // Disappear from public college directory the day after results are announced
+      if (activeTab !== 'my-events' && isHackathonArchivedFromFeed(h)) return false;
 
       // Deadline filter
       if (onlyOpen) {
