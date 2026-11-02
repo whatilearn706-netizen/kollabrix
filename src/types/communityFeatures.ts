@@ -41,6 +41,10 @@ export interface CampusDeadlineItem {
   prize?: string;
   urgency?: 'urgent' | 'upcoming' | 'ongoing';
   tags?: string[];
+  is_sponsored?: boolean;
+  company_name?: string;
+  company_logo?: string;
+  glow_color?: 'gold' | 'cyan' | 'purple' | 'emerald';
 }
 
 export interface SparkTemplateItem {

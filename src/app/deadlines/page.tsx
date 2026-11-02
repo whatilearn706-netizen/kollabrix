@@ -84,6 +84,12 @@ export default function CollegiateDeadlinesPage() {
     return matchesType && matchesQuery;
   });
 
+  const sortedDeadlines = [...filteredDeadlines].sort((a, b) => {
+    if (a.is_sponsored && !b.is_sponsored) return -1;
+    if (!a.is_sponsored && b.is_sponsored) return 1;
+    return new Date(a.deadlineDate).getTime() - new Date(b.deadlineDate).getTime();
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-charcoal-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-6xl mx-auto space-y-10">
@@ -158,7 +164,7 @@ export default function CollegiateDeadlinesPage() {
                 </div>
               ))}
             </div>
-          ) : filteredDeadlines.length === 0 ? (
+          ) : sortedDeadlines.length === 0 ? (
             <div className="p-12 text-center rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 space-y-3">
               <Clock className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
               <h3 className="text-base font-bold text-slate-900 dark:text-white">No Deadlines On Radar</h3>
@@ -167,7 +173,7 @@ export default function CollegiateDeadlinesPage() {
               </p>
             </div>
           ) : (
-            filteredDeadlines.map((item) => {
+            sortedDeadlines.map((item) => {
             const countdown = formatCountdown(item.deadlineDate);
             const isUrgent =
               !countdown.expired &&
@@ -177,7 +183,9 @@ export default function CollegiateDeadlinesPage() {
               <div
                 key={item.id}
                 className={`p-6 rounded-3xl bg-white dark:bg-charcoal-900 border transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-sm hover:shadow-md ${
-                  isUrgent
+                  item.is_sponsored
+                    ? 'border-amber-400/60 dark:border-amber-500/50 shadow-amber-500/10 bg-gradient-to-r from-amber-500/[0.04] via-transparent to-transparent'
+                    : isUrgent
                     ? 'border-rose-500/40 dark:border-rose-500/30'
                     : 'border-slate-200 dark:border-charcoal-800'
                 }`}
@@ -185,6 +193,13 @@ export default function CollegiateDeadlinesPage() {
                 {/* Left: Info */}
                 <div className="space-y-2.5 max-w-2xl">
                   <div className="flex flex-wrap items-center gap-2">
+                    {item.is_sponsored && (
+                      <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 shadow-xs animate-pulse">
+                        <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span>🏢 {item.company_name || 'Enterprise'} Sponsored</span>
+                      </span>
+                    )}
+
                     <span
                       className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 ${
                         isUrgent

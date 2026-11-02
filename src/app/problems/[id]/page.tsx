@@ -67,6 +67,7 @@ export default function ProblemStatementDetailPage() {
   const [isLoading, setIsLoading] = useState(() => !Boolean(demoMatch));
   const [error, setError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Link Sharing state
   const [isCopied, setIsCopied] = useState(false);
@@ -416,11 +417,18 @@ export default function ProblemStatementDetailPage() {
     if (!id || !problem) return;
     setIsTogglingLive(true);
     setActionSuccess(null);
+    setActionError(null);
     try {
       const newLiveState = !isResultsLive;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (user?.id) headers['x-user-id'] = user.id;
+
       const res = await fetch('/api/problems/results', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           problem_id: id,
           is_live: newLiveState,
@@ -432,7 +440,7 @@ export default function ProblemStatementDetailPage() {
           video_url: winnerVideoUrl || problemResult?.video_url || '',
           mentor_remarks: winnerRemarks || problemResult?.mentor_remarks || '',
           award_title: winnerAwardTitle || problemResult?.award_title || '1st Place • Faculty Research Excellence Award',
-          author_id: user?.id,
+          author_id: user?.id || problem?.author_id,
         }),
       });
 
@@ -448,7 +456,7 @@ export default function ProblemStatementDetailPage() {
           : 'Results have been reverted to private faculty draft mode.'
       );
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error toggling live status.');
+      setActionError(err instanceof Error ? err.message : 'Error toggling live status.');
     } finally {
       setIsTogglingLive(false);
     }
@@ -460,10 +468,17 @@ export default function ProblemStatementDetailPage() {
     if (!id) return;
     setIsSavingWinner(true);
     setActionSuccess(null);
+    setActionError(null);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (user?.id) headers['x-user-id'] = user.id;
+
       const res = await fetch('/api/problems/results', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           problem_id: id,
           is_live: problemResult?.is_live ?? false,
@@ -475,7 +490,7 @@ export default function ProblemStatementDetailPage() {
           video_url: winnerVideoUrl.trim(),
           mentor_remarks: winnerRemarks.trim(),
           award_title: winnerAwardTitle.trim(),
-          author_id: user?.id,
+          author_id: user?.id || problem?.author_id,
         }),
       });
 
@@ -487,7 +502,7 @@ export default function ProblemStatementDetailPage() {
       setProblemResult(resData.result);
       setActionSuccess('🏆 Result Winner updated! You can now tap "Tap Live / Publish" to reveal to students.');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error saving winner.');
+      setActionError(err instanceof Error ? err.message : 'Error saving winner.');
     } finally {
       setIsSavingWinner(false);
     }
@@ -613,6 +628,21 @@ export default function ProblemStatementDetailPage() {
           </div>
           <button
             onClick={() => setActionSuccess(null)}
+            className="text-slate-300 hover:text-white text-xs font-semibold underline ml-3"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="mb-6 p-4 rounded-xl bg-red-500/15 border border-red-500/40 flex items-center justify-between text-xs text-red-200 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span className="font-medium">{actionError}</span>
+          </div>
+          <button
+            onClick={() => setActionError(null)}
             className="text-slate-300 hover:text-white text-xs font-semibold underline ml-3"
           >
             Dismiss
