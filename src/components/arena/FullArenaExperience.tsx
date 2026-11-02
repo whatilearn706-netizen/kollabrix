@@ -1005,6 +1005,19 @@ export function FullArenaExperience({
 
   // Tag toggle helper
   const handleToggleTag = (tagId: string) => {
+    // In Web Dev mode, HTML is the mandatory DOM foundation and CANNOT be unticked!
+    if (arena === 'web_dev') {
+      if (tagId === 'html') return; // Locked on HTML
+      if (selectedTags.includes(tagId)) {
+        const next = selectedTags.filter((t) => t !== tagId);
+        setSelectedTags(next.includes('html') ? next : ['html', ...next]);
+      } else {
+        const next = [...selectedTags, tagId];
+        setSelectedTags(next.includes('html') ? next : ['html', ...next]);
+      }
+      return;
+    }
+
     if (selectedTags.includes(tagId)) {
       if (selectedTags.length > 1) {
         setSelectedTags(selectedTags.filter((t) => t !== tagId));
@@ -3085,33 +3098,39 @@ export function FullArenaExperience({
             </div>
 
             {/* Arena-Specific Language / Topic Checkboxes */}
-            {/* 1. WEB DEV CHECKBOXES */}
+            {/* 1. WEB DEV TOPICS (HTML REQUIRED / LOCKED • CAN TOGGLE CSS & JAVASCRIPT) */}
             {arena === 'web_dev' && (
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                    Web Dev Topics (Pick 1, 2, or All 3):
+                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Web Dev Topics (HTML Locked • Customize CSS & JS):</span>
                   </span>
-                  <span className="text-[11px] font-mono text-cyan-400">
-                    {selectedTags.length} selected
+                  <span className="text-[11px] font-mono text-cyan-400 font-bold">
+                    {selectedTags.includes('html') ? selectedTags.length : selectedTags.length + 1} selected
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
-                    { id: 'html', label: 'HTML', desc: 'Structure & semantic elements' },
-                    { id: 'css', label: 'CSS', desc: 'Flexbox, grids & styling' },
-                    { id: 'javascript', label: 'JavaScript', desc: 'DOM clicks & logic' },
+                    { id: 'html', label: 'HTML', desc: 'Structure & semantic elements', isMandatory: true },
+                    { id: 'css', label: 'CSS', desc: 'Flexbox, grids & styling', isMandatory: false },
+                    { id: 'javascript', label: 'JavaScript', desc: 'DOM clicks & logic', isMandatory: false },
                   ].map((topic) => {
-                    const isChecked = selectedTags.includes(topic.id);
+                    const isChecked = topic.isMandatory || selectedTags.includes(topic.id);
                     return (
                       <div
                         key={topic.id}
-                        onClick={() => handleToggleTag(topic.id)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
-                          isChecked
-                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        onClick={() => {
+                          if (topic.isMandatory) return; // Cannot untick HTML
+                          handleToggleTag(topic.id);
+                        }}
+                        className={`p-3 rounded-xl border transition-all flex items-start gap-2.5 select-none ${
+                          topic.isMandatory
+                            ? 'bg-cyan-950/60 border-cyan-400/80 text-white shadow-sm cursor-default'
+                            : isChecked
+                            ? 'bg-cyan-950/50 border-cyan-400 text-white shadow-sm cursor-pointer'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 cursor-pointer'
                         }`}
                       >
                         <div
@@ -3123,8 +3142,15 @@ export function FullArenaExperience({
                         >
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
-                        <div>
-                          <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
+                            {topic.isMandatory && (
+                              <span className="text-[9px] font-mono uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold">
+                                Locked
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-400">{topic.desc}</p>
                         </div>
                       </div>
