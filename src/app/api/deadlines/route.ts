@@ -31,18 +31,40 @@ export async function GET() {
           if (targetDate && !existingTitles.has(h.title.toLowerCase().trim())) {
             existingTitles.add(h.title.toLowerCase().trim());
             const diff = new Date(targetDate).getTime() - Date.now();
+
+            let isSponsored = Boolean(h.is_sponsored || h.is_enterprise);
+            let companyName = h.company_name;
+            let glowColor = h.glow_color;
+
+            if (h.description && h.description.includes('<!-- HACKATHON_META:')) {
+              try {
+                const rawMeta = h.description.split('<!-- HACKATHON_META:')[1]?.split('-->')[0];
+                if (rawMeta) {
+                  const parsed = JSON.parse(rawMeta);
+                  if (parsed.is_sponsored || parsed.is_enterprise) isSponsored = true;
+                  if (parsed.company_name) companyName = parsed.company_name;
+                  if (parsed.glow_color) glowColor = parsed.glow_color;
+                }
+              } catch {}
+            }
+
             aggregated.push({
               id: `hack-${h.id}`,
               title: h.title,
-              organizer: h.organizer || 'Kollabrix Campus Hackathons',
+              organizer: h.organizer || (companyName ? `${companyName} Recruitment` : 'Kollabrix Campus Hackathons'),
               type: 'hackathon',
               deadlineDate: new Date(targetDate).toISOString(),
               category: (Array.isArray(h.themes) && h.themes[0]) || 'Collegiate Hackathon',
-              description: h.description || 'Rapid collegiate hackathon sprint.',
+              description: h.description ? h.description.split('<!-- HACKATHON_META:')[0].trim() : 'Rapid collegiate hackathon sprint.',
               link: `/hackathons/${h.id}`,
               prize: h.prize_pool || undefined,
               urgency: diff > 0 && diff < 3 * 86400000 ? 'urgent' : 'upcoming',
-              tags: ['Hackathon', ...(Array.isArray(h.themes) ? h.themes : ['Sprint'])],
+              tags: isSponsored
+                ? ['Sponsored', companyName || 'Enterprise', ...(Array.isArray(h.themes) ? h.themes : ['Sprint'])]
+                : ['Hackathon', ...(Array.isArray(h.themes) ? h.themes : ['Sprint'])],
+              is_sponsored: isSponsored,
+              company_name: companyName,
+              glow_color: glowColor,
             });
           }
         }

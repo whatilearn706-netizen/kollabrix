@@ -45,17 +45,63 @@ export function HackathonCard({
   const isClosed = diffDays < 0;
   const isUrgent = diffDays >= 0 && diffDays <= 7;
 
+  let isSponsored = Boolean(hackathon.is_sponsored || hackathon.is_enterprise);
+  let companyName = hackathon.company_name;
+  let glowColor = hackathon.glow_color || 'gold';
+  let recruitmentPerks = hackathon.recruitment_perks || [];
+
+  if (hackathon.description && hackathon.description.includes('<!-- HACKATHON_META:')) {
+    try {
+      const rawMeta = hackathon.description.split('<!-- HACKATHON_META:')[1]?.split('-->')[0];
+      if (rawMeta) {
+        const parsed = JSON.parse(rawMeta);
+        if (parsed.is_sponsored || parsed.is_enterprise) isSponsored = true;
+        if (parsed.company_name) companyName = parsed.company_name;
+        if (parsed.glow_color) glowColor = parsed.glow_color;
+        if (Array.isArray(parsed.recruitment_perks)) recruitmentPerks = parsed.recruitment_perks;
+      }
+    } catch {}
+  }
+
+  const glowStyles = !isSponsored
+    ? ''
+    : glowColor === 'cyan'
+    ? 'border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.35)] ring-1 ring-cyan-400/50'
+    : glowColor === 'purple'
+    ? 'border-purple-400/80 shadow-[0_0_25px_rgba(168,85,247,0.35)] ring-1 ring-purple-400/50'
+    : glowColor === 'emerald'
+    ? 'border-emerald-400/80 shadow-[0_0_25px_rgba(16,185,129,0.35)] ring-1 ring-emerald-400/50'
+    : 'border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.35)] ring-1 ring-amber-400/50';
+
   return (
     <div
       style={{
         backgroundColor: theme.surfaceColor,
-        borderColor: theme.borderColor,
+        borderColor: !isSponsored ? theme.borderColor : undefined,
         borderRadius: theme.borderRadius,
       }}
-      className="site-card card-hover-lift border p-6 flex flex-col justify-between group relative overflow-hidden space-y-4 shadow-sm"
+      className={`site-card card-hover-lift border p-6 flex flex-col justify-between group relative overflow-hidden space-y-4 shadow-sm transition-all duration-300 ${glowStyles}`}
     >
-      {/* Top glowing accent gradient bar on hover */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+      {/* Top glowing accent gradient bar */}
+      <div
+        className={`absolute inset-x-0 top-0 h-1.5 transition-opacity duration-300 pointer-events-none z-10 ${
+          isSponsored
+            ? 'opacity-100 bg-gradient-to-r from-amber-400 via-rose-500 to-indigo-500'
+            : 'bg-gradient-to-r from-amber-500 via-rose-500 to-violet-500 opacity-0 group-hover:opacity-100'
+        }`}
+      />
+
+      {isSponsored && (
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 -mx-2 -mt-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-rose-500/15 to-transparent border border-amber-500/30 text-amber-300 text-[11px] font-black uppercase tracking-wider">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            🏢 {companyName || 'Enterprise'} Sponsored Spotlight
+          </span>
+          <span className="text-[10px] text-amber-200/90 font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">
+            Hiring Track
+          </span>
+        </div>
+      )}
 
       {hackathon.banner_url ? (
         <div className="-mx-6 -mt-6 mb-1 h-32 overflow-hidden relative border-b border-white/10">

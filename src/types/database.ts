@@ -330,6 +330,12 @@ export interface Hackathon {
   created_at: string;
   updated_at: string;
   is_saved?: boolean;
+  is_sponsored?: boolean;
+  is_enterprise?: boolean;
+  company_name?: string;
+  company_logo?: string | null;
+  glow_color?: 'gold' | 'cyan' | 'purple' | 'emerald';
+  recruitment_perks?: string[];
 }
 
 export interface SavedHackathon {

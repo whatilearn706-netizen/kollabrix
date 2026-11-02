@@ -3,7 +3,11 @@ import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons, DeletedHackathonsData } from '@/lib/admin/hackathonSettings';
-import { getMasterControlRecord, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
+import {
+  getMasterControlRecord,
+  getMasterControlSubkey,
+  updateMasterControlSubkey,
+} from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 
@@ -290,6 +294,129 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, hackathonId } = body;
+
+    if (action === 'create_sponsored') {
+      const client = auth.dbClient;
+      const {
+        company_name,
+        title,
+        description = '',
+        mode = 'Online',
+        location = 'Global Online Hub',
+        start_date,
+        end_date,
+        registration_deadline,
+        results_date,
+        prize_pool = '₹5,00,000 + Direct PPI Fast-Track Interviews',
+        recruitment_perks,
+        glow_color = 'gold',
+        themes = ['Enterprise Challenge', 'AI/Cloud Architecture'],
+        banner_url,
+        access_type = 'public',
+      } = body;
+
+      if (!company_name || !title) {
+        return NextResponse.json({ error: 'Company name and Hackathon Title are required.' }, { status: 400 });
+      }
+
+      const joinCode = `corp-${company_name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5)}-${Math.random().toString(36).substring(2, 6)}`;
+      const perksArray = Array.isArray(recruitment_perks)
+        ? recruitment_perks
+        : typeof recruitment_perks === 'string'
+        ? recruitment_perks.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : ['Fast-track interview', 'Direct PPI for top squads', '1:1 Tech Mentorship'];
+
+      const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
+        is_sponsored: true,
+        is_enterprise: true,
+        company_name: company_name.trim(),
+        glow_color,
+        recruitment_perks: perksArray,
+        prize_pool: prize_pool.trim(),
+        access_type,
+        join_code: joinCode,
+        min_team_size: 1,
+        max_team_size: 4,
+        results_date: results_date ? new Date(results_date).toISOString() : null,
+      })} -->`;
+
+      const newHackathonPayload = {
+        title: title.trim(),
+        organizer: `${company_name.trim()} Campus Innovation & Recruitment`,
+        description: description.trim() + metaComment,
+        mode,
+        location: location.trim() || 'Global Online Hub',
+        start_date: new Date(start_date || Date.now()).toISOString(),
+        end_date: end_date ? new Date(end_date).toISOString() : null,
+        registration_deadline: new Date(registration_deadline || Date.now() + 14 * 86400000).toISOString(),
+        results_date: results_date ? new Date(results_date).toISOString() : null,
+        eligibility: 'Open to all college students & engineering developers',
+        themes: Array.isArray(themes) && themes.length > 0 ? themes : ['Enterprise Innovation', 'Cloud/AI Architecture'],
+        prize_pool: prize_pool.trim() || '₹5,00,000 + Direct PPI Interviews',
+        website_url: `https://kollabrix.in/h/${joinCode}`,
+        banner_url: banner_url?.trim() || null,
+        is_verified: true,
+        status: 'Published',
+        creator_id: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+      };
+
+      let insertedRecord: any = null;
+      if (isSupabaseConfigured()) {
+        try {
+          const { data, error } = await client
+            .from('hackathons')
+            .insert(newHackathonPayload)
+            .select('*')
+            .single();
+          if (!error && data) {
+            insertedRecord = data;
+          }
+        } catch (dbErr) {
+          console.warn('DB insert fallback note:', dbErr);
+        }
+      }
+
+      if (!insertedRecord) {
+        insertedRecord = {
+          id: `hack-corp-${Date.now()}`,
+          ...newHackathonPayload,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          join_code: joinCode,
+          is_sponsored: true,
+          is_enterprise: true,
+          company_name: company_name.trim(),
+          glow_color,
+          recruitment_perks: perksArray,
+        };
+      }
+
+      // Also persist to masterConfigStorage 'hackathons' list so it syncs universally across deadlines and feeds
+      try {
+        const rawMaster = await getMasterControlSubkey<any[]>('hackathons', []);
+        const masterList = Array.isArray(rawMaster) ? rawMaster : [];
+        await updateMasterControlSubkey('hackathons', [insertedRecord, ...masterList]);
+      } catch (masterErr) {
+        console.warn('Master config update note:', masterErr);
+      }
+
+      // Record Admin Audit Log
+      await recordAdminAuditLog({
+        actorEmail: auth.user?.email || 'admin@kollabrix.in',
+        actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        action: 'CREATE_SPONSORED_HACKATHON',
+        targetType: 'hackathon',
+        targetId: insertedRecord.id,
+        details: { company_name, title, prize_pool, glow_color },
+        outcome: 'SUCCESS',
+      });
+
+      return NextResponse.json({
+        success: true,
+        hackathon: insertedRecord,
+        message: `Sponsored hackathon "${title}" for ${company_name} is now live with priority glowing spotlight!`,
+      });
+    }
 
     if (action === 'restore' && hackathonId) {
       const client = auth.dbClient;
