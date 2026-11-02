@@ -419,29 +419,69 @@ async function executeWithJudge0(language: string, code: string, stdin: string, 
   const b64Source = Buffer.from(finalCode).toString('base64');
   const b64Stdin = Buffer.from(stdin || '').toString('base64');
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6500);
+  const privateUrl =
+    process.env.PRIVATE_JUDGE0_URL ||
+    'https://api.kollabrix.in/submissions?base64_encoded=true&wait=true';
+  const publicUrl =
+    'https://ce.judge0.com/submissions?base64_encoded=true&wait=true';
 
-  const res = await fetch('https://ce.judge0.com/submissions?base64_encoded=true&wait=true', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 KollabrixJudge/1.0',
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify({
-      source_code: b64Source,
-      language_id: langId,
-      stdin: b64Stdin,
-      cpu_time_limit: 3.0,
-      memory_limit: 256000,
-    }),
-    signal: controller.signal,
-  });
-  clearTimeout(timeoutId);
+  let res: Response | null = null;
+  let usedEngine = 'kollabrix-aic-cloud';
 
-  if (!res.ok) {
-    throw new Error(`Judge0 returned HTTP ${res.status}`);
+  // 1. Try dedicated AIC Cloud private compiler first (0ms queue, dedicated resources)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6500);
+    res = await fetch(privateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 KollabrixJudge/1.0',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        source_code: b64Source,
+        language_id: langId,
+        stdin: b64Stdin,
+        cpu_time_limit: 3.0,
+        memory_limit: 256000,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) res = null;
+  } catch (e) {
+    res = null;
+  }
+
+  // 2. Fallback to public Judge0 if private server is temporarily unreachable
+  if (!res) {
+    usedEngine = 'judge0-ce-fallback';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6500);
+    res = await fetch(publicUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 KollabrixJudge/1.0',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        source_code: b64Source,
+        language_id: langId,
+        stdin: b64Stdin,
+        cpu_time_limit: 3.0,
+        memory_limit: 256000,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Judge0 returned HTTP ${res.status}`);
+    }
   }
 
   const result = await res.json();
@@ -460,7 +500,7 @@ async function executeWithJudge0(language: string, code: string, stdin: string, 
     stdout,
     stderr: errorMsg,
     executionTimeMs: Date.now() - startTime,
-    engine: 'judge0-fast',
+    engine: usedEngine,
   };
 }
 
