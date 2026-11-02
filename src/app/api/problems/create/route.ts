@@ -92,9 +92,15 @@ export async function POST(request: NextRequest) {
       ? bodySkills
       : ['Problem Solving'];
 
-    const resolvedTeamSize = team_size || (min_team_size && max_team_size ? `${min_team_size} - ${max_team_size} Students` : '2 - 4 Students');
+    const resolvedMin = min_team_size || (team_size?.includes('1 - 2') ? 1 : (team_size?.includes('Solo') ? 1 : 2));
+    const resolvedMax = max_team_size || (team_size?.includes('1 - 2') ? 2 : (team_size?.includes('Solo') ? 1 : 4));
+    const resolvedTeamSize = team_size || `${resolvedMin} - ${resolvedMax} Students`;
 
-
+    const metaComment = `\n\n<!-- PROBLEM_META:${JSON.stringify({
+      team_size: resolvedTeamSize,
+      min_team_size: resolvedMin,
+      max_team_size: resolvedMax,
+    })} -->`;
 
     if (!isSupabaseConfigured()) {
       const mockId = `prob-mock-${Date.now()}`;
@@ -110,8 +116,8 @@ export async function POST(request: NextRequest) {
           difficulty,
           deadline: deadline || null,
           status,
-          min_team_size: min_team_size || 2,
-          max_team_size: max_team_size || 4,
+          min_team_size: resolvedMin,
+          max_team_size: resolvedMax,
           team_size: resolvedTeamSize,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -153,7 +159,7 @@ export async function POST(request: NextRequest) {
     const dbPayload: any = {
       author_id: authorId,
       title: title.trim(),
-      description: description.trim(),
+      description: description.trim() + metaComment,
       category,
       required_skills: resolvedSkills,
       difficulty,
@@ -170,8 +176,8 @@ export async function POST(request: NextRequest) {
         .from('problem_statements')
         .insert({
           ...dbPayload,
-          min_team_size: min_team_size || null,
-          max_team_size: max_team_size || null,
+          min_team_size: resolvedMin,
+          max_team_size: resolvedMax,
           team_size: resolvedTeamSize,
         })
         .select(`
@@ -230,7 +236,10 @@ export async function POST(request: NextRequest) {
 
     if (!insertError && created) {
       try {
-        const { data: metaRow } = await defaultClient
+        const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const adminClient = createClient(supabaseUrl, adminKey, { auth: { persistSession: false } });
+
+        const { data: metaRow } = await adminClient
           .from('platform_settings')
           .select('value')
           .eq('key', 'problem_statement_metadata')
@@ -239,11 +248,11 @@ export async function POST(request: NextRequest) {
         const currentMeta = (metaRow?.value && typeof metaRow.value === 'object') ? metaRow.value : {};
         currentMeta[created.id] = {
           team_size: resolvedTeamSize,
-          min_team_size: min_team_size || 1,
-          max_team_size: max_team_size || 2,
+          min_team_size: resolvedMin,
+          max_team_size: resolvedMax,
         };
 
-        await defaultClient.from('platform_settings').upsert({
+        await adminClient.from('platform_settings').upsert({
           key: 'problem_statement_metadata',
           value: currentMeta,
           description: 'Problem statement metadata (team size ranges, faculty limits)',

@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
       endDate,
       registrationDeadline,
       submissionDeadline,
+      resultsDate,
+      results_date,
       eligibility = 'Open to all college students',
       themes = [],
       prizePool,
@@ -119,12 +121,15 @@ export async function POST(request: NextRequest) {
 
     const resolvedBannerUrl = bannerUrl?.trim() || banner_url?.trim() || null;
 
+    const resolvedResultsDate = resultsDate ? new Date(resultsDate).toISOString() : (results_date ? new Date(results_date).toISOString() : null);
+
     // Embed resilient metadata comment (safe fields only; passwords remain strictly in protected columns)
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
       access_type: accessType,
       join_code: joinCode,
       min_team_size: minTeamSize,
       max_team_size: maxTeamSize,
+      results_date: resolvedResultsDate,
       banner_url: resolvedBannerUrl,
     })} -->`;
 
@@ -139,6 +144,7 @@ export async function POST(request: NextRequest) {
       end_date: endDate ? new Date(endDate).toISOString() : null,
       registration_deadline: new Date(registrationDeadline).toISOString(),
       submission_deadline: submissionDeadline ? new Date(submissionDeadline).toISOString() : null,
+      results_date: resolvedResultsDate,
       eligibility: eligibility.trim(),
       themes,
       prize_pool: prizePool?.trim() || null,

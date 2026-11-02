@@ -175,16 +175,23 @@ export default function NewProblemStatementPage() {
         }
       }
 
+      const resolvedTeamSize = teamSize || `${minTeamSize} – ${maxTeamSize} Students`;
+      const metaComment = `\n\n<!-- PROBLEM_META:${JSON.stringify({
+        team_size: resolvedTeamSize,
+        min_team_size: minTeamSize,
+        max_team_size: maxTeamSize,
+      })} -->`;
+
       const payload = {
         author_id: user.id,
         title: title.trim(),
-        description: description.trim(),
+        description: description.trim() + metaComment,
         category,
         required_skills: requiredSkills,
         difficulty,
         deadline: deadline || null,
         status,
-        team_size: teamSize,
+        team_size: resolvedTeamSize,
         min_team_size: minTeamSize,
         max_team_size: maxTeamSize,
       };

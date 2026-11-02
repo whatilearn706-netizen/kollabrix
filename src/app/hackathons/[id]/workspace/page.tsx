@@ -32,6 +32,7 @@ import {
   Clock,
   Users,
   Shield,
+  ShieldCheck,
   Lock,
   Globe,
   Sparkles,
@@ -40,6 +41,7 @@ import {
   Video,
   FileText,
   PlusCircle,
+  Plus,
   Copy,
   Check,
   CheckCircle2,
@@ -150,6 +152,14 @@ export default function HackathonWorkspacePage() {
   const [copiedTeamCode, setCopiedTeamCode] = useState(false);
   const [copiedTeamCodeId, setCopiedTeamCodeId] = useState<string | null>(null);
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
+
+  // Organizer manual team registration & deletion state
+  const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
+  const [manualTeamName, setManualTeamName] = useState('');
+  const [manualTeamDesc, setManualTeamDesc] = useState('');
+  const [manualChallengeId, setManualChallengeId] = useState('');
+  const [isDeletingTeamId, setIsDeletingTeamId] = useState<string | null>(null);
+  const [isCreatingManualTeam, setIsCreatingManualTeam] = useState(false);
 
   // Role checks
   const isOrganizer = Boolean(
@@ -548,36 +558,56 @@ export default function HackathonWorkspacePage() {
         } catch {}
       }
 
-      setTeams(allTeams);
+      // Check if current user is an organizer / faculty host
+      const userIsOrganizer = Boolean(
+        user && (
+          currentHack?.creator_id === user.id ||
+          participants.some((p) => p.user_id === user.id && p.role === 'organizer') ||
+          profile?.role === 'teacher' ||
+          (profile as any)?.role === 'faculty' ||
+          Boolean(profile?.faculty_verified)
+        )
+      );
 
-      if (user) {
-        const userTeam = allTeams.find((t) =>
-          t.members?.some((m) => m.user_id === user.id)
+      if (userIsOrganizer) {
+        // Organizers manage teams — they do not have a participant builder team.
+        // Clean out any phantom auto-created organizer team.
+        allTeams = allTeams.filter(
+          (t) => t.leader_id !== user?.id || !t.team_name.toLowerCase().includes((user?.email?.split('@')[0] || 'kollabrix').toLowerCase())
         );
-        setMyTeam(userTeam || null);
+        setTeams(allTeams);
+        setMyTeam(null);
+      } else {
+        setTeams(allTeams);
+        if (user) {
+          const userTeam = allTeams.find((t) =>
+            t.members?.some((m) => m.user_id === user.id)
+          );
+          setMyTeam(userTeam || null);
 
-        // If user has team, fetch team submission
-        if (userTeam) {
-          try {
-            const { data: subData } = await supabase
-              .from('hackathon_submissions')
-              .select('*')
-              .eq('team_id', userTeam.id)
-              .maybeSingle();
+          // If user has team, fetch team submission
+          if (userTeam) {
+            try {
+              const { data: subData } = await supabase
+                .from('hackathon_submissions')
+                .select('*')
+                .eq('team_id', userTeam.id)
+                .maybeSingle();
 
-            if (subData) {
-              setMySubmission(subData as HackathonSubmission);
-              setSubTitle(subData.title || '');
-              setSubPitch(subData.pitch || '');
-              setSubProblem(subData.problem_statement || '');
-              setSubSolution(subData.solution_description || '');
-              setSubTechStack((subData.tech_stack || []).join(', '));
-              setSubRepoUrl(subData.repository_url || '');
-              setSubDemoUrl(subData.demo_url || '');
-              setSubVideoUrl(subData.video_url || '');
-              setSubDocsUrl(subData.documentation_url || '');
-            }
-          } catch {}
+              if (subData) {
+                setMySubmission(subData as HackathonSubmission);
+                setSubTitle(subData.title || '');
+                setSubPitch(subData.pitch || '');
+                setSubProblem(subData.problem_statement || '');
+                setSubSolution(subData.solution_description || '');
+                setSubTechStack((subData.tech_stack || []).join(', '));
+                setSubRepoUrl(subData.repository_url || '');
+                setSubDemoUrl(subData.demo_url || '');
+                setSubVideoUrl(subData.video_url || '');
+                setSubDocsUrl(subData.documentation_url || '');
+              }
+            } catch {}
+          }
         }
       }
 
@@ -709,6 +739,80 @@ export default function HackathonWorkspacePage() {
       supabase.removeChannel(channel);
     };
   }, [hackathonId, hackathon?.id, loadWorkspace]);
+
+  // Handle Organizer Delete Team
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Are you sure you want to delete team "${teamName}"? All its member registrations and deliverables will be removed.`)) {
+      return;
+    }
+    try {
+      setIsDeletingTeamId(teamId);
+      const res = await fetch('/api/hackathons/teams/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hackathonId: hackathon?.id || hackathonId, teamId, userId: user?.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTeams((prev) => prev.filter((t) => t.id !== teamId));
+        setAllSubmissions((prev) => prev.filter((s) => s.team_id !== teamId));
+        if (typeof window !== 'undefined') {
+          const k1 = `teamforge_teams_${hackathon?.id}`;
+          const k2 = `teamforge_teams_${hackathonId}`;
+          try {
+            const r1 = JSON.parse(localStorage.getItem(k1) || '[]').filter((t: any) => t.id !== teamId);
+            const r2 = JSON.parse(localStorage.getItem(k2) || '[]').filter((t: any) => t.id !== teamId);
+            localStorage.setItem(k1, JSON.stringify(r1));
+            localStorage.setItem(k2, JSON.stringify(r2));
+          } catch {}
+        }
+      } else {
+        alert(data.error || 'Failed to delete team.');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Error deleting team.');
+    } finally {
+      setIsDeletingTeamId(null);
+    }
+  };
+
+  // Handle Organizer Manual Add Team
+  const handleManualAddTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualTeamName.trim()) return;
+    try {
+      setIsCreatingManualTeam(true);
+      const res = await fetch('/api/hackathons/teams/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hackathonId: hackathon?.id || hackathonId,
+          teamName: manualTeamName.trim(),
+          description: manualTeamDesc.trim(),
+          challengeId: manualChallengeId || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.team) {
+        const fullTeam: TeamWithMembers = {
+          ...data.team,
+          members: [],
+          challenge: challenges.find((c) => c.id === manualChallengeId),
+        };
+        setTeams((prev) => [fullTeam, ...prev]);
+        setIsAddTeamModalOpen(false);
+        setManualTeamName('');
+        setManualTeamDesc('');
+        setManualChallengeId('');
+      } else {
+        alert(data.error || 'Could not register team.');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Failed to register team.');
+    } finally {
+      setIsCreatingManualTeam(false);
+    }
+  };
 
   // Handle Create Team
   const handleCreateTeam = async (e: React.FormEvent) => {
@@ -1359,7 +1463,7 @@ export default function HackathonWorkspacePage() {
                 )}
               </button>
 
-              {/* Tab 3: My Squad */}
+              {/* Tab 3: Squads / Team */}
               <button
                 type="button"
                 onClick={() => setActiveTab('team')}
@@ -1384,22 +1488,28 @@ export default function HackathonWorkspacePage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-semibold truncate leading-tight">
-                      My Squad {myTeam ? `(${myTeam.team_name})` : '(Register)'}
+                      {isOrganizer
+                        ? `Squads (${teams.length})`
+                        : (myTeam ? `My Squad (${myTeam.team_name})` : 'My Squad')}
                     </div>
                     <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
-                      {myTeam ? `${myTeam.members?.length || 1} team members` : 'Form or join squad'}
+                      {isOrganizer
+                        ? 'Manage builder squads'
+                        : (myTeam ? `${myTeam.members?.length || 1} team members` : 'Form or join squad')}
                     </div>
                   </div>
                 </div>
 
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ${
-                    myTeam
+                    isOrganizer
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold'
+                      : myTeam
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold'
                       : 'bg-charcoal-800 text-slate-400 border border-charcoal-700'
                   }`}
                 >
-                  {myTeam ? 'Formed' : 'Join'}
+                  {isOrganizer ? `${teams.length}` : (myTeam ? 'Formed' : 'Join')}
                 </span>
               </button>
 
@@ -1428,15 +1538,21 @@ export default function HackathonWorkspacePage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-semibold truncate leading-tight">
-                      Deliverables {mySubmission?.status === 'submitted' ? '✅' : ''}
+                      {isOrganizer
+                        ? `Deliverables (${allSubmissions.length})`
+                        : `Deliverables ${mySubmission?.status === 'submitted' ? '✅' : ''}`}
                     </div>
                     <div className="hidden lg:block text-[10px] text-slate-500 font-normal truncate mt-0.5">
-                      Repo links & final demo
+                      {isOrganizer ? 'Review submitted code' : 'Repo links & final demo'}
                     </div>
                   </div>
                 </div>
 
-                {mySubmission?.status === 'submitted' ? (
+                {isOrganizer ? (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                    {allSubmissions.length} Review
+                  </span>
+                ) : mySubmission?.status === 'submitted' ? (
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
                     Submitted
                   </span>
@@ -1828,11 +1944,34 @@ export default function HackathonWorkspacePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: MY TEAM & FORMATION */}
+      {/* TAB 3: SQUADS & FORMATION */}
       {/* ========================================================================= */}
       {activeTab === 'team' && (
         <div className="space-y-6">
-          {myTeam ? (
+          {isOrganizer ? (
+            /* Organizer Squad Management Console */
+            <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold text-brand-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-brand-400" />
+                  Organizer Control Console
+                </div>
+                <h3 className="text-2xl font-bold text-white">Registered Student Teams ({teams.length})</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Manage student teams, inspect private squad invite codes, add custom teams, or delete non-compliant teams.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsAddTeamModalOpen(true)}
+                leftIcon={<Plus className="w-4 h-4" />}
+                className="bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm"
+              >
+                + Add Team Manually
+              </Button>
+            </div>
+          ) : myTeam ? (
             /* Student has a team */
             <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-charcoal-800">
@@ -2225,9 +2364,45 @@ export default function HackathonWorkspacePage() {
                           </div>
                         </div>
 
-                        {/* Invite Code Box & Join Actions */}
+                        {/* Invite Code Box & Join / Manage Actions */}
                         <div className="mt-4 pt-3.5 border-t border-charcoal-800/80 space-y-2.5">
-                          {isMyTeamCard ? (
+                          {isOrganizer ? (
+                            /* Organizer View: Always see private team invite code */
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-2 bg-charcoal-950/90 border border-charcoal-750 px-3 py-2 rounded-xl">
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="text-[11px] text-amber-300 font-semibold">Invite Code:</span>
+                                  <span className="font-mono text-xs font-bold text-white tracking-widest">
+                                    {t.invite_code}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (t.invite_code) {
+                                      navigator.clipboard.writeText(t.invite_code);
+                                      setCopiedTeamCodeId(t.id);
+                                      setTimeout(() => setCopiedTeamCodeId(null), 2000);
+                                    }
+                                  }}
+                                  className="text-slate-400 hover:text-white p-1 rounded transition-colors flex items-center gap-1 text-[11px]"
+                                  title="Copy Invite Code"
+                                >
+                                  {isCopied ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span className="text-emerald-400 font-semibold">Copied</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          ) : isMyTeamCard ? (
                             /* Only the creator / member of this team can see and copy their team's code */
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between gap-2 bg-charcoal-950/90 border border-brand-500/40 px-3 py-2 rounded-xl">
@@ -2279,14 +2454,40 @@ export default function HackathonWorkspacePage() {
                             </div>
                           )}
 
-                          {/* Action Button for non-members */}
-                          {!myTeam ? (
+                          {/* Action Button: Organizer vs Participant */}
+                          {isOrganizer ? (
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                              <Link href={`/projects/${t.id}/workspace`} className="flex-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full text-xs border-charcoal-750 text-slate-300 hover:text-white"
+                                  leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}
+                                >
+                                  Workspace
+                                </Button>
+                              </Link>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isDeletingTeamId === t.id}
+                                isLoading={isDeletingTeamId === t.id}
+                                onClick={() => handleDeleteTeam(t.id, t.team_name)}
+                                className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20"
+                                leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          ) : !myTeam ? (
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               className="w-full text-xs font-semibold"
-                              disabled={isTeamFull}
+                              disabled={isTeamFull || isClosed}
                               onClick={() => {
                                 const input = document.querySelector('input[placeholder="e.g. 7X9K2P"]') as HTMLInputElement;
                                 if (input) {
@@ -2295,7 +2496,7 @@ export default function HackathonWorkspacePage() {
                                 }
                               }}
                             >
-                              {isTeamFull ? 'Team Full' : 'Join with Code'}
+                              {isClosed ? 'Event Closed' : isTeamFull ? 'Team Full' : 'Join with Code'}
                             </Button>
                           ) : isMyTeamCard ? (
                             <div className="text-center py-1 text-xs text-brand-400 font-semibold flex items-center justify-center gap-1.5">
@@ -2318,7 +2519,182 @@ export default function HackathonWorkspacePage() {
       {/* ========================================================================= */}
       {activeTab === 'submission' && (
         <div className="space-y-6">
-          {!myTeam ? (
+          {isOrganizer ? (
+            /* Organizer & Jury Deliverables Review Console */
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-amber-400" />
+                    Organizer Review Console
+                  </div>
+                  <h3 className="text-2xl font-bold text-white">Submitted Student Deliverables ({allSubmissions.length})</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Review repository links, live prototypes, video pitches, and evaluate submissions.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setActiveTab('judging')}
+                  leftIcon={<Award className="w-4 h-4 text-white" />}
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold whitespace-nowrap shadow-sm"
+                >
+                  Open Jury Scoring &amp; Leaderboard
+                </Button>
+              </div>
+
+              {allSubmissions.length === 0 ? (
+                <div className="p-12 rounded-2xl border border-dashed border-charcoal-800 bg-charcoal-900/30 text-center space-y-3">
+                  <FileText className="w-10 h-10 text-slate-500 mx-auto" />
+                  <h4 className="text-base font-bold text-white">No Deliverables Submitted Yet</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Participating student teams are currently developing in their project workspaces. Submitted deliverables will appear here in real-time.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5">
+                  {allSubmissions.map((sub: HackathonSubmission & { team_name?: string }) => {
+                    const team = teams.find((t) => t.id === sub.team_id);
+                    const chal = challenges.find((c) => c.id === team?.challenge_id);
+                    return (
+                      <div
+                        key={sub.id}
+                        className="p-6 rounded-2xl border border-charcoal-800 bg-charcoal-900/80 space-y-4 hover:border-charcoal-700 transition-all"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-charcoal-800">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                                Team: {team?.team_name || sub.title || 'Student Squad'}
+                              </span>
+                              {chal?.title && (
+                                <span className="text-[11px] text-slate-400">
+                                  Track: <strong className="text-slate-200">{chal.title}</strong>
+                                </span>
+                              )}
+                              <span
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                                  sub.status === 'submitted'
+                                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                                    : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                                }`}
+                              >
+                                {sub.status === 'submitted' ? 'Final Submission' : 'Draft'}
+                              </span>
+                            </div>
+                            <h4 className="text-xl font-bold text-white">{sub.title}</h4>
+                            {sub.pitch && <p className="text-xs text-slate-300 italic mt-0.5">{sub.pitch}</p>}
+                          </div>
+
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedSubmissionForEval({ ...sub, team_name: team?.team_name });
+                              setActiveTab('judging');
+                            }}
+                            leftIcon={<Award className="w-3.5 h-3.5" />}
+                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold whitespace-nowrap text-xs"
+                          >
+                            Score Deliverable
+                          </Button>
+                        </div>
+
+                        {sub.problem_statement && (
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                              Problem Addressed
+                            </span>
+                            <p className="text-xs text-slate-300 leading-relaxed bg-charcoal-950/60 p-3 rounded-xl border border-charcoal-800">
+                              {sub.problem_statement}
+                            </p>
+                          </div>
+                        )}
+
+                        {sub.solution_description && (
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                              Architecture &amp; Solution
+                            </span>
+                            <p className="text-xs text-slate-300 leading-relaxed bg-charcoal-950/60 p-3 rounded-xl border border-charcoal-800">
+                              {sub.solution_description}
+                            </p>
+                          </div>
+                        )}
+
+                        {sub.tech_stack && sub.tech_stack.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] text-slate-500 mr-1">Stack:</span>
+                            {sub.tech_stack.map((t: string, idx: number) => (
+                              <span
+                                key={idx}
+                                className="text-[11px] font-mono px-2 py-0.5 rounded bg-charcoal-800 text-slate-300 border border-charcoal-700"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Project Deliverables External Links */}
+                        <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-charcoal-800/60">
+                          {sub.repository_url && (
+                            <a
+                              href={safeExternalUrl(sub.repository_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-charcoal-950 px-3 py-1.5 rounded-lg border border-charcoal-750 transition-colors"
+                            >
+                              <Github className="w-3.5 h-3.5" />
+                              <span>Code Repo</span>
+                              <ExternalLink className="w-3 h-3 text-slate-500" />
+                            </a>
+                          )}
+                          {sub.demo_url && (
+                            <a
+                              href={safeExternalUrl(sub.demo_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-brand-300 hover:text-brand-200 bg-charcoal-950 px-3 py-1.5 rounded-lg border border-brand-500/30 transition-colors"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-brand-400" />
+                              <span>Live Prototype</span>
+                              <ExternalLink className="w-3 h-3 text-slate-500" />
+                            </a>
+                          )}
+                          {sub.video_url && (
+                            <a
+                              href={safeExternalUrl(sub.video_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-red-300 hover:text-red-200 bg-charcoal-950 px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors"
+                            >
+                              <Video className="w-3.5 h-3.5 text-red-400" />
+                              <span>Video Pitch</span>
+                              <ExternalLink className="w-3 h-3 text-slate-500" />
+                            </a>
+                          )}
+                          {sub.documentation_url && (
+                            <a
+                              href={safeExternalUrl(sub.documentation_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-indigo-300 hover:text-indigo-200 bg-charcoal-950 px-3 py-1.5 rounded-lg border border-indigo-500/30 transition-colors"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Presentation Slides</span>
+                              <ExternalLink className="w-3 h-3 text-slate-500" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : !myTeam ? (
             <div className="p-12 rounded-2xl border border-charcoal-800 bg-charcoal-900/40 text-center space-y-3">
               <Users className="w-10 h-10 text-slate-500 mx-auto" />
               <h4 className="text-base font-bold text-white">Team Registration Required</h4>
@@ -2346,12 +2722,21 @@ export default function HackathonWorkspacePage() {
                   </p>
                 </div>
 
-                {isSubmissionClosed && (
+                {(isSubmissionClosed || isClosed) ? (
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
                     🔒 Submissions Closed
                   </span>
-                )}
+                ) : null}
               </div>
+
+              {(isSubmissionClosed || isClosed) && (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2.5 text-amber-300 text-xs">
+                  <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+                  <span>
+                    🔒 <strong>Hackathon Submissions Closed:</strong> Deliverables are locked in Read-Only Mode. Good luck during jury scoring!
+                  </span>
+                </div>
+              )}
 
               {submissionFeedback && (
                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
@@ -2376,7 +2761,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="e.g. EcoRide Campus Mobility"
                     value={subTitle}
                     onChange={(e) => setSubTitle(e.target.value)}
-                    disabled={isSubmissionClosed}
+                    disabled={isSubmissionClosed || isClosed}
                     required
                   />
                 </div>
@@ -2389,7 +2774,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="e.g. Decentralized on-campus bike sharing with zero emissions"
                     value={subPitch}
                     onChange={(e) => setSubPitch(e.target.value)}
-                    disabled={isSubmissionClosed}
+                    disabled={isSubmissionClosed || isClosed}
                     required
                   />
                 </div>
@@ -2404,7 +2789,7 @@ export default function HackathonWorkspacePage() {
                   placeholder="Detail the specific friction or challenge your team set out to resolve..."
                   value={subProblem}
                   onChange={(e) => setSubProblem(e.target.value)}
-                  disabled={isSubmissionClosed}
+                  disabled={isSubmissionClosed || isClosed}
                   required
                 />
               </div>
@@ -2418,7 +2803,7 @@ export default function HackathonWorkspacePage() {
                   placeholder="Explain your approach, design decisions, and how the prototype works..."
                   value={subSolution}
                   onChange={(e) => setSubSolution(e.target.value)}
-                  disabled={isSubmissionClosed}
+                  disabled={isSubmissionClosed || isClosed}
                   required
                 />
               </div>
@@ -2431,7 +2816,7 @@ export default function HackathonWorkspacePage() {
                   placeholder="e.g. Next.js, FastAPI, PostgreSQL, Supabase, Tailwind"
                   value={subTechStack}
                   onChange={(e) => setSubTechStack(e.target.value)}
-                  disabled={isSubmissionClosed}
+                  disabled={isSubmissionClosed || isClosed}
                 />
               </div>
 
@@ -2447,7 +2832,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://github.com/org/repo"
                     value={subRepoUrl}
                     onChange={(e) => setSubRepoUrl(e.target.value)}
-                    disabled={isSubmissionClosed}
+                    disabled={isSubmissionClosed || isClosed}
                   />
                 </div>
 
@@ -2461,7 +2846,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://project.vercel.app"
                     value={subDemoUrl}
                     onChange={(e) => setSubDemoUrl(e.target.value)}
-                    disabled={isSubmissionClosed}
+                    disabled={isSubmissionClosed || isClosed}
                   />
                 </div>
 
@@ -2475,7 +2860,7 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://youtube.com/watch?v=... or Loom"
                     value={subVideoUrl}
                     onChange={(e) => setSubVideoUrl(e.target.value)}
-                    disabled={isSubmissionClosed}
+                    disabled={isSubmissionClosed || isClosed}
                   />
                 </div>
 
@@ -2489,12 +2874,12 @@ export default function HackathonWorkspacePage() {
                     placeholder="https://docs.google.com/presentation/..."
                     value={subDocsUrl}
                     onChange={(e) => setSubDocsUrl(e.target.value)}
-                    disabled={isSubmissionClosed}
+                    disabled={isSubmissionClosed || isClosed}
                   />
                 </div>
               </div>
 
-              {!isSubmissionClosed && (
+              {!isSubmissionClosed && !isClosed && (
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-charcoal-800">
                   <Button
                     type="button"
@@ -2799,6 +3184,66 @@ export default function HackathonWorkspacePage() {
           await loadWorkspace();
         }}
       />
+
+      {/* Modal: Organizer Add Team Manually */}
+      {isAddTeamModalOpen && (
+        <Modal
+          isOpen={isAddTeamModalOpen}
+          onClose={() => setIsAddTeamModalOpen(false)}
+          title="Manually Register Student Team"
+        >
+          <form onSubmit={handleManualAddTeam} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                Team Name *
+              </label>
+              <Input
+                placeholder="e.g. Campus Titans"
+                value={manualTeamName}
+                onChange={(e) => setManualTeamName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                Team Vision / Tagline (Optional)
+              </label>
+              <Input
+                placeholder="e.g. High-throughput edge telemetry"
+                value={manualTeamDesc}
+                onChange={(e) => setManualTeamDesc(e.target.value)}
+              />
+            </div>
+            {challenges.length > 0 && (
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Assigned Problem Statement
+                </label>
+                <select
+                  value={manualChallengeId}
+                  onChange={(e) => setManualChallengeId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-xs text-slate-200"
+                >
+                  <option value="">Select track later</option>
+                  {challenges.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-3 border-t border-charcoal-800">
+              <Button variant="ghost" size="sm" type="button" onClick={() => setIsAddTeamModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" type="submit" isLoading={isCreatingManualTeam}>
+                Create Team
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

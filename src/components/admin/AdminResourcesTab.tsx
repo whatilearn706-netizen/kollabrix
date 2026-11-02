@@ -95,10 +95,30 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
   const fetchCurricula = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/curriculum');
+      const res = await fetch(`/api/curriculum?_t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success && data.curricula && Object.keys(data.curricula).length > 0) {
-        setCurriculaMap(data.curricula);
+        let loadedCurricula = data.curricula;
+        try {
+          const localDel = JSON.parse(localStorage.getItem('tf_deleted_curricula_ids') || '[]');
+          if (Array.isArray(localDel) && localDel.length > 0) {
+            const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase()));
+            const filtered: Record<string, LanguageCurriculum> = {};
+            for (const [k, v] of Object.entries(loadedCurricula as Record<string, LanguageCurriculum>)) {
+              if (!delSet.has(k.toLowerCase()) && !delSet.has((v.id || '').toLowerCase())) {
+                filtered[k] = v;
+              }
+            }
+            loadedCurricula = filtered;
+          }
+        } catch {}
+
+        setCurriculaMap(loadedCurricula);
+        const keys = Object.keys(loadedCurricula);
+        if (keys.length > 0 && !loadedCurricula[selectedCurriculumId]) {
+          setSelectedCurriculumId(keys[0]);
+          setSelectedStepNumber(1);
+        }
       }
     } catch (err) {
       console.warn('Failed to fetch curricula:', err);
@@ -111,8 +131,15 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
     fetchCurricula();
   }, []);
 
+  useEffect(() => {
+    if (Object.keys(curriculaMap).length > 0 && !curriculaMap[selectedCurriculumId]) {
+      setSelectedCurriculumId(Object.keys(curriculaMap)[0]);
+      setSelectedStepNumber(1);
+    }
+  }, [curriculaMap, selectedCurriculumId]);
+
   const currentCurriculum: LanguageCurriculum =
-    curriculaMap[selectedCurriculumId] || curriculaMap['java-beginner'] || Object.values(curriculaMap)[0];
+    curriculaMap[selectedCurriculumId] || Object.values(curriculaMap)[0];
 
   const currentStep: LearningStep =
     currentCurriculum?.steps.find((s) => s.stepNumber === selectedStepNumber) || currentCurriculum?.steps[0];
@@ -503,14 +530,25 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
       });
       const data = await res.json();
       if (data.success && data.curricula) {
+        try {
+          const localDel = JSON.parse(localStorage.getItem('tf_deleted_curricula_ids') || '[]');
+          localDel.push(idToDelete);
+          localStorage.setItem('tf_deleted_curricula_ids', JSON.stringify(localDel));
+        } catch {}
+
         setCurriculaMap(data.curricula);
         const remainingKeys = Object.keys(data.curricula);
-        setSelectedCurriculumId(remainingKeys[0]);
-        setSelectedStepNumber(1);
+        if (remainingKeys.length > 0) {
+          setSelectedCurriculumId(remainingKeys[0]);
+          setSelectedStepNumber(1);
+        }
         setStatusMessage({
           type: 'success',
           text: `Deleted skill "${curr.title}" successfully!`,
         });
+        setTimeout(() => {
+          fetchCurricula();
+        }, 100);
       } else {
         alert(data.error || 'Failed to delete skill');
       }

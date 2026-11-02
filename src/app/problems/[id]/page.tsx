@@ -145,7 +145,18 @@ export default function ProblemStatementDetailPage() {
         } catch {}
 
         if (foundComm) {
-          setProblem(foundComm as ProblemStatement);
+          let pComm: any = { ...foundComm };
+          if (pComm.description?.includes('<!-- PROBLEM_META:')) {
+            try {
+              const metaStr = pComm.description.split('<!-- PROBLEM_META:')[1].split('-->')[0];
+              const meta = JSON.parse(metaStr);
+              pComm.team_size = meta.team_size || pComm.team_size;
+              pComm.min_team_size = meta.min_team_size || pComm.min_team_size;
+              pComm.max_team_size = meta.max_team_size || pComm.max_team_size;
+              pComm.description = pComm.description.replace(/\n\n<!-- PROBLEM_META:[\s\S]*?-->/g, '').trim();
+            } catch {}
+          }
+          setProblem(pComm as ProblemStatement);
         } else if (matched) {
           setProblem(matched);
           setTacklingProjects(DEMO_PROJECTS.filter((p) => p.problem_statement_id === id));
@@ -154,6 +165,18 @@ export default function ProblemStatementDetailPage() {
         }
       } else if (probData) {
         let enriched: any = { ...probData };
+
+        if (enriched.description?.includes('<!-- PROBLEM_META:')) {
+          try {
+            const metaStr = enriched.description.split('<!-- PROBLEM_META:')[1].split('-->')[0];
+            const meta = JSON.parse(metaStr);
+            enriched.team_size = meta.team_size || enriched.team_size;
+            enriched.min_team_size = meta.min_team_size || enriched.min_team_size;
+            enriched.max_team_size = meta.max_team_size || enriched.max_team_size;
+            enriched.description = enriched.description.replace(/\n\n<!-- PROBLEM_META:[\s\S]*?-->/g, '').trim();
+          } catch {}
+        }
+
         try {
           const { data: metaRow } = await supabase
             .from('platform_settings')

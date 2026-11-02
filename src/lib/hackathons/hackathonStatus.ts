@@ -107,6 +107,52 @@ export function isHackathonClosed(hackathon?: Partial<Hackathon> | null): boolea
   return false;
 }
 
+/**
+ * Checks if a hackathon has completed its cycle and should be removed from the active college feed.
+ * A hackathon remains visible while open, while in evaluation, and until the day after results are announced.
+ * The day after results are announced (results_date + 24 hours), it automatically disappears from the active directory.
+ */
+export function isHackathonArchivedFromFeed(hackathon?: Partial<Hackathon> | null): boolean {
+  if (!hackathon) return false;
+  const status = (hackathon.status || '').toLowerCase();
+  if (status === 'archived') return true;
+
+  const now = Date.now();
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+  // 1. Check explicit results_date or extracted meta
+  let resDateStr = (hackathon as any).results_date || (hackathon as any).resultsDate;
+  if (!resDateStr && hackathon.description && hackathon.description.includes('HACKATHON_META:')) {
+    try {
+      const match = hackathon.description.match(/<!-- HACKATHON_META:(.*?) -->/);
+      if (match && match[1]) {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.results_date) resDateStr = parsed.results_date;
+      }
+    } catch {}
+  }
+
+  if (resDateStr) {
+    const resTime = new Date(resDateStr).getTime();
+    if (!isNaN(resTime)) {
+      // Disappears the day after results are announced (24h grace window)
+      return now > resTime + ONE_DAY_MS;
+    }
+  }
+
+  // 2. If no results date, archive 48 hours after end_date / submission_deadline
+  const normHack = normalizeHackathonDeadlines(hackathon) as any;
+  const end = normHack.end_date || normHack.endDate || normHack.submission_deadline;
+  if (end) {
+    const endTime = new Date(end).getTime();
+    if (!isNaN(endTime)) {
+      return now > endTime + 2 * ONE_DAY_MS;
+    }
+  }
+
+  return false;
+}
+
 export function formatTimeRemaining(deadlineStr?: string | null): string {
   if (!deadlineStr) return 'Active Sprint';
   const diff = new Date(deadlineStr).getTime() - Date.now();

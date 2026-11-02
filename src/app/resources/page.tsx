@@ -75,13 +75,28 @@ export default function ResourcesPage() {
     // Fetch dynamic curricula from API
     async function loadCurricula() {
       try {
-        const res = await fetch('/api/curriculum', { cache: 'no-store' });
+        const res = await fetch(`/api/curriculum?_t=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.success && data.curricula && Object.keys(data.curricula).length > 0) {
-          setCurriculaMap(data.curricula);
+          let loaded = data.curricula;
+          try {
+            const localDel = JSON.parse(localStorage.getItem('tf_deleted_curricula_ids') || '[]');
+            if (Array.isArray(localDel) && localDel.length > 0) {
+              const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase()));
+              const filtered: Record<string, LanguageCurriculum> = {};
+              for (const [k, v] of Object.entries(loaded as Record<string, LanguageCurriculum>)) {
+                if (!delSet.has(k.toLowerCase()) && !delSet.has((v.id || '').toLowerCase())) {
+                  filtered[k] = v;
+                }
+              }
+              loaded = filtered;
+            }
+          } catch {}
+
+          setCurriculaMap(loaded);
           // Clean up local reference if the selected curriculum was deleted by admin
           const localCurriculum = localStorage.getItem('linkora_active_curriculum');
-          if (localCurriculum && !data.curricula[localCurriculum]) {
+          if (localCurriculum && !loaded[localCurriculum]) {
             try {
               localStorage.removeItem('linkora_active_curriculum');
             } catch {}
