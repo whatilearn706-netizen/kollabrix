@@ -127,9 +127,26 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // Dynamic status calculation based on authoritative clock time
+      let computedStatus = c.status;
+      if (c.contestType !== 'practice' && c.startTime && c.endTime) {
+        const now = Date.now();
+        const s = new Date(c.startTime).getTime();
+        const e = new Date(c.endTime).getTime();
+        if (!isNaN(s) && !isNaN(e)) {
+          if (now < s) {
+            computedStatus = 'upcoming';
+          } else if (now > e) {
+            computedStatus = 'ended';
+          } else {
+            computedStatus = 'live';
+          }
+        }
+      }
+
       // Check anti-cheat timeline lock:
       // If contest is live and has not ended yet, lock solutionCode to prevent leaks
-      const isContestLive = c.contestType !== 'practice' && (c.status === 'live' && new Date() < new Date(c.endTime));
+      const isContestLive = c.contestType !== 'practice' && computedStatus === 'live';
 
       const sanitizedProblems = activeProblems.map((p) => {
         const cleanStarter = (p.starterCode && p.starterCode.cpp && !p.starterCode.cpp.includes('TODO:') && !p.starterCode.cpp.includes('cin >> a[i]') && !p.starterCode.cpp.includes('cin >> n >> m'))
@@ -157,8 +174,9 @@ export async function GET(request: NextRequest) {
 
       uniqueContests.push({
         ...safeContest,
+        status: computedStatus,
         hasPasscode: Boolean(rawPasscode),
-        contestType: c.contestType || (c.status === 'ended' ? 'practice' : 'contest'),
+        contestType: c.contestType || (computedStatus === 'ended' ? 'practice' : 'contest'),
         problems: sanitizedProblems,
       });
     }

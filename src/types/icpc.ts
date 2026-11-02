@@ -45,6 +45,7 @@ export interface IcpcContest {
   organizerRole?: string;
   college?: string;
   authorId?: string;
+  creatorId?: string;
   contestType?: ContestType;
   category?: ContestCategory;
   companyTag?: string;

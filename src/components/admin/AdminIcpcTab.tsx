@@ -1145,7 +1145,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           { id: 'all', label: 'All Tracks', count: contests.length },
           {
             id: 'placement',
-            label: '🏢 Company Placement Mocks',
+            label: '🏢 Company Placement',
             count: contests.filter((c) => c.category === 'placement' || Boolean(c.companyTag)).length,
           },
           {

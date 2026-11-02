@@ -82,10 +82,45 @@ export default function IcpcCollegiateArenaPage() {
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [isLeaderboardLive, setIsLeaderboardLive] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedTrack, setSelectedTrack] = useState<'all' | 'placement' | 'faculty' | 'icpc'>('all');
+  const [selectedTrack, setSelectedTrack] = useState<'placement' | 'faculty' | 'icpc'>('placement');
   const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'upcoming' | 'ended'>('all');
   const [leaderboardTab, setLeaderboardTab] = useState<'weekly' | 'all-time'>('weekly');
   const [passcodeModalContest, setPasscodeModalContest] = useState<IcpcContest | null>(null);
+  const [upcomingLockedContest, setUpcomingLockedContest] = useState<IcpcContest | null>(null);
+
+  function formatContestSchedule(iso?: string) {
+    if (!iso) return 'Scheduled Soon';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return 'Scheduled Soon';
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (e) {
+      return 'Scheduled Soon';
+    }
+  }
+
+  function getTimeUntilContest(iso?: string) {
+    if (!iso) return '';
+    try {
+      const diffMs = new Date(iso).getTime() - Date.now();
+      if (diffMs <= 0) return 'Starting now';
+      const totalMinutes = Math.floor(diffMs / 60000);
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const mins = totalMinutes % 60;
+      if (days > 0) return `Starts in ${days}d ${hours}h`;
+      if (hours > 0) return `Starts in ${hours}h ${mins}m`;
+      return `Starts in ${mins}m`;
+    } catch (e) {
+      return '';
+    }
+  }
   const [pendingProblem, setPendingProblem] = useState<IcpcProblem | null>(null);
   const [enteredPasscode, setEnteredPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
@@ -281,6 +316,15 @@ export default function IcpcCollegiateArenaPage() {
     if (!user) {
       setShowAuthModal(true);
       return;
+    }
+    const isUpcoming = contest.status === 'upcoming' || (contest.contestType !== 'practice' && contest.startTime && new Date() < new Date(contest.startTime));
+    if (isUpcoming) {
+      const uRole = (profile?.role || '').toLowerCase();
+      const isCreatorOrAdmin = uRole === 'admin' || (user?.id && (contest.creatorId === user.id || contest.authorId === user.id));
+      if (!isCreatorOrAdmin) {
+        setUpcomingLockedContest(contest);
+        return;
+      }
     }
     if (contest.visibility === 'passcode' && !unlockedContests[contest.id]) {
       setPasscodeModalContest(contest);
@@ -649,10 +693,8 @@ export default function IcpcCollegiateArenaPage() {
       }
     }
 
-    if (selectedTrack !== 'all') {
-      const cat = c.category || (c.companyTag ? 'placement' : c.visibility === 'passcode' ? 'faculty' : 'icpc');
-      if (cat !== selectedTrack) return false;
-    }
+    const cat = c.category || (c.companyTag ? 'placement' : c.visibility === 'passcode' ? 'faculty' : 'icpc');
+    if (cat !== selectedTrack) return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -725,7 +767,7 @@ export default function IcpcCollegiateArenaPage() {
                 </h1>
 
                 <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal max-w-2xl">
-                  Solve official company placement OA mocks (Amazon, TCS, Infosys), enter speedrun programming contests, take private faculty lab assessments, and climb the campus leaderboard.
+                  Solve official company placement OA challenges (Amazon, TCS, Infosys), enter speedrun programming contests, take private faculty lab assessments, and climb the campus leaderboard.
                 </p>
 
                 {/* Host Contest Button Gated for Faculty */}
@@ -745,7 +787,7 @@ export default function IcpcCollegiateArenaPage() {
                 <div className="flex flex-wrap items-center gap-3 pt-2 text-xs font-mono text-slate-400">
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
                     <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>🏢 Company OA Mocks (Amazon, TCS, Infosys)</span>
+                    <span>🏢 Company Placement (Amazon, TCS, Infosys)</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800/80 border border-charcoal-700">
                     <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
@@ -979,17 +1021,6 @@ export default function IcpcCollegiateArenaPage() {
             <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 overflow-x-auto select-none scrollbar-none">
               <button
                 type="button"
-                onClick={() => setSelectedTrack('all')}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  selectedTrack === 'all'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                All Tracks ({contests.length})
-              </button>
-              <button
-                type="button"
                 onClick={() => setSelectedTrack('placement')}
                 className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'placement'
@@ -997,7 +1028,7 @@ export default function IcpcCollegiateArenaPage() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>🏢 Company Placement Mocks</span>
+                <span>🏢 Company Placement</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200">
                   {contests.filter((c) => c.category === 'placement' || Boolean(c.companyTag)).length}
                 </span>
@@ -1077,7 +1108,10 @@ export default function IcpcCollegiateArenaPage() {
               {/* Contests Viewport with Blur-to-Focus Mask */}
               <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {filteredContests.map((contest, idx) => (
+                  {filteredContests.map((contest, idx) => {
+                    const isUpcoming = contest.status === 'upcoming' || (contest.contestType !== 'practice' && contest.startTime && new Date() < new Date(contest.startTime));
+
+                    return (
                     <div
                       key={contest.id}
                       className="blur-to-focus-card h-full"
@@ -1091,7 +1125,7 @@ export default function IcpcCollegiateArenaPage() {
                               {/* Category Track Badge */}
                               {contest.category === 'placement' || contest.companyTag ? (
                                 <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider flex items-center gap-1">
-                                  <span>🏢 {contest.companyTag || 'Placement'} Mock</span>
+                                  <span>🏢 {contest.companyTag || 'Placement'}</span>
                                 </span>
                               ) : contest.category === 'faculty' || contest.visibility === 'passcode' ? (
                                 <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider flex items-center gap-1">
@@ -1107,12 +1141,12 @@ export default function IcpcCollegiateArenaPage() {
                                 className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
                                   contest.status === 'live'
                                     ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                                    : contest.status === 'upcoming'
+                                    : isUpcoming
                                     ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40'
                                     : 'bg-slate-700/40 text-slate-300 border-slate-600'
                                 }`}
                               >
-                                {contest.status === 'live' ? '🟢 Live Contest' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Practice Mode'}
+                                {contest.status === 'live' ? '🟢 Live Contest' : isUpcoming ? '🕒 Upcoming' : '🏁 Practice Mode'}
                               </span>
                               {contest.visibility === 'passcode' && (
                                 <div className="flex items-center gap-1.5">
@@ -1159,6 +1193,19 @@ export default function IcpcCollegiateArenaPage() {
                       <p className="text-xs text-slate-400 mt-1">{contest.subtitle}</p>
                     </div>
 
+                    {/* Upcoming Contest Countdown Banner */}
+                    {isUpcoming && contest.startTime && (
+                      <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs font-mono text-indigo-300">
+                        <span className="flex items-center gap-1.5 font-bold">
+                          <Clock className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+                          <span>Opens: {formatContestSchedule(contest.startTime)}</span>
+                        </span>
+                        <span className="text-[11px] text-indigo-300/90 font-bold bg-indigo-500/20 px-2 py-0.5 rounded-md">
+                          {getTimeUntilContest(contest.startTime)}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Organizer Meta */}
                     <div className="p-3 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 flex items-center justify-between text-xs text-slate-300">
                       <div className="flex items-center gap-2">
@@ -1183,6 +1230,10 @@ export default function IcpcCollegiateArenaPage() {
                           <div
                             key={problem.id}
                             onClick={() => {
+                              if (isUpcoming) {
+                                setUpcomingLockedContest(contest);
+                                return;
+                              }
                               try {
                                 if (typeof document !== 'undefined' && !document.fullscreenElement) {
                                   document.documentElement.requestFullscreen().catch(() => {});
@@ -1190,7 +1241,11 @@ export default function IcpcCollegiateArenaPage() {
                               } catch (e) {}
                               handleOpenProblem(contest, problem);
                             }}
-                            className="p-3 rounded-xl bg-charcoal-950/50 hover:bg-charcoal-800/80 border border-charcoal-800 hover:border-cyan-500/50 transition-all flex items-center justify-between gap-3 cursor-pointer group/prob"
+                            className={`p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800 transition-all flex items-center justify-between gap-3 ${
+                              isUpcoming
+                                ? 'cursor-not-allowed opacity-80'
+                                : 'hover:bg-charcoal-800/80 hover:border-cyan-500/50 cursor-pointer group/prob'
+                            }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <span className="text-xs font-mono font-bold text-cyan-400 shrink-0">
@@ -1214,22 +1269,29 @@ export default function IcpcCollegiateArenaPage() {
 
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-[11px] font-mono text-slate-400">+{problem.points} pts</span>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    if (typeof document !== 'undefined' && !document.fullscreenElement) {
-                                      document.documentElement.requestFullscreen().catch(() => {});
-                                    }
-                                  } catch (err) {}
-                                  handleOpenProblem(contest, problem);
-                                }}
-                                className="text-[10px] h-6 px-2 border-cyan-500/30 text-cyan-300 group-hover/prob:bg-cyan-500/20"
-                              >
-                                Solve
-                              </Button>
+                              {isUpcoming ? (
+                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono font-bold select-none">
+                                  <Lock className="w-2.5 h-2.5 text-indigo-400" />
+                                  <span>Locked</span>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      if (typeof document !== 'undefined' && !document.fullscreenElement) {
+                                        document.documentElement.requestFullscreen().catch(() => {});
+                                      }
+                                    } catch (err) {}
+                                    handleOpenProblem(contest, problem);
+                                  }}
+                                  className="text-[10px] h-6 px-2 border-cyan-500/30 text-cyan-300 group-hover/prob:bg-cyan-500/20"
+                                >
+                                  Solve
+                                </Button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1242,48 +1304,61 @@ export default function IcpcCollegiateArenaPage() {
                     <span className="text-[11px] font-mono text-slate-500">
                       Scoring: {(contest.scoringType || 'icpc').toUpperCase()}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => {
-                        if (!user) {
-                          setShowAuthModal(true);
-                          return;
+                    {isUpcoming ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setUpcomingLockedContest(contest)}
+                        className="bg-indigo-950/40 border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/40 font-mono text-xs cursor-pointer shadow-xs"
+                        leftIcon={<Clock className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
+                      >
+                        <span>Opens {formatContestSchedule(contest.startTime)}</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          if (!user) {
+                            setShowAuthModal(true);
+                            return;
+                          }
+                          if (contest.problems.length > 0) {
+                            try {
+                              if (typeof document !== 'undefined' && !document.fullscreenElement) {
+                                document.documentElement.requestFullscreen().catch(() => {});
+                              }
+                            } catch (e) {}
+                            handleOpenProblem(contest, contest.problems[0]);
+                          }
+                        }}
+                        rightIcon={
+                          !user ? (
+                            <Lock className="w-3.5 h-3.5 text-cyan-200" />
+                          ) : contest.visibility === 'passcode' && !unlockedContests[contest.id] ? (
+                            <Lock className="w-3.5 h-3.5 text-purple-200" />
+                          ) : (
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          )
                         }
-                        if (contest.problems.length > 0) {
-                          try {
-                            if (typeof document !== 'undefined' && !document.fullscreenElement) {
-                              document.documentElement.requestFullscreen().catch(() => {});
-                            }
-                          } catch (e) {}
-                          handleOpenProblem(contest, contest.problems[0]);
+                        className={
+                          contest.visibility === 'passcode' && !unlockedContests[contest.id]
+                            ? 'bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs'
+                            : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs'
                         }
-                      }}
-                      rightIcon={
-                        !user ? (
-                          <Lock className="w-3.5 h-3.5 text-cyan-200" />
-                        ) : contest.visibility === 'passcode' && !unlockedContests[contest.id] ? (
-                          <Lock className="w-3.5 h-3.5 text-purple-200" />
-                        ) : (
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        )
-                      }
-                      className={
-                        contest.visibility === 'passcode' && !unlockedContests[contest.id]
-                          ? 'bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs'
-                          : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs'
-                      }
-                    >
-                      {!user
-                        ? 'Log In to Enter Arena'
-                        : contest.visibility === 'passcode' && !unlockedContests[contest.id]
-                        ? 'Enter with Passcode'
-                        : 'Enter Arena'}
-                    </Button>
+                      >
+                        {!user
+                          ? 'Log In to Enter Arena'
+                          : contest.visibility === 'passcode' && !unlockedContests[contest.id]
+                          ? 'Enter with Passcode'
+                          : 'Enter Arena'}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -2051,6 +2126,70 @@ export default function IcpcCollegiateArenaPage() {
                 </Button>
               </div>
             </form>
+          )}
+        </Modal>
+
+        {/* Upcoming Contest Locked Schedule Dialog */}
+        <Modal
+          isOpen={Boolean(upcomingLockedContest)}
+          onClose={() => setUpcomingLockedContest(null)}
+          title="Contest Has Not Started Yet"
+          maxWidth="md"
+        >
+          {upcomingLockedContest && (
+            <div className="p-4 space-y-5 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto shadow-md">
+                <Clock className="w-7 h-7 animate-pulse" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-black text-white">{upcomingLockedContest.title}</h3>
+                <p className="text-xs text-slate-400">
+                  {upcomingLockedContest.subtitle}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 text-left space-y-2.5 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Scheduled Start:</span>
+                  <span className="text-indigo-300 font-bold">
+                    {formatContestSchedule(upcomingLockedContest.startTime)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Scheduled End:</span>
+                  <span className="text-slate-300">
+                    {formatContestSchedule(upcomingLockedContest.endTime)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Duration:</span>
+                  <span className="text-cyan-300 font-bold">
+                    {upcomingLockedContest.durationMinutes} minutes
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-charcoal-800">
+                  <span className="text-slate-400">Status:</span>
+                  <span className="text-indigo-400 font-bold flex items-center gap-1">
+                    <span>⏳</span>
+                    <span>{getTimeUntilContest(upcomingLockedContest.startTime) || 'Upcoming'}</span>
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed font-mono">
+                🔒 Problems and code execution testbenches will unlock automatically when this contest starts. Please return when the scheduled time arrives!
+              </p>
+
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => setUpcomingLockedContest(null)}
+                className="w-full font-bold text-xs py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                Understood, I&apos;ll Return When Live
+              </Button>
+            </div>
           )}
         </Modal>
       </main>
