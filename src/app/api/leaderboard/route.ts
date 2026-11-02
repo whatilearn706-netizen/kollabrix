@@ -26,16 +26,22 @@ export async function GET() {
   try {
     const client = getSupabaseClient();
     let colleges: CollegeLeaderboardItem[] = [...DEFAULT_LEADERBOARD_COLLEGES];
+    let isLive = false; // Default draft if not explicitly published
 
     if (client) {
-      const { data } = await client
+      const { data: rows } = await client
         .from('platform_settings')
-        .select('value')
-        .eq('key', LEADERBOARD_KEY)
-        .maybeSingle();
+        .select('key, value')
+        .in('key', [LEADERBOARD_KEY, 'leaderboard_is_live']);
 
-      if (Array.isArray(data?.value) && data.value.length > 0) {
-        colleges = data.value;
+      if (Array.isArray(rows)) {
+        for (const row of rows) {
+          if (row.key === LEADERBOARD_KEY && Array.isArray(row.value) && row.value.length > 0) {
+            colleges = row.value;
+          } else if (row.key === 'leaderboard_is_live') {
+            isLive = Boolean(row.value === true || row.value === 'true');
+          }
+        }
       }
     }
 
@@ -45,6 +51,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
+      isLive,
       colleges,
       totalColleges: colleges.length,
       totalActiveBuilders: colleges.reduce((acc, c) => acc + (c.activeBuilders || 0), 0),
@@ -52,7 +59,7 @@ export async function GET() {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { colleges: DEFAULT_LEADERBOARD_COLLEGES, error: err.message },
+      { colleges: DEFAULT_LEADERBOARD_COLLEGES, isLive: false, error: err.message },
       { status: 200 }
     );
   }
@@ -127,7 +134,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: Admin updates a college
+// PATCH: Admin updates a college or toggles live status
 export async function PATCH(request: NextRequest) {
   try {
     const auth = await verifyAdminSession(request);
@@ -136,15 +143,30 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'College ID required' }, { status: 400 });
-    }
-
     const client = getSupabaseClient();
     if (!client) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
+    }
+
+    // Handle toggle live status
+    if (body.action === 'toggle_live' || typeof body.isLive === 'boolean') {
+      const isLiveVal = Boolean(body.isLive);
+      await client.from('platform_settings').upsert({
+        key: 'leaderboard_is_live',
+        value: isLiveVal,
+        updated_at: new Date().toISOString(),
+      });
+      return NextResponse.json({
+        success: true,
+        message: `Leaderboard is now ${isLiveVal ? 'LIVE 🟢' : 'DRAFT (Hidden) 🔴'}`,
+        isLive: isLiveVal,
+      });
+    }
+
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'College ID or action required' }, { status: 400 });
     }
 
     const { data: existingRow } = await client
