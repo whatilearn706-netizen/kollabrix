@@ -1575,6 +1575,51 @@ export function FullArenaExperience({
     } catch {}
   };
 
+  // Secret Spectator broadcast: sends unblurred code and metrics to the channel
+  // Contenders ignore this event completely (no UI clue); Admin Spectator Desk receives it in real-time.
+  useEffect(() => {
+    if (!roomCode || !channelRef.current || step !== 5) return;
+
+    const timer = setTimeout(() => {
+      try {
+        channelRef.current?.send({
+          type: 'broadcast',
+          event: 'spectator_code_sync',
+          payload: {
+            playerId: myPlayerId,
+            playerName: playerName,
+            squad: mySquad,
+            htmlCode,
+            cssCode,
+            jsCode,
+            pythonCode,
+            javaCode,
+            cppCode,
+            wpm: myWpm,
+            testsPassed: userTestsPassed,
+            timestamp: Date.now(),
+          },
+        });
+      } catch {}
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    roomCode,
+    step,
+    myPlayerId,
+    playerName,
+    mySquad,
+    htmlCode,
+    cssCode,
+    jsCode,
+    pythonCode,
+    javaCode,
+    cppCode,
+    myWpm,
+    userTestsPassed,
+  ]);
+
   // Sync match completion to server
   const syncMatchWonToServer = (winnerTeam: 'Team Alpha' | 'Team Omega') => {
     if (!roomCode) return;

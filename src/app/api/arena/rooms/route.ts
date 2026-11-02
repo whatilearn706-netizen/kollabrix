@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRoom, saveRoom, ArenaRoom, ArenaPlayer } from '@/lib/arena/roomStorage';
+import { getRoom, saveRoom, getAllActiveRooms, ArenaRoom, ArenaPlayer } from '@/lib/arena/roomStorage';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion } from '@/types/arenaDuel';
 import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { selectBestQuestion } from '@/lib/arena/questionSelector';
@@ -8,11 +8,28 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-// GET: Fetch room status by code
+// GET: Fetch room status by code, or list all active rooms for Admin Desk
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code') || searchParams.get('room') || searchParams.get('roomCode');
+    const isList = searchParams.get('list') === 'true' || searchParams.get('all') === 'true';
+
+    if (isList) {
+      const allRoomsMap = await getAllActiveRooms();
+      const rooms: ArenaRoom[] = Object.values(allRoomsMap).sort(
+        (a: ArenaRoom, b: ArenaRoom) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      return NextResponse.json(
+        { success: true, rooms },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          },
+        }
+      );
+    }
 
     if (!code) {
       return NextResponse.json({ success: false, error: 'Room code is required' }, { status: 400 });
@@ -53,6 +70,8 @@ export async function POST(request: NextRequest) {
       isBotEnabled = false,
       avatarIdx = 0,
       hostId = `host-${Date.now()}`,
+      isTournamentRoom = false,
+      matchTitle,
     } = body;
 
     if (!code) {
@@ -122,9 +141,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Build or update room
+    const isTourney = Boolean(isTournamentRoom);
     const newRoom: ArenaRoom = {
       code: cleanCode,
-      hostName: hostPlayer.name,
+      hostName: isTourney ? (matchTitle || 'Tournament Host') : hostPlayer.name,
       format: format === '2v2' ? '2v2' : '1v1',
       arena,
       selectedTags,
@@ -132,8 +152,10 @@ export async function POST(request: NextRequest) {
       timeLimit: matchDuration,
       question: finalQuestion,
       status: 'lobby',
-      alphaPlayers: [hostPlayer],
-      omegaPlayers: isBotEnabled
+      alphaPlayers: isTourney ? [] : [hostPlayer],
+      omegaPlayers: isTourney
+        ? []
+        : isBotEnabled
         ? [
             {
               id: 'bot-rival',
@@ -149,7 +171,9 @@ export async function POST(request: NextRequest) {
             },
           ]
         : [],
-      isBotEnabled: Boolean(isBotEnabled),
+      isBotEnabled: isTourney ? false : Boolean(isBotEnabled),
+      isTournamentRoom: isTourney,
+      matchTitle: matchTitle || (isTourney ? `Tournament Duel ${cleanCode}` : undefined),
       createdAt: now,
       updatedAt: now,
     };
