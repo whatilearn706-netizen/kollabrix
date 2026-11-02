@@ -326,11 +326,18 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
 
       let savedSuccessfully = false;
 
-      // 1. Primary: Save via server route using service role key to bypass client RLS policies
+      // 1. Primary: Save via server route using service role key to bypass client RLS policies safely
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const srvRes = await fetch('/api/profile/save', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         });
         if (srvRes.ok) {
