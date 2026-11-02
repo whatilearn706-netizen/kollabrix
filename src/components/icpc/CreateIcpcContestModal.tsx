@@ -90,26 +90,75 @@ export function CreateIcpcContestModal({
   const [subtitle, setSubtitle] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(90);
 
-  // Date + Time scheduling for live ICPC contest (default start: +15 mins, end: +135 mins)
-  const [startTimeLocal, setStartTimeLocal] = useState(() => {
-    const d = new Date(Date.now() + 15 * 60000);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  });
-  const [endTimeLocal, setEndTimeLocal] = useState(() => {
-    const d = new Date(Date.now() + 135 * 60000);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  });
+  // Authoritative Date + Time scheduling helpers for live ICPC contests
+  function createLocalDate(dateStr: string, hour12Str: string, minStr: string, period: 'AM' | 'PM'): Date {
+    const parts = (dateStr || '').split('-').map(Number);
+    const year = parts[0] || new Date().getFullYear();
+    const month = (parts[1] || 1) - 1;
+    const day = parts[2] || new Date().getDate();
+    let h = parseInt(hour12Str, 10) || 12;
+    const m = parseInt(minStr, 10) || 0;
+    if (period === 'PM' && h < 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    return new Date(year, month, day, h, m, 0, 0);
+  }
+
+  function getFieldDefaults(offsetMinutes: number) {
+    const d = new Date(Date.now() + offsetMinutes * 60000);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    let h = d.getHours();
+    const period: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    const hourStr = String(h).padStart(2, '0');
+    const rawM = d.getMinutes();
+    const roundedM = Math.round(rawM / 5) * 5 % 60;
+    const minStr = String(roundedM).padStart(2, '0');
+    return { dateStr, hourStr, minStr, period };
+  }
+
+  const [startDate, setStartDate] = useState(() => getFieldDefaults(15).dateStr);
+  const [startHour, setStartHour] = useState(() => getFieldDefaults(15).hourStr);
+  const [startMinute, setStartMinute] = useState(() => getFieldDefaults(15).minStr);
+  const [startPeriod, setStartPeriod] = useState<'AM' | 'PM'>(() => getFieldDefaults(15).period);
+
+  const [endDate, setEndDate] = useState(() => getFieldDefaults(135).dateStr);
+  const [endHour, setEndHour] = useState(() => getFieldDefaults(135).hourStr);
+  const [endMinute, setEndMinute] = useState(() => getFieldDefaults(135).minStr);
+  const [endPeriod, setEndPeriod] = useState<'AM' | 'PM'>(() => getFieldDefaults(135).period);
+
+  const startObj = createLocalDate(startDate, startHour, startMinute, startPeriod);
+  const endObj = createLocalDate(endDate, endHour, endMinute, endPeriod);
 
   const calculatedDuration = (() => {
     try {
-      const s = new Date(startTimeLocal).getTime();
-      const e = new Date(endTimeLocal).getTime();
+      const s = startObj.getTime();
+      const e = endObj.getTime();
       if (!isNaN(s) && !isNaN(e) && e > s) {
         return Math.max(15, Math.round((e - s) / 60000));
       }
     } catch (e) {}
     return durationMinutes || 90;
   })();
+
+  const handleApplyQuickDuration = (minutes: number) => {
+    const sDate = createLocalDate(startDate, startHour, startMinute, startPeriod);
+    const newEnd = new Date(sDate.getTime() + minutes * 60000);
+    const year = newEnd.getFullYear();
+    const month = String(newEnd.getMonth() + 1).padStart(2, '0');
+    const day = String(newEnd.getDate()).padStart(2, '0');
+    setEndDate(`${year}-${month}-${day}`);
+    let h = newEnd.getHours();
+    const p: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    setEndHour(String(h).padStart(2, '0'));
+    setEndMinute(String(newEnd.getMinutes()).padStart(2, '0'));
+    setEndPeriod(p);
+  };
 
   const [visibility, setVisibility] = useState<'public' | 'passcode'>('public');
   const [passcode, setPasscode] = useState('');
@@ -210,8 +259,8 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
     }
 
     if (contestType === 'contest') {
-      const sEpoch = new Date(startTimeLocal).getTime();
-      const eEpoch = new Date(endTimeLocal).getTime();
+      const sEpoch = startObj.getTime();
+      const eEpoch = endObj.getTime();
       if (isNaN(sEpoch) || isNaN(eEpoch) || eEpoch <= sEpoch) {
         setErrorMsg('Please enter valid Live Contest Start and End times (End must be after Start).');
         return;
@@ -275,8 +324,8 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           category,
           companyTag: finalCompany,
           durationMinutes: calculatedDuration,
-          startTime: contestType === 'contest' ? new Date(startTimeLocal).toISOString() : new Date().toISOString(),
-          endTime: contestType === 'contest' ? new Date(endTimeLocal).toISOString() : new Date().toISOString(),
+          startTime: contestType === 'contest' ? startObj.toISOString() : new Date().toISOString(),
+          endTime: contestType === 'contest' ? endObj.toISOString() : new Date().toISOString(),
           visibility,
           passcode: visibility === 'passcode' ? passcode : undefined,
           rules,
@@ -363,7 +412,7 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                  <span>🏢 Placement OA Mock</span>
+                  <span>🏢 Placement OA Practice</span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Amazon, TCS, Infosys hiring round simulations.</p>
               </div>
@@ -560,47 +609,194 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
 
           {/* Live Contest Date + Time Window (Only for Live ICPC Contests) */}
           {contestType === 'contest' && (
-            <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-cyan-400" />
-                <h5 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                  Live Contest Schedule (From Date &amp; Time to End Date &amp; Time) *
-                </h5>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Live From (Start Date &amp; Time) *
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={startTimeLocal}
-                    onChange={(e) => setStartTimeLocal(e.target.value)}
-                    required
-                    className="font-mono text-xs"
-                  />
+            <div className="p-4 sm:p-5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-cyan-400" />
+                  <h5 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    Live Contest Schedule (Start Date &amp; Time → End Date &amp; Time) *
+                  </h5>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Live Until (End Date &amp; Time) *
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={endTimeLocal}
-                    onChange={(e) => setEndTimeLocal(e.target.value)}
-                    required
-                    className="font-mono text-xs"
-                  />
+                {/* Quick Duration Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-mono text-slate-400">Quick Duration:</span>
+                  {[
+                    { label: '+1h', mins: 60 },
+                    { label: '+1.5h', mins: 90 },
+                    { label: '+2h', mins: 120 },
+                    { label: '+3h', mins: 180 },
+                  ].map((btn) => (
+                    <button
+                      key={btn.mins}
+                      type="button"
+                      onClick={() => handleApplyQuickDuration(btn.mins)}
+                      className="px-2 py-0.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-500/20 border border-cyan-500/30 text-[10px] font-mono font-bold text-cyan-300 transition-colors cursor-pointer"
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 pt-1 border-t border-cyan-500/20">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Start Date & Time */}
+                <div className="p-3 rounded-xl bg-charcoal-900/90 border border-charcoal-750 space-y-2.5">
+                  <label className="block text-xs font-bold text-cyan-300">
+                    🟢 Live From (Start Date &amp; Time) *
+                  </label>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-mono block mb-1">Select Date:</span>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-mono block mb-1">Set Exact Time:</span>
+                      <div className="flex items-center gap-1.5">
+                        {/* Hour */}
+                        <select
+                          value={startHour}
+                          onChange={(e) => setStartHour(e.target.value)}
+                          className="flex-1 px-2.5 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs text-white font-mono focus:outline-none focus:border-cyan-400 cursor-pointer"
+                        >
+                          {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-white font-bold font-mono">:</span>
+                        {/* Minute */}
+                        <select
+                          value={startMinute}
+                          onChange={(e) => setStartMinute(e.target.value)}
+                          className="flex-1 px-2.5 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs text-white font-mono focus:outline-none focus:border-cyan-400 cursor-pointer"
+                        >
+                          {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        {/* AM/PM Toggle */}
+                        <div className="flex rounded-xl bg-charcoal-950 border border-charcoal-700 p-0.5 select-none">
+                          <button
+                            type="button"
+                            onClick={() => setStartPeriod('AM')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all ${
+                              startPeriod === 'AM'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            AM
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStartPeriod('PM')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all ${
+                              startPeriod === 'PM'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            PM
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* End Date & Time */}
+                <div className="p-3 rounded-xl bg-charcoal-900/90 border border-charcoal-750 space-y-2.5">
+                  <label className="block text-xs font-bold text-amber-300">
+                    🏁 Live Until (End Date &amp; Time) *
+                  </label>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-mono block mb-1">Select Date:</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-mono block mb-1">Set Exact Time:</span>
+                      <div className="flex items-center gap-1.5">
+                        {/* Hour */}
+                        <select
+                          value={endHour}
+                          onChange={(e) => setEndHour(e.target.value)}
+                          className="flex-1 px-2.5 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs text-white font-mono focus:outline-none focus:border-amber-400 cursor-pointer"
+                        >
+                          {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-white font-bold font-mono">:</span>
+                        {/* Minute */}
+                        <select
+                          value={endMinute}
+                          onChange={(e) => setEndMinute(e.target.value)}
+                          className="flex-1 px-2.5 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-xs text-white font-mono focus:outline-none focus:border-amber-400 cursor-pointer"
+                        >
+                          {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        {/* AM/PM Toggle */}
+                        <div className="flex rounded-xl bg-charcoal-950 border border-charcoal-700 p-0.5 select-none">
+                          <button
+                            type="button"
+                            onClick={() => setEndPeriod('AM')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all ${
+                              endPeriod === 'AM'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            AM
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEndPeriod('PM')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all ${
+                              endPeriod === 'PM'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            PM
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status summary banner */}
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 pt-2 border-t border-cyan-500/20 flex-wrap gap-2">
                 <span>
                   ⏱️ Calculated Contest Duration: <strong className="text-cyan-300">{calculatedDuration} minutes</strong>
                 </span>
                 <span className="text-cyan-400/90 font-bold">
-                  {new Date(startTimeLocal) > new Date()
+                  {startObj.getTime() > Date.now()
                     ? '🕒 Will appear as Upcoming'
-                    : new Date(endTimeLocal) < new Date()
+                    : endObj.getTime() < Date.now()
                     ? '🏁 Will appear as Ended'
                     : '🟢 Will appear Live Now'}
                 </span>
