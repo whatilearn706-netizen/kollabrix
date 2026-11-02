@@ -48,13 +48,13 @@ const features = [
     href: '/teammates',
   },
   {
-    title: 'ICPC Arena',
+    title: 'Competitive Practice',
     priority: 'PRIORITY 04',
     priorityBadge: 'DSA & RANKINGS',
     priorityTheme: 'border-blue-500/50 bg-blue-500/15 text-blue-300 shadow-blue-500/20',
     glowColor: 'rgba(59, 130, 246, 0.35)',
     description:
-      'Compete in proctored competitive programming contests with real-time leaderboards and verified results.',
+      'Compete in placement OA simulations and faculty lab tests with anti-cheat and instant rankings.',
     icon: Code2,
     iconBg: 'bg-blue-500/10 text-blue-400 border border-blue-500/25',
     span: '',

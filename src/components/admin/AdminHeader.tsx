@@ -89,7 +89,7 @@ export function AdminHeader({
     { id: 'hotpatch', label: '🤖 AI Hot-Patch & Code Desk', icon: Code2, category: 'code' },
     { id: 'spark', label: '✨ AI Spark Templates', icon: Sparkles, category: 'code' },
     { id: 'deadlines', label: '⏳ Deadlines Radar', icon: Clock, category: 'campus' },
-    { id: 'icpc', label: '⚡ ICPC Arena', icon: Terminal, category: 'campus' },
+    { id: 'icpc', label: '⚡ Competitive Practice', icon: Terminal, category: 'campus' },
     { id: 'security', label: '🛡️ WhatsApp Watchdog & Security', icon: ShieldAlert, category: 'security' },
     { id: 'feedback', label: '💬 User Feedback Desk', icon: MessageSquare, category: 'campus' },
     { id: 'leaderboard', label: '🏆 Campus Leaderboard', icon: Trophy, category: 'campus' },

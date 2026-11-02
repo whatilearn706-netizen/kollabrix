@@ -1525,7 +1525,7 @@ export default function TeacherDashboardPage() {
                   leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
                   className="border-charcoal-700 text-slate-300 hover:text-white"
                 >
-                  Open ICPC Arena
+                  Open Competitive Practice
                 </Button>
               </Link>
               <Button
@@ -1535,7 +1535,7 @@ export default function TeacherDashboardPage() {
                 leftIcon={<PlusCircle className="w-3.5 h-3.5 text-cyan-300" />}
                 className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold"
               >
-                Upload ICPC Contest
+                Upload Faculty Lab
               </Button>
             </div>
           </div>
@@ -1544,9 +1544,9 @@ export default function TeacherDashboardPage() {
           {myIcpcContests.length === 0 ? (
             <div className="text-center py-16 p-8 rounded-2xl bg-charcoal-850/60 border border-charcoal-750 space-y-3">
               <Terminal className="w-12 h-12 text-slate-500 mx-auto" />
-              <h4 className="text-base font-bold text-slate-200">No ICPC contests published yet</h4>
+              <h4 className="text-base font-bold text-slate-200">No contests or labs published yet</h4>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Host your first collegiate speedrun contest for students. Define problem statements, set difficulty levels, and provide sample testcases.
+                Host your first collegiate lab or speedrun contest for students. Define problem statements, set difficulty levels, and provide sample testcases.
               </p>
               <Button
                 variant="primary"
@@ -1609,7 +1609,7 @@ export default function TeacherDashboardPage() {
                       size="sm"
                       className="w-full border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-bold"
                     >
-                      View in ICPC Arena →
+                      View in Competitive Practice →
                     </Button>
                   </Link>
                 </div>

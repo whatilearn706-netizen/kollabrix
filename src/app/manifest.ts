@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & ICPC Arena',
+    name: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     short_name: 'Kollabrix',
     description:
       'Discover student projects, assemble hackathon dream teams, showcase engineering portfolios, and solve collegiate challenges together.',

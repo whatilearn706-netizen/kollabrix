@@ -505,7 +505,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH: Toggle ICPC Arena Live / Offline or Leaderboard Visibility (Admin Only)
+// PATCH: Toggle Competitive Practice Live / Offline or Leaderboard Visibility (Admin Only)
 export async function PATCH(request: NextRequest) {
   try {
     const auth = await verifyAdminSession(request);

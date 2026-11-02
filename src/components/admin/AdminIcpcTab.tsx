@@ -307,7 +307,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       if (res.ok && data.success) {
         setStatusMessage({
           type: 'success',
-          text: 'All contests and problems cleared from ICPC arena!',
+          text: 'All contests and problems cleared from Competitive Practice arena!',
         });
         setContests([]);
         setIsClearAllOpen(false);
@@ -1025,7 +1025,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-white">ICPC Arena Access Status:</span>
+                <span className="text-sm font-black text-white">Competitive Practice Access Status:</span>
                 <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${isArenaLive ? 'bg-emerald-500/25 border-emerald-500/40 text-emerald-300' : 'bg-rose-500/25 border-rose-500/40 text-rose-300'}`}>
                   {isArenaLive ? '🟢 LIVE (Accessible to all students)' : '🔴 OFFLINE / PAUSED (Maintenance Mode)'}
                 </span>
@@ -1745,7 +1745,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                     </div>
                     <h4 className="text-sm font-bold text-white">No Proctoring Incidents Found</h4>
                     <p className="text-xs text-slate-400 max-w-md mx-auto">
-                      All active and recent ICPC arena contestant sessions are operating within verified academic standards. Violations will appear here live in real-time.
+                      All active and recent contestant sessions are operating within verified academic standards. Violations will appear here live in real-time.
                     </p>
                   </div>
                 ) : (
@@ -1886,7 +1886,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       <Modal
         isOpen={Boolean(deleteTargetProblem)}
         onClose={() => setDeleteTargetProblem(null)}
-        title="Remove Problem from ICPC Arena"
+        title="Remove Problem from Competitive Practice"
         maxWidth="md"
       >
         <div className="space-y-4">
@@ -1895,7 +1895,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               Are you sure you want to remove &ldquo;{deleteTargetProblem?.problem.title}&rdquo;?
             </p>
             <p>
-              This will immediately delete the problem and its testcases from the ICPC Collegiate Arena for all students.
+              This will immediately delete the problem and its testcases from Competitive Practice for all students.
             </p>
           </div>
 
@@ -1921,7 +1921,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       <Modal
         isOpen={Boolean(deleteTargetContest)}
         onClose={() => setDeleteTargetContest(null)}
-        title="Delete ICPC Contest"
+        title="Delete Contest / Lab"
         maxWidth="md"
       >
         <div className="space-y-4">
@@ -1954,7 +1954,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
       <Modal
         isOpen={isClearAllOpen}
         onClose={() => setIsClearAllOpen(false)}
-        title="Clear Entire ICPC Arena"
+        title="Clear Entire Competitive Practice Arena"
         maxWidth="md"
       >
         <div className="space-y-4">
