@@ -10,17 +10,23 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only apply to arena routes (including the root /arena page)
-  if (pathname.startsWith('/arena')) {
-    // Assume the session token is stored in a cookie called `next-auth.session-token`
-    const session = request.cookies.get('next-auth.session-token');
-    if (!session) {
+  // Protect nested arena sub-routes while allowing public entry
+  if (pathname.startsWith('/arena/')) {
+    const cookies = request.cookies.getAll();
+    const hasSession = cookies.some(
+      (c) =>
+        c.name.includes('-auth-token') ||
+        c.name.startsWith('sb-') ||
+        c.name === 'next-auth.session-token'
+    );
+
+    if (!hasSession) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
     }
   }
-  // Continue to the requested page when auth is present or path is not protected
+
   return NextResponse.next();
 }
 
