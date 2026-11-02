@@ -202,14 +202,40 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, subtitle, durationMinutes, problems, rules, visibility, passcode, college, contestType, creatorId, userRole, facultyVerified } = body;
 
-    // ── Authentication Check: Verified faculty, college-verified students, or administrators ──
+    // ── Authentication Check: Verified faculty or administrators ONLY ──
     const auth = await verifyAdminSession(request);
     let isAuthorized = auth.authorized;
 
     if (!isAuthorized) {
-      const authHeader = request.headers.get('authorization');
-      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-      const xUserId = request.headers.get('x-user-id') || creatorId;
+      const authHeader = request.headers.get('authorization') || '';
+      let token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
+
+      // If Authorization header wasn't provided, check cookies for Supabase auth tokens
+      if (!token) {
+        try {
+          const cookies = request.cookies.getAll();
+          for (const c of cookies) {
+            if (c.name.includes('-auth-token') || c.name.startsWith('sb-')) {
+              try {
+                const raw = decodeURIComponent(c.value);
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed[0]) {
+                  token = parsed[0];
+                  break;
+                } else if (parsed && parsed.access_token) {
+                  token = parsed.access_token;
+                  break;
+                }
+              } catch {
+                if (c.value && c.value.length > 40) {
+                  token = c.value;
+                  break;
+                }
+              }
+            }
+          }
+        } catch {}
+      }
 
       if (token && isSupabaseConfigured()) {
         const client = getSupabaseClient();
@@ -219,7 +245,7 @@ export async function POST(request: NextRequest) {
             if (userData?.user) {
               const { data: prof } = await client
                 .from('profiles')
-                .select('role, faculty_verified, college')
+                .select('role, faculty_verified')
                 .eq('user_id', userData.user.id)
                 .maybeSingle();
 
@@ -228,9 +254,9 @@ export async function POST(request: NextRequest) {
                 prof?.role === 'admin' ||
                 prof?.role === 'faculty' ||
                 prof?.role === 'professor' ||
-                prof?.faculty_verified ||
-                Boolean(prof?.college) ||
-                userData.user.email?.toLowerCase() === 'goyalmayank142@gmail.com'
+                prof?.faculty_verified === true ||
+                userData.user.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+                userData.user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
               ) {
                 isAuthorized = true;
               }
@@ -238,43 +264,11 @@ export async function POST(request: NextRequest) {
           } catch (tokenErr) {}
         }
       }
-
-      // Check xUserId in profiles table
-      if (!isAuthorized && xUserId && isSupabaseConfigured()) {
-        const client = getSupabaseClient();
-        if (client) {
-          try {
-            const { data: prof } = await client
-              .from('profiles')
-              .select('user_id, role, faculty_verified, college')
-              .eq('user_id', xUserId)
-              .maybeSingle();
-
-            if (
-              prof?.role === 'teacher' ||
-              prof?.role === 'admin' ||
-              prof?.role === 'faculty' ||
-              prof?.role === 'professor' ||
-              prof?.faculty_verified ||
-              Boolean(prof?.college) ||
-              xUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
-              xUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
-            ) {
-              isAuthorized = true;
-            }
-          } catch (userErr) {}
-        }
-      }
-
-      // Client-asserted verified status fallback
-      if (!isAuthorized && (facultyVerified || userRole === 'teacher' || userRole === 'admin' || userRole === 'faculty')) {
-        isAuthorized = true;
-      }
     }
 
     if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden: Only verified faculty mentors or administrators can create ICPC contests.' },
+        { success: false, error: 'Forbidden: Only verified faculty mentors or administrators can create contests and labs.' },
         { status: 403 }
       );
     }

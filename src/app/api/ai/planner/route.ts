@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIPlanDraft } from '@/types/database';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
 
@@ -188,6 +189,22 @@ function generateHeuristicPlan(
 
 export async function POST(request: NextRequest) {
   try {
+    // Anti-Abuse Rate Limit Gate: Max 10 Plan generations per 5 minutes per IP
+    const ip = getClientIp(request);
+    const rateCheck = checkIpRateLimit(`ai-planner:${ip}`, 10, 5 * 60 * 1000, 5 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      const waitMinutes = Math.ceil((rateCheck.retryAfterMs || 300000) / 60000);
+      return NextResponse.json(
+        { error: `AI Planner rate limit reached. Please wait ${waitMinutes} minute(s) before generating another capstone plan.` },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateCheck.retryAfterMs || 60000) / 1000)),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const {
       idea = '',

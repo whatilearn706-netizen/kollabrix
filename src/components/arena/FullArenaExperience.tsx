@@ -1434,6 +1434,22 @@ export function FullArenaExperience({
             }
           }
         })
+        .on('broadcast', { event: 'relay_code_sync' }, ({ payload }) => {
+          if (!isMounted || !payload) return;
+          if (payload.squad === mySquad && payload.senderId !== myPlayerId) {
+            if (typeof payload.htmlCode === 'string') setHtmlCode(payload.htmlCode);
+            if (typeof payload.cssCode === 'string') setCssCode(payload.cssCode);
+            if (typeof payload.jsCode === 'string') setJsCode(payload.jsCode);
+            if (typeof payload.pythonCode === 'string') setPythonCode(payload.pythonCode);
+            if (typeof payload.javaCode === 'string') setJavaCode(payload.javaCode);
+            if (typeof payload.cppCode === 'string') setCppCode(payload.cppCode);
+            setActivityNotification({
+              message: '🔄 Live code synced from teammate!',
+              type: 'join',
+              id: Date.now(),
+            });
+          }
+        })
         .subscribe();
 
       channelRef.current = channel;
@@ -1511,6 +1527,32 @@ export function FullArenaExperience({
         },
       }),
     }).catch(() => {});
+
+    // In 2v2: synchronize code buffer with teammate when progress changes
+    if (teamSize === '2v2') {
+      syncCodeToTeammate();
+    }
+  };
+
+  // Relay code synchronization across teammates in 2v2
+  const syncCodeToTeammate = () => {
+    if (!roomCode || teamSize !== '2v2' || !channelRef.current) return;
+    try {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'relay_code_sync',
+        payload: {
+          squad: mySquad,
+          senderId: myPlayerId,
+          htmlCode,
+          cssCode,
+          jsCode,
+          pythonCode,
+          javaCode,
+          cppCode,
+        },
+      });
+    } catch {}
   };
 
   // Sync match completion to server
@@ -1771,6 +1813,7 @@ export function FullArenaExperience({
         // Relay swap at 2.5 minutes remaining in 2v2
         if (teamSize === '2v2' && remaining === 150) {
           setRelayPlayer('Navigator (Teammate)');
+          syncCodeToTeammate();
         }
       } else {
         setTimeLeft((prev) => {
@@ -1794,6 +1837,7 @@ export function FullArenaExperience({
           // Relay swap at 2.5 minutes remaining in 2v2
           if (teamSize === '2v2' && prev === 150) {
             setRelayPlayer('Navigator (Teammate)');
+            syncCodeToTeammate();
           }
 
           return prev - 1;
@@ -2837,8 +2881,11 @@ export function FullArenaExperience({
                               <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
                             )}
                           </div>
-                          <h3 className="font-bold text-white text-base font-mono flex items-center gap-1.5">
+                          <h3 className="font-bold text-white text-base font-mono flex items-center justify-between gap-1.5">
                             <span>1 v 1 Solo Showdown</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                              OFFICIAL STABLE
+                            </span>
                           </h3>
                           <p className="text-[11px] font-mono text-cyan-400/90 mt-0.5 font-bold">
                             ULTRA LOW LATENCY DUEL
@@ -2886,8 +2933,11 @@ export function FullArenaExperience({
                               <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
                             )}
                           </div>
-                          <h3 className="font-bold text-white text-base font-mono flex items-center gap-1.5">
+                          <h3 className="font-bold text-white text-base font-mono flex items-center justify-between gap-1.5">
                             <span>2 v 2 Relay Squad</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              BETA (EXPERIMENTAL)
+                            </span>
                           </h3>
                           <p className="text-[11px] font-mono text-rose-400/90 mt-0.5 font-bold">
                             DUAL-PILOT CO-OP WARFARE
