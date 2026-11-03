@@ -3,6 +3,7 @@ import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { ProblemSolution } from '@/types/database';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
 
@@ -170,6 +171,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = checkIpRateLimit(`solution_submit_ip_${ip}`, 15, 60 * 1000, 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many submissions from this IP. Please wait a moment before trying again.' },
+        { status: 429 }
+      );
+    }
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 

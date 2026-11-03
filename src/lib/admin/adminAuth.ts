@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import {
@@ -201,8 +202,48 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
 }
 
 /**
+ * Generate cryptographic HMAC-SHA256 signature for immutable audit log integrity
+ */
+export function signAuditLogEntry(payload: Record<string, any>): string {
+  const secret =
+    process.env.AUDIT_SIGNING_KEY ||
+    process.env.CLUSTER_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'kollabrix-immutable-audit-key';
+  const serialized = JSON.stringify(payload, Object.keys(payload).sort());
+  return crypto.createHmac('sha256', secret).update(serialized).digest('hex');
+}
+
+/**
+ * Verify cryptographic signature of an audit log entry to ensure it has not been tampered with
+ */
+export function verifyAuditLogSignature(log: {
+  actor_id?: string | null;
+  action: string;
+  target_type: string;
+  target_id?: string | null;
+  details?: Record<string, any>;
+  outcome?: string;
+  ip_address?: string | null;
+}): boolean {
+  if (!log?.details || !log.details._signature) return false;
+  const { _signature, _signed_at, ...originalDetails } = log.details;
+  const expectedSig = signAuditLogEntry({
+    actorId: log.actor_id,
+    action: log.action,
+    targetType: log.target_type,
+    targetId: log.target_id,
+    details: originalDetails,
+    outcome: log.outcome,
+    ipAddress: log.ip_address,
+    signedAt: _signed_at,
+  });
+  return crypto.timingSafeEqual(Buffer.from(_signature), Buffer.from(expectedSig));
+}
+
+/**
  * Record an immutable administrative action into public.admin_audit_logs.
- * Strips any sensitive credentials or secrets.
+ * Strips any sensitive credentials or secrets and signs the entry cryptographically.
  */
 export async function recordAdminAuditLog({
   actorId,
@@ -237,6 +278,21 @@ export async function recordAdminAuditLog({
         sanitizedDetails[key] = val;
       }
     }
+
+    const signedAt = new Date().toISOString();
+    const signature = signAuditLogEntry({
+      actorId,
+      action,
+      targetType,
+      targetId,
+      details: sanitizedDetails,
+      outcome,
+      ipAddress,
+      signedAt,
+    });
+
+    sanitizedDetails._signature = signature;
+    sanitizedDetails._signed_at = signedAt;
 
     await client.from('admin_audit_logs').insert({
       actor_id: actorId || null,

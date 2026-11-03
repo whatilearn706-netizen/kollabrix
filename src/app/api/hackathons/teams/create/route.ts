@@ -5,6 +5,7 @@ import {
   DEFAULT_SUPABASE_ANON_KEY,
   DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
 } from '@/lib/supabase/isConfigured';
+import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,8 +22,27 @@ function getAdminClient() {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = checkIpRateLimit(`team_create_ip_${ip}`, 10, 60 * 1000, 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many team creation requests from this IP. Please wait a minute.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { hackathonId, teamName, description, challengeId, leaderUserId } = body;
+
+    if (leaderUserId) {
+      const userLimit = checkIpRateLimit(`team_create_user_${leaderUserId}`, 5, 5 * 60 * 1000, 5 * 60 * 1000);
+      if (!userLimit.allowed) {
+        return NextResponse.json(
+          { error: 'You have reached the team creation limit. Please wait before creating another team.' },
+          { status: 429 }
+        );
+      }
+    }
 
     if (!hackathonId || !teamName) {
       return NextResponse.json({ error: 'Hackathon ID and Team Name are required.' }, { status: 400 });
