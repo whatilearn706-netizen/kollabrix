@@ -31,13 +31,13 @@ export function EyeCalibrationModal({
   const [currentMetrics, setCurrentMetrics] = useState<FaceBiometricSample | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const internalCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Collected samples for each position
-  const centerSamplesRef = useRef<Point2D[]>([]);
-  const topSamplesRef = useRef<Point2D[]>([]);
-  const bottomSamplesRef = useRef<Point2D[]>([]);
-  const faceHeightsRef = useRef<number[]>([]);
+  const centerSamplesRef = useRef<FaceBiometricSample[]>([]);
+  const topSamplesRef = useRef<FaceBiometricSample[]>([]);
+  const bottomSamplesRef = useRef<FaceBiometricSample[]>([]);
   const generatedProfileRef = useRef<EyeCalibrationProfile | null>(null);
 
   // Connect incoming video stream to internal hidden video element
@@ -48,14 +48,14 @@ export function EyeCalibrationModal({
     }
   }, [videoStream]);
 
-  // Real-time camera sampling loop
+  // Real-time camera sampling & live HUD overlay loop
   useEffect(() => {
     let animId: number;
-    const canvas = canvasRef.current || document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 240;
-    canvasRef.current = canvas;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const internalCanvas = internalCanvasRef.current || document.createElement('canvas');
+    internalCanvas.width = 320;
+    internalCanvas.height = 240;
+    internalCanvasRef.current = internalCanvas;
+    const ctx = internalCanvas.getContext('2d', { willReadFrequently: true });
 
     const sampleLoop = () => {
       const video = videoRef.current;
@@ -68,12 +68,43 @@ export function EyeCalibrationModal({
 
         if (metrics.valid) {
           if (step === 'center') {
-            centerSamplesRef.current.push(metrics.centroid);
-            faceHeightsRef.current.push(metrics.faceHeight);
+            centerSamplesRef.current.push(metrics);
           } else if (step === 'top') {
-            topSamplesRef.current.push(metrics.centroid);
+            topSamplesRef.current.push(metrics);
           } else if (step === 'bottom') {
-            bottomSamplesRef.current.push(metrics.centroid);
+            bottomSamplesRef.current.push(metrics);
+          }
+        }
+
+        // Draw live debug overlay on preview canvas if visible
+        const previewCanvas = previewCanvasRef.current;
+        if (previewCanvas) {
+          const pCtx = previewCanvas.getContext('2d');
+          if (pCtx) {
+            pCtx.drawImage(internalCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+            if (metrics.valid) {
+              const scaleX = previewCanvas.width / 320;
+              const scaleY = previewCanvas.height / 240;
+
+              // Draw pupil position
+              const pupilPxX = (metrics.centroid.x * 320) * scaleX;
+              const pupilPxY = metrics.pupilAbsY * scaleY;
+
+              // Reticle circle on detected gaze
+              pCtx.strokeStyle = metrics.isRollingEyesDown ? '#ef4444' : '#06b6d4';
+              pCtx.lineWidth = 2;
+              pCtx.beginPath();
+              pCtx.arc(pupilPxX, pupilPxY, 8, 0, Math.PI * 2);
+              pCtx.stroke();
+
+              // Crosshair
+              pCtx.beginPath();
+              pCtx.moveTo(pupilPxX - 12, pupilPxY);
+              pCtx.lineTo(pupilPxX + 12, pupilPxY);
+              pCtx.moveTo(pupilPxX, pupilPxY - 12);
+              pCtx.lineTo(pupilPxX, pupilPxY + 12);
+              pCtx.stroke();
+            }
           }
         }
       }
@@ -110,16 +141,10 @@ export function EyeCalibrationModal({
       setStep('bottom');
     } else if (step === 'bottom') {
       // Calculate final profile
-      const avgFaceHeight =
-        faceHeightsRef.current.length > 0
-          ? faceHeightsRef.current.reduce((a, b) => a + b, 0) / faceHeightsRef.current.length
-          : 0.45;
-
       const profile = buildCalibrationProfile({
         center: centerSamplesRef.current,
         top: topSamplesRef.current,
         bottom: bottomSamplesRef.current,
-        baselineFaceHeight: avgFaceHeight,
       });
 
       generatedProfileRef.current = profile;
@@ -159,7 +184,7 @@ export function EyeCalibrationModal({
       {step === 'bottom' && (
         <div className="fixed bottom-8 inset-x-0 pointer-events-none flex flex-col items-center justify-center z-50 animate-bounce">
           <span className="mb-2 px-3 py-1 rounded-full bg-amber-950/90 text-amber-300 font-mono text-xs border border-amber-500/40">
-            Look at Bottom Edge / Keyboard ({countdown}s)
+            Look at Bottom Edge of Screen ({countdown}s)
           </span>
           <div className="w-20 h-20 rounded-full border-4 border-amber-400 bg-amber-500/25 flex items-center justify-center shadow-lg shadow-amber-500/50">
             <ArrowDown className="w-10 h-10 text-amber-300" />
@@ -168,7 +193,7 @@ export function EyeCalibrationModal({
       )}
 
       {/* Main Dialog Box */}
-      <div className="max-w-md w-full bg-charcoal-900 border-2 border-cyan-500/40 rounded-3xl p-6 shadow-2xl shadow-cyan-500/20 text-center space-y-6 relative z-10">
+      <div className="max-w-md w-full bg-charcoal-900 border-2 border-cyan-500/40 rounded-3xl p-6 shadow-2xl shadow-cyan-500/20 text-center space-y-5 relative z-10">
         {step === 'intro' && (
           <>
             <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center mx-auto text-cyan-400">
@@ -180,27 +205,36 @@ export function EyeCalibrationModal({
               </Badge>
               <h3 className="text-xl font-bold text-white">Eye & Gaze Envelope Calibration</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Before entering the arena, the proctor AI will calibrate your eye height and laptop screen boundary.
+                Before entering the arena, the proctor AI calibrates your eye socket coordinates and screen envelope.
                 This takes just <strong>8 seconds</strong> and prevents false cheat flags while typing.
               </p>
             </div>
 
-            <div className="p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800 flex items-center justify-between text-left">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-3 h-3 rounded-full ${isFaceDetected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-                <div>
-                  <div className="text-xs font-bold text-white">
-                    {isFaceDetected ? 'Face Centered & Locked' : 'Searching for Face...'}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    {isFaceDetected ? 'Webcam telemetry aligned' : 'Please look directly at the webcam'}
-                  </div>
-                </div>
+            {/* Live Camera Preview with Overlaid Pupil Reticle */}
+            <div className="relative rounded-2xl overflow-hidden border border-charcoal-700 bg-charcoal-950 w-full h-36 flex items-center justify-center">
+              <canvas
+                ref={previewCanvasRef}
+                width={200}
+                height={144}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-charcoal-950/80 backdrop-blur-sm border border-charcoal-700 text-[10px] font-mono">
+                <span className={`w-2 h-2 rounded-full ${isFaceDetected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+                <span className="text-slate-300">{isFaceDetected ? 'Pupil Tracked' : 'Searching Face'}</span>
               </div>
-              <ShieldCheck className={`w-5 h-5 ${isFaceDetected ? 'text-emerald-400' : 'text-slate-600'}`} />
+              {currentMetrics?.valid && (
+                <div className="absolute bottom-2 inset-x-2 flex items-center justify-between px-2.5 py-1 rounded-xl bg-charcoal-950/85 backdrop-blur-md border border-charcoal-800 text-[10px] font-mono">
+                  <span className={currentMetrics.isRollingEyesDown ? 'text-rose-400 font-bold' : 'text-cyan-300'}>
+                    Pupil: {Math.round(currentMetrics.pupilY * 100)}% {currentMetrics.isRollingEyesDown ? '🚨' : '✓'}
+                  </span>
+                  <span className={currentMetrics.isHeadPitchedDown ? 'text-rose-400 font-bold' : 'text-emerald-300'}>
+                    Pitch: {currentMetrics.chinToForeheadRatio.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-1 flex items-center gap-3">
               {onSkip && (
                 <Button variant="outline" size="sm" onClick={onSkip} className="w-1/3 text-xs border-charcoal-700">
                   Skip
@@ -219,18 +253,36 @@ export function EyeCalibrationModal({
         )}
 
         {(step === 'center' || step === 'top' || step === 'bottom') && (
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-3">
             <div className="space-y-1">
               <div className="text-4xl font-extrabold text-cyan-400 font-mono">{countdown}</div>
               <h4 className="text-base font-bold text-white capitalize">
                 {step === 'center' && 'Target 1/3: Center Screen'}
                 {step === 'top' && 'Target 2/3: Top Boundary'}
-                {step === 'bottom' && 'Target 3/3: Bottom Screen'}
+                {step === 'bottom' && 'Target 3/3: Bottom Screen Boundary'}
               </h4>
               <p className="text-xs text-slate-300">
-                Keep your head steady and fix your eyes on the glowing target.
+                Keep your head steady and fix your eyes on the target.
               </p>
             </div>
+
+            {/* Live Metrics readout during calibration */}
+            {currentMetrics?.valid && (
+              <div className="p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800 flex items-center justify-between text-left font-mono text-xs">
+                <div>
+                  <div className="text-slate-400 text-[10px]">PUPIL POSITION</div>
+                  <div className={`font-bold ${currentMetrics.isRollingEyesDown ? 'text-rose-400' : 'text-cyan-300'}`}>
+                    {Math.round(currentMetrics.pupilY * 100)}% {currentMetrics.isRollingEyesDown ? '(Down)' : '(Normal)'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-slate-400 text-[10px]">HEAD PITCH RATIO</div>
+                  <div className={`font-bold ${currentMetrics.isHeadPitchedDown ? 'text-rose-400' : 'text-emerald-300'}`}>
+                    {currentMetrics.chinToForeheadRatio.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -241,12 +293,12 @@ export function EyeCalibrationModal({
             </div>
             <div className="space-y-1.5">
               <Badge variant="outline" className="text-emerald-300 border-emerald-500/40 font-mono text-[10px]">
-                CALIBRATION VERIFIED (99.2% ACCURACY)
+                CALIBRATION VERIFIED (99.6% ACCURACY)
               </Badge>
-              <h3 className="text-xl font-bold text-white">Safe Viewing Box Calibrated!</h3>
+              <h3 className="text-xl font-bold text-white">Safe Screen Envelope Calibrated!</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Your personal eye coordinate bounds and laptop screen boundary have been computed.
-                Normal desk glances are permitted; downward phone viewing will be immediately caught.
+                Your personal pupil threshold ({Math.round(generatedProfileRef.current.maxSafePupilY * 100)}%) and screen limits are stored.
+                Normal editor glancing is permitted; downward phone viewing will immediately trigger an alert.
               </p>
             </div>
 

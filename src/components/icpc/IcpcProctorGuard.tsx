@@ -98,6 +98,7 @@ export function IcpcProctorGuard({
   // Vision telemetry
   const [gazeStatus, setGazeStatus] = useState<'normal' | 'away_left' | 'away_right' | 'away_up' | 'down_excessive' | 'missing'>('normal');
   const [phoneStatus, setPhoneStatus] = useState<'clear' | 'suspect'>('clear');
+  const [latestEyeMetrics, setLatestEyeMetrics] = useState<{ pupilY: number; pitchRatio: number } | null>(null);
   const [isPipMinimized, setIsPipMinimized] = useState(false);
 
   // Movable PiP state
@@ -1036,6 +1037,7 @@ export function IcpcProctorGuard({
 
       if (!metrics.valid) {
         setGazeStatus('missing');
+        setLatestEyeMetrics(null);
         gazeDeviationStartTimeRef.current = null;
         continuousDownwardStartTimeRef.current = null;
         if (!faceMissingStartTimeRef.current) {
@@ -1050,6 +1052,7 @@ export function IcpcProctorGuard({
         }
       } else {
         faceMissingStartTimeRef.current = null;
+        setLatestEyeMetrics({ pupilY: metrics.pupilY, pitchRatio: metrics.chinToForeheadRatio });
         const gazeEval = evaluateGaze(metrics, calibrationProfileRef.current);
 
         if (gazeEval.deviation === 'down_lap') {
@@ -1057,28 +1060,28 @@ export function IcpcProctorGuard({
           setGazeStatus('down_excessive');
           gazeDeviationStartTimeRef.current = null;
 
-          // Track downward glance timestamps in sliding 60s window
-          const recentGlances = downwardGlanceTimestampsRef.current.filter((t) => now - t < 60000);
+          // Track downward glance timestamps in sliding 45s window
+          const recentGlances = downwardGlanceTimestampsRef.current.filter((t) => now - t < 45000);
           if (!continuousDownwardStartTimeRef.current) {
             continuousDownwardStartTimeRef.current = now;
             recentGlances.push(now);
             downwardGlanceTimestampsRef.current = recentGlances;
 
-            // Frequency check: if they look down 3 or more times in 60 seconds
-            if (recentGlances.length >= 3) {
+            // Frequency check: if they look down 2 or more times in 45 seconds
+            if (recentGlances.length >= 2) {
               triggerViolation(
                 'GAZE_DEVIATION',
-                'Suspicious Repeated Lap Glances (3x/min)',
+                'Suspicious Repeated Lap Glances (2x in 45s)',
                 'Contestant repeatedly looked down below calibrated screen boundary towards lap or hidden phone.',
                 'critical'
               );
             }
-          } else if (now - continuousDownwardStartTimeRef.current >= 3500) {
-            // Sustained continuous downward gaze > 3.5 seconds
+          } else if (now - continuousDownwardStartTimeRef.current >= 2500) {
+            // Sustained continuous downward gaze > 2.5 seconds
             triggerViolation(
               'GAZE_DEVIATION',
-              'Sustained Downward Lap Gaze (> 3.5s)',
-              'Contestant staring downward below calibrated screen boundary towards lap/phone for > 3.5s.',
+              'Sustained Downward Lap Gaze (> 2.5s)',
+              'Contestant staring downward below calibrated screen boundary towards lap/phone for > 2.5s.',
               'critical'
             );
           }
@@ -1130,16 +1133,17 @@ export function IcpcProctorGuard({
       }
 
       // ── 2. Smartphone & Mobile Device Detection Algorithm ──
-      // Strict handheld emissive screen cluster detection:
-      // ZERO false positives on shirts, collars, neck skin, desks, or ambient room lighting.
+      // Handheld device detection:
+      // A) Emissive smartphone screen (bright display)
+      // B) Handheld device / phone camera held up in front of screen
       let phoneCandidateFound = false;
 
-      // Only scan for an elevated handheld device in the mid-upper view
-      // A handheld phone raised in view is between y = 0.18*height and y = 0.78*height
+      // Scan for an elevated handheld device in the lower-middle camera view
       const scanYStart = Math.floor(height * 0.18);
-      const scanYEnd = Math.floor(height * 0.78);
+      const scanYEnd = Math.floor(height * 0.82);
 
       let emissiveScreenCount = 0;
+      let darkDeviceCount = 0;
       let minX = width;
       let maxX = 0;
       let minY = height;
@@ -1160,14 +1164,20 @@ export function IcpcProctorGuard({
             b > 20 &&
             r > g &&
             r > b &&
-            r - g > 12;
+            r - g > 10;
 
           if (isSkin) {
             nearbySkinCount++;
           } else {
-            // Emissive phone screen: intense brightness with neutral white/blue-white backlight
+            // Emissive phone screen: intense brightness
             const isEmissiveScreen =
               lum > 215 &&
+              Math.abs(r - g) < 18 &&
+              Math.abs(r - b) < 18;
+
+            // Dark rectangular device/chassis held up
+            const isDarkDevice =
+              lum < 40 &&
               Math.abs(r - g) < 15 &&
               Math.abs(r - b) < 15;
 
@@ -1177,6 +1187,8 @@ export function IcpcProctorGuard({
               if (x > maxX) maxX = x;
               if (y < minY) minY = y;
               if (y > maxY) maxY = y;
+            } else if (isDarkDevice) {
+              darkDeviceCount++;
             }
           }
         }
@@ -1186,39 +1198,38 @@ export function IcpcProctorGuard({
       const clusterH = Math.max(0, maxY - minY);
       const aspect = clusterH > 0 && clusterW > 0 ? Math.max(clusterH / clusterW, clusterW / clusterH) : 1;
 
-      // A genuine smartphone held up in camera view:
-      // 1. Must be isolated: NOT extending to the bottom of the frame (maxY < scanYEnd - 6)
-      //    (Clothing/shirts extend all the way down and out of frame)
-      // 2. Must have bounded phone dimensions: width between 25 and 110 px, height between 35 and 160 px
-      // 3. Must not span across the chest (clusterW < width * 0.42)
-      // 4. Must have aspect ratio between 1.3 and 2.6 (typical smartphone aspect ratio)
-      // 5. Must have dense emissive screen pixels (>= 50 sample points in this compact box)
-      // 6. Must have skin nearby (hand/fingers holding the phone: nearbySkinCount >= 10)
-      if (
-        emissiveScreenCount >= 50 &&
+      // Check genuine smartphone held in view:
+      // Either emissive screen with hand nearby, or dark device chassis held up by hands
+      const isEmissivePhone =
+        emissiveScreenCount >= 40 &&
         clusterW >= 25 &&
-        clusterW <= Math.floor(width * 0.42) &&
+        clusterW <= Math.floor(width * 0.45) &&
         clusterH >= 35 &&
-        clusterH <= 160 &&
+        clusterH <= 165 &&
         maxY < scanYEnd - 6 &&
-        aspect >= 1.3 &&
-        aspect <= 2.6 &&
-        nearbySkinCount >= 10
-      ) {
+        aspect >= 1.25 &&
+        aspect <= 2.8 &&
+        nearbySkinCount >= 10;
+
+      const isHandheldDeviceRaised =
+        darkDeviceCount >= 60 &&
+        nearbySkinCount >= 25 &&
+        metrics.isRollingEyesDown;
+
+      if (isEmissivePhone || isHandheldDeviceRaised) {
         phoneCandidateFound = true;
       }
 
       // If the contestant is looking straight at the laptop with face centered and no elevated phone device:
-      // Absolutely clear — zero false positives!
       if (phoneCandidateFound) {
         setPhoneStatus('suspect');
         if (!phoneDetectionStartTimeRef.current) {
           phoneDetectionStartTimeRef.current = now;
-        } else if (now - phoneDetectionStartTimeRef.current >= 4000) {
+        } else if (now - phoneDetectionStartTimeRef.current >= 2500) {
           triggerViolation(
             'PHONE_DETECTED',
-            'Mobile Phone Detected in Camera Feed',
-            'Handheld smartphone screen detected in camera view for > 4s. Handheld device usage is strictly prohibited.',
+            'Mobile Phone / Handheld Device Detected',
+            'Smartphone or camera device detected in front of screen for > 2.5s. External devices are strictly banned.',
             'critical'
           );
         }
@@ -1425,13 +1436,15 @@ export function IcpcProctorGuard({
                       gazeStatus === 'normal'
                         ? 'bg-charcoal-950/80 text-emerald-300'
                         : gazeStatus === 'missing'
-                        ? 'bg-rose-600 text-white'
+                        ? 'bg-rose-600 text-white animate-pulse'
+                        : gazeStatus === 'down_excessive'
+                        ? 'bg-rose-500 text-white font-extrabold shadow-md shadow-rose-500/50 animate-bounce'
                         : 'bg-amber-500 text-black font-extrabold'
                     }`}
                   >
                     <Eye className="w-2.5 h-2.5" />
                     {gazeStatus === 'normal'
-                      ? 'Focus: Laptop Screen'
+                      ? `Gaze: Screen Locked (${Math.round((latestEyeMetrics?.pupilY ?? 0.44) * 100)}%)`
                       : gazeStatus === 'away_left'
                       ? 'Gaze: Looking Left'
                       : gazeStatus === 'away_right'
@@ -1439,7 +1452,7 @@ export function IcpcProctorGuard({
                       : gazeStatus === 'away_up'
                       ? 'Gaze: Looking Up'
                       : gazeStatus === 'down_excessive'
-                      ? 'Gaze: Looking Down'
+                      ? `🚨 Eyes Down (${Math.round((latestEyeMetrics?.pupilY ?? 0.65) * 100)}% / Lap Detected)`
                       : 'Face: Missing'}
                   </span>
                 </div>
