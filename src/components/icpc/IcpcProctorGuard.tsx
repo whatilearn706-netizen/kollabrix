@@ -271,13 +271,13 @@ export function IcpcProctorGuard({
       if (!screenVideo || screenVideo.readyState < 2) return undefined;
 
       const snapCanvas = document.createElement('canvas');
-      snapCanvas.width = 640;
-      snapCanvas.height = 360;
+      snapCanvas.width = 480;
+      snapCanvas.height = 270;
       const ctx = snapCanvas.getContext('2d');
       if (!ctx) return undefined;
 
-      ctx.drawImage(screenVideo, 0, 0, 640, 360);
-      return snapCanvas.toDataURL('image/jpeg', 0.65);
+      ctx.drawImage(screenVideo, 0, 0, 480, 270);
+      return snapCanvas.toDataURL('image/jpeg', 0.5);
     } catch (e) {
       console.warn('Could not capture screen snapshot:', e);
       return undefined;

@@ -75,8 +75,13 @@ async function saveProctorIncidents(incidents: ProctorIncident[]): Promise<void>
   }
 }
 
+let lastActiveSessionsLoad = 0;
 async function loadActiveSessions(): Promise<Record<string, ActiveProctorSession>> {
-  if (Object.keys(memoryActiveSessions).length > 0) return memoryActiveSessions;
+  const now = Date.now();
+  if (Object.keys(memoryActiveSessions).length > 0 && now - lastActiveSessionsLoad < 1500) {
+    return memoryActiveSessions;
+  }
+  lastActiveSessionsLoad = now;
   try {
     const client = getSupabaseAdmin();
     if (!client) return memoryActiveSessions;
@@ -94,8 +99,8 @@ async function loadActiveSessions(): Promise<Record<string, ActiveProctorSession
 async function saveActiveSessions(sessions: Record<string, ActiveProctorSession>, forceFlush = false): Promise<void> {
   memoryActiveSessions = sessions;
   const now = Date.now();
-  // Throttle database persistence to at most once per 30 seconds to protect Supabase Egress & Log Ingestion
-  if (!forceFlush && (now - lastDbSessionFlush < 30_000)) {
+  // Throttle database persistence to at most once per 2 seconds so live frames update smoothly
+  if (!forceFlush && (now - lastDbSessionFlush < 2000)) {
     return;
   }
   lastDbSessionFlush = now;
@@ -106,9 +111,7 @@ async function saveActiveSessions(sessions: Record<string, ActiveProctorSession>
     const cleanMap: Record<string, ActiveProctorSession> = {};
     for (const [k, s] of Object.entries(sessions)) {
       if (now - new Date(s.lastHeartbeat).getTime() < 10 * 60 * 1000) {
-        // STRIP screenSnapshot so heavy Base64 images are NEVER written to Supabase!
-        const { screenSnapshot, ...rest } = s;
-        cleanMap[k] = rest as ActiveProctorSession;
+        cleanMap[k] = s;
       }
     }
     await client.from('platform_settings').upsert({
