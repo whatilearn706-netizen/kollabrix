@@ -42,28 +42,28 @@ function AnimatedCounter({
 
 const stats = [
   {
-    value: 1400,
-    label: '1v1 Duels Fought',
+    value: 5000,
+    label: 'Students',
     suffix: '+',
-    color: 'bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400 bg-clip-text text-transparent',
-  },
-  {
-    value: 48,
-    label: 'Compiler Latency',
-    suffix: 'ms',
     color: 'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent',
   },
   {
-    value: 40,
-    label: 'Engineering Colleges',
+    value: 200,
+    label: 'Projects Shipped',
     suffix: '+',
     color: 'bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent',
   },
   {
-    value: 100,
-    label: 'Proctor Verification',
-    suffix: '%',
+    value: 50,
+    label: 'Hackathons Hosted',
+    suffix: '+',
     color: 'bg-gradient-to-r from-violet-400 via-purple-300 to-fuchsia-400 bg-clip-text text-transparent',
+  },
+  {
+    value: 100,
+    label: 'Universities',
+    suffix: '+',
+    color: 'bg-gradient-to-r from-amber-400 via-orange-300 to-rose-400 bg-clip-text text-transparent',
   },
 ];
 

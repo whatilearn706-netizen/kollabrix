@@ -42,20 +42,21 @@ export function LandingCTA() {
         className="relative z-20 max-w-3xl mx-auto px-6 text-center"
       >
         <h2 className="font-heading text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-          Ready to climb the{' '}
-          <span className="landing-gradient-text">Collegiate Leaderboard?</span>
+          Ready to build something{' '}
+          <span className="landing-gradient-text">amazing?</span>
         </h2>
         <p className="text-lg text-slate-400 mb-10 max-w-xl mx-auto leading-relaxed">
-          Join thousands of engineering students dueling in live 1v1 speedruns, shipping winning hackathons, and preparing for top tech roles on Kollabrix.
+          Join thousands of students who are already collaborating, competing,
+          and shipping real projects on Kollabrix.
         </p>
         <Link
-          href={user ? "/icpc" : "/signup"}
-          className="group inline-flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-lg landing-btn-glow shadow-xl shadow-orange-500/25 hover:scale-105 transition-all duration-200"
+          href={user ? "/my-projects" : "/signup"}
+          className="group inline-flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-lg landing-btn-glow"
         >
-          {user ? 'Enter 1v1 Arena' : "Start Dueling — It's Free"}
+          {user ? 'Go to Workspace' : "Get Started — It's Free"}
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
         </Link>
-        <p className="mt-5 text-sm text-slate-500 font-mono">Zero paywalls • Modern C++, Python &amp; Java</p>
+        <p className="mt-5 text-sm text-slate-600">No credit card required</p>
       </motion.div>
     </section>
   );
