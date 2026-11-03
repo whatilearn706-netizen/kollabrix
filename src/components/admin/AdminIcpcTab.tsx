@@ -1570,34 +1570,60 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                         )}
                       </div>
 
-                      {/* Monitor Snapshot Feed & Direct 60FPS Tap Trigger */}
+                      {/* Dual-Lens Snapshot Feed: Screen & Side Cam */}
                       <div
                         className="relative aspect-video bg-black flex items-center justify-center overflow-hidden cursor-pointer"
                         onClick={() => setTheaterSession(session)}
                       >
                         {session.screenSnapshot ? (
-                          <>
-                            <img
-                              src={session.screenSnapshot}
-                              alt={`${session.studentName} monitor`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                            />
-                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                              <span className="px-3 py-1.5 rounded-xl bg-cyan-500 text-black text-xs font-bold flex items-center gap-1.5 shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform">
-                                <Play className="w-3.5 h-3.5 fill-current" />
-                                <span>Watch Live 60FPS</span>
-                              </span>
-                            </div>
-                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 backdrop-blur text-[9px] font-mono text-emerald-400 border border-charcoal-700 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              <span>Live Feed</span>
-                            </div>
-                          </>
+                          <img
+                            src={session.screenSnapshot}
+                            alt={`${session.studentName} monitor`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
                         ) : (
                           <div className="flex flex-col items-center gap-1 text-slate-500 text-xs font-mono p-4 text-center">
                             <Monitor className="w-6 h-6 animate-pulse text-cyan-400" />
                             <span>Monitor Connected</span>
                             <span className="text-[10px] text-slate-600">Click to connect WebRTC stream...</span>
+                          </div>
+                        )}
+
+                        {/* Inset Side Camera PiP Snapshot Thumbnail */}
+                        {session.sideCameraSnapshot && (
+                          <div className="absolute bottom-2 right-2 w-24 h-16 rounded-lg overflow-hidden border-2 border-cyan-400/80 shadow-lg bg-black z-10">
+                            <img
+                              src={session.sideCameraSnapshot}
+                              alt="Side Camera Desk & Lap"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute bottom-0 inset-x-0 bg-black/75 text-[8px] font-mono text-cyan-300 text-center font-bold">
+                              SIDE CAM
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
+                          <span className="px-3 py-1.5 rounded-xl bg-cyan-500 text-black text-xs font-bold flex items-center gap-1.5 shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform">
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>Inspect Live (Screen + Desk)</span>
+                          </span>
+                        </div>
+
+                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 backdrop-blur text-[9px] font-mono text-emerald-400 border border-charcoal-700 flex items-center gap-1 z-10">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>Screen Live</span>
+                        </div>
+
+                        {session.sideCameraConnected ? (
+                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-emerald-950/80 backdrop-blur text-[9px] font-mono text-emerald-300 border border-emerald-500/40 flex items-center gap-1 z-10">
+                            <Smartphone className="w-2.5 h-2.5" />
+                            <span>Side Cam Online</span>
+                          </div>
+                        ) : (
+                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-rose-950/80 backdrop-blur text-[9px] font-mono text-rose-300 border border-rose-500/40 flex items-center gap-1 z-10">
+                            <Smartphone className="w-2.5 h-2.5" />
+                            <span>Side Cam Offline</span>
                           </div>
                         )}
                       </div>
@@ -2301,47 +2327,74 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             </div>
           </div>
 
-          {/* 60FPS Video Canvas Container */}
-          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-charcoal-750 flex items-center justify-center shadow-2xl">
-            {/* Fluid WebRTC Video Element */}
-            <video
-              ref={theaterVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`w-full h-full object-contain ${isWebRtcConnected ? 'block' : 'hidden'}`}
-            />
+          {/* Dual-Lens Theater Grid: Left (Screen), Right (Side Camera Desk & Lap) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* 1. Fluid WebRTC Screen Stream */}
+            <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-charcoal-750 flex items-center justify-center shadow-2xl">
+              <video
+                ref={theaterVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-contain ${isWebRtcConnected ? 'block' : 'hidden'}`}
+              />
 
-            {/* Instant Fallback Snapshot while WebRTC Handshake completes */}
-            {!isWebRtcConnected && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
-                {theaterSession?.screenSnapshot ? (
-                  <img
-                    src={theaterSession.screenSnapshot}
-                    alt="Screen Snapshot Preview"
-                    className="w-full h-full object-contain opacity-60"
-                  />
-                ) : null}
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-3 p-6 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
-                    <RefreshCw className="w-6 h-6 animate-spin text-cyan-400" />
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-bold text-white">Connecting Real-Time WebRTC Video</h5>
-                    <p className="text-xs text-slate-400 font-mono mt-1">
-                      Establishing direct peer-to-peer 60 FPS display stream with student browser...
-                    </p>
+              {!isWebRtcConnected && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
+                  {theaterSession?.screenSnapshot ? (
+                    <img
+                      src={theaterSession.screenSnapshot}
+                      alt="Screen Snapshot Preview"
+                      className="w-full h-full object-contain opacity-60"
+                    />
+                  ) : null}
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-2 p-4 text-center">
+                    <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
+                    <div className="text-xs font-bold text-white">Connecting Real-Time Screen Stream...</div>
+                    <div className="text-[10px] text-slate-400 font-mono">P2P 60FPS WebRTC handshake in progress</div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Real-time streaming badge */}
-            <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[10px] font-mono text-white pointer-events-none">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-              <span className="font-bold">LIVE SCREEN</span>
-              <span className="text-slate-500">|</span>
-              <span className="text-emerald-400">{isWebRtcConnected ? '60 FPS Ultra-Fluid' : 'Connecting...'}</span>
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[9px] font-mono text-white pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                <span className="font-bold">CONTESTANT SCREEN</span>
+                <span className="text-slate-500">|</span>
+                <span className="text-emerald-400">{isWebRtcConnected ? '60 FPS Live' : 'P2P Syncing'}</span>
+              </div>
+            </div>
+
+            {/* 2. Secondary Side Camera Stream (Desk, Lap, Hands) */}
+            <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-charcoal-750 flex items-center justify-center shadow-2xl">
+              {theaterSession?.sideCameraSnapshot ? (
+                <img
+                  src={theaterSession.sideCameraSnapshot}
+                  alt="Side Camera Desk & Lap Feed"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2 text-slate-500 p-4 text-center">
+                  <Smartphone className="w-8 h-8 text-cyan-400/60 animate-pulse" />
+                  <div className="text-xs font-mono font-bold text-slate-400">
+                    {theaterSession?.sideCameraConnected ? 'Side Camera Transmitting' : 'Side Camera Offline'}
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    {theaterSession?.sideCameraConnected ? 'Waiting for snapshot keyframe...' : 'Student has not connected phone yet'}
+                  </div>
+                </div>
+              )}
+
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[9px] font-mono text-white pointer-events-none">
+                <span className={`w-1.5 h-1.5 rounded-full ${theaterSession?.sideCameraConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+                <span className="font-bold">SIDE CAM (DESK &amp; LAP)</span>
+              </div>
+
+              <div className="absolute bottom-2 left-2 right-2 px-2 py-1 rounded-lg bg-black/75 backdrop-blur text-[9px] font-mono text-cyan-300 flex items-center justify-between">
+                <span>View: Desk, Keyboard &amp; Lap</span>
+                <span className={theaterSession?.sideCameraConnected ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                  {theaterSession?.sideCameraConnected ? '● Online' : '○ Disconnected'}
+                </span>
+              </div>
             </div>
           </div>
 

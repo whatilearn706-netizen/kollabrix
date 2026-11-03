@@ -39,13 +39,14 @@ setInterval(() => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, studentId } = body;
+    const { action, studentId, streamType = 'screen' } = body;
 
     if (!studentId) {
       return NextResponse.json({ error: 'studentId required' }, { status: 400 });
     }
 
-    const state = getSignal(studentId);
+    const signalKey = streamType && streamType !== 'screen' ? `${studentId}_${streamType}` : studentId;
+    const state = getSignal(signalKey);
     state.updatedAt = Date.now();
 
     // 0. Admin requests a fresh offer from student
