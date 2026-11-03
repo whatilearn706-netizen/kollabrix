@@ -170,8 +170,8 @@ function SideCameraContent() {
       }
     };
 
-    // Staggered heartbeat interval around 2400ms to distribute server load across 500+ contestants
-    const intervalTime = 2200 + Math.floor(Math.random() * 400);
+    // Staggered heartbeat interval around 1200ms for responsive real-time proctor view
+    const intervalTime = 1100 + Math.floor(Math.random() * 300);
     heartbeatTimerRef.current = setInterval(sendHeartbeat, intervalTime);
 
     // Send first snapshot immediately
