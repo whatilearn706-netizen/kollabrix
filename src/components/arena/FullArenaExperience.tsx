@@ -813,6 +813,17 @@ export function FullArenaExperience({
   };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Anti-Cheat: Intercept Cmd+V / Ctrl+V
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      setActivityNotification({
+        message: '🛡️ Anti-Cheat Active: Copy-paste is disabled in Battle Arena. Type your code solution!',
+        type: 'leave',
+        id: Date.now(),
+      });
+      return;
+    }
+
     const textarea = e.currentTarget;
     const { selectionStart, selectionEnd, value } = textarea;
 
@@ -3818,7 +3829,10 @@ export function FullArenaExperience({
         {step === 5 && (
           <div className="w-full h-full flex flex-col gap-3 animate-fadeIn">
             {/* Mission Objective Header */}
-            <div className="p-3 rounded-2xl bg-slate-950/85 border border-slate-800 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div
+              className="p-3 rounded-2xl bg-slate-950/85 border border-slate-800 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none"
+              onContextMenu={(e) => e.preventDefault()}
+            >
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -4125,6 +4139,14 @@ export function FullArenaExperience({
                         setCurrentCode(val);
                       }}
                       onKeyDown={handleEditorKeyDown}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        setActivityNotification({
+                          message: '🛡️ Anti-Cheat Active: Copy-paste is disabled in Battle Arena. Type your code solution!',
+                          type: 'leave',
+                          id: Date.now(),
+                        });
+                      }}
                       onScroll={() => {
                         if (lineNumbersRef.current && textareaRef.current) {
                           lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
@@ -4133,11 +4155,11 @@ export function FullArenaExperience({
                       placeholder={
                         isWebMatch
                           ? activeTab === 'html'
-                            ? '<!-- Type or paste your HTML here. Delete all content anytime. -->'
+                            ? '<!-- Type your HTML here. (Copy-paste disabled for fair play) -->'
                             : activeTab === 'css'
-                            ? '/* Type or paste your CSS styles here. Delete all content anytime. */'
-                            : '// Type or paste your JavaScript here.'
-                          : '// Write your code solution here. Implement the required method / logic.'
+                            ? '/* Type your CSS styles here. (Copy-paste disabled for fair play) */'
+                            : '// Type your JavaScript here. (Copy-paste disabled for fair play).'
+                          : '// Write your code solution here. (Copy-paste disabled for fair play).'
                       }
                       className="flex-1 w-full h-full bg-transparent p-3 font-mono text-xs sm:text-sm text-cyan-200 placeholder-slate-600 resize-none focus:outline-none whitespace-pre overflow-auto"
                       style={{ lineHeight: '1.5rem', tabSize: 2 }}
@@ -4415,8 +4437,11 @@ ${jsCode || ''}
                           </div>
                         </div>
 
-                        {/* Problem Details Body */}
-                        <div className="flex-1 p-4 bg-slate-950 overflow-y-auto space-y-3.5 font-sans">
+                        {/* Problem Details Body (Protected against copy & highlight) */}
+                        <div
+                          className="flex-1 p-4 bg-slate-950 overflow-y-auto space-y-3.5 font-sans select-none"
+                          onContextMenu={(e) => e.preventDefault()}
+                        >
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="text-base font-bold text-white font-mono">
