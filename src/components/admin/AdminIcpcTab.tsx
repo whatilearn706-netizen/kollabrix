@@ -764,16 +764,17 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         theaterPcRef.current = null;
       }
     };
-  }, [theaterSession]);
+  }, [theaterSession?.studentId]);
 
   useEffect(() => {
     loadProctorData();
     if (!autoRefreshProctor) return;
+    const intervalMs = theaterSession ? 1500 : 3500;
     const interval = setInterval(() => {
       loadProctorData();
-    }, 3000);
+    }, intervalMs);
     return () => clearInterval(interval);
-  }, [loadProctorData, autoRefreshProctor]);
+  }, [loadProctorData, autoRefreshProctor, theaterSession]);
 
   const handleExecuteSuspend = async () => {
     if (!suspendingIncident) return;
@@ -2345,22 +2346,23 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
                     <img
                       src={theaterSession.screenSnapshot}
                       alt="Screen Snapshot Preview"
-                      className="w-full h-full object-contain opacity-60"
+                      className="w-full h-full object-contain"
                     />
-                  ) : null}
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-2 p-4 text-center">
-                    <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
-                    <div className="text-xs font-bold text-white">Connecting Real-Time Screen Stream...</div>
-                    <div className="text-[10px] text-slate-400 font-mono">P2P 60FPS WebRTC handshake in progress</div>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-2 p-4 text-center">
+                      <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
+                      <div className="text-xs font-bold text-white">Connecting Real-Time Screen Stream...</div>
+                      <div className="text-[10px] text-slate-400 font-mono">P2P 60FPS WebRTC handshake in progress</div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[9px] font-mono text-white pointer-events-none">
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[9px] font-mono text-white pointer-events-none z-10">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                 <span className="font-bold">CONTESTANT SCREEN</span>
                 <span className="text-slate-500">|</span>
-                <span className="text-emerald-400">{isWebRtcConnected ? '60 FPS Live' : 'P2P Syncing'}</span>
+                <span className="text-emerald-400">{isWebRtcConnected ? '60 FPS Live' : 'Live Stream'}</span>
               </div>
             </div>
 

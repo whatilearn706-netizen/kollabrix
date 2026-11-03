@@ -564,6 +564,7 @@ export function IcpcProctorGuard({
       if (typeof document !== 'undefined' && document.hidden) return;
 
       try {
+        const screenSnapshot = captureScreenSnapshot();
         const res = await fetch('/api/icpc/proctor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -577,6 +578,7 @@ export function IcpcProctorGuard({
             contestTitle,
             problemTitle,
             warningCount: warningCountRef.current,
+            screenSnapshot,
           }),
         });
         const data = await res.json();
@@ -612,7 +614,7 @@ export function IcpcProctorGuard({
     };
 
     sendHeartbeat();
-    const heartbeatTimer = setInterval(sendHeartbeat, 5000);
+    const heartbeatTimer = setInterval(sendHeartbeat, 2000);
     return () => clearInterval(heartbeatTimer);
   }, [
     isActive,
@@ -627,6 +629,7 @@ export function IcpcProctorGuard({
     contestId,
     contestTitle,
     problemTitle,
+    captureScreenSnapshot,
     playAlertSound,
     triggerViolation,
   ]);
@@ -783,7 +786,7 @@ export function IcpcProctorGuard({
         pc.close();
       }
     };
-  }, [isActive, showEntranceModal, isTerminated, hasScreenPermission, studentId]);
+  }, [isActive, showEntranceModal, showSideCameraModal, isTerminated, hasScreenPermission, studentId]);
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
   useEffect(() => {
@@ -890,42 +893,33 @@ export function IcpcProctorGuard({
 
         if (!focusLostStartTimeRef.current) {
           focusLostStartTimeRef.current = Date.now();
-        } else {
-          const elapsed = Date.now() - focusLostStartTimeRef.current;
-          if (elapsed >= 1500) {
-            triggerViolation(
-              'TAB_SWITCH',
-              'External App / Overlay / Desktop Switch Detected',
-              `Contest window lost focus to an external window or overlay for ${(elapsed / 1000).toFixed(1)}s. The contest arena was blacked out. Switching windows or using overlays during contests is strictly prohibited.`,
-              'critical'
-            );
-          }
+          triggerViolation(
+            'TAB_SWITCH',
+            'Window Focus Lost (Desktop / App Switch)',
+            'Contest arena is no longer in active focus. Navigating away or using overlays is strictly prohibited.',
+            'critical'
+          );
         }
       } else {
         setIsFocusLost(false);
-        if (focusLostStartTimeRef.current) {
-          const awayDuration = Date.now() - focusLostStartTimeRef.current;
-          focusLostStartTimeRef.current = null;
-          if (awayDuration >= 1500) {
-            triggerViolation(
-              'TAB_SWITCH',
-              'External Window Navigation Detected',
-              `You navigated away from the contest arena for ${(awayDuration / 1000).toFixed(1)}s. Screen switching is strictly prohibited.`,
-              'critical'
-            );
-          }
-        }
+        focusLostStartTimeRef.current = null;
       }
     };
 
-    const poller = setInterval(checkFocusAndVisibility, 1000);
+    const poller = setInterval(checkFocusAndVisibility, 500);
 
     const handleWindowBlur = () => {
       setIsFocusLost(true);
+      playAlertSound('critical');
+      triggerViolation(
+        'TAB_SWITCH',
+        '4-Finger Desktop Swipe / External Navigation Detected',
+        'Contest arena lost focus via trackpad swipe or window switch. Multi-desktop navigation is strictly prohibited.',
+        'critical'
+      );
       if (!focusLostStartTimeRef.current) {
         focusLostStartTimeRef.current = Date.now();
       }
-      playAlertSound('critical');
       checkFocusAndVisibility();
     };
 
@@ -936,9 +930,11 @@ export function IcpcProctorGuard({
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        setIsFocusLost(true);
+        playAlertSound('critical');
         triggerViolation(
           'TAB_SWITCH',
-          '4-Finger Desktop Swipe Detected',
+          '4-Finger Desktop Swipe Detected (Screen Moved Off)',
           'Contest arena moved off-screen via desktop swipe gesture. Multi-desktop navigation is strictly prohibited.',
           'critical'
         );
@@ -946,10 +942,23 @@ export function IcpcProctorGuard({
       checkFocusAndVisibility();
     };
 
+    const handleWheelSwipe = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > 150 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2) {
+        playAlertSound('warning');
+        triggerViolation(
+          'TAB_SWITCH',
+          '4-Finger Trackpad Swipe Gesture Attempt',
+          'Horizontal desktop navigation gesture detected in fullscreen. Stay strictly inside the contest editor.',
+          'medium'
+        );
+      }
+    };
+
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pagehide', handleWindowBlur);
+    window.addEventListener('wheel', handleWheelSwipe, { passive: true });
 
     return () => {
       clearInterval(poller);
@@ -957,6 +966,7 @@ export function IcpcProctorGuard({
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handleWindowBlur);
+      window.removeEventListener('wheel', handleWheelSwipe);
     };
   }, [isActive, showEntranceModal, triggerViolation, playAlertSound]);
 
