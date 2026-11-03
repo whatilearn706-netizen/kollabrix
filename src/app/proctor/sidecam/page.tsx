@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Camera,
@@ -17,7 +17,9 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 
-export default function SideCameraPage() {
+export const dynamic = 'force-dynamic';
+
+function SideCameraContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('session') || searchParams.get('studentId') || '';
   const contestId = searchParams.get('contest') || searchParams.get('contestId') || 'icpc-arena';
@@ -397,5 +399,22 @@ export default function SideCameraPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function SideCameraPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-charcoal-950 text-white flex items-center justify-center p-4">
+          <div className="flex items-center gap-2 text-cyan-400 font-mono text-sm">
+            <RefreshCw className="w-5 h-5 animate-spin" />
+            <span>Initializing Side Proctor Camera...</span>
+          </div>
+        </div>
+      }
+    >
+      <SideCameraContent />
+    </Suspense>
   );
 }
