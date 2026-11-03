@@ -31,6 +31,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { ProctorIncident, ProctorViolationType } from '@/types/icpc';
 import { supabase } from '@/lib/supabase/client';
+import { EyeCalibrationModal } from '@/components/icpc/EyeCalibrationModal';
+import {
+  EyeCalibrationProfile,
+  evaluateGaze,
+  extractFaceMetrics,
+} from '@/lib/arena/eyeCalibrationEngine';
 
 const MAX_WARNINGS = 10;
 
@@ -73,6 +79,9 @@ export function IcpcProctorGuard({
   const [isCameraMirrored, setIsCameraMirrored] = useState(false);
   const [pipFeedMode, setPipFeedMode] = useState<'camera' | 'screen'>('camera');
   const [showEntranceModal, setShowEntranceModal] = useState(true);
+  const [showCalibrationModal, setShowCalibrationModal] = useState(false);
+  const calibrationProfileRef = useRef<EyeCalibrationProfile | null>(null);
+  const downwardGlanceTimestampsRef = useRef<number[]>([]);
   const [isTerminated, setIsTerminated] = useState(false);
   const [isDemolishedByAdmin, setIsDemolishedByAdmin] = useState(false);
   const [adminCautionMessage, setAdminCautionMessage] = useState<string | null>(null);
@@ -544,6 +553,7 @@ export function IcpcProctorGuard({
     }
 
     setShowEntranceModal(false);
+    setShowCalibrationModal(true);
     await requestArenaFullscreen();
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
@@ -552,7 +562,7 @@ export function IcpcProctorGuard({
 
   // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 60 SECONDS - EVENT DRIVEN) ──
   useEffect(() => {
-    if (!isActive || showEntranceModal || isTerminated) return;
+    if (!isActive || showEntranceModal || showCalibrationModal || isTerminated) return;
 
     const sendHeartbeat = async () => {
       // Idle tab protection: skip heartbeat if window is hidden/minimized to preserve server CPU
@@ -609,7 +619,7 @@ export function IcpcProctorGuard({
 
   // ── WEBRTC 60FPS REAL-TIME SCREEN BROADCASTER (VIA SUPABASE REALTIME WEBSOCKETS) ──
   useEffect(() => {
-    if (!isActive || showEntranceModal || isTerminated || !hasScreenPermission) return;
+    if (!isActive || showEntranceModal || showCalibrationModal || isTerminated || !hasScreenPermission) return;
     const stream = screenStreamRef.current;
     if (!stream) return;
 
@@ -763,7 +773,7 @@ export function IcpcProctorGuard({
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
   useEffect(() => {
-    if (!isActive || showEntranceModal) return;
+    if (!isActive || showEntranceModal || showCalibrationModal) return;
 
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
@@ -849,7 +859,7 @@ export function IcpcProctorGuard({
 
   // ── HIGH-FREQUENCY FOCUS, VISIBILITY & DESKTOP GESTURE MONITOR ──
   useEffect(() => {
-    if (!isActive || showEntranceModal) return;
+    if (!isActive || showEntranceModal || showCalibrationModal) return;
 
     const checkFocusAndVisibility = () => {
       const hasFocus = typeof document !== 'undefined' ? document.hasFocus() : true;
@@ -938,7 +948,7 @@ export function IcpcProctorGuard({
 
   // Full-Screen Change Event Listener (with 1.5-Second Rule)
   useEffect(() => {
-    if (!isActive || showEntranceModal) return;
+    if (!isActive || showEntranceModal || showCalibrationModal) return;
 
     setIsFullscreenActive(Boolean(document.fullscreenElement));
 
@@ -978,7 +988,7 @@ export function IcpcProctorGuard({
 
   // ── REAL-TIME VISION FRAME PROCESSING (Phone & Laptop Gaze Tracking) ──
   useEffect(() => {
-    if (!isActive || !hasCameraPermission || showEntranceModal) return;
+    if (!isActive || !hasCameraPermission || showEntranceModal || showCalibrationModal) return;
 
     const canvas = canvasRef.current || document.createElement('canvas');
     canvas.width = 320;
@@ -1021,128 +1031,98 @@ export function IcpcProctorGuard({
       const frameData = ctx.getImageData(0, 0, 320, 240);
       const { data, width, height } = frameData;
 
-      // ── 1. Face & Laptop Gaze Cone Tracking Algorithm ──
-      // Scan upper 72% of frame to isolate the face and avoid keyboard/mouse/hand skin pixels
-      let skinPixelCount = 0;
-      let sumX = 0;
-      let sumY = 0;
-      let leftSkinCount = 0;
-      let rightSkinCount = 0;
-      const faceRegionBottom = Math.floor(height * 0.72);
+      // ── 1. High-Precision Calibrated Gaze & Head-Pose Tracking ──
+      const metrics = extractFaceMetrics(data, width, height);
 
-      for (let y = 0; y < faceRegionBottom; y += 2) {
-        for (let x = 0; x < width; x += 2) {
-          const idx = (y * width + x) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-
-          const isSkin =
-            r > 60 &&
-            g > 35 &&
-            b > 20 &&
-            r > g &&
-            r > b &&
-            r - g > 12;
-
-          if (isSkin) {
-            sumX += x;
-            sumY += y;
-            skinPixelCount++;
-
-            if (x < width / 2) {
-              leftSkinCount++;
-            } else {
-              rightSkinCount++;
-            }
-          }
-        }
-      }
-
-      if (skinPixelCount < 60) {
+      if (!metrics.valid) {
         setGazeStatus('missing');
         gazeDeviationStartTimeRef.current = null;
         continuousDownwardStartTimeRef.current = null;
         if (!faceMissingStartTimeRef.current) {
           faceMissingStartTimeRef.current = now;
-        } else if (now - faceMissingStartTimeRef.current >= 6000) {
+        } else if (now - faceMissingStartTimeRef.current >= 5000) {
           triggerViolation(
             'FACE_MISSING',
             'Face Not Detected in Frame',
-            'Contestant face not visible in camera proctor feed for > 6s. Keep your face centered in the camera.',
+            'Contestant face not visible in camera proctor feed for > 5s. Keep your face centered in the camera.',
             'medium'
           );
         }
       } else {
         faceMissingStartTimeRef.current = null;
-        const avgX = sumX / skinPixelCount / width;
-        const avgY = sumY / skinPixelCount / height;
+        const gazeEval = evaluateGaze(metrics, calibrationProfileRef.current);
 
-        const totalSkin = leftSkinCount + rightSkinCount;
-        const leftRatio = totalSkin > 0 ? leftSkinCount / totalSkin : 0.5;
+        if (gazeEval.deviation === 'down_lap') {
+          // Downward gaze below calibrated screen boundary
+          setGazeStatus('down_excessive');
+          gazeDeviationStartTimeRef.current = null;
 
-        // Accurate directional gaze cone tracking:
-        // Wide laptop view cone: avgX between 0.24 and 0.76, avgY between 0.16 and 0.60
-        if (avgX < 0.24 || (avgX < 0.28 && leftRatio > 0.85)) {
-          // Turned Left away from screen
+          // Track downward glance timestamps in sliding 60s window
+          const recentGlances = downwardGlanceTimestampsRef.current.filter((t) => now - t < 60000);
+          if (!continuousDownwardStartTimeRef.current) {
+            continuousDownwardStartTimeRef.current = now;
+            recentGlances.push(now);
+            downwardGlanceTimestampsRef.current = recentGlances;
+
+            // Frequency check: if they look down 3 or more times in 60 seconds
+            if (recentGlances.length >= 3) {
+              triggerViolation(
+                'GAZE_DEVIATION',
+                'Suspicious Repeated Lap Glances (3x/min)',
+                'Contestant repeatedly looked down below calibrated screen boundary towards lap or hidden phone.',
+                'critical'
+              );
+            }
+          } else if (now - continuousDownwardStartTimeRef.current >= 3500) {
+            // Sustained continuous downward gaze > 3.5 seconds
+            triggerViolation(
+              'GAZE_DEVIATION',
+              'Sustained Downward Lap Gaze (> 3.5s)',
+              'Contestant staring downward below calibrated screen boundary towards lap/phone for > 3.5s.',
+              'critical'
+            );
+          }
+        } else if (gazeEval.deviation === 'away_left') {
           setGazeStatus('away_left');
           continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 5000) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 4000) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Away to the Left Detected',
-              'Contestant turned head/gaze far to the left away from the laptop screen for > 5s.',
+              'Contestant turned head/gaze far to the left away from the screen for > 4s.',
               'medium'
             );
           }
-        } else if (avgX > 0.76 || (avgX > 0.72 && leftRatio < 0.15)) {
-          // Turned Right away from screen
+        } else if (gazeEval.deviation === 'away_right') {
           setGazeStatus('away_right');
           continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 5000) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 4000) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Away to the Right Detected',
-              'Contestant turned head/gaze far to the right away from the laptop screen for > 5s.',
+              'Contestant turned head/gaze far to the right away from the screen for > 4s.',
               'medium'
             );
           }
-        } else if (avgY < 0.16) {
-          // Looking Upward away from screen
+        } else if (gazeEval.deviation === 'away_up') {
           setGazeStatus('away_up');
           continuousDownwardStartTimeRef.current = null;
           if (!gazeDeviationStartTimeRef.current) {
             gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 5000) {
+          } else if (now - gazeDeviationStartTimeRef.current >= 4000) {
             triggerViolation(
               'GAZE_DEVIATION',
               'Looking Upward Away from Screen',
-              'Contestant looking upward away from the contest problem and editor for > 5s.',
-              'medium'
-            );
-          }
-        } else if (avgY > 0.60) {
-          // Looking Downward (Lap / Notes / Desk)
-          // Normal brief downward glances (typing on keyboard, looking at desk) are permitted;
-          // Only triggers if sustained continuously for > 30 seconds as requested!
-          setGazeStatus('down_excessive');
-          gazeDeviationStartTimeRef.current = null;
-          if (!continuousDownwardStartTimeRef.current) {
-            continuousDownwardStartTimeRef.current = now;
-          } else if (now - continuousDownwardStartTimeRef.current >= 30000) {
-            triggerViolation(
-              'GAZE_DEVIATION',
-              'Excessive Continuous Downward Gaze (> 30s)',
-              'Contestant looking continuously downward toward lap/desk for > 30s without looking at screen. Cheating risk.',
+              'Contestant looking upward away from the contest editor for > 4s.',
               'medium'
             );
           }
         } else {
-          // Seeing laptop front normally: reset all deviation timers!
+          // Gaze is safe within calibrated envelope!
           setGazeStatus('normal');
           gazeDeviationStartTimeRef.current = null;
           continuousDownwardStartTimeRef.current = null;
@@ -1286,7 +1266,7 @@ export function IcpcProctorGuard({
       />
 
       {/* ── PROCTOR PIP FLOATING WIDGET (Movable / Draggable Anywhere inside Arena) ── */}
-      {isActive && !showEntranceModal && !isTerminated && (
+      {isActive && !showEntranceModal && !showCalibrationModal && !isTerminated && (
         <div
           ref={pipContainerRef}
           style={
@@ -1498,6 +1478,20 @@ export function IcpcProctorGuard({
             <span>{studentName.split(' ')[0]}</span>
           </div>
         </div>
+      )}
+
+      {/* ── HIGH-PRECISION PRE-CONTEST EYE & HEAD CALIBRATION MODAL ── */}
+      {isActive && showCalibrationModal && (
+        <EyeCalibrationModal
+          videoStream={streamRef.current}
+          onCalibrationComplete={(profile) => {
+            calibrationProfileRef.current = profile;
+            setShowCalibrationModal(false);
+          }}
+          onSkip={() => {
+            setShowCalibrationModal(false);
+          }}
+        />
       )}
 
       {/* ── MANDATORY DUAL-LENS PROCTOR ENTRANCE MODAL ── */}
@@ -1879,7 +1873,7 @@ export function IcpcProctorGuard({
       )}
 
       {/* ── PERSISTENT REAL-TIME BLACKOUT OVERLAY (WHILE WINDOW UNFOCUSED / OVERLAY ACTIVE) ── */}
-      {isActive && isFocusLost && !showEntranceModal && !isTerminated && (
+      {isActive && isFocusLost && !showEntranceModal && !showCalibrationModal && !isTerminated && (
         <div
           onClick={() => {
             try {
