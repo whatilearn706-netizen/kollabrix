@@ -31,12 +31,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { ProctorIncident, ProctorViolationType } from '@/types/icpc';
 import { supabase } from '@/lib/supabase/client';
-import { EyeCalibrationModal } from '@/components/icpc/EyeCalibrationModal';
-import {
-  EyeCalibrationProfile,
-  evaluateGaze,
-  extractFaceMetrics,
-} from '@/lib/arena/eyeCalibrationEngine';
+import { SideCameraConnectModal } from '@/components/icpc/SideCameraConnectModal';
 
 const MAX_WARNINGS = 10;
 
@@ -79,9 +74,10 @@ export function IcpcProctorGuard({
   const [isCameraMirrored, setIsCameraMirrored] = useState(false);
   const [pipFeedMode, setPipFeedMode] = useState<'camera' | 'screen'>('camera');
   const [showEntranceModal, setShowEntranceModal] = useState(true);
-  const [showCalibrationModal, setShowCalibrationModal] = useState(false);
-  const calibrationProfileRef = useRef<EyeCalibrationProfile | null>(null);
-  const downwardGlanceTimestampsRef = useRef<number[]>([]);
+  const [showSideCameraModal, setShowSideCameraModal] = useState(false);
+  const [isSideCameraConnected, setIsSideCameraConnected] = useState(false);
+  const [isSideCameraLost, setIsSideCameraLost] = useState(false);
+  const sideCameraDisconnectTimeRef = useRef<number | null>(null);
   const [isTerminated, setIsTerminated] = useState(false);
   const [isDemolishedByAdmin, setIsDemolishedByAdmin] = useState(false);
   const [adminCautionMessage, setAdminCautionMessage] = useState<string | null>(null);
@@ -96,9 +92,8 @@ export function IcpcProctorGuard({
   } | null>(null);
 
   // Vision telemetry
-  const [gazeStatus, setGazeStatus] = useState<'normal' | 'away_left' | 'away_right' | 'away_up' | 'down_excessive' | 'missing'>('normal');
+  const [isFaceDetected, setIsFaceDetected] = useState(true);
   const [phoneStatus, setPhoneStatus] = useState<'clear' | 'suspect'>('clear');
-  const [latestEyeMetrics, setLatestEyeMetrics] = useState<{ pupilY: number; pitchRatio: number } | null>(null);
   const [isPipMinimized, setIsPipMinimized] = useState(false);
 
   // Movable PiP state
@@ -554,19 +549,18 @@ export function IcpcProctorGuard({
     }
 
     setShowEntranceModal(false);
-    setShowCalibrationModal(true);
+    setShowSideCameraModal(true);
     await requestArenaFullscreen();
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
     }
   }, [hasCameraPermission, hasScreenPermission, initWebcam, initScreenShare, requestArenaFullscreen]);
 
-  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 60 SECONDS - EVENT DRIVEN) ──
+  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 30 SECONDS) ──
   useEffect(() => {
-    if (!isActive || showEntranceModal || showCalibrationModal || isTerminated) return;
+    if (!isActive || showEntranceModal || showSideCameraModal || isTerminated) return;
 
     const sendHeartbeat = async () => {
-      // Idle tab protection: skip heartbeat if window is hidden/minimized to preserve server CPU
       if (typeof document !== 'undefined' && document.hidden) return;
 
       try {
@@ -583,7 +577,6 @@ export function IcpcProctorGuard({
             contestTitle,
             problemTitle,
             warningCount: warningCountRef.current,
-            // Screen sharing is streamed via peer-to-peer WebRTC, not heavy HTTP Base64 payloads
           }),
         });
         const data = await res.json();
@@ -595,19 +588,38 @@ export function IcpcProctorGuard({
           setAdminCautionMessage(data.cautionMessage);
           playAlertSound('warning');
         }
+
+        // Side Camera Watchdog: Check if phone feed disconnected
+        if (isSideCameraConnected && data.sideCameraConnected === false) {
+          if (!sideCameraDisconnectTimeRef.current) {
+            sideCameraDisconnectTimeRef.current = Date.now();
+          } else if (Date.now() - sideCameraDisconnectTimeRef.current > 4000) {
+            setIsSideCameraLost(true);
+            triggerViolation(
+              'SIDE_CAM_DISCONNECTED',
+              'Secondary Side Camera Disconnected',
+              'The secondary mobile side-view camera stream was disconnected or phone was locked. Reconnect to resume.',
+              'critical'
+            );
+          }
+        } else if (data.sideCameraConnected) {
+          sideCameraDisconnectTimeRef.current = null;
+          setIsSideCameraLost(false);
+        }
       } catch (err) {
-        // Silently tolerate temporary network glitch
+        // Tolerate temporary network glitch
       }
     };
 
     sendHeartbeat();
-    // 60s interval: exactly 1 ping per minute instead of 24 pings per minute (96% CPU reduction)
-    const heartbeatTimer = setInterval(sendHeartbeat, 60000);
+    const heartbeatTimer = setInterval(sendHeartbeat, 5000);
     return () => clearInterval(heartbeatTimer);
   }, [
     isActive,
     showEntranceModal,
+    showSideCameraModal,
     isTerminated,
+    isSideCameraConnected,
     studentId,
     studentName,
     studentEmail,
@@ -616,11 +628,12 @@ export function IcpcProctorGuard({
     contestTitle,
     problemTitle,
     playAlertSound,
+    triggerViolation,
   ]);
 
   // ── WEBRTC 60FPS REAL-TIME SCREEN BROADCASTER (VIA SUPABASE REALTIME WEBSOCKETS) ──
   useEffect(() => {
-    if (!isActive || showEntranceModal || showCalibrationModal || isTerminated || !hasScreenPermission) return;
+    if (!isActive || showEntranceModal || showSideCameraModal || isTerminated || !hasScreenPermission) return;
     const stream = screenStreamRef.current;
     if (!stream) return;
 
@@ -774,7 +787,7 @@ export function IcpcProctorGuard({
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
   useEffect(() => {
-    if (!isActive || showEntranceModal || showCalibrationModal) return;
+    if (!isActive || showEntranceModal || showSideCameraModal) return;
 
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
@@ -860,7 +873,7 @@ export function IcpcProctorGuard({
 
   // ── HIGH-FREQUENCY FOCUS, VISIBILITY & DESKTOP GESTURE MONITOR ──
   useEffect(() => {
-    if (!isActive || showEntranceModal || showCalibrationModal) return;
+    if (!isActive || showEntranceModal || showSideCameraModal) return;
 
     const checkFocusAndVisibility = () => {
       const hasFocus = typeof document !== 'undefined' ? document.hasFocus() : true;
@@ -949,7 +962,7 @@ export function IcpcProctorGuard({
 
   // Full-Screen Change Event Listener (with 1.5-Second Rule)
   useEffect(() => {
-    if (!isActive || showEntranceModal || showCalibrationModal) return;
+    if (!isActive || showEntranceModal || showSideCameraModal) return;
 
     setIsFullscreenActive(Boolean(document.fullscreenElement));
 
@@ -987,9 +1000,9 @@ export function IcpcProctorGuard({
     };
   }, [isActive, showEntranceModal, triggerViolation]);
 
-  // ── REAL-TIME VISION FRAME PROCESSING (Phone & Laptop Gaze Tracking) ──
+  // ── REAL-TIME VISION FRAME PROCESSING (Front Camera & Face Tracking) ──
   useEffect(() => {
-    if (!isActive || !hasCameraPermission || showEntranceModal || showCalibrationModal) return;
+    if (!isActive || !hasCameraPermission || showEntranceModal || showSideCameraModal) return;
 
     const canvas = canvasRef.current || document.createElement('canvas');
     canvas.width = 320;
@@ -1032,14 +1045,24 @@ export function IcpcProctorGuard({
       const frameData = ctx.getImageData(0, 0, 320, 240);
       const { data, width, height } = frameData;
 
-      // ── 1. High-Precision Calibrated Gaze & Head-Pose Tracking ──
-      const metrics = extractFaceMetrics(data, width, height);
+      // ── 1. Front Camera Face Presence Verification ──
+      let skinPixels = 0;
+      for (let y = 0; y < height; y += 4) {
+        for (let x = 0; x < width; x += 4) {
+          const idx = (y * width + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          if (r > 60 && g > 35 && b > 20 && r > g && r > b && r - g > 10) {
+            skinPixels++;
+          }
+        }
+      }
 
-      if (!metrics.valid) {
-        setGazeStatus('missing');
-        setLatestEyeMetrics(null);
-        gazeDeviationStartTimeRef.current = null;
-        continuousDownwardStartTimeRef.current = null;
+      const facePresent = skinPixels > 35;
+      setIsFaceDetected(facePresent);
+
+      if (!facePresent) {
         if (!faceMissingStartTimeRef.current) {
           faceMissingStartTimeRef.current = now;
         } else if (now - faceMissingStartTimeRef.current >= 5000) {
@@ -1052,84 +1075,6 @@ export function IcpcProctorGuard({
         }
       } else {
         faceMissingStartTimeRef.current = null;
-        setLatestEyeMetrics({ pupilY: metrics.pupilY, pitchRatio: metrics.chinToForeheadRatio });
-        const gazeEval = evaluateGaze(metrics, calibrationProfileRef.current);
-
-        if (gazeEval.deviation === 'down_lap') {
-          // Downward gaze below calibrated screen boundary
-          setGazeStatus('down_excessive');
-          gazeDeviationStartTimeRef.current = null;
-
-          // Track downward glance timestamps in sliding 45s window
-          const recentGlances = downwardGlanceTimestampsRef.current.filter((t) => now - t < 45000);
-          if (!continuousDownwardStartTimeRef.current) {
-            continuousDownwardStartTimeRef.current = now;
-            recentGlances.push(now);
-            downwardGlanceTimestampsRef.current = recentGlances;
-
-            // Frequency check: if they look down 2 or more times in 45 seconds
-            if (recentGlances.length >= 2) {
-              triggerViolation(
-                'GAZE_DEVIATION',
-                'Suspicious Repeated Lap Glances (2x in 45s)',
-                'Contestant repeatedly looked down below calibrated screen boundary towards lap or hidden phone.',
-                'critical'
-              );
-            }
-          } else if (now - continuousDownwardStartTimeRef.current >= 2500) {
-            // Sustained continuous downward gaze > 2.5 seconds
-            triggerViolation(
-              'GAZE_DEVIATION',
-              'Sustained Downward Lap Gaze (> 2.5s)',
-              'Contestant staring downward below calibrated screen boundary towards lap/phone for > 2.5s.',
-              'critical'
-            );
-          }
-        } else if (gazeEval.deviation === 'away_left') {
-          setGazeStatus('away_left');
-          continuousDownwardStartTimeRef.current = null;
-          if (!gazeDeviationStartTimeRef.current) {
-            gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 4000) {
-            triggerViolation(
-              'GAZE_DEVIATION',
-              'Looking Away to the Left Detected',
-              'Contestant turned head/gaze far to the left away from the screen for > 4s.',
-              'medium'
-            );
-          }
-        } else if (gazeEval.deviation === 'away_right') {
-          setGazeStatus('away_right');
-          continuousDownwardStartTimeRef.current = null;
-          if (!gazeDeviationStartTimeRef.current) {
-            gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 4000) {
-            triggerViolation(
-              'GAZE_DEVIATION',
-              'Looking Away to the Right Detected',
-              'Contestant turned head/gaze far to the right away from the screen for > 4s.',
-              'medium'
-            );
-          }
-        } else if (gazeEval.deviation === 'away_up') {
-          setGazeStatus('away_up');
-          continuousDownwardStartTimeRef.current = null;
-          if (!gazeDeviationStartTimeRef.current) {
-            gazeDeviationStartTimeRef.current = now;
-          } else if (now - gazeDeviationStartTimeRef.current >= 4000) {
-            triggerViolation(
-              'GAZE_DEVIATION',
-              'Looking Upward Away from Screen',
-              'Contestant looking upward away from the contest editor for > 4s.',
-              'medium'
-            );
-          }
-        } else {
-          // Gaze is safe within calibrated envelope!
-          setGazeStatus('normal');
-          gazeDeviationStartTimeRef.current = null;
-          continuousDownwardStartTimeRef.current = null;
-        }
       }
 
       // ── 2. Smartphone & Mobile Device Detection Algorithm ──
@@ -1199,7 +1144,6 @@ export function IcpcProctorGuard({
       const aspect = clusterH > 0 && clusterW > 0 ? Math.max(clusterH / clusterW, clusterW / clusterH) : 1;
 
       // Check genuine smartphone held in view:
-      // Either emissive screen with hand nearby, or dark device chassis held up by hands
       const isEmissivePhone =
         emissiveScreenCount >= 40 &&
         clusterW >= 25 &&
@@ -1211,10 +1155,7 @@ export function IcpcProctorGuard({
         aspect <= 2.8 &&
         nearbySkinCount >= 10;
 
-      const isHandheldDeviceRaised =
-        darkDeviceCount >= 60 &&
-        nearbySkinCount >= 25 &&
-        metrics.isRollingEyesDown;
+      const isHandheldDeviceRaised = darkDeviceCount >= 70 && nearbySkinCount >= 30;
 
       if (isEmissivePhone || isHandheldDeviceRaised) {
         phoneCandidateFound = true;
@@ -1277,7 +1218,7 @@ export function IcpcProctorGuard({
       />
 
       {/* ── PROCTOR PIP FLOATING WIDGET (Movable / Draggable Anywhere inside Arena) ── */}
-      {isActive && !showEntranceModal && !showCalibrationModal && !isTerminated && (
+      {isActive && !showEntranceModal && !showSideCameraModal && !isTerminated && (
         <div
           ref={pipContainerRef}
           style={
@@ -1295,7 +1236,7 @@ export function IcpcProctorGuard({
           } ${
             activeWarning
               ? 'border-rose-500 bg-rose-950/90 shadow-rose-500/20'
-              : phoneStatus === 'suspect' || gazeStatus !== 'normal'
+              : phoneStatus === 'suspect' || !isSideCameraConnected
               ? 'border-amber-500 bg-charcoal-900/95 shadow-amber-500/10'
               : 'border-cyan-500/40 bg-charcoal-900/95'
           } ${
@@ -1422,38 +1363,24 @@ export function IcpcProctorGuard({
                 <div className="absolute top-1.5 left-1.5 flex flex-col gap-1 pointer-events-none">
                   <span
                     className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
-                      phoneStatus === 'suspect'
-                        ? 'bg-rose-600 text-white animate-pulse'
-                        : 'bg-charcoal-950/80 text-emerald-300'
+                      isSideCameraConnected
+                        ? 'bg-charcoal-950/80 text-emerald-300'
+                        : 'bg-rose-500 text-white font-extrabold animate-pulse'
                     }`}
                   >
                     <Smartphone className="w-2.5 h-2.5" />
-                    {phoneStatus === 'suspect' ? 'PHONE DETECTED (SUSPECT)' : 'Phone Clear'}
+                    {isSideCameraConnected ? 'Side Cam: Active (Desk & Lap)' : 'Side Cam: Offline'}
                   </span>
 
                   <span
                     className={`text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-md font-bold flex items-center gap-1 ${
-                      gazeStatus === 'normal'
-                        ? 'bg-charcoal-950/80 text-emerald-300'
-                        : gazeStatus === 'missing'
-                        ? 'bg-rose-600 text-white animate-pulse'
-                        : gazeStatus === 'down_excessive'
-                        ? 'bg-rose-500 text-white font-extrabold shadow-md shadow-rose-500/50 animate-bounce'
-                        : 'bg-amber-500 text-black font-extrabold'
+                      isFaceDetected
+                        ? 'bg-charcoal-950/80 text-cyan-300'
+                        : 'bg-rose-600 text-white animate-pulse'
                     }`}
                   >
-                    <Eye className="w-2.5 h-2.5" />
-                    {gazeStatus === 'normal'
-                      ? `Gaze: Screen Locked (${Math.round((latestEyeMetrics?.pupilY ?? 0.44) * 100)}%)`
-                      : gazeStatus === 'away_left'
-                      ? 'Gaze: Looking Left'
-                      : gazeStatus === 'away_right'
-                      ? 'Gaze: Looking Right'
-                      : gazeStatus === 'away_up'
-                      ? 'Gaze: Looking Up'
-                      : gazeStatus === 'down_excessive'
-                      ? `🚨 Eyes Down (${Math.round((latestEyeMetrics?.pupilY ?? 0.65) * 100)}% / Lap Detected)`
-                      : 'Face: Missing'}
+                    <Camera className="w-2.5 h-2.5" />
+                    {isFaceDetected ? 'Front Cam: Centered' : 'Face Missing'}
                   </span>
                 </div>
               )}
@@ -1493,18 +1420,44 @@ export function IcpcProctorGuard({
         </div>
       )}
 
-      {/* ── HIGH-PRECISION PRE-CONTEST EYE & HEAD CALIBRATION MODAL ── */}
-      {isActive && showCalibrationModal && (
-        <EyeCalibrationModal
-          videoStream={streamRef.current}
-          onCalibrationComplete={(profile) => {
-            calibrationProfileRef.current = profile;
-            setShowCalibrationModal(false);
+      {/* ── SECONDARY SIDE-VIEW CAMERA CONNECTION MODAL ── */}
+      {isActive && showSideCameraModal && (
+        <SideCameraConnectModal
+          studentId={studentId}
+          contestId={contestId}
+          onConnected={() => {
+            setIsSideCameraConnected(true);
+            setIsSideCameraLost(false);
+            setShowSideCameraModal(false);
           }}
           onSkip={() => {
-            setShowCalibrationModal(false);
+            setShowSideCameraModal(false);
           }}
         />
+      )}
+
+      {/* ── SIDE CAMERA DISCONNECTED ARENA FREEZE ── */}
+      {isSideCameraLost && !isTerminated && (
+        <div className="fixed inset-0 z-[200] bg-charcoal-950/95 backdrop-blur-xl flex items-center justify-center p-6 text-center select-none animate-in fade-in duration-200">
+          <div className="max-w-md w-full bg-charcoal-900 border-2 border-rose-500 rounded-3xl p-6 space-y-4 shadow-2xl shadow-rose-500/20">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center mx-auto text-rose-400">
+              <Smartphone className="w-8 h-8 animate-bounce" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Side Proctor Camera Disconnected!</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Your secondary mobile side camera was lost or minimized. Contest arena is locked until camera is reconnected.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => {
+                setShowSideCameraModal(true);
+              }}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold w-full"
+            >
+              Reconnect Side Camera
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* ── MANDATORY DUAL-LENS PROCTOR ENTRANCE MODAL ── */}
@@ -1886,7 +1839,7 @@ export function IcpcProctorGuard({
       )}
 
       {/* ── PERSISTENT REAL-TIME BLACKOUT OVERLAY (WHILE WINDOW UNFOCUSED / OVERLAY ACTIVE) ── */}
-      {isActive && isFocusLost && !showEntranceModal && !showCalibrationModal && !isTerminated && (
+      {isActive && isFocusLost && !showEntranceModal && !showSideCameraModal && !isTerminated && (
         <div
           onClick={() => {
             try {

@@ -318,11 +318,51 @@ export async function POST(request: NextRequest) {
       activeMap[studentId] = existing;
       await saveActiveSessions(activeMap);
 
+      const isSideCamActive = Boolean(
+        existing.sideCameraConnected &&
+        existing.sideCameraLastHeartbeat &&
+        Date.now() - new Date(existing.sideCameraLastHeartbeat).getTime() < 8000
+      );
+
       return NextResponse.json({
         success: true,
         cautionMessage,
         isDemolished,
+        sideCameraConnected: isSideCamActive,
       });
+    }
+
+    // 1b. Side Camera Heartbeat from contestant's mobile phone
+    if (action === 'sidecam_heartbeat') {
+      const { studentId, sideCameraSnapshot, connected = true } = body;
+      if (!studentId) {
+        return NextResponse.json({ error: 'studentId required' }, { status: 400 });
+      }
+      const activeMap = await loadActiveSessions();
+      if (!activeMap[studentId]) {
+        activeMap[studentId] = {
+          id: studentId,
+          studentId,
+          studentName: studentId,
+          contestId: 'icpc-arena',
+          contestTitle: 'ICPC Contest',
+          warningCount: 0,
+          status: 'active',
+          startedNotified: true,
+          lastHeartbeat: new Date().toISOString(),
+          sideCameraConnected: Boolean(connected),
+          sideCameraLastHeartbeat: new Date().toISOString(),
+          sideCameraSnapshot: typeof sideCameraSnapshot === 'string' ? sideCameraSnapshot : undefined,
+        };
+      } else {
+        activeMap[studentId].sideCameraConnected = Boolean(connected);
+        activeMap[studentId].sideCameraLastHeartbeat = new Date().toISOString();
+        if (typeof sideCameraSnapshot === 'string' && sideCameraSnapshot.startsWith('data:image/')) {
+          activeMap[studentId].sideCameraSnapshot = sideCameraSnapshot;
+        }
+      }
+      await saveActiveSessions(activeMap);
+      return NextResponse.json({ success: true, connected: Boolean(connected) });
     }
 
     // 2. Admin action: Give Caution to student

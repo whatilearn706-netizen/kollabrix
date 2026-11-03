@@ -93,7 +93,9 @@ export type ProctorViolationType =
   | 'SUSPICIOUS_PASTE'
   | 'FACE_MISSING'
   | 'SCREEN_SHARE_STOPPED'
-  | 'SIRI_ATTEMPT';
+  | 'SIRI_ATTEMPT'
+  | 'SIDE_CAM_DISCONNECTED'
+  | 'SIDE_CAM_OBSTRUCTED';
 
 export interface ProctorIncident {
   id: string;
@@ -112,6 +114,7 @@ export interface ProctorIncident {
   severity: 'low' | 'medium' | 'high' | 'critical';
   resolved?: boolean;
   screenSnapshot?: string;
+  sideCameraSnapshot?: string;
 }
 
 export interface ProctorLiveStats {
@@ -122,6 +125,7 @@ export interface ProctorLiveStats {
   gazeViolations: number;
   pasteViolations: number;
   flaggedStudentsCount: number;
+  sideCamOfflineCount?: number;
 }
 
 export interface ActiveProctorSession {
@@ -135,6 +139,9 @@ export interface ActiveProctorSession {
   problemTitle?: string;
   warningCount: number;
   screenSnapshot?: string;
+  sideCameraSnapshot?: string;
+  sideCameraConnected?: boolean;
+  sideCameraLastHeartbeat?: string;
   lastHeartbeat: string;
   status: 'active' | 'cautioned' | 'demolished';
   cautionMessage?: string;
