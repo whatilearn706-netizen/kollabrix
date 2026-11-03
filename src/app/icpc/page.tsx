@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { IcpcContest, IcpcProblem, ContestSubmission, StudentIcpcProgress } from '@/types/icpc';
 import { IcpcProctorGuard, checkSuspiciousPaste } from '@/components/icpc/IcpcProctorGuard';
+import { AntiPhotoWatermarkGuard } from '@/components/icpc/AntiPhotoWatermarkGuard';
 
 function getDefaultStarter(lang: 'cpp' | 'python' | 'java'): string {
   if (lang === 'cpp') {
@@ -1470,7 +1471,14 @@ export default function IcpcCollegiateArenaPage() {
                   </div>
 
                   {/* Left Column Scrollable Content */}
-                  <div className="flex-1 overflow-y-auto p-5 space-y-5 text-slate-200">
+                  <div className="flex-1 overflow-y-auto p-5 text-slate-200 relative">
+                    <AntiPhotoWatermarkGuard
+                      studentName={profile?.display_name || user?.user_metadata?.full_name || 'Contestant'}
+                      studentEmail={user?.email || ''}
+                      studentCollege={(profile as any)?.college || (user as any)?.user_metadata?.college || ''}
+                      contestId={selectedContest?.id || ''}
+                      className="min-h-full space-y-5"
+                    >
                     {solverTab === 'editor' ? (
                       <>
                         <div>
@@ -1616,6 +1624,7 @@ export default function IcpcCollegiateArenaPage() {
                         );
                       })()
                     )}
+                    </AntiPhotoWatermarkGuard>
                   </div>
                 </div>
 
