@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { subscribeToRealtimeRoom, KollabrixRealtimeClient } from '@/lib/realtime/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
   Hackathon,
@@ -132,6 +133,7 @@ export default function HackathonWorkspacePage() {
   const [teamActionError, setTeamActionError] = useState<string | null>(null);
   const [teamActionSuccess, setTeamActionSuccess] = useState<string | null>(null);
   const [isSubmittingTeam, setIsSubmittingTeam] = useState(false);
+  const aicSocketRef = React.useRef<KollabrixRealtimeClient | null>(null);
 
   // Project submission form state
   const [subTitle, setSubTitle] = useState('');
@@ -762,12 +764,34 @@ export default function HackathonWorkspacePage() {
         );
     }
 
+    // AIC Cloud Realtime Cluster connection (unlimited 500+ students capacity)
+    if (activeHackId) {
+      try {
+        const aicSocket = subscribeToRealtimeRoom(`hackathon-workspace-${activeHackId}`, {
+          userId: user?.id,
+          name: profile?.display_name || user?.email?.split('@')[0] || 'Student',
+          onMessage: (msg) => {
+            if (msg.type === 'broadcast') {
+              loadWorkspace();
+            }
+          },
+        });
+        aicSocketRef.current = aicSocket;
+      } catch (err) {
+        console.warn('AIC Realtime Socket notice:', err);
+      }
+    }
+
     const channel = channelBuilder.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (aicSocketRef.current) {
+        aicSocketRef.current.close();
+        aicSocketRef.current = null;
+      }
     };
-  }, [hackathonId, hackathon?.id, loadWorkspace]);
+  }, [hackathonId, hackathon?.id, loadWorkspace, user?.id, profile?.display_name]);
 
   // Handle Organizer Delete Team
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
@@ -795,6 +819,7 @@ export default function HackathonWorkspacePage() {
             localStorage.setItem(k2, JSON.stringify(r2));
           } catch {}
         }
+        aicSocketRef.current?.broadcast('workspace_update', { action: 'team_deleted' });
       } else {
         alert(data.error || 'Failed to delete team.');
       }
@@ -985,8 +1010,9 @@ export default function HackathonWorkspacePage() {
       setNewTeamName('');
       setNewTeamDesc('');
 
-      // Reload fresh data from database
+      // Reload fresh data from database and notify all 500+ students via AIC Cloud Cluster
       await loadWorkspace();
+      aicSocketRef.current?.broadcast('workspace_update', { action: 'team_created' });
     } catch (err: unknown) {
       setTeamActionError(err instanceof Error ? err.message : 'Error creating team.');
     } finally {
@@ -1124,6 +1150,7 @@ export default function HackathonWorkspacePage() {
       setTeamActionSuccess(`Joined team "${targetTeam.team_name}"!`);
       setJoinTeamCode('');
       await loadWorkspace();
+      aicSocketRef.current?.broadcast('workspace_update', { action: 'team_joined' });
     } catch (err: unknown) {
       setTeamActionError(err instanceof Error ? err.message : 'Error joining team.');
     } finally {
@@ -1218,6 +1245,7 @@ export default function HackathonWorkspacePage() {
       );
 
       await loadWorkspace();
+      aicSocketRef.current?.broadcast('workspace_update', { action: 'submission_saved' });
     } catch (err: unknown) {
       setSubmissionError(err instanceof Error ? err.message : 'Error saving project submission.');
     } finally {
@@ -3249,6 +3277,7 @@ export default function HackathonWorkspacePage() {
             setAnnouncements((prev) => [newAnn, ...prev.filter((a) => a.id !== newAnn.id)]);
           }
           await loadWorkspace();
+          aicSocketRef.current?.broadcast('workspace_update', { action: 'announcement_posted' });
         }}
       />
 
