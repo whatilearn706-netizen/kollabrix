@@ -3,7 +3,13 @@ const { WebSocketServer, WebSocket } = require('ws');
 const url = require('url');
 
 const PORT = process.env.PORT || 4000;
-const SECRET_KEY = process.env.CLUSTER_SECRET || 'kollabrix_secret_cluster_2026';
+
+// Ensure secret is provided in production
+if (!process.env.CLUSTER_SECRET) {
+  console.error('🛑 CLUSTER_SECRET environment variable is required');
+  process.exit(1);
+}
+const SECRET_KEY = process.env.CLUSTER_SECRET;
 
 // Room management
 // rooms: Map<string, Set<WebSocket>>
