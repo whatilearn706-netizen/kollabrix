@@ -559,6 +559,7 @@ export async function PATCH(request: NextRequest) {
           username: target.username,
           college: target.collegeName,
           verifiedAt: now,
+          status: 'approved',
           method: isFacultyTarget ? 'faculty_id_card' : 'student_id_card',
           role: isFacultyTarget ? 'teacher' : 'student',
           isFaculty: isFacultyTarget,

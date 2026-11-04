@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { isSupabaseConfigured, DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/isConfigured';
 
 export const runtime = 'nodejs';
 
@@ -23,26 +23,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Moderation action is required.' }, { status: 400 });
     }
 
-    // 1. Critical Self-Lockout & Founder Protection
-    if (targetUserId === auth.user?.id) {
+    // 1. Critical Self-Lockout & Founder Protection (Destructive actions only)
+    const isDestructiveAction = ['suspend', 'remove_from_project', 'remove_from_all_teams'].includes(action);
+
+    if (isDestructiveAction && targetUserId === auth.user?.id) {
       return NextResponse.json(
-        { error: 'Action denied: Administrators cannot suspend, demote, or moderate their own account.' },
+        { error: 'Action denied: Administrators cannot suspend, demote, or remove their own account.' },
         { status: 400 }
       );
     }
 
     if (
-      targetUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
-      targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
+      isDestructiveAction &&
+      (targetUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
+        targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508')
     ) {
       return NextResponse.json(
-        { error: 'Action denied: Platform founder account is immutable and cannot be modified or suspended.' },
+        { error: 'Action denied: Platform founder account cannot be suspended or demoted.' },
         { status: 403 }
       );
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseServiceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      '';
     const client = supabaseServiceKey
       ? createSupabaseClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
       : (auth.dbClient || createSupabaseClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '', { auth: { persistSession: false } }));
@@ -431,6 +438,237 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `User @${targetProfile?.username || targetUserId} has been removed from all project and hackathon team rosters. Shared projects and history were preserved.`,
+      });
+    }
+
+    // -------------------------------------------------------------
+    // ACTION: GRANT COLLEGE VERIFICATION
+    // -------------------------------------------------------------
+    if (action === 'grant_college_verification') {
+      const collegeToVerify = (body.collegeName || targetProfile?.college || '').trim();
+      const now = new Date().toISOString();
+
+      // 1. Authoritative update on profiles table via service_role
+      const { error: profileErr } = await client
+        .from('profiles')
+        .update({
+          college_verified: true,
+          college_verified_at: now,
+          ...(collegeToVerify ? { college: collegeToVerify } : {}),
+          updated_at: now,
+        })
+        .eq('user_id', targetUserId);
+
+      if (profileErr) {
+        console.warn('Profile update error in grant_college_verification:', profileErr);
+      }
+
+      // 2. Authoritative update in universal verified registry (linkedin_college_verifications)
+      try {
+        const { data: pData } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'linkedin_college_verifications')
+          .maybeSingle();
+
+        const curList: any[] = Array.isArray(pData?.value) ? pData.value : [];
+        const cleanList = curList.filter(
+          (item: any) =>
+            item.userId !== targetUserId &&
+            item.username?.toLowerCase() !== targetProfile?.username?.toLowerCase()
+        );
+
+        const newEntry = {
+          userId: targetUserId,
+          username: targetProfile?.username || '',
+          displayName: targetProfile?.display_name || targetProfile?.username || 'Verified Student',
+          college: collegeToVerify || targetProfile?.college || 'Verified Collegiate Institution',
+          verifiedAt: now,
+          status: 'approved',
+          collegeVerified: true,
+          verifiedBy: auth.user?.email || 'admin',
+          method: 'admin_manual_grant',
+        };
+
+        await client.from('platform_settings').upsert({
+          key: 'linkedin_college_verifications',
+          value: [newEntry, ...cleanList].slice(0, 500),
+          description: 'Registry of verified college affiliations and credentials.',
+          updated_at: now,
+          updated_by: auth.user?.id,
+        });
+      } catch (regErr) {
+        console.warn('Error updating linkedin_college_verifications:', regErr);
+      }
+
+      // 3. Automatically approve any pending request in student_id_verifications queue
+      try {
+        const { data: idData } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'student_id_verifications')
+          .maybeSingle();
+
+        const idList: any[] = Array.isArray(idData?.value) ? idData.value : [];
+        let hasModifiedIdList = false;
+
+        const updatedIdList = idList.map((req: any) => {
+          if (
+            (req.userId && req.userId === targetUserId) ||
+            (req.username && targetProfile?.username && req.username.toLowerCase() === targetProfile.username.toLowerCase())
+          ) {
+            hasModifiedIdList = true;
+            return {
+              ...req,
+              status: 'approved',
+              reviewedAt: now,
+              reviewedBy: auth.user?.email || 'admin',
+              rejectionReason: undefined,
+              collegeVerified: true,
+            };
+          }
+          return req;
+        });
+
+        if (hasModifiedIdList) {
+          await client.from('platform_settings').upsert({
+            key: 'student_id_verifications',
+            value: updatedIdList,
+            description: 'Authoritative student college ID card verification submissions queue.',
+            updated_at: now,
+            updated_by: auth.user?.id,
+          });
+        }
+      } catch (queueErr) {
+        console.warn('Error syncing student_id_verifications queue:', queueErr);
+      }
+
+      await recordAdminAuditLog({
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        action: 'COLLEGE_VERIFICATION_GRANTED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: {
+          target_username: targetProfile?.username,
+          target_display_name: targetProfile?.display_name,
+          college: collegeToVerify,
+        },
+        outcome: 'SUCCESS',
+        dbClient: client,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `College verification successfully granted for ${targetProfile?.display_name || targetProfile?.username || 'user'}.`,
+        targetUserId,
+        collegeVerified: true,
+      });
+    }
+
+    // -------------------------------------------------------------
+    // ACTION: REVOKE COLLEGE VERIFICATION
+    // -------------------------------------------------------------
+    if (action === 'revoke_college_verification') {
+      const now = new Date().toISOString();
+
+      // 1. Authoritative update on profiles table
+      await client
+        .from('profiles')
+        .update({
+          college_verified: false,
+          college_verified_at: null,
+          updated_at: now,
+        })
+        .eq('user_id', targetUserId);
+
+      // 2. Remove from linkedin_college_verifications
+      try {
+        const { data: pData } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'linkedin_college_verifications')
+          .maybeSingle();
+
+        const curList: any[] = Array.isArray(pData?.value) ? pData.value : [];
+        const cleanList = curList.filter(
+          (item: any) =>
+            item.userId !== targetUserId &&
+            item.username?.toLowerCase() !== targetProfile?.username?.toLowerCase()
+        );
+
+        await client.from('platform_settings').upsert({
+          key: 'linkedin_college_verifications',
+          value: cleanList,
+          description: 'Registry of verified college affiliations and credentials.',
+          updated_at: now,
+          updated_by: auth.user?.id,
+        });
+      } catch (regErr) {
+        console.warn('Error clearing linkedin_college_verifications:', regErr);
+      }
+
+      // 3. Mark any ID verification requests as unapproved
+      try {
+        const { data: idData } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'student_id_verifications')
+          .maybeSingle();
+
+        const idList: any[] = Array.isArray(idData?.value) ? idData.value : [];
+        let hasModifiedIdList = false;
+
+        const updatedIdList = idList.map((req: any) => {
+          if (
+            (req.userId && req.userId === targetUserId) ||
+            (req.username && targetProfile?.username && req.username.toLowerCase() === targetProfile.username.toLowerCase())
+          ) {
+            hasModifiedIdList = true;
+            return {
+              ...req,
+              status: 'rejected',
+              reviewedAt: now,
+              reviewedBy: auth.user?.email || 'admin',
+              rejectionReason: 'Verification manually revoked by platform administrator.',
+              collegeVerified: false,
+            };
+          }
+          return req;
+        });
+
+        if (hasModifiedIdList) {
+          await client.from('platform_settings').upsert({
+            key: 'student_id_verifications',
+            value: updatedIdList,
+            description: 'Authoritative student college ID card verification submissions queue.',
+            updated_at: now,
+            updated_by: auth.user?.id,
+          });
+        }
+      } catch (queueErr) {
+        console.warn('Error updating student_id_verifications on revoke:', queueErr);
+      }
+
+      await recordAdminAuditLog({
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        action: 'COLLEGE_VERIFICATION_REVOKED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: {
+          target_username: targetProfile?.username,
+          target_display_name: targetProfile?.display_name,
+        },
+        outcome: 'SUCCESS',
+        dbClient: client,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `College verification revoked for ${targetProfile?.display_name || targetProfile?.username || 'user'}.`,
+        targetUserId,
+        collegeVerified: false,
       });
     }
 

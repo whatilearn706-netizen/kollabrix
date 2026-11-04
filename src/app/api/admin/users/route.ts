@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       const { data: settingsRows } = await client
         .from('platform_settings')
         .select('key, value')
-        .in('key', ['match_scoring_config', 'linkedin_college_verifications']);
+        .in('key', ['match_scoring_config', 'linkedin_college_verifications', 'student_id_verifications']);
 
       if (Array.isArray(settingsRows)) {
         for (const row of settingsRows) {
@@ -209,7 +209,11 @@ export async function GET(request: NextRequest) {
             });
           } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
             row.value.forEach((v: any) => {
-              const isApproved = v.status === 'approved' || v.collegeVerified === true || v.facultyVerified === true;
+              const isApproved =
+                v.status === 'approved' ||
+                v.collegeVerified === true ||
+                v.facultyVerified === true ||
+                Boolean(v.verifiedAt);
               if (isApproved && v.status !== 'pending' && v.status !== 'rejected') {
                 if (v.userId) verifiedUserIds.add(v.userId);
                 if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
@@ -288,6 +292,7 @@ export async function GET(request: NextRequest) {
       const userStatus = isSuspended ? 'suspended' : (p.status || 'active');
       const userReason = p.suspension_reason || suspendedUsersMap[p.user_id]?.reason || null;
       const isCollegeVerified =
+        Boolean(p.college_verified) ||
         verifiedUserIds.has(p.user_id) ||
         Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
 

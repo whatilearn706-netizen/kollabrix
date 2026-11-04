@@ -57,7 +57,11 @@ export async function fetchVerifiedRegistry(force = false): Promise<Set<string>>
             }
           } else if (row.key === 'linkedin_college_verifications') {
             for (const item of row.value) {
-              const isApproved = item.status === 'approved' || item.collegeVerified === true || item.facultyVerified === true;
+              const isApproved =
+                item.status === 'approved' ||
+                item.collegeVerified === true ||
+                item.facultyVerified === true ||
+                Boolean(item.verifiedAt);
               if (isApproved && item.status !== 'pending' && item.status !== 'rejected') {
                 if (item.userId) set.add(`uid:${item.userId}`);
                 if (item.username) set.add(`user:${item.username.toLowerCase().trim()}`);
@@ -119,7 +123,6 @@ export function VerifiedCollegeBadge({
 }: VerifiedCollegeBadgeProps) {
   const [localVerified, setLocalVerified] = useState<boolean>(() => {
     if (isVerified === true) return true;
-    if (isVerified === false) return false;
     if (typeof window !== 'undefined') {
       try {
         const cachedRegistry = localStorage.getItem('linkora_verified_registry_cache');
@@ -138,10 +141,6 @@ export function VerifiedCollegeBadge({
   useEffect(() => {
     if (isVerified === true) {
       setLocalVerified(true);
-      return;
-    }
-    if (isVerified === false) {
-      setLocalVerified(false);
       return;
     }
 

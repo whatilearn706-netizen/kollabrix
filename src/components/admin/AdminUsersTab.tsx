@@ -377,6 +377,9 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
       }
 
       if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('linkora_verified_registry_cache');
+        } catch (e) {}
         window.dispatchEvent(new Event('linkora_college_updated'));
       }
 
@@ -470,12 +473,22 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
     setIsSubmitting(true);
     setActionMessage(null);
     try {
-      const res = await fetch('/api/verify/linkedin-college', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${data.session.access_token}`;
+        }
+      }
+
+      const res = await fetch('/api/admin/users/moderate', {
+        method: 'POST',
+        headers,
         body: JSON.stringify({
+          action: 'revoke_college_verification',
           targetUserId: targetUser.user_id,
-          targetUsername: targetUser.username,
         }),
       });
       const data = await res.json();
@@ -485,12 +498,16 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
           text: `College verification removed for ${targetUser.display_name}.`,
         });
         if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('linkora_verified_registry_cache');
+          } catch (e) {}
           window.dispatchEvent(new Event('linkora_college_updated'));
         }
         if (selectedUser?.user_id === targetUser.user_id) {
           setSelectedUser({ ...selectedUser, college_verified: false });
         }
         await fetchUsers();
+        await fetchIdVerifications();
       } else {
         throw new Error(data.error || 'Failed to remove verification.');
       }
@@ -512,53 +529,46 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
     setIsSubmitting(true);
     setActionMessage(null);
     try {
-      const { data: pData } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'linkedin_college_verifications')
-        .maybeSingle();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${data.session.access_token}`;
+        }
+      }
 
-      const existingList = Array.isArray(pData?.value) ? pData.value : [];
-      const record = {
-        userId: targetUser.user_id,
-        username: targetUser.username,
-        displayName: targetUser.display_name,
-        college: targetUser.college,
-        verifiedAt: new Date().toISOString(),
-      };
-      const updatedList = [
-        record,
-        ...existingList.filter((item: any) => item.userId !== targetUser.user_id),
-      ].slice(0, 500);
-
-      await supabase.from('platform_settings').upsert({
-        key: 'linkedin_college_verifications',
-        value: updatedList,
-        description: 'Registry of LinkedIn verified college affiliations and credentials.',
-        updated_at: new Date().toISOString(),
+      const res = await fetch('/api/admin/users/moderate', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'grant_college_verification',
+          targetUserId: targetUser.user_id,
+          collegeName: targetUser.college,
+        }),
       });
 
-      try {
-        await supabase
-          .from('profiles')
-          .update({
-            college_verified: true,
-            college_verified_at: new Date().toISOString(),
-          })
-          .eq('user_id', targetUser.user_id);
-      } catch (e) {}
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('linkora_college_updated'));
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('linkora_verified_registry_cache');
+          } catch (e) {}
+          window.dispatchEvent(new Event('linkora_college_updated'));
+        }
+        if (selectedUser?.user_id === targetUser.user_id) {
+          setSelectedUser({ ...selectedUser, college_verified: true });
+        }
+        setActionMessage({
+          type: 'success',
+          text: data.message || `College verification granted for ${targetUser.display_name}.`,
+        });
+        await fetchUsers();
+        await fetchIdVerifications();
+      } else {
+        throw new Error(data.error || 'Failed to grant verification.');
       }
-      if (selectedUser?.user_id === targetUser.user_id) {
-        setSelectedUser({ ...selectedUser, college_verified: true });
-      }
-      setActionMessage({
-        type: 'success',
-        text: `College verification granted for ${targetUser.display_name}.`,
-      });
-      await fetchUsers();
     } catch (err: unknown) {
       setActionMessage({
         type: 'error',
