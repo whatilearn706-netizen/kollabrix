@@ -163,7 +163,7 @@ function FeatureCard({
             />
           )}
 
-          {/* Top Row: Icon & Dynamic Priority Spotlight Pop */}
+          {/* Top Row: Icon & Clean Corner Action */}
           <div className="relative z-10 flex items-start justify-between gap-4 mb-5">
             <div
               className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${feature.iconBg} transition-transform duration-300 group-hover:scale-110 shadow-sm`}
@@ -171,26 +171,19 @@ function FeatureCard({
               <feature.icon className="w-6 h-6" />
             </div>
 
-            {/* Big Priority Pop Badge */}
-            <motion.div
-              animate={{
-                scale: isCurrentHovered ? 1.08 : 0.95,
-                opacity: isCurrentHovered ? 1 : 0.85,
-              }}
-              transition={{ duration: 0.2 }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider border shadow-md ${feature.priorityTheme}`}
+            <div
+              className={`p-2 rounded-xl border border-white/5 bg-white/[0.02] text-slate-400 group-hover:text-white group-hover:border-white/20 transition-all ${
+                isCurrentHovered ? 'translate-x-0.5 -translate-y-0.5 text-white bg-white/[0.08]' : ''
+              }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shrink-0" />
-              <span>{feature.priority}</span>
-              <span className="opacity-70 text-[10px] font-normal hidden sm:inline">• {feature.priorityBadge}</span>
-            </motion.div>
+              <ArrowUpRight className="w-4 h-4" />
+            </div>
           </div>
 
           {/* Middle: Title & Description */}
           <div className="relative z-10">
             <h3 className="font-heading text-xl font-bold text-white mb-2.5 flex items-center gap-2 group-hover:text-amber-300 transition-colors">
               <span>{feature.title}</span>
-              <ArrowUpRight className={`w-4 h-4 text-slate-400 transition-all duration-200 ${isCurrentHovered ? 'opacity-100 translate-x-0.5 -translate-y-0.5 text-amber-400' : 'opacity-0'}`} />
             </h3>
             <p className="text-slate-400 text-[14px] sm:text-[15px] leading-relaxed">
               {feature.description}
@@ -210,7 +203,7 @@ function FeatureCard({
           >
             <span className="flex items-center gap-1.5 text-amber-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Explore Priority Module</span>
+              <span>Explore Capability</span>
             </span>
             <span className="text-slate-400 font-mono text-[11px]">Click to open &rarr;</span>
           </motion.div>
@@ -239,7 +232,7 @@ export function LandingFeatures() {
             </span>
           </h2>
           <p className="text-slate-400 text-sm mt-3">
-            Hover over any core capability to inspect its priority and interactive toolset.
+            Explore the core infrastructure powering collegiate teams and competitive coders.
           </p>
         </div>
 
