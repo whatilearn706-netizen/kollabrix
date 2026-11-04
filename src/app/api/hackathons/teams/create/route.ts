@@ -23,7 +23,8 @@ function getAdminClient() {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const ipLimit = checkIpRateLimit(`team_create_ip_${ip}`, 10, 60 * 1000, 60 * 1000);
+    // Allow up to 120 team creations per minute per shared IP (e.g. collegiate hostel/campus Wi-Fi NAT)
+    const ipLimit = checkIpRateLimit(`team_create_ip_${ip}`, 120, 60 * 1000, 60 * 1000);
     if (!ipLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many team creation requests from this IP. Please wait a minute.' },
