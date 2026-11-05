@@ -69,7 +69,9 @@ export async function GET(request: Request) {
 
         const isOwner =
           user.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+          user.email?.toLowerCase() === 'mayankgoyal335@gmail.com' ||
           user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+          user.id === '303c5237-2b3c-415e-bc12-6d6cd5e3c0a1' ||
           profile?.role === 'admin';
 
         // Check if user is suspended
