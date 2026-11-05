@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       const { data: settingsRows } = await client
         .from('platform_settings')
         .select('key, value')
-        .in('key', ['match_scoring_config', 'linkedin_college_verifications', 'student_id_verifications']);
+        .in('key', ['match_scoring_config', 'linkedin_college_verifications']);
 
       if (Array.isArray(settingsRows)) {
         for (const row of settingsRows) {
@@ -200,13 +200,6 @@ export async function GET(request: NextRequest) {
             if (row.value.suspended_users) {
               suspendedUsersMap = row.value.suspended_users;
             }
-          } else if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
-            row.value.forEach((v: any) => {
-              if (v.status === 'approved') {
-                if (v.userId) verifiedUserIds.add(v.userId);
-                if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
-              }
-            });
           } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
             row.value.forEach((v: any) => {
               const isApproved =
