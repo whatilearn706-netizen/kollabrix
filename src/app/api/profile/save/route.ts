@@ -119,7 +119,10 @@ export async function POST(request: NextRequest) {
     // ── STRICT AUTHORIZATION GATE (IDOR Prevention) ──
     const isOwnerOrAdmin =
       authenticatedUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-      authenticatedUserEmail === 'goyalmayank142@gmail.com';
+      authenticatedUserId === '303c5237-2b3c-415e-bc12-6d6cd5e3c0a1' ||
+      authenticatedUserId === '29359508-c755-424b-81a2-89e714577437' ||
+      authenticatedUserEmail === 'goyalmayank142@gmail.com' ||
+      authenticatedUserEmail === 'mayankgoyal335@gmail.com';
 
     if (authenticatedUserId && authenticatedUserId !== payload.user_id && !isOwnerOrAdmin) {
       return NextResponse.json(
@@ -133,6 +136,17 @@ export async function POST(request: NextRequest) {
     const sanitizedPayload = { ...payload };
     if (!isOwnerOrAdmin && sanitizedPayload.role === 'admin') {
       delete sanitizedPayload.role; // Strip unauthorized role escalation
+    }
+
+    // Ensure active collegiate status and visibility defaults
+    if (sanitizedPayload.is_suspended === undefined || sanitizedPayload.is_suspended === null) {
+      sanitizedPayload.is_suspended = false;
+    }
+    if (!sanitizedPayload.status) {
+      sanitizedPayload.status = 'active';
+    }
+    if (sanitizedPayload.is_portfolio_public === undefined || sanitizedPayload.is_portfolio_public === null) {
+      sanitizedPayload.is_portfolio_public = true;
     }
 
     const supabaseAdmin = getAdminClient();
