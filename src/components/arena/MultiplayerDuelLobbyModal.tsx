@@ -117,7 +117,7 @@ export function MultiplayerDuelLobbyModal({
       if (res.ok) {
         const data = await res.json();
         if (data.questions && data.questions.length > 0) {
-          chosen = data.questions[Math.floor(Math.random() * data.questions.length)];
+          chosen = data.questions[0];
         }
       }
     } catch {

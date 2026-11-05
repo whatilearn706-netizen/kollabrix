@@ -485,6 +485,26 @@ export function FullArenaExperience({
     }
   }, [initialQuestion]);
 
+  // Authoritative pool of questions preloaded from server database (includes admin custom questions)
+  const [availableQuestions, setAvailableQuestions] = useState<DuelQuestion[]>(DEFAULT_ARENA_QUESTIONS);
+  const availableQuestionsRef = useRef<DuelQuestion[]>(DEFAULT_ARENA_QUESTIONS);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/arena/questions', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+          setAvailableQuestions(data.questions);
+          availableQuestionsRef.current = data.questions;
+        }
+      })
+      .catch((err) => console.warn('Preload arena questions notice:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Arena Live Status check
   const [isArenaLive, setIsArenaLive] = useState<boolean>(true);
   const [maintenanceMsg, setMaintenanceMsg] = useState<string>(
@@ -1178,7 +1198,12 @@ export function FullArenaExperience({
     // 2. Select initial best matching question locally so question & starter code are ready instantly
     try {
       const matchTime = Number(timeLimit) || 300;
-      const initialChosen = selectBestQuestion(DEFAULT_ARENA_QUESTIONS, {
+      const questionPool =
+        availableQuestionsRef.current.length > 0
+          ? availableQuestionsRef.current
+          : DEFAULT_ARENA_QUESTIONS;
+
+      const initialChosen = selectBestQuestion(questionPool, {
         arena,
         bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
         selectedTags: effectiveTags,
@@ -1189,22 +1214,22 @@ export function FullArenaExperience({
       if (initialChosen) {
         const enriched = enrichQuestion(initialChosen);
         enrichedQuestionToSend = enriched;
-      setActiveQuestion(enriched);
-      activeQuestionRef.current = enriched;
-      initializedQuestionIdRef.current = enriched.id;
-      setTimeLimit(matchTime);
-      setTimeLeft(matchTime);
-      setHtmlCode(enriched.starterHtml || '');
-      setCssCode(enriched.starterCss || '');
-      setJsCode(enriched.starterJs || '');
-      setPythonCode(enriched.starterPython || '# Your python solution\n');
-      setJavaCode(enriched.starterJava || '// Your java solution\n');
-      setCppCode(enriched.starterCpp || '// Your C++ solution\n');
-      setTotalTests(computeExpectedQuestionTests(enriched));
+        setActiveQuestion(enriched);
+        activeQuestionRef.current = enriched;
+        initializedQuestionIdRef.current = enriched.id;
+        setTimeLimit(matchTime);
+        setTimeLeft(matchTime);
+        setHtmlCode(enriched.starterHtml || '');
+        setCssCode(enriched.starterCss || '');
+        setJsCode(enriched.starterJs || '');
+        setPythonCode(enriched.starterPython || '# Your python solution\n');
+        setJavaCode(enriched.starterJava || '// Your java solution\n');
+        setCppCode(enriched.starterCpp || '// Your C++ solution\n');
+        setTotalTests(computeExpectedQuestionTests(enriched));
+      }
+    } catch (e) {
+      console.warn('Local question pre-selection notice:', e);
     }
-  } catch (e) {
-    console.warn('Local question pre-selection notice:', e);
-  }
 
   // 3. Register authoritative room on server asynchronously
   try {
@@ -1700,10 +1725,16 @@ export function FullArenaExperience({
         : selectedTags;
 
     const currentQ = roomData?.question || activeQuestion;
-    const isTagMatch =
-      currentQ &&
-      (!effectiveTags.length ||
-        effectiveTags.some((t: string) => (currentQ.tags || []).map((x: string) => x.toLowerCase()).includes(t.toLowerCase())));
+    const isCurrentAdmin = currentQ && !DEFAULT_ARENA_QUESTIONS.some((d) => d.id === currentQ.id);
+
+    const qTags = (currentQ?.tags || []).map((x: string) => x.toLowerCase().trim());
+    const reqTags = effectiveTags.map((t: string) => t.toLowerCase().trim());
+
+    // Strict tag matching: Question must satisfy all requested tags AND must not force unselected languages
+    const matchesAllRequested = reqTags.length === 0 || reqTags.every((t: string) => qTags.includes(t));
+    const hasUnwantedTags = qTags.some((t: string) => !reqTags.includes(t));
+    const isStrictTagMatch = matchesAllRequested && !hasUnwantedTags;
+
     const isDiffMatch =
       currentQ && (!difficulty || (currentQ.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase());
 
@@ -1711,7 +1742,8 @@ export function FullArenaExperience({
       currentQ &&
       currentQ.arena === arena &&
       isDiffMatch &&
-      isTagMatch &&
+      isStrictTagMatch &&
+      isCurrentAdmin &&
       (arena !== 'bug_hunt' || !bugDomain || !currentQ.bugDomain || currentQ.bugDomain === bugDomain)
     ) {
       chosen = {
@@ -1723,7 +1755,7 @@ export function FullArenaExperience({
       try {
         const queryParams = new URLSearchParams({
           arena,
-          difficulty,
+          difficulty: difficulty || 'medium',
           tags: effectiveTags.join(','),
           timeLimit: String(matchDuration),
           _rnd: String(Date.now()),
@@ -1734,16 +1766,34 @@ export function FullArenaExperience({
         if (res.ok) {
           const data = await res.json();
           if (data.questions && data.questions.length > 0) {
-            chosen = data.questions[0];
+            // Find top matching questions (filtering for strict exact criteria)
+            const topMatches = data.questions.filter((q: any) => {
+              const diffOk = (q.difficulty || 'medium').toLowerCase() === (difficulty || 'medium').toLowerCase();
+              const candTags = (q.tags || []).map((x: string) => x.toLowerCase().trim());
+              const tagsOk =
+                reqTags.length === 0 ||
+                (reqTags.every((t) => candTags.includes(t)) && !candTags.some((t: string) => !reqTags.includes(t)));
+              return diffOk && tagsOk;
+            });
+            chosen = topMatches.length > 0
+              ? topMatches[Math.floor(Math.random() * topMatches.length)]
+              : data.questions[0];
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Questions fetch notice in handleStartBattle:', e);
+      }
 
       if (!chosen) {
-        chosen = selectBestQuestion(DEFAULT_ARENA_QUESTIONS, {
+        const questionPool =
+          availableQuestionsRef.current.length > 0
+            ? availableQuestionsRef.current
+            : DEFAULT_ARENA_QUESTIONS;
+
+        chosen = selectBestQuestion(questionPool, {
           arena,
           bugDomain,
-          selectedTags,
+          selectedTags: effectiveTags,
           difficulty,
           timeLimit: matchDuration,
         });
