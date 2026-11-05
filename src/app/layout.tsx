@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import '@/styles/globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { Navbar } from '@/components/layout/Navbar';
@@ -21,7 +21,13 @@ import dynamic from 'next/dynamic';
 const Analytics = dynamic(() => import('@vercel/analytics/next').then(mod => mod.Analytics), { ssr: false });
 const SpeedInsights = dynamic(() => import('@vercel/speed-insights/next').then(mod => mod.SpeedInsights), { ssr: false });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.in';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.kollabrix.in';
+
+export const viewport: Viewport = {
+  themeColor: '#FF7A00',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
