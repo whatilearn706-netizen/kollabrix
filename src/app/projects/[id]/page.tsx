@@ -124,9 +124,35 @@ export default function ProjectDetailsPage() {
             )
           `)
           .eq('id', projectId)
-          .single();
+          .maybeSingle();
 
-        if (dbError) {
+        if (dbError || !data) {
+          // Resilient fallback query without nested joins
+          try {
+            const { data: fallbackData } = await supabase
+              .from('projects')
+              .select(`
+                *,
+                owner:profiles!projects_owner_id_fkey(
+                  user_id,
+                  display_name,
+                  username,
+                  avatar_url,
+                  college,
+                  course,
+                  bio,
+                  skills
+                )
+              `)
+              .eq('id', projectId)
+              .maybeSingle();
+
+            if (fallbackData) {
+              setProject(fallbackData as unknown as Project);
+              return;
+            }
+          } catch {}
+
           if (isInitial) setError('Project not found or could not be loaded from database.');
         } else if (data) {
           const proj = data as unknown as Project;
