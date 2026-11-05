@@ -279,10 +279,14 @@ export function FullArenaExperience({
   const [myPlayerId] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = sessionStorage.getItem('kollabrix_arena_pid');
+        if (!window.name || !window.name.startsWith('kbx_tab_')) {
+          window.name = `kbx_tab_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        }
+        const storageKey = `kollabrix_arena_pid_${window.name}`;
+        const stored = sessionStorage.getItem(storageKey);
         if (stored) return stored;
         const fresh = `pilot-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        sessionStorage.setItem('kollabrix_arena_pid', fresh);
+        sessionStorage.setItem(storageKey, fresh);
         return fresh;
       } catch {}
     }
@@ -444,7 +448,7 @@ export function FullArenaExperience({
   const [isBotOpponentAdded, setIsBotOpponentAdded] = useState(false);
 
   // Step 4 & 5: Battlefield States
-  const [countdownNum, setCountdownNum] = useState<number>(3);
+  const [countdownNum, setCountdownNum] = useState<number | string>(3);
   const [timeLeft, setTimeLeft] = useState<number>(300);
   const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(() =>
     enrichQuestion(initialQuestion || DEFAULT_ARENA_QUESTIONS[0])
@@ -556,11 +560,10 @@ export function FullArenaExperience({
         setArena(rm.arena || 'web_dev');
         if (rm.selectedTags) setSelectedTags(rm.selectedTags);
 
-        // Determine host role
+        // Determine host role: STRICTLY by ID match, never by name match
         const isHostPlayer = Boolean(
-          rm.hostId === myPlayerId ||
-          rm.alphaPlayers?.[0]?.id === myPlayerId ||
-          (playerName && rm.hostName && rm.hostName.toLowerCase() === playerName.toLowerCase())
+          (rm.hostId && rm.hostId === myPlayerId) ||
+          (rm.alphaPlayers?.[0]?.id && rm.alphaPlayers[0].id === myPlayerId)
         );
         setIsHost(isHostPlayer);
 
@@ -921,11 +924,12 @@ export function FullArenaExperience({
 
   // Dynamic Squad & Opponent Identification (1v1 duel & 2v2 relay aware)
   const isUserInAlpha = Boolean(
-    roomData?.alphaPlayers?.some(
-      (p: any) => p.id === myPlayerId || (playerName && p.name?.toLowerCase() === playerName.toLowerCase())
-    )
+    isHost || (roomData?.alphaPlayers?.some((p: any) => p.id === myPlayerId) ?? false)
   );
-  const mySquad: 'alpha' | 'omega' = isUserInAlpha ? 'alpha' : isHost ? 'alpha' : 'omega';
+  const isUserInOmega = Boolean(
+    roomData?.omegaPlayers?.some((p: any) => p.id === myPlayerId) ?? false
+  );
+  const mySquad: 'alpha' | 'omega' = isUserInAlpha ? 'alpha' : isUserInOmega ? 'omega' : isHost ? 'alpha' : 'omega';
 
   // Opponent player is ALWAYS the opposing squad (Omega if I am Alpha; Alpha if I am Omega)
   const opponentPlayer = mySquad === 'alpha'
@@ -1156,7 +1160,8 @@ export function FullArenaExperience({
                 event: 'player_joined',
                 payload: {
                   name: playerName,
-                  team: data.room.alphaPlayers?.some((p: any) => p.name === playerName) ? 'alpha' : 'omega',
+                  team: 'omega',
+                  playerId: myPlayerId,
                 },
               });
               joinChannel.send({
@@ -1164,6 +1169,11 @@ export function FullArenaExperience({
                 event: 'room_sync',
                 payload: { room: data.room },
               });
+              setTimeout(() => {
+                try {
+                  supabase.removeChannel(joinChannel);
+                } catch {}
+              }, 2000);
             }
           });
         } catch {}
@@ -1324,6 +1334,18 @@ export function FullArenaExperience({
     prevPlayersRef.current = currentRoster;
 
     setRoomData(incomingRoom);
+
+    // Ensure isHost role is kept strictly accurate by ID match
+    const isHostPlayer = Boolean(
+      (incomingRoom.hostId && incomingRoom.hostId === myPlayerId) ||
+      (incomingRoom.alphaPlayers?.[0]?.id && incomingRoom.alphaPlayers[0].id === myPlayerId)
+    );
+    setIsHost(isHostPlayer);
+
+    // If real opponent is present in Omega, disable bot toggle
+    if (incomingRoom.omegaPlayers && incomingRoom.omegaPlayers.some((p: any) => p.id !== 'bot-rival')) {
+      setIsBotOpponentAdded(false);
+    }
 
     const currentStep = stepRef.current;
 
@@ -1516,7 +1538,7 @@ export function FullArenaExperience({
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. High-frequency background HTTP safety check (1s in lobby & countdown, 3s in match)
+    // 2. High-frequency background HTTP safety check (800ms in lobby & countdown, 3s in match)
     const pollInterval = setInterval(async () => {
       // In Step 3 & 4 (Lobby waiting & Countdown), DO NOT skip when document.hidden
       if (stepRef.current > 4 && typeof document !== 'undefined' && document.hidden) return;
@@ -1527,7 +1549,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, stepRef.current <= 4 ? 1000 : 3000);
+    }, stepRef.current <= 4 ? 800 : 3000);
 
     // Instant sync when user switches tabs or focuses the window
     const handleFocusSync = async () => {
@@ -1848,12 +1870,16 @@ export function FullArenaExperience({
       setActiveTab('python');
     }
 
+    const nowIso = new Date().toISOString();
+    const matchStartedAt = new Date(Date.now() + 3800).toISOString();
     const updatedRoom = {
       ...roomData,
       status: 'starting',
+      startedAt: matchStartedAt,
       question: finalChosen,
       timeLimit: matchDuration,
       difficulty,
+      updatedAt: nowIso,
     };
     setRoomData(updatedRoom);
 
@@ -1876,7 +1902,7 @@ export function FullArenaExperience({
         body: JSON.stringify({
           code: roomCode,
           action: 'start_match',
-          payload: { question: finalChosen, timeLimit: matchDuration },
+          payload: { question: finalChosen, timeLimit: matchDuration, startedAt: matchStartedAt },
         }),
       });
       trackEvent('arena_match_started', { code: roomCode, format: teamSize, arena, difficulty });
@@ -1887,22 +1913,35 @@ export function FullArenaExperience({
     setCountdownNum(3);
   };
 
-  // 3-2-1 Countdown Timer
+  // 3-2-1 START Countdown Timer
   useEffect(() => {
     if (step !== 4) return;
 
-    if (countdownNum > 1) {
+    if (countdownNum === 3) {
       const timer = setTimeout(() => {
-        setCountdownNum((prev) => prev - 1);
+        playTacticalSelectSound();
+        setCountdownNum(2);
       }, 1000);
       return () => clearTimeout(timer);
-    } else {
+    } else if (countdownNum === 2) {
+      const timer = setTimeout(() => {
+        playTacticalSelectSound();
+        setCountdownNum(1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdownNum === 1) {
+      const timer = setTimeout(() => {
+        playArcadeCoinSound();
+        setCountdownNum('START!');
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdownNum === 'START!') {
       // Countdown finished: Transition to Battlefield (Step 5)
       const timer = setTimeout(() => {
         transitionStep(5);
 
         // Authoritatively notify server and all peers that match is in progress!
-        if (roomCode) {
+        if (roomCode && isHost) {
           fetch('/api/arena/rooms/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1919,10 +1958,10 @@ export function FullArenaExperience({
             } catch {}
           }
         }
-      }, 1000);
+      }, 750);
       return () => clearTimeout(timer);
     }
-  }, [step, countdownNum, roomCode, roomData]);
+  }, [step, countdownNum, roomCode, roomData, isHost]);
 
   // Battle Clock - Synchronized across all duelists via roomData.startedAt
   useEffect(() => {
@@ -3693,10 +3732,10 @@ export function FullArenaExperience({
                   {(() => {
                     const hostName =
                       roomData?.alphaPlayers?.[0]?.name || roomData?.hostName || (isHost ? playerName : 'Host');
-                    const isP1Me =
+                    const isP1Me = Boolean(
                       roomData?.alphaPlayers?.[0]?.id === myPlayerId ||
-                      (playerName && roomData?.alphaPlayers?.[0]?.name?.toLowerCase() === playerName.toLowerCase()) ||
-                      isHost;
+                      (isHost && (!roomData?.alphaPlayers?.[0]?.id || roomData?.alphaPlayers?.[0]?.id === myPlayerId))
+                    );
                     return (
                       <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
@@ -3718,9 +3757,7 @@ export function FullArenaExperience({
                     roomData?.alphaPlayers?.[1] ? (
                       (() => {
                         const p2 = roomData.alphaPlayers[1];
-                        const isP2Me =
-                          p2.id === myPlayerId ||
-                          (playerName && p2.name?.toLowerCase() === playerName.toLowerCase());
+                        const isP2Me = Boolean(p2.id === myPlayerId);
                         return (
                           <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
                             <div className="flex items-center gap-2">
@@ -3766,9 +3803,9 @@ export function FullArenaExperience({
                 {roomData?.omegaPlayers && roomData.omegaPlayers.length > 0 ? (
                   <div className="space-y-2">
                     {roomData.omegaPlayers.map((opp: any, idx: number) => {
-                      const isOppMe =
-                        opp.id === myPlayerId ||
-                        (playerName && opp.name?.toLowerCase() === playerName.toLowerCase());
+                      const isOppMe = Boolean(
+                        opp.id === myPlayerId || (!isHost && mySquad === 'omega')
+                      );
                       return (
                         <div
                           key={opp.id || idx}
@@ -3879,18 +3916,23 @@ export function FullArenaExperience({
 
         {/* ================= STEP 4: ADRENALINE COUNTDOWN ================= */}
         {step === 4 && (
-          <div className="flex flex-col items-center justify-center text-center animate-fadeIn">
+          <div className="flex flex-col items-center justify-center text-center animate-fadeIn py-12">
             <div className="relative flex items-center justify-center mb-6">
               <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-cyan-500 opacity-40 blur-3xl animate-pulse" />
-              <div className="text-8xl sm:text-9xl font-black font-mono text-white drop-shadow-[0_0_50px_rgba(244,63,94,0.8)] animate-ping-short">
+              <div
+                key={String(countdownNum)}
+                className={`font-black font-mono tracking-tight text-white drop-shadow-[0_0_50px_rgba(244,63,94,0.9)] animate-bounce ${
+                  countdownNum === 'START!' ? 'text-6xl sm:text-8xl text-emerald-400' : 'text-8xl sm:text-9xl'
+                }`}
+              >
                 {countdownNum}
               </div>
             </div>
             <h3 className="text-xl sm:text-2xl font-mono font-black text-rose-400 uppercase tracking-widest">
-              GET READY TO CODE...
+              {countdownNum === 'START!' ? '⚔️ MATCH COMMENCED!' : 'GET READY TO CODE...'}
             </h3>
             <p className="mt-2 text-xs font-mono text-slate-400">
-              Anti-Cheat Fog of War will engage automatically upon match start.
+              Synchronizing code editor and Fog of War anti-cheat shield...
             </p>
           </div>
         )}
