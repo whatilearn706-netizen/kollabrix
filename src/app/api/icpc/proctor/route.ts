@@ -139,10 +139,10 @@ export async function GET(request: NextRequest) {
     const activeMap = await loadActiveSessions();
     const meetingUrl = await loadMeetingUrl();
 
-    // Active within the last 45 seconds
+    // Active within the last 90 seconds (resilient to tab switches or mobile network hiccups)
     const now = Date.now();
     const activeSessionsList = Object.values(activeMap).filter(
-      (s) => now - new Date(s.lastHeartbeat).getTime() < 45 * 1000
+      (s) => now - new Date(s.lastHeartbeat).getTime() < 90 * 1000
     );
 
     const stats: ProctorLiveStats = {
@@ -364,7 +364,7 @@ export async function POST(request: NextRequest) {
           activeMap[studentId].sideCameraSnapshot = sideCameraSnapshot;
         }
       }
-      await saveActiveSessions(activeMap);
+      await saveActiveSessions(activeMap, true);
       return NextResponse.json({ success: true, connected: Boolean(connected) });
     }
 

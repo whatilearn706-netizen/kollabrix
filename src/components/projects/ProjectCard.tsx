@@ -43,12 +43,12 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         borderColor: project.is_featured ? theme.brandColor : theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className={`site-card card-hover-lift group flex flex-col justify-between border p-6 sm:p-7 relative overflow-hidden`}
+      className={`site-card card-hover-lift group flex flex-col justify-between border p-6 sm:p-7 relative overflow-hidden h-full shadow-sm hover:shadow-md transition-all`}
     >
       {/* Top glowing accent gradient bar on hover */}
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-      <div className="space-y-3.5">
+      <div className="flex-1 flex flex-col space-y-3.5">
         {/* Top Badges Row */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -111,86 +111,105 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           </span>
         </div>
 
-        {/* Project Title */}
+        {/* Project Title with Uniform Min Height */}
         <Link href={`/projects/${project.id}`} className="block focus:outline-none">
           <h3
             style={{ color: cardHeadingColor }}
-            className={`text-base sm:text-lg font-black transition-colors duration-200 line-clamp-2 leading-snug group-hover:text-violet-600 dark:group-hover:text-violet-400 ${isCardDark ? 'text-white site-heading-white' : ''}`}
+            className={`text-base sm:text-lg font-black transition-colors duration-200 line-clamp-2 min-h-[3rem] leading-snug group-hover:text-violet-600 dark:group-hover:text-violet-400 ${isCardDark ? 'text-white site-heading-white' : ''}`}
           >
             {project.title}
           </h3>
         </Link>
 
-        {/* Short Summary */}
+        {/* Short Summary with Uniform Min Height */}
         <p
           style={{ color: theme.bodyTextColor }}
-          className="text-xs sm:text-sm line-clamp-2 leading-relaxed font-medium opacity-90"
+          className="text-xs sm:text-sm line-clamp-2 min-h-[2.5rem] leading-relaxed font-medium opacity-90"
         >
           {project.summary}
         </p>
 
-        {/* Technologies List */}
-        {project.technologies && project.technologies.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            {project.technologies.slice(0, 4).map((tech, idx) => (
-              <span
-                key={idx}
-                style={{
-                  backgroundColor: effectiveDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
-                  borderColor: theme.borderColor,
-                  color: theme.bodyTextColor,
-                }}
-                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition-all duration-200 group-hover:border-violet-500/30 group-hover:scale-[1.02]"
-              >
-                {tech}
-              </span>
-            ))}
-            {project.technologies.length > 4 && (
-              <span style={{ color: theme.mutedTextColor }} className="text-[10px] font-mono font-medium">
-                +{project.technologies.length - 4}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Required Open Skills */}
-        {project.required_skills && project.required_skills.length > 0 && (
-          <div
-            style={{ borderColor: theme.borderColor }}
-            className="pt-2 border-t opacity-90"
-          >
-            <div className="flex items-center gap-1 text-[11px] font-bold mb-1.5" style={{ color: theme.headingColor }}>
-              <Sparkles className="w-3.5 h-3.5 text-brand-500 shrink-0" />
-              <span>Open Team Roles:</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {project.required_skills.slice(0, 3).map((skill, idx) => (
+        {/* Technologies List with Uniform Spacing */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 min-h-[1.75rem]">
+          {project.technologies && project.technologies.length > 0 ? (
+            <>
+              {project.technologies.slice(0, 4).map((tech, idx) => (
                 <span
                   key={idx}
                   style={{
-                    backgroundColor: `${theme.brandColor}10`,
-                    borderColor: `${theme.brandColor}30`,
-                    color: theme.brandColor,
+                    backgroundColor: effectiveDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
+                    borderColor: theme.borderColor,
+                    color: theme.bodyTextColor,
                   }}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-lg border"
+                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition-all duration-200 group-hover:border-violet-500/30 group-hover:scale-[1.02]"
                 >
-                  {skill}
+                  {tech}
                 </span>
               ))}
-              {project.required_skills.length > 3 && (
-                <span style={{ color: theme.mutedTextColor }} className="text-[10px] self-center font-medium">
-                  +{project.required_skills.length - 3}
+              {project.technologies.length > 4 && (
+                <span style={{ color: theme.mutedTextColor }} className="text-[10px] font-mono font-medium">
+                  +{project.technologies.length - 4}
                 </span>
               )}
+            </>
+          ) : (
+            <span
+              style={{
+                backgroundColor: effectiveDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
+                borderColor: theme.borderColor,
+                color: theme.mutedTextColor,
+              }}
+              className="text-[10px] font-mono px-2 py-0.5 rounded-lg border opacity-60"
+            >
+              General Stack
+            </span>
+          )}
+        </div>
+
+        {/* Required Open Skills with Uniform Height */}
+        <div
+          style={{ borderColor: theme.borderColor }}
+          className="pt-2 border-t opacity-90 min-h-[3.25rem] flex flex-col justify-center"
+        >
+          {project.required_skills && project.required_skills.length > 0 ? (
+            <>
+              <div className="flex items-center gap-1 text-[11px] font-bold mb-1" style={{ color: theme.headingColor }}>
+                <Sparkles className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                <span>Open Team Roles:</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {project.required_skills.slice(0, 3).map((skill, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      backgroundColor: `${theme.brandColor}10`,
+                      borderColor: `${theme.brandColor}30`,
+                      color: theme.brandColor,
+                    }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg border"
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {project.required_skills.length > 3 && (
+                  <span style={{ color: theme.mutedTextColor }} className="text-[10px] self-center font-medium">
+                    +{project.required_skills.length - 3}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 italic">
+              <span>All Builder Roles Welcome</span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Card Footer - Organized, Spacious & Glitch-Free */}
+      {/* Card Footer - Pinned to bottom with mt-auto */}
       <div
         style={{ borderColor: theme.borderColor }}
-        className="mt-5 pt-3.5 border-t space-y-3"
+        className="mt-auto pt-4 border-t space-y-3"
       >
         {/* Creator Info & Verified College Affiliation */}
         <div className="flex items-center justify-between gap-2 min-w-0">

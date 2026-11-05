@@ -36,6 +36,32 @@ const CATEGORIES: ProjectCategory[] = [
 const DIFFICULTIES: ProjectDifficulty[] = ['Beginner', 'Intermediate', 'Advanced'];
 const STATUSES: ProjectStatus[] = ['Recruiting', 'In Progress', 'Completed'];
 
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined') {
+    if (typeof crypto.randomUUID === 'function') {
+      try {
+        return crypto.randomUUID();
+      } catch {}
+    }
+    if (typeof crypto.getRandomValues === 'function') {
+      try {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        return Array.from(bytes, (b) => b.toString(16).padStart(2, '0'))
+          .join('')
+          .replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+      } catch {}
+    }
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps) {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
@@ -301,7 +327,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
       // Check if user is authenticated with Supabase Auth
       if (!activeUserId) {
-        setError('Authentication required: Please sign in with Google, LinkedIn, or GitHub to publish your project and start your Daily Streak.');
+        setError('Authentication required: Please sign in with Google, LinkedIn, or GitHub to publish your project.');
         openAuthModal('login');
         setIsLoading(false);
         return;
@@ -372,11 +398,11 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         if (creatorRole === 'teacher') {
           // 1. Create entry in Teacher section (problem_statements)
           try {
-            const probId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined;
+            const probId = generateUUID();
             const { data: createdProb, error: probErr } = await supabase
               .from('problem_statements')
               .insert({
-                ...(probId ? { id: probId } : {}),
+                id: probId,
                 author_id: activeUserId,
                 title: title.trim(),
                 description: description.trim(),
@@ -398,10 +424,10 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           }
         }
 
-        const newProjectId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined;
+        const newProjectId = generateUUID();
         const insertPayload = {
           ...payload,
-          ...(newProjectId ? { id: newProjectId } : {}),
+          id: newProjectId,
         };
 
         const { data: created, error: insertError } = await supabase
@@ -412,24 +438,12 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
         if (insertError) {
           if (insertError.code === '42501' || insertError.message?.toLowerCase().includes('row-level security')) {
-            setError('Authentication session needs verification: Please sign in with Google, LinkedIn, or GitHub to publish your project and claim your Daily Streak.');
+            setError('Authentication session needs verification: Please sign in with Google, LinkedIn, or GitHub to publish your project.');
             openAuthModal('login');
           } else {
             setError(insertError.message);
           }
           return;
-        }
-
-        // Ignite / Advance Daily Streak upon publishing project
-        try {
-          recordDailyStreakActivity({
-            type: 'PROJECT_PUBLISHED',
-            note: `Published project: ${title.trim()}`,
-            title: title.trim(),
-            userId: activeUserId,
-          });
-        } catch (e) {
-          console.warn('Streak activity record error:', e);
         }
 
         invalidatePageCache();

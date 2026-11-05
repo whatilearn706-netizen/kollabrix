@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,138 +135,76 @@ function SideCameraContent() {
     };
   }, [startCamera, facingMode]);
 
-  // Periodic Compressed Snapshot & Heartbeat Loop (Ultra-lightweight for 500+ users)
-  useEffect(() => {
-    if (!isStreaming || !studentId) return;
-
-    const canvas = canvasRef.current || document.createElement('canvas');
-    canvasRef.current = canvas;
-    // 240x180 resolution keeps snapshot size under 8KB
-    canvas.width = 240;
-    canvas.height = 180;
-    const ctx = canvas.getContext('2d');
-
-    const sendHeartbeat = async () => {
-      const video = videoRef.current;
-      if (!video || !ctx || video.readyState < 2) return;
-
-      try {
-        ctx.drawImage(video, 0, 0, 240, 180);
-        const snapshotDataUrl = canvas.toDataURL('image/webp', 0.55);
-
-        await fetch('/api/icpc/proctor', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'sidecam_heartbeat',
-            studentId,
-            connected: true,
-            sideCameraSnapshot: snapshotDataUrl,
-          }),
-        });
-
-        setSnapshotCount((prev) => prev + 1);
-      } catch (e) {
-        console.warn('Sidecam heartbeat failure:', e);
-      }
-    };
-
-    // Staggered heartbeat interval around 1200ms for responsive real-time proctor view
-    const intervalTime = 1100 + Math.floor(Math.random() * 300);
-    heartbeatTimerRef.current = setInterval(sendHeartbeat, intervalTime);
-
-    // Send first snapshot immediately
-    sendHeartbeat();
-
-    return () => {
-      if (heartbeatTimerRef.current) {
-        clearInterval(heartbeatTimerRef.current);
-      }
-    };
-  }, [isStreaming, studentId]);
-
-  // WebRTC Broadcaster: Connects when Admin inspects student in Live Theater
+  // Supabase Real-Time Streaming & Live Proctoring Sync
   useEffect(() => {
     if (!isStreaming || !studentId) return;
 
     let isDisposed = false;
+    const channel = supabase.channel(`icpc-proctor-${studentId}`, {
+      config: { broadcast: { self: false } },
+    });
+    channel.subscribe();
 
-    const checkWebRtcSignal = async () => {
+    const canvas = canvasRef.current || document.createElement('canvas');
+    canvasRef.current = canvas;
+    // 320x240 provides crisp desk and keyboard visibility
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+
+    let lastHttpSync = 0;
+
+    const streamFrame = async () => {
       if (isDisposed) return;
+      const video = videoRef.current;
+      if (!video || !ctx || video.readyState < 2) return;
+
       try {
-        const res = await fetch('/api/icpc/proctor/webrtc', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'get_offer',
-            studentId,
-            streamType: 'sidecam',
-          }),
-        });
-        const data = await res.json();
+        ctx.drawImage(video, 0, 0, 320, 240);
+        // Fast, high-efficiency JPEG snapshot
+        const snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.55);
 
-        // If admin requested an offer from this sidecam
-        if (data.needsOffer && !pcRef.current) {
-          const pc = new RTCPeerConnection({
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-            ],
-          });
-          pcRef.current = pc;
+        // 1. Instant WebSocket broadcast directly to Admin Theater Modal (< 40ms)
+        channel.send({
+          type: 'broadcast',
+          event: 'sidecam_frame',
+          payload: {
+            snapshot: snapshotDataUrl,
+            connected: true,
+            timestamp: Date.now(),
+          },
+        }).catch(() => {});
 
-          // Add side camera stream tracks
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => {
-              pc.addTrack(track, streamRef.current!);
-            });
-          }
+        setSnapshotCount((prev) => prev + 1);
 
-          pc.onicecandidate = (event) => {
-            if (event.candidate) {
-              fetch('/api/icpc/proctor/webrtc', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  action: 'candidate',
-                  studentId,
-                  streamType: 'sidecam',
-                  role: 'student',
-                  candidate: event.candidate,
-                }),
-              }).catch(() => {});
-            }
-          };
-
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-
-          await fetch('/api/icpc/proctor/webrtc', {
+        // 2. HTTP Heartbeat persistence every 3.5s so database & grid cards stay updated
+        const now = Date.now();
+        if (now - lastHttpSync > 3500) {
+          lastHttpSync = now;
+          fetch('/api/icpc/proctor', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              action: 'offer',
+              action: 'sidecam_heartbeat',
               studentId,
-              streamType: 'sidecam',
-              sdp: offer,
+              connected: true,
+              sideCameraSnapshot: snapshotDataUrl,
             }),
-          });
+          }).catch(() => {});
         }
-      } catch (err) {
-        // Silent catch for background polling
+      } catch (e) {
+        console.warn('Sidecam frame capture error:', e);
       }
     };
 
-    webrtcPollTimerRef.current = setInterval(checkWebRtcSignal, 2500);
+    // Fluid ~500ms video frame updates for true real-time streaming
+    const streamInterval = setInterval(streamFrame, 550);
+    streamFrame();
+
     return () => {
       isDisposed = true;
-      if (webrtcPollTimerRef.current) {
-        clearInterval(webrtcPollTimerRef.current);
-      }
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
+      clearInterval(streamInterval);
+      channel.unsubscribe();
     };
   }, [isStreaming, studentId]);
 

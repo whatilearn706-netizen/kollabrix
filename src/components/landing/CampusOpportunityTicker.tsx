@@ -32,10 +32,10 @@ const TICKER_ITEMS: TickerItem[] = [
   },
   {
     id: 't-3',
-    icon: 'flame',
-    title: '14-Day Build Streak recorded across 18 universities',
+    icon: 'trophy',
+    title: '1,400+ Collegiate Projects built across 18 universities',
     college: 'BITS Pilani',
-    tag: 'Campus Streak',
+    tag: 'Campus Builders',
     href: '/explore',
   },
   {
