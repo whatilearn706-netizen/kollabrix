@@ -23,29 +23,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Moderation action is required.' }, { status: 400 });
     }
 
-    // 1. Critical Self-Lockout & Founder Protection (Destructive actions only)
-    const isDestructiveAction = ['suspend', 'remove_from_project', 'remove_from_all_teams', 'delete_user'].includes(action);
-
-    if (isDestructiveAction && targetUserId === auth.user?.id) {
-      return NextResponse.json(
-        { error: 'Action denied: Administrators cannot suspend, demote, or remove their own account.' },
-        { status: 400 }
-      );
-    }
-
-    if (
-      isDestructiveAction &&
-      (targetUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
-        targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-        targetUserId === '303c5237-2b3c-415e-bc12-6d6cd5e3c0a1' ||
-        targetUserId === '29359508-c755-424b-81a2-89e714577437')
-    ) {
-      return NextResponse.json(
-        { error: 'Action denied: Platform founder account cannot be suspended or deleted.' },
-        { status: 403 }
-      );
-    }
-
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseServiceKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -64,12 +41,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Fetch target user profile for audit details
+    // Fetch target user profile for audit details and protection checks
     const { data: targetProfile } = await client
       .from('profiles')
       .select('username, display_name, role, is_suspended')
       .eq('user_id', targetUserId)
       .maybeSingle();
+
+    // 1. Critical Self-Lockout & Founder Protection (Destructive actions only)
+    const isDestructiveAction = ['suspend', 'remove_from_project', 'remove_from_all_teams', 'delete_user'].includes(action);
+
+    if (isDestructiveAction && targetUserId === auth.user?.id) {
+      return NextResponse.json(
+        { error: 'Action denied: Administrators cannot suspend, demote, or remove their own account.' },
+        { status: 400 }
+      );
+    }
+
+    if (
+      isDestructiveAction &&
+      (targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        targetUserId === '29359508-c755-424b-81a2-89e714577437' ||
+        targetProfile?.username === 'goyalmayank142')
+    ) {
+      return NextResponse.json(
+        { error: 'Action denied: Platform founder account (goyalmayank142) cannot be suspended or deleted.' },
+        { status: 403 }
+      );
+    }
 
     // -------------------------------------------------------------
     // ACTION: SUSPEND USER

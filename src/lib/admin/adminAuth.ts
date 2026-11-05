@@ -111,13 +111,17 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       };
     }
 
-    // Only this exact, verified Supabase account is the platform owner.
-    const isOwner =
-      user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-      user.id === '303c5237-2b3c-415e-bc12-6d6cd5e3c0a1' ||
-      user.id === '29359508-c755-424b-81a2-89e714577437' ||
-      user.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-      user.email?.toLowerCase() === 'mayankgoyal335@gmail.com';
+    // Strictly and exclusively goyalmayank142@gmail.com is authorized as the platform owner and administrator.
+    const isOwner = user.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+
+    // If the authenticated session is not goyalmayank142@gmail.com, access is immediately denied.
+    if (!isOwner) {
+      return {
+        authorized: false,
+        status: 403,
+        error: 'Administrator access is restricted exclusively to platform owner goyalmayank142@gmail.com.',
+      };
+    }
 
     // Read the authoritative profile server-side when possible.
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
