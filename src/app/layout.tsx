@@ -54,17 +54,17 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon.ico?v=20261031_vbare_emblem', sizes: 'any' },
-      { url: '/favicon-v20261031.ico?v=20261031_vbare_emblem', sizes: 'any' },
-      { url: '/favicon-48x48.png?v=20261031_vbare_emblem', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-96x96.png?v=20261031_vbare_emblem', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-144x144.png?v=20261031_vbare_emblem', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png?v=20261031_vbare_emblem', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=20261031_vbare_emblem', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico?v=20261105_v3', sizes: 'any' },
+      { url: '/favicon-v20261031.ico?v=20261105_v3', sizes: 'any' },
+      { url: '/favicon-48x48.png?v=20261105_v3', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png?v=20261105_v3', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-144x144.png?v=20261105_v3', sizes: '144x144', type: 'image/png' },
+      { url: '/icon-192.png?v=20261105_v3', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=20261105_v3', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico?v=20261031_vbare_emblem',
+    shortcut: '/favicon.ico?v=20261105_v3',
     apple: [
-      { url: '/apple-touch-icon.png?v=20261031_vbare_emblem', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=20261105_v3', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.json',
@@ -245,6 +245,54 @@ const jsonLd = {
       sameAs: [
         'https://kollabrix.in',
         'https://github.com/goyalmayank142-pixel/kollabrix',
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': 'https://kollabrix.in/#application',
+      name: 'Kollabrix',
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
+      operatingSystem: 'All Modern Web Browsers',
+      applicationCategory: 'DeveloperApplication',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'INR',
+      },
+      headline: 'Collegiate Hackathon Teams, 1v1 Battle Arena & Project Collaboration Platform',
+      description:
+        'Kollabrix (kollabrix.in) is the official Indian collegiate developer collaboration network, real-time 1v1/2v2 Battle Arena, and campus hackathon builder founded by Mayank Goyal. It is independent of and distinct from historical European educational course syllabus software.',
+      featureList: [
+        'Collegiate Hackathon Team Builder & Private Workspace',
+        'Real-time 1v1 & 2v2 Battle Arena Code Duels with Zero-Latency WebSockets',
+        'ICPC Contest Proctoring with WebRTC Live Camera & Screen Feeds',
+        'Student Engineering Project Workspaces & Task Kanban',
+        'Faculty Challenge Problem Statements & Student Solutions',
+      ],
+      author: {
+        '@id': 'https://kollabrix.in/#organization',
+      },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': 'https://kollabrix.in/#faq',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'What is Kollabrix?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Kollabrix (kollabrix.in) is an Indian collegiate developer network and real-time coding platform founded by Mayank Goyal. It connects university students to build hackathon teams, collaborate in real-time project workspaces, compete in 1v1 Battle Arena code duels, and participate in proctored ICPC contests.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Who founded Kollabrix?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Kollabrix was founded in India by Mayank Goyal as a dedicated student innovation network and collegiate coding battle arena.',
+          },
+        },
       ],
     },
   ],
