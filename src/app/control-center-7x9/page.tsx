@@ -211,7 +211,7 @@ export default function AdminControlCenterPage() {
               Administrator access has not been verified for this session ({user.email}).
             </p>
             <p className="text-xs text-slate-400">
-              Your previous session may have expired after the backend upgrade. Please re-authenticate with your platform owner account.
+              Administrator access is restricted exclusively to platform owner <span className="text-white font-mono">goyalmayank142@gmail.com</span>.
             </p>
             <Button
               type="button"

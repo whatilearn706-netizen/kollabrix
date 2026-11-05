@@ -67,11 +67,7 @@ export function Navbar() {
   const [isArenaLive, setIsArenaLive] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin =
-    user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
-    user?.email?.toLowerCase() === 'mayankgoyal335@gmail.com' ||
-    (profile as any)?.is_admin === true ||
-    (profile as any)?.role === 'admin';
+  const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
   const checkArenaStatus = () => {
     fetch(`/api/arena/status?_t=${Date.now()}`, { cache: 'no-store' })
