@@ -37,4 +37,9 @@ next-env.d.ts
 # Local security-review backups (never commit)
 security-backup-*/
 src/app/api/admin/emergency-maintenance/route.ts.backup-*
-*.sql
+
+# Database backup dumps (protect sensitive keys from git)
+backups/*.json
+backups/*.tar.gz
+!backups/RESTORE_GUIDE.md
+!backups/complete-database-schema.sql

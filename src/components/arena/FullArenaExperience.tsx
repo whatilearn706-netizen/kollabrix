@@ -3988,19 +3988,23 @@ export function FullArenaExperience({
                     </div>
                   )}
 
-                  {/* Toggle Button for Full Question */}
+                  {/* Toggle Button for Full Question (Clean Minimalist Symbol) */}
                   <button
                     type="button"
                     onClick={() => setIsQuestionExpanded((prev) => !prev)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                       isQuestionExpanded
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.3)] ring-1 ring-amber-400/40'
+                        ? 'bg-amber-500/25 border border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.3)] ring-1 ring-amber-400/50'
                         : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:shadow-[0_0_12px_rgba(245,158,11,0.2)]'
                     }`}
-                    title={isQuestionExpanded ? 'Compress question brief' : 'View full question description & requirements'}
+                    title={isQuestionExpanded ? 'Collapse Question' : 'Open Full Question'}
+                    aria-label={isQuestionExpanded ? 'Collapse Question' : 'Open Full Question'}
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{isQuestionExpanded ? 'Collapse Question ▴' : 'View Full Question ▾'}</span>
+                    {isQuestionExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-amber-400" />
+                    ) : (
+                      <BookOpen className="w-4 h-4 text-amber-400" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -4012,24 +4016,6 @@ export function FullArenaExperience({
                     <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-200 whitespace-pre-line font-normal text-xs sm:text-[13px] leading-relaxed shadow-inner">
                       {activeQuestion.description}
                     </div>
-
-                    {/* Requirements / Validation Criteria (if available) */}
-                    {activeQuestion.validationCriteria && activeQuestion.validationCriteria.length > 0 && (
-                      <div className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-1.5">
-                        <span className="font-mono text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                          Key Requirements & Acceptance Criteria:
-                        </span>
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px] text-slate-300 pl-1">
-                          {activeQuestion.validationCriteria.map((crit, idx) => (
-                            <li key={idx} className="flex items-start gap-1.5">
-                              <span className="text-amber-400 font-bold">•</span>
-                              <span>{crit}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
 
                     {/* Test Cases / Target Criteria for Algorithms */}
                     {!isWebMatch && activeQuestion.testCases && activeQuestion.testCases.length > 0 && (

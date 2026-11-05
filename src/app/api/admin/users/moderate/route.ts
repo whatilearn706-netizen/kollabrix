@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession, recordAdminAuditLog } from '@/lib/admin/adminAuth';
-import { isSupabaseConfigured, DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/isConfigured';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 
 export const runtime = 'nodejs';
 

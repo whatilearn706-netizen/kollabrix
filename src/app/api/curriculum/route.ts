@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   isSupabaseConfigured,
   DEFAULT_SUPABASE_URL,
-  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
 } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import { LanguageCurriculum, LearningStep } from '@/types/curriculum';

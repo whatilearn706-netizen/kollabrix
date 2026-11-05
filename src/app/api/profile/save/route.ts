@@ -4,8 +4,8 @@ import {
   isSupabaseConfigured,
   DEFAULT_SUPABASE_URL,
   DEFAULT_SUPABASE_ANON_KEY,
-  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
 } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
