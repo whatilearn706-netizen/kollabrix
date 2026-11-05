@@ -195,25 +195,22 @@ export async function joinPlayerToRoom(
   const cleanCode = roomCode.trim().toUpperCase();
   const now = new Date().toISOString();
 
-  // Deduplication check: Is player already in alpha or omega?
-  const existingInAlpha = room.alphaPlayers.find(
-    (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
-  );
+  // Deduplication check: Is this specific player already in alpha or omega?
+  // NOTE: Strict check by player.id ONLY. Never match by player.name to avoid collisions when two users share names or during multi-account testing.
+  const existingInAlpha = room.alphaPlayers.find((p) => p.id === player.id);
   if (existingInAlpha) {
     existingInAlpha.lastActive = now;
     existingInAlpha.avatarIdx = player.avatarIdx ?? existingInAlpha.avatarIdx;
-    existingInAlpha.name = player.name || existingInAlpha.name;
+    if (player.name) existingInAlpha.name = player.name;
     const saved = await saveRoom(room);
     return { success: true, room: saved };
   }
 
-  const existingInOmega = room.omegaPlayers.find(
-    (p) => p.id === player.id || (player.name && p.name.toLowerCase() === player.name.toLowerCase())
-  );
+  const existingInOmega = room.omegaPlayers.find((p) => p.id === player.id);
   if (existingInOmega) {
     existingInOmega.lastActive = now;
     existingInOmega.avatarIdx = player.avatarIdx ?? existingInOmega.avatarIdx;
-    existingInOmega.name = player.name || existingInOmega.name;
+    if (player.name) existingInOmega.name = player.name;
     const saved = await saveRoom(room);
     return { success: true, room: saved };
   }
@@ -303,9 +300,14 @@ export async function joinPlayerToRoom(
 
   // In 1v1: the joining player is ALWAYS assigned to Team Omega (Opponent Slot)
   if (room.format === '1v1') {
+    const rawName = player.name?.trim() || 'Challenger';
+    const hostPlayerName = room.alphaPlayers[0]?.name?.trim() || room.hostName?.trim() || '';
+    const isSameNameAsHost = Boolean(hostPlayerName && hostPlayerName.toLowerCase() === rawName.toLowerCase());
+    const assignedName = isSameNameAsHost ? `${rawName} (Challenger)` : rawName;
+
     const newOpponent: ArenaPlayer = {
       id: player.id || `p-${Date.now()}`,
-      name: player.name || 'Challenger',
+      name: assignedName,
       avatarIdx: player.avatarIdx ?? 1,
       team: 'omega',
       role: 'driver',
@@ -374,15 +376,11 @@ export async function leaveRoomPlayer(
   if (!room) return { success: false, error: 'Room not found' };
 
   // If host leaves, close room
-  if (room.hostId === playerId || room.alphaPlayers[0]?.id === playerId || room.alphaPlayers[0]?.name === playerName) {
+  if (room.hostId === playerId || room.alphaPlayers[0]?.id === playerId) {
     room.status = 'closed';
   } else {
-    room.alphaPlayers = room.alphaPlayers.filter(
-      (p) => p.id !== playerId && (!playerName || p.name.toLowerCase() !== playerName.toLowerCase())
-    );
-    room.omegaPlayers = room.omegaPlayers.filter(
-      (p) => p.id !== playerId && (!playerName || p.name.toLowerCase() !== playerName.toLowerCase())
-    );
+    room.alphaPlayers = room.alphaPlayers.filter((p) => p.id !== playerId);
+    room.omegaPlayers = room.omegaPlayers.filter((p) => p.id !== playerId);
   }
 
   const saved = await saveRoom(room);

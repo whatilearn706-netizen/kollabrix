@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       cleanCode = cleanCode.split('#join-')[1];
     }
 
-    cleanCode = cleanCode.toUpperCase();
+    cleanCode = cleanCode.replace(/\s+/g, '-').toUpperCase();
 
     const playerName = player?.name?.trim() || 'RivalCoder';
     const avatarIdx = Number(player?.avatarIdx) || 1;
