@@ -41,5 +41,6 @@ src/app/api/admin/emergency-maintenance/route.ts.backup-*
 # Database backup dumps (protect sensitive keys from git)
 backups/*.json
 backups/*.tar.gz
+backups/*.sql
 !backups/RESTORE_GUIDE.md
 !backups/complete-database-schema.sql
