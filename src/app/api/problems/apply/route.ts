@@ -71,10 +71,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Per-user rate limit: max 10 applications per 24 h ──────────────────────
-    const ip = getClientIp(request);
-    const rlKey = `apply:${resolvedApplicantId}:${ip}`;
-    const rateCheck = checkIpRateLimit(rlKey, 10, 24 * 60 * 60 * 1000, 60 * 60 * 1000);
+    // ── Per-user rate limit: max 20 applications per 24 h (keyed by student ID, not shared IP) ──────
+    const rlKey = `apply:${resolvedApplicantId}`;
+    const rateCheck = checkIpRateLimit(rlKey, 20, 24 * 60 * 60 * 1000, 60 * 1000);
     if (!rateCheck.allowed) {
       const waitMins = Math.ceil((rateCheck.retryAfterMs ?? 3600000) / 60000);
       return NextResponse.json(

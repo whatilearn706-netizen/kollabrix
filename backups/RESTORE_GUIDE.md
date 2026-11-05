@@ -48,6 +48,18 @@ The script will automatically upsert all:
 
 ---
 
+### Step 3: High-Concurrency Connection Pooling (1000+ Concurrent Students)
+When connecting an application to the database for high-concurrency events (e.g. hackathons, contests, duels with 300 - 1000+ concurrent students), **always use the Supavisor Transaction Pooler on port 6543** instead of port 5432:
+```bash
+# Correct (Transaction Pooler - Port 6543 handles 1000+ simultaneous connections):
+DATABASE_URL="postgresql://postgres.[REF]:[PASS]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Avoid for 1000+ live users (Direct Session - Port 5432 exhausts connection limits):
+# DATABASE_URL="postgresql://...:5432/postgres"
+```
+
+---
+
 ## 🔄 How to Create Fresh Backups Anytime
 
 Whenever you make major changes or add new features, create a new backup with:

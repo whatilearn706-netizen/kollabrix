@@ -5,7 +5,7 @@ import {
   DEFAULT_SUPABASE_ANON_KEY,
 } from '@/lib/supabase/isConfigured';
 import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
-import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,26 +23,24 @@ function getAdminClient() {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    // Allow up to 120 team creations per minute per shared IP (e.g. collegiate hostel/campus Wi-Fi NAT)
-    const ipLimit = checkIpRateLimit(`team_create_ip_${ip}`, 120, 60 * 1000, 60 * 1000);
-    if (!ipLimit.allowed) {
-      return NextResponse.json(
-        { error: 'Too many team creation requests from this IP. Please wait a minute.' },
-        { status: 429 }
-      );
-    }
-
     const body = await request.json();
     const { hackathonId, teamName, description, challengeId, leaderUserId } = body;
 
-    if (leaderUserId) {
-      const userLimit = checkIpRateLimit(`team_create_user_${leaderUserId}`, 5, 5 * 60 * 1000, 5 * 60 * 1000);
-      if (!userLimit.allowed) {
-        return NextResponse.json(
-          { error: 'You have reached the team creation limit. Please wait before creating another team.' },
-          { status: 429 }
-        );
-      }
+    // Rate-limit per user (allows 1000+ students on campus Wi-Fi without blocking)
+    const rateLimit = checkUserOrCampusRateLimit(
+      leaderUserId,
+      ip,
+      10, // Max 10 team creations per 5 minutes per user
+      5 * 60 * 1000,
+      3000, // Campus NAT ceiling
+      60 * 1000
+    );
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Team creation rate limit reached. Please wait before creating another team.' },
+        { status: 429 }
+      );
     }
 
     if (!hackathonId || !teamName) {

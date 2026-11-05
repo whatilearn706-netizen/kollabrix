@@ -64,9 +64,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Rate limit: max 5 problem statements per faculty per day ────────────────
-    const ip = getClientIp(request);
-    const rateCheck = checkIpRateLimit(`create-problem:${authorId}:${ip}`, 5, 24 * 60 * 60 * 1000, 60 * 60 * 1000);
+    // ── Rate limit: max 20 problem statements per faculty per day (keyed by authorId, not shared IP) ────
+    const rateCheck = checkIpRateLimit(`create-problem:${authorId}`, 20, 24 * 60 * 60 * 1000, 60 * 1000);
     if (!rateCheck.allowed) {
       const waitMins = Math.ceil((rateCheck.retryAfterMs ?? 3600000) / 60000);
       return NextResponse.json(
