@@ -182,7 +182,10 @@ export default function NewProblemStatementPage() {
         max_team_size: maxTeamSize,
       })} -->`;
 
+      const problemId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `prob-${Date.now()}`;
+
       const payload = {
+        id: problemId,
         author_id: user.id,
         title: title.trim(),
         description: description.trim() + metaComment,

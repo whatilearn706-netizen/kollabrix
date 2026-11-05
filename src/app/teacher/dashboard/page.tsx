@@ -542,6 +542,7 @@ export default function TeacherDashboardPage() {
       setIsSubmittingFeedback(true);
 
       const payload = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined,
         project_id: selectedProject.id,
         mentor_id: user.id,
         content: feedbackContent.trim(),

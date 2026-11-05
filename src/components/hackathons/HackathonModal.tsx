@@ -67,6 +67,7 @@ export function HackathonModal({ isOpen, onClose, onSuccess }: HackathonModalPro
         .filter(Boolean);
 
       const payload = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined,
         title: title.trim(),
         organizer: organizer.trim(),
         description: description.trim(),

@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
     }${commsLink.trim() ? `\n\n### Team Communication\n${commsLink.trim()}` : ''}`;
 
     const projectPayload = {
+      id: crypto.randomUUID(),
       title: teamName.trim(),
       summary: summaryText,
       description: descriptionText,
@@ -218,7 +219,6 @@ export async function POST(request: NextRequest) {
     // 5. Fallback project representation if direct insert failed
     if (!createdProject) {
       createdProject = {
-        id: `probteam-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         ...projectPayload,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

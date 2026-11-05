@@ -17,7 +17,7 @@ const memoryCache = new Map<string, CacheEntry<any>>();
  * Retrieve cached data for instantaneous client rendering (0ms).
  * Checks in-memory Map first, then falls back to sessionStorage.
  */
-export function getPageCache<T>(key: string, maxAgeMs = 10 * 60 * 1000): T | null {
+export function getPageCache<T>(key: string, maxAgeMs = 15 * 60 * 1000): T | null {
   const now = Date.now();
 
   // 1. Check in-memory cache
@@ -35,7 +35,20 @@ export function getPageCache<T>(key: string, maxAgeMs = 10 * 60 * 1000): T | nul
       if (raw) {
         const parsed: CacheEntry<T> = JSON.parse(raw);
         if (parsed && typeof parsed.timestamp === 'number') {
-          // Promote to memory cache
+          memoryCache.set(key, parsed);
+          if (now - parsed.timestamp < maxAgeMs) {
+            return parsed.data;
+          }
+        }
+      }
+    } catch {}
+
+    // 3. Fall back to localStorage (persists across tabs & browser restarts for 0ms loads)
+    try {
+      const localRaw = localStorage.getItem(`linkora_cache_${key}`);
+      if (localRaw) {
+        const parsed: CacheEntry<T> = JSON.parse(localRaw);
+        if (parsed && typeof parsed.timestamp === 'number') {
           memoryCache.set(key, parsed);
           if (now - parsed.timestamp < maxAgeMs) {
             return parsed.data;
@@ -45,17 +58,25 @@ export function getPageCache<T>(key: string, maxAgeMs = 10 * 60 * 1000): T | nul
     } catch {}
   }
 
-  // Stale fallback: If entry exists in memory even if older than maxAgeMs,
-  // return it to avoid skeleton flicker while revalidating
+  // Stale-While-Revalidate: Return stale cached data from memory or storage to avoid skeleton flicker
   if (mem && mem.data) {
     return mem.data as T;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const fallbackRaw = sessionStorage.getItem(`linkora_cache_${key}`) || localStorage.getItem(`linkora_cache_${key}`);
+      if (fallbackRaw) {
+        const parsed = JSON.parse(fallbackRaw);
+        if (parsed?.data) return parsed.data as T;
+      }
+    } catch {}
   }
 
   return null;
 }
 
 /**
- * Persist data to in-memory cache and sessionStorage.
+ * Persist data to in-memory cache, sessionStorage, and localStorage.
  */
 export function setPageCache<T>(key: string, data: T): void {
   const entry: CacheEntry<T> = { data, timestamp: Date.now() };
@@ -63,7 +84,9 @@ export function setPageCache<T>(key: string, data: T): void {
 
   if (typeof window !== 'undefined') {
     try {
-      sessionStorage.setItem(`linkora_cache_${key}`, JSON.stringify(entry));
+      const json = JSON.stringify(entry);
+      sessionStorage.setItem(`linkora_cache_${key}`, json);
+      localStorage.setItem(`linkora_cache_${key}`, json);
     } catch {}
   }
 }

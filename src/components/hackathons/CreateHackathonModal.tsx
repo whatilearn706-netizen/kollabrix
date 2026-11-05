@@ -181,6 +181,7 @@ export function CreateHackathonModal({
           })} -->`;
 
           const clientPayload = {
+            id: resData.hackathon?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined),
             creator_id: user.id,
             title: title.trim(),
             organizer: organizer.trim(),

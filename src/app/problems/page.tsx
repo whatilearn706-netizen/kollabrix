@@ -31,6 +31,7 @@ import {
 
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
 import { isFacultyUser } from '@/lib/auth/faculty';
+import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 
 const CATEGORIES: (ProjectCategory | 'All')[] = [
   'All',
@@ -47,8 +48,9 @@ const DIFFICULTIES: (ProjectDifficulty | 'All')[] = ['All', 'Beginner', 'Interme
 
 export default function ProblemStatementsPage() {
   const { user, profile, isLoading: isAuthLoading, openAuthModal } = useAuth();
-  const [problems, setProblems] = useState<ProblemStatement[]>(() => DEMO_PROBLEMS);
-  const [isLoading, setIsLoading] = useState(false);
+  const cachedProblems = getPageCache<ProblemStatement[]>('linkora_problems_list');
+  const [problems, setProblems] = useState<ProblemStatement[]>(() => cachedProblems || DEMO_PROBLEMS);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !cachedProblems && (!DEMO_PROBLEMS || DEMO_PROBLEMS.length === 0));
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | 'All'>('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState<ProjectDifficulty | 'All'>('All');
@@ -59,7 +61,10 @@ export default function ProblemStatementsPage() {
   const isTeacher = isFacultyUser(user, profile);
 
   const loadProblems = useCallback(async () => {
-    setIsLoading(true);
+    // Only show loader if no problem statements are currently cached or displayed
+    if (problems.length === 0) {
+      setIsLoading(true);
+    }
     if (!isSupabaseConfigured()) {
       setProblems(DEMO_PROBLEMS);
       setIsLoading(false);
@@ -158,6 +163,7 @@ export default function ProblemStatementsPage() {
       });
 
       setProblems(list);
+      setPageCache('linkora_problems_list', list);
     } catch {
       setProblems(DEMO_PROBLEMS);
     } finally {

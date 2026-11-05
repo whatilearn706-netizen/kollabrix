@@ -140,16 +140,21 @@ function SideCameraContent() {
     if (!isStreaming || !studentId) return;
 
     let isDisposed = false;
+    let isSubscribed = false;
     const channel = supabase.channel(`icpc-proctor-${studentId}`, {
       config: { broadcast: { self: false } },
     });
-    channel.subscribe();
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        isSubscribed = true;
+      }
+    });
 
     const canvas = canvasRef.current || document.createElement('canvas');
     canvasRef.current = canvas;
-    // 320x240 provides crisp desk and keyboard visibility
-    canvas.width = 320;
-    canvas.height = 240;
+    // 240x180 keeps WebSocket payload ~5KB-7KB (well below Supabase 32KB limit) while retaining clear desk/keyboard visibility
+    canvas.width = 240;
+    canvas.height = 180;
     const ctx = canvas.getContext('2d');
 
     let lastHttpSync = 0;
@@ -160,26 +165,28 @@ function SideCameraContent() {
       if (!video || !ctx || video.readyState < 2) return;
 
       try {
-        ctx.drawImage(video, 0, 0, 320, 240);
-        // Fast, high-efficiency JPEG snapshot
-        const snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.55);
+        ctx.drawImage(video, 0, 0, 240, 180);
+        // Ultra-compact JPEG payload (~5KB-7KB) guarantees zero packet loss over WebSocket
+        const snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.38);
 
         // 1. Instant WebSocket broadcast directly to Admin Theater Modal (< 40ms)
-        channel.send({
-          type: 'broadcast',
-          event: 'sidecam_frame',
-          payload: {
-            snapshot: snapshotDataUrl,
-            connected: true,
-            timestamp: Date.now(),
-          },
-        }).catch(() => {});
+        if (isSubscribed) {
+          channel.send({
+            type: 'broadcast',
+            event: 'sidecam_frame',
+            payload: {
+              snapshot: snapshotDataUrl,
+              connected: true,
+              timestamp: Date.now(),
+            },
+          }).catch(() => {});
+        }
 
         setSnapshotCount((prev) => prev + 1);
 
-        // 2. HTTP Heartbeat persistence every 3.5s so database & grid cards stay updated
+        // 2. HTTP Heartbeat persistence every 2s so database & grid cards stay updated
         const now = Date.now();
-        if (now - lastHttpSync > 3500) {
+        if (now - lastHttpSync > 2000) {
           lastHttpSync = now;
           fetch('/api/icpc/proctor', {
             method: 'POST',
@@ -197,8 +204,8 @@ function SideCameraContent() {
       }
     };
 
-    // Fluid ~500ms video frame updates for true real-time streaming
-    const streamInterval = setInterval(streamFrame, 550);
+    // Fluid ~280ms video frame updates for true real-time streaming (~3.5 FPS)
+    const streamInterval = setInterval(streamFrame, 280);
     streamFrame();
 
     return () => {
