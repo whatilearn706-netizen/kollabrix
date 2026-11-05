@@ -372,9 +372,11 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         if (creatorRole === 'teacher') {
           // 1. Create entry in Teacher section (problem_statements)
           try {
+            const probId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined;
             const { data: createdProb, error: probErr } = await supabase
               .from('problem_statements')
               .insert({
+                ...(probId ? { id: probId } : {}),
                 author_id: activeUserId,
                 title: title.trim(),
                 description: description.trim(),
@@ -396,9 +398,15 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           }
         }
 
+        const newProjectId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined;
+        const insertPayload = {
+          ...payload,
+          ...(newProjectId ? { id: newProjectId } : {}),
+        };
+
         const { data: created, error: insertError } = await supabase
           .from('projects')
-          .insert(payload)
+          .insert(insertPayload)
           .select('id')
           .single();
 

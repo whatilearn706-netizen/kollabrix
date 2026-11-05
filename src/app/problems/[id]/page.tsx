@@ -129,9 +129,11 @@ export default function ProblemStatementDetailPage() {
           )
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (probError) {
+      let problemStatement: ProblemStatement | null = probData as ProblemStatement | null;
+
+      if (!problemStatement) {
         let foundComm: any = null;
         try {
           const { data: commRow } = await supabase
@@ -146,26 +148,15 @@ export default function ProblemStatementDetailPage() {
         } catch {}
 
         if (foundComm) {
-          let pComm: any = { ...foundComm };
-          if (pComm.description?.includes('<!-- PROBLEM_META:')) {
-            try {
-              const metaStr = pComm.description.split('<!-- PROBLEM_META:')[1].split('-->')[0];
-              const meta = JSON.parse(metaStr);
-              pComm.team_size = meta.team_size || pComm.team_size;
-              pComm.min_team_size = meta.min_team_size || pComm.min_team_size;
-              pComm.max_team_size = meta.max_team_size || pComm.max_team_size;
-              pComm.description = pComm.description.replace(/\n\n<!-- PROBLEM_META:[\s\S]*?-->/g, '').trim();
-            } catch {}
-          }
-          setProblem(pComm as ProblemStatement);
+          problemStatement = foundComm as ProblemStatement;
         } else if (matched) {
-          setProblem(matched);
+          problemStatement = matched;
           setTacklingProjects(DEMO_PROJECTS.filter((p) => p.problem_statement_id === id));
-        } else {
-          throw new Error(probError.message);
         }
-      } else if (probData) {
-        let enriched: any = { ...probData };
+      }
+
+      if (problemStatement) {
+        let enriched: any = { ...problemStatement };
 
         if (enriched.description?.includes('<!-- PROBLEM_META:')) {
           try {

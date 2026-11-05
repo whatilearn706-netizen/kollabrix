@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { supabase } from '@/lib/supabase/client';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
@@ -133,7 +134,10 @@ export async function POST(request: NextRequest) {
       banner_url: resolvedBannerUrl,
     })} -->`;
 
+    const generatedHackathonId = crypto.randomUUID();
+
     const payload = {
+      id: generatedHackathonId,
       creator_id: creatorId,
       title: title.trim(),
       organizer: organizer ? organizer.trim() : 'College Faculty',
@@ -178,6 +182,7 @@ export async function POST(request: NextRequest) {
 
         // Fall back to inserting with base columns that exist in the standard schema
         const basePayload = {
+          id: generatedHackathonId,
           creator_id: creatorId,
           title: title.trim(),
           organizer: organizer ? organizer.trim() : 'College Faculty',
@@ -204,7 +209,6 @@ export async function POST(request: NextRequest) {
         if (fallbackError) {
           console.warn('Fallback insert notice:', fallbackError.message);
           createdHack = {
-            id: `hack-${Date.now()}`,
             ...payload,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -294,7 +298,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       hackathon: {
-        id: `hack-${Date.now()}`,
         ...payload,
       },
       joinUrl: `/h/${joinCode}`,

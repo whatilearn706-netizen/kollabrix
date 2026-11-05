@@ -106,7 +106,14 @@ export default function AdminControlCenterPage() {
 
       try {
         const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        let token = data.session?.access_token;
+
+        if (!token) {
+          try {
+            const refreshRes = await supabase.auth.refreshSession();
+            token = refreshRes.data.session?.access_token;
+          } catch {}
+        }
 
         if (cancelled) return;
 
@@ -133,6 +140,31 @@ export default function AdminControlCenterPage() {
           setAdminUser(result.user);
           setAdminProfile(result.profile);
           try { sessionStorage.setItem('linkora_cc_auth_v7', 'true'); } catch {}
+        } else if (user?.email?.toLowerCase() === 'goyalmayank142@gmail.com') {
+          // If token was stale, refresh session and retry once
+          try {
+            const freshSession = await supabase.auth.refreshSession();
+            const freshToken = freshSession.data.session?.access_token;
+            if (freshToken) {
+              setAuthToken(freshToken);
+              const retryRes = await fetch('/api/admin/verify', {
+                headers: { Authorization: `Bearer ${freshToken}` },
+                cache: 'no-store',
+              });
+              const retryResult = await retryRes.json();
+              if (retryRes.ok && retryResult.authorized === true) {
+                setIsAdmin(true);
+                setAdminUser(retryResult.user);
+                setAdminProfile(retryResult.profile);
+                try { sessionStorage.setItem('linkora_cc_auth_v7', 'true'); } catch {}
+                return;
+              }
+            }
+          } catch {}
+          setIsAdmin(false);
+          setAdminUser(null);
+          setAdminProfile(null);
+          try { sessionStorage.removeItem('linkora_cc_auth_v7'); } catch {}
         } else {
           setIsAdmin(false);
           setAdminUser(null);

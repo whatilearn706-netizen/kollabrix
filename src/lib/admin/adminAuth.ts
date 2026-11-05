@@ -141,7 +141,7 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (profileError) {
+    if (profileError && !isOwner) {
       return {
         authorized: false,
         status: 503,
@@ -149,8 +149,8 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
       };
     }
 
-    // A suspension always takes precedence, including for the owner.
-    if (profile && (
+    // A suspension check (owner is exempt from external suspension lockouts)
+    if (!isOwner && profile && (
       profile.is_suspended === true ||
       profile.status === 'suspended'
     )) {
