@@ -59,6 +59,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
   // Action Modals State
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
   const [isRemoveAllModalOpen, setIsRemoveAllModalOpen] = useState(false);
   const [isRemoveProjectModalOpen, setIsRemoveProjectModalOpen] = useState<{
     isOpen: boolean;
@@ -425,7 +426,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
 
   // Handle Moderation Action
   const executeModeration = async (
-    action: 'suspend' | 'restore' | 'remove_from_project' | 'remove_from_all_teams',
+    action: 'suspend' | 'restore' | 'remove_from_project' | 'remove_from_all_teams' | 'delete_user',
     extraPayload: Record<string, any> = {}
   ) => {
     if (!selectedUser) return;
@@ -455,9 +456,11 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
       setActionMessage({ type: 'success', text: data.message || 'Action executed successfully.' });
       setModerationReason('');
       setIsSuspendModalOpen(false);
+      setIsDeleteUserModalOpen(false);
       setIsRemoveAllModalOpen(false);
       setIsRemoveProjectModalOpen({ isOpen: false });
       setIsDetailModalOpen(false);
+      setSelectedUser(null);
       await fetchUsers();
     } catch (err: unknown) {
       setActionMessage({
@@ -832,16 +835,33 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(u);
-                            setIsDetailModalOpen(true);
-                          }}
-                        >
-                          Inspect & Teams
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setIsDetailModalOpen(true);
+                            }}
+                          >
+                            Inspect & Teams
+                          </Button>
+                          {u.user_id !== currentAdminId && u.role !== 'admin' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(u);
+                                setModerationReason('');
+                                setIsDeleteUserModalOpen(true);
+                              }}
+                              className="border-red-500/30 text-red-400 hover:bg-red-500/10 px-2 py-1.5"
+                              title="Delete User Account"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1221,9 +1241,9 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                 )}
               </div>
 
-              {/* Suspension Action Button */}
-              {selectedUser.user_id !== currentAdminId && (
-                <div>
+              {/* Suspension & Delete Action Buttons */}
+              {selectedUser.user_id !== currentAdminId && selectedUser.role !== 'admin' && (
+                <div className="flex items-center gap-2">
                   {selectedUser.is_suspended ? (
                     <Button
                       variant="primary"
@@ -1242,9 +1262,21 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                       className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
                       leftIcon={<UserX className="w-3.5 h-3.5" />}
                     >
-                      Suspend Account
+                      Suspend
                     </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setModerationReason('');
+                      setIsDeleteUserModalOpen(true);
+                    }}
+                    className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+                    leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                  >
+                    Delete Account
+                  </Button>
                 </div>
               )}
             </div>
@@ -1476,6 +1508,53 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
               className="bg-amber-600 hover:bg-amber-500"
             >
               Confirm Account Suspension
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* DELETE USER PERMANENT CONFIRMATION MODAL */}
+      <Modal
+        isOpen={isDeleteUserModalOpen}
+        onClose={() => setIsDeleteUserModalOpen(false)}
+        title="Permanently Delete Account"
+        maxWidth="md"
+      >
+        <div className="space-y-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 flex items-start gap-2.5">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-red-400" />
+            <div className="leading-relaxed">
+              <strong className="text-white">Irreversible Action:</strong> This will permanently delete{' '}
+              <strong className="text-white">@{selectedUser?.username}</strong> from both the Supabase Authentication service and PostgreSQL database.
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">
+              Deletion Reason (Optional)
+            </label>
+            <textarea
+              className="w-full rounded-xl bg-charcoal-900 border border-charcoal-750 p-3 text-xs text-white focus:outline-none focus:border-red-500"
+              rows={2}
+              placeholder="Test user, spam account, duplicate registration..."
+              value={moderationReason}
+              onChange={(e) => setModerationReason(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => setIsDeleteUserModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+              onClick={() => executeModeration('delete_user')}
+              className="bg-red-600 hover:bg-red-500 text-white font-bold"
+              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+            >
+              Delete User Permanently
             </Button>
           </div>
         </div>
