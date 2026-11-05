@@ -46,7 +46,7 @@ import { AdminResourcesTab } from '@/components/admin/AdminResourcesTab';
 import { AdminIntegrationsPanel } from '@/components/admin/AdminIntegrationsPanel';
 
 export default function AdminControlCenterPage() {
-  const { user, profile, openAuthModal, isLoading: isAuthLoading } = useAuth();
+  const { user, profile, openAuthModal, signOut, isLoading: isAuthLoading } = useAuth();
 
   const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
     if (typeof window !== 'undefined') {
@@ -206,9 +206,25 @@ export default function AdminControlCenterPage() {
         </div>
 
         {user ? (
-          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-2">
-            <p className="text-sm text-slate-200">Administrator access has not been verified for this account ({user.email}).</p>
-            <p className="text-xs text-slate-400">Sign in with your authorized platform-owner account and try again.</p>
+          <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-3">
+            <p className="text-sm text-slate-200">
+              Administrator access has not been verified for this session ({user.email}).
+            </p>
+            <p className="text-xs text-slate-400">
+              Your previous session may have expired after the backend upgrade. Please re-authenticate with your platform owner account.
+            </p>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              className="w-full text-xs font-bold bg-amber-500 hover:bg-amber-400 text-charcoal-950 mt-2"
+              onClick={async () => {
+                await signOut();
+                openAuthModal('login');
+              }}
+            >
+              Sign In with Platform Owner Account
+            </Button>
           </div>
         ) : (
           <Button

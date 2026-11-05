@@ -69,6 +69,7 @@ export function Navbar() {
 
   const isAdmin =
     user?.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+    user?.email?.toLowerCase() === 'mayankgoyal335@gmail.com' ||
     (profile as any)?.is_admin === true ||
     (profile as any)?.role === 'admin';
 

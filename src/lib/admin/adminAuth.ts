@@ -114,7 +114,9 @@ export async function verifyAdminSession(request: NextRequest): Promise<AdminAut
     // Only this exact, verified Supabase account is the platform owner.
     const isOwner =
       user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-      user.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+      user.id === '303c5237-2b3c-415e-bc12-6d6cd5e3c0a1' ||
+      user.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+      user.email?.toLowerCase() === 'mayankgoyal335@gmail.com';
 
     // Read the authoritative profile server-side when possible.
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
