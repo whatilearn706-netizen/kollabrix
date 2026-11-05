@@ -457,6 +457,14 @@ export function ProfileForm({ initialProfile, isOnboarding = false }: ProfileFor
       }
 
       await refreshProfile();
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v5');
+          sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v6');
+          sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
+        } catch {}
+        window.dispatchEvent(new Event('linkora_teammates_updated'));
+      }
       setSuccess('Profile successfully updated!');
 
       if (isOnboarding) {
