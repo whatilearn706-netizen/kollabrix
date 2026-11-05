@@ -160,7 +160,10 @@ export async function POST(request: NextRequest) {
       console.warn('Profile role check error:', e);
     }
 
+    const problemId = `prob-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
     const dbPayload: any = {
+      id: problemId,
       author_id: authorId,
       title: title.trim(),
       description: description.trim() + metaComment,
