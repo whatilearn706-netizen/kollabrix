@@ -47,6 +47,9 @@ import {
   Lock,
   RotateCcw,
   Trash2,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
@@ -450,6 +453,7 @@ export function FullArenaExperience({
   // Step 4 & 5: Battlefield States
   const [countdownNum, setCountdownNum] = useState<number | string>(3);
   const [timeLeft, setTimeLeft] = useState<number>(300);
+  const [isQuestionExpanded, setIsQuestionExpanded] = useState<boolean>(false);
   const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(() =>
     enrichQuestion(initialQuestion || DEFAULT_ARENA_QUESTIONS[0])
   );
@@ -3940,34 +3944,118 @@ export function FullArenaExperience({
         {/* ================= STEP 5: SPLIT-SCREEN REFINED COMBAT ARENA ================= */}
         {step === 5 && (
           <div className="w-full h-full flex flex-col gap-3 animate-fadeIn">
-            {/* Mission Objective Header */}
+            {/* Mission Objective Header with Collapsible Full Question Brief */}
             <div
-              className="p-3 rounded-2xl bg-slate-950/85 border border-slate-800 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none"
-              onContextMenu={(e) => e.preventDefault()}
+              className={`p-3.5 rounded-2xl bg-slate-950/90 border transition-all duration-300 backdrop-blur-md shrink-0 select-none ${
+                isQuestionExpanded
+                  ? 'border-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
+                  : 'border-slate-800'
+              }`}
             >
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    TARGET CHALLENGE:
-                  </span>
-                  <span className="font-bold text-white text-sm">{activeQuestion.title}</span>
-                  <span className="text-[11px] font-mono text-slate-400 uppercase font-semibold">
-                    ({activeQuestion.difficulty})
-                  </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      TARGET CHALLENGE:
+                    </span>
+                    <span className="font-bold text-white text-sm truncate">{activeQuestion.title}</span>
+                    <span className="text-[11px] font-mono text-slate-400 uppercase font-semibold">
+                      ({activeQuestion.difficulty})
+                    </span>
+                    {activeQuestion.tags && activeQuestion.tags.length > 0 && (
+                      <div className="hidden md:flex items-center gap-1">
+                        {activeQuestion.tags.slice(0, 3).map((tag: string) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-slate-900 text-cyan-400 border border-cyan-500/30 font-medium"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {!isQuestionExpanded && (
+                    <p className="text-xs text-slate-300 line-clamp-1">{activeQuestion.description}</p>
+                  )}
                 </div>
-                <p className="text-xs text-slate-300 line-clamp-1">{activeQuestion.description}</p>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {teamSize === '2v2' && (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-xs font-mono text-cyan-300 shrink-0">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                      <span>ACTIVE KEYBOARD: {relayPlayer}</span>
+                    </div>
+                  )}
+
+                  {/* Toggle Button for Full Question */}
+                  <button
+                    type="button"
+                    onClick={() => setIsQuestionExpanded((prev) => !prev)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isQuestionExpanded
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.3)] ring-1 ring-amber-400/40'
+                        : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                    }`}
+                    title={isQuestionExpanded ? 'Compress question brief' : 'View full question description & requirements'}
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isQuestionExpanded ? 'Collapse Question ▴' : 'View Full Question ▾'}</span>
+                  </button>
+                </div>
               </div>
 
-              {teamSize === '2v2' && (
-                <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-xs font-mono text-cyan-300 shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                  <span>ACTIVE KEYBOARD: {relayPlayer}</span>
+              {/* EXPANDED FULL QUESTION CONTENT */}
+              {isQuestionExpanded && (
+                <div className="mt-3 pt-3 border-t border-slate-800/80 animate-fadeIn space-y-3">
+                  <div className="max-h-[170px] sm:max-h-[210px] overflow-y-auto pr-2 space-y-3 text-xs leading-relaxed text-slate-200 select-text font-sans scrollbar-thin scrollbar-thumb-amber-500/30 scrollbar-track-slate-900">
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-200 whitespace-pre-line font-normal text-xs sm:text-[13px] leading-relaxed shadow-inner">
+                      {activeQuestion.description}
+                    </div>
+
+                    {/* Requirements / Validation Criteria (if available) */}
+                    {activeQuestion.validationCriteria && activeQuestion.validationCriteria.length > 0 && (
+                      <div className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-1.5">
+                        <span className="font-mono text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                          Key Requirements & Acceptance Criteria:
+                        </span>
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px] text-slate-300 pl-1">
+                          {activeQuestion.validationCriteria.map((crit, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5">
+                              <span className="text-amber-400 font-bold">•</span>
+                              <span>{crit}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Test Cases / Target Criteria for Algorithms */}
+                    {!isWebMatch && activeQuestion.testCases && activeQuestion.testCases.length > 0 && (
+                      <div className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 space-y-1.5">
+                        <span className="font-mono text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+                          Example Inputs & Expected Outputs:
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+                          {activeQuestion.testCases.slice(0, 2).map((tc, idx) => (
+                            <div key={idx} className="p-2 rounded-lg bg-slate-950 border border-slate-800 space-y-0.5">
+                              <div className="text-slate-400">Input: <span className="text-white">{tc.input || 'None'}</span></div>
+                              <div className="text-slate-400">Expected: <span className="text-emerald-400 font-bold">{tc.expectedOutput}</span></div>
+                              {tc.description && <div className="text-[10px] text-slate-500 italic">{tc.description}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Split Screen Grid: Left Studio & Opponent Telemetry, Right Preview & Output / Compiler Terminal */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[560px]">
+            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 ${isQuestionExpanded ? 'min-h-[430px]' : 'min-h-[560px]'} transition-all duration-300`}>
               
               {/* LEFT: Team Alpha (Code Studio + Live Opponent Telemetry HUD) */}
               <div className="flex flex-col rounded-2xl bg-slate-950/90 border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.1)] overflow-hidden">
@@ -4180,7 +4268,7 @@ export function FullArenaExperience({
                 </div>
 
                 {/* Code Editor Studio with Line Numbers & Real Compiler Capabilities */}
-                <div className="flex-1 flex flex-col min-h-[340px] sm:min-h-[400px] bg-[#070a14] border-b border-slate-800/80">
+                <div className={`flex-1 flex flex-col ${isQuestionExpanded ? 'min-h-[250px] sm:min-h-[290px]' : 'min-h-[340px] sm:min-h-[400px]'} bg-[#070a14] border-b border-slate-800/80 transition-all duration-300`}>
                   {/* Sub-header / IDE Utilities Bar */}
                   <div className="h-7 bg-[#0b0f1d] px-3 border-b border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none">
                     <div className="flex items-center gap-2">
@@ -4344,15 +4432,15 @@ export function FullArenaExperience({
               </div>
 
               {/* RIGHT: DYNAMIC SPLIT VIEW — WEB PREVIEW/OUTPUT (FOR WEB) OR COMPILER TERMINAL (FOR JAVA/C++/PYTHON) */}
-              <div className="flex flex-col gap-3 min-h-[500px]">
+              <div className={`flex flex-col gap-3 ${isQuestionExpanded ? 'min-h-[420px]' : 'min-h-[500px]'} transition-all duration-300`}>
                 {/* ================= IF WEB MATCH: IMAGE 6 PARITY (PREVIEW ON TOP, OUTPUT ON BOTTOM) ================= */}
                 {isWebMatch ? (
                   <>
                     {/* TOP: PREVIEW CONTAINER (Target Component Blueprint) */}
                     {maximizedPane !== 'output' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-200 ${
-                          maximizedPane === 'preview' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-300 ${
+                          maximizedPane === 'preview' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
                         }`}
                       >
                         {/* Preview Title Bar (Image 6 Parity) */}
@@ -4453,8 +4541,8 @@ ${
                     {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering in Sandboxed Iframe) */}
                     {maximizedPane !== 'preview' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
-                          maximizedPane === 'output' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-300 ${
+                          maximizedPane === 'output' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
                         }`}
                       >
                         {/* Output Title Bar (Image 6 Parity) */}
@@ -4526,8 +4614,8 @@ ${jsCode || ''}
                     {/* TOP: PROBLEM STATEMENT, EXAMPLES & CONSTRAINTS */}
                     {maximizedPane !== 'output' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-200 ${
-                          maximizedPane === 'preview' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-300 ${
+                          maximizedPane === 'preview' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
                         }`}
                       >
                         {/* Problem Header Bar */}
@@ -4614,8 +4702,8 @@ ${jsCode || ''}
                     {/* BOTTOM: REAL COMPILER TERMINAL & TEST RESULTS */}
                     {maximizedPane !== 'preview' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-200 ${
-                          maximizedPane === 'output' ? 'flex-1 h-full' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-300 ${
+                          maximizedPane === 'output' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
                         }`}
                       >
                         {/* Terminal Header Bar */}
