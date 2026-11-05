@@ -48,12 +48,14 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = getAdminClient();
+    const teamId = crypto.randomUUID();
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    // Insert team
+    // Insert team with explicit cryptographically secure UUID
     const { data: newTeam, error: teamErr } = await admin
       .from('hackathon_teams')
       .insert({
+        id: teamId,
         hackathon_id: hackathonId,
         team_name: teamName.trim(),
         description: description?.trim() || null,
@@ -69,12 +71,40 @@ export async function POST(request: NextRequest) {
     }
 
     if (leaderUserId && newTeam?.id) {
+      // 1. Add leader to hackathon_team_members
       await admin.from('hackathon_team_members').insert({
         team_id: newTeam.id,
         hackathon_id: hackathonId,
         user_id: leaderUserId,
         role: 'Leader',
       });
+
+      // 2. Pre-seed projects & project_members for instant, error-free workspace access
+      try {
+        await admin.from('projects').upsert({
+          id: newTeam.id,
+          owner_id: leaderUserId,
+          title: teamName.trim(),
+          summary: `Hackathon Team Sprint: Team ${teamName.trim()}`,
+          description: description?.trim() || 'Collegiate Hackathon Sprint Workspace',
+          category: 'Other',
+          difficulty: 'Intermediate',
+          technologies: ['Next.js', 'React', 'TypeScript'],
+          required_skills: ['Rapid Prototyping', 'Full-Stack'],
+          desired_roles: ['Project Lead', 'Frontend Developer', 'Backend Developer'],
+          current_team_size: 1,
+          desired_team_size: 4,
+          status: 'In Progress',
+        }, { onConflict: 'id' });
+
+        await admin.from('project_members').upsert({
+          project_id: newTeam.id,
+          user_id: leaderUserId,
+          role: 'Project Lead',
+        }, { onConflict: 'project_id,user_id' });
+      } catch (seedErr) {
+        // Non-blocking: Workspace layout self-heals as secondary safety net
+      }
     }
 
     return NextResponse.json({ success: true, team: newTeam });

@@ -211,8 +211,9 @@ export default function WorkspaceTasksPage() {
           return;
         }
       } else {
-        // Create task
+        // Create task with explicit secure UUID
         const { error } = await supabase.from('project_tasks').insert({
+          id: crypto.randomUUID(),
           ...payload,
           creator_id: user.id,
         });

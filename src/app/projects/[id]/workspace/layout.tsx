@@ -247,14 +247,14 @@ export default function WorkspaceLayout({
           const isMem = (teamMems || []).some((m: any) => m.user_id === currentUserId);
 
           if (isLeader || isMem) {
-            // Build synthetic Project object (Strictly categorized as Hackathon Sprint so it never leaks into Explore or Permanent Projects)
+            // Build synthetic Project object (Categorized as 'Other' to satisfy DB check constraints, marked with 'Hackathon Team Sprint' prefix so it never leaks into Explore)
             const hackProj: Project = {
               id: teamData.id,
               owner_id: teamData.leader_id,
               title: teamData.team_name,
               summary: `Hackathon Team Sprint: ${h?.title || 'Campus Hackathon'}${teamData.description ? ` — ${teamData.description}` : ''}`,
               description: `### Problem Statement\n${teamData.challenge?.title || teamData.description || 'Assigned Hackathon Challenge'}\n\n### Proposed Solution\nBuilding an innovative solution for ${h?.title || 'the campus hackathon sprint'}.\n\n### Tech Stack & Architecture\n${(h?.themes || ['Next.js', 'React', 'TypeScript', 'TailwindCSS']).join(', ')}\n\n### Who We Need\nCollegiate student builders collaborating during the hackathon sprint.`,
-              category: 'Hackathon Sprint' as any,
+              category: 'Other' as any,
               difficulty: 'Intermediate',
               technologies: h?.themes || ['Next.js', 'React', 'TypeScript'],
               required_skills: h?.themes || ['Rapid Prototyping', 'Full-Stack'],
@@ -636,7 +636,7 @@ export default function WorkspaceLayout({
 
   const isOwner = user?.id === project.owner_id;
   const isLead = isOwner || currentUserMember?.role === 'Project Lead';
-  const isHackathonWorkspace = Boolean(hackathonId) || project.category === ('Hackathon Sprint' as any);
+  const isHackathonWorkspace = Boolean(hackathonId) || project.category === ('Hackathon Sprint' as any) || project.summary?.startsWith('Hackathon Team Sprint');
 
   const navItems = [
     {

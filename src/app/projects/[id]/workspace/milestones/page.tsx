@@ -208,6 +208,7 @@ NOTIFY pgrst, 'reload schema';`;
         const { error } = await supabase
           .from('project_milestones')
           .insert({
+            id: crypto.randomUUID(),
             ...payload,
             created_by: user.id,
           });
