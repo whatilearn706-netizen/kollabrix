@@ -316,8 +316,8 @@ export function IcpcProctorGuard({
       };
       setActiveWarning(incidentData);
 
-      // Auto-terminate session on 10 violations or when screen share stopped
-      if (nextCount >= MAX_WARNINGS || type === 'SCREEN_SHARE_STOPPED') {
+      // Flag session on violations, but keep screen stream alive so proctor monitors activity
+      if (nextCount >= MAX_WARNINGS) {
         setIsTerminated(true);
       }
 
@@ -556,13 +556,13 @@ export function IcpcProctorGuard({
     }
   }, [hasCameraPermission, hasScreenPermission, initWebcam, initScreenShare, requestArenaFullscreen]);
 
-  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 30 SECONDS) ──
+  // ── PERIODIC HEARTBEAT & ADMIN LIVE PROCTOR SYNC (EVERY 2 SECONDS) ──
+  // Keeps session streaming to admin even when tab switches or warnings occur
   useEffect(() => {
-    if (!isActive || showEntranceModal || showSideCameraModal || isTerminated) return;
+    if (!isActive || showEntranceModal || showSideCameraModal || isDemolishedByAdmin) return;
 
     const sendHeartbeat = async () => {
-      if (typeof document !== 'undefined' && document.hidden) return;
-
+      // NOTE: Never return on document.hidden — proctor MUST receive updates even when user switches tabs!
       try {
         const screenSnapshot = captureScreenSnapshot();
         const res = await fetch('/api/icpc/proctor', {
@@ -620,7 +620,7 @@ export function IcpcProctorGuard({
     isActive,
     showEntranceModal,
     showSideCameraModal,
-    isTerminated,
+    isDemolishedByAdmin,
     isSideCameraConnected,
     studentId,
     studentName,
@@ -635,8 +635,9 @@ export function IcpcProctorGuard({
   ]);
 
   // ── WEBRTC 60FPS REAL-TIME SCREEN BROADCASTER (VIA SUPABASE REALTIME WEBSOCKETS) ──
+  // Persists continuously during warnings until faculty demolishes contest or contestant exits
   useEffect(() => {
-    if (!isActive || showEntranceModal || showSideCameraModal || isTerminated || !hasScreenPermission) return;
+    if (!isActive || showEntranceModal || showSideCameraModal || isDemolishedByAdmin || !hasScreenPermission) return;
     const stream = screenStreamRef.current;
     if (!stream) return;
 
@@ -786,7 +787,7 @@ export function IcpcProctorGuard({
         pc.close();
       }
     };
-  }, [isActive, showEntranceModal, showSideCameraModal, isTerminated, hasScreenPermission, studentId]);
+  }, [isActive, showEntranceModal, showSideCameraModal, isDemolishedByAdmin, hasScreenPermission, studentId]);
 
   // ── KEYBOARD SHORTCUT & TRACKPAD SWIPE INTERCEPTOR ──
   useEffect(() => {
@@ -1045,7 +1046,6 @@ export function IcpcProctorGuard({
               'Contestant switched screen share from Entire Screen to a single tab or window. Entire screen sharing is strictly mandatory.',
               'critical'
             );
-            setIsTerminated(true);
             return;
           }
         }

@@ -50,7 +50,7 @@ export function ProjectFilters({
     Boolean(filters.technology);
 
   return (
-    <div className="space-y-4 rounded-3xl bg-white border-2 border-slate-200/90 p-6 shadow-sm text-slate-900">
+    <div className="space-y-4 rounded-3xl bg-white dark:bg-[#12141c] border border-slate-200 dark:border-slate-800/90 p-5 sm:p-6 shadow-md text-slate-900 dark:text-white backdrop-blur-md">
       {/* Top Search Bar & Sort Row */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="flex-1">
@@ -94,7 +94,7 @@ export function ProjectFilters({
               size="sm"
               onClick={onClear}
               leftIcon={<X className="w-3.5 h-3.5 text-slate-500" />}
-              className="text-slate-600 hover:text-slate-900 font-bold"
+              className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold"
             >
               Clear
             </Button>
@@ -104,7 +104,7 @@ export function ProjectFilters({
 
       {/* Category Pills with Colorful Active States */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        <span className="text-xs text-slate-500 font-bold mr-1 shrink-0">Category:</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-bold mr-1 shrink-0">Category:</span>
         {activeCategories.map((cat) => {
           const isSelected = (!filters.category && cat === 'All') || filters.category === cat;
           return (
@@ -115,7 +115,7 @@ export function ProjectFilters({
               className={`text-xs px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-150 font-bold active:scale-[0.97] cursor-pointer ${
                 isSelected
                   ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white shadow-md shadow-violet-500/25 ring-2 ring-violet-500/20'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/90'
+                  : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80'
               }`}
             >
               {cat}
@@ -125,10 +125,10 @@ export function ProjectFilters({
       </div>
 
       {/* Secondary Filter Row: Difficulty & Status Dropdowns & Quick Skill Pills */}
-      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-slate-500 font-bold">Difficulty:</span>
+            <span className="text-slate-500 dark:text-slate-400 font-bold">Difficulty:</span>
             <div className="w-36">
               <Select
                 value={filters.difficulty || 'All'}
@@ -145,7 +145,7 @@ export function ProjectFilters({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-500 font-bold">Status:</span>
+            <span className="text-slate-500 dark:text-slate-400 font-bold">Status:</span>
             <div className="w-36">
               <Select
                 value={filters.status || 'All'}
@@ -182,7 +182,7 @@ export function ProjectFilters({
                   className={`text-[11px] font-mono tabular-nums px-2.5 py-0.5 rounded-md transition-all duration-150 active:scale-95 cursor-pointer ${
                     isSelected
                       ? 'bg-violet-600 text-white font-bold shadow-xs'
-                      : 'bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200'
+                      : 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 border border-violet-200 dark:border-violet-800/60'
                   }`}
                 >
                   {skill}

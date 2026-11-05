@@ -27,7 +27,7 @@ import {
 import { HomepageSectionToggles } from '@/types/masterControl';
 import { Project } from '@/types/database';
 import type { User } from '@supabase/supabase-js';
-import { DailyStreakBanner, DailyStreakModal } from '@/components/gamification/DailyStreakHub';
+
 
 interface CampusPulseHubProps {
   sections: HomepageSectionToggles;
@@ -273,7 +273,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
 
   // Active subtab
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'matchmaker' | 'presence'>('leaderboard');
-  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
+
   const [collegesList, setCollegesList] = useState<CollegeLeaderboardItem[]>(LEADERBOARD_COLLEGES);
 
   useEffect(() => {
@@ -461,10 +461,7 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
           </div>
         </div>
 
-        {/* Daily Builder Streak Habit Loop Banner */}
-        <div className="mt-8">
-          <DailyStreakBanner onOpenCheckIn={() => setIsStreakModalOpen(true)} />
-        </div>
+
 
         {/* ========================================================================= */}
         {/* MODULE 1: INTER-COLLEGE LEADERBOARDS & VIRAL CAMPUS SHOWCASE */}
@@ -1018,12 +1015,6 @@ export function CampusPulseHub({ sections, projects, user }: CampusPulseHubProps
           </div>
         )}
       </div>
-
-      {/* Daily Streak Modal */}
-      <DailyStreakModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-      />
     </section>
   );
 }

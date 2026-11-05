@@ -724,6 +724,20 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
           }
         });
 
+        // Listen for live side camera video frames broadcast in real-time by mobile phone
+        channel.on('broadcast', { event: 'sidecam_frame' }, (msg: any) => {
+          const { snapshot, connected } = msg?.payload || {};
+          if (!isMounted) return;
+          setTheaterSession((prev) => {
+            if (!prev || prev.studentId !== studentId) return prev;
+            return {
+              ...prev,
+              sideCameraConnected: connected ?? true,
+              sideCameraSnapshot: snapshot || prev.sideCameraSnapshot,
+            };
+          });
+        });
+
         channel.subscribe((status) => {
           if (status === 'SUBSCRIBED' && channel && isMounted) {
             // Signal the student to send their 60 FPS screen stream

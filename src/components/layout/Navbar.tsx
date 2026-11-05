@@ -38,12 +38,8 @@ import {
   prefetchHackathonsData,
 } from '@/lib/cache/pageDataCache';
 import {
-  StreakNavbarButton,
-  DailyStreakModal,
-  StreakCelebrationToast,
-  DailyStreakAutoPrompt,
-} from '@/components/gamification/DailyStreakHub';
-import { openProfileEditModal } from '@/components/profile/MandatoryOnboardingModal';
+  openProfileEditModal,
+} from '@/components/profile/MandatoryOnboardingModal';
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
@@ -61,7 +57,6 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
   const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
   const [isArenaLive, setIsArenaLive] = useState(true);
@@ -318,11 +313,6 @@ export function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2.5">
-              {/* Daily Streak Flame Button - Authenticated only */}
-              {mounted && (
-                <StreakNavbarButton onClick={() => setIsStreakModalOpen(true)} />
-              )}
-
               {/* Configurable Brand CTA Button */}
               <button
                 type="button"
@@ -694,22 +684,6 @@ export function Navbar() {
 
           <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
-          {/* Mobile Daily Streak Indicator - Only when authenticated */}
-          {user && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
-              <span className="text-xs font-bold text-white flex items-center gap-2">
-                <span className="text-sm">🔥</span>
-                <span>Daily Build Streak</span>
-              </span>
-              <StreakNavbarButton
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setIsStreakModalOpen(true);
-                }}
-              />
-            </div>
-          )}
-
           {user ? (
             <button
               type="button"
@@ -743,18 +717,6 @@ export function Navbar() {
         </div>
       )}
     </header>
-
-    {/* Daily Streak Interactive Check-in Modal */}
-    <DailyStreakModal
-      isOpen={isStreakModalOpen}
-      onClose={() => setIsStreakModalOpen(false)}
-    />
-
-    {/* Auto-Prompt for Day 0 First-Time Login */}
-    <DailyStreakAutoPrompt />
-
-    {/* Floating Streak Celebration Toast */}
-    <StreakCelebrationToast />
 
     {/* Full Screen Immersive Battle Arena Experience */}
     {isArenaModalOpen && (

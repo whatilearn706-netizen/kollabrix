@@ -129,27 +129,27 @@ export function InteractiveBentoGrid() {
           </div>
         </div>
 
-        {/* Card 2: Daily Streak & Freeze Flame */}
+        {/* Card 2: Real-Time Sprints */}
         <div className="rounded-2xl bg-gradient-to-br from-[#1C1916] to-[#141210] border border-stone-800/80 hover:border-amber-500/40 p-6 flex flex-col justify-between shadow-xl transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-wider text-stone-400 font-bold">Daily Streak</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-stone-400 font-bold">Workspace Engine</span>
             <span className="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-md border border-amber-500/25 flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" /> 24 Days
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Active Sprints
             </span>
           </div>
 
           <div className="my-4 text-center">
-            <div className="inline-flex p-4 rounded-2xl bg-gradient-to-b from-orange-500/20 to-transparent border border-orange-500/30 shadow-inner">
-              <Flame className="w-12 h-12 text-orange-500 fill-orange-500 animate-pulse" />
+            <div className="inline-flex p-4 rounded-2xl bg-gradient-to-b from-amber-500/20 to-transparent border border-amber-500/30 shadow-inner">
+              <Code2 className="w-12 h-12 text-amber-400 animate-pulse" />
             </div>
-            <div className="text-3xl font-black text-stone-100 mt-3 tracking-tight">24-Day Streak</div>
-            <p className="text-xs text-stone-400 mt-1">Collegiate Practice & Git Commits</p>
+            <div className="text-3xl font-black text-stone-100 mt-3 tracking-tight">Zero Latency</div>
+            <p className="text-xs text-stone-400 mt-1">Collegiate Sprints & Proof-of-Work</p>
           </div>
 
           <div className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-stone-800/90 text-xs">
-            <span className="text-stone-400 font-medium">Streak Freeze Shield</span>
+            <span className="text-stone-400 font-medium">Auto-Sync Architecture</span>
             <span className="text-emerald-400 font-bold flex items-center gap-1">
-              2 Active 🛡️
+              Live Verified ⚡
             </span>
           </div>
         </div>

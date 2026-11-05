@@ -23,8 +23,8 @@ const ROW_1: PulseCardData[] = [
     link: '/teammates',
   },
   {
-    icon: '🔥',
-    title: 'Riya S. hit Day 30 Streak',
+    icon: '⚡',
+    title: 'Riya S. solved 30 ICPC Problems',
     subtitle: 'ICPC Practice • BITS Pilani',
     timeAgo: '8m ago',
     badgeColor: 'text-amber-400',

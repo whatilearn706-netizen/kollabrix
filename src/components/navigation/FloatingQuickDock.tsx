@@ -7,7 +7,6 @@ import {
   Home,
   Compass,
   Users,
-  Flame,
   Plus,
   BookOpen,
   Sparkles,
@@ -142,20 +141,6 @@ export function FloatingQuickDock() {
           </span>
         </Link>
 
-        {/* Daily Streak Indicator */}
-        <Link
-          href="/resources"
-          onMouseEnter={() => setHoveredIdx(99)}
-          onMouseLeave={() => setHoveredIdx(null)}
-          className={`p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/5 text-amber-400 hover:text-white hover:bg-orange-500/20 hover:border-orange-500/40 transition-all relative group flex items-center justify-center ${
-            hoveredIdx === 99 ? 'scale-110 -translate-y-1' : ''
-          }`}
-        >
-          <Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-orange-500" />
-          <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1C1916] text-stone-200 text-[10px] font-mono px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-stone-700/80 shadow-md">
-            Streak: 24 🔥
-          </span>
-        </Link>
 
         {/* + Build CTA */}
         <Link
