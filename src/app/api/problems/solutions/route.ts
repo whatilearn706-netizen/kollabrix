@@ -3,7 +3,7 @@ import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { ProblemSolution } from '@/types/database';
-import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
 
@@ -172,10 +172,33 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const ipLimit = checkIpRateLimit(`solution_submit_ip_${ip}`, 15, 60 * 1000, 60 * 1000);
-    if (!ipLimit.allowed) {
+    const body = await request.json();
+    const {
+      problem_id,
+      problem_title,
+      project_id,
+      team_name,
+      title,
+      solution_writeup,
+      repo_url,
+      demo_url,
+      video_url,
+      team_members = [],
+      author_id,
+    } = body;
+
+    // User-ID rate limiting allows 1000+ students on campus Wi-Fi without false 429 blocks
+    const rateLimit = checkUserOrCampusRateLimit(
+      author_id,
+      ip,
+      15, // 15 submissions per minute per student
+      60 * 1000,
+      3000, // Campus NAT ceiling
+      60 * 1000
+    );
+    if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Too many submissions from this IP. Please wait a moment before trying again.' },
+        { error: 'Submission rate limit reached. Please wait a moment before trying again.' },
         { status: 429 }
       );
     }
@@ -191,21 +214,6 @@ export async function POST(request: NextRequest) {
           auth: { persistSession: false },
         })
       : defaultClient;
-
-    const body = await request.json();
-    const {
-      problem_id,
-      problem_title,
-      project_id,
-      team_name,
-      title,
-      solution_writeup,
-      repo_url,
-      demo_url,
-      video_url,
-      team_members = [],
-      author_id,
-    } = body;
 
     if (!problem_id) {
       return NextResponse.json(

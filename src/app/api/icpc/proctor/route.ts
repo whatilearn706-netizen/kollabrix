@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProctorIncident, ProctorLiveStats, ProctorViolationType, ActiveProctorSession } from '@/types/icpc';
 import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
-import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 import { sendTelegramIcpcAlert } from '@/lib/security/telegramAlert';
 import { createClient } from '@supabase/supabase-js';
 
@@ -111,7 +111,9 @@ async function saveActiveSessions(sessions: Record<string, ActiveProctorSession>
     const cleanMap: Record<string, ActiveProctorSession> = {};
     for (const [k, s] of Object.entries(sessions)) {
       if (now - new Date(s.lastHeartbeat).getTime() < 10 * 60 * 1000) {
-        cleanMap[k] = s;
+        // Strip heavy ephemeral base64 frames before persisting to SQL so database never bloats under 1000+ users
+        const { sideCameraSnapshot: _, ...persisted } = s;
+        cleanMap[k] = persisted;
       }
     }
     await client.from('platform_settings').upsert({
@@ -187,16 +189,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const rateCheck = checkIpRateLimit(`icpc-proctor-post:${ip}`, 300, 60 * 1000, 60 * 1000);
+    const body = await request.json();
+    const { action, studentId: reqStudentId, userId: reqUserId } = body;
+
+    // Rate-limit per user / student (allows 1000+ students on campus Wi-Fi)
+    const targetUser = reqStudentId || reqUserId || null;
+    const rateCheck = checkUserOrCampusRateLimit(
+      targetUser,
+      ip,
+      120, // 120 actions per minute per student
+      60 * 1000,
+      10000, // Campus NAT ceiling
+      60 * 1000
+    );
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: 'Proctor telemetry rate limit reached. Please throttle.' },
         { status: 429 }
       );
     }
-
-    const body = await request.json();
-    const { action } = body;
 
     // 0a. Admin action: Save Telegram Configuration
     if (action === 'save_telegram_config') {
@@ -335,9 +346,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1b. Side Camera Heartbeat from contestant's mobile phone
+    // 1b. Side Camera Heartbeat from contestant's mobile phone (ultra-lightweight status, no heavy base64 over HTTP)
     if (action === 'sidecam_heartbeat') {
-      const { studentId, sideCameraSnapshot, connected = true } = body;
+      const { studentId, connected = true } = body;
       if (!studentId) {
         return NextResponse.json({ error: 'studentId required' }, { status: 400 });
       }
@@ -355,17 +366,13 @@ export async function POST(request: NextRequest) {
           lastHeartbeat: new Date().toISOString(),
           sideCameraConnected: Boolean(connected),
           sideCameraLastHeartbeat: new Date().toISOString(),
-          sideCameraSnapshot: typeof sideCameraSnapshot === 'string' ? sideCameraSnapshot : undefined,
         };
       } else {
         activeMap[studentId].lastHeartbeat = new Date().toISOString();
         activeMap[studentId].sideCameraConnected = Boolean(connected);
         activeMap[studentId].sideCameraLastHeartbeat = new Date().toISOString();
-        if (typeof sideCameraSnapshot === 'string' && sideCameraSnapshot.startsWith('data:image/')) {
-          activeMap[studentId].sideCameraSnapshot = sideCameraSnapshot;
-        }
       }
-      await saveActiveSessions(activeMap, true);
+      await saveActiveSessions(activeMap);
       return NextResponse.json({ success: true, connected: Boolean(connected) });
     }
 

@@ -184,9 +184,9 @@ function SideCameraContent() {
 
         setSnapshotCount((prev) => prev + 1);
 
-        // 2. HTTP Heartbeat persistence every 2s so database & grid cards stay updated
+        // 2. High-efficiency lightweight HTTP Heartbeat every 8s (no heavy base64 image over HTTP; real-time video flows via WebRTC / Realtime broadcast channel above)
         const now = Date.now();
-        if (now - lastHttpSync > 2000) {
+        if (now - lastHttpSync > 8000) {
           lastHttpSync = now;
           fetch('/api/icpc/proctor', {
             method: 'POST',
@@ -195,7 +195,6 @@ function SideCameraContent() {
               action: 'sidecam_heartbeat',
               studentId,
               connected: true,
-              sideCameraSnapshot: snapshotDataUrl,
             }),
           }).catch(() => {});
         }

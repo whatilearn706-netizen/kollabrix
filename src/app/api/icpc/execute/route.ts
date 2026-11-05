@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,9 +32,29 @@ function cleanOutput(str?: string | null): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // Anti-Abuse Rate Limit Gate: Max 30 compilations per 60 seconds per IP
     const ip = getClientIp(request);
-    const rateCheck = checkIpRateLimit(`icpc-exec:${ip}`, 30, 60 * 1000, 60 * 1000);
+    const body = await request.json();
+    const {
+      code,
+      sourceCode,
+      language = 'cpp',
+      stdin = '',
+      expectedOutput = '',
+      userId,
+      studentId,
+    } = body;
+
+    // User-ID rate limit allows 1000+ students on campus Wi-Fi without blocking each other
+    const targetUserId = userId || studentId || null;
+    const rateCheck = checkUserOrCampusRateLimit(
+      targetUserId,
+      ip,
+      30, // 30 runs per minute per student
+      60 * 1000,
+      5000, // Campus NAT ceiling
+      60 * 1000
+    );
+
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
@@ -46,15 +66,6 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
-
-    const body = await request.json();
-    const {
-      code,
-      sourceCode,
-      language = 'cpp',
-      stdin = '',
-      expectedOutput = '',
-    } = body;
 
     const rawCode = code || sourceCode || '';
 

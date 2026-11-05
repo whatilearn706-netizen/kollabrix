@@ -51,6 +51,28 @@ export function checkIpRateLimit(
   return { allowed: true };
 }
 
+/**
+ * Collegiate & Campus-Scale Rate Limiter (Supports 1000+ Concurrent Students):
+ * - If `userId` is present, rate-limits per individual user (`user:<userId>`), allowing
+ *   hundreds or thousands of students to work simultaneously from the same campus Wi-Fi NAT.
+ * - If no `userId` is present, falls back to `campus_ip:<ip>` with a high collegiate threshold
+ *   (default 3000 req/min) so lab machines or shared NAT IPs are never falsely blocked.
+ */
+export function checkUserOrCampusRateLimit(
+  userId: string | null | undefined,
+  ip: string,
+  userMaxRequests: number,
+  userWindowMs: number,
+  campusMaxRequests: number = 3000,
+  campusWindowMs: number = 60 * 1000
+): { allowed: boolean; retryAfterMs?: number } {
+  const cleanUser = userId ? String(userId).trim() : '';
+  if (cleanUser && cleanUser !== 'unknown' && cleanUser !== 'null' && cleanUser !== 'undefined') {
+    return checkIpRateLimit(`user:${cleanUser}`, userMaxRequests, userWindowMs);
+  }
+  return checkIpRateLimit(`campus_ip:${ip || 'unknown'}`, campusMaxRequests, campusWindowMs);
+}
+
 /** Extract a best-effort client IP from a Next.js NextRequest */
 export function getClientIp(request: Request): string {
   const headers = (request as any).headers as Headers;

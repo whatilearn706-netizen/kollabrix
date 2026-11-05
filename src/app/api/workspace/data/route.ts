@@ -142,9 +142,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rate limit: max 60 writes per user per minute (prevents flooding)
-    const ip = getClientIp(request);
-    const rateCheck = checkIpRateLimit(`workspace-write:${userId}:${ip}`, 60, 60 * 1000, 60 * 1000);
+    // Rate limit: max 120 writes per user per minute (keyed by userId, collegiate NAT friendly)
+    const rateCheck = checkIpRateLimit(`workspace-write:${userId}`, 120, 60 * 1000, 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: 'Too many workspace save requests. Please slow down.' },
