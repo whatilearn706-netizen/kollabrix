@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import {
   DEFAULT_SUPABASE_URL,
   DEFAULT_SUPABASE_ANON_KEY,
-  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
 } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

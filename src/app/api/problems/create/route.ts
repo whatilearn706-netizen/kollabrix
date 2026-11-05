@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import {
   isSupabaseConfigured,
   DEFAULT_SUPABASE_URL,
-  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
 } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 /** Sanitize text input — strip HTML, limit length */

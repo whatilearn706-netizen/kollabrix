@@ -4,8 +4,8 @@ import { IcpcContest } from '@/types/icpc';
 import {
   isSupabaseConfigured,
   DEFAULT_SUPABASE_URL,
-  DEFAULT_SUPABASE_SERVICE_ROLE_KEY,
 } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
