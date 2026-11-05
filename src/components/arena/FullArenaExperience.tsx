@@ -1174,6 +1174,7 @@ export function FullArenaExperience({
     // 1. Advance immediately to Step 3 for instant 0ms transition without awaiting network roundtrip
     setStep(3);
 
+    let enrichedQuestionToSend: any = undefined;
     // 2. Select initial best matching question locally so question & starter code are ready instantly
     try {
       const matchTime = Number(timeLimit) || 300;
@@ -1187,42 +1188,44 @@ export function FullArenaExperience({
 
       if (initialChosen) {
         const enriched = enrichQuestion(initialChosen);
-        setActiveQuestion(enriched);
-        activeQuestionRef.current = enriched;
-        initializedQuestionIdRef.current = enriched.id;
-        setTimeLimit(matchTime);
-        setTimeLeft(matchTime);
-        setHtmlCode(enriched.starterHtml || '');
-        setCssCode(enriched.starterCss || '');
-        setJsCode(enriched.starterJs || '');
-        setPythonCode(enriched.starterPython || '# Your python solution\n');
-        setJavaCode(enriched.starterJava || '// Your java solution\n');
-        setCppCode(enriched.starterCpp || '// Your C++ solution\n');
-        setTotalTests(computeExpectedQuestionTests(enriched));
-      }
-    } catch (e) {
-      console.warn('Local question pre-selection notice:', e);
+        enrichedQuestionToSend = enriched;
+      setActiveQuestion(enriched);
+      activeQuestionRef.current = enriched;
+      initializedQuestionIdRef.current = enriched.id;
+      setTimeLimit(matchTime);
+      setTimeLeft(matchTime);
+      setHtmlCode(enriched.starterHtml || '');
+      setCssCode(enriched.starterCss || '');
+      setJsCode(enriched.starterJs || '');
+      setPythonCode(enriched.starterPython || '# Your python solution\n');
+      setJavaCode(enriched.starterJava || '// Your java solution\n');
+      setCppCode(enriched.starterCpp || '// Your C++ solution\n');
+      setTotalTests(computeExpectedQuestionTests(enriched));
     }
+  } catch (e) {
+    console.warn('Local question pre-selection notice:', e);
+  }
 
-    // 3. Register authoritative room on server asynchronously
-    try {
-      const res = await fetch('/api/arena/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: roomCode,
-          hostName: playerName || profile?.display_name || user?.user_metadata?.full_name || 'SquadLeader',
-          hostId: myPlayerId,
-          avatarIdx: selectedAvatarIdx,
-          format: teamSize,
-          arena,
-          bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
-          selectedTags: effectiveTags,
-          difficulty,
-          timeLimit,
-          isBotEnabled: isBotOpponentAdded,
-        }),
-      });
+  // 3. Register authoritative room on server asynchronously
+  try {
+    const res = await fetch('/api/arena/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: roomCode,
+        hostName: playerName || profile?.display_name || user?.user_metadata?.full_name || 'SquadLeader',
+        hostId: myPlayerId,
+        avatarIdx: selectedAvatarIdx,
+        format: teamSize,
+        arena,
+        bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
+        selectedTags: effectiveTags,
+        difficulty,
+        timeLimit,
+        isBotEnabled: isBotOpponentAdded,
+        question: enrichedQuestionToSend,
+      }),
+    });
       if (res.ok) {
         const data = await res.json();
         if (data.room) {
@@ -1688,14 +1691,31 @@ export function FullArenaExperience({
     const matchDuration = Number(timeLimit) || Number(roomData?.timeLimit) || 300;
     let chosen: DuelQuestion | null = null;
 
-    // 1. If room already has a verified question matching the arena, reuse it for 100% host/joiner parity!
+    // 1. If room already has a verified question matching the exact arena, tags, and difficulty, reuse it!
+    const effectiveTags =
+      arena === 'web_dev' || (arena === 'bug_hunt' && bugDomain === 'web')
+        ? selectedTags.includes('html')
+          ? selectedTags
+          : ['html', ...selectedTags]
+        : selectedTags;
+
+    const currentQ = roomData?.question || activeQuestion;
+    const isTagMatch =
+      currentQ &&
+      (!effectiveTags.length ||
+        effectiveTags.some((t: string) => (currentQ.tags || []).map((x: string) => x.toLowerCase()).includes(t.toLowerCase())));
+    const isDiffMatch =
+      currentQ && (!difficulty || (currentQ.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase());
+
     if (
-      roomData?.question &&
-      roomData.question.arena === arena &&
-      (arena !== 'bug_hunt' || !bugDomain || !roomData.question.bugDomain || roomData.question.bugDomain === bugDomain)
+      currentQ &&
+      currentQ.arena === arena &&
+      isDiffMatch &&
+      isTagMatch &&
+      (arena !== 'bug_hunt' || !bugDomain || !currentQ.bugDomain || currentQ.bugDomain === bugDomain)
     ) {
       chosen = {
-        ...roomData.question,
+        ...currentQ,
         timeLimitSeconds: matchDuration,
       };
     } else {
@@ -1704,7 +1724,7 @@ export function FullArenaExperience({
         const queryParams = new URLSearchParams({
           arena,
           difficulty,
-          tags: selectedTags.join(','),
+          tags: effectiveTags.join(','),
           timeLimit: String(matchDuration),
           _rnd: String(Date.now()),
         });
