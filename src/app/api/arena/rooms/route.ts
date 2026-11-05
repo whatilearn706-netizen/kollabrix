@@ -96,21 +96,38 @@ export async function POST(request: NextRequest) {
 
     const matchDuration = Number(timeLimit) || 300;
     let finalQuestion = question;
-    if (!finalQuestion) {
-      try {
-        const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
-          'arena_duel_questions',
-          DEFAULT_ARENA_QUESTIONS
-        );
-        const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
-        // Combine admin questions with default questions (deduping by ID)
-        const combined = [...adminList];
-        for (const defQ of DEFAULT_ARENA_QUESTIONS) {
-          if (!combined.some((q) => q.id === defQ.id)) {
-            combined.push(defQ);
-          }
-        }
+    try {
+      const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
+        'arena_duel_questions',
+        DEFAULT_ARENA_QUESTIONS
+      );
+      const rawDeleted = await getMasterControlSubkey<string[]>('deleted_arena_question_ids', []);
+      const deletedSet = new Set<string>(
+        Array.isArray(rawDeleted) ? rawDeleted.map((id) => String(id).trim().toLowerCase()) : []
+      );
 
+      const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
+      const combined: DuelQuestion[] = [];
+      for (const q of adminList) {
+        if (q && q.id && !deletedSet.has(q.id.toLowerCase())) {
+          combined.push(q);
+        }
+      }
+      for (const defQ of DEFAULT_ARENA_QUESTIONS) {
+        if (!deletedSet.has(defQ.id.toLowerCase()) && !combined.some((q) => q.id === defQ.id)) {
+          combined.push(defQ);
+        }
+      }
+
+      // If the client provided a specific non-default admin question (e.g. Admin "Play" test), preserve it.
+      // Otherwise, authoritatively select the best question from the combined database pool (which prioritizes admin questions).
+      const isClientQuestionAdmin = question && !DEFAULT_ARENA_QUESTIONS.some((d) => d.id === question.id);
+      if (isClientQuestionAdmin) {
+        finalQuestion = {
+          ...question,
+          timeLimitSeconds: matchDuration,
+        };
+      } else {
         finalQuestion = selectBestQuestion(combined, {
           arena,
           bugDomain,
@@ -118,17 +135,14 @@ export async function POST(request: NextRequest) {
           difficulty,
           timeLimit: matchDuration,
         });
-      } catch {
-        finalQuestion = {
-          ...DEFAULT_ARENA_QUESTIONS[0],
-          timeLimitSeconds: matchDuration,
-        };
       }
-    } else {
-      finalQuestion = {
-        ...finalQuestion,
-        timeLimitSeconds: matchDuration,
-      };
+    } catch {
+      finalQuestion = finalQuestion
+        ? { ...finalQuestion, timeLimitSeconds: matchDuration }
+        : {
+            ...DEFAULT_ARENA_QUESTIONS[0],
+            timeLimitSeconds: matchDuration,
+          };
     }
 
     if (finalQuestion) {

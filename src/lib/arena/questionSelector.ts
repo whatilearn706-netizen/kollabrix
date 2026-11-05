@@ -32,7 +32,7 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
   const qDiff = (q.difficulty || 'medium').toLowerCase();
 
   if (qDiff === targetDiff) {
-    score += 120; // Exact difficulty match gets high weight
+    score += 150; // Exact difficulty match gets high weight
   } else if (
     (targetDiff === 'medium' && (qDiff === 'easy' || qDiff === 'hard')) ||
     (targetDiff === 'easy' && qDiff === 'medium') ||
@@ -40,10 +40,10 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
   ) {
     score += 20; // Adjacent difficulty
   } else {
-    score -= 30; // Opposite difficulty (e.g. easy requested, hard question)
+    score -= 60; // Opposite difficulty (e.g. easy requested, hard question)
   }
 
-  // 4. Tags scoring
+  // 4. Tags scoring (Strict match & heavy penalty for unselected/unwanted technologies)
   const targetTags = (criteria.selectedTags || [])
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
@@ -52,31 +52,45 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
 
   if (targetTags.length > 0) {
     const matched = targetTags.filter((t) => qTags.includes(t));
-    const matchCount = matched.length;
+    const missing = targetTags.filter((t) => !qTags.includes(t));
+    const unwanted = qTags.filter((t) => !targetTags.includes(t));
 
-    if (matchCount > 0) {
+    // Heavy penalty for extra technologies the user specifically excluded
+    // E.g. User selected HTML only: questions requiring CSS or JS receive -150 each
+    if (unwanted.length > 0) {
+      score -= unwanted.length * 150;
+    }
+
+    // Penalty for missing any of the user's requested tags
+    if (missing.length > 0) {
+      score -= missing.length * 60;
+    }
+
+    if (matched.length > 0) {
       // Proportion of requested tags matched
-      score += Math.round((matchCount / targetTags.length) * 70);
+      score += Math.round((matched.length / targetTags.length) * 80);
 
-      // Exact match bonus: Question matches ALL requested tags and has NO irrelevant extra tags
-      if (matchCount === targetTags.length && qTags.length === targetTags.length) {
-        score += 80;
-      } else if (matchCount === targetTags.length) {
-        score += 45; // Contains all requested tags
+      // Exact match bonus: Question matches ALL requested tags and has ZERO unwanted tags
+      if (matched.length === targetTags.length && unwanted.length === 0) {
+        score += 200; // Perfect exact tag match
+      } else if (matched.length === targetTags.length) {
+        score += 50;
       }
     } else {
-      score -= 60; // Zero tags matched
+      score -= 200; // Zero tags matched
     }
   }
 
-  // 5. Time Limit matching score (Matches duration configured by admin)
+  // 5. Time Limit matching score (Matches duration configured by admin / room)
   if (criteria.timeLimit && q.timeLimitSeconds) {
     const targetTime = Number(criteria.timeLimit);
     const qTime = Number(q.timeLimitSeconds);
     if (qTime === targetTime) {
-      score += 60; // Exact duration match bonus!
+      score += 100; // Exact duration match bonus!
     } else if (Math.abs(qTime - targetTime) <= 120) {
-      score += 25; // Close duration
+      score += 30; // Close duration
+    } else {
+      score -= 30; // Distant duration
     }
   }
 
@@ -84,7 +98,7 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
   // If this question was created in the admin control center, prefer it heavily over default templates!
   const isDefault = DEFAULT_ARENA_QUESTIONS.some((d) => d.id === q.id);
   if (!isDefault) {
-    score += 60;
+    score += 300; // Massive boost for custom admin questions
   }
 
   return score;
