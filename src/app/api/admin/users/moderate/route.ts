@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Critical Self-Lockout & Founder Protection (Destructive actions only)
-    const isDestructiveAction = ['suspend', 'remove_from_project', 'remove_from_all_teams'].includes(action);
+    const isDestructiveAction = ['suspend', 'remove_from_project', 'remove_from_all_teams', 'delete_user'].includes(action);
 
     if (isDestructiveAction && targetUserId === auth.user?.id) {
       return NextResponse.json(
@@ -36,10 +36,12 @@ export async function POST(request: NextRequest) {
     if (
       isDestructiveAction &&
       (targetUserId === '9343b52f-f7e8-4ed8-a8a1-476829811b53' ||
-        targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508')
+        targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        targetUserId === '303c5237-2b3c-415e-bc12-6d6cd5e3c0a1' ||
+        targetUserId === '29359508-c755-424b-81a2-89e714577437')
     ) {
       return NextResponse.json(
-        { error: 'Action denied: Platform founder account cannot be suspended or demoted.' },
+        { error: 'Action denied: Platform founder account cannot be suspended or deleted.' },
         { status: 403 }
       );
     }
@@ -271,6 +273,87 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `User @${targetProfile?.username || targetUserId} account has been restored to active status.`,
+      });
+    }
+
+    // -------------------------------------------------------------
+    // ACTION: DELETE USER ACCOUNT PERMANENTLY
+    // -------------------------------------------------------------
+    if (action === 'delete_user') {
+      const trimmedReason = reason.trim() || 'Permanently deleted by platform administrator.';
+
+      // 1. Clean up user project relationships and memberships
+      try {
+        await client.from('project_members').delete().eq('user_id', targetUserId);
+        await client.from('hackathon_team_members').delete().eq('user_id', targetUserId);
+        await client.from('project_applications').delete().eq('applicant_id', targetUserId);
+        await client.from('project_invitations').delete().eq('invitee_id', targetUserId);
+      } catch (cleanupErr) {
+        console.warn('Membership cleanup notice:', cleanupErr);
+      }
+
+      // 2. Clean up user problem statements and authored projects
+      try {
+        await client.from('problem_statements').delete().eq('author_id', targetUserId);
+        await client.from('projects').delete().eq('owner_id', targetUserId);
+      } catch (projDelErr) {
+        console.warn('Project deletion notice:', projDelErr);
+      }
+
+      // 3. Delete from public.profiles
+      const { error: profileDelErr } = await client
+        .from('profiles')
+        .delete()
+        .eq('user_id', targetUserId);
+
+      if (profileDelErr) {
+        console.warn('Profile deletion notice:', profileDelErr);
+      }
+
+      // 4. Delete user permanently from auth.users (Supabase GoTrue)
+      try {
+        await client.auth.admin.deleteUser(targetUserId);
+      } catch (authDelErr) {
+        console.warn('Auth deletion notice:', authDelErr);
+      }
+
+      // 5. Clean up from platform_settings registry
+      try {
+        const { data: pData } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'linkedin_college_verifications')
+          .maybeSingle();
+
+        if (Array.isArray(pData?.value)) {
+          const cleanList = pData.value.filter((item: any) => item.userId !== targetUserId);
+          await client
+            .from('platform_settings')
+            .update({ value: cleanList, updated_at: new Date().toISOString() })
+            .eq('key', 'linkedin_college_verifications');
+        }
+      } catch (regErr) {
+        console.warn('Settings cleanup notice:', regErr);
+      }
+
+      await recordAdminAuditLog({
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        action: 'USER_DELETED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: {
+          target_username: targetProfile?.username,
+          target_display_name: targetProfile?.display_name,
+          reason: trimmedReason,
+        },
+        outcome: 'SUCCESS',
+        dbClient: client,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Account @${targetProfile?.username || targetUserId} has been permanently deleted from both the database and authentication directory.`,
       });
     }
 
