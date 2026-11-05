@@ -358,6 +358,7 @@ export async function POST(request: NextRequest) {
           sideCameraSnapshot: typeof sideCameraSnapshot === 'string' ? sideCameraSnapshot : undefined,
         };
       } else {
+        activeMap[studentId].lastHeartbeat = new Date().toISOString();
         activeMap[studentId].sideCameraConnected = Boolean(connected);
         activeMap[studentId].sideCameraLastHeartbeat = new Date().toISOString();
         if (typeof sideCameraSnapshot === 'string' && sideCameraSnapshot.startsWith('data:image/')) {

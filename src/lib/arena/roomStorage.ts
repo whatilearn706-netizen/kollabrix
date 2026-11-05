@@ -153,21 +153,16 @@ export async function saveRoom(room: ArenaRoom): Promise<ArenaRoom> {
         .eq('key', 'arena_active_rooms')
         .limit(1);
 
-      if (existingRows && existingRows.length > 0) {
-        await client
-          .from('platform_settings')
-          .update({
+      await client
+        .from('platform_settings')
+        .upsert(
+          {
+            key: 'arena_active_rooms',
             value: cleaned,
             updated_at: now,
-          })
-          .eq('key', 'arena_active_rooms');
-      } else {
-        await client.from('platform_settings').insert({
-          key: 'arena_active_rooms',
-          value: cleaned,
-          updated_at: now,
-        });
-      }
+          },
+          { onConflict: 'key' }
+        );
     }
   } catch (err) {
     console.warn('Failed writing room to DB:', err);
