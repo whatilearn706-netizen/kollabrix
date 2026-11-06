@@ -21,6 +21,7 @@ import {
   Search,
   Filter,
   ArrowRight,
+  ArrowLeft,
   Zap,
   Lock,
 } from 'lucide-react';
@@ -859,37 +860,41 @@ export default function CampusWarPage() {
           </div>
         )}
 
-        {/* 6. MODAL: DUAL-STACK DERBY ROSTER BOARD */}
+        {/* 6. FULL-SCREEN DUAL-STACK DERBY ROSTER VIEW */}
         {selectedDerbyMatch && (
-          <div className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-xl flex flex-col p-2 sm:p-4 lg:p-6 overflow-y-auto animate-fadeIn">
-            <div className="w-full max-w-[98vw] 2xl:max-w-[1850px] mx-auto bg-[#080B10] border border-amber-500/30 rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl my-auto space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDerbyMatch(null)}
-                    className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <span>← Back to Arenas</span>
-                  </button>
-                  <div>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
-                      OFFICIAL COLLEGIATE 1v1 BATTLE DERBY
-                    </span>
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white">
-                      {selectedDerbyMatch.title}
-                    </h2>
-                  </div>
-                </div>
+          <div className="fixed inset-0 z-50 bg-[#07090E] overflow-y-auto w-full h-full flex flex-col p-3 sm:p-5 lg:p-6 animate-fadeIn">
+            {/* Top Navigation Bar: Spans Full Edge-to-Edge Width */}
+            <div className="w-full flex items-center justify-between pb-4 border-b border-white/10 mb-5 shrink-0">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedDerbyMatch(null)}
-                  className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer text-base font-bold"
+                  className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
                 >
-                  ✕
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back to War Arenas</span>
                 </button>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                    OFFICIAL COLLEGIATE 1v1 BATTLE DERBY
+                  </span>
+                  <h2 className="text-base sm:text-lg md:text-xl font-black text-white">
+                    {selectedDerbyMatch.title}
+                  </h2>
+                </div>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setSelectedDerbyMatch(null)}
+                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer text-base font-bold shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Main Area: Fills 100% of Screen Width With The Two Boxes */}
+            <div className="w-full flex-1">
               <DerbyRosterBoard
                 key={selectedDerbyMatch.id}
                 initialDerby={buildDerbyFromMatch(selectedDerbyMatch)}
