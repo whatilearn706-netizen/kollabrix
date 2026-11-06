@@ -20,6 +20,7 @@ import {
   Briefcase,
   X,
   Search,
+  Swords,
 } from 'lucide-react';
 
 interface DockItem {
@@ -33,6 +34,14 @@ interface DockItem {
 }
 
 const DOCK_ITEMS: DockItem[] = [
+  {
+    id: 'campus-war',
+    label: 'Campus War ⚔️',
+    sub: 'Inter-College Clash & Bounties',
+    href: '/war',
+    icon: Swords,
+    tone: 'brand',
+  },
   // The 4 initially visible items (without scrolling)
   {
     id: 'hackathons',
