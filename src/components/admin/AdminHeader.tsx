@@ -30,6 +30,7 @@ import {
   GraduationCap,
   BookOpen,
   Zap,
+  Swords,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -37,6 +38,7 @@ export type AdminTab =
   | 'overview'
   | 'master'
   | 'integrations'
+  | 'campus_war'
   | 'arena'
   | 'flight_recorder'
   | 'id_verifications'
@@ -83,6 +85,7 @@ export function AdminHeader({
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
     { id: 'integrations', label: '⚡ Live Integrations & Email Test', icon: Zap, category: 'master' },
     { id: 'arena', label: '⚔️ 2v2 Battleground Arena', icon: Zap, category: 'code' },
+    { id: 'campus_war', label: '⚔️ Campus War Hub & Sponsors', icon: Swords, category: 'campus' },
     { id: 'flight_recorder', label: '🛸 Flight Recorder & Passports', icon: Sparkles, category: 'master' },
     { id: 'id_verifications', label: '🎓 Student ID Verifications', icon: GraduationCap, category: 'campus' },
     { id: 'resources', label: '📚 Learning Resources Hub', icon: BookOpen, category: 'campus' },

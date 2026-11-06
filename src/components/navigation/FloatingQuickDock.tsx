@@ -10,6 +10,7 @@ import {
   Plus,
   BookOpen,
   Sparkles,
+  Swords,
 } from 'lucide-react';
 import { VisualTemplatesConfig, DEFAULT_VISUAL_TEMPLATES_CONFIG } from '@/types/masterControl';
 
@@ -84,6 +85,7 @@ export function FloatingQuickDock() {
 
   const dockItems = [
     { label: 'Home', href: '/', icon: Home, isActive: pathname === '/' },
+    { label: 'Campus War', href: '/war', icon: Swords, isActive: pathname?.startsWith('/war') },
     { label: 'Explore', href: '/explore', icon: Compass, isActive: pathname?.startsWith('/explore') },
     { label: 'Teammates', href: '/teammates', icon: Users, isActive: pathname?.startsWith('/teammates') },
   ];

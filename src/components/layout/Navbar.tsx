@@ -29,6 +29,7 @@ import {
   Lightbulb,
   Clock,
   MessageSquare,
+  Swords,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
@@ -177,6 +178,11 @@ export function Navbar() {
     (theme.navbarStyle === 'auto' && isDark);
 
   const navLinks = [
+    {
+      href: '/war',
+      label: 'Campus War ⚔️',
+      icon: Swords,
+    },
     {
       href: '/explore',
       label: 'Explore',
