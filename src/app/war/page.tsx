@@ -38,7 +38,7 @@ export default function CampusWarPage() {
 
   const [config, setConfig] = useState<CampusWarConfig>(DEFAULT_CAMPUS_WAR_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPillar, setSelectedPillar] = useState<'all' | WarPillar>('all');
+  const [selectedPillar, setSelectedPillar] = useState<WarPillar>('arena');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'matches' | 'standings'>('matches');
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
@@ -95,7 +95,7 @@ export default function CampusWarPage() {
   // Filtered matches
   const filteredMatches = useMemo(() => {
     return (config.matches || []).filter((m) => {
-      const matchesPillar = selectedPillar === 'all' || m.pillar === selectedPillar;
+      const matchesPillar = m.pillar === selectedPillar;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -108,8 +108,7 @@ export default function CampusWarPage() {
 
   // Pillar match counts
   const pillarCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      all: config.matches?.length || 0,
+    const counts: Record<WarPillar, number> = {
       arena: 0,
       hackathon: 0,
       problem: 0,
@@ -197,8 +196,8 @@ export default function CampusWarPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#07090E] text-slate-100 pb-24 pt-4 px-4 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-slate-950">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <main className="min-h-screen bg-[#07090E] text-slate-100 pb-24 pt-4 px-3 sm:px-6 lg:px-8 xl:px-10 selection:bg-amber-500 selection:text-slate-950 w-full">
+      <div className="w-full space-y-6">
         
         {/* Admin Draft Mode Warning (If Offline) */}
         {!config.isLive && isAdmin && (
@@ -339,55 +338,13 @@ export default function CampusWarPage() {
         {viewMode === 'matches' && (
           <div className="flex flex-col lg:flex-row gap-6 items-start animate-fadeIn">
             {/* LEFT COLUMN: Vertical Category Cards ("battle arena hackathon faculty bounties icpc should be vertical left side so that i show in big") */}
-            <aside className="w-full lg:w-80 xl:w-96 shrink-0 space-y-3">
+            <aside className="w-full lg:w-72 xl:w-80 2xl:w-88 shrink-0 space-y-3">
               <div className="px-1 flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
                 <span>War Arenas</span>
-                <span className="text-amber-400 font-bold">{pillarCounts.all} Battles Live</span>
+                <span className="text-amber-400 font-bold">{config.matches?.length || 0} Battles Live</span>
               </div>
 
-              {/* 1. All Arenas */}
-              <button
-                type="button"
-                onClick={() => setSelectedPillar('all')}
-                className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden flex items-center justify-between gap-3.5 ${
-                  selectedPillar === 'all'
-                    ? 'bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-amber-500/5 border-2 border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.2)] ring-1 ring-amber-300/30'
-                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
-                }`}
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
-                      selectedPillar === 'all'
-                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 shadow-md shadow-amber-500/30'
-                        : 'bg-white/[0.04] border border-white/10 text-slate-300 group-hover:text-amber-300'
-                    }`}
-                  >
-                    <Flame className="w-6 h-6" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className={`text-base font-black truncate ${selectedPillar === 'all' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
-                        All Battles
-                      </h4>
-                    </div>
-                    <p className="text-xs text-slate-400 truncate mt-0.5">
-                      All collegiate challenges
-                    </p>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
-                    selectedPillar === 'all'
-                      ? 'bg-amber-400/20 text-amber-200 border-amber-400/40'
-                      : 'bg-white/[0.03] text-slate-400 border-white/5'
-                  }`}>
-                    {pillarCounts.all}
-                  </span>
-                </div>
-              </button>
-
-              {/* 2. Battle Arena 1v1 */}
+              {/* 1. Battle Arena 1v1 */}
               <button
                 type="button"
                 onClick={() => setSelectedPillar('arena')}
@@ -565,7 +522,6 @@ export default function CampusWarPage() {
                     Showing:
                   </span>
                   <span className="text-xs font-bold text-amber-300 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    {selectedPillar === 'all' && 'All Arenas'}
                     {selectedPillar === 'arena' && '⚔️ Battle Arena 1v1'}
                     {selectedPillar === 'hackathon' && '🏆 Hackathons'}
                     {selectedPillar === 'problem' && '💡 Faculty Bounties'}
@@ -587,9 +543,9 @@ export default function CampusWarPage() {
                 </div>
               </div>
 
-              {/* Matches Grid */}
+              {/* Matches Grid (Responsive Full Screen: 2 cols on tablet, 3 on desktop, 4 on widescreen) */}
               {filteredMatches.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
                   {filteredMatches.map((match) => {
                     const isShiny = Boolean(match.isPriorityShiny);
                     return (
