@@ -31,6 +31,7 @@ import {
   WarPillar,
 } from '@/types/campusWar';
 import { DerbyRosterBoard } from '@/components/war/DerbyRosterBoard';
+import { buildDerbyFromMatch } from '@/types/derbyWar';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function CampusWarPage() {
@@ -605,9 +606,9 @@ export default function CampusWarPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedDerbyMatch(match)}
-                              className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                              className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                             >
-                              <span>⚔️ View Dual-Stack Roster</span>
+                              <span>Apply</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           ) : (
@@ -783,11 +784,16 @@ export default function CampusWarPage() {
                       onChange={(e) => setChallengePillar(e.target.value as WarPillar)}
                       className="w-full h-10 px-2.5 rounded-xl bg-[#090C12] border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400"
                     >
-                      <option value="arena">⚔️ Battle Arena 1v1</option>
+                      {isAdmin && <option value="arena">⚔️ Battle Arena 1v1 (Official Dual-Stack)</option>}
                       <option value="hackathon">🏆 Hackathon Derby</option>
                       <option value="problem">💡 Faculty Bounty</option>
                       <option value="icpc">⚡ ICPC Gauntlet</option>
                     </select>
+                    {!isAdmin && (
+                      <span className="text-[10px] text-amber-400 font-mono block mt-1">
+                        Notice: Inter-College Battle Arenas are hosted exclusively by Kollabrix Master Admin.
+                      </span>
+                    )}
                   </div>
 
                   <div>
@@ -875,7 +881,11 @@ export default function CampusWarPage() {
                 </button>
               </div>
 
-              <DerbyRosterBoard isAdmin={isAdmin} />
+              <DerbyRosterBoard
+                key={selectedDerbyMatch.id}
+                initialDerby={buildDerbyFromMatch(selectedDerbyMatch)}
+                isAdmin={isAdmin}
+              />
             </div>
           </div>
         )}

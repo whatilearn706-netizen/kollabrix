@@ -1,3 +1,5 @@
+import { CollegiateDerby } from './derbyWar';
+
 export type WarPillar = 'arena' | 'hackathon' | 'problem' | 'icpc';
 export type WarMatchStatus = 'open' | 'live' | 'completed';
 
@@ -18,6 +20,7 @@ export interface WarMatch {
   isPriorityShiny?: boolean;
   createdAt: string;
   expiresAt?: string;
+  derby?: CollegiateDerby;
 }
 
 export interface WarSponsor {
