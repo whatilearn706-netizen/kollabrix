@@ -179,11 +179,6 @@ export function Navbar() {
 
   const navLinks = [
     {
-      href: '/war',
-      label: 'Campus War ⚔️',
-      icon: Swords,
-    },
-    {
       href: '/explore',
       label: 'Explore',
       icon: Compass,

@@ -106,6 +106,23 @@ export default function CampusWarPage() {
     });
   }, [config.matches, selectedPillar, searchQuery]);
 
+  // Pillar match counts
+  const pillarCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: config.matches?.length || 0,
+      arena: 0,
+      hackathon: 0,
+      problem: 0,
+      icpc: 0,
+    };
+    (config.matches || []).forEach((m) => {
+      if (counts[m.pillar] !== undefined) {
+        counts[m.pillar]++;
+      }
+    });
+    return counts;
+  }, [config.matches]);
+
   // Handle student posting a challenge
   const handlePostChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,69 +218,7 @@ export default function CampusWarPage() {
           </div>
         )}
 
-        {/* 1. HERO & SEASON BANNER */}
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-slate-900/90 via-[#0A0D14] to-[#07090E] border border-amber-500/20 p-6 sm:p-10 shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-amber-500/15 via-orange-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-xs">
-                  <Swords className="w-3.5 h-3.5 text-amber-400" />
-                  <span>COLLEGIATE ESPORTS ARENA</span>
-                </span>
-                <span className="px-3 py-1 rounded-full text-[11px] font-mono text-slate-400 bg-white/[0.03] border border-white/5">
-                  {config.seasonName}
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-                Campus vs Campus War
-              </h1>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                Represent your university. Defend your campus honor in real-time 1v1 Battle Arena duels, collegiate hackathon sprints, and faculty research raids. Every victory earns war points for your college treasury.
-              </p>
-            </div>
-
-            {/* Countdown Box */}
-            <div className="p-5 rounded-2xl bg-black/60 border border-amber-500/30 backdrop-blur-xl space-y-3 text-center sm:text-left shrink-0 shadow-xl">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> Season Ends In
-                </span>
-                <span className="text-[11px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  ● ACTIVE WAR
-                </span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-xl sm:text-2xl font-black font-mono text-white">{timeLeft.days}</div>
-                  <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Days</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-xl sm:text-2xl font-black font-mono text-white">{timeLeft.hours}</div>
-                  <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Hours</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-xl sm:text-2xl font-black font-mono text-white">{timeLeft.minutes}</div>
-                  <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Mins</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-xl sm:text-2xl font-black font-mono text-amber-400">{timeLeft.seconds}</div>
-                  <div className="text-[9px] uppercase tracking-wider font-mono text-slate-400">Secs</div>
-                </div>
-              </div>
-
-              <div className="pt-1 flex items-center justify-between text-xs text-slate-300 font-mono">
-                <span>Prize Pool:</span>
-                <span className="font-bold text-amber-300">{config.totalPrizePool}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. SPONSOR & PRIORITY COLLEGE SHINY SPOTLIGHT */}
+        {/* 1. SPONSOR & PRIORITY COLLEGE SHINY SPOTLIGHT */}
         {config.sponsor?.enabled && (
           <div
             className={`relative rounded-2xl p-5 sm:p-6 transition-all overflow-hidden ${
@@ -328,14 +283,14 @@ export default function CampusWarPage() {
           </div>
         )}
 
-        {/* 3. CONTROLS: VIEW TOGGLE (MATCHES vs STANDINGS) & POST CHALLENGE */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        {/* 2. CONTROLS: VIEW TOGGLE (MATCHES vs STANDINGS) & POST CHALLENGE */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-2 border-b border-slate-800">
           {/* Sub-view toggle */}
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/10 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/10 w-full md:w-auto">
             <button
               type="button"
               onClick={() => setViewMode('matches')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'matches'
                   ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                   : 'text-slate-400 hover:text-white'
@@ -347,7 +302,7 @@ export default function CampusWarPage() {
             <button
               type="button"
               onClick={() => setViewMode('standings')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'standings'
                   ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                   : 'text-slate-400 hover:text-white'
@@ -358,8 +313,17 @@ export default function CampusWarPage() {
             </button>
           </div>
 
-          {/* Action: Post a Challenge button */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Right side: Season countdown summary & Post a Challenge */}
+          <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-[11px] font-mono text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-slate-300 font-bold">{config.seasonName}</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-amber-400">{timeLeft.days}d {timeLeft.hours}h left</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-amber-300 font-bold">{config.totalPrizePool}</span>
+            </div>
+
             <button
               type="button"
               onClick={() => setIsChallengeModalOpen(true)}
@@ -371,181 +335,353 @@ export default function CampusWarPage() {
           </div>
         </div>
 
-        {/* 4. VIEW: ACTIVE WAR MATCHES */}
+        {/* 3. VIEW: ACTIVE WAR MATCHES (2-COLUMN: VERTICAL PILLARS RAIL ON LEFT) */}
         {viewMode === 'matches' && (
-          <div className="space-y-6 animate-fadeIn">
-            {/* Filter bar */}
-            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-              {/* Category pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPillar('all')}
-                  className={`text-xs px-3.5 py-1.5 rounded-xl border transition-all shrink-0 cursor-pointer ${
+          <div className="flex flex-col lg:flex-row gap-6 items-start animate-fadeIn">
+            {/* LEFT COLUMN: Vertical Category Cards ("battle arena hackathon faculty bounties icpc should be vertical left side so that i show in big") */}
+            <aside className="w-full lg:w-80 xl:w-96 shrink-0 space-y-3">
+              <div className="px-1 flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                <span>War Arenas</span>
+                <span className="text-amber-400 font-bold">{pillarCounts.all} Battles Live</span>
+              </div>
+
+              {/* 1. All Arenas */}
+              <button
+                type="button"
+                onClick={() => setSelectedPillar('all')}
+                className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden flex items-center justify-between gap-3.5 ${
+                  selectedPillar === 'all'
+                    ? 'bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-amber-500/5 border-2 border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.2)] ring-1 ring-amber-300/30'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                      selectedPillar === 'all'
+                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 shadow-md shadow-amber-500/30'
+                        : 'bg-white/[0.04] border border-white/10 text-slate-300 group-hover:text-amber-300'
+                    }`}
+                  >
+                    <Flame className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-base font-black truncate ${selectedPillar === 'all' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                        All Battles
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      All collegiate challenges
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     selectedPillar === 'all'
-                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  All Battles
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPillar('arena')}
-                  className={`text-xs px-3.5 py-1.5 rounded-xl border transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                      ? 'bg-amber-400/20 text-amber-200 border-amber-400/40'
+                      : 'bg-white/[0.03] text-slate-400 border-white/5'
+                  }`}>
+                    {pillarCounts.all}
+                  </span>
+                </div>
+              </button>
+
+              {/* 2. Battle Arena 1v1 */}
+              <button
+                type="button"
+                onClick={() => setSelectedPillar('arena')}
+                className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden flex items-center justify-between gap-3.5 ${
+                  selectedPillar === 'arena'
+                    ? 'bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-amber-500/5 border-2 border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.2)] ring-1 ring-amber-300/30'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                      selectedPillar === 'arena'
+                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 shadow-md shadow-amber-500/30'
+                        : 'bg-white/[0.04] border border-white/10 text-slate-300 group-hover:text-amber-300'
+                    }`}
+                  >
+                    <Swords className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-base font-black truncate ${selectedPillar === 'arena' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                        Battle Arena 1v1
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      Head-to-head live code duels
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     selectedPillar === 'arena'
-                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Swords className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Battle Arena 1v1</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPillar('hackathon')}
-                  className={`text-xs px-3.5 py-1.5 rounded-xl border transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                      ? 'bg-amber-400/20 text-amber-200 border-amber-400/40'
+                      : 'bg-white/[0.03] text-slate-400 border-white/5'
+                  }`}>
+                    {pillarCounts.arena}
+                  </span>
+                </div>
+              </button>
+
+              {/* 3. Hackathons */}
+              <button
+                type="button"
+                onClick={() => setSelectedPillar('hackathon')}
+                className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden flex items-center justify-between gap-3.5 ${
+                  selectedPillar === 'hackathon'
+                    ? 'bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/5 border-2 border-orange-400 shadow-[0_0_25px_rgba(249,115,22,0.2)] ring-1 ring-orange-300/30'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                      selectedPillar === 'hackathon'
+                        ? 'bg-gradient-to-br from-orange-400 to-amber-500 text-slate-950 shadow-md shadow-orange-500/30'
+                        : 'bg-white/[0.04] border border-white/10 text-slate-300 group-hover:text-orange-300'
+                    }`}
+                  >
+                    <Trophy className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-base font-black truncate ${selectedPillar === 'hackathon' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                        Hackathons
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      Inter-campus team derbies
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     selectedPillar === 'hackathon'
-                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Hackathon Derbies</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPillar('problem')}
-                  className={`text-xs px-3.5 py-1.5 rounded-xl border transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                      ? 'bg-orange-400/20 text-orange-200 border-orange-400/40'
+                      : 'bg-white/[0.03] text-slate-400 border-white/5'
+                  }`}>
+                    {pillarCounts.hackathon}
+                  </span>
+                </div>
+              </button>
+
+              {/* 4. Faculty Bounties */}
+              <button
+                type="button"
+                onClick={() => setSelectedPillar('problem')}
+                className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden flex items-center justify-between gap-3.5 ${
+                  selectedPillar === 'problem'
+                    ? 'bg-gradient-to-r from-violet-500/20 via-amber-500/10 to-violet-500/5 border-2 border-violet-400 shadow-[0_0_25px_rgba(167,139,250,0.2)] ring-1 ring-violet-300/30'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                      selectedPillar === 'problem'
+                        ? 'bg-gradient-to-br from-violet-400 to-amber-500 text-slate-950 shadow-md shadow-violet-500/30'
+                        : 'bg-white/[0.04] border border-white/10 text-slate-300 group-hover:text-violet-300'
+                    }`}
+                  >
+                    <Lightbulb className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-base font-black truncate ${selectedPillar === 'problem' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                        Faculty Bounties
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      Professor research challenges
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     selectedPillar === 'problem'
-                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Faculty Bounties</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPillar('icpc')}
-                  className={`text-xs px-3.5 py-1.5 rounded-xl border transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                      ? 'bg-violet-400/20 text-violet-200 border-violet-400/40'
+                      : 'bg-white/[0.03] text-slate-400 border-white/5'
+                  }`}>
+                    {pillarCounts.problem}
+                  </span>
+                </div>
+              </button>
+
+              {/* 5. ICPC Gauntlet */}
+              <button
+                type="button"
+                onClick={() => setSelectedPillar('icpc')}
+                className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden flex items-center justify-between gap-3.5 ${
+                  selectedPillar === 'icpc'
+                    ? 'bg-gradient-to-r from-cyan-500/20 via-amber-500/10 to-cyan-500/5 border-2 border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.2)] ring-1 ring-cyan-300/30'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                      selectedPillar === 'icpc'
+                        ? 'bg-gradient-to-br from-cyan-400 to-amber-500 text-slate-950 shadow-md shadow-cyan-500/30'
+                        : 'bg-white/[0.04] border border-white/10 text-slate-300 group-hover:text-cyan-300'
+                    }`}
+                  >
+                    <Terminal className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-base font-black truncate ${selectedPillar === 'icpc' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                        ICPC Gauntlet
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      Competitive algorithmic clashes
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     selectedPillar === 'icpc'
-                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold'
-                      : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Terminal className="w-3.5 h-3.5 text-amber-400" />
-                  <span>ICPC Gauntlet</span>
-                </button>
+                      ? 'bg-cyan-400/20 text-cyan-200 border-cyan-400/40'
+                      : 'bg-white/[0.03] text-slate-400 border-white/5'
+                  }`}>
+                    {pillarCounts.icpc}
+                  </span>
+                </div>
+              </button>
+            </aside>
+
+            {/* RIGHT COLUMN: Matches Grid + Search Bar */}
+            <div className="flex-1 min-w-0 space-y-4">
+              {/* Search & active category bar */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-slate-400">
+                    Showing:
+                  </span>
+                  <span className="text-xs font-bold text-amber-300 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    {selectedPillar === 'all' && 'All Arenas'}
+                    {selectedPillar === 'arena' && '⚔️ Battle Arena 1v1'}
+                    {selectedPillar === 'hackathon' && '🏆 Hackathons'}
+                    {selectedPillar === 'problem' && '💡 Faculty Bounties'}
+                    {selectedPillar === 'icpc' && '⚡ ICPC Gauntlet'}
+                    {' '}({filteredMatches.length})
+                  </span>
+                </div>
+
+                {/* Search input */}
+                <div className="relative w-full sm:w-72">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search matches or colleges..."
+                    className="w-full h-9 px-3 pl-8 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
+                  />
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3" />
+                </div>
               </div>
 
-              {/* Search input */}
-              <div className="relative w-full sm:w-64">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search matches or colleges..."
-                  className="w-full h-9 px-3 pl-8 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
-                />
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3" />
-              </div>
-            </div>
-
-            {/* Matches Grid */}
-            {filteredMatches.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {filteredMatches.map((match) => {
-                  const isShiny = Boolean(match.isPriorityShiny);
-                  return (
-                    <div
-                      key={match.id}
-                      className={`rounded-2xl p-5 flex flex-col justify-between transition-all relative ${
-                        isShiny
-                          ? 'bg-gradient-to-b from-amber-500/15 via-[#0D111A] to-[#080B10] border-2 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
-                          : 'bg-slate-900/60 border border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="space-y-3">
-                        {/* Top tag & status */}
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 flex items-center gap-1">
-                            {match.pillar === 'arena' && <Swords className="w-3 h-3 text-amber-400" />}
-                            {match.pillar === 'hackathon' && <Trophy className="w-3 h-3 text-orange-400" />}
-                            {match.pillar === 'problem' && <Lightbulb className="w-3 h-3 text-violet-400" />}
-                            {match.pillar === 'icpc' && <Terminal className="w-3 h-3 text-cyan-400" />}
-                            <span className="uppercase">{match.pillar}</span>
-                          </span>
-
-                          <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                            <span>OPEN CHALLENGE</span>
-                          </span>
-                        </div>
-
-                        {/* Title */}
-                        <h4 className="text-base font-bold text-white leading-snug">
-                          {match.title}
-                        </h4>
-
-                        {/* College vs College clash */}
-                        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
-                          <div className="flex items-center justify-between text-xs font-mono">
-                            <span className="text-amber-300 font-bold truncate max-w-[140px]">
-                              {match.challengerCollege}
+              {/* Matches Grid */}
+              {filteredMatches.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  {filteredMatches.map((match) => {
+                    const isShiny = Boolean(match.isPriorityShiny);
+                    return (
+                      <div
+                        key={match.id}
+                        className={`rounded-2xl p-5 flex flex-col justify-between transition-all relative ${
+                          isShiny
+                            ? 'bg-gradient-to-b from-amber-500/15 via-[#0D111A] to-[#080B10] border-2 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
+                            : 'bg-slate-900/60 border border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          {/* Top tag & status */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 flex items-center gap-1">
+                              {match.pillar === 'arena' && <Swords className="w-3 h-3 text-amber-400" />}
+                              {match.pillar === 'hackathon' && <Trophy className="w-3 h-3 text-orange-400" />}
+                              {match.pillar === 'problem' && <Lightbulb className="w-3 h-3 text-violet-400" />}
+                              {match.pillar === 'icpc' && <Terminal className="w-3 h-3 text-cyan-400" />}
+                              <span className="uppercase">{match.pillar}</span>
                             </span>
-                            <span className="text-[10px] uppercase font-bold text-slate-500 px-1.5 py-0.5 rounded bg-white/5">
-                              VS
-                            </span>
-                            <span className="text-slate-300 font-medium truncate max-w-[140px] text-right">
-                              {match.targetCollege}
+
+                            <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                              <span>OPEN CHALLENGE</span>
                             </span>
                           </div>
-                          {match.challengerName && (
-                            <div className="text-[10px] text-slate-400 font-sans truncate">
-                              Posted by: <span className="text-slate-300">{match.challengerName}</span>
+
+                          {/* Title */}
+                          <h4 className="text-base font-bold text-white leading-snug">
+                            {match.title}
+                          </h4>
+
+                          {/* College vs College clash */}
+                          <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-mono">
+                              <span className="text-amber-300 font-bold truncate max-w-[140px]">
+                                {match.challengerCollege}
+                              </span>
+                              <span className="text-[10px] uppercase font-bold text-slate-500 px-1.5 py-0.5 rounded bg-white/5">
+                                VS
+                              </span>
+                              <span className="text-slate-300 font-medium truncate max-w-[140px] text-right">
+                                {match.targetCollege}
+                              </span>
                             </div>
-                          )}
+                            {match.challengerName && (
+                              <div className="text-[10px] text-slate-400 font-sans truncate">
+                                Posted by: <span className="text-slate-300">{match.challengerName}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Stakes & Bounty */}
+                          <div className="flex items-center justify-between text-xs font-mono pt-1">
+                            <span className="text-slate-400">Bounty Stake:</span>
+                            <span className="font-bold text-amber-400">{match.stakes}</span>
+                          </div>
                         </div>
 
-                        {/* Stakes & Bounty */}
-                        <div className="flex items-center justify-between text-xs font-mono pt-1">
-                          <span className="text-slate-400">Bounty Stake:</span>
-                          <span className="font-bold text-amber-400">{match.stakes}</span>
+                        {/* Action Button */}
+                        <div className="pt-4 mt-2 border-t border-white/5">
+                          <Link
+                            href={match.actionUrl || '/arena'}
+                            className="w-full h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all"
+                          >
+                            <span>{match.actionLabel || '⚔️ Accept Duel'}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
                       </div>
-
-                      {/* Action Button */}
-                      <div className="pt-4 mt-2 border-t border-white/5">
-                        <Link
-                          href={match.actionUrl || '/arena'}
-                          className="w-full h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all"
-                        >
-                          <span>{match.actionLabel || '⚔️ Accept Duel'}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-12 rounded-3xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-3">
-                <Swords className="w-10 h-10 text-slate-600 mx-auto" />
-                <h4 className="text-base font-bold text-white">No active matches found</h4>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Be the first champion to throw down the gauntlet for your college!
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setIsChallengeModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Post First Challenge</span>
-                </button>
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-12 rounded-3xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-3">
+                  <Swords className="w-10 h-10 text-slate-600 mx-auto" />
+                  <h4 className="text-base font-bold text-white">No active matches found</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Be the first champion to throw down the gauntlet for your college!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsChallengeModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Post First Challenge</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
