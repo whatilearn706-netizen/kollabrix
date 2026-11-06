@@ -204,34 +204,49 @@ export default function CampusWarPage() {
     return (
       <main className="min-h-screen bg-[#07090E] text-slate-100 pb-24 pt-6 px-4 sm:px-6 lg:px-8 xl:px-10 selection:bg-amber-500 selection:text-slate-950 w-full animate-fadeIn">
         <div className="w-full space-y-6">
-          {/* Top Header Bar - Clear, Unclipped, and Fully Visible */}
-          <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
-            <div className="flex items-center gap-3.5 min-w-0">
+          {/* Top Header Card - Clear, Spacious, High Line-Height, Never Clipped */}
+          <div className="w-full rounded-2xl bg-gradient-to-r from-slate-900/95 via-[#0A0E17] to-slate-900/95 border border-white/10 p-5 sm:p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between gap-4">
               <button
                 type="button"
                 onClick={() => setSelectedDerbyMatch(null)}
-                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono font-bold text-slate-200 hover:text-white transition-all cursor-pointer flex items-center gap-2 shadow-sm shrink-0"
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono font-bold text-slate-200 hover:text-white transition-all cursor-pointer flex items-center gap-2 shadow-xs group"
               >
-                <ArrowLeft className="w-4 h-4 text-amber-400" />
+                <ArrowLeft className="w-4 h-4 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
                 <span>← Back to War Arenas</span>
               </button>
-              <div className="min-w-0">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
-                  OFFICIAL COLLEGIATE 1v1 BATTLE DERBY
+
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                  <Swords className="w-3 h-3 text-amber-400" />
+                  <span>COLLEGIATE 1v1 ARENA DERBY</span>
                 </span>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-normal mt-0.5">
-                  {selectedDerbyMatch.title}
-                </h1>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDerbyMatch(null)}
+                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer text-sm font-bold"
+                  title="Close and return to arenas"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setSelectedDerbyMatch(null)}
-              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer text-base font-bold shrink-0 self-start sm:self-center"
-            >
-              ✕
-            </button>
+            {/* Match Title - Large, Clear, Beautifully Spaced */}
+            <div className="space-y-2 pt-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-normal break-words">
+                {selectedDerbyMatch.title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400 pt-1">
+                <span className="text-amber-400 font-bold">{selectedDerbyMatch.challengerCollege}</span>
+                <span className="text-slate-600 font-black">VS</span>
+                <span className="text-cyan-400 font-bold">{selectedDerbyMatch.targetCollege}</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-slate-300">
+                  Bounty Stake: <strong className="text-amber-300">{selectedDerbyMatch.stakes}</strong>
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Dual Stack Two Grand Boxes (Left Box: Arena Details, Right Box: Teams) */}
