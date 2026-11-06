@@ -29,6 +29,7 @@ import {
   WarSponsor,
   CampusStanding,
 } from '@/types/campusWar';
+import { DEFAULT_DERBY_QUESTIONS, CollegiateDerby } from '@/types/derbyWar';
 
 interface AdminCampusWarTabProps {
   authToken?: string;
@@ -50,8 +51,16 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
   const [newBountyPoints, setNewBountyPoints] = useState(50);
   const [newStakes, setNewStakes] = useState('+50 War Pts • Best of 3 Speedrun');
   const [newActionUrl, setNewActionUrl] = useState('/arena?room=KBX-WAR-101');
-  const [newActionLabel, setNewActionLabel] = useState('⚔️ Accept 1v1 Duel');
+  const [newActionLabel, setNewActionLabel] = useState('Apply');
   const [newIsShiny, setNewIsShiny] = useState(true);
+
+  // Collegiate Arena Derby specific Admin fields
+  const [newChallengerLogo, setNewChallengerLogo] = useState('/brand/kollabrix-logo.png?v=20261031_v3squircle');
+  const [newTargetLogo, setNewTargetLogo] = useState('/brand/kollabrix-logo.png?v=20261031_v3squircle');
+  const [newTotalTeams, setNewTotalTeams] = useState(10);
+  const [newHasEntryQuestion, setNewHasEntryQuestion] = useState(false);
+  const [newEntryQuestionText, setNewEntryQuestionText] = useState('In Big-O notation, what is the average time complexity of searching a balanced BST?');
+  const [newEntryQuestionAnswer, setNewEntryQuestionAnswer] = useState('O(log n)');
 
   // Load config on mount
   const loadConfig = async () => {
@@ -125,17 +134,82 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
+    let derbyPayload: CollegiateDerby | undefined = undefined;
+
+    if (newPillar === 'arena') {
+      const shortA = newChallengerCollege.includes('Thapar')
+        ? 'TIET'
+        : newChallengerCollege.includes('BITS')
+        ? 'BITS'
+        : newChallengerCollege.split(' ')[0] || 'CAMPUS-A';
+
+      const shortB = newTargetCollege.includes('Delhi Tech') || newTargetCollege.includes('DTU')
+        ? 'DTU'
+        : newTargetCollege.includes('IIT')
+        ? 'IITD'
+        : newTargetCollege.split(' ')[0] || 'CAMPUS-B';
+
+      derbyPayload = {
+        id: `derby-${Date.now()}`,
+        title: newTitle.trim(),
+        description: `${newTotalTeams}v${newTotalTeams} Simultaneous 1v1 Team Duel. Each team receives a unique technical question.`,
+        bountyPoints: Number(newBountyPoints) || 50,
+        entryQuestion: {
+          enabled: newHasEntryQuestion,
+          question: newEntryQuestionText,
+          hint: 'Enter your answer to qualify',
+          expectedAnswer: newEntryQuestionAnswer,
+        },
+        collegeA: {
+          id: shortA.toLowerCase(),
+          name: newChallengerCollege.trim(),
+          shortName: shortA,
+          logoUrl: newChallengerLogo,
+          color: '#F59E0B',
+        },
+        collegeB: {
+          id: shortB.toLowerCase(),
+          name: newTargetCollege.trim(),
+          shortName: shortB,
+          logoUrl: newTargetLogo,
+          color: '#06B6D4',
+        },
+        totalBoards: newTotalTeams,
+        status: 'registration',
+        registrationClosesAt: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
+        battleStartsAt: new Date(Date.now() + 1000 * 60 * 60 * 50).toISOString(),
+        resultAnnouncesAt: new Date(Date.now() + 1000 * 60 * 60 * 72).toISOString(),
+        resultsPublished: false,
+        winnerCollege: newChallengerCollege.trim(),
+        collegeAWins: Math.ceil(newTotalTeams / 2),
+        collegeBWins: Math.floor(newTotalTeams / 2),
+        matchups: Array.from({ length: newTotalTeams }, (_, idx) => {
+          const q = DEFAULT_DERBY_QUESTIONS[idx] || DEFAULT_DERBY_QUESTIONS[0];
+          return {
+            boardNumber: idx + 1,
+            title: `Team ${idx + 1} • ${q.title}`,
+            teamQuestion: q,
+            actionUrl: `/arena?room=DERBY-TEAM-${idx + 1}`,
+            winnerCollegeId: 'pending',
+          };
+        }),
+      };
+    }
+
     await sendAdminAction('add_match', {
       title: newTitle.trim(),
       pillar: newPillar,
       challengerCollege: newChallengerCollege.trim(),
+      challengerLogo: newChallengerLogo,
       challengerName: newChallengerName.trim(),
       targetCollege: newTargetCollege.trim(),
+      targetLogo: newTargetLogo,
       bountyPoints: Number(newBountyPoints) || 50,
       stakes: newStakes.trim(),
       actionUrl: newActionUrl.trim(),
-      actionLabel: newActionLabel.trim(),
+      actionLabel: newPillar === 'arena' ? 'Apply' : newActionLabel.trim(),
       isPriorityShiny: newIsShiny,
+      derby: derbyPayload,
       status: 'open',
     });
 
@@ -584,6 +658,88 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
                 />
               </div>
             </div>
+
+            {/* Arena-specific fields (when newPillar === 'arena') */}
+            {newPillar === 'arena' && (
+              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/25 space-y-3 font-mono text-xs">
+                <div className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Swords className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Collegiate Battle Arena Settings</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold mb-1">Challenger Logo URL</label>
+                    <input
+                      type="text"
+                      value={newChallengerLogo}
+                      onChange={(e) => setNewChallengerLogo(e.target.value)}
+                      placeholder="/brand/kollabrix-logo.png"
+                      className="w-full h-8 px-2.5 rounded-lg bg-black/50 border border-white/10 text-white text-[11px] font-mono focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold mb-1">Target College Logo URL</label>
+                    <input
+                      type="text"
+                      value={newTargetLogo}
+                      onChange={(e) => setNewTargetLogo(e.target.value)}
+                      placeholder="/brand/kollabrix-logo.png"
+                      className="w-full h-8 px-2.5 rounded-lg bg-black/50 border border-white/10 text-white text-[11px] font-mono focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-300 font-bold mb-1">Teams (Unique Questions)</label>
+                    <select
+                      value={newTotalTeams}
+                      onChange={(e) => setNewTotalTeams(Number(e.target.value))}
+                      className="w-full h-8 px-2 rounded-lg bg-[#090C12] border border-white/10 text-white text-[11px] font-mono focus:border-amber-400"
+                    >
+                      <option value={5}>5 Teams (5 Unique Questions)</option>
+                      <option value={10}>10 Teams (10 Unique Questions)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Application Qualifying Question Gate */}
+                <div className="pt-2 border-t border-white/5 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={newHasEntryQuestion}
+                      onChange={(e) => setNewHasEntryQuestion(e.target.checked)}
+                      className="w-4 h-4 rounded text-purple-500 focus:ring-purple-400 bg-slate-900 border-slate-700 cursor-pointer"
+                    />
+                    <span>Require Qualifying Question to Apply / Enter</span>
+                  </label>
+
+                  {newHasEntryQuestion && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6 pt-1">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold mb-1">Qualifying Question</label>
+                        <input
+                          type="text"
+                          value={newEntryQuestionText}
+                          onChange={(e) => setNewEntryQuestionText(e.target.value)}
+                          className="w-full h-8 px-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-[11px] focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold mb-1">Expected Answer</label>
+                        <input
+                          type="text"
+                          value={newEntryQuestionAnswer}
+                          onChange={(e) => setNewEntryQuestionAnswer(e.target.value)}
+                          className="w-full h-8 px-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-[11px] focus:border-purple-400"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-2">
               <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-amber-300">

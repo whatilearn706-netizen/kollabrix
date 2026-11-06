@@ -134,14 +134,17 @@ export async function POST(req: NextRequest) {
         title: payload?.title || 'Collegiate Duel Challenge',
         pillar: payload?.pillar || 'arena',
         challengerCollege: payload?.challengerCollege || 'Collegiate Builder',
+        challengerLogo: payload?.challengerLogo || undefined,
         challengerName: payload?.challengerName || 'Anonymous Coder',
         targetCollege: payload?.targetCollege || 'Open to All Campuses',
+        targetLogo: payload?.targetLogo || undefined,
         bountyPoints: Number(payload?.bountyPoints) || 50,
         stakes: payload?.stakes || '+50 War Pts',
         status: payload?.status || 'open',
         actionUrl: payload?.actionUrl || '/arena',
-        actionLabel: payload?.actionLabel || '⚔️ Accept Duel',
+        actionLabel: payload?.actionLabel || 'Apply',
         isPriorityShiny: Boolean(payload?.isPriorityShiny),
+        derby: payload?.derby || undefined,
         createdAt: new Date().toISOString(),
       };
       currentConfig.matches = [newMatch, ...currentConfig.matches];
