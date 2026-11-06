@@ -44,7 +44,7 @@ export function DerbyLeftInfoPanel({
               <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
                 LEFT STACK • CAMPUS A
               </span>
-              <h4 className="text-sm font-black text-white truncate">
+              <h4 className="text-sm sm:text-base font-black text-white leading-tight">
                 {derby.collegeA.name}
               </h4>
             </div>
@@ -66,7 +66,7 @@ export function DerbyLeftInfoPanel({
               <span className="text-[9px] font-mono uppercase tracking-widest text-cyan-400 font-bold block">
                 RIGHT STACK • CAMPUS B
               </span>
-              <h4 className="text-sm font-black text-white truncate">
+              <h4 className="text-sm sm:text-base font-black text-white leading-tight">
                 {derby.collegeB.name}
               </h4>
             </div>

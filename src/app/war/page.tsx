@@ -861,21 +861,30 @@ export default function CampusWarPage() {
 
         {/* 6. MODAL: DUAL-STACK DERBY ROSTER BOARD */}
         {selectedDerbyMatch && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-            <div className="relative w-full max-w-5xl bg-[#080B10] border border-amber-500/30 rounded-3xl p-5 sm:p-7 shadow-2xl max-h-[92vh] overflow-y-auto">
-              <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
-                <div>
-                  <span className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
-                    OFFICIAL COLLEGIATE 1v1 BATTLE DERBY
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-white">
-                    {selectedDerbyMatch.title}
-                  </h2>
+          <div className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-xl flex flex-col p-2 sm:p-4 lg:p-6 overflow-y-auto animate-fadeIn">
+            <div className="w-full max-w-[98vw] 2xl:max-w-[1850px] mx-auto bg-[#080B10] border border-amber-500/30 rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl my-auto space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDerbyMatch(null)}
+                    className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>← Back to Arenas</span>
+                  </button>
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                      OFFICIAL COLLEGIATE 1v1 BATTLE DERBY
+                    </span>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white">
+                      {selectedDerbyMatch.title}
+                    </h2>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedDerbyMatch(null)}
-                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer text-base font-bold"
                 >
                   ✕
                 </button>
