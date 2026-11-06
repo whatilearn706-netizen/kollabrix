@@ -8,9 +8,6 @@ import {
   CheckCircle2,
   Plus,
   X,
-  Sparkles,
-  AlertCircle,
-  Check,
 } from 'lucide-react';
 import {
   SUGGESTED_SKILLS,
@@ -128,33 +125,13 @@ export function Step4Skills({
 
   return (
     <div className="space-y-6 animate-fade-in max-h-[58vh] overflow-y-auto pr-1">
-      {/* Fair Matching Banner */}
-      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2.5">
-        <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold text-amber-300">Fair Skill Matching: </span>
-          <span>
-            Select or write only the skills you genuinely know. Real skills ensure you get matched with the right hackathon squad!
-          </span>
-        </div>
-      </div>
-
       {/* 1. Technical Skills */}
       <div className="space-y-2.5">
-        <div className="flex items-center justify-between">
+        <div>
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
             <Code2 className="w-3.5 h-3.5 text-amber-400" />
             <span>Technical Skills (Select or write at least 2) <span className="text-amber-400">*</span></span>
           </label>
-          {skills.length < 2 ? (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              {skills.length} / 2 required
-            </span>
-          ) : (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-              <Check className="w-3 h-3" /> {skills.length} selected
-            </span>
-          )}
         </div>
 
         {/* Custom Skill Input (Prominent at top) */}
@@ -250,20 +227,11 @@ export function Step4Skills({
 
       {/* 2. Interests & Focus Areas */}
       <div className="space-y-2.5 pt-2 border-t border-white/5">
-        <div className="flex items-center justify-between">
+        <div>
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
             <Compass className="w-3.5 h-3.5 text-orange-400" />
             <span>Interests &amp; Passion Areas (Select at least 1) <span className="text-amber-400">*</span></span>
           </label>
-          {interests.length < 1 ? (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              {interests.length} / 1 required
-            </span>
-          ) : (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-              <Check className="w-3 h-3" /> {interests.length} selected
-            </span>
-          )}
         </div>
 
         {/* Custom Interest Input */}
@@ -349,20 +317,11 @@ export function Step4Skills({
 
       {/* 3. Preferred Project Roles */}
       <div className="space-y-2.5 pt-2 border-t border-white/5">
-        <div className="flex items-center justify-between">
+        <div>
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
             <Briefcase className="w-3.5 h-3.5 text-amber-400" />
             <span>Preferred Project Roles (Select at least 1) <span className="text-amber-400">*</span></span>
           </label>
-          {preferredRoles.length < 1 ? (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              {preferredRoles.length} / 1 required
-            </span>
-          ) : (
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-              <Check className="w-3 h-3" /> {preferredRoles.length} selected
-            </span>
-          )}
         </div>
 
         {/* Custom Role Input */}
