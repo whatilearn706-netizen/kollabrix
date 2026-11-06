@@ -16,7 +16,7 @@ export function DerbyLeftInfoPanel({
   userCollegeSide,
 }: DerbyLeftInfoPanelProps) {
   return (
-    <div className="w-full h-full rounded-3xl bg-[#090D14] border border-amber-500/30 p-6 flex flex-col justify-between space-y-6 shadow-xl relative overflow-hidden">
+    <div className="w-full h-full rounded-3xl bg-[#090D14] border-2 border-amber-500/30 p-6 flex flex-col justify-between space-y-6 shadow-2xl relative overflow-hidden">
       
       {/* Background ambient glow */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-44 h-44 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />

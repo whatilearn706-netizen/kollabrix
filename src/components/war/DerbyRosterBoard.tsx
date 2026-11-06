@@ -187,11 +187,11 @@ export function DerbyRosterBoard({ initialDerby = DEFAULT_DERBY, isAdmin }: Derb
         </div>
       )}
 
-      {/* Main 2-Panel Layout Matching the Hand-Drawn Sketch (third_image.png) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Main 2-Panel Layout Matching the Hand-Drawn Sketch (Left Box: Details, Right Box: Teams) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 w-full items-start">
         
-        {/* LEFT COLUMN: College Name vs College Name & 3 Dates */}
-        <div className="lg:col-span-5 xl:col-span-4">
+        {/* LEFT BOX: College Details (Full Left, Occupies Left Space) */}
+        <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 w-full">
           <DerbyLeftInfoPanel
             derby={derby}
             userSeatNumber={userCurrentSeat?.boardNumber}
@@ -199,8 +199,8 @@ export function DerbyRosterBoard({ initialDerby = DEFAULT_DERBY, isAdmin }: Derb
           />
         </div>
 
-        {/* RIGHT BOX: All Teams Roster & Duels Box */}
-        <div className="lg:col-span-7 xl:col-span-8 rounded-3xl bg-[#090D14] border border-amber-500/30 p-5 sm:p-6 shadow-xl flex flex-col space-y-4">
+        {/* RIGHT BOX: All Teams Roster & Duels Box (Full Right, Occupies Right Space) */}
+        <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 w-full rounded-3xl bg-[#090D14] border-2 border-amber-500/30 p-5 sm:p-6 shadow-2xl flex flex-col space-y-4">
           <div className="flex items-center justify-between pb-3.5 border-b border-white/5 text-xs font-mono">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
