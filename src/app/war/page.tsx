@@ -30,6 +30,7 @@ import {
   WarMatch,
   WarPillar,
 } from '@/types/campusWar';
+import { DerbyRosterBoard } from '@/components/war/DerbyRosterBoard';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function CampusWarPage() {
@@ -42,6 +43,7 @@ export default function CampusWarPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'matches' | 'standings'>('matches');
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
+  const [selectedDerbyMatch, setSelectedDerbyMatch] = useState<WarMatch | null>(null);
 
   // Challenge form state
   const [challengeTitle, setChallengeTitle] = useState('');
@@ -599,13 +601,24 @@ export default function CampusWarPage() {
 
                         {/* Action Button */}
                         <div className="pt-5 mt-3 border-t border-white/5">
-                          <Link
-                            href={match.actionUrl || '/arena'}
-                            className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
-                          >
-                            <span>{match.actionLabel || '⚔️ Accept Duel'}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
+                          {match.pillar === 'arena' ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDerbyMatch(match)}
+                              className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                            >
+                              <span>⚔️ View Dual-Stack Roster</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <Link
+                              href={match.actionUrl || '/arena'}
+                              className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                            >
+                              <span>{match.actionLabel || '⚔️ Accept Duel'}</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
                         </div>
                       </div>
                     );
@@ -836,6 +849,33 @@ export default function CampusWarPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* 6. MODAL: DUAL-STACK DERBY ROSTER BOARD */}
+        {selectedDerbyMatch && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+            <div className="relative w-full max-w-5xl bg-[#080B10] border border-amber-500/30 rounded-3xl p-5 sm:p-7 shadow-2xl max-h-[92vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
+                <div>
+                  <span className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                    OFFICIAL COLLEGIATE 1v1 BATTLE DERBY
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-white">
+                    {selectedDerbyMatch.title}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDerbyMatch(null)}
+                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <DerbyRosterBoard isAdmin={isAdmin} />
             </div>
           </div>
         )}
