@@ -199,17 +199,31 @@ export function DerbyRosterBoard({ initialDerby = DEFAULT_DERBY, isAdmin }: Derb
           />
         </div>
 
-        {/* RIGHT COLUMN: Vertical List of Team Matches 1 to 10 */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-3.5">
-          <div className="flex items-center justify-between px-1 text-xs font-mono text-slate-400">
-            <span className="text-amber-400 font-bold">{derby.collegeA.shortName} Stack</span>
-            <span className="uppercase text-[11px] font-bold text-slate-300">
-              Team by Team Lineup (1 to {derby.totalBoards})
-            </span>
-            <span className="text-cyan-400 font-bold">{derby.collegeB.shortName} Stack</span>
+        {/* RIGHT BOX: All Teams Roster & Duels Box */}
+        <div className="lg:col-span-7 xl:col-span-8 rounded-3xl bg-[#090D14] border border-amber-500/30 p-5 sm:p-6 shadow-xl flex flex-col space-y-4">
+          <div className="flex items-center justify-between pb-3.5 border-b border-white/5 text-xs font-mono">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-amber-300 font-bold uppercase tracking-wider">
+                {derby.collegeA.shortName} Stack
+              </span>
+            </div>
+
+            <div className="text-center">
+              <span className="text-[11px] uppercase font-black tracking-widest text-white px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                Team by Team Lineup (1 to {derby.totalBoards})
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 justify-end">
+              <span className="text-cyan-300 font-bold uppercase tracking-wider">
+                {derby.collegeB.shortName} Stack
+              </span>
+              <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+            </div>
           </div>
 
-          <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[660px] overflow-y-auto pr-1.5">
             {derby.matchups.map((board) => (
               <DerbyTeamRow
                 key={board.boardNumber}
