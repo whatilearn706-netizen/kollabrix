@@ -190,8 +190,8 @@ export function DerbyRosterBoard({ initialDerby = DEFAULT_DERBY, isAdmin }: Derb
       {/* Main 2-Panel Layout Matching the Hand-Drawn Sketch (Left Box: Details, Right Box: Teams) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 w-full items-start">
         
-        {/* LEFT BOX: College Details (Full Left, Occupies Left Space) */}
-        <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 w-full">
+        {/* LEFT BOX: College Details (Full Left, Sticky Pinned on Scroll) */}
+        <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 w-full lg:sticky lg:top-6 self-start">
           <DerbyLeftInfoPanel
             derby={derby}
             userSeatNumber={userCurrentSeat?.boardNumber}
