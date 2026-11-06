@@ -56,18 +56,19 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [bio, setBio] = useState('College builder excited to collaborate on innovative projects.');
+  const [bio, setBio] = useState('');
 
   const [college, setCollege] = useState('');
   const [studentIdUrl, setStudentIdUrl] = useState<string | null>(null);
   const [studentRollNo, setStudentRollNo] = useState('');
 
-  const [academicYear, setAcademicYear] = useState('2nd Year (Sophomore)');
+  const [academicYear, setAcademicYear] = useState('');
   const [course, setCourse] = useState(profile?.course || '');
 
-  const [skills, setSkills] = useState<string[]>(['React', 'Next.js']);
-  const [interests, setInterests] = useState<string[]>(['Hackathons', 'Open Source']);
-  const [preferredRoles, setPreferredRoles] = useState<string[]>(['Full-Stack Developer']);
+  // Start with empty arrays so users must actively write or select their genuine skills
+  const [skills, setSkills] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [preferredRoles, setPreferredRoles] = useState<string[]>([]);
 
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -197,7 +198,19 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       }
     } else if (step === 4) {
       if (skills.length < 2) {
-        setErrorMessage('Please select at least 2 primary technical skills.');
+        setErrorMessage(
+          skills.length === 0
+            ? 'Please write or select at least 2 technical skills you know.'
+            : 'Please write or select at least 1 more technical skill (minimum 2 required).'
+        );
+        return false;
+      }
+      if (interests.length < 1) {
+        setErrorMessage('Please select or write at least 1 interest or passion area.');
+        return false;
+      }
+      if (preferredRoles.length < 1) {
+        setErrorMessage('Please select or write at least 1 preferred project role.');
         return false;
       }
     }
@@ -598,7 +611,17 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     onClick={handleNext}
                     className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/25 transition-all"
                   >
-                    <span>Next: {STEP_TITLES[currentStep].tag}</span>
+                    <span>
+                      {currentStep === 4
+                        ? skills.length < 2
+                          ? `Next: Add ${2 - skills.length} More Skill${2 - skills.length === 1 ? '' : 's'}`
+                          : interests.length < 1
+                          ? 'Next: Select 1 Interest'
+                          : preferredRoles.length < 1
+                          ? 'Next: Select 1 Role'
+                          : 'Next: Online Links'
+                        : `Next: ${STEP_TITLES[currentStep].tag}`}
+                    </span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 ) : (
