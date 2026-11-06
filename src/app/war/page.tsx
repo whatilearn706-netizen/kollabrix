@@ -312,17 +312,8 @@ export default function CampusWarPage() {
             </button>
           </div>
 
-          {/* Right side: Season countdown summary & Post a Challenge */}
-          <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-[11px] font-mono text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-slate-300 font-bold">{config.seasonName}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-amber-400">{timeLeft.days}d {timeLeft.hours}h left</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-amber-300 font-bold">{config.totalPrizePool}</span>
-            </div>
-
+          {/* Right side: Post a Challenge */}
+          <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
             <button
               type="button"
               onClick={() => setIsChallengeModalOpen(true)}
@@ -336,9 +327,9 @@ export default function CampusWarPage() {
 
         {/* 3. VIEW: ACTIVE WAR MATCHES (2-COLUMN: VERTICAL PILLARS RAIL ON LEFT) */}
         {viewMode === 'matches' && (
-          <div className="flex flex-col lg:flex-row gap-6 items-start animate-fadeIn">
-            {/* LEFT COLUMN: Vertical Category Cards ("battle arena hackathon faculty bounties icpc should be vertical left side so that i show in big") */}
-            <aside className="w-full lg:w-72 xl:w-80 2xl:w-88 shrink-0 space-y-3">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 xl:gap-14 2xl:gap-16 items-start animate-fadeIn">
+            {/* LEFT COLUMN: Vertical Category Cards with clean right separation */}
+            <aside className="w-full lg:w-72 xl:w-80 shrink-0 space-y-3 lg:border-r lg:border-white/5 lg:pr-8 xl:pr-10">
               <div className="px-1 flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
                 <span>War Arenas</span>
                 <span className="text-amber-400 font-bold">{config.matches?.length || 0} Battles Live</span>
@@ -514,14 +505,14 @@ export default function CampusWarPage() {
             </aside>
 
             {/* RIGHT COLUMN: Matches Grid + Search Bar */}
-            <div className="flex-1 min-w-0 space-y-4">
+            <div className="flex-1 min-w-0 space-y-6">
               {/* Search & active category bar */}
               <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-slate-400">
                     Showing:
                   </span>
-                  <span className="text-xs font-bold text-amber-300 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-xs font-bold text-amber-300 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 shadow-xs">
                     {selectedPillar === 'arena' && '⚔️ Battle Arena 1v1'}
                     {selectedPillar === 'hackathon' && '🏆 Hackathons'}
                     {selectedPillar === 'problem' && '💡 Faculty Bounties'}
@@ -531,33 +522,33 @@ export default function CampusWarPage() {
                 </div>
 
                 {/* Search input */}
-                <div className="relative w-full sm:w-72">
+                <div className="relative w-full sm:w-80">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search matches or colleges..."
-                    className="w-full h-9 px-3 pl-8 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
+                    className="w-full h-10 px-3 pl-9 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
                   />
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3" />
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 </div>
               </div>
 
-              {/* Matches Grid (Responsive Full Screen: 2 cols on tablet, 3 on desktop, 4 on widescreen) */}
+              {/* Matches Grid (Spacious, generous 2-3 col layout with high readability) */}
               {filteredMatches.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 xl:gap-8">
                   {filteredMatches.map((match) => {
                     const isShiny = Boolean(match.isPriorityShiny);
                     return (
                       <div
                         key={match.id}
-                        className={`rounded-2xl p-5 flex flex-col justify-between transition-all relative ${
+                        className={`rounded-2xl p-6 flex flex-col justify-between transition-all relative ${
                           isShiny
                             ? 'bg-gradient-to-b from-amber-500/15 via-[#0D111A] to-[#080B10] border-2 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
                             : 'bg-slate-900/60 border border-slate-800 hover:border-slate-700'
                         }`}
                       >
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {/* Top tag & status */}
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-slate-300 flex items-center gap-1">
@@ -568,33 +559,33 @@ export default function CampusWarPage() {
                               <span className="uppercase">{match.pillar}</span>
                             </span>
 
-                            <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                            <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                               <span>OPEN CHALLENGE</span>
                             </span>
                           </div>
 
                           {/* Title */}
-                          <h4 className="text-base font-bold text-white leading-snug">
+                          <h4 className="text-base sm:text-lg font-bold text-white leading-snug">
                             {match.title}
                           </h4>
 
-                          {/* College vs College clash */}
-                          <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
-                            <div className="flex items-center justify-between text-xs font-mono">
-                              <span className="text-amber-300 font-bold truncate max-w-[140px]">
+                          {/* College vs College clash - unconstrained full text for high readability */}
+                          <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-2">
+                            <div className="flex items-center justify-between text-xs sm:text-sm font-mono gap-3">
+                              <span className="text-amber-300 font-bold">
                                 {match.challengerCollege}
                               </span>
-                              <span className="text-[10px] uppercase font-bold text-slate-500 px-1.5 py-0.5 rounded bg-white/5">
+                              <span className="text-[10px] uppercase font-bold text-slate-500 px-2 py-0.5 rounded bg-white/5 shrink-0">
                                 VS
                               </span>
-                              <span className="text-slate-300 font-medium truncate max-w-[140px] text-right">
+                              <span className="text-slate-200 font-semibold text-right">
                                 {match.targetCollege}
                               </span>
                             </div>
                             {match.challengerName && (
-                              <div className="text-[10px] text-slate-400 font-sans truncate">
-                                Posted by: <span className="text-slate-300">{match.challengerName}</span>
+                              <div className="text-[11px] text-slate-400 font-sans">
+                                Posted by: <span className="text-slate-300 font-medium">{match.challengerName}</span>
                               </div>
                             )}
                           </div>
@@ -607,10 +598,10 @@ export default function CampusWarPage() {
                         </div>
 
                         {/* Action Button */}
-                        <div className="pt-4 mt-2 border-t border-white/5">
+                        <div className="pt-5 mt-3 border-t border-white/5">
                           <Link
                             href={match.actionUrl || '/arena'}
-                            className="w-full h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all"
+                            className="w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                           >
                             <span>{match.actionLabel || '⚔️ Accept Duel'}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
