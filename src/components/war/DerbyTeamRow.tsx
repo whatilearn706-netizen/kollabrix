@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Lock, Swords, HelpCircle, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Lock, Swords, ArrowRight } from 'lucide-react';
 import { DerbyBoardMatchup, CollegiateDerby } from '@/types/derbyWar';
 
 interface DerbyTeamRowProps {
@@ -30,8 +30,8 @@ export function DerbyTeamRow({
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/70 border border-slate-800/90 hover:border-slate-700/80 transition-all space-y-3.5">
-      {/* Team Header & Assigned Duel Question */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+      {/* Team Header */}
+      <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-black text-xs flex items-center justify-center border border-amber-500/30">
             {board.boardNumber}
@@ -39,23 +39,6 @@ export function DerbyTeamRow({
           <h4 className="text-xs sm:text-sm font-bold text-white">
             Team {board.boardNumber} Clash
           </h4>
-        </div>
-
-        {/* Assigned Question Preview (1 Unique Question Per Team) */}
-        <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400 bg-black/40 px-3 py-1 rounded-lg border border-white/5">
-          <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="truncate max-w-[260px] sm:max-w-[340px]">
-            {board.teamQuestion?.title || 'Algorithmic Duel'}
-          </span>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
-            board.teamQuestion?.difficulty === 'Hard'
-              ? 'bg-rose-500/20 text-rose-300'
-              : board.teamQuestion?.difficulty === 'Medium'
-              ? 'bg-amber-500/20 text-amber-300'
-              : 'bg-emerald-500/20 text-emerald-300'
-          }`}>
-            {board.teamQuestion?.difficulty || 'Medium'}
-          </span>
         </div>
       </div>
 

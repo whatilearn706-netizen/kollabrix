@@ -29,7 +29,13 @@ import {
   WarSponsor,
   CampusStanding,
 } from '@/types/campusWar';
-import { DEFAULT_DERBY_QUESTIONS, CollegiateDerby } from '@/types/derbyWar';
+import {
+  DEFAULT_DERBY_QUESTIONS,
+  ARENA_1V1_DERBY_QUESTIONS,
+  getRandomArenaQuestions,
+  DerbyTeamQuestion,
+  CollegiateDerby,
+} from '@/types/derbyWar';
 
 interface AdminCampusWarTabProps {
   authToken?: string;
@@ -58,9 +64,31 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
   const [newChallengerLogo, setNewChallengerLogo] = useState('/brand/kollabrix-logo.png?v=20261031_v3squircle');
   const [newTargetLogo, setNewTargetLogo] = useState('/brand/kollabrix-logo.png?v=20261031_v3squircle');
   const [newTotalTeams, setNewTotalTeams] = useState(10);
+  const [newTeamQuestions, setNewTeamQuestions] = useState<DerbyTeamQuestion[]>(() =>
+    getRandomArenaQuestions(10)
+  );
   const [newHasEntryQuestion, setNewHasEntryQuestion] = useState(false);
   const [newEntryQuestionText, setNewEntryQuestionText] = useState('In Big-O notation, what is the average time complexity of searching a balanced BST?');
   const [newEntryQuestionAnswer, setNewEntryQuestionAnswer] = useState('O(log n)');
+
+  const handleTotalTeamsChange = (count: number) => {
+    setNewTotalTeams(count);
+    setNewTeamQuestions(getRandomArenaQuestions(count));
+  };
+
+  const handleRandomizeQuestions = () => {
+    setNewTeamQuestions(getRandomArenaQuestions(newTotalTeams));
+  };
+
+  const handleQuestionChange = (teamIdx: number, questionId: string) => {
+    const found = ARENA_1V1_DERBY_QUESTIONS.find((q) => q.id === questionId);
+    if (!found) return;
+    setNewTeamQuestions((prev) => {
+      const next = [...prev];
+      next[teamIdx] = found;
+      return next;
+    });
+  };
 
   // Load config on mount
   const loadConfig = async () => {
@@ -184,12 +212,12 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
         collegeAWins: Math.ceil(newTotalTeams / 2),
         collegeBWins: Math.floor(newTotalTeams / 2),
         matchups: Array.from({ length: newTotalTeams }, (_, idx) => {
-          const q = DEFAULT_DERBY_QUESTIONS[idx] || DEFAULT_DERBY_QUESTIONS[0];
+          const q = newTeamQuestions[idx] || ARENA_1V1_DERBY_QUESTIONS[idx % ARENA_1V1_DERBY_QUESTIONS.length];
           return {
             boardNumber: idx + 1,
             title: `Team ${idx + 1} • ${q.title}`,
             teamQuestion: q,
-            actionUrl: `/arena?room=DERBY-TEAM-${idx + 1}`,
+            actionUrl: `/arena?question=${q.id}&room=DERBY-TEAM-${idx + 1}`,
             winnerCollegeId: 'pending',
           };
         }),
@@ -691,15 +719,85 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-slate-300 font-bold mb-1">Teams (Unique Questions)</label>
+                    <label className="block text-[10px] text-slate-300 font-bold mb-1">Teams Count</label>
                     <select
                       value={newTotalTeams}
-                      onChange={(e) => setNewTotalTeams(Number(e.target.value))}
+                      onChange={(e) => handleTotalTeamsChange(Number(e.target.value))}
                       className="w-full h-8 px-2 rounded-lg bg-[#090C12] border border-white/10 text-white text-[11px] font-mono focus:border-amber-400"
                     >
-                      <option value={5}>5 Teams (5 Unique Questions)</option>
-                      <option value={10}>10 Teams (10 Unique Questions)</option>
+                      <option value={3}>3 Teams</option>
+                      <option value={5}>5 Teams</option>
+                      <option value={8}>8 Teams</option>
+                      <option value={10}>10 Teams (Standard)</option>
+                      <option value={12}>12 Teams</option>
                     </select>
+                  </div>
+                </div>
+
+                {/* Battle Arena 1v1 Question Allocation (Randomized & Synchronized) */}
+                <div className="pt-3 border-t border-purple-500/20 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider block">
+                        Battle Arena 1v1 Questions ({newTotalTeams} Teams • 1 Unique Question Per Team)
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-sans">
+                        Sourced directly from official 1v1 Battle Arena engine. Each team gets a distinct challenge (no duplicates).
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRandomizeQuestions}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-mono font-bold flex items-center gap-1.5 shrink-0 cursor-pointer transition-all self-start sm:self-center"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>🎲 Randomize 1v1 Questions</span>
+                    </button>
+                  </div>
+
+                  {/* Team Questions Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1">
+                    {Array.from({ length: newTotalTeams }, (_, idx) => {
+                      const currentQ =
+                        newTeamQuestions[idx] ||
+                        ARENA_1V1_DERBY_QUESTIONS[idx % ARENA_1V1_DERBY_QUESTIONS.length];
+                      return (
+                        <div
+                          key={idx}
+                          className="p-2.5 rounded-lg bg-black/60 border border-white/10 flex flex-col gap-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono font-bold text-amber-400">
+                              Team #{idx + 1} Question
+                            </span>
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                currentQ?.difficulty === 'Hard'
+                                  ? 'bg-rose-500/20 text-rose-300'
+                                  : currentQ?.difficulty === 'Medium'
+                                  ? 'bg-amber-500/20 text-amber-300'
+                                  : 'bg-emerald-500/20 text-emerald-300'
+                              }`}
+                            >
+                              {currentQ?.difficulty || 'Medium'}
+                            </span>
+                          </div>
+
+                          <select
+                            value={currentQ?.id}
+                            onChange={(e) => handleQuestionChange(idx, e.target.value)}
+                            className="w-full h-7 px-2 rounded bg-slate-900 border border-white/10 text-white text-[10px] font-sans truncate focus:border-amber-400"
+                          >
+                            {ARENA_1V1_DERBY_QUESTIONS.map((q) => (
+                              <option key={q.id} value={q.id}>
+                                {q.title} ({q.difficulty} • {q.topic})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

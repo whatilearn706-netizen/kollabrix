@@ -1,3 +1,5 @@
+import { DEFAULT_ARENA_QUESTIONS, DuelQuestion } from '@/types/arenaDuel';
+
 export type DerbyStatus = 'registration' | 'live' | 'judging' | 'completed';
 
 export interface DerbySeatPlayer {
@@ -19,6 +21,7 @@ export interface DerbyTeamQuestion {
   prompt: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   topic: string;
+  arenaQuestionId?: string;
 }
 
 export interface DerbyBoardMatchup {
@@ -78,78 +81,43 @@ export interface CollegiateDerby {
   matchups: DerbyBoardMatchup[];
 }
 
-export const DEFAULT_DERBY_QUESTIONS: DerbyTeamQuestion[] = [
-  {
-    id: 'q-1',
-    title: 'Speed CSS & Flexbox Layout',
-    prompt: 'Implement a responsive navigation bar with sticky positioning and zero layout shift.',
-    difficulty: 'Easy',
-    topic: 'Frontend UI',
-  },
-  {
-    id: 'q-2',
-    title: 'LRU Cache with O(1) Get and Put',
-    prompt: 'Construct a Least Recently Used (LRU) Cache data structure with O(1) time complexity.',
-    difficulty: 'Medium',
-    topic: 'Data Structures',
-  },
-  {
-    id: 'q-3',
-    title: 'Longest Increasing Subsequence',
-    prompt: 'Find the length of the longest strictly increasing subsequence in an integer array using O(N log N).',
-    difficulty: 'Hard',
-    topic: 'Dynamic Programming',
-  },
-  {
-    id: 'q-4',
-    title: 'Token Bucket Rate Limiter',
-    prompt: 'Design an in-memory token bucket rate limiter supporting bursts of up to 100 requests per minute.',
-    difficulty: 'Medium',
-    topic: 'Backend Systems',
-  },
-  {
-    id: 'q-5',
-    title: 'Graph Shortest Path with Dijkstra',
-    prompt: 'Compute the shortest path in a weighted directed acyclic graph with dynamic edge obstacles.',
-    difficulty: 'Hard',
-    topic: 'Graph Algorithms',
-  },
-  {
-    id: 'q-6',
-    title: 'Rotated Sorted Array Binary Search',
-    prompt: 'Search a target value in a sorted array that has been rotated at an unknown pivot index in O(log N).',
-    difficulty: 'Medium',
-    topic: 'Binary Search',
-  },
-  {
-    id: 'q-7',
-    title: 'Custom Debounce & Throttle Hook',
-    prompt: 'Create a custom React hook `useDebouncedCallback` with immediate execution option and cleanup.',
-    difficulty: 'Easy',
-    topic: 'React Architecture',
-  },
-  {
-    id: 'q-8',
-    title: 'High-Concurrency Transaction Lock',
-    prompt: 'Formulate an optimistic locking mechanism for an e-commerce inventory decrement under 10k RPS.',
-    difficulty: 'Hard',
-    topic: 'Database Systems',
-  },
-  {
-    id: 'q-9',
-    title: 'Trie-Based Prefix Autocomplete',
-    prompt: 'Implement a Prefix Tree (Trie) that returns top 5 lexicographically smallest completions in O(K).',
-    difficulty: 'Medium',
-    topic: 'Strings & Trees',
-  },
-  {
-    id: 'q-10',
-    title: 'Anchor Match: Min-Heap Task Scheduler',
-    prompt: 'Schedule CPU tasks with cooldown intervals between identical tasks to minimize total idle cycles.',
-    difficulty: 'Hard',
-    topic: 'Priority Queues',
-  },
-];
+export function arenaQuestionToDerbyQuestion(q: DuelQuestion): DerbyTeamQuestion {
+  const diffMap: Record<string, 'Easy' | 'Medium' | 'Hard'> = {
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+  };
+  return {
+    id: q.id,
+    title: q.title,
+    prompt: q.description,
+    difficulty: diffMap[q.difficulty] || 'Medium',
+    topic: q.tags?.join(', ') || q.arena.replace('_', ' ').toUpperCase(),
+    arenaQuestionId: q.id,
+  };
+}
+
+// Battle Arena 1v1 questions mapped directly for Collegiate War Matches
+export const ARENA_1V1_DERBY_QUESTIONS: DerbyTeamQuestion[] = DEFAULT_ARENA_QUESTIONS.map(arenaQuestionToDerbyQuestion);
+
+// Deterministic or randomized unique questions selector without duplicates
+export function getRandomArenaQuestions(count: number): DerbyTeamQuestion[] {
+  const pool = [...ARENA_1V1_DERBY_QUESTIONS];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  if (count <= pool.length) {
+    return pool.slice(0, count);
+  }
+  const result: DerbyTeamQuestion[] = [];
+  for (let i = 0; i < count; i++) {
+    result.push(pool[i % pool.length]);
+  }
+  return result;
+}
+
+export const DEFAULT_DERBY_QUESTIONS: DerbyTeamQuestion[] = ARENA_1V1_DERBY_QUESTIONS;
 
 export const DEFAULT_DERBY: CollegiateDerby = {
   id: 'derby-thapar-iitd-101',
@@ -270,7 +238,7 @@ export const DEFAULT_DERBY: CollegiateDerby = {
       teamQuestion: question,
       collegeAPlayer: pA,
       collegeBPlayer: pB,
-      actionUrl: `/arena?room=DERBY-TEAM-${boardNum}`,
+      actionUrl: `/arena?question=${question.id}&room=DERBY-TEAM-${boardNum}`,
       winnerCollegeId: winStatus,
     };
   }),

@@ -36,8 +36,16 @@ export function DerbyLeftInfoPanel({
       <div className="space-y-4 relative z-10">
         {/* College A */}
         <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-500/30 flex items-center gap-3.5 shadow-xs">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-black text-amber-300 text-sm shrink-0">
-            {derby.collegeA.shortName.slice(0, 4)}
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-black text-amber-300 text-sm shrink-0 overflow-hidden">
+            {derby.collegeA.logoUrl && !derby.collegeA.logoUrl.includes('kollabrix-logo') ? (
+              <img
+                src={derby.collegeA.logoUrl}
+                alt={derby.collegeA.shortName}
+                className="w-full h-full object-contain p-1"
+              />
+            ) : (
+              <span>{derby.collegeA.shortName.slice(0, 4)}</span>
+            )}
           </div>
           <div className="min-w-0">
             <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
@@ -58,8 +66,16 @@ export function DerbyLeftInfoPanel({
 
         {/* College B */}
         <div className="p-3.5 rounded-2xl bg-black/40 border border-cyan-500/30 flex items-center gap-3.5 shadow-xs">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center font-black text-cyan-300 text-sm shrink-0">
-            {derby.collegeB.shortName.slice(0, 4)}
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center font-black text-cyan-300 text-sm shrink-0 overflow-hidden">
+            {derby.collegeB.logoUrl && !derby.collegeB.logoUrl.includes('kollabrix-logo') ? (
+              <img
+                src={derby.collegeB.logoUrl}
+                alt={derby.collegeB.shortName}
+                className="w-full h-full object-contain p-1"
+              />
+            ) : (
+              <span>{derby.collegeB.shortName.slice(0, 4)}</span>
+            )}
           </div>
           <div className="min-w-0">
             <span className="text-[9px] font-mono uppercase tracking-widest text-cyan-400 font-bold block">
