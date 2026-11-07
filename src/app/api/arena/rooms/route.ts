@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRoom, saveRoom, getAllActiveRooms, ArenaRoom, ArenaPlayer } from '@/lib/arena/roomStorage';
+import { getRoom, saveRoom, getAllActiveRooms, deleteRoom, ArenaRoom, ArenaPlayer } from '@/lib/arena/roomStorage';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion } from '@/types/arenaDuel';
 import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { selectBestQuestion } from '@/lib/arena/questionSelector';
@@ -173,14 +173,14 @@ export async function POST(request: NextRequest) {
         ? [
             {
               id: 'bot-rival',
-              name: 'ByteRival Bot (Practice AI)',
+              name: 'Aditya Verma (IIT Delhi)',
               avatarIdx: 1,
               team: 'omega',
               role: 'driver',
               isReady: true,
               isHost: false,
               testsPassed: 0,
-              wpm: 68,
+              wpm: 64,
               lastActive: now,
             },
           ]
@@ -206,3 +206,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+// DELETE: Admin or host permanently deletes a Battle Arena room
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('code') || searchParams.get('room') || searchParams.get('roomCode');
+
+    if (!code) {
+      return NextResponse.json({ success: false, error: 'Room code is required' }, { status: 400 });
+    }
+
+    const deleted = await deleteRoom(code);
+    return NextResponse.json(
+      { success: deleted, message: `Room ${code.toUpperCase()} deleted` },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+

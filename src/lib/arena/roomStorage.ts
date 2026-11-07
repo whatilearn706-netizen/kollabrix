@@ -172,6 +172,41 @@ export async function saveRoom(room: ArenaRoom): Promise<ArenaRoom> {
 }
 
 /**
+ * Delete a room permanently from memory and database
+ */
+export async function deleteRoom(code: string): Promise<boolean> {
+  if (!code) return false;
+  const cleanCode = code.trim().toUpperCase();
+
+  // 1. Remove from in-memory cache
+  MEMORY_ROOMS.delete(cleanCode);
+
+  // 2. Remove from Supabase platform_settings
+  try {
+    const allRooms = await getAllActiveRooms();
+    delete allRooms[cleanCode];
+    const cleaned = cleanupStaleRooms(allRooms);
+    const client = getSupabaseAdmin();
+    if (client) {
+      await client
+        .from('platform_settings')
+        .upsert(
+          {
+            key: 'arena_active_rooms',
+            value: cleaned,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+    }
+    return true;
+  } catch (err) {
+    console.warn('Failed deleting room from DB:', err);
+    return false;
+  }
+}
+
+/**
  * Join an existing room
  */
 export async function joinPlayerToRoom(

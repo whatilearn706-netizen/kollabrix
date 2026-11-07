@@ -775,6 +775,73 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             </div>
           </div>
 
+          {/* Prominent Bug Hunt Domain & Mode Selector */}
+          {newArena === 'bug_hunt' && (
+            <div className="p-3.5 rounded-xl bg-charcoal-950 border border-rose-500/40 shadow-lg space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-rose-400 font-mono uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  Bug Hunt Domain & Mode:
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">
+                  Select whether this challenge tests Frontend UI or Backend/DSA Logic
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBugDomain('web');
+                    setNewTags('html,css');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                    newBugDomain === 'web'
+                      ? 'bg-cyan-500/15 border-cyan-500/70 text-white shadow-md'
+                      : 'bg-charcoal-900 border-charcoal-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
+                      newBugDomain === 'web' ? 'bg-cyan-500 border-cyan-400 text-black font-bold' : 'border-slate-600'
+                    }`}
+                  >
+                    {newBugDomain === 'web' ? '✓' : ''}
+                  </span>
+                  <div>
+                    <div className="font-bold text-cyan-300 text-xs">Web UI Bug (HTML / CSS / JS)</div>
+                    <div className="text-[10px] text-slate-400">Visual layout bugs with Target Preview & Output diff</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBugDomain('logic');
+                    setNewTags('java');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                    newBugDomain === 'logic'
+                      ? 'bg-rose-500/15 border-rose-500/70 text-white shadow-md'
+                      : 'bg-charcoal-900 border-charcoal-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
+                      newBugDomain === 'logic' ? 'bg-rose-500 border-rose-400 text-white font-bold' : 'border-slate-600'
+                    }`}
+                  >
+                    {newBugDomain === 'logic' ? '✓' : ''}
+                  </span>
+                  <div>
+                    <div className="font-bold text-rose-300 text-xs">Logic & Code Bug (Java / Python / C++)</div>
+                    <div className="text-[10px] text-slate-400">Algorithmic bugs with real Judge0 compiler test cases</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -895,125 +962,74 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             />
           </div>
 
-          {/* Bug Hunt Domain & Language Selector for Admin */}
+          {/* Bug Hunt Target Language Confirmation */}
           {newArena === 'bug_hunt' && (
-            <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-rose-400 font-mono mb-1">
-                  Bug Hunt Domain & Mode:
-                </label>
-                <div className="flex flex-wrap gap-4 text-xs font-mono">
-                  <label className="flex items-center gap-2 cursor-pointer text-white">
-                    <input
-                      type="radio"
-                      name="bugDomain"
-                      value="web"
-                      checked={newBugDomain === 'web'}
-                      onChange={() => {
-                        setNewBugDomain('web');
-                        setNewTags('html,css');
-                      }}
-                      className="text-rose-500 focus:ring-rose-500"
-                    />
-                    <span>Web UI Bug (Visual layout with Target Preview & Output)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-white">
-                    <input
-                      type="radio"
-                      name="bugDomain"
-                      value="logic"
-                      checked={newBugDomain === 'logic'}
-                      onChange={() => {
-                        setNewBugDomain('logic');
-                        setNewTags('java');
-                      }}
-                      className="text-rose-500 focus:ring-rose-500"
-                    />
-                    <span>Logic & Code Bug (Python / Java / C++ with Real Compiler)</span>
-                  </label>
-                </div>
+            <div className="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                  Target Bug Language ({newBugDomain === 'web' ? 'Web UI' : 'Logic Code'}):
+                </span>
+                <span className="text-xs font-mono text-cyan-300 font-bold">
+                  {newTags}
+                </span>
               </div>
-
-              {/* Specific Bug Language Selection */}
-              <div className="pt-2 border-t border-charcoal-800">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider">
-                    Target Language Bug to Fix ({newBugDomain === 'web' ? 'Web UI' : 'Logic Code'}):
-                  </label>
-                  {newBugDomain === 'web' && (
-                    <span className="text-[10px] font-mono text-cyan-400">
-                      Multi-select: Tick 1, 2, or all 3
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs font-mono">
-                  {(newBugDomain === 'web'
-                    ? [
-                        { id: 'html', label: 'HTML' },
-                        { id: 'css', label: 'CSS' },
-                        { id: 'javascript', label: 'JavaScript' },
-                      ]
-                    : [
-                        { id: 'java', label: 'Java' },
-                        { id: 'python', label: 'Python' },
-                        { id: 'cpp', label: 'C++' },
-                      ]
-                  ).map((lang) => {
-                    const currentTagsList = newTags
-                      .split(',')
-                      .map((t) => t.trim().toLowerCase())
-                      .filter(Boolean);
-                    const isSelected = currentTagsList.includes(lang.id);
-                    return (
-                      <button
-                        key={lang.id}
-                        type="button"
-                        onClick={() => {
-                          if (newBugDomain === 'web') {
-                            // Multi-select for Web UI Bug Hunt (can tick 1, 2, or 3)
-                            let updated: string[];
-                            if (isSelected) {
-                              if (currentTagsList.length > 1) {
-                                updated = currentTagsList.filter((t) => t !== lang.id);
-                              } else {
-                                updated = currentTagsList; // keep at least 1
-                              }
+              <div className="flex flex-wrap gap-1.5 text-xs font-mono">
+                {(newBugDomain === 'web'
+                  ? [
+                      { id: 'html', label: 'HTML' },
+                      { id: 'css', label: 'CSS' },
+                      { id: 'javascript', label: 'JavaScript' },
+                    ]
+                  : [
+                      { id: 'java', label: 'Java' },
+                      { id: 'python', label: 'Python' },
+                      { id: 'cpp', label: 'C++' },
+                    ]
+                ).map((lang) => {
+                  const currentTagsList = newTags
+                    .split(',')
+                    .map((t) => t.trim().toLowerCase())
+                    .filter(Boolean);
+                  const isSelected = currentTagsList.includes(lang.id);
+                  return (
+                    <button
+                      key={lang.id}
+                      type="button"
+                      onClick={() => {
+                        if (newBugDomain === 'web') {
+                          let updated: string[];
+                          if (isSelected) {
+                            if (currentTagsList.length > 1) {
+                              updated = currentTagsList.filter((t) => t !== lang.id);
                             } else {
-                              updated = [...currentTagsList, lang.id];
+                              updated = currentTagsList;
                             }
-                            setNewTags(updated.join(', '));
                           } else {
-                            // Single-select for Logic Bug Hunt (only 1 tick)
-                            setNewTags(lang.id);
+                            updated = [...currentTagsList, lang.id];
                           }
-                        }}
-                        className={`px-3 py-1.5 rounded-lg border font-mono text-xs uppercase font-bold transition-all flex items-center gap-1.5 ${
-                          isSelected
-                            ? newBugDomain === 'web'
-                              ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
-                              : 'bg-rose-500 text-white border-rose-400 shadow-sm'
-                            : 'bg-charcoal-900 text-slate-400 border-charcoal-750 hover:text-white'
-                        }`}
-                      >
-                        <span
-                          className={`w-3.5 h-3.5 ${
-                            newBugDomain === 'web' ? 'rounded-xs' : 'rounded-full'
-                          } border flex items-center justify-center text-[9px] ${
-                            isSelected
-                              ? 'border-white bg-white/20 text-white font-bold'
-                              : 'border-slate-600'
-                          }`}
-                        >
-                          {isSelected ? '✓' : ''}
-                        </span>
-                        <span>{lang.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                          setNewTags(updated.join(', '));
+                        } else {
+                          setNewTags(lang.id);
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded-lg border font-mono text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                        isSelected
+                          ? newBugDomain === 'web'
+                            ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
+                            : 'bg-rose-500 text-white border-rose-400 shadow-sm'
+                          : 'bg-charcoal-900 text-slate-400 border-charcoal-750 hover:text-white'
+                      }`}
+                    >
+                      <span>{isSelected ? '✓' : '+'}</span>
+                      <span>{lang.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
+
 
           {/* Starter Codes for Web or Web Bug Hunt (Dynamically filtered by tags) */}
           {isWebAdminMode && (

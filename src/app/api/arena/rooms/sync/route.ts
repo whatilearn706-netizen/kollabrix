@@ -82,14 +82,14 @@ export async function POST(request: NextRequest) {
           room.omegaPlayers = [
             {
               id: 'bot-rival',
-              name: 'ByteRival Bot (Practice AI)',
-              avatarIdx: 1,
+              name: 'Rohan Sharma (DTU Delhi)',
+              avatarIdx: 2,
               team: 'omega',
               role: 'driver',
               isReady: true,
               isHost: false,
               testsPassed: 0,
-              wpm: 68,
+              wpm: 66,
               lastActive: now,
             },
           ];

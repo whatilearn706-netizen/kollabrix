@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   X,
@@ -229,6 +229,17 @@ if (document.readyState === "loading") {
     targetComponentCss: q.targetComponentCss || match?.targetComponentCss || '',
   };
 }
+
+export const COLLEGIATE_BOT_PROFILES = [
+  { name: 'Aditya Verma', college: 'IIT Delhi', tag: 'IITD CSE', avatarIdx: 1, avatarEmoji: '🔥', baseWpm: 66 },
+  { name: 'Rohan Sharma', college: 'DTU Delhi', tag: 'DTU COE', avatarIdx: 2, avatarEmoji: '⚡', baseWpm: 62 },
+  { name: 'Tanvi Pillai', college: 'BITS Pilani', tag: 'BITS Goa', avatarIdx: 3, avatarEmoji: '🦊', baseWpm: 70 },
+  { name: 'Sneha Kulkarni', college: 'COEP Pune', tag: 'COEP IT', avatarIdx: 4, avatarEmoji: '🧠', baseWpm: 58 },
+  { name: 'Aryan Mehta', college: 'NSUT Delhi', tag: 'NSUT SE', avatarIdx: 5, avatarEmoji: '🐺', baseWpm: 64 },
+  { name: 'Divya Nair', college: 'NIT Trichy', tag: 'NITT CSE', avatarIdx: 6, avatarEmoji: '⚔️', baseWpm: 68 },
+  { name: 'Vikramaditya', college: 'IIIT Hyderabad', tag: 'IIITH CS', avatarIdx: 7, avatarEmoji: '👑', baseWpm: 72 },
+  { name: 'Ananya Roy', college: 'Jadavpur Univ', tag: 'JU CS', avatarIdx: 8, avatarEmoji: '🚀', baseWpm: 60 },
+];
 
 export function FullArenaExperience({
   onClose,
@@ -782,7 +793,21 @@ export function FullArenaExperience({
   const [opponentTestsPassed, setOpponentTestsPassed] = useState<number>(0);
   const [opponentWpm, setOpponentWpm] = useState<number>(0);
   const [opponentAlert, setOpponentAlert] = useState<string>('');
+  const [opponentStatusText, setOpponentStatusText] = useState<string>('Reading Problem & Constraints 📖');
+  const [opponentSimCodeLinesCount, setOpponentSimCodeLinesCount] = useState<number>(3);
   const [winnerTeam, setWinnerTeam] = useState<'Team Alpha' | 'Team Omega' | null>(null);
+
+  // Stably assign a collegiate student contender profile for practice matches based on roomCode hash
+  const botProfileIndex = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < roomCode.length; i++) {
+      hash = (hash << 5) - hash + roomCode.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash) % COLLEGIATE_BOT_PROFILES.length;
+  }, [roomCode]);
+
+  const assignedBotProfile = COLLEGIATE_BOT_PROFILES[botProfileIndex];
 
   // Real-time Keystrokes & Cadence Tracking
   const [myWpm, setMyWpm] = useState<number>(0);
@@ -951,12 +976,12 @@ export function FullArenaExperience({
     (isBotOpponentAdded || roomData?.isBotEnabled || opponentPlayer?.id === 'bot-rival')
   );
 
-  const opponentDisplayName = isBotDuel
-    ? 'ByteRival Bot (Practice AI)'
-    : opponentPlayer?.name
-      ? `${opponentPlayer.name} (Opponent)`
+  const opponentDisplayName = isRealOpponentPresent
+    ? `${opponentPlayer?.name} (Opponent)`
+    : isBotDuel
+      ? `${assignedBotProfile.name} • ${assignedBotProfile.college}`
       : mySquad === 'alpha'
-        ? (isBotOpponentAdded ? 'ByteRival Bot (Practice AI)' : 'Waiting for Opponent...')
+        ? (isBotOpponentAdded ? `${assignedBotProfile.name} • ${assignedBotProfile.college}` : 'Waiting for Opponent...')
         : (roomData?.hostName ? `${roomData.hostName} (Host)` : 'Classmate Opponent');
 
   // Determine if active match uses Web View (Live Preview & Output) or Compiler Terminal View
@@ -2079,35 +2104,93 @@ export function FullArenaExperience({
     return () => clearInterval(cadenceInterval);
   }, [step, userTestsPassed]);
 
-  // Opponent Telemetry Simulator (Fog of War) - STRICTLY for Solo Practice vs AI Bot
+  // Opponent Telemetry Simulator (Fog of War) - STRICTLY for Collegiate Simulation Practice
   useEffect(() => {
     if (step !== 5) return;
     // CRITICAL: NEVER run simulation during real human vs human multiplayer duels!
     if (!isBotDuel) return;
 
-    const oppInterval = setInterval(() => {
-      // In practice mode, simulated bot types at variable pacing
-      setOpponentWpm(Math.floor(45 + Math.random() * 25));
+    let localTestsPassed = 0;
+    const startTime = Date.now();
 
-      // Bot solves tests slowly during solo practice
-      const roll = Math.random();
-      if (roll < 0.15 && opponentTestsPassed < totalTests) {
-        setOpponentTestsPassed((prev) => {
-          const next = prev + 1;
-          setOpponentAlert(`🔥 ByteRival Bot passed Test Case ${next}/${totalTests}!`);
-          setTimeout(() => setOpponentAlert(''), 3500);
-          if (next >= totalTests) {
-            setStep(6);
-            setWinnerTeam('Team Omega');
-            playVictorySound();
-          }
-          return next;
-        });
+    const simTicker = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+
+      // Phase 1: 0 - 18s: Reading problem statement
+      if (elapsedSec < 18) {
+        setOpponentWpm(0);
+        setOpponentStatusText('Reading problem & constraints 📖');
+        setOpponentSimCodeLinesCount(2);
+      } 
+      // Phase 2: 18 - 48s: Initial coding burst
+      else if (elapsedSec < 48) {
+        // Natural typing rhythm with micro-bursts
+        const burst = Math.floor(assignedBotProfile.baseWpm - 6 + (Math.sin(elapsedSec * 0.8) * 12) + (Math.random() * 8));
+        setOpponentWpm(Math.max(48, burst));
+        setOpponentStatusText('Drafting solution in editor ⌨️');
+        setOpponentSimCodeLinesCount(Math.min(12, 3 + Math.floor((elapsedSec - 18) / 2.5)));
       }
-    }, 9000);
+      // Phase 3: 48 - 56s: Compiling test 1
+      else if (elapsedSec < 56) {
+        setOpponentWpm(Math.random() < 0.3 ? 15 : 0);
+        setOpponentStatusText('Compiling & running test suite ⚙️');
+      }
+      // Milestone 1: ~56s - Test 1 passes!
+      else if (elapsedSec < 100) {
+        if (localTestsPassed < 1 && totalTests >= 1) {
+          localTestsPassed = 1;
+          setOpponentTestsPassed(1);
+          setOpponentAlert(`⚡ ${assignedBotProfile.name} passed Test 1/${totalTests}!`);
+          setTimeout(() => setOpponentAlert(''), 4500);
+        }
+        const burst = Math.floor(assignedBotProfile.baseWpm - 4 + (Math.sin(elapsedSec * 0.7) * 14) + (Math.random() * 6));
+        setOpponentWpm(Math.max(50, burst));
+        setOpponentStatusText('Passed Test 1 🟢 & refactoring');
+        setOpponentSimCodeLinesCount(Math.min(18, 10 + Math.floor((elapsedSec - 56) / 2.5)));
+      }
+      // Phase 4: 100 - 110s: Compiling test 2
+      else if (elapsedSec < 110) {
+        setOpponentWpm(Math.random() < 0.2 ? 18 : 0);
+        setOpponentStatusText('Testing edge cases for Test 2 ⚙️');
+      }
+      // Milestone 2: ~110s - Test 2 passes!
+      else if (elapsedSec < 165) {
+        if (localTestsPassed < 2 && totalTests >= 2) {
+          localTestsPassed = 2;
+          setOpponentTestsPassed(2);
+          setOpponentAlert(`⚡ ${assignedBotProfile.name} passed Test 2/${totalTests}!`);
+          setTimeout(() => setOpponentAlert(''), 4500);
+        }
+        const burst = Math.floor(assignedBotProfile.baseWpm - 2 + (Math.sin(elapsedSec * 0.9) * 15) + (Math.random() * 8));
+        setOpponentWpm(Math.max(52, burst));
+        setOpponentStatusText('Passed Test 2 🟢 & handling final tests');
+        setOpponentSimCodeLinesCount(Math.min(26, 17 + Math.floor((elapsedSec - 110) / 2.2)));
+      }
+      // Milestone 3: 165s - 225s: Final stretch
+      else {
+        if (totalTests <= 2 && localTestsPassed < totalTests) {
+          localTestsPassed = totalTests;
+          setOpponentTestsPassed(totalTests);
+          setWinnerTeam('Team Omega');
+          setStep(6);
+          playVictorySound();
+        } else if (totalTests > 2 && localTestsPassed < 3 && elapsedSec >= 220) {
+          localTestsPassed = totalTests;
+          setOpponentTestsPassed(totalTests);
+          setWinnerTeam('Team Omega');
+          setStep(6);
+          playVictorySound();
+        } else {
+          const burst = Math.floor(assignedBotProfile.baseWpm + (Math.sin(elapsedSec) * 10));
+          setOpponentWpm(Math.max(45, burst));
+          setOpponentStatusText('Final pass optimization 🚀');
+          setOpponentSimCodeLinesCount(28);
+        }
+      }
+    }, 1500);
 
-    return () => clearInterval(oppInterval);
-  }, [step, isBotDuel, opponentTestsPassed, totalTests]);
+    return () => clearInterval(simTicker);
+  }, [step, isBotDuel, totalTests, timeLimit, assignedBotProfile]);
 
   // Real Backend Compiler Execution for Java, C++, Python (Compile & Run)
   // Evaluates every test case so each tab (Case 1, Case 2, etc.) has its own live output and verdict!
@@ -3675,20 +3758,23 @@ export function FullArenaExperience({
             <label className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 cursor-pointer select-none transition-all">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors text-sm ${
                     isBotOpponentAdded
                       ? 'bg-rose-500 text-white shadow-[0_0_12px_#f43f5e]'
                       : 'bg-slate-800 text-slate-400'
                   }`}
                 >
-                  <Bot className="w-4 h-4" />
+                  {isBotOpponentAdded ? assignedBotProfile.avatarEmoji : <Bot className="w-4 h-4" />}
                 </div>
                 <div>
-                  <p className="font-mono font-bold text-white text-xs">
-                    Play vs AI Practice Bot (Solo Instant Start)
+                  <p className="font-mono font-bold text-white text-xs flex items-center gap-1.5">
+                    <span>Simulate Collegiate Opponent (Instant Match)</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      {assignedBotProfile.college}
+                    </span>
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Tick this box to practice immediately without waiting for a classmate.
+                    Duel {assignedBotProfile.name} ({assignedBotProfile.tag}) with real human typing bursts and Fog of War encryption.
                   </p>
                 </div>
               </div>
@@ -3826,12 +3912,12 @@ export function FullArenaExperience({
                           className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/50 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(244,63,94,0.25)]"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                              {opp.id === 'bot-rival' ? <Bot className="w-3.5 h-3.5" /> : `P${idx + (teamSize === '2v2' ? 3 : 2)}`}
+                            <div className="w-6 h-6 rounded-lg bg-rose-500 text-white font-bold flex items-center justify-center text-xs">
+                              {opp.id === 'bot-rival' ? assignedBotProfile.avatarEmoji : `P${idx + (teamSize === '2v2' ? 3 : 2)}`}
                             </div>
-                            <span className="text-white font-bold">{opp.name}</span>
-                            <span className="text-[10px] text-rose-400 font-semibold">
-                              {isOppMe ? '(You)' : opp.id === 'bot-rival' ? '(Practice AI)' : '(Opponent)'}
+                            <span className="text-white font-bold">{opp.id === 'bot-rival' ? assignedBotProfile.name : opp.name}</span>
+                            <span className="text-[10px] text-rose-300 font-semibold">
+                              {isOppMe ? '(You)' : opp.id === 'bot-rival' ? `(${assignedBotProfile.college})` : '(Opponent)'}
                             </span>
                           </div>
                           <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded">
@@ -3858,11 +3944,11 @@ export function FullArenaExperience({
                   <div className="space-y-2">
                     <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                          <Bot className="w-3.5 h-3.5" />
+                        <div className="w-6 h-6 rounded-lg bg-rose-500 text-white font-bold flex items-center justify-center text-xs">
+                          {assignedBotProfile.avatarEmoji}
                         </div>
-                        <span className="text-white font-bold">ByteRival Bot</span>
-                        <span className="text-[10px] text-rose-400 font-semibold">(Practice AI)</span>
+                        <span className="text-white font-bold">{assignedBotProfile.name}</span>
+                        <span className="text-[10px] text-rose-300 font-semibold">({assignedBotProfile.college})</span>
                       </div>
                       <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                     </div>
@@ -3870,10 +3956,11 @@ export function FullArenaExperience({
                     {teamSize === '2v2' && (
                       <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-rose-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
-                            <Bot className="w-3.5 h-3.5" />
+                          <div className="w-6 h-6 rounded-lg bg-rose-500 text-white font-bold flex items-center justify-center text-xs">
+                            🐺
                           </div>
-                          <span className="text-white font-bold">ApexAI Partner</span>
+                          <span className="text-white font-bold">Aryan Mehta</span>
+                          <span className="text-[10px] text-rose-300 font-semibold">(NSUT Delhi)</span>
                         </div>
                         <span className="text-[10px] text-emerald-400 font-bold">READY</span>
                       </div>
@@ -4049,6 +4136,19 @@ export function FullArenaExperience({
                 </div>
               )}
             </div>
+
+            {/* Live Opponent Test Surge Esports Banner */}
+            {opponentAlert && (
+              <div className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-950 via-rose-900 to-amber-950 border border-rose-500/60 text-white font-mono text-xs font-bold flex items-center justify-between shadow-[0_0_25px_rgba(244,63,94,0.35)] animate-bounce">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping" />
+                  <span>{opponentAlert}</span>
+                </div>
+                <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/30">
+                  Collegiate Rival Surge
+                </span>
+              </div>
+            )}
 
             {/* Split Screen Grid: Left Studio & Opponent Telemetry, Right Preview & Output / Compiler Terminal */}
             <div className={`flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 ${isQuestionExpanded ? 'min-h-[430px]' : 'min-h-[560px]'} transition-all duration-300`}>
@@ -4385,8 +4485,13 @@ export function FullArenaExperience({
                   {/* Opponent Progress Bar */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-slate-400 text-[11px] font-semibold">
-                        {opponentDisplayName}
+                      <span className="text-slate-300 text-[11px] font-semibold flex items-center gap-1.5">
+                        <span>{opponentDisplayName}</span>
+                        {isBotDuel && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold font-mono">
+                            {assignedBotProfile.tag}
+                          </span>
+                        )}
                       </span>
                       <span className="text-rose-400 font-bold text-[11px]">
                         {opponentTestsPassed} / {totalTests} Tests Passed
@@ -4411,18 +4516,67 @@ export function FullArenaExperience({
                         <span>{opponentWpm} WPM</span>
                       </div>
                     </div>
-                    <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Status:</span>
-                      <span className={`font-black ${opponentWpm > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-                        {opponentWpm > 0 ? 'Typing' : 'Idle'}
+                    <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between min-w-0">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase shrink-0">Status:</span>
+                      <span className={`font-bold truncate text-[10px] ${opponentWpm > 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {isBotDuel ? opponentStatusText : (opponentWpm > 0 ? 'Typing' : 'Idle')}
                       </span>
                     </div>
                   </div>
 
-                  {/* Encrypted Code Glitch preview (Unlocks at finish) */}
-                  <div className="p-2 rounded-xl bg-[#070914] border border-rose-500/20 font-mono text-[9px] text-rose-400/70 select-none overflow-hidden">
-                    <p className="truncate">0x7F4A89C // ENCRYPTED_BLOCK // 01001011 01001111 // TESTS_LOCKED</p>
-                    <p className="truncate">0x3E8B12A // ENCRYPTED_HASH  // 01100010 01111001 // RUNNER_ACTIVE</p>
+                  {/* Fog of War Blurred Code Streaming View (Realistic Indented Code Preview) */}
+                  <div className="relative rounded-xl bg-[#070914] border border-rose-500/30 overflow-hidden shadow-inner">
+                    <div className="h-6 bg-slate-950/90 px-2.5 flex items-center justify-between border-b border-rose-500/20 text-[10px] font-mono select-none">
+                      <div className="flex items-center gap-1.5 text-rose-400 font-bold">
+                        <EyeOff className="w-3 h-3 text-rose-500" />
+                        <span>Fog of War &bull; Live Code Stream</span>
+                      </div>
+                      <span className="text-[9px] text-slate-500 font-semibold uppercase">Real-Time Encrypted</span>
+                    </div>
+
+                    <div className="p-2.5 font-mono text-[10px] leading-relaxed relative overflow-hidden max-h-[115px] select-none pointer-events-none">
+                      <div className="filter blur-[4px] opacity-75 space-y-0.5 font-mono text-slate-300">
+                        {Array.from({ length: Math.max(3, opponentSimCodeLinesCount) }).map((_, idx) => {
+                          const snippets = [
+                            'const container = document.querySelector(".card-root");',
+                            'function solveLayout(width, height) {',
+                            '  const padding = 16;',
+                            '  return { flex: "1 1 auto", width: width - padding };',
+                            '}',
+                            'export function solve(nums, target) {',
+                            '  const map = new Map();',
+                            '  for (let i = 0; i < nums.length; i++) {',
+                            '    const comp = target - nums[i];',
+                            '    if (map.has(comp)) return [map.get(comp), i];',
+                            '    map.set(nums[i], i);',
+                            '  }',
+                            '  return [];',
+                            '}',
+                            '// Validating test assertions',
+                            'class Solution { public int run() { return 1; } }',
+                          ];
+                          return (
+                            <div key={idx} className="flex items-center gap-2">
+                              <span className="text-slate-600 text-[9px] w-4 text-right font-mono select-none">{idx + 1}</span>
+                              <span className={idx % 3 === 0 ? 'text-cyan-300' : idx % 2 === 0 ? 'text-amber-300' : 'text-slate-200'}>
+                                {snippets[idx % snippets.length]}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Anti-cheat banner over blurred code */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[0.5px]">
+                        <div className="px-2.5 py-0.5 rounded-full bg-slate-950/90 border border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.3)] flex items-center gap-1.5 text-rose-300 text-[9px] font-mono font-bold tracking-wider">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                          <span>ANTI-CHEAT FOG OF WAR</span>
+                        </div>
+                        <p className="text-[8px] font-mono text-slate-400 mt-0.5">
+                          Cadence streaming active &bull; Unlocks on match finish
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
