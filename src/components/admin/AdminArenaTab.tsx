@@ -693,8 +693,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         const showWebJs = hasAnyWebTag ? (parsedCurrentTags.includes('javascript') || parsedCurrentTags.includes('js')) : false;
 
         const hasAnyAlgoTag = parsedCurrentTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
-        // Single language selection for Algorithms & DSA (Java, Python, or C++)
-        const showAlgoJava = parsedCurrentTags.includes('java') || (!hasAnyAlgoTag && newArena === 'algorithms');
+        // Single language selection for Algorithms & DSA or Logic Bug Hunt (Java, Python, or C++)
+        const showAlgoJava = parsedCurrentTags.includes('java') || (!hasAnyAlgoTag && isAlgoAdminMode);
         const showAlgoPython = parsedCurrentTags.includes('python');
         const showAlgoCpp = parsedCurrentTags.includes('cpp') || parsedCurrentTags.includes('c++');
 
@@ -754,23 +754,37 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">Arena Category</label>
               <select
-                value={newArena}
+                value={
+                  newArena === 'bug_hunt'
+                    ? newBugDomain === 'logic'
+                      ? 'bug_hunt_logic'
+                      : 'bug_hunt_web'
+                    : newArena
+                }
                 onChange={(e) => {
-                  const val = e.target.value as ArenaCategory;
-                  setNewArena(val);
-                  if (val === 'algorithms') {
-                    setNewTags('java');
-                  } else if (val === 'web_dev') {
+                  const val = e.target.value;
+                  if (val === 'web_dev') {
+                    setNewArena('web_dev');
                     setNewTags('html,css');
-                  } else if (val === 'bug_hunt') {
-                    setNewTags(newBugDomain === 'web' ? 'html,css' : 'java');
+                  } else if (val === 'algorithms') {
+                    setNewArena('algorithms');
+                    setNewTags('java');
+                  } else if (val === 'bug_hunt_web') {
+                    setNewArena('bug_hunt');
+                    setNewBugDomain('web');
+                    setNewTags('html,css');
+                  } else if (val === 'bug_hunt_logic') {
+                    setNewArena('bug_hunt');
+                    setNewBugDomain('logic');
+                    setNewTags('java');
                   }
                 }}
                 className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs focus:border-rose-500 focus:outline-none"
               >
                 <option value="web_dev">Web Development (HTML / CSS / JS)</option>
                 <option value="algorithms">Algorithms & DSA (Java / Python / C++)</option>
-                <option value="bug_hunt">Bug Hunt (Web UI / Logic & Code)</option>
+                <option value="bug_hunt_web">Bug Hunt — Web UI (HTML / CSS / JS)</option>
+                <option value="bug_hunt_logic">Bug Hunt — Logic & Code (Java / Python / C++)</option>
               </select>
             </div>
           </div>
