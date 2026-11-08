@@ -84,8 +84,8 @@ export default function HackathonsPage() {
 
       // 1. Fetch authoritative active hackathons from server API
       try {
-        const res = await fetch('/api/hackathons', {
-          next: { revalidate: 60 },
+        const res = await fetch(`/api/hackathons?_t=${Date.now()}`, {
+          cache: 'no-store',
         });
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.hackathons)) {

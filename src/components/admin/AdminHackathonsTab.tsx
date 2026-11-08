@@ -226,7 +226,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       const headers: Record<string, string> = {};
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-      const res = await fetch('/api/admin/hackathons', { headers });
+      const res = await fetch(`/api/admin/hackathons?_t=${Date.now()}`, { headers, cache: 'no-store' });
       const data = await res.json();
       if (res.ok && data.success) {
         setHackathons(data.hackathons || []);

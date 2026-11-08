@@ -8,6 +8,7 @@ import {
   getMasterControlSubkey,
   updateMasterControlSubkey,
 } from '@/lib/admin/masterConfigStorage';
+import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
 export const runtime = 'nodejs';
 
@@ -81,15 +82,41 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Combine DB hackathons with curated catalog for comprehensive admin visibility
+  // Combine DB hackathons, Master Config Hackathons, and Curated catalog for comprehensive admin visibility
   const seenIds = new Set<string>();
   const allHackathons: any[] = [];
 
-  for (const h of dbHackathons) {
+  let masterHackathons: any[] = [];
+  try {
+    const master = await getMasterControlRecord();
+    if (Array.isArray(master?.hackathons)) {
+      masterHackathons = master.hackathons;
+    }
+  } catch {}
+
+  const combinedRaw = [...dbHackathons, ...masterHackathons];
+
+  for (const h of combinedRaw) {
     if (h && h.id && !seenIds.has(h.id)) {
       seenIds.add(h.id);
       if (h.join_code) seenIds.add(h.join_code);
-      allHackathons.push(h);
+      const meta = extractSponsoredMeta(h);
+      allHackathons.push({
+        ...h,
+        is_sponsored: meta.isSponsored,
+        is_enterprise: meta.isSponsored,
+        company_name: meta.companyName || h.company_name,
+        company_logo: meta.sponsorLogoUrl || h.company_logo,
+        theme_preset: meta.themePreset,
+        glow_color: meta.glowColor,
+        priority_rank: meta.priorityRank,
+        hiring_roles: meta.hiringRoles || h.hiring_roles,
+        hiring_package: meta.hiringPackage || h.hiring_package,
+        recruitment_perks: meta.recruitmentPerks || h.recruitment_perks,
+        tagline: meta.tagline || h.tagline,
+        promo_video_url: meta.promoVideoUrl || h.promo_video_url,
+        custom_cta_text: meta.customCtaText || h.custom_cta_text,
+      });
     }
   }
 
@@ -97,12 +124,23 @@ export async function GET(request: NextRequest) {
     if (c && c.id && !seenIds.has(c.id)) {
       seenIds.add(c.id);
       if (c.join_code) seenIds.add(c.join_code);
+      const meta = extractSponsoredMeta(c);
       allHackathons.push({
         ...c,
         is_curated: true,
         participants_count: 0,
         teams_count: 0,
         submissions_count: 0,
+        is_sponsored: meta.isSponsored,
+        is_enterprise: meta.isSponsored,
+        company_name: meta.companyName || c.company_name,
+        company_logo: meta.sponsorLogoUrl || c.company_logo,
+        theme_preset: meta.themePreset,
+        glow_color: meta.glowColor,
+        priority_rank: meta.priorityRank,
+        hiring_roles: meta.hiringRoles || c.hiring_roles,
+        hiring_package: meta.hiringPackage || c.hiring_package,
+        recruitment_perks: meta.recruitmentPerks || c.recruitment_perks,
       });
     }
   }
@@ -252,6 +290,19 @@ export async function DELETE(request: NextRequest) {
 
       currentDeleted.deletedIds = newDeletedIds;
       currentDeleted.deletedTitles = newDeletedTitles;
+
+      // Also remove from masterConfigStorage 'hackathons' list if present
+      try {
+        const rawMaster = await getMasterControlSubkey<any[]>('hackathons', []);
+        if (Array.isArray(rawMaster) && rawMaster.length > 0) {
+          const remaining = rawMaster.filter((h: any) => {
+            const matchId = h.id === hackathonId || (h.id && h.id.toLowerCase() === hackathonId.toLowerCase());
+            const matchCode = effectiveJoinCode && h.join_code === effectiveJoinCode;
+            return !matchId && !matchCode;
+          });
+          await updateMasterControlSubkey('hackathons', remaining);
+        }
+      } catch {}
     } catch (settingErr) {
       console.warn('Could not update deleted_hackathons setting:', settingErr);
     }
@@ -357,7 +408,8 @@ export async function POST(request: NextRequest) {
         results_date: results_date ? new Date(results_date).toISOString() : null,
       })} -->`;
 
-      const newHackathonPayload = {
+      // Prepare sanitized payload strictly containing columns present in Supabase PostgreSQL hackathons table
+      const dbInsertPayload = {
         title: title.trim(),
         organizer: `${company_name.trim()} Campus Innovation & Recruitment`,
         description: (description || tagline || title).trim() + metaComment,
@@ -366,19 +418,18 @@ export async function POST(request: NextRequest) {
         start_date: new Date(start_date || Date.now()).toISOString(),
         end_date: end_date ? new Date(end_date).toISOString() : null,
         registration_deadline: new Date(registration_deadline || Date.now() + 14 * 86400000).toISOString(),
-        results_date: results_date ? new Date(results_date).toISOString() : null,
+        submission_deadline: results_date ? new Date(results_date).toISOString() : null,
         eligibility: 'Open to all college students & engineering developers',
         themes: Array.isArray(themes) && themes.length > 0 ? themes : ['Enterprise Innovation', 'Cloud/AI Architecture'],
         prize_pool: prize_pool.trim() || '₹5,00,000 + Direct PPI Interviews',
         website_url: `https://kollabrix.in/h/${joinCode}`,
         banner_url: banner_url?.trim() || null,
-        company_logo: company_logo?.trim() || null,
-        company_name: company_name.trim(),
         is_verified: true,
-        is_sponsored: true,
-        priority_rank: parsedPriority,
-        hiring_roles: hiring_roles.trim(),
         status: 'Published',
+        access_type: access_type || 'public',
+        join_code: joinCode,
+        min_team_size: 1,
+        max_team_size: 4,
         creator_id: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
       };
 
@@ -387,11 +438,13 @@ export async function POST(request: NextRequest) {
         try {
           const { data, error } = await client
             .from('hackathons')
-            .insert(newHackathonPayload)
+            .insert(dbInsertPayload)
             .select('*')
             .single();
           if (!error && data) {
             insertedRecord = data;
+          } else if (error) {
+            console.warn('DB insert error note:', error.message);
           }
         } catch (dbErr) {
           console.warn('DB insert fallback note:', dbErr);
@@ -401,23 +454,38 @@ export async function POST(request: NextRequest) {
       if (!insertedRecord) {
         insertedRecord = {
           id: `hack-corp-${Date.now()}`,
-          ...newHackathonPayload,
+          ...dbInsertPayload,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          join_code: joinCode,
-          is_sponsored: true,
-          is_enterprise: true,
-          company_name: company_name.trim(),
-          glow_color,
-          recruitment_perks: perksArray,
         };
       }
+
+      const enrichedRecord = {
+        ...insertedRecord,
+        is_sponsored: true,
+        is_enterprise: true,
+        company_name: company_name.trim(),
+        company_logo: company_logo?.trim() || null,
+        sponsor_logo_url: company_logo?.trim() || null,
+        theme_preset,
+        glow_color,
+        priority_rank: parsedPriority,
+        hiring_roles: hiring_roles.trim(),
+        hiring_package: hiring_package.trim(),
+        tagline: tagline?.trim() || '',
+        promo_video_url: promo_video_url?.trim() || null,
+        custom_cta_text: custom_cta_text?.trim() || null,
+        recruitment_perks: perksArray,
+      };
 
       // Also persist to masterConfigStorage 'hackathons' list so it syncs universally across deadlines and feeds
       try {
         const rawMaster = await getMasterControlSubkey<any[]>('hackathons', []);
         const masterList = Array.isArray(rawMaster) ? rawMaster : [];
-        await updateMasterControlSubkey('hackathons', [insertedRecord, ...masterList]);
+        const filteredMaster = masterList.filter(
+          (h: any) => h.id !== enrichedRecord.id && h.join_code !== joinCode
+        );
+        await updateMasterControlSubkey('hackathons', [enrichedRecord, ...filteredMaster]);
       } catch (masterErr) {
         console.warn('Master config update note:', masterErr);
       }
@@ -428,14 +496,14 @@ export async function POST(request: NextRequest) {
         actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
         action: 'CREATE_SPONSORED_HACKATHON',
         targetType: 'hackathon',
-        targetId: insertedRecord.id,
+        targetId: enrichedRecord.id,
         details: { company_name, title, prize_pool, glow_color },
         outcome: 'SUCCESS',
       });
 
       return NextResponse.json({
         success: true,
-        hackathon: insertedRecord,
+        hackathon: enrichedRecord,
         message: `Sponsored hackathon "${title}" for ${company_name} is now live with priority glowing spotlight!`,
       });
     }
@@ -524,12 +592,11 @@ export async function POST(request: NextRequest) {
         try {
           const { data: current } = await client
             .from('hackathons')
-            .select('id, title, description, organizer, is_sponsored')
+            .select('id, title, description, organizer')
             .eq('id', hackathonId)
             .maybeSingle();
 
           if (current) {
-            isNowSponsored = !current.is_sponsored;
             const updatedDesc = current.description || '';
             let metaObj: any = {};
             if (updatedDesc.includes('<!-- HACKATHON_META:')) {
@@ -537,6 +604,8 @@ export async function POST(request: NextRequest) {
                 metaObj = JSON.parse(updatedDesc.split('<!-- HACKATHON_META:')[1].split('-->')[0]);
               } catch {}
             }
+            const currentIsSponsored = Boolean(metaObj.is_sponsored || metaObj.is_enterprise);
+            isNowSponsored = !currentIsSponsored;
             metaObj.is_sponsored = isNowSponsored;
             metaObj.is_enterprise = isNowSponsored;
             metaObj.priority_rank = isNowSponsored ? priority_rank : 1;
@@ -548,7 +617,6 @@ export async function POST(request: NextRequest) {
             await client
               .from('hackathons')
               .update({
-                is_sponsored: isNowSponsored,
                 description: newDesc,
                 updated_at: new Date().toISOString(),
               })
@@ -558,6 +626,27 @@ export async function POST(request: NextRequest) {
           console.warn('DB toggle sponsored fallback:', dbErr);
         }
       }
+
+      // Also sync to masterConfigStorage 'hackathons'
+      try {
+        const rawMaster = await getMasterControlSubkey<any[]>('hackathons', []);
+        if (Array.isArray(rawMaster)) {
+          const updatedMaster = rawMaster.map((h: any) => {
+            if (h.id === hackathonId || h.join_code === hackathonId) {
+              const meta = extractSponsoredMeta(h);
+              const toggled = !meta.isSponsored;
+              return {
+                ...h,
+                is_sponsored: toggled,
+                is_enterprise: toggled,
+                priority_rank: toggled ? priority_rank : 1,
+              };
+            }
+            return h;
+          });
+          await updateMasterControlSubkey('hackathons', updatedMaster);
+        }
+      } catch {}
 
       await recordAdminAuditLog({
         actorEmail: auth.user?.email || 'admin@kollabrix.in',
@@ -645,11 +734,6 @@ export async function POST(request: NextRequest) {
               .from('hackathons')
               .update({
                 description: updatedDesc,
-                company_name,
-                company_logo: company_logo || null,
-                is_sponsored: true,
-                priority_rank: parsedPriority,
-                hiring_roles,
                 updated_at: new Date().toISOString(),
               })
               .eq('id', hackathonId);
@@ -658,6 +742,36 @@ export async function POST(request: NextRequest) {
           console.warn('Update sponsored theme error:', dbErr);
         }
       }
+
+      // Also sync to masterConfigStorage 'hackathons'
+      try {
+        const rawMaster = await getMasterControlSubkey<any[]>('hackathons', []);
+        if (Array.isArray(rawMaster)) {
+          const updatedMaster = rawMaster.map((h: any) => {
+            if (h.id === hackathonId || h.join_code === hackathonId) {
+              return {
+                ...h,
+                is_sponsored: true,
+                is_enterprise: true,
+                company_name,
+                company_logo: company_logo || null,
+                sponsor_logo_url: company_logo || null,
+                theme_preset,
+                glow_color,
+                tagline,
+                hiring_roles,
+                hiring_package,
+                recruitment_perks: perksArray,
+                priority_rank: parsedPriority,
+                promo_video_url: promo_video_url || null,
+                custom_cta_text: custom_cta_text || null,
+              };
+            }
+            return h;
+          });
+          await updateMasterControlSubkey('hackathons', updatedMaster);
+        }
+      } catch {}
 
       await recordAdminAuditLog({
         actorEmail: auth.user?.email || 'admin@kollabrix.in',

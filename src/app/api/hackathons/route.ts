@@ -5,14 +5,28 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons, DeletedHackathonsData } from '@/lib/admin/hackathonSettings';
 import { getMasterControlRecord } from '@/lib/admin/masterConfigStorage';
+import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
 export const runtime = 'nodejs';
-export const revalidate = 120; // 2-minute edge cache to protect database egress
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
     let dbHackathons: any[] = [];
+    let masterHackathons: any[] = [];
     let deletedData: DeletedHackathonsData = { deletedIds: [], deletedTitles: [], deletedAt: {} };
+
+    // 1. Fetch deleted hackathons list and master config hackathons
+    try {
+      const master = await getMasterControlRecord();
+      if (master?.deletedHackathons) {
+        deletedData = parseDeletedHackathons(master.deletedHackathons);
+      }
+      if (Array.isArray(master?.hackathons)) {
+        masterHackathons = master.hackathons;
+      }
+    } catch {}
 
     if (isSupabaseConfigured()) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -21,14 +35,6 @@ export async function GET(request: NextRequest) {
       const client = createSupabaseClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
         auth: { persistSession: false },
       });
-
-      // 1. Fetch deleted hackathons list
-      try {
-        const master = await getMasterControlRecord();
-        if (master?.deletedHackathons) {
-          deletedData = parseDeletedHackathons(master.deletedHackathons);
-        }
-      } catch {}
 
       if (!deletedData.deletedIds || deletedData.deletedIds.length === 0) {
         try {
@@ -64,52 +70,79 @@ export async function GET(request: NextRequest) {
     const deletedSet = new Set((deletedData.deletedIds || []).map((id) => id.toLowerCase()));
     const deletedTitlesSet = new Set((deletedData.deletedTitles || []).map((t) => t.trim().toLowerCase()));
 
-    // Normalize DB hackathons
-    const normalizedDbHacks = (dbHackathons || []).map((h: any) => {
+    // Normalizer that preserves rich sponsor & meta data
+    const normalizeHackathon = (h: any) => {
       let joinCode = h.join_code;
       let accessType = h.access_type;
-      let cleanDesc = h.description || '';
 
-      if (cleanDesc.includes('<!-- HACKATHON_META:')) {
+      if (h.description && h.description.includes('<!-- HACKATHON_META:')) {
         try {
-          const metaStr = cleanDesc.split('<!-- HACKATHON_META:')[1].split('-->')[0];
-          const meta = JSON.parse(metaStr);
-          accessType = meta.access_type || accessType || 'private';
-          joinCode = meta.join_code || joinCode;
-          cleanDesc = cleanDesc.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim();
+          const metaStr = h.description.split('<!-- HACKATHON_META:')[1].split('-->')[0];
+          const metaParsed = JSON.parse(metaStr);
+          accessType = metaParsed.access_type || accessType;
+          joinCode = metaParsed.join_code || joinCode;
         } catch {}
       }
 
       if (!joinCode && h.website_url && h.website_url.includes('/h/')) {
         joinCode = h.website_url.split('/h/')[1]?.split(/[?#]/)[0];
-        accessType = accessType || 'private';
       }
+
+      const meta = extractSponsoredMeta(h);
 
       return {
         ...h,
-        description: cleanDesc,
+        description: h.description,
         join_code: joinCode || h.join_code,
         access_type: accessType || (joinCode ? 'private' : h.access_type || 'public'),
+        is_sponsored: meta.isSponsored,
+        is_enterprise: meta.isSponsored,
+        company_name: meta.companyName || h.company_name,
+        company_logo: meta.sponsorLogoUrl || h.company_logo,
+        theme_preset: meta.themePreset,
+        glow_color: meta.glowColor,
+        priority_rank: meta.priorityRank,
+        hiring_roles: meta.hiringRoles || h.hiring_roles,
+        hiring_package: meta.hiringPackage || h.hiring_package,
+        recruitment_perks: meta.recruitmentPerks || h.recruitment_perks,
+        tagline: meta.tagline || h.tagline,
+        promo_video_url: meta.promoVideoUrl || h.promo_video_url,
+        custom_cta_text: meta.customCtaText || h.custom_cta_text,
       };
-    });
+    };
 
-    // Combine DB hackathons with curated catalog
+    // Combine DB hackathons, Master Config Hackathons, and curated catalog
     const seenIds = new Set<string>();
     const combined: any[] = [];
 
-    for (const item of normalizedDbHacks) {
-      if (item && item.id && !seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        if (item.join_code) seenIds.add(item.join_code);
-        combined.push(item);
+    // 1. Database hackathons first
+    for (const raw of dbHackathons) {
+      if (raw && raw.id && !seenIds.has(raw.id)) {
+        seenIds.add(raw.id);
+        if (raw.join_code) seenIds.add(raw.join_code);
+        combined.push(normalizeHackathon(raw));
       }
     }
 
-    for (const item of CURATED_HACKATHONS) {
-      if (item && item.id && !seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        if (item.join_code) seenIds.add(item.join_code);
-        combined.push(item);
+    // 2. Master config hackathons (catches any hot-patched or created corporate events)
+    for (const raw of masterHackathons) {
+      if (raw && raw.id && !seenIds.has(raw.id)) {
+        if (!raw.join_code || !seenIds.has(raw.join_code)) {
+          seenIds.add(raw.id);
+          if (raw.join_code) seenIds.add(raw.join_code);
+          combined.push(normalizeHackathon(raw));
+        }
+      }
+    }
+
+    // 3. Curated catalog
+    for (const raw of CURATED_HACKATHONS) {
+      if (raw && raw.id && !seenIds.has(raw.id)) {
+        if (!raw.join_code || !seenIds.has(raw.join_code)) {
+          seenIds.add(raw.id);
+          if (raw.join_code) seenIds.add(raw.join_code);
+          combined.push(normalizeHackathon(raw));
+        }
       }
     }
 
@@ -139,7 +172,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+          'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate',
         },
       }
     );

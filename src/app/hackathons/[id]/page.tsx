@@ -137,6 +137,24 @@ export default function HackathonDetailPage() {
         if (curated) currentHack = curated as Hackathon;
       }
 
+      // Fallback: Query /api/hackathons endpoint
+      if (!currentHack) {
+        try {
+          const res = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (res.ok && data.success && Array.isArray(data.hackathons)) {
+            const found = data.hackathons.find(
+              (h: any) =>
+                h.id === cleanId ||
+                h.join_code === cleanId ||
+                (h.id && h.id.toLowerCase() === cleanId.toLowerCase()) ||
+                (h.join_code && h.join_code.toLowerCase() === cleanId.toLowerCase())
+            );
+            if (found) currentHack = found as Hackathon;
+          }
+        } catch {}
+      }
+
       if (!currentHack) {
         setError('Hackathon not found. It may have expired or been removed.');
         setIsLoading(false);
