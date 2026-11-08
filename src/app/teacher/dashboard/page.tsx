@@ -337,7 +337,7 @@ export default function TeacherDashboardPage() {
       // Fetch deleted hackathons list to prevent suppressed items from reappearing
       let deletedSet = new Set<string>();
       try {
-        const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
+        const hRes = await fetch('/api/hackathons', { next: { revalidate: 120 } });
         const hData = await hRes.json();
         const dIds: string[] = hData?.deletedIds || [];
         const dTitles: string[] = hData?.deletedTitles || [];

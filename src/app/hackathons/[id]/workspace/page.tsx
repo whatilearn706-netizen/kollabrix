@@ -233,20 +233,13 @@ export default function HackathonWorkspacePage() {
       setIsLoading(true);
       setError(null);
 
-      // Check if this hackathon was deleted by admin
       let deletedSet = new Set<string>();
-      try {
-        const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
-        const hData = await hRes.json();
-        const dIds: string[] = hData?.deletedIds || [];
-        const dTitles: string[] = hData?.deletedTitles || [];
-        deletedSet = new Set([...dIds, ...dTitles].map((id: string) => id.trim().toLowerCase()));
-        if (deletedSet.has(hackathonId.toLowerCase())) {
-          setError('This hackathon has been removed.');
-          setIsLoading(false);
-          return;
-        }
-      } catch {}
+      if (typeof window !== 'undefined') {
+        try {
+          const localDel = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
+          deletedSet = new Set(localDel.map((s: string) => String(s).toLowerCase()));
+        } catch {}
+      }
 
       // 1. Fetch Hackathon from Supabase safely
       let currentHack: Hackathon | null = null;
