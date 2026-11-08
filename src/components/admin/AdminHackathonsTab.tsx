@@ -613,9 +613,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
 
                       {/* View Link */}
                       <Link
-                        href={item.join_code ? `/h/${item.join_code}` : `/hackathons/${item.id}`}
+                        href={`/hackathons/${item.id}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 hover:text-white border border-charcoal-700 text-xs font-semibold transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 hover:text-white border border-charcoal-700 text-xs font-semibold transition-colors cursor-pointer"
                       >
                         <ExternalLink className="w-3 h-3" />
                         <span>View</span>

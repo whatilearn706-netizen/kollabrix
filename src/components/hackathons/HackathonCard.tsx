@@ -86,30 +86,32 @@ export function HackathonCard({
       <div>
         {/* Banner with Floating Badges */}
         <div className="h-36 sm:h-40 overflow-hidden relative border-b border-slate-200/50 dark:border-white/10 bg-slate-950">
-          {hackathon.banner_url ? (
-            <img
-              src={hackathon.banner_url}
-              alt={hackathon.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center relative">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/25 via-indigo-600/10 to-transparent" />
-              <div className="flex items-center gap-2.5 z-10 opacity-80 group-hover:scale-105 transition-transform duration-300">
-                <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 shadow-sm">
-                  <Trophy className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="text-[11px] font-mono font-bold tracking-widest text-amber-300/90 uppercase block">
-                    {hackathon.mode} Sprint
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {companyName}
-                  </span>
+          <Link href={`/hackathons/${hackathon.id}`} className="block w-full h-full cursor-pointer">
+            {hackathon.banner_url ? (
+              <img
+                src={hackathon.banner_url}
+                alt={hackathon.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/25 via-indigo-600/10 to-transparent" />
+                <div className="flex items-center gap-2.5 z-10 opacity-80 group-hover:scale-105 transition-transform duration-300">
+                  <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 shadow-sm">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-mono font-bold tracking-widest text-amber-300/90 uppercase block">
+                      {hackathon.mode} Sprint
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {companyName}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </Link>
 
           {/* Dark Overlay Gradient for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30 pointer-events-none" />
@@ -371,45 +373,49 @@ export function HackathonCard({
                 variant="primary"
                 size="sm"
                 style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="w-full justify-center text-white font-bold shadow-md"
+                className="w-full justify-center text-white font-bold shadow-md cursor-pointer"
                 rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               >
                 Team Workspace
               </Button>
             </Link>
-          ) : hackathon.join_code ? (
-            <Link href={`/h/${hackathon.join_code}`} className="flex-1">
+          ) : isClosed ? (
+            <Link href={`/hackathons/${hackathon.id}`} className="flex-1">
               <Button
-                variant="primary"
+                variant="outline"
                 size="sm"
-                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="w-full justify-center text-white font-bold shadow-md"
-                leftIcon={<Lock className="w-3.5 h-3.5" />}
+                className="w-full justify-center opacity-70 text-xs font-bold cursor-pointer"
               >
-                Enter Event
+                View Event Details
               </Button>
             </Link>
-          ) : isClosed ? (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="flex-1 justify-center opacity-60 text-xs font-bold"
-            >
-              Registration Closed
-            </Button>
           ) : (
             <Link href={`/hackathons/${hackathon.id}`} className="flex-1">
               <button
                 type="button"
-                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn ${
+                style={!isSponsored ? { backgroundColor: theme.brandColor } : undefined}
+                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn cursor-pointer ${
                   isSponsored
                     ? `bg-gradient-to-r ${themeStyle.buttonGradient} shadow-lg ring-1 ring-white/20`
-                    : 'bg-violet-600 hover:bg-violet-700 text-white'
+                    : 'text-white hover:opacity-95'
                 }`}
               >
-                <span>{isSponsored ? ctaText : 'Register Team'}</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                {hackathon.access_type === 'private' ? (
+                  <>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Enter Event</span>
+                  </>
+                ) : isSponsored ? (
+                  <>
+                    <span>{ctaText}</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                  </>
+                ) : (
+                  <>
+                    <span>Register Team</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                  </>
+                )}
               </button>
             </Link>
           )}

@@ -257,7 +257,19 @@ export default function HackathonsPage() {
       return;
     }
 
-    router.push(`/h/${code}`);
+    const matched = hackathons.find(
+      (h: Hackathon) =>
+        h.join_code?.toLowerCase() === code ||
+        h.id?.toLowerCase() === code ||
+        (h.website_url && h.website_url.toLowerCase().includes(`/h/${code}`))
+    );
+
+    if (matched) {
+      router.push(`/hackathons/${matched.id}`);
+      return;
+    }
+
+    router.push(`/hackathons/${code}`);
   };
 
   // Toggle Save / Bookmark
@@ -519,11 +531,9 @@ export default function HackathonsPage() {
                 key={ph.id}
                 type="button"
                 onClick={() => {
-                  if (ph.join_code) {
-                    router.push(`/h/${ph.join_code}`);
-                  }
+                  router.push(`/hackathons/${ph.id}`);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-bold font-mono transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-bold font-mono transition-colors shadow-xs cursor-pointer"
               >
                 <Lock className="w-3 h-3 text-amber-600" />
                 <span>{ph.title}</span>

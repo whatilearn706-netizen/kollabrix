@@ -7,22 +7,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Hackathon } from '@/types/database';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import {
-  Trophy,
-  Lock,
-  Calendar,
-  Clock,
-  Users,
-  MapPin,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  BookOpen,
-  HelpCircle,
-} from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { normalizeHackathonDeadlines } from '@/lib/hackathons/hackathonStatus';
@@ -31,17 +16,13 @@ export default function JoinHackathonPage() {
   const params = useParams();
   const router = useRouter();
   const joinCode = params?.code as string;
-  const { user, openAuthModal } = useAuth();
+  const { user } = useAuth();
 
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
-  const [password, setPassword] = useState('');
-  const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  // Load hackathon by join code
+  // Load hackathon by join code and redirect immediately to the rich detail view
   useEffect(() => {
     async function loadHackathon() {
       if (!joinCode) return;
@@ -201,26 +182,25 @@ export default function JoinHackathonPage() {
               if (typeof window !== 'undefined') {
                 const enrolled = JSON.parse(localStorage.getItem('teamforge_enrolled_hackathons') || '[]');
                 if (enrolled.includes(foundHackathon.id) || (foundHackathon.join_code && enrolled.includes(foundHackathon.join_code))) {
-                  setIsAlreadyEnrolled(true);
+                  // already enrolled
                 }
               }
 
               if (isSupabaseConfigured() && foundHackathon.id) {
-                const { data: member } = await supabase
+                await supabase
                   .from('hackathon_participants')
                   .select('id, role')
                   .eq('hackathon_id', foundHackathon.id)
                   .eq('user_id', user.id)
                   .maybeSingle();
-
-                if (member) {
-                  setIsAlreadyEnrolled(true);
-                }
               }
             } catch {
               // non-critical
             }
           }
+
+          // Immediately redirect to the full-featured widescreen detail page (Image 2)
+          router.replace(`/hackathons/${foundHackathon.id}`);
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Error fetching hackathon details.');
@@ -230,331 +210,35 @@ export default function JoinHackathonPage() {
     }
 
     loadHackathon();
-  }, [joinCode, user]);
+  }, [joinCode, user, router]);
 
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!user) {
-      openAuthModal('signup');
-      return;
-    }
-
-    if (!hackathon) return;
-
-    if (hackathon.access_type === 'private' && !password.trim()) {
-      setError('Please enter the hackathon access password.');
-      return;
-    }
-
-    setIsJoining(true);
-
-    try {
-      // Forward Supabase auth token to backend so RLS can identify the student
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-
-      const res = await fetch('/api/hackathons/join', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          joinCode: hackathon.join_code,
-          password: password.trim(),
-          userId: user.id,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to join hackathon');
-      }
-
-      // Record enrollment in localStorage for instant seamless workspace access
-      try {
-        const enrolled = JSON.parse(localStorage.getItem('teamforge_enrolled_hackathons') || '[]');
-        if (!enrolled.includes(hackathon.id)) {
-          enrolled.push(hackathon.id);
-        }
-        if (hackathon.join_code && !enrolled.includes(hackathon.join_code)) {
-          enrolled.push(hackathon.join_code);
-        }
-        localStorage.setItem('teamforge_enrolled_hackathons', JSON.stringify(enrolled));
-      } catch {}
-
-      // Dual fallback: Attempt direct browser insert into hackathon_participants with user's authenticated client
-      try {
-        await supabase.from('hackathon_participants').insert({
-          hackathon_id: hackathon.id,
-          user_id: user.id,
-          role: 'student',
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      setSuccess('Access granted! Redirecting to the hackathon workspace...');
-      setTimeout(() => {
-        router.push(`/hackathons/${hackathon.id}/workspace`);
-      }, 1000);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error validating access');
-    } finally {
-      setIsJoining(false);
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading || hackathon) {
     return (
-      <div className="max-w-xl mx-auto my-20 p-8 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 animate-pulse">
-        <div className="w-12 h-12 bg-charcoal-800 rounded-full mx-auto" />
-        <div className="h-6 w-64 bg-charcoal-800 rounded mx-auto" />
-        <div className="h-4 w-96 bg-charcoal-800 rounded mx-auto" />
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center space-y-4 px-4 py-24">
+        <div className="w-10 h-10 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+        <p className="text-xs text-slate-400 font-mono tracking-widest uppercase">
+          Opening Hackathon Protocol &amp; Registration...
+        </p>
       </div>
     );
   }
 
-  if (error && !hackathon) {
-    return (
-      <div className="max-w-md mx-auto my-20 p-8 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 shadow-elevated">
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-4 py-24">
+      <div className="max-w-md w-full p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 shadow-elevated">
         <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mx-auto">
           <AlertCircle className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-bold text-white">Join Link Expired</h2>
-        <p className="text-xs text-slate-400 leading-relaxed">{error}</p>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          {error || 'This hackathon join link is invalid, expired, or has been removed.'}
+        </p>
         <div className="pt-2">
           <Link href="/hackathons">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="cursor-pointer">
               Explore Open Hackathons
             </Button>
           </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!hackathon) return null;
-
-  const now = Date.now();
-  const startDateMs = hackathon.start_date ? new Date(hackathon.start_date).getTime() : 0;
-  const regDeadlineMs = hackathon.registration_deadline ? new Date(hackathon.registration_deadline).getTime() : 0;
-
-  const isRegistrationClosed = Boolean(
-    !hackathon.is_join_active ||
-    hackathon.status === 'Archived' ||
-    (regDeadlineMs > 0 && now > regDeadlineMs)
-  );
-
-  const isBeforeKickoff = Boolean(startDateMs > 0 && now < startDateMs);
-
-  return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-8">
-      {/* Top Banner & Header */}
-      <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-10 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-400 via-rose-500 to-violet-500" />
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="space-y-6 relative z-10">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1.5">
-                <Trophy className="w-3.5 h-3.5 text-amber-600" />
-                <span>Private College Hackathon</span>
-              </span>
-
-              {hackathon.access_type === 'private' && (
-                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 border border-rose-200 font-bold flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-rose-600" />
-                  <span>Password Protected</span>
-                </span>
-              )}
-            </div>
-
-            <span className="text-xs font-mono font-bold text-slate-500">
-              Join Code: <strong className="text-slate-900 font-black">{hackathon.join_code}</strong>
-            </span>
-          </div>
-
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              {hackathon.title}
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 mt-2 leading-relaxed font-medium">
-              {hackathon.description}
-            </p>
-            <p className="text-xs text-slate-500 mt-2 font-medium">
-              Organized by: <strong className="text-slate-900 font-black">{hackathon.organizer}</strong>
-            </p>
-          </div>
-
-          {/* Quick Schedule Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-500 block">Event Start</span>
-              <span className="text-xs font-black text-slate-900 block truncate">
-                {new Date(hackathon.start_date).toLocaleDateString()}
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase text-rose-700 block">Registration Due</span>
-              <span className="text-xs font-black text-rose-800 block truncate">
-                {new Date(hackathon.registration_deadline).toLocaleDateString()}
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase text-indigo-700 block">Team Size</span>
-              <span className="text-xs font-black text-indigo-900 block">
-                {hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Members
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1">
-              <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 block">Format</span>
-              <span className="text-xs font-black text-emerald-900 block">
-                {hackathon.mode}
-              </span>
-            </div>
-          </div>
-
-          {/* Rules & Eligibility summary */}
-          {hackathon.rules && (
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs font-medium">
-              <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-violet-600" />
-                <span>Rules & Requirements:</span>
-              </span>
-              <p className="text-slate-600 whitespace-pre-line leading-relaxed">
-                {hackathon.rules}
-              </p>
-            </div>
-          )}
-
-          {/* Action / Join Area */}
-          <div className="pt-4 border-t border-slate-100">
-            {isAlreadyEnrolled ? (
-              isBeforeKickoff ? (
-                <div className="p-5 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-indigo-950">You Are Registered!</h4>
-                      <p className="text-xs text-indigo-800 font-medium">
-                        Live sprint kicks off on <strong>{new Date(hackathon.start_date).toLocaleDateString()}</strong>. Enter your preparation workspace to recruit teammates and review challenges.
-                      </p>
-                    </div>
-                  </div>
-
-                  <Link href={`/hackathons/${hackathon.id}/workspace`} className="w-full sm:w-auto">
-                    <Button
-                      variant="primary"
-                      className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold shadow-md border-0"
-                      rightIcon={<ArrowRight className="w-4 h-4" />}
-                    >
-                      Enter Prep Workspace
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-emerald-950">You Are Registered!</h4>
-                      <p className="text-xs text-emerald-800 font-medium">
-                        The coding sprint is live. Access your workspace to collaborate with your squad and submit deliverables.
-                      </p>
-                    </div>
-                  </div>
-
-                  <Link href={`/hackathons/${hackathon.id}/workspace`} className="w-full sm:w-auto">
-                    <Button
-                      variant="primary"
-                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-md border-0"
-                      rightIcon={<ArrowRight className="w-4 h-4" />}
-                    >
-                      Enter Live Workspace
-                    </Button>
-                  </Link>
-                </div>
-              )
-            ) : isRegistrationClosed ? (
-              <div className="p-6 rounded-2xl bg-rose-50 border-2 border-rose-200 text-center space-y-2">
-                <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-black text-rose-950">Registration Closed</h3>
-                <p className="text-xs text-rose-800 font-medium max-w-md mx-auto">
-                  The registration deadline for this collegiate hackathon was{' '}
-                  <strong>{new Date(hackathon.registration_deadline).toLocaleDateString()}</strong>.
-                  Late registrations are not accepted. Only previously enrolled participants can access this event.
-                </p>
-              </div>
-            ) : !user ? (
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
-                <p className="text-sm text-slate-800 font-bold">
-                  Sign in with your college account to join this hackathon.
-                </p>
-                <Button
-                  variant="primary"
-                  onClick={() => openAuthModal('signup')}
-                  leftIcon={<Users className="w-4 h-4" />}
-                >
-                  Sign In to Join
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleJoin} className="space-y-4 max-w-md mx-auto">
-                {error && (
-                  <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-xs font-medium text-red-700 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {success && (
-                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{success}</span>
-                  </div>
-                )}
-
-                {hackathon.access_type === 'private' && (
-                  <Input
-                    label="College Access Password *"
-                    type="password"
-                    required
-                    placeholder="Enter event access password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    helperText="Obtain this password from your professor or college event announcement."
-                  />
-                )}
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black py-3 shadow-md border-0"
-                  isLoading={isJoining}
-                  leftIcon={<Trophy className="w-4 h-4" />}
-                >
-                  {isBeforeKickoff
-                    ? `Register for Hackathon (Starts ${new Date(hackathon.start_date).toLocaleDateString()})`
-                    : 'Join Live Hackathon'}
-                </Button>
-              </form>
-            )}
-          </div>
         </div>
       </div>
     </div>
