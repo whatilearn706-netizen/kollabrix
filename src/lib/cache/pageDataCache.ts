@@ -146,9 +146,8 @@ export async function prefetchHackathonsData(): Promise<void> {
     let deletedIdsList: string[] = [];
     let deletedTitlesList: string[] = [];
 
-    const res = await fetch(`/api/hackathons?_t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
+    const res = await fetch('/api/hackathons', {
+      next: { revalidate: 120 },
     });
     const data = await res.json();
     if (res.ok && data.success && Array.isArray(data.hackathons)) {

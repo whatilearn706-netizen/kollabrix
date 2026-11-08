@@ -80,14 +80,10 @@ export default function HackathonsPage() {
       let deletedIdsList: string[] = [];
       let deletedTitlesList: string[] = [];
 
-      // 1. Fetch authoritative active hackathons and deleted tombstone IDs from server API with cache busting
+      // 1. Fetch authoritative active hackathons from server API
       try {
-        const res = await fetch(`/api/hackathons?_t=${Date.now()}`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-            Pragma: 'no-cache',
-          },
+        const res = await fetch('/api/hackathons', {
+          next: { revalidate: 60 },
         });
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.hackathons)) {
