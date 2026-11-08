@@ -36,6 +36,128 @@ import {
   Eye,
 } from 'lucide-react';
 
+function format12Hour(timeStr: string): string {
+  if (!timeStr) return '';
+  const [hStr, mStr] = timeStr.split(':');
+  const h = parseInt(hStr, 10);
+  const m = mStr || '00';
+  if (isNaN(h)) return timeStr;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${m} ${period}`;
+}
+
+interface DateTimeFieldProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  required?: boolean;
+  accentColor?: string;
+  presets?: Array<{ label: string; time: string }>;
+  helperText?: string;
+}
+
+function DateTimeField({
+  label,
+  value,
+  onChange,
+  required,
+  accentColor = 'text-slate-300',
+  presets = [
+    { label: '09:00 AM', time: '09:00' },
+    { label: '12:00 PM', time: '12:00' },
+    { label: '06:00 PM', time: '18:00' },
+    { label: '11:59 PM', time: '23:59' },
+  ],
+  helperText,
+}: DateTimeFieldProps) {
+  const datePart = value ? value.split('T')[0] || '' : '';
+  const timePart = value && value.includes('T') ? value.split('T')[1].slice(0, 5) : '12:00';
+
+  const handleDateChange = (newDate: string) => {
+    if (!newDate) {
+      onChange('');
+      return;
+    }
+    onChange(`${newDate}T${timePart || '12:00'}`);
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    const d = datePart || new Date().toISOString().split('T')[0];
+    onChange(`${d}T${newTime}`);
+  };
+
+  return (
+    <div className="space-y-2.5 p-3.5 rounded-xl bg-charcoal-950/90 border border-charcoal-800 hover:border-charcoal-700 transition-all">
+      <div className="flex items-center justify-between gap-1 flex-wrap">
+        <label className={`text-xs font-semibold ${accentColor} flex items-center gap-1.5`}>
+          <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+          <span>{label}</span>
+        </label>
+        {timePart && (
+          <span className="text-[10px] font-mono text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+            {format12Hour(timePart)}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <span className="text-[10px] text-slate-400 block mb-1 font-mono">Date:</span>
+          <Input
+            type="date"
+            value={datePart}
+            onChange={(e) => handleDateChange(e.target.value)}
+            required={required}
+            className="text-xs bg-charcoal-900 border-charcoal-750 text-white"
+          />
+        </div>
+
+        <div>
+          <span className="text-[10px] text-slate-400 block mb-1 font-mono flex items-center gap-1">
+            <Clock className="w-3 h-3 text-cyan-400" /> Time (HH:MM):
+          </span>
+          <Input
+            type="time"
+            value={timePart}
+            onChange={(e) => handleTimeChange(e.target.value)}
+            required={required}
+            className="text-xs bg-charcoal-900 border-charcoal-750 text-white"
+          />
+        </div>
+      </div>
+
+      {/* Quick Time Presets */}
+      <div className="pt-0.5">
+        <span className="text-[10px] text-slate-400 block mb-1 font-mono">Quick Set Time:</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {presets.map((p) => {
+            const isSelected = timePart === p.time;
+            return (
+              <button
+                key={p.time}
+                type="button"
+                onClick={() => handleTimeChange(p.time)}
+                className={`text-[10px] font-mono px-2 py-1 rounded-lg border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 font-bold shadow-xs'
+                    : 'bg-charcoal-900 text-slate-400 border-charcoal-800 hover:border-charcoal-700 hover:text-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {helperText && (
+        <p className="text-[10px] text-slate-400 font-mono pt-0.5">{helperText}</p>
+      )}
+    </div>
+  );
+}
+
 export default function NewHackathonPage() {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
@@ -58,11 +180,21 @@ export default function NewHackathonPage() {
   const [location, setLocation] = useState('Campus Turing Computer Lab, Tech Block');
   const [accessType, setAccessType] = useState<'private' | 'public'>('private');
   const [password, setPassword] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [registrationDeadline, setRegistrationDeadline] = useState('');
-  const [submissionDeadline, setSubmissionDeadline] = useState('');
-  const [resultsDate, setResultsDate] = useState('');
+  
+  const getDefaultDateTime = (daysAhead: number, timeStr: string) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysAhead);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${timeStr}`;
+  };
+
+  const [startDate, setStartDate] = useState(() => getDefaultDateTime(8, '09:00'));
+  const [endDate, setEndDate] = useState(() => getDefaultDateTime(10, '23:59'));
+  const [registrationDeadline, setRegistrationDeadline] = useState(() => getDefaultDateTime(7, '23:59'));
+  const [submissionDeadline, setSubmissionDeadline] = useState(() => getDefaultDateTime(10, '23:59'));
+  const [resultsDate, setResultsDate] = useState(() => getDefaultDateTime(11, '18:00'));
   const [minTeamSize, setMinTeamSize] = useState(2);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
   const [themesInput, setThemesInput] = useState('AI/ML, Campus Life, FinTech, Sustainability, Web3');
@@ -665,57 +797,78 @@ export default function NewHackathonPage() {
 
             {/* Section 4: Timeline, Deadlines & Results */}
             <div className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-4">
-              <div className="flex items-center gap-2.5 text-base font-bold text-white border-b border-charcoal-800 pb-3">
-                <Calendar className="w-5 h-5 text-indigo-400" />
-                <span>4. Timeline, Deadlines &amp; Results Announcement</span>
+              <div className="flex items-center justify-between border-b border-charcoal-800 pb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2.5 text-base font-bold text-white">
+                  <Calendar className="w-5 h-5 text-indigo-400" />
+                  <span>4. Timeline, Deadlines &amp; Custom Schedule Times</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  Configure custom dates &amp; exact kickoff/closing times
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                    Registration Closes *
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={registrationDeadline}
-                    onChange={(e) => setRegistrationDeadline(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                    Hackathon Starts *
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                    Final Submission Due *
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={submissionDeadline}
-                    onChange={(e) => setSubmissionDeadline(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-amber-300 block mb-1.5">
-                    Results Announcement Date
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={resultsDate}
-                    onChange={(e) => setResultsDate(e.target.value)}
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DateTimeField
+                  label="Registration Closes *"
+                  value={registrationDeadline}
+                  onChange={setRegistrationDeadline}
+                  required
+                  accentColor="text-slate-200"
+                  presets={[
+                    { label: '11:59 PM (Midnight)', time: '23:59' },
+                    { label: '06:00 PM (Evening)', time: '18:00' },
+                    { label: '12:00 PM (Noon)', time: '12:00' },
+                    { label: '09:00 AM (Morning)', time: '09:00' },
+                  ]}
+                  helperText="Deadline for student teams to sign up."
+                />
+
+                <DateTimeField
+                  label="Hackathon Starts *"
+                  value={startDate}
+                  onChange={setStartDate}
+                  required
+                  accentColor="text-slate-200"
+                  presets={[
+                    { label: '09:00 AM (Morning Kickoff)', time: '09:00' },
+                    { label: '10:00 AM', time: '10:00' },
+                    { label: '12:00 PM (Noon)', time: '12:00' },
+                    { label: '02:00 PM (Afternoon)', time: '14:00' },
+                  ]}
+                  helperText="Sprint workspace officially unlocks for builders."
+                />
+
+                <DateTimeField
+                  label="Final Submission Due *"
+                  value={submissionDeadline}
+                  onChange={setSubmissionDeadline}
+                  required
+                  accentColor="text-slate-200"
+                  presets={[
+                    { label: '11:59 PM (Midnight)', time: '23:59' },
+                    { label: '05:00 PM (EOD)', time: '17:00' },
+                    { label: '12:00 PM (Noon)', time: '12:00' },
+                    { label: '09:00 PM (Night)', time: '21:00' },
+                  ]}
+                  helperText="Deliverables lock into read-only mode."
+                />
+
+                <DateTimeField
+                  label="Results Announcement Date"
+                  value={resultsDate}
+                  onChange={setResultsDate}
+                  accentColor="text-amber-300"
+                  presets={[
+                    { label: '06:00 PM (Evening Ceremony)', time: '18:00' },
+                    { label: '04:00 PM (Afternoon)', time: '16:00' },
+                    { label: '12:00 PM (Noon)', time: '12:00' },
+                    { label: '08:00 PM (Night)', time: '20:00' },
+                  ]}
+                  helperText="Winners announced &amp; leaderboard finalized."
+                />
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed font-mono">
+
+              <p className="text-[11px] text-slate-400 leading-relaxed font-mono pt-1">
                 🔒 <strong>Lifecycle Rule:</strong> When submissions close, student deliverables lock into read-only mode. The hackathon will remain visible in the active directory until 24 hours after the <strong>Results Announcement Date</strong>, after which it safely archives.
               </p>
             </div>
