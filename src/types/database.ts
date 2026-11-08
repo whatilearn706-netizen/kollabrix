@@ -312,6 +312,7 @@ export interface Hackathon {
   prize_pool?: string | null;
   website_url: string;
   banner_url?: string | null;
+  logo_url?: string | null;
   creator_id?: string | null;
   is_verified: boolean;
   access_type?: 'public' | 'private';

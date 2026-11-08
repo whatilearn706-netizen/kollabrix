@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       submissionDeadline,
       resultsDate,
       results_date,
-      eligibility = 'Open to all college students',
+      eligibility = 'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.',
       themes = [],
       prizePool,
       websiteUrl,
@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       maxTeamSize = 4,
       bannerUrl,
       banner_url,
+      logoUrl,
+      logo_url,
     } = body;
 
     if (!creatorId) {
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     const resolvedBannerUrl = bannerUrl?.trim() || banner_url?.trim() || null;
+    const resolvedLogoUrl = logoUrl?.trim() || logo_url?.trim() || null;
 
     const resolvedResultsDate = resultsDate ? new Date(resultsDate).toISOString() : (results_date ? new Date(results_date).toISOString() : null);
 
@@ -132,6 +135,8 @@ export async function POST(request: NextRequest) {
       max_team_size: maxTeamSize,
       results_date: resolvedResultsDate,
       banner_url: resolvedBannerUrl,
+      logo_url: resolvedLogoUrl,
+      eligibility: eligibility.trim(),
     })} -->`;
 
     const generatedHackathonId = crypto.randomUUID();
@@ -154,6 +159,8 @@ export async function POST(request: NextRequest) {
       prize_pool: prizePool?.trim() || null,
       website_url: `https://kollabrix.in/h/${joinCode}`,
       banner_url: resolvedBannerUrl,
+      logo_url: resolvedLogoUrl,
+      company_logo: resolvedLogoUrl,
       rules: rules?.trim() || null,
       contact_info: contactInfo?.trim() || null,
       access_type: accessType,
