@@ -58,6 +58,7 @@ export default function HackathonsPage() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('all');
+  const [hasUserSelectedTab, setHasUserSelectedTab] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMode, setSelectedMode] = useState<string>('All');
@@ -307,17 +308,49 @@ export default function HackathonsPage() {
     return hackathons.filter((h) => extractSponsoredMeta(h).isSponsored);
   }, [hackathons]);
 
+  // Free / Standard Collegiate Competitions list (Excludes sponsored & private events)
+  const competitionHackathons = useMemo(() => {
+    return hackathons.filter(
+      (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private'
+    );
+  }, [hackathons]);
+
+  // Set default tab on load if only sponsored events exist
+  useEffect(() => {
+    if (!hasUserSelectedTab && hackathons.length > 0) {
+      const hasCompetitions = hackathons.some(
+        (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private'
+      );
+      if (!hasCompetitions) {
+        setActiveTab('corporate');
+      }
+    }
+  }, [hackathons, hasUserSelectedTab]);
+
   // Filtered list based on active tab and filters
   const filteredHackathons = useMemo(() => {
     const now = new Date();
 
     return hackathons
       .filter((h) => {
-        // Tab filter
-        if (activeTab === 'corporate' && !extractSponsoredMeta(h).isSponsored) return false;
-        if (activeTab === 'private' && h.access_type !== 'private') return false;
-        if (activeTab === 'my-events' && !enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
-        if (activeTab === 'saved' && !savedIds.includes(h.id)) return false;
+        const isSponsored = extractSponsoredMeta(h).isSponsored;
+        const isPrivate = h.access_type === 'private';
+
+        // Tab filter: Strict segregation between Competition, Sponsored, and Private
+        if (activeTab === 'all') {
+          // "Competition" tab: ONLY normal free collegiate competitions (exclude sponsored & private)
+          if (isSponsored || isPrivate) return false;
+        } else if (activeTab === 'corporate') {
+          // "Sponsored" tab: ONLY company sponsored hackathons
+          if (!isSponsored) return false;
+        } else if (activeTab === 'private') {
+          // "Private Campus Events" tab: ONLY private passcoded campus events
+          if (!isPrivate) return false;
+        } else if (activeTab === 'my-events') {
+          if (!enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
+        } else if (activeTab === 'saved') {
+          if (!savedIds.includes(h.id)) return false;
+        }
 
         // Disappear from public college directory the day after results are announced
         if (activeTab !== 'my-events' && isHackathonArchivedFromFeed(h)) return false;
@@ -506,19 +539,25 @@ export default function HackathonsPage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
             type="button"
-            onClick={() => setActiveTab('all')}
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('all');
+            }}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap ${
               activeTab === 'all'
                 ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Competition ({hackathons.length})
+            Competition ({competitionHackathons.length})
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('corporate')}
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('corporate');
+            }}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'corporate'
                 ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-lg ring-2 ring-amber-400/50'
@@ -527,12 +566,17 @@ export default function HackathonsPage() {
           >
             <Zap className={`w-3.5 h-3.5 ${activeTab === 'corporate' ? 'fill-current text-amber-200' : 'text-amber-600'}`} />
             <span>Sponsored ({corporateHackathons.length})</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
+            {corporateHackathons.length > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
+            )}
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('private')}
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('private');
+            }}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'private'
                 ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md'
@@ -545,7 +589,10 @@ export default function HackathonsPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('my-events')}
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('my-events');
+            }}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'my-events'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
@@ -558,7 +605,10 @@ export default function HackathonsPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('saved')}
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('saved');
+            }}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'saved'
                 ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
@@ -686,8 +736,8 @@ export default function HackathonsPage() {
                   : activeTab === 'private'
                   ? 'No Private Campus Hackathons Found'
                   : activeTab === 'my-events'
-                  ? 'You Haven\'t Enrolled in Any Hackathons Yet'
-                  : 'No Hackathons Matched'}
+                  ? "You Haven't Enrolled in Any Hackathons Yet"
+                  : 'No Collegiate Competitions Available'}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
                 {activeTab === 'corporate'
@@ -696,8 +746,34 @@ export default function HackathonsPage() {
                   ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
                   : activeTab === 'my-events'
                   ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
-                  : 'Try adjusting your search query or reset the theme filters to view all upcoming competitions.'}
+                  : 'Faculty-hosted college hackathons and open student competitions will appear here. Click "Sponsored" to view enterprise challenges, or host a new college hackathon!'}
               </p>
+              {activeTab === 'all' && corporateHackathons.length > 0 && (
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setHasUserSelectedTab(true);
+                      setActiveTab('corporate');
+                    }}
+                    className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white font-bold text-xs"
+                    leftIcon={<Zap className="w-3.5 h-3.5" />}
+                  >
+                    View Sponsored Challenges ({corporateHackathons.length})
+                  </Button>
+                  <Link href="/hackathons/new">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs font-bold"
+                      leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
+                    >
+                      Host College Hackathon
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
