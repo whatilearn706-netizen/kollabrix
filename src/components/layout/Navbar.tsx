@@ -189,6 +189,11 @@ export function Navbar() {
       icon: Users,
     },
     {
+      href: '/hackathons',
+      label: 'Hackathons',
+      icon: Trophy,
+    },
+    {
       href: '/my-projects',
       label: 'Workspace',
       icon: Briefcase,
@@ -236,6 +241,7 @@ export function Navbar() {
             const handleWarmup = () => {
               if (link.href === '/explore') prefetchExploreData();
               else if (link.href === '/teammates') prefetchTeammatesData();
+              else if (link.href === '/hackathons') prefetchHackathonsData();
             };
 
             const handleClick = (e: React.MouseEvent) => {
@@ -426,6 +432,15 @@ export function Navbar() {
                     >
                       <Bot className="w-3.5 h-3.5 text-orange-500" />
                       <span>AI Project Planner</span>
+                    </Link>
+
+                    <Link
+                      href="/hackathons/new"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-cyan-400 hover:bg-cyan-500/10 transition-colors font-bold"
+                    >
+                      <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Host a Hackathon</span>
                     </Link>
 
                     <Link
