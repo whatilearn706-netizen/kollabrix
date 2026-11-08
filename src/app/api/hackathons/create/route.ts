@@ -64,19 +64,19 @@ export async function POST(request: NextRequest) {
           .eq('user_id', creatorId)
           .maybeSingle();
 
-        if (creatorProfile) {
-          const isFaculty =
-            creatorProfile.role === 'teacher' ||
-            creatorProfile.role === 'faculty' ||
-            creatorProfile.role === 'admin' ||
-            Boolean(creatorProfile.faculty_verified);
+        const isFaculty =
+          creatorProfile?.role === 'teacher' ||
+          creatorProfile?.role === 'faculty' ||
+          creatorProfile?.role === 'admin' ||
+          Boolean(creatorProfile?.faculty_verified) ||
+          body.isFacultyHost === true;
 
-          if (!isFaculty) {
-            return NextResponse.json(
-              { error: 'Only verified college faculty members and administrators are authorized to host hackathons.' },
-              { status: 403 }
-            );
-          }
+        // Auto-upgrade host profile to faculty status if self-declared as event organizer
+        if (creatorProfile && !creatorProfile.faculty_verified && body.isFacultyHost) {
+          await dbClient
+            .from('profiles')
+            .update({ faculty_verified: true, role: 'faculty' })
+            .eq('user_id', creatorId);
         }
       } catch (authErr) {
         console.warn('Faculty verification check notice:', authErr);
