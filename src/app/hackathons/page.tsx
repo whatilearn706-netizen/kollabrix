@@ -35,8 +35,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Building2,
-  GraduationCap,
 } from 'lucide-react';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
@@ -59,7 +57,7 @@ export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<Hackathon[]>(() => cachedHackathons || []);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'collegiate' | 'private' | 'my-events' | 'saved'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('all');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMode, setSelectedMode] = useState<string>('All');
@@ -309,11 +307,6 @@ export default function HackathonsPage() {
     return hackathons.filter((h) => extractSponsoredMeta(h).isSponsored);
   }, [hackathons]);
 
-  // Collegiate / Campus hackathons list
-  const collegiateHackathons = useMemo(() => {
-    return hackathons.filter((h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private');
-  }, [hackathons]);
-
   // Filtered list based on active tab and filters
   const filteredHackathons = useMemo(() => {
     const now = new Date();
@@ -322,7 +315,6 @@ export default function HackathonsPage() {
       .filter((h) => {
         // Tab filter
         if (activeTab === 'corporate' && !extractSponsoredMeta(h).isSponsored) return false;
-        if (activeTab === 'collegiate' && (extractSponsoredMeta(h).isSponsored || h.access_type === 'private')) return false;
         if (activeTab === 'private' && h.access_type !== 'private') return false;
         if (activeTab === 'my-events' && !enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
         if (activeTab === 'saved' && !savedIds.includes(h.id)) return false;
@@ -521,7 +513,7 @@ export default function HackathonsPage() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            All Competitions ({hackathons.length})
+            Competition ({hackathons.length})
           </button>
 
           <button
@@ -534,21 +526,8 @@ export default function HackathonsPage() {
             }`}
           >
             <Zap className={`w-3.5 h-3.5 ${activeTab === 'corporate' ? 'fill-current text-amber-200' : 'text-amber-600'}`} />
-            <span>Corporate &amp; Sponsored ({corporateHackathons.length})</span>
+            <span>Sponsored ({corporateHackathons.length})</span>
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('collegiate')}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'collegiate'
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>Collegiate &amp; Campus ({collegiateHackathons.length})</span>
           </button>
 
           <button
@@ -703,9 +682,7 @@ export default function HackathonsPage() {
               </div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">
                 {activeTab === 'corporate'
-                  ? 'No Corporate Sponsored Hackathons Found'
-                  : activeTab === 'collegiate'
-                  ? 'No Collegiate Hackathons Found'
+                  ? 'No Sponsored Hackathons Found'
                   : activeTab === 'private'
                   ? 'No Private Campus Hackathons Found'
                   : activeTab === 'my-events'
@@ -715,13 +692,11 @@ export default function HackathonsPage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
                 {activeTab === 'corporate'
                   ? 'Corporate and enterprise sponsored challenges with cash prize pools and direct hiring tracks will appear here.'
-                  : activeTab === 'collegiate'
-                  ? 'Inter-college, university, and student club technical hackathons will appear here.'
                   : activeTab === 'private'
                   ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
                   : activeTab === 'my-events'
                   ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
-                  : 'Try adjusting your search query or reset the theme filters to view all upcoming collegiate events.'}
+                  : 'Try adjusting your search query or reset the theme filters to view all upcoming competitions.'}
               </p>
             </div>
           )}
