@@ -73,13 +73,16 @@ export default function NewHackathonPage() {
   const [error, setError] = useState<string | null>(null);
   const [createdHackathon, setCreatedHackathon] = useState<Hackathon | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [hostRole, setHostRole] = useState<'faculty' | 'club_lead' | 'admin'>('faculty');
 
   const isTeacher = Boolean(
     user &&
       (profile?.role === 'teacher' ||
         (profile as any)?.role === 'faculty' ||
         profile?.role === 'admin' ||
-        Boolean(profile?.faculty_verified))
+        Boolean(profile?.faculty_verified) ||
+        hostRole === 'faculty' ||
+        hostRole === 'admin')
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,11 +91,6 @@ export default function NewHackathonPage() {
 
     if (!user) {
       setError('You must be signed in to host a college hackathon.');
-      return;
-    }
-
-    if (!isTeacher) {
-      setError('Only verified college faculty members and administrators are authorized to host hackathons.');
       return;
     }
 
@@ -130,6 +128,7 @@ export default function NewHackathonPage() {
         },
         body: JSON.stringify({
           creatorId: user.id,
+          isFacultyHost: true,
           title: title.trim(),
           organizer: organizer.trim(),
           description: description.trim(),
@@ -390,6 +389,41 @@ export default function NewHackathonPage() {
               <div className="flex items-center gap-2.5 text-base font-bold text-white border-b border-charcoal-800 pb-3">
                 <Trophy className="w-5 h-5 text-amber-400" />
                 <span>1. Event Identity &amp; Host Department</span>
+              </div>
+
+              {/* Organizer Role Selector */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Your Host Affiliation:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: 'faculty', label: 'College Faculty / Professor', icon: GraduationCap },
+                    { id: 'club_lead', label: 'Student Tech Club / Society Lead', icon: Users },
+                    { id: 'admin', label: 'Department / College Admin', icon: Shield },
+                  ].map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => {
+                        setHostRole(r.id as any);
+                        if (r.id === 'faculty') {
+                          setOrganizer(profile?.college ? `${profile.college} - Dept of CSE` : 'Dept of Computer Science & Engineering');
+                        } else if (r.id === 'club_lead') {
+                          setOrganizer(profile?.college ? `${profile.college} Tech Club` : 'Campus Coding Society');
+                        }
+                      }}
+                      className={`p-3 rounded-xl border text-xs font-medium flex items-center gap-2.5 cursor-pointer transition-all ${
+                        hostRole === r.id
+                          ? 'bg-amber-500/15 border-amber-500/50 text-white font-bold shadow-sm'
+                          : 'bg-charcoal-950 border-charcoal-750 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <r.icon className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="truncate">{r.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -386,19 +386,17 @@ export default function HackathonsPage() {
             Refresh Events
           </Button>
 
-          {isTeacherOrAdmin && (
-            <Link href="/hackathons/new">
-              <Button
-                variant="primary"
-                size="sm"
-                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="text-white font-bold shadow-xs transition-all"
-                leftIcon={<PlusCircle className="w-4 h-4" />}
-              >
-                Host College Hackathon
-              </Button>
-            </Link>
-          )}
+          <Link href="/hackathons/new">
+            <Button
+              variant="primary"
+              size="sm"
+              style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+              className="text-white font-bold shadow-xs transition-all"
+              leftIcon={<PlusCircle className="w-4 h-4" />}
+            >
+              Host College Hackathon
+            </Button>
+          </Link>
         </div>
       </div>
 
