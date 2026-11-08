@@ -299,7 +299,10 @@ export async function POST(request: NextRequest) {
       const client = auth.dbClient;
       const {
         company_name,
+        company_logo,
+        theme_preset = 'sunset-gold',
         title,
+        tagline,
         description = '',
         mode = 'Online',
         location = 'Global Online Hub',
@@ -310,6 +313,11 @@ export async function POST(request: NextRequest) {
         prize_pool = '₹5,00,000 + Direct PPI Fast-Track Interviews',
         recruitment_perks,
         glow_color = 'gold',
+        priority_rank = 10,
+        hiring_roles = '',
+        hiring_package = '',
+        promo_video_url = '',
+        custom_cta_text = '',
         themes = ['Enterprise Challenge', 'AI/Cloud Architecture'],
         banner_url,
         access_type = 'public',
@@ -326,16 +334,20 @@ export async function POST(request: NextRequest) {
         ? recruitment_perks.split(',').map((s: string) => s.trim()).filter(Boolean)
         : ['Fast-track interview', 'Direct PPI for top squads', '1:1 Tech Mentorship'];
 
-      const priority_rank = body.priority_rank ? parseInt(body.priority_rank) : 10;
-      const hiring_roles = body.hiring_roles?.trim() || '';
-
+      const parsedPriority = parseInt(String(priority_rank)) || 10;
       const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
         is_sponsored: true,
         is_enterprise: true,
         company_name: company_name.trim(),
+        sponsor_logo_url: company_logo?.trim() || null,
+        theme_preset,
         glow_color,
-        priority_rank,
-        hiring_roles,
+        priority_rank: parsedPriority,
+        hiring_roles: hiring_roles.trim(),
+        hiring_package: hiring_package.trim(),
+        tagline: tagline?.trim() || '',
+        promo_video_url: promo_video_url?.trim() || null,
+        custom_cta_text: custom_cta_text?.trim() || null,
         recruitment_perks: perksArray,
         prize_pool: prize_pool.trim(),
         access_type,
@@ -348,7 +360,7 @@ export async function POST(request: NextRequest) {
       const newHackathonPayload = {
         title: title.trim(),
         organizer: `${company_name.trim()} Campus Innovation & Recruitment`,
-        description: description.trim() + metaComment,
+        description: (description || tagline || title).trim() + metaComment,
         mode,
         location: location.trim() || 'Global Online Hub',
         start_date: new Date(start_date || Date.now()).toISOString(),
@@ -360,7 +372,12 @@ export async function POST(request: NextRequest) {
         prize_pool: prize_pool.trim() || '₹5,00,000 + Direct PPI Interviews',
         website_url: `https://kollabrix.in/h/${joinCode}`,
         banner_url: banner_url?.trim() || null,
+        company_logo: company_logo?.trim() || null,
+        company_name: company_name.trim(),
         is_verified: true,
+        is_sponsored: true,
+        priority_rank: parsedPriority,
+        hiring_roles: hiring_roles.trim(),
         status: 'Published',
         creator_id: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
       };
@@ -559,6 +576,103 @@ export async function POST(request: NextRequest) {
           : 'Hackathon reverted to regular Collegiate status.',
         hackathonId,
         is_sponsored: isNowSponsored,
+      });
+    }
+
+    if (action === 'update_sponsored_theme' && hackathonId) {
+      const client = auth.dbClient;
+      const {
+        company_name,
+        company_logo,
+        theme_preset = 'sunset-gold',
+        glow_color = 'gold',
+        tagline = '',
+        hiring_roles = '',
+        hiring_package = '',
+        recruitment_perks,
+        priority_rank = 10,
+        promo_video_url = '',
+        custom_cta_text = '',
+      } = body;
+
+      const perksArray = Array.isArray(recruitment_perks)
+        ? recruitment_perks
+        : typeof recruitment_perks === 'string'
+        ? recruitment_perks.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
+      const parsedPriority = parseInt(String(priority_rank)) || 10;
+
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: current } = await client
+            .from('hackathons')
+            .select('id, description')
+            .eq('id', hackathonId)
+            .maybeSingle();
+
+          if (current) {
+            let cleanDesc = current.description || '';
+            let metaObj: any = {};
+            if (cleanDesc.includes('<!-- HACKATHON_META:')) {
+              try {
+                const metaStr = cleanDesc.split('<!-- HACKATHON_META:')[1].split('-->')[0];
+                metaObj = JSON.parse(metaStr);
+                cleanDesc = cleanDesc.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim();
+              } catch {}
+            }
+
+            metaObj = {
+              ...metaObj,
+              is_sponsored: true,
+              is_enterprise: true,
+              company_name,
+              sponsor_logo_url: company_logo || null,
+              theme_preset,
+              glow_color,
+              tagline,
+              hiring_roles,
+              hiring_package,
+              recruitment_perks: perksArray,
+              priority_rank: parsedPriority,
+              promo_video_url: promo_video_url || null,
+              custom_cta_text: custom_cta_text || null,
+            };
+
+            const updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
+
+            await client
+              .from('hackathons')
+              .update({
+                description: updatedDesc,
+                company_name,
+                company_logo: company_logo || null,
+                is_sponsored: true,
+                priority_rank: parsedPriority,
+                hiring_roles,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', hackathonId);
+          }
+        } catch (dbErr) {
+          console.warn('Update sponsored theme error:', dbErr);
+        }
+      }
+
+      await recordAdminAuditLog({
+        actorEmail: auth.user?.email || 'admin@kollabrix.in',
+        actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        action: 'UPDATE_SPONSOR_THEME',
+        targetType: 'hackathon',
+        targetId: hackathonId,
+        details: { company_name, theme_preset, priority_rank: parsedPriority },
+        outcome: 'SUCCESS',
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Bespoke brand theme for "${company_name || 'Hackathon'}" updated successfully!`,
+        hackathonId,
       });
     }
 

@@ -20,10 +20,18 @@ import {
   Sparkles,
   Building2,
   Zap,
+  Briefcase,
+  Play,
+  Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
+import {
+  extractSponsoredMeta,
+  SPONSOR_THEMES,
+  SponsorThemePreset,
+  getSponsorTheme,
+} from '@/lib/hackathons/sponsoredMeta';
 
 interface AdminHackathonsTabProps {
   authToken?: string;
@@ -43,16 +51,22 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
 
   // Sponsored Hackathon Modal State
   const [isSponsoredModalOpen, setIsSponsoredModalOpen] = useState(false);
+  const [editingHackathonId, setEditingHackathonId] = useState<string | null>(null);
   const [isSubmittingSponsored, setIsSubmittingSponsored] = useState(false);
   const [sponsoredForm, setSponsoredForm] = useState({
     company_name: '',
+    company_logo: '',
     title: '',
     tagline: '',
-    glow_color: 'gold' as 'gold' | 'cyan' | 'purple' | 'emerald',
+    theme_preset: 'sunset-gold' as SponsorThemePreset,
+    glow_color: 'gold' as 'gold' | 'cyan' | 'purple' | 'emerald' | 'blue' | 'rose' | 'fuchsia',
     priority_rank: 10,
     hiring_roles: 'SDE-1, AI/ML Engineers, Full-Stack Interns',
+    hiring_package: '₹18-35 LPA Full-Time • ₹90k/mo Internship',
     prize_pool: '₹5,00,000 Cash Pool + Cloud Credits',
-    recruitment_perks: 'Direct Fast-Track PPIs for Top 3 Squads, 1:1 Tech Mentorship, Verified Certificate',
+    recruitment_perks: 'Direct Fast-Track PPIs for Top 3 Squads, 1:1 Tech Mentorship, $10,000 Cloud Credits',
+    promo_video_url: '',
+    custom_cta_text: 'Apply & Compete',
     mode: 'Online',
     registration_deadline: '',
     results_date: '',
@@ -60,7 +74,58 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     banner_url: '',
   });
 
-  const handleCreateSponsoredHackathon = async (e: React.FormEvent) => {
+  const handleOpenCreateSponsored = () => {
+    setEditingHackathonId(null);
+    setSponsoredForm({
+      company_name: '',
+      company_logo: '',
+      title: '',
+      tagline: '',
+      theme_preset: 'sunset-gold',
+      glow_color: 'gold',
+      priority_rank: 10,
+      hiring_roles: 'SDE-1, AI/ML Engineers, Full-Stack Interns',
+      hiring_package: '₹18-35 LPA Full-Time • ₹90k/mo Internship',
+      prize_pool: '₹5,00,000 Cash Pool + Cloud Credits',
+      recruitment_perks: 'Direct Fast-Track PPIs for Top 3 Squads, 1:1 Tech Mentorship, $10,000 Cloud Credits',
+      promo_video_url: '',
+      custom_cta_text: 'Apply & Compete',
+      mode: 'Online',
+      registration_deadline: '',
+      results_date: '',
+      themes: 'Generative AI, Cloud Systems, Enterprise Architecture',
+      banner_url: '',
+    });
+    setIsSponsoredModalOpen(true);
+  };
+
+  const handleOpenEditTheme = (item: any) => {
+    const meta = extractSponsoredMeta(item);
+    setEditingHackathonId(item.id);
+    setSponsoredForm({
+      company_name: meta.companyName || item.organizer || '',
+      company_logo: meta.sponsorLogoUrl || item.company_logo || '',
+      title: item.title || '',
+      tagline: meta.tagline || (item.description ? item.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim() : ''),
+      theme_preset: meta.themePreset || 'sunset-gold',
+      glow_color: meta.glowColor || 'gold',
+      priority_rank: meta.priorityRank || 10,
+      hiring_roles: meta.hiringRoles || '',
+      hiring_package: meta.hiringPackage || '',
+      prize_pool: item.prize_pool || '₹5,00,000 Cash Pool',
+      recruitment_perks: meta.recruitmentPerks.join(', ') || 'Direct Fast-Track PPIs, 1:1 Mentorship',
+      promo_video_url: meta.promoVideoUrl || '',
+      custom_cta_text: meta.customCtaText || 'Apply & Compete',
+      mode: item.mode || 'Online',
+      registration_deadline: item.registration_deadline ? item.registration_deadline.slice(0, 16) : '',
+      results_date: item.results_date ? item.results_date.slice(0, 16) : '',
+      themes: Array.isArray(item.themes) ? item.themes.join(', ') : 'AI/ML, Enterprise',
+      banner_url: item.banner_url || '',
+    });
+    setIsSponsoredModalOpen(true);
+  };
+
+  const handleCreateOrUpdateSponsored = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sponsoredForm.company_name.trim() || !sponsoredForm.title.trim()) {
       setStatusMessage({ type: 'error', text: 'Please provide company name and hackathon title.' });
@@ -73,13 +138,18 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
+      const isEdit = Boolean(editingHackathonId);
       const res = await fetch('/api/admin/hackathons', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          action: 'create_sponsored',
+          action: isEdit ? 'update_sponsored_theme' : 'create_sponsored',
+          hackathonId: editingHackathonId || undefined,
           company_name: sponsoredForm.company_name,
+          company_logo: sponsoredForm.company_logo,
+          theme_preset: sponsoredForm.theme_preset,
           title: sponsoredForm.title,
+          tagline: sponsoredForm.tagline,
           description: sponsoredForm.tagline,
           mode: sponsoredForm.mode,
           prize_pool: sponsoredForm.prize_pool,
@@ -87,6 +157,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           glow_color: sponsoredForm.glow_color,
           priority_rank: sponsoredForm.priority_rank,
           hiring_roles: sponsoredForm.hiring_roles,
+          hiring_package: sponsoredForm.hiring_package,
+          promo_video_url: sponsoredForm.promo_video_url,
+          custom_cta_text: sponsoredForm.custom_cta_text,
           registration_deadline: sponsoredForm.registration_deadline || undefined,
           results_date: sponsoredForm.results_date || undefined,
           themes: sponsoredForm.themes.split(',').map((s) => s.trim()).filter(Boolean),
@@ -96,32 +169,19 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create sponsored hackathon.');
+        throw new Error(data.error || 'Failed to save sponsored hackathon theme.');
       }
 
       setStatusMessage({
         type: 'success',
-        text: `✨ Success! ${sponsoredForm.company_name} Sponsored Hackathon "${sponsoredForm.title}" is now LIVE with priority glowing spotlight and synchronized to Deadlines radar.`,
+        text: isEdit
+          ? `✨ Bespoke theme for "${sponsoredForm.company_name}" has been updated live!`
+          : `✨ Success! ${sponsoredForm.company_name} Sponsored Hackathon "${sponsoredForm.title}" is now LIVE with priority placement and custom theme!`,
       });
       setIsSponsoredModalOpen(false);
-      setSponsoredForm({
-        company_name: '',
-        title: '',
-        tagline: '',
-        glow_color: 'gold',
-        priority_rank: 10,
-        hiring_roles: 'SDE-1, AI/ML Engineers, Full-Stack Interns',
-        prize_pool: '₹5,00,000 Cash Pool + Cloud Credits',
-        recruitment_perks: 'Direct Fast-Track PPIs for Top 3 Squads, 1:1 Tech Mentorship, Verified Certificate',
-        mode: 'Online',
-        registration_deadline: '',
-        results_date: '',
-        themes: 'Generative AI, Cloud Systems, Enterprise Architecture',
-        banner_url: '',
-      });
       await loadHackathons();
     } catch (err: any) {
-      setStatusMessage({ type: 'error', text: err?.message || 'Error creating sponsored hackathon.' });
+      setStatusMessage({ type: 'error', text: err?.message || 'Error saving sponsored hackathon.' });
     } finally {
       setIsSubmittingSponsored(false);
     }
@@ -377,7 +437,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           <Button
             variant="primary"
             size="sm"
-            onClick={() => setIsSponsoredModalOpen(true)}
+            onClick={handleOpenCreateSponsored}
             className="bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-lg shadow-amber-500/20 border border-amber-400/40"
             leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-200" />}
           >
@@ -525,6 +585,17 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     </td>
 
                     <td className="py-3.5 px-3 text-right space-x-2 whitespace-nowrap">
+                      {/* Customize Brand Theme */}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditTheme(item)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-colors bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30"
+                        title="Customize Brand Theme, Atmosphere, Logo & Perks"
+                      >
+                        <Palette className="w-3 h-3 text-purple-300" />
+                        <span>Brand Theme</span>
+                      </button>
+
                       {/* Toggle Corporate Sponsor */}
                       <button
                         type="button"
@@ -687,33 +758,84 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         </Modal>
       )}
 
-      {/* Host Big Company Sponsored Hackathon Modal */}
+      {/* Host / Configure Bespoke Corporate Sponsored Hackathon Modal */}
       {isSponsoredModalOpen && (
         <Modal
           isOpen={isSponsoredModalOpen}
           onClose={() => setIsSponsoredModalOpen(false)}
-          title="🏢 Host Enterprise / Big Company Sponsored Hackathon"
+          title={
+            editingHackathonId
+              ? `🎨 Customize Brand Theme & Placement: ${sponsoredForm.company_name || 'Hackathon'}`
+              : '🏢 Host Bespoke Corporate Sponsored Hackathon'
+          }
         >
-          <form onSubmit={handleCreateSponsoredHackathon} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-1">
+          <form onSubmit={handleCreateOrUpdateSponsored} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-500/30 text-xs text-amber-200 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-amber-300">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Enterprise Spotlight Placement</span>
+                <span>Bespoke Brand Placement Engine</span>
               </div>
-              <p className="text-[11px] leading-relaxed text-amber-200/90">
-                When top tech companies hire Kollabrix to host hackathons, this will publish their competition with an animated priority aura, enterprise company badge, direct fast-track recruitment perks, and auto-sync with the collegiate deadlines radar.
+              <p className="text-[11px] leading-relaxed text-slate-300">
+                Configure every sponsor&apos;s unique brand identity, visual atmosphere, hiring tracks, compensation guarantee, and video briefing. Faculty hackathons never appear here.
               </p>
             </div>
 
+            {/* Visual Theme & Atmosphere Selector */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-white flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-purple-400" />
+                <span>Select Brand Theme &amp; Visual Atmosphere</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Object.values(SPONSOR_THEMES).map((th) => {
+                  const isSelected = sponsoredForm.theme_preset === th.key;
+                  return (
+                    <button
+                      key={th.key}
+                      type="button"
+                      onClick={() =>
+                        setSponsoredForm({
+                          ...sponsoredForm,
+                          theme_preset: th.key,
+                          glow_color:
+                            th.key === 'cyberpunk'
+                              ? 'cyan'
+                              : th.key === 'ethereum'
+                              ? 'purple'
+                              : th.key === 'google'
+                              ? 'cyan'
+                              : 'gold',
+                        })
+                      }
+                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                        isSelected
+                          ? `${th.cardBorder} ${th.cardGlow} bg-charcoal-850 ring-2 ring-white/30`
+                          : 'border-charcoal-750 bg-charcoal-900 hover:border-charcoal-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${th.badgeBg} ${th.badgeText} ${th.badgeBorder} border`}>
+                          {th.key}
+                        </span>
+                        {isSelected && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />}
+                      </div>
+                      <p className="text-[11px] font-bold text-white truncate">{th.name}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Company Name & Logo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Company Name <span className="text-red-400">*</span>
+                  Company / Brand Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Google, Amazon, Atlassian, NVIDIA"
+                  placeholder="e.g. Google Developers, Ethereum Foundation, AWS"
                   value={sponsoredForm.company_name}
                   onChange={(e) => setSponsoredForm({ ...sponsoredForm, company_name: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
@@ -722,33 +844,33 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Priority Glowing Spotlight Aura
+                  Company Logo Image URL
                 </label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(['gold', 'cyan', 'purple', 'emerald'] as const).map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setSponsoredForm({ ...sponsoredForm, glow_color: color })}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-bold capitalize border transition-all ${
-                        sponsoredForm.glow_color === color
-                          ? color === 'gold'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-400'
-                            : color === 'cyan'
-                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400'
-                            : color === 'purple'
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-400'
-                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-400'
-                          : 'bg-charcoal-800 text-slate-400 border-charcoal-700 hover:border-slate-500'
-                      }`}
-                    >
-                      {color}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://.../logo.png or svg"
+                    value={sponsoredForm.company_logo}
+                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, company_logo: e.target.value })}
+                    className="flex-1 px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+                  />
+                  {sponsoredForm.company_logo && (
+                    <div className="w-8 h-8 rounded-lg bg-white p-1 border border-white/30 shrink-0 flex items-center justify-center">
+                      <img
+                        src={sponsoredForm.company_logo}
+                        alt="Logo"
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* Hackathon Title & Tagline */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
                 Hackathon Title <span className="text-red-400">*</span>
@@ -756,36 +878,140 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
               <input
                 type="text"
                 required
-                placeholder="e.g. Google Cloud Apex GenAI Collegiate Hackathon 2026"
+                placeholder="e.g. Google Solution Challenge 2026"
                 value={sponsoredForm.title}
                 onChange={(e) => setSponsoredForm({ ...sponsoredForm, title: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-bold"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                Challenge Overview &amp; Problem Focus
+                Brand Mission &amp; Promotional Tagline
               </label>
               <textarea
                 rows={2}
-                placeholder="Describe what college students must build and the corporate vision..."
+                placeholder="e.g. Build real-world AI & Cloud solutions for UN Global Goals with Google technologies. Direct interviews with engineering mentors."
                 value={sponsoredForm.tagline}
                 onChange={(e) => setSponsoredForm({ ...sponsoredForm, tagline: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
               />
             </div>
 
+            {/* Hiring Roles & Compensation */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Prize Pool &amp; Grants
+                <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Target Hiring Roles</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. ₹5,00,000 + ₹2,00,000 Cloud Credits"
+                  placeholder="e.g. AI/ML, Cloud & Full-Stack Developers"
+                  value={sponsoredForm.hiring_roles}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, hiring_roles: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Compensation / Stipend Guarantee
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ₹18-35 LPA Full-Time • ₹90k/mo Internship"
+                  value={sponsoredForm.hiring_package}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, hiring_package: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
+
+            {/* Recruitment Perks & Prize Pool */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Prize Pool &amp; Escrow
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. $100,000+ USD in bounties & track grants"
                   value={sponsoredForm.prize_pool}
                   onChange={(e) => setSponsoredForm({ ...sponsoredForm, prize_pool: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Priority Rank (1 to 10)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={sponsoredForm.priority_rank}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, priority_rank: parseInt(e.target.value) || 10 })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                Recruitment Perks &amp; Fast-Track Advantages
+              </label>
+              <input
+                type="text"
+                placeholder="Google 1:1 Tech Mentorship, Global Incubator Fast-Track, Direct PPI Rounds"
+                value={sponsoredForm.recruitment_perks}
+                onChange={(e) => setSponsoredForm({ ...sponsoredForm, recruitment_perks: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            {/* Media: Video URL & Custom CTA Text */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <Play className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Sponsor Promo Video URL (Optional)</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://www.youtube.com/embed/... or watch URL"
+                  value={sponsoredForm.promo_video_url}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, promo_video_url: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Custom CTA Button Text
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Apply with Google Developers"
+                  value={sponsoredForm.custom_cta_text}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, custom_cta_text: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Banner URL & Mode */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Hero Banner URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/... or company banner"
+                  value={sponsoredForm.banner_url}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, banner_url: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
                 />
               </div>
@@ -806,104 +1032,57 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                Direct Corporate Recruitment &amp; Hiring Perks
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Fast-track PPI interview for top 3 teams, 1:1 Director mentorship"
-                value={sponsoredForm.recruitment_perks}
-                onChange={(e) => setSponsoredForm({ ...sponsoredForm, recruitment_perks: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-              />
-              <p className="text-[10px] text-slate-500 mt-1">
-                Comma-separated hiring advantages that will be prominently showcased to attract top campus coders.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Directory Priority Rank (1 to 10)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={sponsoredForm.priority_rank}
-                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, priority_rank: parseInt(e.target.value) || 10 })}
-                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
-                />
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Rank 10 = Pinned to absolute top of directory.
-                </p>
+            {/* Live Interactive Card Preview */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <span className="flex items-center gap-1.5 font-bold text-amber-300">
+                  <Sparkles className="w-3.5 h-3.5" /> Live Directory Card Preview
+                </span>
+                <span>Priority #{sponsoredForm.priority_rank}</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Target Hiring Roles
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. SDE-1, AI/ML Engineers, Frontend Interns"
-                  value={sponsoredForm.hiring_roles}
-                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, hiring_roles: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-                />
+              <div
+                className={`p-4 rounded-2xl border bg-charcoal-900 ${
+                  getSponsorTheme(sponsoredForm.theme_preset).cardBorder
+                } ${getSponsorTheme(sponsoredForm.theme_preset).cardGlow} space-y-2.5`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {sponsoredForm.company_logo ? (
+                      <div className="w-7 h-7 rounded-lg bg-white p-0.5 border border-white/30 shrink-0 flex items-center justify-center">
+                        <img src={sponsoredForm.company_logo} alt="Logo" className="w-full h-full object-contain" />
+                      </div>
+                    ) : (
+                      <Zap className="w-4 h-4 text-amber-400" />
+                    )}
+                    <span className="text-xs font-black text-white">{sponsoredForm.company_name || 'Brand Name'}</span>
+                  </div>
+                  <span
+                    className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      getSponsorTheme(sponsoredForm.theme_preset).badgeBg
+                    } ${getSponsorTheme(sponsoredForm.theme_preset).badgeText} ${
+                      getSponsorTheme(sponsoredForm.theme_preset).badgeBorder
+                    }`}
+                  >
+                    ⭐ Featured #{sponsoredForm.priority_rank}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white line-clamp-1">{sponsoredForm.title || 'Challenge Title'}</h4>
+                  <p className="text-[11px] text-amber-200/80 line-clamp-1">{sponsoredForm.tagline || 'Brand promotional tagline...'}</p>
+                </div>
+                {sponsoredForm.hiring_roles && (
+                  <div className="text-[10px] text-slate-300 font-mono">
+                    🎯 Hiring: <strong className="text-white">{sponsoredForm.hiring_roles}</strong>
+                  </div>
+                )}
+                <div
+                  className={`w-full py-2 px-3 rounded-xl text-xs font-black text-center bg-gradient-to-r ${
+                    getSponsorTheme(sponsoredForm.theme_preset).buttonGradient
+                  } shadow-md`}
+                >
+                  {sponsoredForm.custom_cta_text || 'Apply & Compete'} →
+                </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Registration Deadline
-                </label>
-                <input
-                  type="datetime-local"
-                  value={sponsoredForm.registration_deadline}
-                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, registration_deadline: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Result Announcement Date
-                </label>
-                <input
-                  type="datetime-local"
-                  value={sponsoredForm.results_date}
-                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, results_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                Themes &amp; Tags (Comma separated)
-              </label>
-              <input
-                type="text"
-                placeholder="Generative AI, Cloud Systems, Enterprise Architecture"
-                value={sponsoredForm.themes}
-                onChange={(e) => setSponsoredForm({ ...sponsoredForm, themes: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                Custom Sponsor Banner Image URL (Optional)
-              </label>
-              <input
-                type="url"
-                placeholder="https://images.unsplash.com/... or company brand asset"
-                value={sponsoredForm.banner_url}
-                onChange={(e) => setSponsoredForm({ ...sponsoredForm, banner_url: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-              />
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t border-charcoal-750">
@@ -914,10 +1093,10 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                 variant="primary"
                 type="submit"
                 isLoading={isSubmittingSponsored}
-                className="bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-bold"
+                className="bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-lg"
                 leftIcon={<Sparkles className="w-4 h-4 text-amber-200" />}
               >
-                Launch Sponsored Hackathon
+                {editingHackathonId ? 'Save Brand Customization' : 'Launch Sponsored Challenge'}
               </Button>
             </div>
           </form>

@@ -335,10 +335,15 @@ export interface Hackathon {
   is_enterprise?: boolean;
   company_name?: string;
   company_logo?: string | null;
-  glow_color?: 'gold' | 'cyan' | 'purple' | 'emerald';
+  glow_color?: 'gold' | 'cyan' | 'purple' | 'emerald' | 'blue' | 'rose' | 'fuchsia';
   recruitment_perks?: string[];
   priority_rank?: number;
   hiring_roles?: string;
+  tagline?: string;
+  hiring_package?: string;
+  custom_cta_text?: string;
+  promo_video_url?: string;
+  theme_preset?: string;
 }
 
 export interface SavedHackathon {
