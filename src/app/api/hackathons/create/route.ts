@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     const generatedHackathonId = crypto.randomUUID();
 
-    const payload = {
+    const validDbPayload = {
       id: generatedHackathonId,
       creator_id: creatorId,
       title: title.trim(),
@@ -153,14 +153,11 @@ export async function POST(request: NextRequest) {
       end_date: endDate ? new Date(endDate).toISOString() : null,
       registration_deadline: new Date(registrationDeadline).toISOString(),
       submission_deadline: submissionDeadline ? new Date(submissionDeadline).toISOString() : null,
-      results_date: resolvedResultsDate,
       eligibility: eligibility.trim(),
       themes,
       prize_pool: prizePool?.trim() || null,
       website_url: `https://kollabrix.in/h/${joinCode}`,
       banner_url: resolvedBannerUrl,
-      logo_url: resolvedLogoUrl,
-      company_logo: resolvedLogoUrl,
       rules: rules?.trim() || null,
       contact_info: contactInfo?.trim() || null,
       access_type: accessType,
@@ -176,11 +173,11 @@ export async function POST(request: NextRequest) {
     };
 
     if (isSupabaseConfigured()) {
-      // 1. Insert Hackathon with resilient schema fallback
+      // 1. Insert Hackathon with verified schema columns
       let createdHack: any = null;
       const { data, error: hackError } = await dbClient
         .from('hackathons')
-        .insert(payload)
+        .insert(validDbPayload)
         .select('*')
         .single();
 
@@ -199,11 +196,15 @@ export async function POST(request: NextRequest) {
           start_date: new Date(startDate).toISOString(),
           end_date: endDate ? new Date(endDate).toISOString() : null,
           registration_deadline: new Date(registrationDeadline).toISOString(),
+          submission_deadline: submissionDeadline ? new Date(submissionDeadline).toISOString() : null,
           eligibility: eligibility.trim(),
           themes,
           prize_pool: prizePool?.trim() || null,
           website_url: `https://kollabrix.in/h/${joinCode}`,
           banner_url: resolvedBannerUrl,
+          access_type: accessType,
+          join_code: joinCode,
+          status: 'Published',
           is_verified: true,
         };
 
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
         if (fallbackError) {
           console.warn('Fallback insert notice:', fallbackError.message);
           createdHack = {
-            ...payload,
+            ...validDbPayload,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -305,7 +306,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       hackathon: {
-        ...payload,
+        ...validDbPayload,
       },
       joinUrl: `/h/${joinCode}`,
       joinCode,
