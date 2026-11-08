@@ -1066,7 +1066,7 @@ function MyProjectsContent() {
                           </Button>
                         </Link>
 
-                        <Link href={h.join_code ? `/h/${h.join_code}` : `/hackathons/${h.id}/workspace`}>
+                        <Link href={`/hackathons/${h.id}`}>
                           <Button
                             variant="outline"
                             size="sm"

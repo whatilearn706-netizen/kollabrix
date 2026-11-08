@@ -1315,9 +1315,9 @@ export default function HackathonWorkspacePage() {
             &quot;{hackathon.title}&quot; is restricted to enrolled college students. Please authenticate with the event passcode to enter the workspace.
           </p>
         </div>
-        <Link href={`/h/${hackathon.join_code}`}>
+        <Link href={`/hackathons/${hackathon.id}`}>
           <Button variant="primary" size="lg" className="w-full" leftIcon={<Lock className="w-4 h-4" />}>
-            Enter Access Passcode
+            Enter Access Passcode &amp; Register
           </Button>
         </Link>
       </div>

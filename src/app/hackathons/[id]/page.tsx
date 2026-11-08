@@ -90,6 +90,8 @@ export default function HackathonDetailPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [registeredCount, setRegisteredCount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'themes' | 'schedule' | 'rules'>('overview');
+  const [passcode, setPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState<string | null>(null);
 
   // Load Hackathon details with maximum resilience & 0ms perceived latency
   const loadHackathon = useCallback(async () => {
@@ -117,6 +119,30 @@ export default function HackathonDetailPage() {
           if (hackData) currentHack = hackData as Hackathon;
         } catch (err) {
           console.warn('Direct fetch from Supabase:', err);
+        }
+
+        if (!currentHack && !isParamUUID) {
+          try {
+            const { data: byUrl } = await supabase
+              .from('hackathons')
+              .select('*')
+              .ilike('website_url', `%/h/${cleanId}%`)
+              .limit(1)
+              .maybeSingle();
+            if (byUrl) currentHack = byUrl as Hackathon;
+          } catch {}
+
+          if (!currentHack) {
+            try {
+              const { data: byDesc } = await supabase
+                .from('hackathons')
+                .select('*')
+                .ilike('description', `%"join_code":"${cleanId}"%`)
+                .limit(1)
+                .maybeSingle();
+              if (byDesc) currentHack = byDesc as Hackathon;
+            } catch {}
+          }
         }
       }
 
@@ -427,9 +453,64 @@ export default function HackathonDetailPage() {
       return;
     }
 
-    // If private hackathon with join code, route to join code page
-    if (hackathon.access_type === 'private' && hackathon.join_code) {
-      router.push(`/h/${hackathon.join_code}`);
+    // If private hackathon with join code, validate passcode inline without bouncing user
+    if (hackathon.access_type === 'private') {
+      if (!passcode.trim()) {
+        setPasscodeError('Please enter the event passcode to register.');
+        return;
+      }
+
+      setIsRegistering(true);
+      setPasscodeError(null);
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+        const res = await fetch('/api/hackathons/join', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            joinCode: hackathon.join_code,
+            password: passcode.trim(),
+            userId: user.id,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setPasscodeError(data.error || 'Invalid event passcode. Please check with your college coordinator.');
+          setIsRegistering(false);
+          return;
+        }
+
+        // Enrollment verified!
+        const enrolled = JSON.parse(localStorage.getItem('teamforge_enrolled_hackathons') || '[]');
+        if (!enrolled.includes(hackathon.id)) enrolled.push(hackathon.id);
+        if (hackathon.join_code && !enrolled.includes(hackathon.join_code)) enrolled.push(hackathon.join_code);
+        localStorage.setItem('teamforge_enrolled_hackathons', JSON.stringify(enrolled));
+
+        if (isSupabaseConfigured() && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hackathon.id)) {
+          try {
+            await supabase.from('hackathon_participants').upsert(
+              { hackathon_id: hackathon.id, user_id: user.id, role: 'Participant' },
+              { onConflict: 'hackathon_id,user_id' }
+            );
+          } catch {}
+        }
+
+        setIsEnrolled(true);
+        setRegisteredCount((prev) => prev + 1);
+        if (isStarted) {
+          router.push(`/hackathons/${hackathon.id}/workspace`);
+        }
+      } catch (err: any) {
+        setPasscodeError(err.message || 'Error validating passcode.');
+      } finally {
+        setIsRegistering(false);
+      }
       return;
     }
 
@@ -1264,6 +1345,34 @@ export default function HackathonDetailPage() {
                   </div>
                 )}
 
+                {/* Private Passcode Input for campus events */}
+                {hackathon.access_type === 'private' && !isEnrolled && eligibilityEvaluation.isEligible && (
+                  <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-amber-500/30 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-amber-300 font-bold flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Private Event Passcode</span>
+                      </span>
+                      <span className="text-[10px] text-amber-400/80 uppercase tracking-wider font-semibold">
+                        Required
+                      </span>
+                    </div>
+                    <input
+                      type="password"
+                      value={passcode}
+                      onChange={(e) => {
+                        setPasscode(e.target.value);
+                        setPasscodeError(null);
+                      }}
+                      placeholder="Enter event passcode"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-amber-400 transition-colors"
+                    />
+                    {passcodeError && (
+                      <p className="text-[11px] text-rose-400 font-medium">{passcodeError}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Primary Action Button */}
                 <div className="pt-1">
                   {isEnrolled ? (
@@ -1303,6 +1412,8 @@ export default function HackathonDetailPage() {
                         <span>Registration Closed</span>
                       ) : !eligibilityEvaluation.isEligible ? (
                         <span>Not Eligible to Register</span>
+                      ) : hackathon.access_type === 'private' ? (
+                        <span>Enter Passcode &amp; Register</span>
                       ) : sponsoredMeta.isSponsored ? (
                         <span>{sponsoredMeta.customCtaText || 'Apply & Register Squad'}</span>
                       ) : (
@@ -1335,7 +1446,7 @@ export default function HackathonDetailPage() {
                   </div>
                 </div>
 
-                {hackathon.website_url && (
+                {hackathon.website_url && !hackathon.website_url.includes('/h/') && (
                   <a
                     href={hackathon.website_url}
                     target="_blank"
