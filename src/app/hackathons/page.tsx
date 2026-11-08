@@ -34,8 +34,12 @@ import {
   KeyRound,
   CheckCircle2,
   AlertCircle,
+  Zap,
+  Building2,
+  GraduationCap,
 } from 'lucide-react';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
+import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
 export default function HackathonsPage() {
   const router = useRouter();
@@ -55,7 +59,7 @@ export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<Hackathon[]>(() => cachedHackathons || []);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'private' | 'my-events' | 'saved'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'collegiate' | 'private' | 'my-events' | 'saved'>('all');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMode, setSelectedMode] = useState<string>('All');
@@ -300,46 +304,77 @@ export default function HackathonsPage() {
     return hackathons.filter((h) => h.access_type === 'private');
   }, [hackathons]);
 
+  // Corporate / Sponsored hackathons list
+  const corporateHackathons = useMemo(() => {
+    return hackathons.filter((h) => extractSponsoredMeta(h).isSponsored);
+  }, [hackathons]);
+
+  // Collegiate / Campus hackathons list
+  const collegiateHackathons = useMemo(() => {
+    return hackathons.filter((h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private');
+  }, [hackathons]);
+
   // Filtered list based on active tab and filters
   const filteredHackathons = useMemo(() => {
     const now = new Date();
 
-    return hackathons.filter((h) => {
-      // Tab filter
-      if (activeTab === 'private' && h.access_type !== 'private') return false;
-      if (activeTab === 'my-events' && !enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
-      if (activeTab === 'saved' && !savedIds.includes(h.id)) return false;
+    return hackathons
+      .filter((h) => {
+        // Tab filter
+        if (activeTab === 'corporate' && !extractSponsoredMeta(h).isSponsored) return false;
+        if (activeTab === 'collegiate' && (extractSponsoredMeta(h).isSponsored || h.access_type === 'private')) return false;
+        if (activeTab === 'private' && h.access_type !== 'private') return false;
+        if (activeTab === 'my-events' && !enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
+        if (activeTab === 'saved' && !savedIds.includes(h.id)) return false;
 
-      // Disappear from public college directory the day after results are announced
-      if (activeTab !== 'my-events' && isHackathonArchivedFromFeed(h)) return false;
+        // Disappear from public college directory the day after results are announced
+        if (activeTab !== 'my-events' && isHackathonArchivedFromFeed(h)) return false;
 
-      // Deadline filter
-      if (onlyOpen) {
-        const deadline = new Date(h.registration_deadline);
-        if (deadline < now) return false;
-      }
+        // Deadline filter
+        if (onlyOpen) {
+          const deadline = new Date(h.registration_deadline);
+          if (deadline < now) return false;
+        }
 
-      // Mode filter
-      if (selectedMode !== 'All' && h.mode !== selectedMode) return false;
+        // Mode filter
+        if (selectedMode !== 'All' && h.mode !== selectedMode) return false;
 
-      // Theme filter
-      if (selectedTheme !== 'All') {
-        const hasTheme = h.themes?.some((t) => t.toLowerCase() === selectedTheme.toLowerCase());
-        if (!hasTheme) return false;
-      }
+        // Theme filter
+        if (selectedTheme !== 'All') {
+          const hasTheme = h.themes?.some((t) => t.toLowerCase() === selectedTheme.toLowerCase());
+          if (!hasTheme) return false;
+        }
 
-      // Keyword search
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const titleMatch = h.title.toLowerCase().includes(q);
-        const orgMatch = h.organizer.toLowerCase().includes(q);
-        const descMatch = h.description.toLowerCase().includes(q);
-        const themeMatch = h.themes?.some((t) => t.toLowerCase().includes(q));
-        if (!titleMatch && !orgMatch && !descMatch && !themeMatch) return false;
-      }
+        // Keyword search
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const titleMatch = h.title.toLowerCase().includes(q);
+          const orgMatch = h.organizer.toLowerCase().includes(q);
+          const descMatch = h.description.toLowerCase().includes(q);
+          const themeMatch = h.themes?.some((t) => t.toLowerCase().includes(q));
+          if (!titleMatch && !orgMatch && !descMatch && !themeMatch) return false;
+        }
 
-      return true;
-    });
+        return true;
+      })
+      .sort((a, b) => {
+        const metaA = extractSponsoredMeta(a);
+        const metaB = extractSponsoredMeta(b);
+
+        // Corporate/Sponsored challenges always appear at the top in All Competitions & Corporate view
+        if (metaA.isSponsored && !metaB.isSponsored) return -1;
+        if (!metaA.isSponsored && metaB.isSponsored) return 1;
+
+        // If both sponsored, sort by priorityRank descending (10 down to 1)
+        if (metaA.isSponsored && metaB.isSponsored) {
+          if (metaA.priorityRank !== metaB.priorityRank) {
+            return metaB.priorityRank - metaA.priorityRank;
+          }
+        }
+
+        // Default sorting by start date / registration deadline
+        return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      });
   }, [hackathons, activeTab, savedIds, enrolledIds, user, onlyOpen, selectedMode, selectedTheme, searchQuery]);
 
   return (
@@ -491,6 +526,33 @@ export default function HackathonsPage() {
 
           <button
             type="button"
+            onClick={() => setActiveTab('corporate')}
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'corporate'
+                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-lg ring-2 ring-amber-400/50'
+                : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 shadow-2xs'
+            }`}
+          >
+            <Zap className={`w-3.5 h-3.5 ${activeTab === 'corporate' ? 'fill-current text-amber-200' : 'text-amber-600'}`} />
+            <span>Corporate &amp; Sponsored ({corporateHackathons.length})</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('collegiate')}
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'collegiate'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>Collegiate &amp; Campus ({collegiateHackathons.length})</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('private')}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'private'
@@ -499,7 +561,7 @@ export default function HackathonsPage() {
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
-            <span>Private College Events ({privateHackathons.length})</span>
+            <span>Private Campus Events ({privateHackathons.length})</span>
           </button>
 
           <button
@@ -640,14 +702,22 @@ export default function HackathonsPage() {
                 {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
               </div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">
-                {activeTab === 'private'
-                  ? 'No Private College Hackathons Found'
+                {activeTab === 'corporate'
+                  ? 'No Corporate Sponsored Hackathons Found'
+                  : activeTab === 'collegiate'
+                  ? 'No Collegiate Hackathons Found'
+                  : activeTab === 'private'
+                  ? 'No Private Campus Hackathons Found'
                   : activeTab === 'my-events'
                   ? 'You Haven\'t Enrolled in Any Hackathons Yet'
                   : 'No Hackathons Matched'}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
-                {activeTab === 'private'
+                {activeTab === 'corporate'
+                  ? 'Corporate and enterprise sponsored challenges with cash prize pools and direct hiring tracks will appear here.'
+                  : activeTab === 'collegiate'
+                  ? 'Inter-college, university, and student club technical hackathons will appear here.'
+                  : activeTab === 'private'
                   ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
                   : activeTab === 'my-events'
                   ? 'Enter an event join code or browse open competitions to participate with campus teammates.'

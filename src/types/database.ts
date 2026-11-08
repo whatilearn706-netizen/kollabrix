@@ -337,6 +337,8 @@ export interface Hackathon {
   company_logo?: string | null;
   glow_color?: 'gold' | 'cyan' | 'purple' | 'emerald';
   recruitment_perks?: string[];
+  priority_rank?: number;
+  hiring_roles?: string;
 }
 
 export interface SavedHackathon {
