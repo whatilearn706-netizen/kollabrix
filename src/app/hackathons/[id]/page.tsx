@@ -46,7 +46,7 @@ import {
 export default function HackathonDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, openAuthModal } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
   const { theme, isDark } = useSiteTheme();
   const hackathonId = (params?.id as string) || '';
 
@@ -223,6 +223,97 @@ export default function HackathonDetailPage() {
     loadHackathon();
   }, [loadHackathon]);
 
+  // Hackathon Sprint Start Status
+  const isStarted = useMemo(() => {
+    if (!hackathon?.start_date) return false;
+    return new Date(hackathon.start_date).getTime() <= Date.now();
+  }, [hackathon?.start_date]);
+
+  // Profile-based Eligibility Evaluation
+  const eligibilityEvaluation = useMemo(() => {
+    const rawCrit = (hackathon?.eligibility || '').toLowerCase().trim();
+    if (!rawCrit || rawCrit === 'all college students' || rawCrit === 'open to all' || rawCrit === 'all students') {
+      return { isEligible: true, reason: null };
+    }
+
+    if (!user) {
+      return { isEligible: true, reason: 'Sign in to confirm registration eligibility.' };
+    }
+
+    // 1. Check Verified Student requirement
+    const requiresVerification = rawCrit.includes('verified') || rawCrit.includes('collegiate verification');
+    if (requiresVerification) {
+      const isVerified = Boolean(
+        profile?.college_verified ||
+        profile?.faculty_verified ||
+        (profile as any)?.student_verified ||
+        (profile as any)?.id_verified
+      );
+      if (!isVerified) {
+        return {
+          isEligible: false,
+          reason: 'This hackathon requires a verified student profile. Verify your college status in Profile settings or College Hub.',
+        };
+      }
+    }
+
+    // 2. Check Year restrictions
+    const userYear = (profile?.academic_year || '').toLowerCase();
+    const isFirstYearReq = (rawCrit.includes('1st year') || rawCrit.includes('first year')) && !rawCrit.includes('1st to 4th') && !rawCrit.includes('1st to 3rd') && !rawCrit.includes('all');
+    if (isFirstYearReq) {
+      const isFirst = userYear.includes('1') || userYear.includes('first') || userYear.includes('freshman');
+      if (!isFirst && profile?.academic_year) {
+        return {
+          isEligible: false,
+          reason: `Restricted to 1st year students only (Your profile: ${profile.academic_year}).`,
+        };
+      }
+    }
+
+    const isSecondYearReq = (rawCrit.includes('2nd year') || rawCrit.includes('second year')) && !rawCrit.includes('to');
+    if (isSecondYearReq) {
+      const isSecond = userYear.includes('2') || userYear.includes('second') || userYear.includes('sophomore');
+      if (!isSecond && profile?.academic_year) {
+        return {
+          isEligible: false,
+          reason: `Restricted to 2nd year students only (Your profile: ${profile.academic_year}).`,
+        };
+      }
+    }
+
+    const isThirdYearReq = (rawCrit.includes('3rd year') || rawCrit.includes('third year')) && !rawCrit.includes('to');
+    if (isThirdYearReq) {
+      const isThird = userYear.includes('3') || userYear.includes('third') || userYear.includes('junior');
+      if (!isThird && profile?.academic_year) {
+        return {
+          isEligible: false,
+          reason: `Restricted to 3rd year students only (Your profile: ${profile.academic_year}).`,
+        };
+      }
+    }
+
+    const isFourthYearReq = (rawCrit.includes('4th year') || rawCrit.includes('fourth year')) && !rawCrit.includes('to');
+    if (isFourthYearReq) {
+      const isFourth = userYear.includes('4') || userYear.includes('fourth') || userYear.includes('senior');
+      if (!isFourth && profile?.academic_year) {
+        return {
+          isEligible: false,
+          reason: `Restricted to 4th year students only (Your profile: ${profile.academic_year}).`,
+        };
+      }
+    }
+
+    // 3. Faculty / Teacher restriction for student competitions
+    if (rawCrit.includes('student') && (profile?.role === 'teacher' || profile?.faculty_verified)) {
+      return {
+        isEligible: false,
+        reason: 'This hackathon is open to students only. Faculty members may participate as mentors or judges.',
+      };
+    }
+
+    return { isEligible: true, reason: null };
+  }, [hackathon?.eligibility, profile, user]);
+
   // Deadline countdown calculations
   const countdown = useMemo(() => {
     if (!hackathon) return { days: 0, hours: 0, isClosed: false, isUrgent: false };
@@ -279,6 +370,11 @@ export default function HackathonDetailPage() {
     }
 
     if (!hackathon) return;
+
+    if (!eligibilityEvaluation.isEligible) {
+      alert(`Cannot register: ${eligibilityEvaluation.reason || 'You do not meet the eligibility criteria for this hackathon.'}`);
+      return;
+    }
 
     // If private hackathon with join code, route to join code page
     if (hackathon.access_type === 'private' && hackathon.join_code) {
@@ -914,42 +1010,61 @@ export default function HackathonDetailPage() {
 
               <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
                 
-                {/* Unstop Eligibility Status Header */}
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
-                  <Sparkles className="w-4 h-4 text-emerald-400 fill-emerald-400/20" />
-                  <span>You&apos;re eligible</span>
-                </div>
-
-                {/* Unstop Personalized User Registration Box */}
-                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 font-black text-xs flex items-center justify-center shrink-0">
-                    {user?.email?.charAt(0).toUpperCase() || 'S'}
+                {/* Eligibility Status Header */}
+                {eligibilityEvaluation.isEligible ? (
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
+                    <Sparkles className="w-4 h-4 text-emerald-400 fill-emerald-400/20" />
+                    <span>You&apos;re eligible</span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] text-slate-400 font-medium">Please register below</p>
-                    <p className="text-xs font-mono font-bold text-white truncate">
-                      as {user?.email || 'guest builder'}
+                ) : (
+                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-rose-400 font-bold">
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>You are not eligible</span>
+                    </div>
+                    <p className="text-[11px] text-rose-200/80 leading-relaxed pl-5">
+                      {eligibilityEvaluation.reason}
                     </p>
                   </div>
-                </div>
+                )}
 
-                {/* Primary Action Button (Unstop Blue Pill Style) */}
+                {/* Primary Action Button */}
                 <div className="pt-1">
                   {isEnrolled ? (
-                    <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
-                      <button className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
-                        <span>Enter Team Workspace</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </Link>
+                    isStarted ? (
+                      <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
+                        <button className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                          <span>Enter Hackathon</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </Link>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="w-full py-3.5 px-6 rounded-2xl bg-charcoal-800 border border-charcoal-700 text-slate-300 font-bold text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 cursor-not-allowed select-none">
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Registered • Workspace Opens at Start Date</span>
+                        </div>
+                        <p className="text-[11px] text-center text-slate-400 font-medium leading-relaxed">
+                          Hackathon officially begins on {new Date(hackathon.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. Workspace unlocks at launch!
+                        </p>
+                      </div>
+                    )
                   ) : (
                     <button
                       onClick={handleRegister}
-                      disabled={isRegistering}
-                      className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                      disabled={isRegistering || countdown.isClosed || !eligibilityEvaluation.isEligible}
+                      className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
+                        countdown.isClosed || !eligibilityEvaluation.isEligible
+                          ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 cursor-pointer active:scale-[0.98]'
+                      }`}
                     >
                       {isRegistering ? (
                         <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      ) : countdown.isClosed ? (
+                        <span>Registration Closed</span>
+                      ) : !eligibilityEvaluation.isEligible ? (
+                        <span>Not Eligible to Register</span>
                       ) : (
                         <span>Register</span>
                       )}

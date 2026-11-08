@@ -189,11 +189,6 @@ export function Navbar() {
       icon: Users,
     },
     {
-      href: '/hackathons',
-      label: 'Hackathons',
-      icon: Trophy,
-    },
-    {
       href: '/my-projects',
       label: 'Workspace',
       icon: Briefcase,

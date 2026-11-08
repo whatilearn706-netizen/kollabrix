@@ -733,9 +733,6 @@ export default function NewHackathonPage() {
                   <label className="text-xs font-semibold text-slate-300 block">
                     Participant Eligibility Criteria *
                   </label>
-                  <span className="text-[10px] text-cyan-400 font-mono font-semibold">
-                    Shown prominently on Unstop-style page
-                  </span>
                 </div>
                 <Textarea
                   rows={3}
