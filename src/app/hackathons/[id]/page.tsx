@@ -57,6 +57,7 @@ export default function HackathonDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [registeredCount, setRegisteredCount] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'themes' | 'schedule' | 'rules'>('overview');
 
   // Load Hackathon details with maximum resilience
@@ -147,6 +148,10 @@ export default function HackathonDetailPage() {
               max_team_size: meta.max_team_size || currentHack.max_team_size || 4,
               access_type: meta.access_type || currentHack.access_type || 'public',
               join_code: meta.join_code || currentHack.join_code,
+              logo_url: meta.logo_url || currentHack.logo_url || currentHack.company_logo,
+              company_logo: meta.logo_url || currentHack.logo_url || currentHack.company_logo,
+              eligibility: meta.eligibility || currentHack.eligibility,
+              banner_url: meta.banner_url || currentHack.banner_url,
               description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
             };
           }
@@ -155,6 +160,25 @@ export default function HackathonDetailPage() {
 
       currentHack = normalizeHackathonDeadlines(currentHack);
       setHackathon(currentHack);
+
+      // Fetch Real Count of Registered Participants from Supabase
+      if (isSupabaseConfigured() && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentHack.id)) {
+        try {
+          const { count } = await supabase
+            .from('hackathon_participants')
+            .select('*', { count: 'exact', head: true })
+            .eq('hackathon_id', currentHack.id);
+          if (typeof count === 'number') {
+            setRegisteredCount(count);
+          } else {
+            setRegisteredCount(currentHack.participants_count || 0);
+          }
+        } catch {
+          setRegisteredCount(currentHack.participants_count || 0);
+        }
+      } else {
+        setRegisteredCount(currentHack.participants_count || 0);
+      }
 
       // Check enrollment status
       if (typeof window !== 'undefined') {
@@ -291,6 +315,7 @@ export default function HackathonDetailPage() {
       }
 
       setIsEnrolled(true);
+      setRegisteredCount((prev) => prev + 1);
       // Seamlessly navigate to the workspace
       router.push(`/hackathons/${hackathon.id}/workspace`);
     } catch (err) {
@@ -483,20 +508,27 @@ export default function HackathonDetailPage() {
                 </div>
               </div>
 
-              {/* Title & Square Poster Row (Unstop Signature Match) */}
+              {/* Title & Square Logo Row (Brown Marked Item Parity) */}
               <div className="flex items-start justify-between gap-4 pt-1">
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
                     {hackathon.title}
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium">
-                    {hackathon.organizer}
+                  <p className="text-xs sm:text-sm text-slate-300 font-medium flex items-center gap-2">
+                    <span className="text-slate-400">Organized by</span>
+                    <strong className="text-cyan-400 font-bold">{hackathon.organizer}</strong>
                   </p>
                 </div>
 
-                {/* Event Square Emblem / Thumbnail Poster (Unstop Signature) */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-charcoal-950 border border-charcoal-750 p-1 shrink-0 overflow-hidden shadow-lg flex items-center justify-center">
-                  {hackathon.banner_url ? (
+                {/* Event / College Logo Badge (Brown Marked Item) */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-charcoal-950 border border-charcoal-750 p-1.5 shrink-0 overflow-hidden shadow-lg flex items-center justify-center">
+                  {hackathon.logo_url || hackathon.company_logo ? (
+                    <img
+                      src={hackathon.logo_url || hackathon.company_logo || ''}
+                      alt={hackathon.organizer || hackathon.title}
+                      className="w-full h-full object-contain rounded-xl"
+                    />
+                  ) : hackathon.banner_url ? (
                     <img
                       src={hackathon.banner_url}
                       alt={hackathon.title}
@@ -654,8 +686,8 @@ export default function HackathonDetailPage() {
                     <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
                     <span>Eligibility</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-300">
-                    Undergraduate &bull; Postgraduate &bull; Engineering &bull; Computer Science &bull; Polytechnic Students
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                    {hackathon.eligibility || 'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'}
                   </p>
                 </div>
 
@@ -666,32 +698,6 @@ export default function HackathonDetailPage() {
                   </div>
                   <div className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line space-y-3">
                     <p>{hackathon.description}</p>
-                  </div>
-                </div>
-
-                {/* 1v1 Live Code Arena Auditorium Showdown (Unique to Kollabrix) */}
-                <div className="p-6 rounded-3xl bg-gradient-to-r from-rose-950/40 via-charcoal-900 to-amber-950/30 border border-rose-500/30 space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider font-mono">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                      <span>Auditorium Stage Feature &bull; 1v1 Battle Arena</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      Live on Projector
-                    </span>
-                  </div>
-                  <h4 className="text-base font-bold text-white">
-                    Live Stage Showdowns &amp; Tiebreakers
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Tied scores during final judging? Top teams duel head-to-head on the auditorium stage projector in a 3-minute live code sprint with instant Judge0 compiler test cases and anti-cheat Fog of War!
-                  </p>
-                  <div className="pt-1">
-                    <Link href="/arena">
-                      <Button variant="secondary" size="sm" className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40" leftIcon={<Zap className="w-4 h-4 text-rose-400" />}>
-                        Explore 1v1 Battle Arena
-                      </Button>
-                    </Link>
                   </div>
                 </div>
 
@@ -900,6 +906,12 @@ export default function HackathonDetailPage() {
                 <span>{countdown.isClosed ? 'Registration Closed' : `${countdown.days} Days Left`}</span>
               </div>
 
+              {/* Floating Registered Counter on Top-Right (Red Marked Item - Real Database Count) */}
+              <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-charcoal-950 text-cyan-300 text-[11px] font-mono font-bold border border-charcoal-750 shadow-xl flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{registeredCount} Registered</span>
+              </div>
+
               <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
                 
                 {/* Unstop Eligibility Status Header */}
@@ -945,10 +957,15 @@ export default function HackathonDetailPage() {
                   )}
                 </div>
 
-                {/* Unstop Social Proof Registration Counter */}
+                {/* Unstop Social Proof Registration Counter (Real Registered Count) */}
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium pt-1">
-                  <Users className="w-4 h-4 text-slate-400" />
-                  <span>Registered: <strong className="text-white font-mono font-bold">48</strong></span>
+                  <Users className="w-4 h-4 text-cyan-400" />
+                  <span>
+                    Registered:{' '}
+                    <strong className="text-white font-mono font-bold">
+                      {registeredCount}
+                    </strong>
+                  </span>
                 </div>
 
                 {/* Prize Pool & Timeline Mini Summary */}

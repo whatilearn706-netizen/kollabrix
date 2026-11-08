@@ -50,6 +50,10 @@ export default function NewHackathonPage() {
   );
   const [description, setDescription] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [eligibility, setEligibility] = useState(
+    'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'
+  );
   const [mode, setMode] = useState<HackathonMode>('In-Person');
   const [location, setLocation] = useState('Campus Turing Computer Lab, Tech Block');
   const [accessType, setAccessType] = useState<'private' | 'public'>('private');
@@ -149,6 +153,8 @@ export default function NewHackathonPage() {
           prizePool: prizePool.trim() || null,
           websiteUrl: websiteUrl.trim() || null,
           bannerUrl: bannerUrl.trim() || null,
+          logoUrl: logoUrl.trim() || null,
+          eligibility: eligibility.trim(),
         }),
       });
 
@@ -170,6 +176,8 @@ export default function NewHackathonPage() {
             max_team_size: maxTeamSize,
             results_date: resultsDate ? new Date(resultsDate).toISOString() : null,
             banner_url: bannerUrl.trim() || null,
+            logo_url: logoUrl.trim() || null,
+            eligibility: eligibility.trim(),
           })} -->`;
 
           const clientPayload = {
@@ -184,11 +192,13 @@ export default function NewHackathonPage() {
             end_date: endDate ? new Date(endDate).toISOString() : null,
             registration_deadline: new Date(registrationDeadline).toISOString(),
             results_date: resultsDate ? new Date(resultsDate).toISOString() : null,
-            eligibility: 'Open to all college students',
+            eligibility: eligibility.trim(),
             themes,
             prize_pool: prizePool.trim() || null,
             website_url: `https://kollabrix.in/h/${resData.joinCode}`,
             banner_url: bannerUrl.trim() || null,
+            logo_url: logoUrl.trim() || null,
+            company_logo: logoUrl.trim() || null,
             is_verified: true,
           };
 
@@ -475,6 +485,30 @@ export default function NewHackathonPage() {
                 }}
               />
 
+              <div className="space-y-1.5 p-4 rounded-xl bg-charcoal-950/60 border border-charcoal-750">
+                <FileUpload
+                  label="College / Hackathon Logo (Optional)"
+                  helperText="Upload official college emblem, dept crest, or hackathon badge (1:1 square recommended)"
+                  value={logoUrl}
+                  onChange={(url) => setLogoUrl(url)}
+                  options={{
+                    bucket: 'hackathon-banners',
+                    folder: `logos/${user?.id || 'public'}`,
+                  }}
+                />
+                {!logoUrl && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] text-slate-400 font-mono shrink-0">Or paste logo URL:</span>
+                    <Input
+                      placeholder="https://example.com/college-logo.png"
+                      value={logoUrl}
+                      onChange={(e) => setLogoUrl(e.target.value)}
+                      className="text-xs py-1"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1.5">
                   Competition Themes / Tracks (comma-separated)
@@ -690,7 +724,47 @@ export default function NewHackathonPage() {
             <div className="p-6 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-4">
               <div className="flex items-center gap-2.5 text-base font-bold text-white border-b border-charcoal-800 pb-3">
                 <FileText className="w-5 h-5 text-emerald-400" />
-                <span>5. Guidelines, Awards &amp; Support Contact</span>
+                <span>5. Eligibility, Guidelines, Awards &amp; Support Contact</span>
+              </div>
+
+              {/* Eligibility Criteria (Unstop Parity) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Participant Eligibility Criteria *
+                  </label>
+                  <span className="text-[10px] text-cyan-400 font-mono font-semibold">
+                    Shown prominently on Unstop-style page
+                  </span>
+                </div>
+                <Textarea
+                  rows={3}
+                  value={eligibility}
+                  onChange={(e) => setEligibility(e.target.value)}
+                  placeholder="e.g. Undergraduate & Postgraduate Students, B.Tech/BCA/MCA (2024-2028 batches). Inter-college teams allowed."
+                  required
+                />
+                <div className="flex items-center gap-1.5 flex-wrap pt-2">
+                  <span className="text-[10px] text-slate-400 font-mono">Quick Presets:</span>
+                  {[
+                    'All College Students',
+                    'Engineering & CS Students Only',
+                    'Undergrad & Postgrad',
+                    'Inter-College Teams Permitted',
+                    '1st to 4th Year Students',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setEligibility((prev) => (prev ? `${prev} • ${preset}` : preset));
+                      }}
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-mono bg-charcoal-950 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-charcoal-750 transition-all cursor-pointer"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -774,14 +848,31 @@ export default function NewHackathonPage() {
                   <span className="text-xs text-slate-400">{mode}</span>
                 </div>
 
-                <div>
-                  <h4 className="text-base font-bold text-white line-clamp-1">
-                    {title.trim() || 'Untitled College Hackathon'}
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                    {description.trim() || 'Enter overview to preview how students see this challenge...'}
-                  </p>
+                <div className="flex items-start gap-3">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt="Logo"
+                      className="w-10 h-10 rounded-xl object-cover border border-charcoal-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold text-sm shrink-0">
+                      {title ? title.charAt(0).toUpperCase() : 'H'}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-base font-bold text-white line-clamp-1">
+                      {title.trim() || 'Untitled College Hackathon'}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 truncate">
+                      by {organizer || 'College Department'}
+                    </p>
+                  </div>
                 </div>
+
+                <p className="text-xs text-slate-400 line-clamp-2">
+                  {description.trim() || 'Enter overview to preview how students see this challenge...'}
+                </p>
 
                 <div className="pt-2 border-t border-charcoal-800 flex flex-wrap items-center gap-3 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
