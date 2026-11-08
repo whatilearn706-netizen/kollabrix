@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ProtectedPageGuard } from '@/components/auth/ProtectedPageGuard';
 import { Project, ProjectMember, Hackathon, HackathonTeam } from '@/types/database';
@@ -56,17 +57,27 @@ function MyProjectsContent() {
   const [joinedProjects, setJoinedProjects] = useState<(Project & { userRole?: string })[]>(() => cachedWorkspace?.joined || []);
   const [allHackathonSprints, setAllHackathonSprints] = useState<UserHackathonSprint[]>(() => cachedWorkspace?.hackSprints || []);
   const [hackathonCodeInput, setHackathonCodeInput] = useState('');
-  const [activeTab, setActiveTab] = useState<'leading' | 'joined' | 'hackathons'>('leading');
+  const [activeTab, setActiveTab] = useState<'leading' | 'joined' | 'registered' | 'hackathons'>('leading');
   const [isLoading, setIsLoading] = useState<boolean>(() => !cachedWorkspace);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const userRef = React.useRef(user);
   userRef.current = user;
 
-  // Active Hackathon Sprints (temporary event workshops)
+  const isHackathonStarted = (h: Hackathon) => {
+    if (!h?.start_date) return true;
+    return new Date(h.start_date).getTime() <= Date.now();
+  };
+
+  // Registered Hackathons (Upcoming Sprints before start_date)
+  const registeredUpcomingHackathons = useMemo(() => {
+    return allHackathonSprints.filter((s) => !s.isClosed && !isHackathonStarted(s.hackathon));
+  }, [allHackathonSprints]);
+
+  // Active Hackathon Sprints (temporary event workshops currently underway)
   // AUTOMATICALLY EXPIRES & REMOVED when hackathon closes!
   const activeHackathonSprints = useMemo(() => {
-    return allHackathonSprints.filter((s) => !s.isClosed);
+    return allHackathonSprints.filter((s) => !s.isClosed && isHackathonStarted(s.hackathon));
   }, [allHackathonSprints]);
 
   const closedHackathonSprints = useMemo(() => {
@@ -354,6 +365,40 @@ function MyProjectsContent() {
                 }
               }
             }
+
+            // Also check registered hackathons in localStorage ('teamforge_enrolled_hackathons')
+            const enrolledArr: string[] = JSON.parse(localStorage.getItem('teamforge_enrolled_hackathons') || '[]');
+            const localCreated: any[] = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+
+            for (const hId of enrolledArr) {
+              if (hId && !hackathonMap.has(hId)) {
+                let hObj = localCreated.find((lh) => lh.id === hId || lh.join_code === hId) ||
+                           CURATED_HACKATHONS.find((ch) => ch.id === hId || ch.join_code === hId);
+
+                if (!hObj && isSupabaseConfigured() && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hId)) {
+                  try {
+                    const { data: remoteH } = await supabase.from('hackathons').select('*').eq('id', hId).maybeSingle();
+                    if (remoteH) hObj = remoteH as any;
+                  } catch {}
+                }
+
+                if (hObj) {
+                  const closed = isHackathonClosed(hObj as any);
+                  hackathonMap.set(hObj.id, {
+                    hackathon_id: hObj.id,
+                    team_id: null,
+                    team_name: 'Registered Participant',
+                    invite_code: null,
+                    role: 'Participant',
+                    hackathon: hObj as any,
+                    team: null,
+                    members: [],
+                    isClosed: closed,
+                    timeRemaining: formatTimeRemaining((hObj as any).submission_deadline || (hObj as any).end_date),
+                  });
+                }
+              }
+            }
           } catch {}
         }
       } catch (err) {
@@ -490,6 +535,27 @@ function MyProjectsContent() {
             }`}
           >
             {joinedProjects.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('registered')}
+          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'registered'
+              ? 'bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/40 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
+          }`}
+        >
+          <Clock className="w-4 h-4 text-cyan-400" />
+          <span>Registered Hackathons</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
+              activeTab === 'registered'
+                ? 'bg-cyan-500 text-white'
+                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
+            }`}
+          >
+            {registeredUpcomingHackathons.length}
           </span>
         </button>
 
@@ -671,6 +737,150 @@ function MyProjectsContent() {
             ))}
           </div>
         )
+      ) : activeTab === 'registered' ? (
+        /* ================= REGISTERED HACKATHONS (UPCOMING) ================= */
+        <div className="space-y-6">
+          <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex items-start sm:items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Registered Upcoming Hackathons</h4>
+                <p className="text-xs text-slate-400">
+                  You are registered. When the hackathon start date arrives, the workspace unlocks and the event automatically moves to your <strong className="text-amber-400">Active Hackathon Sprints</strong> section!
+                </p>
+              </div>
+
+              {registeredUpcomingHackathons.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between gap-3 max-w-md mx-auto">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>You have {registeredUpcomingHackathons.length} upcoming registered hackathon(s).</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('registered')}
+                    className="font-bold underline text-cyan-200 hover:text-white cursor-pointer"
+                  >
+                    View
+                  </button>
+                </div>
+              )}
+            </div>
+            <Link href="/hackathons">
+              <Button variant="outline" size="sm" className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 text-xs">
+                Browse More Hackathons
+              </Button>
+            </Link>
+          </div>
+
+          {registeredUpcomingHackathons.length === 0 ? (
+            <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mx-auto">
+                <Clock className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-lg font-bold text-white">No Upcoming Registered Hackathons</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  When you register for an upcoming college hackathon, it will appear here with kickoff schedules and preparation details until the sprint begins.
+                </p>
+              </div>
+
+              {registeredUpcomingHackathons.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between gap-3 max-w-md mx-auto">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>You have {registeredUpcomingHackathons.length} upcoming registered hackathon(s).</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('registered')}
+                    className="font-bold underline text-cyan-200 hover:text-white cursor-pointer"
+                  >
+                    View
+                  </button>
+                </div>
+              )}
+              <Link href="/hackathons">
+                <Button variant="primary" size="sm" className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold" leftIcon={<Trophy className="w-4 h-4" />}>
+                  Explore Collegiate Hackathons
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {registeredUpcomingHackathons.map((item) => {
+                const h = item.hackathon;
+                const startDateStr = h.start_date
+                  ? new Date(h.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  : 'Announced Soon';
+
+                return (
+                  <div
+                    key={item.hackathon_id}
+                    className="p-6 rounded-2xl bg-charcoal-900 border border-cyan-500/30 hover:border-cyan-500/50 transition-all flex flex-col justify-between gap-5 shadow-sm relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500" />
+
+                    <div className="space-y-3.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 font-bold">
+                          <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                          Registration Confirmed
+                        </span>
+                        <span className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                          Starts: {startDateStr}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-base font-bold text-white line-clamp-1">{h.title}</h4>
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                          Organized by <strong className="text-slate-300">{h.organizer || 'College Faculty'}</strong>
+                          {(h as any).college ? ` • ${(h as any).college}` : ''}
+                        </p>
+                      </div>
+
+                      {h.eligibility && (
+                        <div className="p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-800 text-[11px] text-slate-300 flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span className="truncate">Criteria: {h.eligibility}</span>
+                        </div>
+                      )}
+
+                      <div className="p-3 rounded-xl bg-charcoal-950/70 border border-charcoal-800 text-xs text-slate-400 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span>Team Size:</span>
+                          <span className="text-white font-medium">{h.min_team_size || 1} - {h.max_team_size || 4} Builders</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Workspace Access:</span>
+                          <span className="text-amber-400 font-medium flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> Unlocks when hackathon starts
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2 flex-wrap">
+                      <Link href={`/hackathons/${h.id}`} className="w-full">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-bold justify-center"
+                          rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                        >
+                          View Event Details &amp; Guidelines
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       ) : activeTab === 'hackathons' ? (
         /* ================= 3. ACTIVE HACKATHON SPRINTS (TEMPORARY WORKSHOP) ================= */
         <div className="space-y-8">
@@ -688,6 +898,22 @@ function MyProjectsContent() {
                   </strong>
                 </p>
               </div>
+
+              {registeredUpcomingHackathons.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between gap-3 max-w-md mx-auto">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>You have {registeredUpcomingHackathons.length} upcoming registered hackathon(s).</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('registered')}
+                    className="font-bold underline text-cyan-200 hover:text-white cursor-pointer"
+                  >
+                    View
+                  </button>
+                </div>
+              )}
 
               {/* Quick Join Code Form */}
               <div className="max-w-md mx-auto p-4 rounded-xl bg-charcoal-950 border border-amber-500/30">
@@ -847,7 +1073,7 @@ function MyProjectsContent() {
                             className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold"
                             rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                           >
-                            Participated
+                            Enter Hackathon
                           </Button>
                         </Link>
                       </div>

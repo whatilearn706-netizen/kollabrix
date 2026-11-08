@@ -901,20 +901,19 @@ export default function HackathonWorkspacePage() {
       let createdTeamData: any = null;
 
       if (isUUID) {
-        const isChallengeUUID =
-          selectedChallengeId &&
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedChallengeId);
+        // Prepare base team payload without challenge_id to prevent PostgREST schema cache errors
+        // on instances where challenge_id has not been added to hackathon_teams
+        const basePayload: Record<string, any> = {
+          hackathon_id: canonicalHackId,
+          team_name: newTeamName.trim(),
+          description: newTeamDesc.trim() || null,
+          leader_id: user.id,
+          invite_code: inviteCode,
+        };
 
         const { data: team, error: teamErr } = await supabase
           .from('hackathon_teams')
-          .insert({
-            hackathon_id: canonicalHackId,
-            team_name: newTeamName.trim(),
-            description: newTeamDesc.trim() || null,
-            challenge_id: isChallengeUUID ? selectedChallengeId : null,
-            leader_id: user.id,
-            invite_code: inviteCode,
-          })
+          .insert(basePayload)
           .select('*')
           .single();
 
@@ -922,7 +921,10 @@ export default function HackathonWorkspacePage() {
           console.error('Supabase team insertion error:', teamErr);
           throw new Error(teamErr.message);
         }
-        createdTeamData = team;
+        createdTeamData = {
+          ...team,
+          challenge_id: selectedChallengeId || null,
+        };
 
         // Add current user as leader in team_members
         const { error: memberErr } = await supabase
@@ -1169,11 +1171,14 @@ export default function HackathonWorkspacePage() {
   const handleSelectChallenge = async (challengeId: string) => {
     if (!myTeam || !user) return;
     try {
-      await supabase
+      const { error } = await supabase
         .from('hackathon_teams')
         .update({ challenge_id: challengeId })
         .eq('id', myTeam.id);
 
+      if (error) {
+        console.warn('Note: challenge_id column may not be present in hackathon_teams:', error.message);
+      }
       await loadWorkspace();
     } catch (e) {
       console.warn('Error selecting challenge:', e);
