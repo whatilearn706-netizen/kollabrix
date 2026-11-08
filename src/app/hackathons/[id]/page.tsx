@@ -519,7 +519,7 @@ export default function HackathonDetailPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white pb-20">
       {/* Top Floating Navigation */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-3 flex items-center justify-between">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 pt-5 pb-3 flex items-center justify-between">
         <Link
           href="/hackathons"
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-charcoal-900/90 border border-charcoal-700 text-xs font-semibold text-slate-300 hover:text-white hover:border-charcoal-600 transition-all shadow-md"
@@ -554,8 +554,8 @@ export default function HackathonDetailPage() {
       {/* ========================================================================= */}
       {/* UNSTOP-STYLE STANDALONE BILLBOARD BANNER CARD (Zero Text Overlap)         */}
       {/* ========================================================================= */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className={`w-full h-56 sm:h-72 md:h-80 rounded-3xl overflow-hidden border bg-[#070914] shadow-2xl relative ${
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
+        <div className={`w-full h-64 sm:h-80 md:h-96 lg:h-[420px] xl:h-[460px] 2xl:h-[500px] rounded-3xl overflow-hidden border bg-[#070914] shadow-2xl relative ${
           sponsoredMeta.isSponsored ? `${sponsoredMeta.theme.cardBorder} ${sponsoredMeta.theme.cardGlow}` : 'border-charcoal-750'
         }`}>
           {hackathon.banner_url ? (
@@ -626,11 +626,11 @@ export default function HackathonDetailPage() {
       {/* ========================================================================= */}
       {/* UNSTOP-STYLE INSTITUTIONAL HEADER & METADATA GRID                        */}
       {/* ========================================================================= */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT 2 COLUMNS: Event Details, Badges & Tabs */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* LEFT 8 COLUMNS: Event Details, Badges & Tabs */}
+          <div className="lg:col-span-8 space-y-6">
 
             {/* Bespoke Corporate & Enterprise Sponsored Showcase (Full Brand Immersion) */}
             {sponsoredMeta.isSponsored && (
@@ -692,7 +692,7 @@ export default function HackathonDetailPage() {
                 )}
 
                 {/* 4-Pillar Executive Perks Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 relative z-10 pt-1">
                   <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-start gap-3">
                     <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 shrink-0">
                       <Trophy className="w-4 h-4" />
@@ -1227,7 +1227,7 @@ export default function HackathonDetailPage() {
           </div>
 
           {/* Right Sidebar: Unstop-Style Sticky Action Card */}
-          <div className="space-y-4 lg:sticky lg:top-24">
+          <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
             
             {/* Main Action Box Container with Relative Positioning for Protruding Pill */}
             <div className="relative pt-3">
