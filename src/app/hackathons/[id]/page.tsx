@@ -38,6 +38,9 @@ import {
   Send,
   UserPlus,
   GraduationCap,
+  Globe,
+  Heart,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function HackathonDetailPage() {
@@ -416,60 +419,120 @@ export default function HackathonDetailPage() {
             
             {/* Header Block with Title & College Emblem */}
             <div className="p-6 rounded-3xl bg-charcoal-900/90 border border-charcoal-800 space-y-4 shadow-xl">
-              {/* Status Badges */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
-                    hackathon.mode === 'Online'
-                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                      : hackathon.mode === 'In-Person'
-                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                      : 'bg-violet-500/15 text-violet-300 border-violet-500/30'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${hackathon.mode === 'Online' ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`} />
-                  <span>{hackathon.mode === 'In-Person' ? '📍 Offline / In-Person' : '🌐 Online Virtual'} Sprint</span>
-                </span>
-
-                {hackathon.is_verified && (
-                  <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Verified Collegiate Challenge</span>
+              {/* Header Status Row with Offline/Online and Unstop Action Icons */}
+              <div className="flex items-center justify-between gap-4 flex-wrap pb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                      hackathon.mode === 'Online'
+                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                        : hackathon.mode === 'In-Person'
+                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                        : 'bg-violet-500/15 text-violet-300 border-violet-500/30'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${hackathon.mode === 'Online' ? 'bg-emerald-400' : 'bg-rose-500'} animate-pulse`} />
+                    <span>{hackathon.mode === 'In-Person' ? '📍 Offline' : '🌐 Online Virtual'}</span>
                   </span>
-                )}
 
-                {hackathon.access_type === 'private' && (
-                  <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Private Campus Event</span>
-                  </span>
-                )}
+                  {hackathon.is_verified && (
+                    <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Verified Collegiate</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Unstop-Style Action Icons (Globe, Calendar, Bookmark, Share) */}
+                <div className="flex items-center gap-2 text-slate-400">
+                  {hackathon.website_url && (
+                    <a
+                      href={hackathon.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-xl bg-charcoal-950 hover:bg-charcoal-800 border border-charcoal-800 text-slate-300 hover:text-white transition-all"
+                      title="Event Website"
+                    >
+                      <Globe className="w-4 h-4" />
+                    </a>
+                  )}
+                  <div
+                    className="p-2 rounded-xl bg-charcoal-950 border border-charcoal-800 text-slate-300 transition-all cursor-default"
+                    title={`Schedule: ${new Date(hackathon.start_date).toLocaleDateString()}`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <button
+                    onClick={handleToggleSave}
+                    className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                      isSaved
+                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                        : 'bg-charcoal-950 border-charcoal-800 text-slate-300 hover:text-white hover:bg-charcoal-800'
+                    }`}
+                    title={isSaved ? 'Saved' : 'Save Hackathon'}
+                  >
+                    <Heart className={`w-4 h-4 ${isSaved ? 'fill-current text-rose-500' : ''}`} />
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    className="p-2 rounded-xl bg-charcoal-950 hover:bg-charcoal-800 border border-charcoal-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                    title="Share Link"
+                  >
+                    {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
-              {/* Title & Official Crest Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Title & Square Poster Row (Unstop Signature Match) */}
+              <div className="flex items-start justify-between gap-4 pt-1">
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
                     {hackathon.title}
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium flex items-center gap-2">
-                    <span className="text-slate-400">Organized by</span>
-                    <strong className="text-cyan-400 font-bold">{hackathon.organizer}</strong>
+                  <p className="text-xs sm:text-sm text-slate-300 font-medium">
+                    {hackathon.organizer}
                   </p>
                 </div>
 
-                {/* Official College Crest / Emblem Badge */}
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-charcoal-950 border border-charcoal-750 shrink-0 self-start sm:self-center shadow-md">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
-                    <GraduationCap className="w-5 h-5" />
+                {/* Event Square Emblem / Thumbnail Poster (Unstop Signature) */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-charcoal-950 border border-charcoal-750 p-1 shrink-0 overflow-hidden shadow-lg flex items-center justify-center">
+                  {hackathon.banner_url ? (
+                    <img
+                      src={hackathon.banner_url}
+                      alt={hackathon.title}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-cyan-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-inner">
+                      {hackathon.title.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Unstop Location & Team Size Rows */}
+              <div className="space-y-2 pt-2 border-t border-charcoal-800 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-charcoal-950 border border-charcoal-800 flex items-center justify-center text-cyan-400 shrink-0">
+                    <MapPin className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">
-                      Institutional Partner
-                    </span>
-                    <span className="text-xs font-bold text-white block">
-                      College CS Dept
-                    </span>
+                    <span className="text-slate-400">Location: </span>
+                    <strong className="text-white font-semibold">{hackathon.location || 'Campus Innovation Lab, CS Department'}</strong>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-charcoal-950 border border-charcoal-800 flex items-center justify-center text-cyan-400 shrink-0">
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Team Size: </span>
+                    <strong className="text-white font-semibold">
+                      {hackathon.min_team_size === 1 && hackathon.max_team_size === 1
+                        ? 'Individual Participation'
+                        : `${hackathon.min_team_size || 1} – ${hackathon.max_team_size || 4} Builders`}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -585,6 +648,17 @@ export default function HackathonDetailPage() {
             {/* Tab Contents */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
+                {/* Unstop-Style Eligibility Section */}
+                <div className="p-6 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-2 shadow-xl">
+                  <div className="flex items-center gap-2 text-base sm:text-lg font-black text-white">
+                    <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
+                    <span>Eligibility</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    Undergraduate &bull; Postgraduate &bull; Engineering &bull; Computer Science &bull; Polytechnic Students
+                  </p>
+                </div>
+
                 <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-4 shadow-xl">
                   <div className="flex items-center gap-2 text-base sm:text-lg font-black text-white">
                     <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
@@ -815,105 +889,86 @@ export default function HackathonDetailPage() {
           </div>
 
           {/* Right Sidebar: Unstop-Style Sticky Action Card */}
-          <div className="space-y-6">
-            <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900 border border-charcoal-750 shadow-2xl space-y-5 sticky top-24">
+          <div className="space-y-4 lg:sticky lg:top-24">
+            
+            {/* Main Action Box Container with Relative Positioning for Protruding Pill */}
+            <div className="relative pt-3">
               
-              {/* Urgency & Social Proof Counter Bar (Unstop Parity) */}
-              <div className="flex items-center justify-between pb-3 border-b border-charcoal-800">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
-                  <Clock className="w-3 h-3 text-amber-400" />
-                  <span>{countdown.isClosed ? 'Closed' : `${countdown.days} Days Left`}</span>
-                </span>
-
-                <span className="text-xs font-mono text-cyan-300 flex items-center gap-1.5 font-bold">
-                  <Users className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>48 Registered</span>
-                </span>
+              {/* Floating Pill on Top-Left of Card (Unstop Signature Match) */}
+              <div className="absolute top-0 left-5 z-20 px-3.5 py-1 rounded-full bg-black text-white text-[11px] font-mono font-black border border-charcoal-700 shadow-xl flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{countdown.isClosed ? 'Registration Closed' : `${countdown.days} Days Left`}</span>
               </div>
 
-              {/* Personalized Eligibility Status */}
-              <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 text-xs font-mono text-slate-300 flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+              <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
+                
+                {/* Unstop Eligibility Status Header */}
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
+                  <Sparkles className="w-4 h-4 text-emerald-400 fill-emerald-400/20" />
+                  <span>You&apos;re eligible</span>
                 </div>
-                <div className="truncate">
-                  <div className="font-bold text-white text-[11px]">Eligible for Participation</div>
-                  <div className="text-[10px] text-slate-400 truncate">{user?.email || 'College Student Account'}</div>
-                </div>
-              </div>
 
-              {/* Prize Pool Highlight */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 text-center space-y-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
-                  Total Prize Pool
-                </span>
-                <span className="text-xl sm:text-2xl font-black text-white block">
-                  {hackathon.prize_pool || '₹50,000 + Incubation'}
-                </span>
-              </div>
-
-              {/* Countdown Ticker */}
-              {!countdown.isClosed && (
-                <div className="space-y-2 text-center">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">
-                    Registration Deadline
-                  </span>
-                  <div className="flex items-center justify-center gap-2 text-slate-200">
-                    <div className="px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-800">
-                      <span className="text-lg font-black text-white block">{countdown.days}</span>
-                      <span className="text-[9px] font-mono text-slate-400 uppercase">Days</span>
-                    </div>
-                    <span className="text-slate-600 font-bold">:</span>
-                    <div className="px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-800">
-                      <span className="text-lg font-black text-white block">{countdown.hours}</span>
-                      <span className="text-[9px] font-mono text-slate-400 uppercase">Hours</span>
-                    </div>
+                {/* Unstop Personalized User Registration Box */}
+                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 font-black text-xs flex items-center justify-center shrink-0">
+                    {user?.email?.charAt(0).toUpperCase() || 'S'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-slate-400 font-medium">Please register below</p>
+                    <p className="text-xs font-mono font-bold text-white truncate">
+                      as {user?.email || 'guest builder'}
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* Primary Action Buttons */}
-              <div className="space-y-3 pt-1">
-                {isEnrolled ? (
-                  <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full justify-center shadow-lg shadow-cyan-500/20 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black"
-                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                {/* Primary Action Button (Unstop Blue Pill Style) */}
+                <div className="pt-1">
+                  {isEnrolled ? (
+                    <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
+                      <button className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                        <span>Enter Team Workspace</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={handleRegister}
+                      disabled={isRegistering}
+                      className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                     >
-                      Enter Team Workspace
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    onClick={handleRegister}
-                    isLoading={isRegistering}
-                    variant="primary"
-                    size="lg"
-                    className="w-full justify-center shadow-lg shadow-cyan-500/20 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black"
-                    rightIcon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    {user ? 'Register for Hackathon' : 'Sign In to Register'}
-                  </Button>
-                )}
+                      {isRegistering ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      ) : (
+                        <span>Register</span>
+                      )}
+                    </button>
+                  )}
+                </div>
 
-                {/* Share With Friends / Team Invite */}
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="w-full py-2.5 px-4 rounded-xl bg-charcoal-950 hover:bg-charcoal-800 border border-charcoal-750 text-xs font-mono font-bold text-slate-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{copiedLink ? 'Link Copied!' : 'Share with Teammates'}</span>
-                </button>
+                {/* Unstop Social Proof Registration Counter */}
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium pt-1">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  <span>Registered: <strong className="text-white font-mono font-bold">48</strong></span>
+                </div>
+
+                {/* Prize Pool & Timeline Mini Summary */}
+                <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Total Prize Pool</span>
+                    <strong className="text-amber-400 font-bold">{hackathon.prize_pool || '₹50,000 + Incubation'}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Team Size</span>
+                    <strong className="text-white font-bold">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
+                  </div>
+                </div>
 
                 {hackathon.website_url && (
                   <a
                     href={hackathon.website_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block"
+                    className="block pt-1"
                   >
                     <Button
                       variant="outline"
@@ -921,27 +976,43 @@ export default function HackathonDetailPage() {
                       className="w-full justify-center text-xs"
                       rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
                     >
-                      Official Guidelines
+                      Official Guidelines &amp; Portal
                     </Button>
                   </a>
                 )}
-              </div>
 
-              {/* Verified Trust Guarantees */}
-              <div className="pt-4 border-t border-charcoal-800 space-y-2 text-[11px] text-slate-400">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Verified Collegiate Credentials & Proof of Work</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Real-Time Team Workspace & Closer Pitch Deck Kit</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Jury Evaluation & Digital Certificate on Completion</span>
+                {/* Verified Trust Guarantees */}
+                <div className="pt-3 border-t border-charcoal-800 space-y-2 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Verified Collegiate Credentials &amp; Proof of Work</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Real-Time Team Workspace &amp; Closer Pitch Deck Kit</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Jury Evaluation &amp; Digital Certificate on Completion</span>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Unstop-Style "Share with Friends" Card (Exact Match) */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-charcoal-900 border border-blue-500/30 flex items-center justify-between gap-3 shadow-lg">
+              <div>
+                <div className="text-xs font-black text-white">Share with Friends</div>
+                <div className="text-[10px] text-slate-400">Invite classmates &amp; teammates</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>{copiedLink ? 'Copied!' : 'Refer now'}</span>
+              </button>
             </div>
           </div>
         </div>
