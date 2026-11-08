@@ -4698,21 +4698,11 @@ ${
                         {/* Output Title Bar (Image 6 Parity) */}
                         <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
-                              output
-                            </span>
-                            {webEvaluation && (
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                  webEvaluation.passed
-                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                }`}
-                              >
-                                Coordinate Graph: {webEvaluation.score}% ({webEvaluation.testsPassed}/{webEvaluation.totalTests} passed)
-                              </span>
-                            )}
-                          </div>
+                         <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
+                            output
+                           </span>
+                             </div>
+                          
                           <div className="flex items-center gap-2 text-slate-400">
                             <button
                               type="button"
