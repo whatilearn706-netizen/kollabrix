@@ -33,6 +33,104 @@ interface CreateHackathonModalProps {
   onSuccess: (hackathon: Hackathon) => void;
 }
 
+function format12Hour(timeStr: string): string {
+  if (!timeStr) return '';
+  const [hStr, mStr] = timeStr.split(':');
+  const h = parseInt(hStr, 10);
+  const m = mStr || '00';
+  if (isNaN(h)) return timeStr;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${m} ${period}`;
+}
+
+interface ModalDateTimeFieldProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  required?: boolean;
+  presets?: Array<{ label: string; time: string }>;
+}
+
+function ModalDateTimeField({
+  label,
+  value,
+  onChange,
+  required,
+  presets = [
+    { label: '09:00 AM', time: '09:00' },
+    { label: '12:00 PM', time: '12:00' },
+    { label: '06:00 PM', time: '18:00' },
+    { label: '11:59 PM', time: '23:59' },
+  ],
+}: ModalDateTimeFieldProps) {
+  const datePart = value ? value.split('T')[0] || '' : '';
+  const timePart = value && value.includes('T') ? value.split('T')[1].slice(0, 5) : '12:00';
+
+  const handleDateChange = (newDate: string) => {
+    if (!newDate) {
+      onChange('');
+      return;
+    }
+    onChange(`${newDate}T${timePart || '12:00'}`);
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    const d = datePart || new Date().toISOString().split('T')[0];
+    onChange(`${d}T${newTime}`);
+  };
+
+  return (
+    <div className="space-y-1.5 p-2.5 rounded-xl bg-charcoal-950/80 border border-charcoal-800">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+          <Calendar className="w-3 h-3 text-indigo-400" />
+          <span>{label}</span>
+        </label>
+        {timePart && (
+          <span className="text-[10px] font-mono text-cyan-400 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+            {format12Hour(timePart)}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <Input
+          type="date"
+          value={datePart}
+          onChange={(e) => handleDateChange(e.target.value)}
+          required={required}
+          className="text-xs bg-charcoal-900 border-charcoal-750 text-white py-1 px-2"
+        />
+        <Input
+          type="time"
+          value={timePart}
+          onChange={(e) => handleTimeChange(e.target.value)}
+          required={required}
+          className="text-xs bg-charcoal-900 border-charcoal-750 text-white py-1 px-2"
+        />
+      </div>
+
+      <div className="flex items-center gap-1 flex-wrap pt-0.5">
+        {presets.map((p) => (
+          <button
+            key={p.time}
+            type="button"
+            onClick={() => handleTimeChange(p.time)}
+            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
+              timePart === p.time
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 font-bold'
+                : 'bg-charcoal-900 text-slate-400 border-charcoal-800 hover:text-white'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function CreateHackathonModal({
   isOpen,
   onClose,
@@ -48,10 +146,20 @@ export function CreateHackathonModal({
   const [location, setLocation] = useState('');
   const [accessType, setAccessType] = useState<'private' | 'public'>('private');
   const [password, setPassword] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [registrationDeadline, setRegistrationDeadline] = useState('');
-  const [submissionDeadline, setSubmissionDeadline] = useState('');
+  
+  const getDefaultDateTime = (daysAhead: number, timeStr: string) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysAhead);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${timeStr}`;
+  };
+
+  const [startDate, setStartDate] = useState(() => getDefaultDateTime(8, '09:00'));
+  const [endDate, setEndDate] = useState(() => getDefaultDateTime(10, '23:59'));
+  const [registrationDeadline, setRegistrationDeadline] = useState(() => getDefaultDateTime(7, '23:59'));
+  const [submissionDeadline, setSubmissionDeadline] = useState(() => getDefaultDateTime(10, '23:59'));
   const [minTeamSize, setMinTeamSize] = useState(1);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
   const [themesInput, setThemesInput] = useState('Web3, Generative AI, Campus Life, FinTech');
@@ -490,39 +598,53 @@ export function CreateHackathonModal({
             </div>
           </div>
 
-          {/* Deadlines */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Registration Deadline *
-              </label>
-              <Input
-                type="datetime-local"
+          {/* Deadlines with Custom Date & Time Controls */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Timeline, Deadlines &amp; Schedule Times</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                Set custom dates &amp; exact times
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <ModalDateTimeField
+                label="Registration Deadline *"
                 value={registrationDeadline}
-                onChange={(e) => setRegistrationDeadline(e.target.value)}
+                onChange={setRegistrationDeadline}
                 required
+                presets={[
+                  { label: '11:59 PM', time: '23:59' },
+                  { label: '06:00 PM', time: '18:00' },
+                  { label: '12:00 PM', time: '12:00' },
+                ]}
               />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Hackathon Starts *
-              </label>
-              <Input
-                type="datetime-local"
+
+              <ModalDateTimeField
+                label="Hackathon Starts *"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={setStartDate}
                 required
+                presets={[
+                  { label: '09:00 AM', time: '09:00' },
+                  { label: '10:00 AM', time: '10:00' },
+                  { label: '12:00 PM', time: '12:00' },
+                ]}
               />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Final Submission Deadline *
-              </label>
-              <Input
-                type="datetime-local"
+
+              <ModalDateTimeField
+                label="Final Submission Due *"
                 value={submissionDeadline}
-                onChange={(e) => setSubmissionDeadline(e.target.value)}
+                onChange={setSubmissionDeadline}
                 required
+                presets={[
+                  { label: '11:59 PM', time: '23:59' },
+                  { label: '05:00 PM', time: '17:00' },
+                  { label: '12:00 PM', time: '12:00' },
+                ]}
               />
             </div>
           </div>
