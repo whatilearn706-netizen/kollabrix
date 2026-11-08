@@ -17,8 +17,10 @@ import {
   ArrowRight,
   Lock,
   Users,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
 interface HackathonCardProps {
   hackathon: Hackathon;
@@ -45,23 +47,12 @@ export function HackathonCard({
   const isClosed = diffDays < 0;
   const isUrgent = diffDays >= 0 && diffDays <= 7;
 
-  let isSponsored = Boolean(hackathon.is_sponsored || hackathon.is_enterprise);
-  let companyName = hackathon.company_name;
-  let glowColor = hackathon.glow_color || 'gold';
-  let recruitmentPerks = hackathon.recruitment_perks || [];
-
-  if (hackathon.description && hackathon.description.includes('<!-- HACKATHON_META:')) {
-    try {
-      const rawMeta = hackathon.description.split('<!-- HACKATHON_META:')[1]?.split('-->')[0];
-      if (rawMeta) {
-        const parsed = JSON.parse(rawMeta);
-        if (parsed.is_sponsored || parsed.is_enterprise) isSponsored = true;
-        if (parsed.company_name) companyName = parsed.company_name;
-        if (parsed.glow_color) glowColor = parsed.glow_color;
-        if (Array.isArray(parsed.recruitment_perks)) recruitmentPerks = parsed.recruitment_perks;
-      }
-    } catch {}
-  }
+  const sponsoredMeta = extractSponsoredMeta(hackathon);
+  const isSponsored = sponsoredMeta.isSponsored;
+  const companyName = sponsoredMeta.companyName;
+  const glowColor = sponsoredMeta.glowColor;
+  const recruitmentPerks = sponsoredMeta.recruitmentPerks;
+  const hiringRoles = sponsoredMeta.hiringRoles;
 
   const glowStyles = !isSponsored
     ? ''
@@ -269,6 +260,20 @@ export function HackathonCard({
           </div>
         </div>
 
+        {/* Recruitment Perks for Sponsored / Enterprise Challenges */}
+        {recruitmentPerks.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-amber-500/20">
+            {recruitmentPerks.slice(0, 2).map((perk, i) => (
+              <span
+                key={i}
+                className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 truncate max-w-[240px]"
+              >
+                ✨ {perk}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Expandable Description */}
         {isExpanded && (
           <div
@@ -337,11 +342,15 @@ export function HackathonCard({
               <Button
                 variant="primary"
                 size="sm"
-                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="w-full justify-center text-white font-bold shadow-md group/btn"
+                style={!isSponsored ? { backgroundColor: theme.brandColor, borderRadius: theme.borderRadius } : { borderRadius: theme.borderRadius }}
+                className={`w-full justify-center font-black shadow-md group/btn ${
+                  isSponsored
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white shadow-amber-500/25 ring-1 ring-amber-400/40'
+                    : 'text-white'
+                }`}
                 rightIcon={<ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform duration-200" />}
               >
-                Register Team
+                {isSponsored ? 'Apply & Compete' : 'Register Team'}
               </Button>
             </Link>
           )}

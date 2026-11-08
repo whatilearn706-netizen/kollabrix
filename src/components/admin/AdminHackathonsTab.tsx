@@ -19,9 +19,11 @@ import {
   RotateCcw,
   Sparkles,
   Building2,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
 interface AdminHackathonsTabProps {
   authToken?: string;
@@ -36,6 +38,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoringId, setIsRestoringId] = useState<string | null>(null);
+  const [isClearingDeleted, setIsClearingDeleted] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Sponsored Hackathon Modal State
@@ -46,6 +49,8 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     title: '',
     tagline: '',
     glow_color: 'gold' as 'gold' | 'cyan' | 'purple' | 'emerald',
+    priority_rank: 10,
+    hiring_roles: 'SDE-1, AI/ML Engineers, Full-Stack Interns',
     prize_pool: '₹5,00,000 Cash Pool + Cloud Credits',
     recruitment_perks: 'Direct Fast-Track PPIs for Top 3 Squads, 1:1 Tech Mentorship, Verified Certificate',
     mode: 'Online',
@@ -80,6 +85,8 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           prize_pool: sponsoredForm.prize_pool,
           recruitment_perks: sponsoredForm.recruitment_perks,
           glow_color: sponsoredForm.glow_color,
+          priority_rank: sponsoredForm.priority_rank,
+          hiring_roles: sponsoredForm.hiring_roles,
           registration_deadline: sponsoredForm.registration_deadline || undefined,
           results_date: sponsoredForm.results_date || undefined,
           themes: sponsoredForm.themes.split(',').map((s) => s.trim()).filter(Boolean),
@@ -102,6 +109,8 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         title: '',
         tagline: '',
         glow_color: 'gold',
+        priority_rank: 10,
+        hiring_roles: 'SDE-1, AI/ML Engineers, Full-Stack Interns',
         prize_pool: '₹5,00,000 Cash Pool + Cloud Credits',
         recruitment_perks: 'Direct Fast-Track PPIs for Top 3 Squads, 1:1 Tech Mentorship, Verified Certificate',
         mode: 'Online',
@@ -115,6 +124,38 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       setStatusMessage({ type: 'error', text: err?.message || 'Error creating sponsored hackathon.' });
     } finally {
       setIsSubmittingSponsored(false);
+    }
+  };
+
+  const handleToggleSponsored = async (target: any) => {
+    try {
+      setStatusMessage(null);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/admin/hackathons', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'toggle_sponsored',
+          hackathonId: target.id,
+          priority_rank: 10,
+          company_name: target.organizer || 'Corporate Sponsor',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to toggle sponsored status.');
+      }
+
+      setStatusMessage({
+        type: 'success',
+        text: `✨ ${data.message}`,
+      });
+      await loadHackathons();
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: err?.message || 'Error updating sponsored status.' });
     }
   };
 
@@ -283,6 +324,34 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     }
   };
 
+  const handleClearAllDeleted = async () => {
+    if (!confirm('Are you sure you want to restore all suppressed/deleted hackathons and reset the catalog?')) return;
+    try {
+      setIsClearingDeleted(true);
+      const res = await fetch('/api/admin/hackathons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear_deleted' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setStatusMessage({ type: 'error', text: data.error || 'Failed to clear deleted registry.' });
+        return;
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('teamforge_deleted_hackathons');
+      }
+      setDeletedHackathons([]);
+      setStatusMessage({ type: 'success', text: 'All suppressed hackathons have been restored to the live catalog!' });
+      window.dispatchEvent(new CustomEvent('teamforge_hackathon_restored', { detail: { id: 'all' } }));
+      await loadHackathons();
+    } catch {
+      setStatusMessage({ type: 'error', text: 'Network error restoring hackathons.' });
+    } finally {
+      setIsClearingDeleted(false);
+    }
+  };
+
   const filtered = hackathons.filter(
     (h) =>
       h.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -396,6 +465,11 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                       <div>
                         <p className="font-bold text-white text-sm">{item.title}</p>
                         <p className="text-[11px] text-slate-400">by {item.organizer || 'Campus Organizer'}</p>
+                        {extractSponsoredMeta(item).isSponsored && (
+                          <span className="inline-flex items-center gap-1 mt-1 font-mono text-[10px] text-amber-300 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
+                            ⚡ Sponsored ({extractSponsoredMeta(item).companyName || 'Corporate'}) • Priority #{extractSponsoredMeta(item).priorityRank}
+                          </span>
+                        )}
                         {item.join_code && (
                           <span className="inline-block mt-1 font-mono text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                             Passcode: {item.join_code}
@@ -451,6 +525,21 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     </td>
 
                     <td className="py-3.5 px-3 text-right space-x-2 whitespace-nowrap">
+                      {/* Toggle Corporate Sponsor */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSponsored(item)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-colors ${
+                          extractSponsoredMeta(item).isSponsored
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                            : 'bg-charcoal-800 text-slate-400 border-charcoal-700 hover:text-white'
+                        }`}
+                        title={extractSponsoredMeta(item).isSponsored ? 'Demote to Regular Collegiate' : 'Promote to Corporate Sponsored'}
+                      >
+                        <Zap className="w-3 h-3" />
+                        <span>{extractSponsoredMeta(item).isSponsored ? 'Sponsored' : 'Make Sponsor'}</span>
+                      </button>
+
                       {/* View Link */}
                       <Link
                         href={item.join_code ? `/h/${item.join_code}` : `/hackathons/${item.id}`}
@@ -483,7 +572,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       {/* Deleted / Suppressed Hackathons (Trash & Restore Registry) */}
       {deletedHackathons.length > 0 && (
         <div className="rounded-2xl bg-charcoal-900 border border-red-500/20 p-6 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-sm font-bold text-red-300 flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-red-400" />
               <span>Deleted Hackathons (Suppressed Site-Wide)</span>
@@ -491,7 +580,17 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                 {deletedHackathons.length} Suppressed
               </span>
             </h3>
-            <span className="text-[11px] text-slate-400">Guaranteed hidden from directory, homepage &amp; workspace</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-slate-400 hidden sm:inline">Guaranteed hidden from directory &amp; workspace</span>
+              <button
+                type="button"
+                onClick={handleClearAllDeleted}
+                disabled={isClearingDeleted}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/40 transition-colors disabled:opacity-50"
+              >
+                {isClearingDeleted ? 'Restoring...' : 'Restore All / Reset Trash'}
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -721,6 +820,38 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
               <p className="text-[10px] text-slate-500 mt-1">
                 Comma-separated hiring advantages that will be prominently showcased to attract top campus coders.
               </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Directory Priority Rank (1 to 10)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={sponsoredForm.priority_rank}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, priority_rank: parseInt(e.target.value) || 10 })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Rank 10 = Pinned to absolute top of directory.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Target Hiring Roles
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. SDE-1, AI/ML Engineers, Frontend Interns"
+                  value={sponsoredForm.hiring_roles}
+                  onChange={(e) => setSponsoredForm({ ...sponsoredForm, hiring_roles: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">

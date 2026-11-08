@@ -41,7 +41,9 @@ import {
   Globe,
   Heart,
   RefreshCw,
+  Building2,
 } from 'lucide-react';
+import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
 export default function HackathonDetailPage() {
   const params = useParams();
@@ -154,6 +156,13 @@ export default function HackathonDetailPage() {
               company_logo: meta.logo_url || currentHack.logo_url || currentHack.company_logo,
               eligibility: meta.eligibility || currentHack.eligibility,
               banner_url: meta.banner_url || currentHack.banner_url,
+              is_sponsored: meta.is_sponsored ?? currentHack.is_sponsored,
+              is_enterprise: meta.is_enterprise ?? currentHack.is_enterprise,
+              company_name: meta.company_name || currentHack.company_name,
+              glow_color: meta.glow_color || currentHack.glow_color,
+              priority_rank: meta.priority_rank || currentHack.priority_rank,
+              recruitment_perks: meta.recruitment_perks || currentHack.recruitment_perks,
+              hiring_roles: meta.hiring_roles || currentHack.hiring_roles,
               description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
             };
           }
@@ -244,6 +253,11 @@ export default function HackathonDetailPage() {
     if (!hackathon?.start_date) return false;
     return new Date(hackathon.start_date).getTime() <= Date.now();
   }, [hackathon?.start_date]);
+
+  // Sponsored & Corporate Metadata
+  const sponsoredMeta = useMemo(() => {
+    return extractSponsoredMeta(hackathon);
+  }, [hackathon]);
 
   // Profile-based Eligibility Evaluation
   const eligibilityEvaluation = useMemo(() => {
@@ -555,6 +569,48 @@ export default function HackathonDetailPage() {
           
           {/* LEFT 2 COLUMNS: Event Details, Badges & Tabs */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* Corporate & Enterprise Sponsored Spotlight Callout */}
+            {sponsoredMeta.isSponsored && (
+              <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-rose-500/10 border-2 border-amber-400/50 shadow-2xl space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                    <span className="text-xs font-mono font-black uppercase tracking-wider text-amber-300">
+                      ⚡ Official Corporate Sponsored Challenge • Fast-Track Tech Hiring
+                    </span>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-amber-400/20 text-amber-200 border border-amber-400/40">
+                    VIP Sponsor: {sponsoredMeta.companyName || hackathon.organizer}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-amber-500/20 text-xs relative z-10">
+                  <p className="text-amber-100/90 font-medium leading-relaxed">
+                    🌟 <strong>Priority Fast-Track:</strong> Top finalist squads unlock fast-track interview rounds, engineering leadership mentorship, and direct incubator funding.
+                  </p>
+                  {sponsoredMeta.hiringRoles && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-charcoal-950/90 border border-amber-400/40 text-amber-300 font-mono text-[11px] shrink-0 font-bold shadow-xs">
+                      🎯 Hiring: {sponsoredMeta.hiringRoles}
+                    </span>
+                  )}
+                </div>
+
+                {sponsoredMeta.recruitmentPerks.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1 relative z-10">
+                    {sponsoredMeta.recruitmentPerks.map((perk, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 rounded-lg bg-black/50 border border-amber-400/30 text-[11px] font-mono text-amber-200 font-semibold"
+                      >
+                        ✨ {perk}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Header Block with Title & College Emblem */}
             <div className="p-6 rounded-3xl bg-charcoal-900/90 border border-charcoal-800 space-y-4 shadow-xl">
@@ -1074,6 +1130,8 @@ export default function HackathonDetailPage() {
                       className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
                         countdown.isClosed || !eligibilityEvaluation.isEligible
                           ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
+                          : sponsoredMeta.isSponsored
+                          ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white shadow-amber-500/30 ring-1 ring-amber-400/50 cursor-pointer active:scale-[0.98]'
                           : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 cursor-pointer active:scale-[0.98]'
                       }`}
                     >
@@ -1083,6 +1141,8 @@ export default function HackathonDetailPage() {
                         <span>Registration Closed</span>
                       ) : !eligibilityEvaluation.isEligible ? (
                         <span>Not Eligible to Register</span>
+                      ) : sponsoredMeta.isSponsored ? (
+                        <span>Apply &amp; Register Squad</span>
                       ) : (
                         <span>Register</span>
                       )}

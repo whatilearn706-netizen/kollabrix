@@ -326,11 +326,16 @@ export async function POST(request: NextRequest) {
         ? recruitment_perks.split(',').map((s: string) => s.trim()).filter(Boolean)
         : ['Fast-track interview', 'Direct PPI for top squads', '1:1 Tech Mentorship'];
 
+      const priority_rank = body.priority_rank ? parseInt(body.priority_rank) : 10;
+      const hiring_roles = body.hiring_roles?.trim() || '';
+
       const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
         is_sponsored: true,
         is_enterprise: true,
         company_name: company_name.trim(),
         glow_color,
+        priority_rank,
+        hiring_roles,
         recruitment_perks: perksArray,
         prize_pool: prize_pool.trim(),
         access_type,
@@ -440,12 +445,17 @@ export async function POST(request: NextRequest) {
         currentDeleted = parseDeletedHackathons(settingRow?.value);
       }
 
+      const targetTitle = (body.title || '').trim().toLowerCase();
       const updatedIds = currentDeleted.deletedIds.filter(
         (id) => id.toLowerCase() !== hackathonId.toLowerCase()
+      );
+      const updatedTitles = (currentDeleted.deletedTitles || []).filter(
+        (t) => t.trim().toLowerCase() !== targetTitle && t.trim().toLowerCase() !== hackathonId.toLowerCase()
       );
 
       const restoreVal = {
         deletedIds: updatedIds,
+        deletedTitles: updatedTitles,
         deletedAt: currentDeleted.deletedAt || {},
       };
 
@@ -464,6 +474,91 @@ export async function POST(request: NextRequest) {
         message: 'Hackathon restored successfully.',
         restoredId: hackathonId,
         deletedIds: updatedIds,
+      });
+    }
+
+    if (action === 'clear_deleted') {
+      const client = auth.dbClient;
+      const emptyVal = {
+        deletedIds: [],
+        deletedTitles: [],
+        deletedAt: {},
+      };
+      await updateMasterControlSubkey('deletedHackathons', emptyVal);
+      try {
+        await client.from('platform_settings').upsert({
+          key: 'deleted_hackathons',
+          value: emptyVal,
+          updated_at: new Date().toISOString(),
+        });
+      } catch {}
+      return NextResponse.json({
+        success: true,
+        message: 'Deleted/suppressed hackathons registry cleared. All competitions restored.',
+      });
+    }
+
+    if (action === 'toggle_sponsored' && hackathonId) {
+      const client = auth.dbClient;
+      const { priority_rank = 10, company_name } = body;
+
+      let isNowSponsored = true;
+      if (isSupabaseConfigured()) {
+        try {
+          const { data: current } = await client
+            .from('hackathons')
+            .select('id, title, description, organizer, is_sponsored')
+            .eq('id', hackathonId)
+            .maybeSingle();
+
+          if (current) {
+            isNowSponsored = !current.is_sponsored;
+            const updatedDesc = current.description || '';
+            let metaObj: any = {};
+            if (updatedDesc.includes('<!-- HACKATHON_META:')) {
+              try {
+                metaObj = JSON.parse(updatedDesc.split('<!-- HACKATHON_META:')[1].split('-->')[0]);
+              } catch {}
+            }
+            metaObj.is_sponsored = isNowSponsored;
+            metaObj.is_enterprise = isNowSponsored;
+            metaObj.priority_rank = isNowSponsored ? priority_rank : 1;
+            if (company_name) metaObj.company_name = company_name;
+
+            const cleanDesc = updatedDesc.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim();
+            const newDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
+
+            await client
+              .from('hackathons')
+              .update({
+                is_sponsored: isNowSponsored,
+                description: newDesc,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', hackathonId);
+          }
+        } catch (dbErr) {
+          console.warn('DB toggle sponsored fallback:', dbErr);
+        }
+      }
+
+      await recordAdminAuditLog({
+        actorEmail: auth.user?.email || 'admin@kollabrix.in',
+        actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        action: isNowSponsored ? 'PROMOTE_TO_SPONSORED' : 'DEMOTE_FROM_SPONSORED',
+        targetType: 'hackathon',
+        targetId: hackathonId,
+        details: { isNowSponsored, priority_rank },
+        outcome: 'SUCCESS',
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: isNowSponsored
+          ? 'Hackathon promoted to Corporate Sponsored with Top Priority.'
+          : 'Hackathon reverted to regular Collegiate status.',
+        hackathonId,
+        is_sponsored: isNowSponsored,
       });
     }
 
