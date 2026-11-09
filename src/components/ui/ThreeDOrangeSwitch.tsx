@@ -9,53 +9,12 @@ interface ThreeDOrangeSwitchProps {
   pastCount?: number;
 }
 
-/**
- * 3D Dark Orange Switch Button
- * Recreated with precision from 3D render specifications:
- * - Recessed dark carbon track with deep inset drop shadows
- * - Warm internal amber/orange glow radiating inside the groove
- * - Brushed aluminum/graphite 3D capsule thumb with circular center dimple
- * - Specular edge glare and realistic 3D directional cast shadow
- */
 export function ThreeDOrangeSwitch({
   isPast,
   onToggle,
-  liveCount,
-  pastCount,
 }: ThreeDOrangeSwitchProps) {
   return (
-    <div className="flex items-center gap-2 sm:gap-2.5 select-none">
-      {/* Live & Upcoming Label */}
-      <button
-        type="button"
-        onClick={() => onToggle(false)}
-        className={`flex items-center gap-1.5 text-xs font-mono font-bold transition-all cursor-pointer ${
-          !isPast
-            ? 'text-amber-500 dark:text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-        }`}
-      >
-        <span
-          className={`w-2 h-2 rounded-full transition-all ${
-            !isPast
-              ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b] scale-110'
-              : 'bg-slate-300 dark:bg-slate-600 scale-90'
-          }`}
-        />
-        <span className="whitespace-nowrap">Live &amp; Upcoming</span>
-        {typeof liveCount === 'number' && (
-          <span
-            className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono border font-semibold transition-colors ${
-              !isPast
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                : 'bg-slate-100 dark:bg-charcoal-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-charcoal-700'
-            }`}
-          >
-            {liveCount}
-          </span>
-        )}
-      </button>
-
+    <div className="flex items-center select-none">
       {/* 3D Dark Orange Recessed Track */}
       <button
         type="button"
@@ -63,7 +22,7 @@ export function ThreeDOrangeSwitch({
         aria-checked={isPast}
         onClick={() => onToggle(!isPast)}
         className="relative w-[68px] h-[30px] rounded-full p-[2.5px] bg-gradient-to-b from-[#0a0a0d] via-[#121217] to-[#1c1c24] border border-white/15 dark:border-white/10 shadow-[inset_0_3px_6px_rgba(0,0,0,0.95),_inset_0_1px_2px_rgba(0,0,0,0.85),_0_2px_4px_rgba(0,0,0,0.15)] cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-500/40 group overflow-hidden shrink-0"
-        title={isPast ? 'Switch to Live & Upcoming' : 'Switch to Past Events'}
+        title={isPast ? 'Past Events (Click for Live & Upcoming)' : 'Live & Upcoming (Click for Past Events)'}
       >
         {/* Internal Amber / Orange Ambient Glow inside the track */}
         <div
@@ -108,30 +67,6 @@ export function ThreeDOrangeSwitch({
             }}
           />
         </div>
-      </button>
-
-      {/* Past Events Label */}
-      <button
-        type="button"
-        onClick={() => onToggle(true)}
-        className={`flex items-center gap-1.5 text-xs font-mono font-bold transition-all cursor-pointer ${
-          isPast
-            ? 'text-amber-500 dark:text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-        }`}
-      >
-        <span className="whitespace-nowrap">Past Events</span>
-        {typeof pastCount === 'number' && (
-          <span
-            className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono border font-semibold transition-colors ${
-              isPast
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                : 'bg-slate-100 dark:bg-charcoal-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-charcoal-700'
-            }`}
-          >
-            {pastCount}
-          </span>
-        )}
       </button>
     </div>
   );
