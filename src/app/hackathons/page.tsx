@@ -10,12 +10,13 @@ import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { Hackathon, HackathonMode } from '@/types/database';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { parseDeletedHackathons } from '@/lib/admin/hackathonSettings';
-import { isHackathonArchivedFromFeed } from '@/lib/hackathons/hackathonStatus';
+import { isHackathonClosed, isHackathonArchivedFromFeed } from '@/lib/hackathons/hackathonStatus';
 import { HackathonCard } from '@/components/hackathons/HackathonCard';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
 import { HackathonCardSkeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ThreeDOrangeSwitch } from '@/components/ui/ThreeDOrangeSwitch';
 import {
   Trophy,
   Search,
@@ -31,7 +32,6 @@ import {
   Shield,
   Users,
   ArrowRight,
-  KeyRound,
   CheckCircle2,
   AlertCircle,
   Zap,
@@ -59,15 +59,12 @@ export default function HackathonsPage() {
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('all');
   const [hasUserSelectedTab, setHasUserSelectedTab] = useState(false);
+  const [timelineFilter, setTimelineFilter] = useState<'live' | 'past'>('live');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMode, setSelectedMode] = useState<string>('All');
   const [selectedTheme, setSelectedTheme] = useState<string>('All');
   const [onlyOpen, setOnlyOpen] = useState(false);
-
-  // Quick Join Code Input
-  const [quickJoinCode, setQuickJoinCode] = useState('');
-  const [quickJoinError, setQuickJoinError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(() => !cachedHackathons);
@@ -236,42 +233,6 @@ export default function HackathonsPage() {
     }
   }, [user]);
 
-  // Handle Quick Join Submit
-  const handleQuickJoin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setQuickJoinError(null);
-
-    if (!quickJoinCode.trim()) {
-      setQuickJoinError('Please enter a hackathon join code or link.');
-      return;
-    }
-
-    let code = quickJoinCode.trim();
-    if (code.includes('/h/')) {
-      code = code.split('/h/')[1];
-    }
-    code = code.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-
-    if (!code) {
-      setQuickJoinError('Invalid hackathon join code.');
-      return;
-    }
-
-    const matched = hackathons.find(
-      (h: Hackathon) =>
-        h.join_code?.toLowerCase() === code ||
-        h.id?.toLowerCase() === code ||
-        (h.website_url && h.website_url.toLowerCase().includes(`/h/${code}`))
-    );
-
-    if (matched) {
-      router.push(`/hackathons/${matched.id}`);
-      return;
-    }
-
-    router.push(`/hackathons/${code}`);
-  };
-
   // Toggle Save / Bookmark
   const handleToggleSave = async (hackathonId: string) => {
     const isCurrentlySaved = savedIds.includes(hackathonId);
@@ -327,6 +288,43 @@ export default function HackathonsPage() {
     );
   }, [hackathons]);
 
+  // Helper: check if a hackathon is concluded / past
+  const isPastEvent = (h: Hackathon): boolean => {
+    if (h.status === 'Archived') {
+      return true;
+    }
+    return isHackathonClosed(h) || isHackathonArchivedFromFeed(h);
+  };
+
+  // Tab-scoped hackathons for real-time live vs past counters
+  const tabScopedHackathons = useMemo(() => {
+    return hackathons.filter((h) => {
+      const isSponsored = extractSponsoredMeta(h).isSponsored;
+      const isPrivate = h.access_type === 'private';
+
+      if (activeTab === 'all') {
+        if (isSponsored || isPrivate) return false;
+      } else if (activeTab === 'corporate') {
+        if (!isSponsored) return false;
+      } else if (activeTab === 'private') {
+        if (!isPrivate) return false;
+      } else if (activeTab === 'my-events') {
+        if (!enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
+      } else if (activeTab === 'saved') {
+        if (!savedIds.includes(h.id)) return false;
+      }
+      return true;
+    });
+  }, [hackathons, activeTab, enrolledIds, savedIds, user?.id]);
+
+  const liveCount = useMemo(() => {
+    return tabScopedHackathons.filter((h) => !isPastEvent(h) && !isHackathonArchivedFromFeed(h)).length;
+  }, [tabScopedHackathons]);
+
+  const pastCount = useMemo(() => {
+    return tabScopedHackathons.filter((h) => isPastEvent(h)).length;
+  }, [tabScopedHackathons]);
+
   // Set default tab on load if only sponsored events exist
   useEffect(() => {
     if (!hasUserSelectedTab && hackathons.length > 0) {
@@ -339,7 +337,7 @@ export default function HackathonsPage() {
     }
   }, [hackathons, hasUserSelectedTab]);
 
-  // Filtered list based on active tab and filters
+  // Filtered list based on active tab, timeline (live vs past), and search filters
   const filteredHackathons = useMemo(() => {
     const now = new Date();
 
@@ -364,11 +362,18 @@ export default function HackathonsPage() {
           if (!savedIds.includes(h.id)) return false;
         }
 
-        // Disappear from public college directory the day after results are announced
-        if (activeTab !== 'my-events' && isHackathonArchivedFromFeed(h)) return false;
+        // Timeline filter: Live & Upcoming vs Past Events
+        const isPast = isPastEvent(h);
+        if (timelineFilter === 'live') {
+          if (isPast) return false;
+          // Disappear from public college directory the day after results are announced
+          if (activeTab !== 'my-events' && isHackathonArchivedFromFeed(h)) return false;
+        } else if (timelineFilter === 'past') {
+          if (!isPast) return false;
+        }
 
-        // Deadline filter
-        if (onlyOpen) {
+        // Deadline filter (only applied in live view)
+        if (onlyOpen && timelineFilter === 'live') {
           const deadline = new Date(h.registration_deadline);
           if (deadline < now) return false;
         }
@@ -395,6 +400,13 @@ export default function HackathonsPage() {
         return true;
       })
       .sort((a, b) => {
+        // Concluded events sort with newest finish first
+        if (timelineFilter === 'past') {
+          const dateA = new Date(a.end_date || a.registration_deadline || a.created_at).getTime();
+          const dateB = new Date(b.end_date || b.registration_deadline || b.created_at).getTime();
+          return dateB - dateA;
+        }
+
         const metaA = extractSponsoredMeta(a);
         const metaB = extractSponsoredMeta(b);
 
@@ -412,7 +424,7 @@ export default function HackathonsPage() {
         // Default sorting by start date / registration deadline
         return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
       });
-  }, [hackathons, activeTab, savedIds, enrolledIds, user, onlyOpen, selectedMode, selectedTheme, searchQuery]);
+  }, [hackathons, activeTab, timelineFilter, savedIds, enrolledIds, user, onlyOpen, selectedMode, selectedTheme, searchQuery]);
 
   return (
     <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10 space-y-8">
@@ -459,89 +471,13 @@ export default function HackathonsPage() {
               variant="primary"
               size="sm"
               style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-              className="text-white font-bold shadow-xs transition-all"
+              className="text-white font-bold shadow-xs transition-all cursor-pointer"
               leftIcon={<PlusCircle className="w-4 h-4" />}
             >
               Host College Hackathon
             </Button>
           </Link>
         </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* DEDICATED PRIVATE COLLEGE HACKATHON SECTION / QUICK ACCESS HUB */}
-      {/* ========================================================================= */}
-      <div className="p-6 sm:p-7 rounded-3xl bg-slate-50 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-800 uppercase tracking-wider">
-              <span className="p-1 rounded bg-amber-100 border border-amber-300">
-                <Lock className="w-3.5 h-3.5 text-amber-900" />
-              </span>
-              <span>Private College Hackathon Portal</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Join Campus Hackathons with Your Teammates
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-              Did your professor or college department announce a private hackathon? Enter your event join code or link to unlock problem statements, register your team, and submit project deliverables.
-            </p>
-          </div>
-
-          {/* Quick Join Passcode Form */}
-          <form
-            onSubmit={handleQuickJoin}
-            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-md shrink-0"
-          >
-            <div className="relative flex-1">
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Join Code (e.g. col-apex26 or /h/...)"
-                value={quickJoinCode}
-                onChange={(e) => setQuickJoinCode(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-2xs transition-colors"
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              className="bg-slate-900 hover:bg-black text-white font-bold whitespace-nowrap py-2.5 shadow-xs"
-              leftIcon={<Lock className="w-3.5 h-3.5" />}
-            >
-              Enter Passcode
-            </Button>
-          </form>
-        </div>
-
-        {quickJoinError && (
-          <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-xs font-medium text-red-700 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-            <span>{quickJoinError}</span>
-          </div>
-        )}
-
-        {/* Quick Suggestion Chips if Private Hackathons Exist */}
-        {privateHackathons.length > 0 && (
-          <div className="pt-2 border-t border-amber-200/60 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-600 font-bold">Active Campus Events:</span>
-            {privateHackathons.map((ph) => (
-              <button
-                key={ph.id}
-                type="button"
-                onClick={() => {
-                  router.push(`/hackathons/${ph.id}`);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-bold font-mono transition-colors shadow-xs cursor-pointer"
-              >
-                <Lock className="w-3 h-3 text-amber-600" />
-                <span>{ph.title}</span>
-                <span className="text-[10px] text-slate-500">({ph.join_code})</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Tabs & Controls */}
@@ -683,24 +619,36 @@ export default function HackathonsPage() {
           </select>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-600 pt-1 font-medium">
-          <span>
-            Showing <strong className="text-slate-900 font-black">{filteredHackathons.length}</strong> event
-            {filteredHackathons.length !== 1 ? 's' : ''}
-          </span>
-          {(searchQuery || selectedMode !== 'All' || selectedTheme !== 'All' || onlyOpen) && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedMode('All');
-                setSelectedTheme('All');
-                setOnlyOpen(false);
-              }}
-              className="text-violet-600 hover:text-violet-700 font-bold"
-            >
-              Reset Filters
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 pt-1 font-medium">
+          <div className="flex items-center gap-3">
+            <span>
+              Showing <strong className="text-slate-900 font-black">{filteredHackathons.length}</strong> event
+              {filteredHackathons.length !== 1 ? 's' : ''}
+            </span>
+            {(searchQuery || selectedMode !== 'All' || selectedTheme !== 'All' || onlyOpen) && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedMode('All');
+                  setSelectedTheme('All');
+                  setOnlyOpen(false);
+                }}
+                className="text-violet-600 hover:text-violet-700 font-bold cursor-pointer"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+
+          {/* 3D Dark Orange Live vs Past Toggle Switch Button (matches video design: recessed track, amber bloom, 3D metallic thumb) */}
+          <div className="flex items-center justify-end">
+            <ThreeDOrangeSwitch
+              isPast={timelineFilter === 'past'}
+              onToggle={(past) => setTimelineFilter(past ? 'past' : 'live')}
+              liveCount={liveCount}
+              pastCount={pastCount}
+            />
+          </div>
         </div>
       </div>
 
