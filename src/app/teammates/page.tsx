@@ -27,8 +27,6 @@ import {
   FolderPlus,
   GraduationCap,
   Trophy,
-  Lock,
-  KeyRound,
   Users2,
   ShieldCheck,
   ArrowRight,
@@ -71,10 +69,6 @@ export default function TeammatesPage() {
   const [isLoading, setIsLoading] = useState<boolean>(() => !cachedProfiles);
   const [inviteModalCandidate, setInviteModalCandidate] = useState<Profile | null>(null);
   const [inviteModalScore, setInviteModalScore] = useState<number | undefined>();
-
-  // Quick join code state for Private Hackathons
-  const [hackathonCode, setHackathonCode] = useState('');
-  const [hackathonError, setHackathonError] = useState<string | null>(null);
 
   const [suspendedUserIds, setSuspendedUserIds] = useState<string[]>([]);
 
@@ -158,8 +152,15 @@ export default function TeammatesPage() {
               return { ...p, college_verified: isVerified };
             });
 
-          // Display all genuine collegiate builder profiles
-          const finalProfiles = activeProfs.length > 0 ? activeProfs : DEMO_PROFILES;
+          // Display all genuine collegiate builder profiles; augment with verified demo profiles if fewer than 2 peers exist
+          const otherProfs = activeProfs.filter((p) => p.user_id !== user?.id);
+          const finalProfiles =
+            otherProfs.length >= 2
+              ? activeProfs
+              : [
+                  ...activeProfs,
+                  ...DEMO_PROFILES.filter((dp) => !activeProfs.some((ap) => ap.user_id === dp.user_id)),
+                ];
 
           setAllProfiles(finalProfiles);
           setPageCache('linkora_teammates_profiles_v7', finalProfiles);
@@ -443,92 +444,6 @@ export default function TeammatesPage() {
           </Link>
         </div>
       </div>
-
-      {/* Compact Campus Hackathon Quick-Join Callout */}
-      <div
-        style={{
-          backgroundColor: theme.surfaceColor,
-          borderColor: theme.borderColor,
-          borderRadius: theme.borderRadius,
-        }}
-        className="site-card p-5 sm:p-6 border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0 text-slate-700 shadow-2xs">
-            <Lock className="w-4 h-4 text-violet-600" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-black text-slate-900">Assembling for a College Hackathon?</span>
-              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-900 border border-violet-200 font-bold uppercase tracking-wide">
-                Campus Portal
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 mt-0.5 font-normal">
-              Enter your department passcode to unlock private challenge guidelines and recruit your 2–4 student squad.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setHackathonError(null);
-              if (!hackathonCode.trim()) {
-                setHackathonError('Please enter a hackathon join code.');
-                return;
-              }
-              let clean = hackathonCode.trim();
-              if (clean.includes('/h/')) {
-                clean = clean.split('/h/')[1];
-              }
-              clean = clean.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-              if (!clean) {
-                setHackathonError('Invalid join code format.');
-                return;
-              }
-              router.push(`/h/${clean}`);
-            }}
-            className="flex items-center gap-2 flex-1 md:flex-initial"
-          >
-            <div className="relative flex-1 md:w-48">
-              <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Passcode (e.g. col-apex26)"
-                value={hackathonCode}
-                onChange={(e) => setHackathonCode(e.target.value)}
-                className="w-full pl-8 pr-2.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono uppercase text-slate-900 placeholder-slate-400 focus:outline-none focus:border-violet-500 shadow-2xs"
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              className="bg-slate-900 hover:bg-black text-white font-bold text-xs whitespace-nowrap py-2 px-4 shadow-xs"
-            >
-              Unlock
-            </Button>
-          </form>
-
-          <Link href="/hackathons">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs border-slate-200 text-slate-700 hover:text-slate-900 bg-white whitespace-nowrap py-2 px-3 font-bold"
-            >
-              Browse All
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {hackathonError && (
-        <div className="p-3 rounded-2xl bg-rose-100 border border-rose-300 text-xs text-rose-800 font-semibold flex items-center gap-2">
-          <span>Error:</span> {hackathonError}
-        </div>
-      )}
 
       {/* Target Matching Context Selector */}
       <div
