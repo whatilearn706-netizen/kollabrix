@@ -33,11 +33,6 @@ export function calculateProjectTeammateMatch(
   // 3. Respect privacy: skip non-public profiles
   if (candidate.is_portfolio_public === false) return null;
 
-  // 4. Strictly exclude users who have not completed and saved their profile
-  const hasCollege = Boolean(candidate.college && candidate.college.trim().length > 0);
-  const hasSkills = Boolean(candidate.skills && Array.isArray(candidate.skills) && candidate.skills.length > 0);
-  if (!hasCollege || !hasSkills) return null;
-
   const weights = customWeights || DEFAULT_MATCH_WEIGHTS;
 
   const candidateSkills = (candidate.skills || []).map((s) => s.trim().toLowerCase());
@@ -129,7 +124,7 @@ export function calculateProjectTeammateMatch(
     matching_skills: matchingSkills,
     matching_roles: matchingRoles,
     matching_interests: matchingInterests,
-    reasons,
+    reasons: reasons.length > 0 ? reasons : ['General collegiate collaborator with active profile'],
   };
 }
 
@@ -144,11 +139,6 @@ export function calculatePeerTeammateMatch(
   if (peer.user_id === currentUser.user_id) return null;
   if (peer.is_suspended || peer.status === 'suspended') return null;
   if (peer.is_portfolio_public === false) return null;
-
-  // Strictly exclude users who have not completed and saved their profile
-  const hasCollege = Boolean(peer.college && peer.college.trim().length > 0);
-  const hasSkills = Boolean(peer.skills && Array.isArray(peer.skills) && peer.skills.length > 0);
-  if (!hasCollege || !hasSkills) return null;
 
   const weights = customWeights || DEFAULT_MATCH_WEIGHTS;
 

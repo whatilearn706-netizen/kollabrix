@@ -355,11 +355,8 @@ export async function prefetchTeammatesData(): Promise<void> {
     const { data: profs } = await supabase
       .from('profiles')
       .select('*')
-      .eq('is_portfolio_public', true)
       .neq('is_suspended', true)
       .neq('status', 'suspended')
-      .not('college', 'is', null)
-      .neq('college', '')
       .order('updated_at', { ascending: false })
       .limit(60);
 
@@ -385,8 +382,7 @@ export async function prefetchTeammatesData(): Promise<void> {
             !p.is_suspended &&
             p.status !== 'suspended' &&
             !suspendedIds.includes(p.user_id) &&
-            Boolean(p.college && p.college.trim().length > 0) &&
-            Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0)
+            Boolean(p.user_id && (p.username || p.display_name))
         )
         .map((p) => {
           const isVerified =
@@ -395,7 +391,7 @@ export async function prefetchTeammatesData(): Promise<void> {
           return { ...p, college_verified: isVerified };
         });
 
-      setPageCache('linkora_teammates_profiles', activeProfs);
+      setPageCache('kollabrix_teammates_real_v2', activeProfs);
     }
   } catch {}
 }

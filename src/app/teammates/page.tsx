@@ -34,15 +34,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
-import { DEMO_PROFILES } from '@/data/mockProfiles';
 
-// Helper: Strictly verifies a student/builder has completed and saved their profile
+// Helper: Checks if a profile is genuine and active (not suspended)
 function isCompleteProfile(p: Profile | null | undefined): boolean {
   if (!p) return false;
   if (p.is_suspended || p.status === 'suspended') return false;
-  const hasCollege = Boolean(p.college && p.college.trim().length > 0);
-  const hasSkills = Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0);
-  return hasCollege && hasSkills;
+  return Boolean(p.user_id && (p.username || p.display_name));
 }
 
 export default function TeammatesPage() {
@@ -50,8 +47,8 @@ export default function TeammatesPage() {
   const { user, profile } = useAuth();
   const { theme } = useSiteTheme();
 
-  // Instant In-Memory / Stale-While-Revalidate Cache
-  const cachedProfiles = getPageCache<Profile[]>('linkora_teammates_profiles_v7');
+  // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
+  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v2');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
     cachedProfiles ? cachedProfiles.filter(isCompleteProfile) : []
@@ -100,17 +97,14 @@ export default function TeammatesPage() {
           }
         } catch {}
 
-        // 1. Fetch public profiles, strictly excluding suspended or non-active accounts
+        // 1. Fetch genuine registered users from database, strictly excluding suspended accounts
         const { data: profs } = await supabase
           .from('profiles')
           .select('*')
-          .eq('is_portfolio_public', true)
           .or('is_suspended.is.null,is_suspended.eq.false')
           .or('status.is.null,status.neq.suspended')
-          .not('college', 'is', null)
-          .neq('college', '')
           .order('updated_at', { ascending: false })
-          .limit(60);
+          .limit(100);
 
         // Fetch verified college affiliations registry from platform_settings
         const verifiedUserIds = new Set<string>();
@@ -136,7 +130,7 @@ export default function TeammatesPage() {
           }
         } catch {}
 
-        if (profs) {
+        if (profs && Array.isArray(profs)) {
           const activeProfs = (profs as Profile[])
             .filter(
               (p) =>
@@ -152,21 +146,11 @@ export default function TeammatesPage() {
               return { ...p, college_verified: isVerified };
             });
 
-          // Display all genuine collegiate builder profiles; augment with verified demo profiles if fewer than 2 peers exist
-          const otherProfs = activeProfs.filter((p) => p.user_id !== user?.id);
-          const finalProfiles =
-            otherProfs.length >= 2
-              ? activeProfs
-              : [
-                  ...activeProfs,
-                  ...DEMO_PROFILES.filter((dp) => !activeProfs.some((ap) => ap.user_id === dp.user_id)),
-                ];
-
-          setAllProfiles(finalProfiles);
-          setPageCache('linkora_teammates_profiles_v7', finalProfiles);
+          // Only genuine registered users from the database are displayed
+          setAllProfiles(activeProfs);
+          setPageCache('kollabrix_teammates_real_v2', activeProfs);
         } else {
-          setAllProfiles(DEMO_PROFILES);
-          setPageCache('linkora_teammates_profiles_v7', DEMO_PROFILES);
+          setAllProfiles([]);
         }
 
         // 2. If logged in, fetch owned projects
@@ -215,8 +199,6 @@ export default function TeammatesPage() {
           const combinedInvitedIds = Array.from(new Set([...remoteInvitedIds, ...localInvitedIds]));
           setInvitedUserIds(combinedInvitedIds);
         }
-      } else {
-        setAllProfiles(DEMO_PROFILES);
       }
     } catch (e) {
       console.warn('Error loading teammates data:', e);
@@ -224,6 +206,14 @@ export default function TeammatesPage() {
       setIsLoading(false);
     }
   };
+
+  // Evict any legacy mock cache from browser storage
+  useEffect(() => {
+    try {
+      localStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
+      sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
+    } catch {}
+  }, []);
 
   useEffect(() => {
     loadData();
