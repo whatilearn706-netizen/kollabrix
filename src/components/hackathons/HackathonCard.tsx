@@ -88,11 +88,19 @@ export function HackathonCard({
         <div className="h-36 sm:h-40 overflow-hidden relative border-b border-slate-200/50 dark:border-white/10 bg-slate-950">
           <Link href={`/hackathons/${hackathon.id}`} className="block w-full h-full cursor-pointer">
             {hackathon.banner_url ? (
-              <img
-                src={hackathon.banner_url}
-                alt={hackathon.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-              />
+              <div className="relative w-full h-full overflow-hidden flex items-center justify-center bg-slate-950">
+                <img
+                  src={hackathon.banner_url}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover filter blur-md opacity-40 scale-125 pointer-events-none select-none"
+                />
+                <img
+                  src={hackathon.banner_url}
+                  alt={hackathon.title}
+                  className="relative z-10 max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
+                />
+              </div>
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center relative">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/25 via-indigo-600/10 to-transparent" />

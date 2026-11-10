@@ -667,15 +667,27 @@ export default function HackathonDetailPage() {
       {/* UNSTOP-STYLE STANDALONE BILLBOARD BANNER CARD (Zero Text Overlap)         */}
       {/* ========================================================================= */}
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
-        <div className={`w-full h-64 sm:h-80 md:h-96 lg:h-[420px] xl:h-[460px] 2xl:h-[500px] rounded-3xl overflow-hidden border bg-[#070914] shadow-2xl relative ${
+        <div className={`w-full min-h-[200px] sm:min-h-[260px] md:min-h-[320px] lg:min-h-[380px] xl:min-h-[420px] max-h-[500px] rounded-3xl overflow-hidden border bg-[#060813] shadow-2xl relative flex items-center justify-center ${
           sponsoredMeta.isSponsored ? `${sponsoredMeta.theme.cardBorder} ${sponsoredMeta.theme.cardGlow}` : 'border-charcoal-750'
         }`}>
           {hackathon.banner_url ? (
-            <img
-              src={hackathon.banner_url}
-              alt={hackathon.title}
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-52 sm:h-64 md:h-80 lg:h-[380px] xl:h-[420px] 2xl:h-[460px] overflow-hidden flex items-center justify-center bg-black/70">
+              {/* Atmospheric background blur derived from the banner's own colors */}
+              <img
+                src={hackathon.banner_url}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover filter blur-3xl opacity-40 scale-125 pointer-events-none select-none"
+              />
+              {/* Subtle vignette for premium cinematic depth */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/60 via-transparent to-[#060813]/40 pointer-events-none z-10" />
+              {/* Crisp uncropped foreground banner: maintains full text readability and logo framing */}
+              <img
+                src={hackathon.banner_url}
+                alt={hackathon.title}
+                className="relative z-10 max-w-full max-h-full object-contain drop-shadow-2xl"
+              />
+            </div>
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-500/15 via-violet-600/10 to-transparent" />
@@ -976,7 +988,7 @@ export default function HackathonDetailPage() {
                     <img
                       src={hackathon.banner_url}
                       alt={hackathon.title}
-                      className="w-full h-full object-cover rounded-xl"
+                      className="w-full h-full object-contain rounded-xl"
                     />
                   ) : (
                     <div className="w-full h-full rounded-xl bg-gradient-to-br from-cyan-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-inner">
