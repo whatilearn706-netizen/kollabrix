@@ -45,6 +45,7 @@ import { AdminCampusWarTab } from '@/components/admin/AdminCampusWarTab';
 import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
 import { AdminResourcesTab } from '@/components/admin/AdminResourcesTab';
 import { AdminIntegrationsPanel } from '@/components/admin/AdminIntegrationsPanel';
+import { AdminWarpPortalTab } from '@/components/admin/AdminWarpPortalTab';
 
 export default function AdminControlCenterPage() {
   const { user, profile, openAuthModal, signOut, isLoading: isAuthLoading } = useAuth();
@@ -375,6 +376,12 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       {visitedTabs.has('master') && (
         <div className={currentTab === 'master' ? 'block' : 'hidden'}>
           <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+        </div>
+      )}
+
+      {visitedTabs.has('warp_portal') && (
+        <div className={currentTab === 'warp_portal' ? 'block' : 'hidden'}>
+          <AdminWarpPortalTab authToken={authToken} />
         </div>
       )}
 
