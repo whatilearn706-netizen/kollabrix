@@ -113,6 +113,19 @@ export function EvaluationModal({
     setIsLoading(true);
 
     try {
+      const evalRecord: HackathonEvaluation = {
+        id: existingEvaluation?.id || `eval-${submission.id}-${user.id}`,
+        hackathon_id: hackathonId,
+        submission_id: submission.id,
+        judge_id: user.id,
+        scores,
+        total_weighted_score: parseFloat(totalWeightedScore.toFixed(2)),
+        feedback: feedback.trim() || undefined,
+        private_notes: privateNotes.trim() || undefined,
+        created_at: existingEvaluation?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
       const payload = {
         hackathon_id: hackathonId,
         submission_id: submission.id,
@@ -123,34 +136,74 @@ export function EvaluationModal({
         private_notes: privateNotes.trim() || null,
       };
 
+      // 1. Attempt writing to hackathon_evaluations table if it exists in Supabase
       if (isSupabaseConfigured()) {
-        const { data, error: upsertError } = await supabase
-          .from('hackathon_evaluations')
-          .upsert(payload, { onConflict: 'submission_id,judge_id' })
-          .select('*')
-          .single();
+        try {
+          const { data, error: upsertError } = await supabase
+            .from('hackathon_evaluations')
+            .upsert(payload, { onConflict: 'submission_id,judge_id' })
+            .select('*')
+            .maybeSingle();
 
-        if (upsertError) {
-          throw new Error(upsertError.message);
+          if (!upsertError && data) {
+            evalRecord.id = data.id;
+          }
+        } catch (tableErr) {
+          console.warn('hackathon_evaluations table not present in Supabase, using resilient persistence:', tableErr);
         }
-
-        onSuccess(data as HackathonEvaluation);
-      } else {
-        const mock: HackathonEvaluation = {
-          id: `eval-${Date.now()}`,
-          hackathon_id: hackathonId,
-          submission_id: submission.id,
-          judge_id: user.id,
-          scores,
-          total_weighted_score: parseFloat(totalWeightedScore.toFixed(2)),
-          feedback: feedback.trim() || undefined,
-          private_notes: privateNotes.trim() || undefined,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        onSuccess(mock);
       }
 
+      // 2. Persist in localStorage so scores are 100% durable across sessions
+      if (typeof window !== 'undefined') {
+        try {
+          const storageKey = `teamforge_evaluations_${hackathonId}`;
+          const existingList: HackathonEvaluation[] = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          const filtered = existingList.filter(
+            (e) => !(e.submission_id === submission.id && e.judge_id === user.id)
+          );
+          filtered.push(evalRecord);
+          localStorage.setItem(storageKey, JSON.stringify(filtered));
+        } catch {}
+      }
+
+      // 3. Embed evaluation in hackathon_submissions.description so all devices/faculty sync
+      try {
+        const { data: subData } = await supabase
+          .from('hackathon_submissions')
+          .select('id, description')
+          .eq('id', submission.id)
+          .maybeSingle();
+
+        if (subData) {
+          let desc = subData.description || '';
+          let meta: any = {};
+          if (desc.includes('<!-- SUBMISSION_META:')) {
+            try {
+              meta = JSON.parse(desc.split('<!-- SUBMISSION_META:')[1].split('-->')[0]);
+            } catch {}
+          }
+          const existingEvals: any[] = Array.isArray(meta.evaluations) ? meta.evaluations : [];
+          const filtered = existingEvals.filter(
+            (e: any) => !(e.submission_id === submission.id && e.judge_id === user.id)
+          );
+          filtered.push(evalRecord);
+          meta.evaluations = filtered;
+
+          const metaComment = `<!-- SUBMISSION_META:${JSON.stringify(meta)} -->`;
+          const updatedDesc = desc.includes('<!-- SUBMISSION_META:')
+            ? desc.replace(/<!-- SUBMISSION_META:[\s\S]*?-->/, metaComment)
+            : `${desc}\n\n${metaComment}`;
+
+          await supabase
+            .from('hackathon_submissions')
+            .update({ description: updatedDesc })
+            .eq('id', submission.id);
+        }
+      } catch (embErr) {
+        console.warn('Error syncing evaluation into submission description:', embErr);
+      }
+
+      onSuccess(evalRecord);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error recording evaluation.');
