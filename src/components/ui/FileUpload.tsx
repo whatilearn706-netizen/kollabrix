@@ -132,12 +132,19 @@ export function FileUpload({
         ) : (
           /* Default Banner Preview State */
           <div className="relative group rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-hidden p-2 transition-all">
-            <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center">
+              {/* Ambient atmospheric backdrop */}
+              <img
+                src={value}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover filter blur-lg opacity-35 scale-125 pointer-events-none select-none"
+              />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={value}
                 alt="Uploaded preview"
-                className="h-full w-full object-cover"
+                className="relative z-10 max-h-full max-w-full object-contain"
               />
               <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button
