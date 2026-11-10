@@ -67,6 +67,20 @@ import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 import { isHackathonClosed, normalizeHackathonDeadlines } from '@/lib/hackathons/hackathonStatus';
 
+function formatEventDateTime(dateStr?: string | null): string {
+  if (!dateStr) return 'TBA';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'TBA';
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 interface TeamWithMembers extends HackathonTeam {
   members?: Array<HackathonTeamMember & { profile?: { display_name: string; avatar_url: string | null; college?: string | null } }>;
   submission?: HackathonSubmission | null;
@@ -1193,7 +1207,7 @@ export default function HackathonWorkspacePage() {
     setSubmissionFeedback(null);
 
     if (isBeforeSprintStart) {
-      setSubmissionError(`The coding sprint officially starts on ${new Date(hackathon.start_date).toLocaleDateString()}. Deliverable submissions unlock when the sprint begins.`);
+      setSubmissionError(`The coding sprint officially starts on ${formatEventDateTime(hackathon.start_date)}. Deliverable submissions unlock when the sprint begins.`);
       return;
     }
 
@@ -1390,7 +1404,7 @@ export default function HackathonWorkspacePage() {
               <div className="mt-3.5 p-2.5 px-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center gap-2 shadow-xs">
                 <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
                 <span>
-                  <strong>Preparation & Team Formation Phase:</strong> Coding sprint officially begins on <strong>{new Date(hackathon.start_date).toLocaleDateString()}</strong>. Assemble your student squad and review problem statements. Submissions unlock once the sprint starts.
+                  <strong>Preparation & Team Formation Phase:</strong> Coding sprint officially begins on <strong>{formatEventDateTime(hackathon.start_date)}</strong>. Assemble your student squad and review problem statements. Submissions unlock once the sprint starts.
                 </span>
               </div>
             ) : (
@@ -2836,7 +2850,7 @@ export default function HackathonWorkspacePage() {
                 <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-2.5 text-indigo-300 text-xs">
                   <Clock className="w-4 h-4 shrink-0 text-indigo-400" />
                   <span>
-                    🕒 <strong>Preparation Phase:</strong> Coding sprint officially begins on <strong>{new Date(hackathon.start_date).toLocaleDateString()}</strong>. Project deliverable submissions will unlock once the sprint starts. Use this time to collaborate with your team, plan your tech stack, and design your architecture.
+                    🕒 <strong>Preparation Phase:</strong> Coding sprint officially begins on <strong>{formatEventDateTime(hackathon.start_date)}</strong>. Project deliverable submissions will unlock once the sprint starts. Use this time to collaborate with your team, plan your tech stack, and design your architecture.
                   </span>
                 </div>
               ) : (isSubmissionClosed || isClosed) ? (
@@ -2993,7 +3007,7 @@ export default function HackathonWorkspacePage() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-charcoal-800">
                   <span className="text-xs text-indigo-300 font-medium flex items-center gap-1.5">
                     <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
-                    Deliverable submissions unlock on {new Date(hackathon.start_date).toLocaleDateString()}
+                    Deliverable submissions unlock on {formatEventDateTime(hackathon.start_date)}
                   </span>
                   <div className="flex items-center gap-3">
                     <Button
@@ -3011,7 +3025,7 @@ export default function HackathonWorkspacePage() {
                       className="opacity-60 cursor-not-allowed bg-indigo-600/80 text-white font-bold"
                       leftIcon={<Clock className="w-4 h-4" />}
                     >
-                      Locked Until Kickoff ({new Date(hackathon.start_date).toLocaleDateString()})
+                      Locked Until Kickoff ({formatEventDateTime(hackathon.start_date)})
                     </Button>
                   </div>
                 </div>

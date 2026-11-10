@@ -7,6 +7,31 @@ import { hashHackathonPassword, generateJoinCode } from '@/lib/security/hackatho
 
 export const runtime = 'nodejs';
 
+/**
+ * Normalizes input date/time strings into an accurate UTC ISO timestamp.
+ * Handles client timezone offsets so that dates and times chosen by faculty
+ * in their local timezone are never shifted by serverless UTC clocks.
+ */
+function parseToIso(dateStr?: string | null, clientTzOffsetMin?: number): string | null {
+  if (!dateStr) return null;
+  // If already full ISO with 'Z' or explicit +/- timezone offset
+  if (dateStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateStr)) {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  // If no timezone offset is in the string, adjust by client timezone offset if provided
+  if (typeof clientTzOffsetMin === 'number' && !isNaN(clientTzOffsetMin)) {
+    const normalized = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+    const utcBase = new Date(normalized + 'Z').getTime();
+    if (!isNaN(utcBase)) {
+      const realUtcMs = utcBase + (clientTzOffsetMin * 60 * 1000);
+      return new Date(realUtcMs).toISOString();
+    }
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -37,6 +62,7 @@ export async function POST(request: NextRequest) {
       submissionDeadline,
       resultsDate,
       results_date,
+      clientTimezoneOffset,
       eligibility = 'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.',
       themes = [],
       prizePool,
@@ -123,7 +149,11 @@ export async function POST(request: NextRequest) {
     const resolvedBannerUrl = bannerUrl?.trim() || banner_url?.trim() || null;
     const resolvedLogoUrl = logoUrl?.trim() || logo_url?.trim() || null;
 
-    const resolvedResultsDate = resultsDate ? new Date(resultsDate).toISOString() : (results_date ? new Date(results_date).toISOString() : null);
+    const resolvedResultsDate = parseToIso(resultsDate || results_date, clientTimezoneOffset);
+    const parsedStartDate = parseToIso(startDate, clientTimezoneOffset) || new Date().toISOString();
+    const parsedEndDate = parseToIso(endDate, clientTimezoneOffset);
+    const parsedRegDeadline = parseToIso(registrationDeadline, clientTimezoneOffset) || parsedStartDate;
+    const parsedSubDeadline = parseToIso(submissionDeadline, clientTimezoneOffset);
 
     // Embed resilient metadata comment (safe fields only; passwords remain strictly in protected columns)
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
@@ -147,10 +177,10 @@ export async function POST(request: NextRequest) {
       description: description.trim() + metaComment,
       mode,
       location: location?.trim() || null,
-      start_date: new Date(startDate).toISOString(),
-      end_date: endDate ? new Date(endDate).toISOString() : null,
-      registration_deadline: new Date(registrationDeadline).toISOString(),
-      submission_deadline: submissionDeadline ? new Date(submissionDeadline).toISOString() : null,
+      start_date: parsedStartDate,
+      end_date: parsedEndDate,
+      registration_deadline: parsedRegDeadline,
+      submission_deadline: parsedSubDeadline,
       eligibility: eligibility.trim(),
       themes,
       prize_pool: prizePool?.trim() || null,
@@ -191,10 +221,10 @@ export async function POST(request: NextRequest) {
           description: description.trim() + metaComment,
           mode,
           location: location?.trim() || null,
-          start_date: new Date(startDate).toISOString(),
-          end_date: endDate ? new Date(endDate).toISOString() : null,
-          registration_deadline: new Date(registrationDeadline).toISOString(),
-          submission_deadline: submissionDeadline ? new Date(submissionDeadline).toISOString() : null,
+          start_date: parsedStartDate,
+          end_date: parsedEndDate,
+          registration_deadline: parsedRegDeadline,
+          submission_deadline: parsedSubDeadline,
           eligibility: eligibility.trim(),
           themes,
           prize_pool: prizePool?.trim() || null,

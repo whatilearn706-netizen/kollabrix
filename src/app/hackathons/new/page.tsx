@@ -241,6 +241,22 @@ export default function NewHackathonPage() {
     setIsLoading(true);
 
     try {
+      // Robust helper: Convert browser local date-time string (e.g. "2026-11-10T23:10")
+      // into an accurate UTC ISO string according to the client browser's local timezone.
+      // This prevents the server from misinterpreting local hours as UTC and shifting the display by +/- timezone offset.
+      const toUtcIso = (val?: string | null): string | null => {
+        if (!val) return null;
+        if (val.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(val)) {
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? null : d.toISOString();
+        }
+        const [dPart, tPart = '00:00'] = val.split('T');
+        const [y, m, d] = dPart.split('-').map(Number);
+        const [hh = 0, mm = 0] = tPart.split(':').map(Number);
+        const dateObj = new Date(y, m - 1, d, hh, mm, 0);
+        return isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+      };
+
       const themes = themesInput
         .split(',')
         .map((t) => t.trim())
@@ -263,11 +279,12 @@ export default function NewHackathonPage() {
           description: description.trim(),
           mode,
           location: location.trim() || null,
-          startDate,
-          endDate: endDate || null,
-          registrationDeadline,
-          submissionDeadline,
-          resultsDate: resultsDate || null,
+          startDate: toUtcIso(startDate),
+          endDate: toUtcIso(endDate),
+          registrationDeadline: toUtcIso(registrationDeadline),
+          submissionDeadline: toUtcIso(submissionDeadline),
+          resultsDate: toUtcIso(resultsDate),
+          clientTimezoneOffset: new Date().getTimezoneOffset(),
           accessType,
           password: password.trim(),
           minTeamSize,
@@ -299,7 +316,7 @@ export default function NewHackathonPage() {
             password_salt: resData.hackathon.password_salt,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
-            results_date: resultsDate ? new Date(resultsDate).toISOString() : null,
+            results_date: toUtcIso(resultsDate),
             banner_url: bannerUrl.trim() || null,
             logo_url: logoUrl.trim() || null,
             eligibility: eligibility.trim(),
@@ -313,10 +330,10 @@ export default function NewHackathonPage() {
             description: description.trim() + metaComment,
             mode,
             location: location.trim() || null,
-            start_date: new Date(startDate).toISOString(),
-            end_date: endDate ? new Date(endDate).toISOString() : null,
-            registration_deadline: new Date(registrationDeadline).toISOString(),
-            results_date: resultsDate ? new Date(resultsDate).toISOString() : null,
+            start_date: toUtcIso(startDate),
+            end_date: toUtcIso(endDate),
+            registration_deadline: toUtcIso(registrationDeadline),
+            results_date: toUtcIso(resultsDate),
             eligibility: eligibility.trim(),
             themes,
             prize_pool: prizePool.trim() || null,
