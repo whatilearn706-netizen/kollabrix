@@ -954,6 +954,17 @@ export default function HackathonWorkspacePage() {
     }
   }, [hackathonId, user]);
 
+  // High-concurrency jittered reload ref and function (prevents thundering herd on 400+ simultaneous students)
+  const reloadTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const debouncedReloadWorkspace = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    // 300ms - 1200ms randomized jitter staggers concurrent browser queries across the server naturally
+    const jitter = 300 + Math.random() * 900;
+    reloadTimerRef.current = setTimeout(() => {
+      loadWorkspace();
+    }, jitter);
+  }, [loadWorkspace]);
+
   useEffect(() => {
     loadWorkspace();
 
@@ -974,7 +985,7 @@ export default function HackathonWorkspacePage() {
             filter: `hackathon_id=eq.${activeHackId}`,
           },
           () => {
-            loadWorkspace();
+            debouncedReloadWorkspace();
           }
         )
         .on(
@@ -986,7 +997,7 @@ export default function HackathonWorkspacePage() {
             filter: `hackathon_id=eq.${activeHackId}`,
           },
           () => {
-            loadWorkspace();
+            debouncedReloadWorkspace();
           }
         )
         .on(
@@ -998,7 +1009,7 @@ export default function HackathonWorkspacePage() {
             filter: `hackathon_id=eq.${activeHackId}`,
           },
           () => {
-            loadWorkspace();
+            debouncedReloadWorkspace();
           }
         )
         .on(
@@ -1010,7 +1021,7 @@ export default function HackathonWorkspacePage() {
             filter: `hackathon_id=eq.${activeHackId}`,
           },
           () => {
-            loadWorkspace();
+            debouncedReloadWorkspace();
           }
         );
     } else {
@@ -1019,7 +1030,7 @@ export default function HackathonWorkspacePage() {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'hackathon_teams' },
           () => {
-            loadWorkspace();
+            debouncedReloadWorkspace();
           }
         );
     }
@@ -1032,7 +1043,7 @@ export default function HackathonWorkspacePage() {
           name: profile?.display_name || user?.email?.split('@')[0] || 'Student',
           onMessage: (msg) => {
             if (msg.type === 'broadcast') {
-              loadWorkspace();
+              debouncedReloadWorkspace();
             }
           },
         });
@@ -1045,13 +1056,14 @@ export default function HackathonWorkspacePage() {
     const channel = channelBuilder.subscribe();
 
     return () => {
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
       supabase.removeChannel(channel);
       if (aicSocketRef.current) {
         aicSocketRef.current.close();
         aicSocketRef.current = null;
       }
     };
-  }, [hackathonId, hackathon?.id, loadWorkspace, user?.id, profile?.display_name]);
+  }, [hackathonId, hackathon?.id, loadWorkspace, debouncedReloadWorkspace, user?.id, profile?.display_name]);
 
   // Handle Organizer Delete Team
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
