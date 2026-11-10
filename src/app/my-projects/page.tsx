@@ -198,7 +198,6 @@ function MyProjectsContent() {
               id,
               team_name,
               invite_code,
-              challenge_id,
               hackathon:hackathons(*),
               members:hackathon_team_members(
                 user_id,
@@ -244,7 +243,6 @@ function MyProjectsContent() {
             id,
             team_name,
             invite_code,
-            challenge_id,
             hackathon:hackathons(*),
             members:hackathon_team_members(
               user_id,

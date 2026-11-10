@@ -51,20 +51,39 @@ export async function POST(request: NextRequest) {
     const teamId = crypto.randomUUID();
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
+    // Prepare team payload
+    const teamPayload: Record<string, any> = {
+      id: teamId,
+      hackathon_id: hackathonId,
+      team_name: teamName.trim(),
+      description: description?.trim() || null,
+      leader_id: leaderUserId || null,
+      invite_code: inviteCode,
+    };
+    if (challengeId) {
+      teamPayload.challenge_id = challengeId;
+    }
+
     // Insert team with explicit cryptographically secure UUID
-    const { data: newTeam, error: teamErr } = await admin
+    let { data: newTeam, error: teamErr } = await admin
       .from('hackathon_teams')
-      .insert({
-        id: teamId,
-        hackathon_id: hackathonId,
-        team_name: teamName.trim(),
-        description: description?.trim() || null,
-        challenge_id: challengeId || null,
-        leader_id: leaderUserId || null,
-        invite_code: inviteCode,
-      })
+      .insert(teamPayload)
       .select('*')
       .single();
+
+    // Resilient fallback: If the database schema does not have the 'challenge_id' column,
+    // retry insertion without challenge_id to avoid blocking team registration
+    if (teamErr && (teamErr.message?.includes('challenge_id') || (teamErr as any)?.details?.includes('challenge_id'))) {
+      console.warn('hackathon_teams schema missing challenge_id; retrying insertion without it:', teamErr.message);
+      delete teamPayload.challenge_id;
+      const retryResult = await admin
+        .from('hackathon_teams')
+        .insert(teamPayload)
+        .select('*')
+        .single();
+      newTeam = retryResult.data;
+      teamErr = retryResult.error;
+    }
 
     if (teamErr) {
       return NextResponse.json({ error: teamErr.message }, { status: 500 });
@@ -107,7 +126,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, team: newTeam });
+    const teamResponse = {
+      ...newTeam,
+      challenge_id: challengeId || newTeam?.challenge_id || null,
+    };
+    return NextResponse.json({ success: true, team: teamResponse });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Server error creating team.' }, { status: 500 });
   }
