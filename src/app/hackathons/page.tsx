@@ -47,7 +47,7 @@ export default function HackathonsPage() {
   const isTeacherOrAdmin = isFacultyUser(user, profile);
 
   // Instant In-Memory / Stale-While-Revalidate Cache
-  const cachedHackathons = getPageCache<Hackathon[]>('linkora_hackathons_list');
+  const cachedHackathons = getPageCache<Hackathon[]>('kollabrix_hackathons_v3');
 
   const [hackathons, setHackathons] = useState<Hackathon[]>(() => cachedHackathons || []);
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -118,11 +118,20 @@ export default function HackathonsPage() {
         }
       }
 
-      // 3. Merge browser localStorage deleted registry if any
+      // 3. Merge browser localStorage deleted registry if any, cleaning up legacy unblocked titles
       if (typeof window !== 'undefined') {
         try {
+          localStorage.removeItem('linkora_hackathons_list');
+          localStorage.removeItem('linkora_cache_linkora_hackathons_list');
+          sessionStorage.removeItem('linkora_cache_linkora_hackathons_list');
           const localDeleted: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
-          deletedIdsList.push(...localDeleted);
+          const sanitizedDeleted = localDeleted.filter(
+            (item) => item.toLowerCase().trim() !== 'november 27 sprint'
+          );
+          if (sanitizedDeleted.length !== localDeleted.length) {
+            localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(sanitizedDeleted));
+          }
+          deletedIdsList.push(...sanitizedDeleted);
         } catch {}
       }
 
@@ -136,12 +145,18 @@ export default function HackathonsPage() {
         const title = (h.title || '').toLowerCase().trim();
         const webCode = h.website_url ? h.website_url.split('/h/')[1]?.split(/[?#]/)[0]?.toLowerCase().trim() : '';
 
-        return (
-          (id && deletedSet.has(id)) ||
-          (joinCode && deletedSet.has(joinCode)) ||
-          (title && (deletedSet.has(title) || deletedTitlesSet.has(title))) ||
-          (webCode && deletedSet.has(webCode))
-        );
+        // Direct ID or Join Code match is authoritative
+        if (id && deletedSet.has(id)) return true;
+        if (joinCode && deletedSet.has(joinCode)) return true;
+        if (webCode && deletedSet.has(webCode)) return true;
+
+        // Title-based deletion applies ONLY to mock/curated hackathons without a genuine database UUID
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(h.id);
+        if (!isUUID && title && (deletedSet.has(title) || deletedTitlesSet.has(title))) {
+          return true;
+        }
+
+        return false;
       };
 
       // 4. Load locally authored hackathons if any, and purge any that were deleted by admin
@@ -175,7 +190,7 @@ export default function HackathonsPage() {
         }
       }
       setHackathons(deduped);
-      setPageCache('linkora_hackathons_list', deduped);
+      setPageCache('kollabrix_hackathons_v3', deduped);
 
       // 6. Load saved bookmarks and enrolled hackathons if logged in
       if (user && isSupabaseConfigured()) {
@@ -276,12 +291,12 @@ export default function HackathonsPage() {
     return hackathons.filter((h) => extractSponsoredMeta(h).isSponsored);
   }, [hackathons]);
 
-  // Free / Standard Collegiate Competitions list (Excludes sponsored & private events)
+  // Free / Standard Collegiate Competitions list (Excludes sponsored & other private events, includes creator's events)
   const competitionHackathons = useMemo(() => {
     return hackathons.filter(
-      (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private'
+      (h) => !extractSponsoredMeta(h).isSponsored && (h.access_type !== 'private' || h.creator_id === user?.id)
     );
-  }, [hackathons]);
+  }, [hackathons, user?.id]);
 
   // Helper: check if a hackathon is concluded / past
   const isPastEvent = (h: Hackathon): boolean => {
@@ -298,7 +313,8 @@ export default function HackathonsPage() {
       const isPrivate = h.access_type === 'private';
 
       if (activeTab === 'all') {
-        if (isSponsored || isPrivate) return false;
+        if (isSponsored) return false;
+        if (isPrivate && h.creator_id !== user?.id) return false;
       } else if (activeTab === 'corporate') {
         if (!isSponsored) return false;
       } else if (activeTab === 'private') {
@@ -343,8 +359,9 @@ export default function HackathonsPage() {
 
         // Tab filter: Strict segregation between Competition, Sponsored, and Private
         if (activeTab === 'all') {
-          // "Competition" tab: ONLY normal free collegiate competitions (exclude sponsored & private)
-          if (isSponsored || isPrivate) return false;
+          // "Competition" tab: ONLY normal free collegiate competitions (exclude sponsored & other private events)
+          if (isSponsored) return false;
+          if (isPrivate && h.creator_id !== user?.id) return false;
         } else if (activeTab === 'corporate') {
           // "Sponsored" tab: ONLY company sponsored hackathons
           if (!isSponsored) return false;

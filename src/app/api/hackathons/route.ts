@@ -154,13 +154,18 @@ export async function GET(request: NextRequest) {
       const title = (h.title || '').trim().toLowerCase();
       const webCode = h.website_url ? h.website_url.split('/h/')[1]?.split(/[?#]/)[0]?.toLowerCase() : '';
 
-      const isDel =
-        (id && deletedSet.has(id)) ||
-        (joinCode && deletedSet.has(joinCode)) ||
-        (title && (deletedSet.has(title) || deletedTitlesSet.has(title))) ||
-        (webCode && deletedSet.has(webCode));
+      // Direct ID or Join Code match is authoritative
+      if (id && deletedSet.has(id)) return false;
+      if (joinCode && deletedSet.has(joinCode)) return false;
+      if (webCode && deletedSet.has(webCode)) return false;
 
-      return !isDel;
+      // Title-based deletion applies ONLY to mock/curated hackathons without a genuine database UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(h.id);
+      if (!isUUID && title && (deletedSet.has(title) || deletedTitlesSet.has(title))) {
+        return false;
+      }
+
+      return true;
     });
 
     return NextResponse.json(
