@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
       join_code: joinCode,
       min_team_size: minTeamSize,
       max_team_size: maxTeamSize,
+      submission_deadline: parsedSubDeadline,
       results_date: resolvedResultsDate,
       banner_url: resolvedBannerUrl,
       logo_url: resolvedLogoUrl,
@@ -324,7 +325,11 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        hackathon: safeHackathon,
+        hackathon: {
+          ...safeHackathon,
+          submission_deadline: parsedSubDeadline || safeHackathon.submission_deadline,
+          results_date: resolvedResultsDate,
+        },
         joinUrl: `/h/${joinCode}`,
         joinCode,
       });
@@ -334,6 +339,8 @@ export async function POST(request: NextRequest) {
       success: true,
       hackathon: {
         ...validDbPayload,
+        submission_deadline: parsedSubDeadline,
+        results_date: resolvedResultsDate,
       },
       joinUrl: `/h/${joinCode}`,
       joinCode,

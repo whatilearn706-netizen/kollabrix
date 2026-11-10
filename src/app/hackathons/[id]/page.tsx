@@ -80,24 +80,47 @@ export default function HackathonDetailPage() {
   const getCachedHackathon = (id: string): Hackathon | null => {
     if (!id || typeof window === 'undefined') return null;
     const clean = id.trim();
+    let hack: any = null;
     try {
       const sess = sessionStorage.getItem(`linkora_hack_${clean}`);
-      if (sess) return JSON.parse(sess);
+      if (sess) hack = JSON.parse(sess);
     } catch {}
-    try {
-      const catalog = JSON.parse(localStorage.getItem('linkora_hackathons_catalog') || '[]');
-      const match = catalog.find((h: any) => h.id === clean || h.join_code === clean);
-      if (match) return match;
-    } catch {}
-    try {
-      const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
-      const match = localHacks.find((h: any) => h.id === clean || h.join_code === clean);
-      if (match) return match;
-    } catch {}
-    const curated = CURATED_HACKATHONS.find(
-      (ch) => ch.id === clean || ch.join_code === clean || ch.id.toLowerCase() === clean.toLowerCase()
-    );
-    if (curated) return curated as Hackathon;
+    if (!hack) {
+      try {
+        const catalog = JSON.parse(localStorage.getItem('linkora_hackathons_catalog') || '[]');
+        const match = catalog.find((h: any) => h.id === clean || h.join_code === clean);
+        if (match) hack = match;
+      } catch {}
+    }
+    if (!hack) {
+      try {
+        const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+        const match = localHacks.find((h: any) => h.id === clean || h.join_code === clean);
+        if (match) hack = match;
+      } catch {}
+    }
+    if (!hack) {
+      const curated = CURATED_HACKATHONS.find(
+        (ch) => ch.id === clean || ch.join_code === clean || ch.id.toLowerCase() === clean.toLowerCase()
+      );
+      if (curated) hack = curated;
+    }
+    if (hack) {
+      if (hack.description?.includes('<!-- HACKATHON_META:')) {
+        try {
+          const metaMatch = hack.description.match(/<!-- HACKATHON_META:([\s\S]*?)-->/);
+          if (metaMatch && metaMatch[1]) {
+            const meta = JSON.parse(metaMatch[1]);
+            hack = {
+              ...hack,
+              submission_deadline: hack.submission_deadline || meta.submission_deadline || hack.submissionDeadline || null,
+              results_date: hack.results_date || meta.results_date || hack.resultsDate || null,
+            };
+          }
+        } catch {}
+      }
+      return normalizeHackathonDeadlines(hack) as Hackathon;
+    }
     return null;
   };
 
@@ -231,10 +254,19 @@ export default function HackathonDetailPage() {
               priority_rank: meta.priority_rank || currentHack.priority_rank,
               recruitment_perks: meta.recruitment_perks || currentHack.recruitment_perks,
               hiring_roles: meta.hiring_roles || currentHack.hiring_roles,
+              submission_deadline: currentHack.submission_deadline || meta.submission_deadline || (currentHack as any).submissionDeadline || null,
+              results_date: currentHack.results_date || meta.results_date || (currentHack as any).resultsDate || null,
               description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
             };
           }
         } catch {}
+      }
+
+      if (!currentHack.submission_deadline && (currentHack as any).submissionDeadline) {
+        currentHack.submission_deadline = (currentHack as any).submissionDeadline;
+      }
+      if (!currentHack.results_date && (currentHack as any).resultsDate) {
+        currentHack.results_date = (currentHack as any).resultsDate;
       }
 
       currentHack = normalizeHackathonDeadlines(currentHack);
@@ -1268,13 +1300,43 @@ export default function HackathonDetailPage() {
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4 className="text-xs font-bold text-white">Deliverable Submission Deadline</h4>
                         <span className="text-[10px] font-mono text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
-                          {hackathon.end_date
+                          {hackathon.submission_deadline
+                            ? formatEventDateTime(hackathon.submission_deadline)
+                            : (hackathon as any).submissionDeadline
+                            ? formatEventDateTime((hackathon as any).submissionDeadline)
+                            : hackathon.end_date
                             ? formatEventDateTime(hackathon.end_date)
                             : 'Sprint Finale'}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
                         Submit repository link, architecture demo video, and interactive prototype for jury review.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 4: Result Declared & Winners Announced */}
+                  <div className="relative flex items-start gap-4">
+                    <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-amber-500 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0 z-10 shadow-sm shadow-amber-500/20">
+                      4
+                    </div>
+                    <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>Result Declared &amp; Winners Announced</span>
+                        </h4>
+                        <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                          {hackathon.results_date
+                            ? formatEventDateTime(hackathon.results_date)
+                            : (hackathon as any).resultsDate
+                            ? formatEventDateTime((hackathon as any).resultsDate)
+                            : hackathon.end_date
+                            ? formatEventDateTime(hackathon.end_date)
+                            : 'To Be Announced'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.
                       </p>
                     </div>
                   </div>
