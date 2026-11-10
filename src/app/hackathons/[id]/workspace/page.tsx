@@ -702,7 +702,7 @@ export default function HackathonWorkspacePage() {
 
               const chalMatch = allChallenges.find((c) => c.id === resolvedChallengeId);
               const resolvedChallengeTitle =
-                chalMatch?.title || parsedMeta.challenge_title || (resolvedChallengeId === 'custom' ? 'Open Innovation Track' : undefined);
+                chalMatch?.title || parsedMeta.challenge_title || undefined;
 
               const formattedSub: HackathonSubmission = {
                 ...activeSub,
@@ -777,7 +777,7 @@ export default function HackathonWorkspacePage() {
               const challengeId = parsedMeta.challenge_id || s.challenge_id || teamMatch?.challenge_id;
               const chal = allChallenges.find((c) => c.id === challengeId);
               const challengeTitle =
-                chal?.title || parsedMeta.challenge_title || (challengeId === 'custom' ? 'Open Innovation Track' : 'Open Track');
+                chal?.title || parsedMeta.challenge_title || 'Official Challenge';
 
               return {
                 ...s,
@@ -1435,8 +1435,12 @@ export default function HackathonWorkspacePage() {
     }
 
     if (status === 'submitted') {
+      if (challenges.length > 0 && !selectedChallengeId && !myTeam.challenge_id) {
+        setSubmissionError('Please choose which Problem Statement your project addresses.');
+        return;
+      }
       if (!subTitle.trim() || !subPitch.trim() || !subProblem.trim() || !subSolution.trim()) {
-        setSubmissionError('Please complete the required fields: Title, Pitch, Problem Statement, and Solution.');
+        setSubmissionError('Please complete the required fields: Problem Statement, Title, Pitch, and Solution.');
         return;
       }
     }
@@ -1451,11 +1455,7 @@ export default function HackathonWorkspacePage() {
 
       const targetChallengeId = selectedChallengeId || myTeam.challenge_id || null;
       const chosenChal = challenges.find((c) => c.id === targetChallengeId);
-      const challengeTitle = chosenChal
-        ? chosenChal.title
-        : targetChallengeId === 'custom'
-        ? 'Open Innovation Track (Custom Collegiate Problem)'
-        : 'Open Innovation Track';
+      const challengeTitle = chosenChal ? chosenChal.title : 'Official Challenge';
 
       // Compile rich description containing both human-readable markdown and machine-readable metadata
       const metaObject = {
@@ -2972,9 +2972,7 @@ export default function HackathonWorkspacePage() {
                               {(() => {
                                 const resolvedChal = chal || challenges.find((c) => c.id === sub.challenge_id);
                                 const trackTitle =
-                                  resolvedChal?.title ||
-                                  sub.challenge_title ||
-                                  (sub.challenge_id === 'custom' ? 'Open Innovation Track' : null);
+                                  resolvedChal?.title || sub.challenge_title;
                                 if (!trackTitle) return null;
                                 return (
                                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
@@ -3210,25 +3208,12 @@ export default function HackathonWorkspacePage() {
                           {c.title} ({c.category} • {c.difficulty})
                         </option>
                       ))}
-                      <option value="custom">⚡ Open Innovation Track (Custom Collegiate Problem)</option>
                     </select>
 
                     {/* Active Selected Challenge Preview Card */}
                     {(() => {
                       const activeChal = challenges.find((c) => c.id === selectedChallengeId);
-                      if (!activeChal) {
-                        if (selectedChallengeId === 'custom') {
-                          return (
-                            <div className="p-3 rounded-lg border border-brand-500/30 bg-brand-500/10 text-xs text-brand-300 flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-brand-400 shrink-0" />
-                              <span>
-                                <strong>Open Innovation Track Selected:</strong> Your team is tackling a self-defined collegiate problem statement. Describe your custom challenge and solution below.
-                              </span>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }
+                      if (!activeChal) return null;
 
                       return (
                         <div className="p-3.5 rounded-xl border border-brand-500/30 bg-brand-500/5 text-xs space-y-2">
@@ -3269,9 +3254,9 @@ export default function HackathonWorkspacePage() {
                   </div>
                 ) : (
                   <div className="p-3.5 rounded-lg border border-charcoal-800 bg-charcoal-900/60 text-xs text-slate-300 flex items-center gap-2.5">
-                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>
-                      <strong>Open Innovation Sprint:</strong> No specific problem statements have been pinned by faculty yet. All submissions participate under the Open Collegiate Innovation track. Detail your team&apos;s problem statement below.
+                      <strong>Awaiting Problem Statements:</strong> The faculty organizer has not published official challenge statements yet. Once published by faculty under the <strong>Problem Statements</strong> tab, you can select one here.
                     </span>
                   </div>
                 )}
