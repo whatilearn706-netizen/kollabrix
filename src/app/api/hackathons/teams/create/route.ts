@@ -81,14 +81,29 @@ export async function POST(request: NextRequest) {
         joined_at: new Date().toISOString(),
       });
 
-      // 2. Pre-seed projects & project_members for instant, error-free workspace access
+      // 2. Pre-seed projects & project_members for instant, error-free workspace access with full Hackathon provenance
       try {
+        let hackathonTitle = 'Campus Hackathon';
+        try {
+          const { data: hRow } = await admin
+            .from('hackathons')
+            .select('title')
+            .eq('id', hackathonId)
+            .maybeSingle();
+          if (hRow?.title) hackathonTitle = hRow.title;
+        } catch {}
+
+        const metaSnippet = `<!-- HACKATHON_TEAM_META:${JSON.stringify({
+          hackathon_id: hackathonId,
+          hackathon_title: hackathonTitle,
+        })} -->`;
+
         await admin.from('projects').upsert({
           id: newTeam.id,
           owner_id: leaderUserId,
           title: teamName.trim(),
-          summary: `Hackathon Team Sprint: Team ${teamName.trim()}`,
-          description: description?.trim() || 'Collegiate Hackathon Sprint Workspace',
+          summary: `Hackathon Team Sprint: ${hackathonTitle} — ${teamName.trim()}`,
+          description: `${metaSnippet}\n\n${description?.trim() || 'Collegiate Hackathon Sprint Workspace'}\n\n### Hackathon Event\nThis workspace belongs to: **${hackathonTitle}**.`,
           category: 'Other',
           difficulty: 'Intermediate',
           technologies: ['Next.js', 'React', 'TypeScript'],

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ProtectedPageGuard } from '@/components/auth/ProtectedPageGuard';
-import { Project, ProjectMember, Hackathon, HackathonTeam } from '@/types/database';
+import { Project, Hackathon, HackathonTeam } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -21,20 +21,22 @@ import {
   Sparkles,
   Trophy,
   Lock,
-  KeyRound,
   ExternalLink,
   Zap,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   Copy,
-  CheckSquare,
-  Headphones,
-  Laptop,
+  GraduationCap,
 } from 'lucide-react';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
+import { DEMO_PROBLEMS } from '@/data/mockProblems';
 import { isHackathonClosed, formatTimeRemaining } from '@/lib/hackathons/hackathonStatus';
+import {
+  resolveWorkspaceOrigin,
+  WorkspaceOriginInfo,
+} from '@/lib/workspaces/workspaceOrigin';
+import { WorkspaceCard, EnrichedWorkspaceItem } from '@/components/workspaces/WorkspaceCard';
 
 interface UserHackathonSprint {
   hackathon_id: string;
@@ -53,11 +55,13 @@ function MyProjectsContent() {
   const { user } = useAuth();
   const cachedWorkspace = user?.id ? getPageCache<any>(`linkora_user_workspace_${user.id}`) : null;
 
-  const [leadingProjects, setLeadingProjects] = useState<Project[]>(() => cachedWorkspace?.leading || []);
-  const [joinedProjects, setJoinedProjects] = useState<(Project & { userRole?: string })[]>(() => cachedWorkspace?.joined || []);
+  const [allWorkspaces, setAllWorkspaces] = useState<EnrichedWorkspaceItem[]>(() => cachedWorkspace?.allWorkspaces || []);
   const [allHackathonSprints, setAllHackathonSprints] = useState<UserHackathonSprint[]>(() => cachedWorkspace?.hackSprints || []);
+  const [activeTab, setActiveTab] = useState<'working' | 'done' | 'registered' | 'permanent'>('working');
+  const [workingFilter, setWorkingFilter] = useState<'all' | 'hackathon' | 'faculty' | 'permanent'>('all');
+  const [doneFilter, setDoneFilter] = useState<'all' | 'hackathon' | 'faculty' | 'permanent'>('all');
+  const [permanentFilter, setPermanentFilter] = useState<'all' | 'leading' | 'joined'>('all');
   const [hackathonCodeInput, setHackathonCodeInput] = useState('');
-  const [activeTab, setActiveTab] = useState<'leading' | 'joined' | 'registered' | 'hackathons'>('leading');
   const [isLoading, setIsLoading] = useState<boolean>(() => !cachedWorkspace);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -74,15 +78,67 @@ function MyProjectsContent() {
     return allHackathonSprints.filter((s) => !s.isClosed && !isHackathonStarted(s.hackathon));
   }, [allHackathonSprints]);
 
-  // Active Hackathon Sprints (temporary event workshops currently underway)
-  // AUTOMATICALLY EXPIRES & REMOVED when hackathon closes!
-  const activeHackathonSprints = useMemo(() => {
-    return allHackathonSprints.filter((s) => !s.isClosed && isHackathonStarted(s.hackathon));
-  }, [allHackathonSprints]);
+  // Workspaces currently running (Hackathons underway, active faculty challenges, active projects)
+  const activeWorkspaces = useMemo(() => {
+    return allWorkspaces.filter(
+      (w) => !w.origin.isResultsAnnounced && !w.origin.isClosed && w.status !== 'Completed'
+    );
+  }, [allWorkspaces]);
 
-  const closedHackathonSprints = useMemo(() => {
-    return allHackathonSprints.filter((s) => s.isClosed);
-  }, [allHackathonSprints]);
+  // Workspaces concluded (Hackathon results published, faculty evaluations completed, or projects finished)
+  const doneWorkspaces = useMemo(() => {
+    return allWorkspaces.filter(
+      (w) => w.origin.isResultsAnnounced || w.origin.isClosed || w.status === 'Completed'
+    );
+  }, [allWorkspaces]);
+
+  // Independent permanent portfolio projects
+  const permanentProjects = useMemo(() => {
+    return allWorkspaces.filter((w) => w.origin.originType === 'permanent');
+  }, [allWorkspaces]);
+
+  // Filtered lists by sub-filter
+  const filteredActiveWorkspaces = useMemo(() => {
+    if (workingFilter === 'hackathon') {
+      return activeWorkspaces.filter((w) => w.origin.originType === 'hackathon');
+    }
+    if (workingFilter === 'faculty') {
+      return activeWorkspaces.filter((w) => w.origin.originType === 'faculty_problem');
+    }
+    if (workingFilter === 'permanent') {
+      return activeWorkspaces.filter((w) => w.origin.originType === 'permanent');
+    }
+    return activeWorkspaces;
+  }, [activeWorkspaces, workingFilter]);
+
+  const filteredDoneWorkspaces = useMemo(() => {
+    if (doneFilter === 'hackathon') {
+      return doneWorkspaces.filter((w) => w.origin.originType === 'hackathon');
+    }
+    if (doneFilter === 'faculty') {
+      return doneWorkspaces.filter((w) => w.origin.originType === 'faculty_problem');
+    }
+    if (doneFilter === 'permanent') {
+      return doneWorkspaces.filter((w) => w.origin.originType === 'permanent');
+    }
+    return doneWorkspaces;
+  }, [doneWorkspaces, doneFilter]);
+
+  const filteredPermanentProjects = useMemo(() => {
+    if (permanentFilter === 'leading') {
+      return permanentProjects.filter((w) => w.isOwner);
+    }
+    if (permanentFilter === 'joined') {
+      return permanentProjects.filter((w) => !w.isOwner);
+    }
+    return permanentProjects;
+  }, [permanentProjects, permanentFilter]);
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
 
   const loadProjects = useCallback(async (isInitial = false) => {
     const currentUserId = userRef.current?.id;
@@ -92,22 +148,72 @@ function MyProjectsContent() {
     }
 
     try {
-      // 1. Fetch permanent projects where user is owner
+      // 1. Fetch available Hackathons & Problem Statements to establish canonical provenance
+      let allHackathons: Partial<Hackathon>[] = [...CURATED_HACKATHONS];
+      try {
+        const { data: dbHacks } = await supabase
+          .from('hackathons')
+          .select('id, title, organizer, description, mode, location, start_date, end_date, submission_deadline, registration_deadline, results_published, status, min_team_size, max_team_size, eligibility, themes');
+        if (Array.isArray(dbHacks)) {
+          const dbMap = new Map(allHackathons.map((h) => [h.id, h]));
+          for (const h of dbHacks) {
+            dbMap.set(h.id, { ...(dbMap.get(h.id) || {}), ...h });
+          }
+          allHackathons = Array.from(dbMap.values());
+        }
+      } catch (err) {
+        console.warn('Could not load remote hackathons:', err);
+      }
+
+      let allProblems: any[] = [...DEMO_PROBLEMS];
+      try {
+        const { data: dbProblems } = await supabase
+          .from('problem_statements')
+          .select('id, title, description, category, difficulty, deadline, status, author:profiles(display_name)');
+        if (Array.isArray(dbProblems)) {
+          const pMap = new Map(allProblems.map((p) => [p.id, p]));
+          for (const p of dbProblems) {
+            pMap.set(p.id, { ...(pMap.get(p.id) || {}), ...p });
+          }
+          allProblems = Array.from(pMap.values());
+        }
+      } catch (err) {
+        console.warn('Could not load remote problems:', err);
+      }
+
+      // 2. Fetch projects owned by current user
       const { data: ownedData } = await supabase
         .from('projects')
         .select('*')
         .eq('owner_id', currentUserId)
         .order('created_at', { ascending: false });
 
-      let permProjects: Project[] = [];
-      if (ownedData) {
-        // Only permanent projects belong here (exclude hackathon sprint projects)
-        permProjects = (ownedData as Project[]).filter(
-          (p) => p.category !== ('Hackathon Sprint' as any) && !p.summary?.startsWith('Hackathon Team Sprint')
-        );
+      const workspaceMap = new Map<string, EnrichedWorkspaceItem>();
+
+      if (Array.isArray(ownedData)) {
+        for (const p of ownedData as Project[]) {
+          const origin = resolveWorkspaceOrigin(p, {
+            hackathons: allHackathons,
+            problemStatements: allProblems,
+          });
+          workspaceMap.set(p.id, {
+            id: p.id,
+            title: p.title,
+            summary: p.summary,
+            description: p.description,
+            category: p.category,
+            status: p.status,
+            current_team_size: p.current_team_size || 1,
+            desired_team_size: p.desired_team_size || 4,
+            created_at: p.created_at,
+            isOwner: true,
+            userRole: 'Team Lead',
+            origin,
+          });
+        }
       }
 
-      // Also merge problem teams owned by the user from registry
+      // 3. Merge problem teams from platform_settings registry
       try {
         const { data: regRow } = await supabase
           .from('platform_settings')
@@ -116,30 +222,67 @@ function MyProjectsContent() {
           .maybeSingle();
 
         if (Array.isArray(regRow?.value)) {
-          const userProblemTeams = regRow.value.filter((p: any) => p && p.owner_id === currentUserId);
-          const existingIds = new Set(permProjects.map((p) => p.id));
+          const userProblemTeams = regRow.value.filter(
+            (p: any) => p && (p.owner_id === currentUserId || p.owner?.user_id === currentUserId)
+          );
           for (const pt of userProblemTeams) {
-            if (!existingIds.has(pt.id)) {
-              permProjects.push(pt);
-              existingIds.add(pt.id);
-            }
+            const origin = resolveWorkspaceOrigin(pt, {
+              hackathons: allHackathons,
+              problemStatements: allProblems,
+            });
+            const existing = workspaceMap.get(pt.id);
+            workspaceMap.set(pt.id, {
+              id: pt.id,
+              title: pt.title,
+              summary: pt.summary,
+              description: pt.description,
+              category: pt.category || 'Web Development',
+              status: pt.status || 'In Progress',
+              current_team_size: pt.current_team_size || 1,
+              desired_team_size: pt.desired_team_size || 4,
+              created_at: pt.created_at || new Date().toISOString(),
+              isOwner: true,
+              userRole: 'Team Lead',
+              invite_code: existing?.invite_code || pt.invite_code,
+              members: existing?.members || pt.members,
+              origin,
+            });
           }
         }
       } catch {}
 
-      // Also merge problem teams from local storage
+      // 4. Merge problem teams from localStorage
       if (typeof window !== 'undefined') {
         try {
-          const existingIds = new Set(permProjects.map((p) => p.id));
           for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
             if (k && k.startsWith('tf_problem_teams_')) {
               const list = JSON.parse(localStorage.getItem(k) || '[]');
               if (Array.isArray(list)) {
                 for (const t of list) {
-                  if (t && (t.owner_id === currentUserId || t.owner?.user_id === currentUserId) && !existingIds.has(t.id)) {
-                    permProjects.push(t);
-                    existingIds.add(t.id);
+                  if (t && (t.owner_id === currentUserId || t.owner?.user_id === currentUserId)) {
+                    if (!workspaceMap.has(t.id)) {
+                      const origin = resolveWorkspaceOrigin(t, {
+                        hackathons: allHackathons,
+                        problemStatements: allProblems,
+                      });
+                      workspaceMap.set(t.id, {
+                        id: t.id,
+                        title: t.title,
+                        summary: t.summary,
+                        description: t.description,
+                        category: t.category || 'Web Development',
+                        status: t.status || 'In Progress',
+                        current_team_size: t.current_team_size || 1,
+                        desired_team_size: t.desired_team_size || 4,
+                        created_at: t.created_at || new Date().toISOString(),
+                        isOwner: true,
+                        userRole: 'Team Lead',
+                        invite_code: t.invite_code,
+                        members: t.members,
+                        origin,
+                      });
+                    }
                   }
                 }
               }
@@ -148,9 +291,7 @@ function MyProjectsContent() {
         } catch {}
       }
 
-      setLeadingProjects(permProjects);
-
-      // 2. Fetch permanent projects where user is a joined team member
+      // 5. Fetch joined projects where user is a team member
       const { data: memberData } = await supabase
         .from('project_members')
         .select(`
@@ -160,32 +301,49 @@ function MyProjectsContent() {
             owner_id,
             title,
             summary,
+            description,
             category,
             difficulty,
             status,
             current_team_size,
             desired_team_size,
-            created_at
+            created_at,
+            problem_statement_id
           )
         `)
         .eq('user_id', currentUserId);
 
-      if (memberData) {
-        const joined = memberData
-          .filter((m) => m.project && (m.project as unknown as Project).owner_id !== currentUserId)
-          .map((m) => ({
-            ...(m.project as unknown as Project),
-            userRole: m.role,
-          }))
-          .filter(
-            (p) => p.category !== ('Hackathon Sprint' as any) && !p.summary?.startsWith('Hackathon Team Sprint')
-          );
-        setJoinedProjects(joined);
+      if (Array.isArray(memberData)) {
+        for (const m of memberData) {
+          const proj = m.project as unknown as Project;
+          if (proj && proj.owner_id !== currentUserId) {
+            const origin = resolveWorkspaceOrigin(proj, {
+              hackathons: allHackathons,
+              problemStatements: allProblems,
+            });
+            const existing = workspaceMap.get(proj.id);
+            workspaceMap.set(proj.id, {
+              id: proj.id,
+              title: proj.title,
+              summary: proj.summary,
+              description: proj.description,
+              category: proj.category,
+              status: proj.status,
+              current_team_size: proj.current_team_size || 1,
+              desired_team_size: proj.desired_team_size || 4,
+              created_at: proj.created_at,
+              isOwner: false,
+              userRole: m.role || 'Contributor',
+              invite_code: existing?.invite_code,
+              members: existing?.members,
+              origin,
+            });
+          }
+        }
       }
 
-      // 3. Fetch all hackathon teams user belongs to
-      // (from hackathon_team_members, hackathon_teams, hackathon_participants, and local storage)
-      const hackathonMap = new Map<string, UserHackathonSprint>();
+      // 6. Fetch Hackathon Teams user belongs to
+      const hackathonSprintMap = new Map<string, UserHackathonSprint>();
 
       try {
         // A. Check hackathon_team_members
@@ -220,7 +378,7 @@ function MyProjectsContent() {
                 avatar_url: m.profile?.avatar_url || null,
               }));
 
-              hackathonMap.set(h.id, {
+              hackathonSprintMap.set(h.id, {
                 hackathon_id: h.id,
                 team_id: t.id,
                 team_name: t.team_name,
@@ -232,6 +390,33 @@ function MyProjectsContent() {
                 isClosed: closed,
                 timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
               });
+
+              // Also ensure squad is represented in workspaceMap
+              if (!workspaceMap.has(t.id)) {
+                const origin = resolveWorkspaceOrigin(
+                  { id: t.id, title: t.team_name, hackathon_id: h.id, category: 'Hackathon Sprint' },
+                  { hackathons: allHackathons, problemStatements: allProblems }
+                );
+                workspaceMap.set(t.id, {
+                  id: t.id,
+                  title: t.team_name,
+                  summary: `Hackathon Team Sprint: ${h.title} — ${t.team_name}`,
+                  category: 'Other',
+                  status: closed ? 'Completed' : 'In Progress',
+                  current_team_size: membersList.length,
+                  desired_team_size: h.max_team_size || 4,
+                  created_at: t.created_at || new Date().toISOString(),
+                  isOwner: item.role === 'Leader',
+                  userRole: item.role || 'Contributor',
+                  invite_code: t.invite_code,
+                  members: membersList,
+                  origin,
+                });
+              } else {
+                const cur = workspaceMap.get(t.id)!;
+                cur.invite_code = t.invite_code;
+                cur.members = membersList;
+              }
             }
           }
         }
@@ -255,7 +440,7 @@ function MyProjectsContent() {
         if (Array.isArray(leaderTeams)) {
           for (const t of leaderTeams as any[]) {
             const h = t?.hackathon;
-            if (h?.id && !hackathonMap.has(h.id)) {
+            if (h?.id) {
               const closed = isHackathonClosed(h);
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
@@ -263,23 +448,51 @@ function MyProjectsContent() {
                 avatar_url: m.profile?.avatar_url || null,
               }));
 
-              hackathonMap.set(h.id, {
-                hackathon_id: h.id,
-                team_id: t.id,
-                team_name: t.team_name,
-                invite_code: t.invite_code,
-                role: 'Leader',
-                hackathon: h,
-                team: t,
-                members: membersList,
-                isClosed: closed,
-                timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
-              });
+              if (!hackathonSprintMap.has(h.id)) {
+                hackathonSprintMap.set(h.id, {
+                  hackathon_id: h.id,
+                  team_id: t.id,
+                  team_name: t.team_name,
+                  invite_code: t.invite_code,
+                  role: 'Leader',
+                  hackathon: h,
+                  team: t,
+                  members: membersList,
+                  isClosed: closed,
+                  timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
+                });
+              }
+
+              if (!workspaceMap.has(t.id)) {
+                const origin = resolveWorkspaceOrigin(
+                  { id: t.id, title: t.team_name, hackathon_id: h.id, category: 'Hackathon Sprint' },
+                  { hackathons: allHackathons, problemStatements: allProblems }
+                );
+                workspaceMap.set(t.id, {
+                  id: t.id,
+                  title: t.team_name,
+                  summary: `Hackathon Team Sprint: ${h.title} — ${t.team_name}`,
+                  category: 'Other',
+                  status: closed ? 'Completed' : 'In Progress',
+                  current_team_size: membersList.length || 1,
+                  desired_team_size: h.max_team_size || 4,
+                  created_at: t.created_at || new Date().toISOString(),
+                  isOwner: true,
+                  userRole: 'Team Lead',
+                  invite_code: t.invite_code,
+                  members: membersList,
+                  origin,
+                });
+              } else {
+                const cur = workspaceMap.get(t.id)!;
+                cur.invite_code = t.invite_code;
+                cur.members = membersList;
+              }
             }
           }
         }
 
-        // C. Check hackathon_participants as fallback
+        // C. Check hackathon_participants as fallback for registered events
         const { data: partData } = await supabase
           .from('hackathon_participants')
           .select(`
@@ -293,7 +506,7 @@ function MyProjectsContent() {
         if (Array.isArray(partData)) {
           for (const p of partData as any[]) {
             const h = p?.hackathon;
-            if (h?.id && !hackathonMap.has(h.id)) {
+            if (h?.id && !hackathonSprintMap.has(h.id)) {
               let actualTeamName = 'Participant (Click to Form Squad)';
               let teamObj: any = null;
               if (p.team_id) {
@@ -310,7 +523,7 @@ function MyProjectsContent() {
                 } catch (e) {}
               }
               const closed = isHackathonClosed(h);
-              hackathonMap.set(h.id, {
+              hackathonSprintMap.set(h.id, {
                 hackathon_id: h.id,
                 team_id: p.team_id || null,
                 team_name: actualTeamName,
@@ -326,64 +539,22 @@ function MyProjectsContent() {
           }
         }
 
-        // D. Also check localStorage for local/mock hackathons
+        // D. Also check registered hackathons in localStorage
         if (typeof window !== 'undefined') {
           try {
-            for (let i = 0; i < localStorage.length; i++) {
-              const k = localStorage.key(i);
-              if (k && k.startsWith('teamforge_teams_')) {
-                const hackId = k.replace('teamforge_teams_', '');
-                if (!hackathonMap.has(hackId)) {
-                  const teamsArr = JSON.parse(localStorage.getItem(k) || '[]');
-                  const userTeam = teamsArr.find((t: any) =>
-                    t.leader_id === currentUserId || (t.members || []).some((m: any) => m.user_id === currentUserId)
-                  );
-                  if (userTeam) {
-                    const curated = CURATED_HACKATHONS.find((c) => c.id === hackId);
-                    if (curated) {
-                      const closed = isHackathonClosed(curated);
-                      hackathonMap.set(hackId, {
-                        hackathon_id: hackId,
-                        team_id: userTeam.id,
-                        team_name: userTeam.team_name,
-                        invite_code: userTeam.invite_code,
-                        role: userTeam.leader_id === currentUserId ? 'Leader' : 'Member',
-                        hackathon: curated as any,
-                        team: userTeam,
-                        members: (userTeam.members || []).map((m: any) => ({
-                          user_id: m.user_id,
-                          display_name: m.profile?.display_name || 'Teammate',
-                          avatar_url: m.profile?.avatar_url,
-                        })),
-                        isClosed: closed,
-                        timeRemaining: formatTimeRemaining(curated.submission_deadline || curated.end_date),
-                      });
-                    }
-                  }
-                }
-              }
-            }
-
-            // Also check registered hackathons in localStorage ('teamforge_enrolled_hackathons')
             const enrolledArr: string[] = JSON.parse(localStorage.getItem('teamforge_enrolled_hackathons') || '[]');
             const localCreated: any[] = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
 
             for (const hId of enrolledArr) {
-              if (hId && !hackathonMap.has(hId)) {
-                let hObj = localCreated.find((lh) => lh.id === hId || lh.join_code === hId) ||
-                           CURATED_HACKATHONS.find((ch) => ch.id === hId || ch.join_code === hId);
-
-                if (!hObj && isSupabaseConfigured() && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hId)) {
-                  try {
-                    const { data: remoteH } = await supabase.from('hackathons').select('*').eq('id', hId).maybeSingle();
-                    if (remoteH) hObj = remoteH as any;
-                  } catch {}
-                }
+              if (hId && !hackathonSprintMap.has(hId)) {
+                let hObj =
+                  localCreated.find((lh) => lh.id === hId || lh.join_code === hId) ||
+                  allHackathons.find((ch) => ch.id === hId || (ch as any).join_code === hId);
 
                 if (hObj) {
                   const closed = isHackathonClosed(hObj as any);
-                  hackathonMap.set(hObj.id, {
-                    hackathon_id: hObj.id,
+                  hackathonSprintMap.set(hObj.id!, {
+                    hackathon_id: hObj.id!,
                     team_id: null,
                     team_name: 'Registered Participant',
                     invite_code: null,
@@ -400,26 +571,21 @@ function MyProjectsContent() {
           } catch {}
         }
       } catch (err) {
-        console.warn('Error fetching hackathon teams:', err);
+        console.warn('Error fetching hackathon sprint teams:', err);
       }
 
-      const allSprints = Array.from(hackathonMap.values());
-      setAllHackathonSprints(allSprints);
+      const allSprintsList = Array.from(hackathonSprintMap.values());
+      setAllHackathonSprints(allSprintsList);
+
+      const workspacesArray = Array.from(workspaceMap.values());
+      setAllWorkspaces(workspacesArray);
 
       setPageCache(`linkora_user_workspace_${currentUserId}`, {
-        leading: ownedData || [],
-        joined: memberData
-          ? memberData
-              .filter((m) => m.project && (m.project as unknown as Project).owner_id !== currentUserId)
-              .map((m) => ({
-                ...(m.project as unknown as Project),
-                userRole: m.role,
-              }))
-          : [],
-        hackSprints: allSprints,
+        allWorkspaces: workspacesArray,
+        hackSprints: allSprintsList,
       });
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Error loading user workspaces:', err);
     } finally {
       if (isInitial) {
         setIsLoading(false);
@@ -473,9 +639,36 @@ function MyProjectsContent() {
     };
   }, [user?.id, loadProjects]);
 
+  // Counts for tabs and sub-filters
+  const activeHackathonsCount = useMemo(
+    () => activeWorkspaces.filter((w) => w.origin.originType === 'hackathon').length,
+    [activeWorkspaces]
+  );
+  const activeFacultyCount = useMemo(
+    () => activeWorkspaces.filter((w) => w.origin.originType === 'faculty_problem').length,
+    [activeWorkspaces]
+  );
+  const activePermCount = useMemo(
+    () => activeWorkspaces.filter((w) => w.origin.originType === 'permanent').length,
+    [activeWorkspaces]
+  );
+
+  const doneHackathonsCount = useMemo(
+    () => doneWorkspaces.filter((w) => w.origin.originType === 'hackathon').length,
+    [doneWorkspaces]
+  );
+  const doneFacultyCount = useMemo(
+    () => doneWorkspaces.filter((w) => w.origin.originType === 'faculty_problem').length,
+    [doneWorkspaces]
+  );
+  const donePermCount = useMemo(
+    () => doneWorkspaces.filter((w) => w.origin.originType === 'permanent').length,
+    [doneWorkspaces]
+  );
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
-      {/* Header */}
+      {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
@@ -483,7 +676,7 @@ function MyProjectsContent() {
             <span>My Projects &amp; Workspaces</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Access permanent project workspaces and active campus hackathon workshops.
+            Access currently active sprints, faculty challenge squads, and concluded event workspaces.
           </p>
         </div>
 
@@ -494,277 +687,319 @@ function MyProjectsContent() {
         </Link>
       </div>
 
-      {/* Tabs */}
+      {/* Primary Category Tabs: Working Now vs Done (Results Announced) vs Registered vs Permanent */}
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-charcoal-800 pb-3 text-sm overflow-x-auto scrollbar-none">
+        {/* TAB 1: WORKING NOW (ACTIVE WORKSPACES) */}
         <button
-          onClick={() => setActiveTab('leading')}
-          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'leading'
-              ? 'bg-slate-900 text-white dark:bg-charcoal-800 dark:text-white border border-slate-800 dark:border-charcoal-700 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
+          onClick={() => setActiveTab('working')}
+          className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer ${
+            activeTab === 'working'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-charcoal-850'
           }`}
         >
-          <span>Projects I Lead (Permanent)</span>
+          <Zap className="w-4 h-4 text-amber-400" />
+          <span>Working Now (Active)</span>
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
-              activeTab === 'leading'
-                ? 'bg-brand-500 text-white'
-                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
+              activeTab === 'working'
+                ? 'bg-amber-500 text-white'
+                : 'bg-charcoal-800 text-slate-400'
             }`}
           >
-            {leadingProjects.length}
+            {activeWorkspaces.length}
+          </span>
+          {activeWorkspaces.length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block ml-0.5" />
+          )}
+        </button>
+
+        {/* TAB 2: WORKSPACE DONE (RESULTS ANNOUNCED) */}
+        <button
+          onClick={() => setActiveTab('done')}
+          className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer ${
+            activeTab === 'done'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-charcoal-850'
+          }`}
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>Workspaces Done (Results Announced)</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
+              activeTab === 'done'
+                ? 'bg-emerald-500 text-white'
+                : 'bg-charcoal-800 text-slate-400'
+            }`}
+          >
+            {doneWorkspaces.length}
           </span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('joined')}
-          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'joined'
-              ? 'bg-slate-900 text-white dark:bg-charcoal-800 dark:text-white border border-slate-800 dark:border-charcoal-700 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
-          }`}
-        >
-          <span>Teams I Joined (Permanent)</span>
-          <span
-            className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
-              activeTab === 'joined'
-                ? 'bg-brand-500 text-white'
-                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
-            }`}
-          >
-            {joinedProjects.length}
-          </span>
-        </button>
-
+        {/* TAB 3: REGISTERED HACKATHONS (UPCOMING) */}
         <button
           onClick={() => setActiveTab('registered')}
-          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+          className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'registered'
-              ? 'bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/40 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-charcoal-850'
           }`}
         >
           <Clock className="w-4 h-4 text-cyan-400" />
-          <span>Registered Hackathons</span>
+          <span>Registered (Upcoming)</span>
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
               activeTab === 'registered'
                 ? 'bg-cyan-500 text-white'
-                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
+                : 'bg-charcoal-800 text-slate-400'
             }`}
           >
             {registeredUpcomingHackathons.length}
           </span>
         </button>
 
+        {/* TAB 4: PERMANENT PROJECTS */}
         <button
-          onClick={() => setActiveTab('hackathons')}
-          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-            activeTab === 'hackathons'
-              ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-charcoal-850'
+          onClick={() => setActiveTab('permanent')}
+          className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer ${
+            activeTab === 'permanent'
+              ? 'bg-brand-500/20 text-brand-300 border border-brand-500/50 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-charcoal-850'
           }`}
         >
-          <Trophy className="w-4 h-4 text-amber-500" />
-          <span>Active Hackathon Sprints</span>
+          <Layers className="w-4 h-4 text-brand-400" />
+          <span>Permanent Projects</span>
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
-              activeTab === 'hackathons'
-                ? 'bg-amber-500 text-white'
-                : 'bg-slate-100 text-slate-700 dark:bg-charcoal-750 dark:text-slate-400 border border-slate-200 dark:border-transparent'
+              activeTab === 'permanent'
+                ? 'bg-brand-500 text-white'
+                : 'bg-charcoal-800 text-slate-400'
             }`}
           >
-            {activeHackathonSprints.length}
+            {permanentProjects.length}
           </span>
-          {activeHackathonSprints.length > 0 && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block ml-0.5" />
-          )}
         </button>
       </div>
 
-      {/* Content Area */}
+      {/* Main Content Area */}
       {isLoading ? (
-        <div className="max-w-md mx-auto py-16 text-center space-y-4">
+        <div className="max-w-md mx-auto py-20 text-center space-y-4">
           <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
-          <p className="text-xs text-slate-400 font-mono">Loading workspaces &amp; sprints...</p>
+          <p className="text-xs text-slate-400 font-mono">Loading your workspaces &amp; active sprints...</p>
         </div>
-      ) : activeTab === 'leading' ? (
-        /* ================= 1. PROJECTS I LEAD (PERMANENT) ================= */
-        leadingProjects.length === 0 ? (
-          <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
-            <Sparkles className="w-10 h-10 text-brand-400 mx-auto" />
-            <h3 className="text-base font-semibold text-white">You haven&apos;t created any projects yet</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Start your first project to publish role requirements, receive student applications, and collaborate in permanent team workspaces.
-            </p>
-            <Link href="/projects/new">
-              <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
-                Create a Project
+      ) : activeTab === 'working' ? (
+        /* ================= 1. WORKING NOW (ACTIVE WORKSPACES) ================= */
+        <div className="space-y-6">
+          {/* Sub-filter bar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+              <button
+                type="button"
+                onClick={() => setWorkingFilter('all')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  workingFilter === 'all'
+                    ? 'bg-charcoal-800 text-white border border-charcoal-700'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                All Active ({activeWorkspaces.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkingFilter('hackathon')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                  workingFilter === 'hackathon'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : 'text-slate-400 hover:text-amber-300'
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <span>Hackathons ({activeHackathonsCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkingFilter('faculty')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                  workingFilter === 'faculty'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                    : 'text-slate-400 hover:text-purple-300'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
+                <span>Faculty Challenges ({activeFacultyCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkingFilter('permanent')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                  workingFilter === 'permanent'
+                    ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                    : 'text-slate-400 hover:text-brand-300'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-brand-400" />
+                <span>Permanent ({activePermCount})</span>
+              </button>
+            </div>
+
+            <span className="text-[11px] font-mono text-slate-500">
+              ⚡ Sprints currently in progress
+            </span>
+          </div>
+
+          {filteredActiveWorkspaces.length === 0 ? (
+            <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto">
+                <Zap className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-lg font-bold text-white">No Active Workspaces In Progress</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You do not currently have any active hackathon sprints or faculty challenge teams underway. Form a team for a college hackathon or apply to a faculty problem statement to get started!
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+                <Link href="/hackathons">
+                  <Button variant="primary" size="sm" className="bg-amber-600 hover:bg-amber-500 font-bold" leftIcon={<Trophy className="w-4 h-4" />}>
+                    Browse Hackathons
+                  </Button>
+                </Link>
+                <Link href="/problems">
+                  <Button variant="outline" size="sm" className="border-purple-500/40 text-purple-300 hover:bg-purple-500/10 font-bold" leftIcon={<GraduationCap className="w-4 h-4" />}>
+                    Faculty Challenges
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredActiveWorkspaces.map((item) => (
+                <WorkspaceCard
+                  key={item.id}
+                  item={item}
+                  copiedCode={copiedCode}
+                  onCopyCode={handleCopyCode}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : activeTab === 'done' ? (
+        /* ================= 2. WORKSPACES DONE (RESULTS ANNOUNCED) ================= */
+        <div className="space-y-6">
+          {/* Explanation Banner */}
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start sm:items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Concluded Workspaces &amp; Results Announced</h4>
+                <p className="text-xs text-slate-400">
+                  Once hackathon organizers publish official results or faculty mentors complete challenge evaluations, workspaces move here so you always know what is finished. You can still inspect project code and view rankings!
+                </p>
+              </div>
+            </div>
+
+            <Link href="/hackathons">
+              <Button variant="outline" size="sm" className="border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 text-xs font-bold">
+                Browse New Events
               </Button>
             </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {leadingProjects.map((p) => (
-              <div
-                key={p.id}
-                className="rounded-2xl bg-charcoal-900 border border-charcoal-750/80 p-6 flex flex-col justify-between space-y-5 hover:border-charcoal-700 transition-all shadow-subtle"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Badge variant="category">{p.category}</Badge>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
-                      Permanent Project
-                    </span>
-                  </div>
 
-                  <div>
-                    <Link
-                      href={`/projects/${p.id}`}
-                      className="text-lg font-bold text-white hover:text-brand-300 transition-colors"
-                    >
-                      {p.title}
-                    </Link>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                      {p.summary}
-                    </p>
-                  </div>
+          {/* Sub-filter bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+            <button
+              type="button"
+              onClick={() => setDoneFilter('all')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                doneFilter === 'all'
+                  ? 'bg-charcoal-800 text-white border border-charcoal-700'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              All Done ({doneWorkspaces.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDoneFilter('hackathon')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                doneFilter === 'hackathon'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'text-slate-400 hover:text-amber-300'
+              }`}
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>Hackathons ({doneHackathonsCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDoneFilter('faculty')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                doneFilter === 'faculty'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                  : 'text-slate-400 hover:text-purple-300'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
+              <span>Faculty Challenges ({doneFacultyCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDoneFilter('permanent')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+                doneFilter === 'permanent'
+                  ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                  : 'text-slate-400 hover:text-brand-300'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-brand-400" />
+              <span>Permanent ({donePermCount})</span>
+            </button>
+          </div>
 
-                  <div className="flex items-center gap-4 text-xs text-slate-400 pt-2 border-t border-charcoal-800">
-                    <span className="flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-brand-400" />
-                      {p.current_team_size} / {p.desired_team_size} members
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4 text-slate-500" />
-                      {new Date(p.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Link href={`/projects/${p.id}/applications`}>
-                      <Button variant="outline" size="sm" leftIcon={<Inbox className="w-3.5 h-3.5 text-brand-400" />}>
-                        Applications
-                      </Button>
-                    </Link>
-                    <Link href={`/projects/${p.id}/workspace`}>
-                      <Button variant="primary" size="sm" leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}>
-                        Workspace
-                      </Button>
-                    </Link>
-                  </div>
-                  <Link href={`/projects/${p.id}`}>
-                    <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                      Details
-                    </Button>
-                  </Link>
-                </div>
+          {filteredDoneWorkspaces.length === 0 ? (
+            <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto">
+                <CheckCircle2 className="w-7 h-7" />
               </div>
-            ))}
-          </div>
-        )
-      ) : activeTab === 'joined' ? (
-        /* ================= 2. TEAMS I JOINED (PERMANENT) ================= */
-        joinedProjects.length === 0 ? (
-          <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
-            <Users className="w-10 h-10 text-slate-500 mx-auto" />
-            <h3 className="text-base font-semibold text-white">You haven&apos;t joined any project teams yet</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Explore active projects and apply for roles matching your engineering skills. Joined project teams remain permanently accessible.
-            </p>
-            <Link href="/explore">
-              <Button variant="primary" size="sm">Explore Open Projects</Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {joinedProjects.map((p) => (
-              <div
-                key={p.id}
-                className="rounded-2xl bg-charcoal-900 border border-charcoal-750/80 p-6 flex flex-col justify-between space-y-5 hover:border-charcoal-700 transition-all shadow-subtle"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Badge variant="category">{p.category}</Badge>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
-                        Permanent Team
-                      </span>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30 font-medium flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        {p.userRole || 'Contributor'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Link
-                      href={`/projects/${p.id}`}
-                      className="text-lg font-bold text-white hover:text-brand-300 transition-colors"
-                    >
-                      {p.title}
-                    </Link>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                      {p.summary}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs text-slate-400 pt-2 border-t border-charcoal-800">
-                    <span className="flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-brand-400" />
-                      {p.current_team_size} / {p.desired_team_size} members
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2 flex-wrap">
-                  <Link href={`/projects/${p.id}/workspace`}>
-                    <Button variant="primary" size="sm" leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}>
-                      Open Team Workspace
-                    </Button>
-                  </Link>
-                  <Link href={`/projects/${p.id}`}>
-                    <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                      Details
-                    </Button>
-                  </Link>
-                </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-lg font-bold text-white">No Concluded Workspaces Yet</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  When a hackathon sprint concludes and results are published by the faculty or jury, the completed workspace will be archived here.
+                </p>
               </div>
-            ))}
-          </div>
-        )
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredDoneWorkspaces.map((item) => (
+                <WorkspaceCard
+                  key={item.id}
+                  item={item}
+                  copiedCode={copiedCode}
+                  onCopyCode={handleCopyCode}
+                  isArchiveView={true}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       ) : activeTab === 'registered' ? (
-        /* ================= REGISTERED HACKATHONS (UPCOMING) ================= */
+        /* ================= 3. REGISTERED (UPCOMING) ================= */
         <div className="space-y-6">
           <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex items-start sm:items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
+                <Clock className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">Registered Upcoming Hackathons</h4>
                 <p className="text-xs text-slate-400">
-                  You are registered. When the hackathon start date arrives, the workspace unlocks and the event automatically moves to your <strong className="text-amber-400">Active Hackathon Sprints</strong> section!
+                  You are registered. When the hackathon start date arrives, the workspace unlocks and automatically moves to your <strong className="text-amber-400">Working Now</strong> tab!
                 </p>
               </div>
-
-              {registeredUpcomingHackathons.length > 0 && (
-                <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between gap-3 max-w-md mx-auto">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <span>You have {registeredUpcomingHackathons.length} upcoming registered hackathon(s).</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('registered')}
-                    className="font-bold underline text-cyan-200 hover:text-white cursor-pointer"
-                  >
-                    View
-                  </button>
-                </div>
-              )}
             </div>
             <Link href="/hackathons">
               <Button variant="outline" size="sm" className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 text-xs">
@@ -785,21 +1020,6 @@ function MyProjectsContent() {
                 </p>
               </div>
 
-              {registeredUpcomingHackathons.length > 0 && (
-                <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between gap-3 max-w-md mx-auto">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <span>You have {registeredUpcomingHackathons.length} upcoming registered hackathon(s).</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('registered')}
-                    className="font-bold underline text-cyan-200 hover:text-white cursor-pointer"
-                  >
-                    View
-                  </button>
-                </div>
-              )}
               <Link href="/hackathons">
                 <Button variant="primary" size="sm" className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold" leftIcon={<Trophy className="w-4 h-4" />}>
                   Explore Collegiate Hackathons
@@ -811,7 +1031,13 @@ function MyProjectsContent() {
               {registeredUpcomingHackathons.map((item) => {
                 const h = item.hackathon;
                 const startDateStr = h.start_date
-                  ? new Date(h.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  ? new Date(h.start_date).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
                   : 'Announced Soon';
 
                 return (
@@ -850,7 +1076,9 @@ function MyProjectsContent() {
                       <div className="p-3 rounded-xl bg-charcoal-950/70 border border-charcoal-800 text-xs text-slate-400 space-y-1">
                         <div className="flex items-center justify-between">
                           <span>Team Size:</span>
-                          <span className="text-white font-medium">{h.min_team_size || 1} - {h.max_team_size || 4} Builders</span>
+                          <span className="text-white font-medium">
+                            {h.min_team_size || 1} - {h.max_team_size || 4} Builders
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span>Workspace Access:</span>
@@ -879,246 +1107,83 @@ function MyProjectsContent() {
             </div>
           )}
         </div>
-      ) : activeTab === 'hackathons' ? (
-        /* ================= 3. ACTIVE HACKATHON SPRINTS (TEMPORARY WORKSHOP) ================= */
-        <div className="space-y-8">
-          {activeHackathonSprints.length === 0 ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-6">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mx-auto">
-                <Trophy className="w-7 h-7" />
-              </div>
-              <div className="space-y-1.5 max-w-lg mx-auto">
-                <h3 className="text-lg font-bold text-white">No Active Hackathon Sprints</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  When you form or join a team for a college hackathon, your collaborative team workshop appears here during the event.
-                  <strong className="text-slate-300 block mt-1">
-                    Hackathon workshops automatically close when the event deadline ends, while your regular project teams remain forever.
-                  </strong>
-                </p>
-              </div>
+      ) : activeTab === 'permanent' ? (
+        /* ================= 4. PERMANENT PROJECTS ================= */
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setPermanentFilter('all')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  permanentFilter === 'all'
+                    ? 'bg-charcoal-800 text-white border border-charcoal-700'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                All Permanent ({permanentProjects.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPermanentFilter('leading')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  permanentFilter === 'leading'
+                    ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                    : 'text-slate-400 hover:text-brand-300'
+                }`}
+              >
+                Projects I Lead ({permanentProjects.filter((w) => w.isOwner).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPermanentFilter('joined')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  permanentFilter === 'joined'
+                    ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                    : 'text-slate-400 hover:text-brand-300'
+                }`}
+              >
+                Teams I Joined ({permanentProjects.filter((w) => !w.isOwner).length})
+              </button>
+            </div>
 
-              {registeredUpcomingHackathons.length > 0 && (
-                <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between gap-3 max-w-md mx-auto">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <span>You have {registeredUpcomingHackathons.length} upcoming registered hackathon(s).</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('registered')}
-                    className="font-bold underline text-cyan-200 hover:text-white cursor-pointer"
-                  >
-                    View
-                  </button>
-                </div>
-              )}
+            <Link href="/projects/new">
+              <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                Create New Project
+              </Button>
+            </Link>
+          </div>
 
-              {/* Quick Join Code Form */}
-              <div className="max-w-md mx-auto p-4 rounded-xl bg-charcoal-950 border border-amber-500/30">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (hackathonCodeInput.trim()) {
-                      let clean = hackathonCodeInput.trim();
-                      if (clean.includes('/h/')) clean = clean.split('/h/')[1];
-                      clean = clean.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-                      window.location.href = `/h/${clean}`;
-                    }
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <input
-                    type="text"
-                    placeholder="Enter event join code (e.g. col-apex26)..."
-                    value={hackathonCodeInput}
-                    onChange={(e) => setHackathonCodeInput(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
-                  />
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
-                    leftIcon={<Lock className="w-3.5 h-3.5" />}
-                  >
-                    Join
+          {filteredPermanentProjects.length === 0 ? (
+            <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
+              <Sparkles className="w-10 h-10 text-brand-400 mx-auto" />
+              <h3 className="text-base font-semibold text-white">No Permanent Projects Found</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Start your own project to assemble a long-term development team, or explore active projects looking for engineering talent.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <Link href="/projects/new">
+                  <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                    Create a Project
                   </Button>
-                </form>
-              </div>
-
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <Link href="/hackathons">
-                  <Button variant="outline" size="sm" leftIcon={<Trophy className="w-4 h-4 text-amber-400" />}>
-                    Browse Active College Hackathons
+                </Link>
+                <Link href="/explore">
+                  <Button variant="outline" size="sm">
+                    Explore Projects
                   </Button>
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                <span className="font-mono uppercase font-bold text-amber-400 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                  Active Event Workshops ({activeHackathonSprints.length})
-                </span>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  Workshops automatically close when the hackathon timeline ends
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {activeHackathonSprints.map((item) => {
-                  const h = item.hackathon;
-                  return (
-                    <div
-                      key={item.hackathon_id}
-                      className="p-6 rounded-2xl bg-charcoal-900 border border-amber-500/40 hover:border-amber-400 transition-all flex flex-col justify-between gap-5 shadow-sm relative overflow-hidden"
-                    >
-                      {/* Top Accent Strip */}
-                      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500" />
-
-                      <div className="space-y-3.5">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            Active Hackathon Sprint
-                          </span>
-
-                          <span className="text-[11px] font-mono font-bold text-amber-300 flex items-center gap-1 bg-charcoal-950 px-2.5 py-0.5 rounded-full border border-charcoal-800">
-                            <Clock className="w-3.5 h-3.5 text-amber-400" />
-                            {item.timeRemaining}
-                          </span>
-                        </div>
-
-                        <div>
-                          <div className="text-xs text-slate-400">
-                            Hackathon: <strong className="text-slate-200">{h.title}</strong>
-                          </div>
-                          <h4 className="text-xl font-black text-white mt-0.5 flex items-center gap-2">
-                            <span>Team &ldquo;{item.team_name}&rdquo;</span>
-                            {item.role && (
-                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-brand-500/20 text-brand-300 border border-brand-500/30">
-                                {item.role}
-                              </span>
-                            )}
-                          </h4>
-                          <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                            {h.description}
-                          </p>
-                        </div>
-
-                        {/* Team Teammates Roster */}
-                        <div className="p-3 rounded-xl bg-charcoal-950/80 border border-charcoal-800 space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400 font-semibold flex items-center gap-1.5">
-                              <Users className="w-3.5 h-3.5 text-brand-400" />
-                              Squad Workshop Members ({item.members?.length || 1})
-                            </span>
-                            {item.invite_code && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(item.invite_code!);
-                                  setCopiedCode(item.invite_code!);
-                                  setTimeout(() => setCopiedCode(null), 2000);
-                                }}
-                                className="text-[11px] font-mono text-amber-300 hover:underline flex items-center gap-1"
-                              >
-                                <span>Code: {item.invite_code}</span>
-                                <Copy className="w-3 h-3" />
-                                {copiedCode === item.invite_code && (
-                                  <span className="text-emerald-400">Copied!</span>
-                                )}
-                              </button>
-                            )}
-                          </div>
-
-                          {item.members && item.members.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                              {item.members.map((m, mIdx) => (
-                                <span
-                                  key={m.user_id || mIdx}
-                                  className="text-[11px] px-2 py-0.5 rounded-lg bg-charcoal-850 border border-charcoal-750 text-slate-300 font-medium"
-                                >
-                                  {m.display_name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="text-[11px] text-slate-500 font-mono">
-                          Faculty / Organizer: <strong className="text-slate-400">{h.organizer}</strong>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-charcoal-800 flex items-center justify-between gap-2 flex-wrap">
-                        <Link href={`/projects/${item.team_id || item.team?.id || `hackathon-${h.id}`}/workspace`}>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white font-bold shadow-sm"
-                            leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}
-                          >
-                            Workspace
-                          </Button>
-                        </Link>
-
-                        <Link href={`/hackathons/${h.id}`}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold"
-                            rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-                          >
-                            Enter Hackathon
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* CLOSED / ARCHIVED HACKATHONS ACCORDION (Clearly shows workshops are closed) */}
-          {closedHackathonSprints.length > 0 && (
-            <div className="pt-6 border-t border-charcoal-800 space-y-3">
-              <div className="text-xs font-mono uppercase font-bold text-slate-500 flex items-center gap-2">
-                <Lock className="w-3.5 h-3.5" />
-                <span>Closed Hackathon Events ({closedHackathonSprints.length})</span>
-              </div>
-              <p className="text-xs text-slate-500">
-                These events have completed their timeline. Active team workshop collaboration is closed, but your submissions and certificates remain archived.
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {closedHackathonSprints.map((item) => (
-                  <div
-                    key={item.hackathon_id}
-                    className="p-4 rounded-xl bg-charcoal-900/60 border border-charcoal-800 opacity-75 flex items-center justify-between gap-3"
-                  >
-                    <div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                        Event Closed
-                      </span>
-                      <h5 className="text-sm font-bold text-slate-300 mt-1">
-                        {item.hackathon.title} — Team &ldquo;{item.team_name}&rdquo;
-                      </h5>
-                      <span className="text-[11px] text-slate-500">
-                        Workshop expired • Host: {item.hackathon.organizer}
-                      </span>
-                    </div>
-
-                    <Link href={`/hackathons/${item.hackathon_id}/workspace`}>
-                      <Button variant="ghost" size="sm" className="text-xs text-slate-400">
-                        View Archive
-                      </Button>
-                    </Link>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredPermanentProjects.map((item) => (
+                <WorkspaceCard
+                  key={item.id}
+                  item={item}
+                  copiedCode={copiedCode}
+                  onCopyCode={handleCopyCode}
+                />
+              ))}
             </div>
           )}
         </div>

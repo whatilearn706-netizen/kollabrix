@@ -27,6 +27,10 @@ import {
   Award,
   Clock,
   ChevronRight,
+  Trophy,
+  GraduationCap,
+  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react';
 import {
   WorkspaceFeaturesConfig,
@@ -34,6 +38,10 @@ import {
 } from '@/types/masterControl';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { isHackathonClosed } from '@/lib/hackathons/hackathonStatus';
+import {
+  resolveWorkspaceOrigin,
+  WorkspaceOriginInfo,
+} from '@/lib/workspaces/workspaceOrigin';
 
 interface WorkspaceContextType {
   project: Project;
@@ -43,6 +51,7 @@ interface WorkspaceContextType {
   currentUserMember: ProjectMember | null;
   refreshWorkspace: () => Promise<void>;
   workspaceFeatures: WorkspaceFeaturesConfig;
+  originInfo: WorkspaceOriginInfo | null;
 }
 
 export const WorkspaceContext = createContext<WorkspaceContextType | null>(null);
@@ -77,6 +86,7 @@ export default function WorkspaceLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [hackathonId, setHackathonId] = useState<string | null>(null);
   const [isHackathonClosedState, setIsHackathonClosedState] = useState<boolean>(false);
+  const [originInfo, setOriginInfo] = useState<WorkspaceOriginInfo | null>(null);
   const [workspaceFeatures, setWorkspaceFeatures] = useState<WorkspaceFeaturesConfig>(
     DEFAULT_MASTER_CONTROL_CONFIG.workspaceFeatures || {
       aiCloserKit: true,
@@ -421,6 +431,35 @@ export default function WorkspaceLayout({
 
       setProject(projData as Project);
 
+      // Resolve origin & provenance (Hackathon Sprint / Faculty Problem / Permanent Project)
+      try {
+        let hackathonsList: any[] = [];
+        let problemsList: any[] = [];
+        const { data: hList } = await supabase
+          .from('hackathons')
+          .select('id, title, organizer, results_published, status, end_date, submission_deadline, start_date');
+        if (Array.isArray(hList)) hackathonsList = hList;
+
+        const { data: pList } = await supabase
+          .from('problem_statements')
+          .select('id, title, status, deadline, author:profiles(display_name)');
+        if (Array.isArray(pList)) problemsList = pList;
+
+        const resolvedOrigin = resolveWorkspaceOrigin(projData, {
+          hackathons: hackathonsList,
+          problemStatements: problemsList,
+        });
+        setOriginInfo(resolvedOrigin);
+        if (resolvedOrigin.originType === 'hackathon' && resolvedOrigin.originId) {
+          setHackathonId(resolvedOrigin.originId);
+        }
+        if (resolvedOrigin.isClosed) {
+          setIsHackathonClosedState(true);
+        }
+      } catch (err) {
+        console.warn('Origin resolution warning:', err);
+      }
+
       // 2. Fetch project members with profiles
       const { data: membersData } = await supabase
         .from('project_members')
@@ -580,33 +619,7 @@ export default function WorkspaceLayout({
     );
   }
 
-  if (isHackathonClosedState) {
-    return (
-      <div className="max-w-md mx-auto my-20 p-8 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4 shadow-elevated">
-        <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
-          <Clock className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-bold text-white">Hackathon Sprint Concluded</h2>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          The official hackathon timeline has ended. As scheduled, temporary event sprint workshops are closed and archived. Your permanent projects remain accessible forever.
-        </p>
-        <div className="pt-2 flex justify-center gap-3">
-          <Link href="/my-projects">
-            <Button variant="primary" size="sm">
-              Back to Workspaces
-            </Button>
-          </Link>
-          {hackathonId && (
-            <Link href={`/hackathons/${hackathonId}/workspace`}>
-              <Button variant="outline" size="sm">
-                View Event Submissions
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
-    );
-  }
+
 
   if (!isAuthorized || !project) {
     return (
@@ -728,6 +741,7 @@ export default function WorkspaceLayout({
         currentUserMember,
         refreshWorkspace: loadWorkspaceData,
         workspaceFeatures,
+        originInfo,
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
@@ -736,12 +750,17 @@ export default function WorkspaceLayout({
           <div className="flex items-center gap-3">
             <Link
               href={
-                hackathonId
-                  ? `/hackathons/${hackathonId}/workspace`
-                  : `/projects/${project.id}`
+                originInfo?.originLink ||
+                (hackathonId ? `/hackathons/${hackathonId}/workspace` : `/projects/${project.id}`)
               }
               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-charcoal-900 dark:hover:bg-charcoal-800 border border-slate-200 dark:border-charcoal-750 text-slate-700 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
-              title={hackathonId ? 'Return to Hackathon' : 'Return to Public Project Page'}
+              title={
+                originInfo?.originType === 'hackathon'
+                  ? 'Return to Hackathon'
+                  : originInfo?.originType === 'faculty_problem'
+                  ? 'Return to Faculty Challenge'
+                  : 'Return to Public Project Page'
+              }
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -755,6 +774,16 @@ export default function WorkspaceLayout({
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-500/30 font-medium">
                   Workspace
                 </span>
+                {originInfo?.originType === 'hackathon' && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1">
+                    <Trophy className="w-3 h-3 text-amber-400" /> Hackathon Squad
+                  </span>
+                )}
+                {originInfo?.originType === 'faculty_problem' && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 font-bold flex items-center gap-1">
+                    <GraduationCap className="w-3 h-3 text-purple-400" /> Faculty Challenge Squad
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 font-medium">
                 Private team environment • {members.length} active members • {project.category}
@@ -765,9 +794,8 @@ export default function WorkspaceLayout({
           <div className="flex items-center gap-2">
             <Link
               href={
-                hackathonId
-                  ? `/hackathons/${hackathonId}/workspace`
-                  : `/projects/${project.id}`
+                originInfo?.originLink ||
+                (hackathonId ? `/hackathons/${hackathonId}/workspace` : `/projects/${project.id}`)
               }
               target="_blank"
             >
@@ -782,6 +810,91 @@ export default function WorkspaceLayout({
             </Link>
           </div>
         </div>
+
+        {/* Workspace Provenance Banner: Where did this workspace come from? */}
+        {originInfo && originInfo.originType === 'hackathon' && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    🏆 Hackathon Sprint Workspace
+                  </span>
+                  {originInfo.isResultsAnnounced ? (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Results Announced • Event Done
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Live Active Sprint
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 mt-1">
+                  Squad workspace created for <strong className="text-white">{originInfo.originTitle}</strong>
+                  {originInfo.originOrganizer ? ` • Organized by ${originInfo.originOrganizer}` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href={originInfo.originLink}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold text-xs"
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                >
+                  Hackathon Arena &amp; Leaderboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {originInfo && originInfo.originType === 'faculty_problem' && (
+          <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                    🎓 Faculty Challenge Workspace
+                  </span>
+                  {originInfo.isResultsAnnounced ? (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Faculty Evaluated • Done
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> Active Faculty Challenge
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 mt-1">
+                  Directly tackling problem: <strong className="text-white">{originInfo.originTitle}</strong>
+                  {originInfo.originOrganizer ? ` • Mentor: ${originInfo.originOrganizer}` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href={originInfo.originLink}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-purple-500/40 text-purple-300 hover:bg-purple-500/10 font-bold text-xs"
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                >
+                  Faculty Problem Statement
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Workspace Body: Left Vertical Sidebar Navigation + Right Content Area */}
         <div className="flex flex-col lg:flex-row gap-6 items-start pt-2">
