@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { WarpSpeedCanvas } from './WarpSpeedCanvas';
-import { TeammatePortalCanvas } from './TeammatePortalCanvas';
 
 export function LandingHero() {
   const { user } = useAuth();
@@ -26,9 +25,6 @@ export function LandingHero() {
     >
       {/* Continuous 60fps Light-Speed Hyperspace Starfield (Derived from reference Image 3 with spaceship removed) */}
       <WarpSpeedCanvas />
-
-      {/* Ambient Collegiate Teammate Portal & Supersonic Warp Jump */}
-      <TeammatePortalCanvas />
 
       {/* Soft radial vignette to keep headline & buttons ultra-readable */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(9,11,16,0.7)_100%)] pointer-events-none" />

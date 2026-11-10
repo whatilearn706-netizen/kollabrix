@@ -31,14 +31,12 @@ import {
   BookOpen,
   Zap,
   Swords,
-  Rocket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
   | 'master'
-  | 'warp_portal'
   | 'integrations'
   | 'campus_war'
   | 'arena'
@@ -85,7 +83,6 @@ export function AdminHeader({
 
   const tabs: { id: AdminTab; label: string; icon: any; category: TabCategory }[] = [
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
-    { id: 'warp_portal', label: '🌀 3D Warp Gate & Spacecraft', icon: Rocket, category: 'master' },
     { id: 'integrations', label: '⚡ Live Integrations & Email Test', icon: Zap, category: 'master' },
     { id: 'arena', label: '⚔️ 2v2 Battleground Arena', icon: Zap, category: 'code' },
     { id: 'campus_war', label: '⚔️ Campus War Hub & Sponsors', icon: Swords, category: 'campus' },
