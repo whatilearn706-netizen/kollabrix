@@ -1573,10 +1573,11 @@ export default function HackathonWorkspacePage() {
         .join('\n\n');
 
       // Safe payload matching verified schema columns on hackathon_submissions table in Supabase
-      const safePayload = {
+      const safePayload: any = {
         hackathon_id: canonicalHackId || hackathon.id,
         team_id: myTeam.id,
         title: subTitle.trim(),
+        challenge_id: targetChallengeId || null,
         description: compiledDescription,
         repo_url: subRepoUrl.trim() || null,
         demo_url: subDemoUrl.trim() || null,
