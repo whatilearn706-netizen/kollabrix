@@ -752,6 +752,7 @@ export default function HackathonWorkspacePage() {
         } catch {}
 
         // 7. If organizer or judge, or if results published, load submissions and evaluations
+        let loadedRawSubs: any[] = [];
         try {
           const { data: allSubs } = await supabase
             .from('hackathon_submissions')
@@ -762,6 +763,7 @@ export default function HackathonWorkspacePage() {
             .eq('hackathon_id', canonicalHackId);
 
           if (allSubs) {
+            loadedRawSubs = allSubs;
             const formatted = allSubs.map((s: any) => {
               let parsedMeta: any = {};
               if (s.description && s.description.includes('<!-- SUBMISSION_META:')) {
@@ -797,6 +799,7 @@ export default function HackathonWorkspacePage() {
         } catch {}
 
         // Fetch evaluations
+        let allEvals: HackathonEvaluation[] = [];
         try {
           const { data: evalData } = await supabase
             .from('hackathon_evaluations')
@@ -804,9 +807,59 @@ export default function HackathonWorkspacePage() {
             .eq('hackathon_id', canonicalHackId);
 
           if (evalData) {
-            setEvaluations(evalData as HackathonEvaluation[]);
+            allEvals = evalData as HackathonEvaluation[];
           }
         } catch {}
+
+        // Extract embedded evaluations from submissions metadata
+        try {
+          const subsToCheck = loadedRawSubs;
+          for (const s of subsToCheck) {
+            if (s.description && s.description.includes('<!-- SUBMISSION_META:')) {
+              try {
+                const meta = JSON.parse(s.description.split('<!-- SUBMISSION_META:')[1].split('-->')[0]);
+                if (Array.isArray(meta.evaluations)) {
+                  meta.evaluations.forEach((ev: any) => {
+                    if (
+                      ev &&
+                      !allEvals.some(
+                        (e) => e.submission_id === ev.submission_id && e.judge_id === ev.judge_id
+                      )
+                    ) {
+                      allEvals.push(ev);
+                    }
+                  });
+                }
+              } catch {}
+            }
+          }
+        } catch {}
+
+        // Merge localStorage evaluations
+        if (typeof window !== 'undefined') {
+          try {
+            const raw =
+              localStorage.getItem(`teamforge_evaluations_${canonicalHackId}`) ||
+              localStorage.getItem(`teamforge_evaluations_${hackathonId}`);
+            if (raw) {
+              const localList = JSON.parse(raw);
+              if (Array.isArray(localList)) {
+                localList.forEach((ev: any) => {
+                  if (
+                    ev &&
+                    !allEvals.some(
+                      (e) => e.submission_id === ev.submission_id && e.judge_id === ev.judge_id
+                    )
+                  ) {
+                    allEvals.push(ev);
+                  }
+                });
+              }
+            }
+          } catch {}
+        }
+
+        setEvaluations(allEvals);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error loading hackathon workspace.');
