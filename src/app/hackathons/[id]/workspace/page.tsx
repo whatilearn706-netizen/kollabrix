@@ -119,6 +119,71 @@ export default function HackathonWorkspacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Dynamic ticking clock for automatic deadline & result announcement detection
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Resolved result announcement date across all storage providers
+  const resolvedResultsDate = useMemo(() => {
+    if (!hackathon) return null;
+    return (
+      hackathon.results_date ||
+      (hackathon as any).resultsDate ||
+      (hackathon as any).result_date ||
+      null
+    );
+  }, [hackathon]);
+
+  // Determine whether official results are announced (either manually published or announcement deadline reached)
+  const areResultsAnnounced = useMemo(() => {
+    if (!hackathon) return false;
+    if (hackathon.results_published) return true;
+    if (resolvedResultsDate) {
+      const resTime = new Date(resolvedResultsDate).getTime();
+      if (!isNaN(resTime) && currentTime >= resTime) {
+        return true;
+      }
+    }
+    return false;
+  }, [hackathon, resolvedResultsDate, currentTime]);
+
+  // Auto-publish when results announcement deadline arrives
+  useEffect(() => {
+    if (hackathon && areResultsAnnounced && !hackathon.results_published) {
+      setHackathon((prev) => (prev ? { ...prev, results_published: true } : prev));
+
+      if (typeof window !== 'undefined') {
+        try {
+          const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          const updated = localHacks.map((h: any) =>
+            h.id === hackathon.id || (hackathon.join_code && h.join_code === hackathon.join_code)
+              ? { ...h, results_published: true }
+              : h
+          );
+          localStorage.setItem('teamforge_created_hackathons', JSON.stringify(updated));
+        } catch {}
+      }
+
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hackathon.id);
+      if (isUUID) {
+        (async () => {
+          try {
+            await supabase
+              .from('hackathons')
+              .update({ results_published: true, updated_at: new Date().toISOString() })
+              .eq('id', hackathon.id);
+          } catch {}
+        })();
+      }
+    }
+  }, [hackathon, areResultsAnnounced]);
+
   const isClosed = useMemo(() => isHackathonClosed(hackathon), [hackathon]);
 
   useEffect(() => {
@@ -217,14 +282,14 @@ export default function HackathonWorkspacePage() {
     if (!hackathon) return false;
     const norm = normalizeHackathonDeadlines(hackathon);
     if (!norm.start_date) return false;
-    return new Date(norm.start_date).getTime() > Date.now();
-  }, [hackathon]);
+    return new Date(norm.start_date).getTime() > currentTime;
+  }, [hackathon, currentTime]);
 
   // Submission deadline check
   const isSubmissionClosed = useMemo(() => {
     if (!hackathon) return false;
     const norm = normalizeHackathonDeadlines(hackathon);
-    const now = Date.now();
+    const now = currentTime;
 
     // Check normalized submission deadline or end date
     const subTime = norm.submission_deadline ? new Date(norm.submission_deadline).getTime() : 0;
@@ -235,7 +300,7 @@ export default function HackathonWorkspacePage() {
       return true;
     }
     return false;
-  }, [hackathon]);
+  }, [hackathon, currentTime]);
 
   // Load all workspace data
   const loadWorkspace = useCallback(async () => {
@@ -413,6 +478,21 @@ export default function HackathonWorkspacePage() {
       if (typeof window !== 'undefined') {
         try {
           const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          const localMatch = localHacks.find(
+            (h: any) => h.id === currentHack?.id || (currentHack?.join_code && h.join_code === currentHack?.join_code)
+          );
+          if (localMatch) {
+            if (!currentHack.results_date && (localMatch.results_date || localMatch.resultsDate)) {
+              currentHack.results_date = localMatch.results_date || localMatch.resultsDate;
+            }
+            if (!currentHack.submission_deadline && (localMatch.submission_deadline || localMatch.submissionDeadline)) {
+              currentHack.submission_deadline = localMatch.submission_deadline || localMatch.submissionDeadline;
+            }
+            if (localMatch.results_published) {
+              currentHack.results_published = true;
+            }
+          }
+
           let changed = false;
           const updated = localHacks.map((h: any) => {
             if (h.id === currentHack?.id || (currentHack?.join_code && h.join_code === currentHack?.join_code)) {
@@ -422,6 +502,7 @@ export default function HackathonWorkspacePage() {
                 submission_deadline: currentHack?.submission_deadline,
                 results_date: currentHack?.results_date,
                 end_date: currentHack?.end_date,
+                results_published: currentHack?.results_published,
               };
             }
             return h;
@@ -430,6 +511,11 @@ export default function HackathonWorkspacePage() {
             localStorage.setItem('teamforge_created_hackathons', JSON.stringify(updated));
           }
         } catch {}
+      }
+
+      const initialResDate = currentHack.results_date || (currentHack as any).resultsDate || (currentHack as any).result_date;
+      if (initialResDate && !isNaN(new Date(initialResDate).getTime()) && Date.now() >= new Date(initialResDate).getTime()) {
+        currentHack.results_published = true;
       }
 
       setHackathon(currentHack);
@@ -1981,7 +2067,7 @@ export default function HackathonWorkspacePage() {
                   </div>
                 </div>
 
-                {isJudge && (
+                {isJudge ? (
                   <span
                     className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ${
                       activeTab === 'judging'
@@ -1990,6 +2076,16 @@ export default function HackathonWorkspacePage() {
                     }`}
                   >
                     {allSubmissions.length}
+                  </span>
+                ) : (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                      areResultsAnnounced
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    }`}
+                  >
+                    {areResultsAnnounced ? 'Live' : 'Pending'}
                   </span>
                 )}
               </button>
@@ -2133,6 +2229,10 @@ export default function HackathonWorkspacePage() {
                   <div className="font-semibold text-amber-300">
                     {hackathon.submission_deadline
                       ? new Date(hackathon.submission_deadline).toLocaleString()
+                      : (hackathon as any).submissionDeadline
+                      ? new Date((hackathon as any).submissionDeadline).toLocaleString()
+                      : hackathon.end_date
+                      ? new Date(hackathon.end_date).toLocaleString()
                       : 'To be announced'}
                   </div>
                   {isSubmissionClosed && (
@@ -2140,6 +2240,37 @@ export default function HackathonWorkspacePage() {
                       ⚠️ Submission portal is closed
                     </span>
                   )}
+                </div>
+
+                <div className="p-3 rounded-xl bg-charcoal-950/70 border border-charcoal-800">
+                  <div className="text-slate-400 mb-0.5 flex items-center justify-between">
+                    <span>Result Announcement:</span>
+                    {areResultsAnnounced ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        🏆 Announced
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        ⏳ Scheduled
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-semibold text-emerald-300">
+                    {resolvedResultsDate
+                      ? new Date(resolvedResultsDate).toLocaleString()
+                      : hackathon.end_date
+                      ? new Date(hackathon.end_date).toLocaleString()
+                      : 'To be announced'}
+                  </div>
+                  {areResultsAnnounced ? (
+                    <span className="inline-block mt-1 text-[10px] text-emerald-400 font-medium">
+                      ✓ Official rankings &amp; awards unlocked on Leaderboard
+                    </span>
+                  ) : resolvedResultsDate ? (
+                    <span className="inline-block mt-1 text-[10px] text-amber-400/90 font-medium">
+                      Scores &amp; ranks reveal automatically when time arrives
+                    </span>
+                  ) : null}
                 </div>
 
                 {hackathon.prize_pool && (
@@ -3456,18 +3587,24 @@ export default function HackathonWorkspacePage() {
                     Jury Review & Rubric Scoring
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Evaluate project submissions on multi-criteria weights. Scores remain private until you publish official results.
+                    {areResultsAnnounced
+                      ? 'Official results are live and published on the public leaderboard.'
+                      : `Evaluate project submissions on multi-criteria weights. Scores remain private until ${
+                          resolvedResultsDate
+                            ? new Date(resolvedResultsDate).toLocaleString()
+                            : 'official results are published'
+                        }.`}
                   </p>
                 </div>
 
                 {isOrganizer && (
                   <Button
-                    variant={hackathon.results_published ? 'outline' : 'primary'}
+                    variant={areResultsAnnounced ? 'outline' : 'primary'}
                     size="sm"
                     onClick={() => setIsSecurityModalOpen(true)}
                     leftIcon={<Trophy className="w-4 h-4" />}
                   >
-                    {hackathon.results_published ? 'Manage Results & Access' : 'Publish Official Results'}
+                    {areResultsAnnounced ? 'Manage Results & Access' : 'Publish Official Results'}
                   </Button>
                 )}
               </div>
@@ -3582,13 +3719,19 @@ export default function HackathonWorkspacePage() {
           ) : (
             /* STUDENT VIEW: OFFICIAL LEADERBOARD */
             <div className="space-y-6">
-              {!hackathon.results_published ? (
+              {!areResultsAnnounced ? (
                 <div className="p-16 text-center rounded-2xl bg-charcoal-900/30 border border-charcoal-800 space-y-4">
                   <Clock className="w-12 h-12 text-amber-400 mx-auto animate-pulse" />
                   <h3 className="text-xl font-bold text-white">Jury Review Underway</h3>
                   <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
                     Faculty mentors and judges are reviewing submissions against evaluation criteria. Official rankings, awards, and jury feedback will appear here once published!
                   </p>
+                  {resolvedResultsDate && (
+                    <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 font-mono shadow-xs">
+                      <span>⏰ Results scheduled for:</span>
+                      <strong className="text-white">{new Date(resolvedResultsDate).toLocaleString()}</strong>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* OFFICIAL RANKINGS PUBLISHED */
