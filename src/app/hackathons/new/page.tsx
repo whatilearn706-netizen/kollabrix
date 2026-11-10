@@ -364,6 +364,7 @@ export default function NewHackathonPage() {
             password_salt: resData.hackathon.password_salt,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
+            submission_deadline: toUtcIso(submissionDeadline),
             results_date: toUtcIso(resultsDate),
             banner_url: bannerUrl.trim() || null,
             logo_url: logoUrl.trim() || null,
@@ -381,6 +382,7 @@ export default function NewHackathonPage() {
             start_date: toUtcIso(startDate),
             end_date: toUtcIso(endDate),
             registration_deadline: toUtcIso(registrationDeadline),
+            submission_deadline: toUtcIso(submissionDeadline),
             results_date: toUtcIso(resultsDate),
             eligibility: eligibility.trim(),
             themes,
@@ -407,6 +409,14 @@ export default function NewHackathonPage() {
         } catch (e) {
           console.warn('Client direct fallback note:', e);
         }
+      }
+
+      if (resData.hackathon) {
+        resData.hackathon = {
+          ...resData.hackathon,
+          submission_deadline: toUtcIso(submissionDeadline),
+          results_date: toUtcIso(resultsDate),
+        };
       }
 
       setCreatedHackathon(resData.hackathon);

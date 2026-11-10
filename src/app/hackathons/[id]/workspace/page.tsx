@@ -385,6 +385,8 @@ export default function HackathonWorkspacePage() {
             ...currentHack,
             access_type: meta.access_type || currentHack.access_type || 'private',
             join_code: meta.join_code || currentHack.join_code,
+            submission_deadline: currentHack.submission_deadline || meta.submission_deadline || (currentHack as any).submissionDeadline || null,
+            results_date: currentHack.results_date || meta.results_date || (currentHack as any).resultsDate || null,
             description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
           };
         } catch {}
@@ -417,6 +419,7 @@ export default function HackathonWorkspacePage() {
               return {
                 ...h,
                 submission_deadline: currentHack?.submission_deadline,
+                results_date: currentHack?.results_date,
                 end_date: currentHack?.end_date,
               };
             }

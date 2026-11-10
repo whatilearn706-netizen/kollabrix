@@ -74,6 +74,8 @@ export async function GET(request: NextRequest) {
     const normalizeHackathon = (h: any) => {
       let joinCode = h.join_code;
       let accessType = h.access_type;
+      let resultsDate = h.results_date;
+      let submissionDeadline = h.submission_deadline;
 
       if (h.description && h.description.includes('<!-- HACKATHON_META:')) {
         try {
@@ -81,6 +83,8 @@ export async function GET(request: NextRequest) {
           const metaParsed = JSON.parse(metaStr);
           accessType = metaParsed.access_type || accessType;
           joinCode = metaParsed.join_code || joinCode;
+          if (metaParsed.results_date) resultsDate = metaParsed.results_date;
+          if (metaParsed.submission_deadline) submissionDeadline = metaParsed.submission_deadline;
         } catch {}
       }
 
@@ -92,6 +96,8 @@ export async function GET(request: NextRequest) {
 
       return {
         ...h,
+        submission_deadline: submissionDeadline || h.submission_deadline || null,
+        results_date: resultsDate || h.results_date || null,
         description: h.description,
         join_code: joinCode || h.join_code,
         access_type: accessType || (joinCode ? 'private' : h.access_type || 'public'),

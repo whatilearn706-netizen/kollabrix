@@ -161,6 +161,7 @@ export function CreateHackathonModal({
   const [endDate, setEndDate] = useState(() => getDefaultDateTime(10, '23:59'));
   const [registrationDeadline, setRegistrationDeadline] = useState(() => getDefaultDateTime(7, '23:59'));
   const [submissionDeadline, setSubmissionDeadline] = useState(() => getDefaultDateTime(10, '23:59'));
+  const [resultsDate, setResultsDate] = useState(() => getDefaultDateTime(11, '18:00'));
   const [minTeamSize, setMinTeamSize] = useState(1);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
   const [themesInput, setThemesInput] = useState('Web3, Generative AI, Campus Life, FinTech');
@@ -198,6 +199,7 @@ export function CreateHackathonModal({
     const regTime = new Date(registrationDeadline).getTime();
     const startTime = new Date(startDate).getTime();
     const subTime = new Date(submissionDeadline).getTime();
+    const resultsTime = resultsDate ? new Date(resultsDate).getTime() : 0;
 
     if (isNaN(regTime) || isNaN(startTime) || isNaN(subTime)) {
       setError('Please provide valid dates and times for all deadline fields.');
@@ -211,6 +213,11 @@ export function CreateHackathonModal({
 
     if (subTime <= regTime) {
       setError('Final Submission Deadline must be after the Registration Deadline.');
+      return;
+    }
+
+    if (resultsTime && resultsTime < subTime) {
+      setError('Result Declared Date must be after the Final Submission Deadline.');
       return;
     }
 
@@ -252,6 +259,9 @@ export function CreateHackathonModal({
           endDate: endDate || null,
           registrationDeadline,
           submissionDeadline,
+          resultsDate,
+          results_date: resultsDate,
+          clientTimezoneOffset: new Date().getTimezoneOffset(),
           accessType,
           password: password.trim(),
           minTeamSize,
@@ -279,6 +289,8 @@ export function CreateHackathonModal({
             join_code: resData.joinCode,
             min_team_size: minTeamSize,
             max_team_size: maxTeamSize,
+            submission_deadline: new Date(submissionDeadline).toISOString(),
+            results_date: new Date(resultsDate).toISOString(),
             banner_url: bannerUrl.trim() || null,
           })} -->`;
 
@@ -293,6 +305,8 @@ export function CreateHackathonModal({
             start_date: new Date(startDate).toISOString(),
             end_date: endDate ? new Date(endDate).toISOString() : null,
             registration_deadline: new Date(registrationDeadline).toISOString(),
+            submission_deadline: new Date(submissionDeadline).toISOString(),
+            results_date: new Date(resultsDate).toISOString(),
             eligibility: 'Open to all college students',
             themes,
             prize_pool: prizePool.trim() || null,
@@ -316,6 +330,14 @@ export function CreateHackathonModal({
         } catch (e) {
           console.warn('Client direct fallback note in modal:', e);
         }
+      }
+
+      if (resData.hackathon) {
+        resData.hackathon = {
+          ...resData.hackathon,
+          submission_deadline: new Date(submissionDeadline).toISOString(),
+          results_date: new Date(resultsDate).toISOString(),
+        };
       }
 
       setCreatedHackathon(resData.hackathon);
@@ -604,7 +626,7 @@ export function CreateHackathonModal({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <ModalDateTimeField
                 label="Registration Deadline *"
                 value={registrationDeadline}
@@ -638,6 +660,18 @@ export function CreateHackathonModal({
                   { label: '11:59 PM', time: '23:59' },
                   { label: '05:00 PM', time: '17:00' },
                   { label: '12:00 PM', time: '12:00' },
+                ]}
+              />
+
+              <ModalDateTimeField
+                label="Result Declared Date *"
+                value={resultsDate}
+                onChange={setResultsDate}
+                required
+                presets={[
+                  { label: '06:00 PM', time: '18:00' },
+                  { label: '08:00 PM', time: '20:00' },
+                  { label: '11:59 PM', time: '23:59' },
                 ]}
               />
             </div>
