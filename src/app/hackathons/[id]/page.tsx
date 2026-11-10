@@ -269,6 +269,23 @@ export default function HackathonDetailPage() {
         currentHack.results_date = (currentHack as any).resultsDate;
       }
 
+      if (typeof window !== 'undefined' && (!currentHack.results_date || !currentHack.submission_deadline)) {
+        try {
+          const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          const localMatch = localHacks.find(
+            (h: any) => h.id === currentHack?.id || (currentHack?.join_code && h.join_code === currentHack?.join_code)
+          );
+          if (localMatch) {
+            if (!currentHack.results_date && (localMatch.results_date || localMatch.resultsDate)) {
+              currentHack.results_date = localMatch.results_date || localMatch.resultsDate;
+            }
+            if (!currentHack.submission_deadline && (localMatch.submission_deadline || localMatch.submissionDeadline)) {
+              currentHack.submission_deadline = localMatch.submission_deadline || localMatch.submissionDeadline;
+            }
+          }
+        } catch {}
+      }
+
       currentHack = normalizeHackathonDeadlines(currentHack);
       setHackathon(currentHack);
       setIsLoading(false); // UNBLOCK IMMEDIATELY
@@ -1551,6 +1568,18 @@ export default function HackathonDetailPage() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">Team Size</span>
                     <strong className="text-white font-bold">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2">
+                    <span className="text-slate-400">Submission Cut-off</span>
+                    <strong className="text-amber-300 font-bold font-mono">
+                      {formatEventDateTime(hackathon.submission_deadline || (hackathon as any).submissionDeadline || hackathon.end_date)}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2">
+                    <span className="text-slate-400">Result Announcement</span>
+                    <strong className="text-emerald-300 font-bold font-mono">
+                      {formatEventDateTime(hackathon.results_date || (hackathon as any).resultsDate || hackathon.end_date)}
+                    </strong>
                   </div>
                 </div>
 
