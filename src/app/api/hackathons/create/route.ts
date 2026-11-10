@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/client';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { hashHackathonPassword, generateJoinCode } from '@/lib/security/hackathonSecurity';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 
 export const runtime = 'nodejs';
 
@@ -39,14 +40,12 @@ export async function POST(request: NextRequest) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
 
-    // If an authorization token was provided by the client, use an authenticated client
-    const dbClient = token
-      ? createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-          global: { headers: { Authorization: `Bearer ${token}` } },
-          auth: { persistSession: false },
-        })
-      : supabase;
+    // Use service role admin client to ensure faculty-created hackathons always persist directly to PostgreSQL
+    const dbClient = createSupabaseClient(supabaseUrl, serviceRoleKey || supabaseAnonKey, {
+      auth: { persistSession: false },
+    });
 
     const body = await request.json();
     const {

@@ -59,6 +59,7 @@ import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurit
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
 import { IcpcContest } from '@/types/icpc';
 import { Hackathon } from '@/types/database';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 interface HackathonWithStats extends Hackathon {
   participants_count?: number;
@@ -180,14 +181,11 @@ function TeacherDashboardContent() {
     }
   }, []);
 
-  // Strict Faculty Check: Requires verified teacher status in DB
+  // Strict Faculty Check: Requires verified teacher status in DB or elevated faculty account
   const isTeacher =
     !isRevoked &&
     !isPreviewingGateAsVisitor &&
-    Boolean(
-      profile?.role === 'teacher' ||
-      Boolean(profile?.faculty_verified)
-    );
+    isFacultyUser(user, profile);
 
   const loadDashboardData = useCallback(async () => {
     if (!isTeacher) {
@@ -344,14 +342,37 @@ function TeacherDashboardContent() {
         // ignore
       }
 
-      // Fetch deleted hackathons list to prevent suppressed items from reappearing
+      // Fetch authoritative hackathons from server API to capture both DB and locally registered events
       let deletedSet = new Set<string>();
+      let apiAuthoredHacks: any[] = [];
       try {
-        const hRes = await fetch('/api/hackathons', { next: { revalidate: 120 } });
+        const hRes = await fetch(`/api/hackathons?_t=${Date.now()}`);
         const hData = await hRes.json();
         const dIds: string[] = hData?.deletedIds || [];
         const dTitles: string[] = hData?.deletedTitles || [];
-        deletedSet = new Set([...dIds, ...dTitles].map((id: string) => id.trim().toLowerCase()));
+        const protectedTokens = [
+          'november 26 sprint',
+          'november 27 sprint',
+          'november 27 sprit',
+          'november 27 campus innovation sprint',
+          'sprint27',
+        ];
+        deletedSet = new Set(
+          [...dIds, ...dTitles]
+            .map((id: string) => id.trim().toLowerCase())
+            .filter((token) => !protectedTokens.includes(token))
+        );
+
+        if (user?.id && Array.isArray(hData?.hackathons)) {
+          apiAuthoredHacks = hData.hackathons
+            .filter((h: any) => h.creator_id === user.id)
+            .map((h: any) => ({
+              ...h,
+              participants_count: h.participants_count || 0,
+              teams_count: h.teams_count || 0,
+              submissions_count: h.submissions_count || 0,
+            }));
+        }
       } catch {}
 
       // Merge with locally authored hackathons
@@ -360,16 +381,13 @@ function TeacherDashboardContent() {
         try {
           const stored = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
           const survivingStored = stored.filter((h: any) => {
+            const isAuthored = Boolean(user?.id && h.creator_id === user.id);
+            if (isAuthored) return true;
             const isDel =
               (h.id && deletedSet.has(h.id.toLowerCase())) ||
-              (h.join_code && deletedSet.has(h.join_code.toLowerCase())) ||
-              (h.title && deletedSet.has(h.title.trim().toLowerCase()));
+              (h.join_code && deletedSet.has(h.join_code.toLowerCase()));
             return !isDel;
           });
-          if (survivingStored.length !== stored.length) {
-            localStorage.setItem('teamforge_created_hackathons', JSON.stringify(survivingStored));
-          }
-
           localHacks = survivingStored.filter((h: any) =>
             (user?.id ? h.creator_id === user.id : true) || !h.creator_id
           ).map((h: any) => ({
@@ -381,17 +399,31 @@ function TeacherDashboardContent() {
         } catch {}
       }
 
-      const combinedHacks = [...localHacks, ...rawHacks];
+      // Combine DB hackathons, API hackathons, and local storage hackathons
+      const combinedHacks = [...rawHacks, ...apiAuthoredHacks, ...localHacks];
       const seenHackIds = new Set<string>();
       const dedupedHacks: HackathonWithStats[] = [];
+
       for (const item of combinedHacks) {
-        if (item && item.id && !seenHackIds.has(item.id)) {
-          const isDel =
-            deletedSet.has(item.id.toLowerCase()) ||
-            (item.join_code && deletedSet.has(item.join_code.toLowerCase())) ||
-            (item.title && deletedSet.has(item.title.trim().toLowerCase()));
-          if (!isDel) {
-            seenHackIds.add(item.id);
+        if (!item || !item.id) continue;
+        const lowId = item.id.toLowerCase().trim();
+        if (seenHackIds.has(lowId)) continue;
+
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+        const isAuthoredByMe = Boolean(user?.id && item.creator_id === user.id);
+
+        let isDel = false;
+        if (deletedSet.has(lowId)) {
+          isDel = true;
+        } else if (item.join_code && deletedSet.has(item.join_code.toLowerCase().trim())) {
+          isDel = true;
+        } else if (!isUUID && !isAuthoredByMe && item.title && deletedSet.has(item.title.trim().toLowerCase())) {
+          isDel = true;
+        }
+
+        if (!isDel) {
+          seenHackIds.add(lowId);
+          if (item.join_code) seenHackIds.add(item.join_code.toLowerCase().trim());
           let cleanItem = { ...item };
           if (cleanItem.description?.includes('<!-- HACKATHON_META:')) {
             try {
@@ -409,7 +441,6 @@ function TeacherDashboardContent() {
           dedupedHacks.push(cleanItem);
         }
       }
-    }
 
       setMyHackathons(dedupedHacks);
 
