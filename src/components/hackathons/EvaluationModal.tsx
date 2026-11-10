@@ -21,6 +21,7 @@ import {
   Github,
   Video,
   FileText,
+  Target,
 } from 'lucide-react';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 
@@ -183,6 +184,12 @@ export function EvaluationModal({
               Submitted: {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : 'Draft'}
             </span>
           </div>
+          {submission.challenge_title && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+              <Target className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Track: <strong className="text-white">{submission.challenge_title}</strong></span>
+            </div>
+          )}
           <h4 className="text-base font-bold text-white">{submission.title}</h4>
           <p className="text-xs text-slate-300 leading-relaxed">{submission.pitch}</p>
 
