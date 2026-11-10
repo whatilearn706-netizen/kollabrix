@@ -429,23 +429,27 @@ export function Navbar() {
                       <span>AI Project Planner</span>
                     </Link>
 
-                    <Link
-                      href="/hackathons/new"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-cyan-400 hover:bg-cyan-500/10 transition-colors font-bold"
-                    >
-                      <Trophy className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Host a Hackathon</span>
-                    </Link>
+                    {isFaculty && (
+                      <>
+                        <Link
+                          href="/hackathons/new"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-cyan-400 hover:bg-cyan-500/10 transition-colors font-bold"
+                        >
+                          <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Host a Hackathon</span>
+                        </Link>
 
-                    <Link
-                      href="/teacher/dashboard"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-600 hover:bg-amber-500/10 transition-colors font-bold"
-                    >
-                      <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Faculty Portal</span>
-                    </Link>
+                        <Link
+                          href="/teacher/dashboard"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-600 hover:bg-amber-500/10 transition-colors font-bold"
+                        >
+                          <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Faculty Portal</span>
+                        </Link>
+                      </>
+                    )}
 
                     <a
                       href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
@@ -643,15 +647,17 @@ export function Navbar() {
               <span>Community Feedback</span>
             </a>
 
-            <Link
-              href="/teacher/dashboard"
-              prefetch={true}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/10 transition-colors"
-            >
-              <GraduationCap className="w-4 h-4 text-amber-600" />
-              <span>Faculty Portal</span>
-            </Link>
+            {isFaculty && (
+              <Link
+                href="/teacher/dashboard"
+                prefetch={true}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/10 transition-colors"
+              >
+                <GraduationCap className="w-4 h-4 text-amber-600" />
+                <span>Faculty Portal</span>
+              </Link>
+            )}
 
             {/* Authenticated-only navigation links */}
             {user && (
