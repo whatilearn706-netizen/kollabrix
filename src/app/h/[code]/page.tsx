@@ -34,8 +34,20 @@ export default function JoinHackathonPage() {
       let deletedSet = new Set<string>();
       if (typeof window !== 'undefined') {
         try {
-          const localDel = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
-          deletedSet = new Set(localDel.map((s: string) => String(s).toLowerCase()));
+          const localDel: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
+          const sanitizedDel = localDel.filter((item) => {
+            const low = String(item).toLowerCase().trim();
+            return (
+              low !== 'november 26 sprint' &&
+              low !== 'november 27 sprint' &&
+              low !== 'november 27 campus innovation sprint' &&
+              low !== 'sprint27'
+            );
+          });
+          if (sanitizedDel.length !== localDel.length) {
+            localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(sanitizedDel));
+          }
+          deletedSet = new Set(sanitizedDel.map((s: string) => String(s).toLowerCase().trim()));
         } catch {}
       }
 
@@ -157,12 +169,16 @@ export default function JoinHackathonPage() {
           } catch {}
         }
 
-        if (
-          foundHackathon &&
-          (deletedSet.has((foundHackathon.id || '').toLowerCase()) ||
-            deletedSet.has((foundHackathon.join_code || '').toLowerCase()) ||
-            deletedSet.has((foundHackathon.title || '').trim().toLowerCase()))
-        ) {
+        // Authoritative Deletion Check:
+        // A genuine database UUID hackathon is NEVER deleted by title matching!
+        const isUUID = foundHackathon && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(foundHackathon.id);
+        const isDirectIdDeleted = foundHackathon && (
+          deletedSet.has((foundHackathon.id || '').toLowerCase().trim()) ||
+          (foundHackathon.join_code && deletedSet.has(foundHackathon.join_code.toLowerCase().trim()))
+        );
+        const isTitleDeleted = !isUUID && foundHackathon && deletedSet.has((foundHackathon.title || '').trim().toLowerCase());
+
+        if (isDirectIdDeleted || isTitleDeleted) {
           setError('This hackathon has been removed.');
           setHackathon(null);
           setIsLoading(false);
