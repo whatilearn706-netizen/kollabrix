@@ -999,14 +999,20 @@ export default function HackathonWorkspacePage() {
           console.warn('Sync participant error:', pErr);
         }
 
-        // Pre-seed projects workspace for this squad
+        // Pre-seed projects workspace for this squad with full Hackathon provenance
         try {
+          const metaSnippet = `<!-- HACKATHON_TEAM_META:${JSON.stringify({
+            hackathon_id: canonicalHackId,
+            hackathon_title: hackathon.title,
+            organizer: hackathon.organizer,
+          })} -->`;
+
           await supabase.from('projects').upsert({
             id: team.id,
             owner_id: user.id,
             title: newTeamName.trim(),
-            summary: newTeamDesc.trim() || `Hackathon Team: ${newTeamName.trim()}`,
-            description: newTeamDesc.trim() || 'Collegiate Hackathon Sprint Workspace',
+            summary: `Hackathon Team Sprint: ${hackathon.title} — ${newTeamName.trim()}`,
+            description: `${metaSnippet}\n\n${newTeamDesc.trim() || 'Collegiate Hackathon Sprint Workspace'}\n\n### Hackathon Event\nThis workspace belongs to: **${hackathon.title}** (Organized by ${hackathon.organizer}).`,
             category: 'Other',
             difficulty: 'Intermediate',
             technologies: ['Next.js', 'React', 'TypeScript'],
