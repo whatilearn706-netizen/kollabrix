@@ -68,12 +68,18 @@ function DateTimeField({
     { label: '09:00 AM', time: '09:00' },
     { label: '12:00 PM', time: '12:00' },
     { label: '06:00 PM', time: '18:00' },
+    { label: '11:20 PM', time: '23:20' },
+    { label: '11:40 PM', time: '23:40' },
     { label: '11:59 PM', time: '23:59' },
   ],
   helperText,
 }: DateTimeFieldProps) {
   const datePart = value ? value.split('T')[0] || '' : '';
   const timePart = value && value.includes('T') ? value.split('T')[1].slice(0, 5) : '12:00';
+
+  const [hStr, mStr] = (timePart || '12:00').split(':');
+  const h = parseInt(hStr, 10);
+  const isPM = !isNaN(h) && h >= 12;
 
   const handleDateChange = (newDate: string) => {
     if (!newDate) {
@@ -86,6 +92,17 @@ function DateTimeField({
   const handleTimeChange = (newTime: string) => {
     const d = datePart || new Date().toISOString().split('T')[0];
     onChange(`${d}T${newTime}`);
+  };
+
+  const handlePeriodChange = (period: 'AM' | 'PM') => {
+    let currentH = isNaN(h) ? 12 : h;
+    if (period === 'PM' && currentH < 12) {
+      currentH = (currentH % 12) + 12;
+    } else if (period === 'AM' && currentH >= 12) {
+      currentH = currentH % 12;
+    }
+    const formattedH = String(currentH).padStart(2, '0');
+    handleTimeChange(`${formattedH}:${mStr || '00'}`);
   };
 
   return (
@@ -115,16 +132,47 @@ function DateTimeField({
         </div>
 
         <div>
-          <span className="text-[10px] text-slate-400 block mb-1 font-mono flex items-center gap-1">
-            <Clock className="w-3 h-3 text-cyan-400" /> Time (HH:MM):
-          </span>
-          <Input
-            type="time"
-            value={timePart}
-            onChange={(e) => handleTimeChange(e.target.value)}
-            required={required}
-            className="text-xs bg-charcoal-900 border-charcoal-750 text-white"
-          />
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+              <Clock className="w-3 h-3 text-cyan-400" /> Time (HH:MM):
+            </span>
+            <span className="text-[10px] font-mono font-semibold text-amber-400">
+              {isPM ? '🌙 PM (Night)' : '☀️ AM (Morning)'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="time"
+              value={timePart}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              required={required}
+              className="text-xs bg-charcoal-900 border-charcoal-750 text-white flex-1"
+            />
+            <div className="flex rounded-lg border border-charcoal-700 bg-charcoal-900 p-0.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handlePeriodChange('AM')}
+                className={`px-2 py-1 text-[10px] font-mono font-bold rounded cursor-pointer transition-all ${
+                  !isPM
+                    ? 'bg-amber-500 text-black shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                AM
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePeriodChange('PM')}
+                className={`px-2 py-1 text-[10px] font-mono font-bold rounded cursor-pointer transition-all ${
+                  isPM
+                    ? 'bg-cyan-500 text-black shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                PM
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
