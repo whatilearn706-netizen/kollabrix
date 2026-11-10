@@ -58,6 +58,7 @@ import {
   ChevronRight,
   Search,
   LayoutDashboard,
+  Target,
 } from 'lucide-react';
 import { AddChallengeModal } from '@/components/hackathons/AddChallengeModal';
 import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementModal';
@@ -435,6 +436,7 @@ export default function HackathonWorkspacePage() {
 
       const canonicalHackId = currentHack.id;
       const isCanonicalUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalHackId);
+      let allChallenges: HackathonChallenge[] = [];
 
       // 2. Fetch Participants
       if (isCanonicalUUID) {
@@ -450,7 +452,6 @@ export default function HackathonWorkspacePage() {
         } catch {}
 
         // 3. Fetch Challenges (Resilient to legacy vs modern schema & localStorage fallback)
-        let allChallenges: HackathonChallenge[] = [];
         try {
           const { data: chalData } = await supabase
             .from('hackathon_challenges')
@@ -651,25 +652,88 @@ export default function HackathonWorkspacePage() {
         // If user has team, fetch team submission
         if (userTeam) {
           try {
+            // Restore team challenge selection from local cache if available
+            if (typeof window !== 'undefined') {
+              try {
+                const cachedChallenge = localStorage.getItem(`teamforge_team_challenge_${userTeam.id}`);
+                if (cachedChallenge) {
+                  userTeam.challenge_id = userTeam.challenge_id || cachedChallenge;
+                  setSelectedChallengeId((prev) => prev || cachedChallenge);
+                }
+              } catch {}
+            }
+
             const { data: subData } = await supabase
               .from('hackathon_submissions')
               .select('*')
               .eq('team_id', userTeam.id)
               .maybeSingle();
 
-            if (subData) {
-              setMySubmission(subData as HackathonSubmission);
-              setSubTitle(subData.title || '');
-              setSubPitch(subData.pitch || '');
-              setSubProblem(subData.problem_statement || '');
-              setSubSolution(subData.solution_description || '');
-              setSubTechStack((subData.tech_stack || []).join(', '));
-              setSubRepoUrl(subData.repository_url || '');
-              setSubDemoUrl(subData.demo_url || '');
-              setSubVideoUrl(subData.video_url || '');
-              setSubDocsUrl(subData.documentation_url || '');
+            // LocalStorage backup
+            let localSub: any = null;
+            if (typeof window !== 'undefined') {
+              try {
+                localSub = JSON.parse(
+                  localStorage.getItem(`teamforge_submission_${canonicalHackId}_${userTeam.id}`) ||
+                  localStorage.getItem(`teamforge_submission_${hackathonId}_${userTeam.id}`) ||
+                  'null'
+                );
+              } catch {}
             }
-          } catch {}
+
+            const activeSub = subData || localSub;
+
+            if (activeSub) {
+              let parsedMeta: any = {};
+              if (activeSub.description && activeSub.description.includes('<!-- SUBMISSION_META:')) {
+                try {
+                  const metaJson = activeSub.description.split('<!-- SUBMISSION_META:')[1].split('-->')[0];
+                  parsedMeta = JSON.parse(metaJson);
+                } catch {}
+              }
+
+              const resolvedChallengeId =
+                parsedMeta.challenge_id || activeSub.challenge_id || userTeam.challenge_id || '';
+
+              if (resolvedChallengeId) {
+                setSelectedChallengeId(resolvedChallengeId);
+                userTeam.challenge_id = resolvedChallengeId;
+              }
+
+              const chalMatch = allChallenges.find((c) => c.id === resolvedChallengeId);
+              const resolvedChallengeTitle =
+                chalMatch?.title || parsedMeta.challenge_title || (resolvedChallengeId === 'custom' ? 'Open Innovation Track' : undefined);
+
+              const formattedSub: HackathonSubmission = {
+                ...activeSub,
+                challenge_id: resolvedChallengeId,
+                challenge_title: resolvedChallengeTitle,
+                pitch: parsedMeta.pitch || activeSub.pitch || '',
+                problem_statement: parsedMeta.problem_statement || activeSub.problem_statement || '',
+                solution_description: parsedMeta.solution_description || activeSub.solution_description || '',
+                tech_stack: parsedMeta.tech_stack || activeSub.tech_stack || [],
+                repository_url: activeSub.repo_url || activeSub.repository_url || '',
+                video_url: parsedMeta.video_url || activeSub.video_url || '',
+                documentation_url: parsedMeta.documentation_url || activeSub.documentation_url || '',
+                status: parsedMeta.status || activeSub.status || (activeSub.submitted_at ? 'submitted' : 'draft'),
+              };
+
+              setMySubmission(formattedSub);
+              setSubTitle(formattedSub.title || '');
+              setSubPitch(formattedSub.pitch || '');
+              setSubProblem(formattedSub.problem_statement || '');
+              setSubSolution(formattedSub.solution_description || '');
+              setSubTechStack((formattedSub.tech_stack || []).join(', '));
+              setSubRepoUrl(formattedSub.repository_url || '');
+              setSubDemoUrl(formattedSub.demo_url || '');
+              setSubVideoUrl(formattedSub.video_url || '');
+              setSubDocsUrl(formattedSub.documentation_url || '');
+            } else if (userTeam.challenge_id) {
+              setSelectedChallengeId(userTeam.challenge_id);
+            }
+          } catch (subErr) {
+            console.warn('Error loading team submission:', subErr);
+          }
         }
       }
 
@@ -698,10 +762,36 @@ export default function HackathonWorkspacePage() {
             .eq('hackathon_id', canonicalHackId);
 
           if (allSubs) {
-            const formatted = allSubs.map((s: any) => ({
-              ...s,
-              team_name: s.team?.team_name || 'Team',
-            }));
+            const formatted = allSubs.map((s: any) => {
+              let parsedMeta: any = {};
+              if (s.description && s.description.includes('<!-- SUBMISSION_META:')) {
+                try {
+                  const metaJson = s.description.split('<!-- SUBMISSION_META:')[1].split('-->')[0];
+                  parsedMeta = JSON.parse(metaJson);
+                } catch {}
+              }
+
+              const teamMatch = allTeams.find((t) => t.id === s.team_id);
+              const challengeId = parsedMeta.challenge_id || s.challenge_id || teamMatch?.challenge_id;
+              const chal = allChallenges.find((c) => c.id === challengeId);
+              const challengeTitle =
+                chal?.title || parsedMeta.challenge_title || (challengeId === 'custom' ? 'Open Innovation Track' : 'Open Track');
+
+              return {
+                ...s,
+                team_name: s.team?.team_name || teamMatch?.team_name || 'Team',
+                challenge_id: challengeId,
+                challenge_title: challengeTitle,
+                pitch: parsedMeta.pitch || s.pitch || '',
+                problem_statement: parsedMeta.problem_statement || s.problem_statement || '',
+                solution_description: parsedMeta.solution_description || s.solution_description || s.description || '',
+                tech_stack: parsedMeta.tech_stack || s.tech_stack || [],
+                repository_url: s.repo_url || s.repository_url || '',
+                video_url: parsedMeta.video_url || s.video_url || '',
+                documentation_url: parsedMeta.documentation_url || s.documentation_url || '',
+                status: parsedMeta.status || (s.submitted_at ? 'submitted' : 'draft'),
+              };
+            });
             setAllSubmissions(formatted);
           }
         } catch {}
@@ -1252,6 +1342,14 @@ export default function HackathonWorkspacePage() {
   const handleSelectChallenge = async (challengeId: string) => {
     if (!myTeam || !user) return;
     try {
+      setSelectedChallengeId(challengeId);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`teamforge_team_challenge_${myTeam.id}`, challengeId);
+        } catch {}
+      }
+
+      // Try updating Supabase hackathon_teams if column exists
       const { error } = await supabase
         .from('hackathon_teams')
         .update({ challenge_id: challengeId })
@@ -1269,6 +1367,7 @@ export default function HackathonWorkspacePage() {
   // Handle Save / Submit Project
   const handleSaveSubmission = async (status: 'draft' | 'submitted') => {
     if (!myTeam || !user || !hackathon) return;
+    const canonicalHackId = hackathon.id;
     setSubmissionError(null);
     setSubmissionFeedback(null);
 
@@ -1297,44 +1396,115 @@ export default function HackathonWorkspacePage() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const payload = {
-        hackathon_id: hackathon.id,
-        team_id: myTeam.id,
-        challenge_id: myTeam.challenge_id || null,
-        title: subTitle.trim(),
+      const targetChallengeId = selectedChallengeId || myTeam.challenge_id || null;
+      const chosenChal = challenges.find((c) => c.id === targetChallengeId);
+      const challengeTitle = chosenChal
+        ? chosenChal.title
+        : targetChallengeId === 'custom'
+        ? 'Open Innovation Track (Custom Collegiate Problem)'
+        : 'Open Innovation Track';
+
+      // Compile rich description containing both human-readable markdown and machine-readable metadata
+      const metaObject = {
+        challenge_id: targetChallengeId,
+        challenge_title: challengeTitle,
         pitch: subPitch.trim(),
         problem_statement: subProblem.trim(),
         solution_description: subSolution.trim(),
         tech_stack: techStack,
-        repository_url: subRepoUrl.trim() || null,
-        demo_url: subDemoUrl.trim() || null,
         video_url: subVideoUrl.trim() || null,
         documentation_url: subDocsUrl.trim() || null,
         status,
-        submitted_at: status === 'submitted' ? new Date().toISOString() : mySubmission?.submitted_at || null,
         last_edited_by: user.id,
-        is_locked: false,
       };
 
-      if (mySubmission) {
+      const metaComment = `<!-- SUBMISSION_META:${JSON.stringify(metaObject)} -->`;
+
+      const compiledDescription = [
+        `### Problem Statement Track\n**${challengeTitle}**`,
+        `### Tagline / Pitch\n${subPitch.trim()}`,
+        `### Problem Addressed\n${subProblem.trim()}`,
+        `### Detailed Solution & Architecture\n${subSolution.trim()}`,
+        techStack.length > 0 ? `### Tech Stack\n${techStack.join(', ')}` : '',
+        subVideoUrl.trim() ? `### Video Walkthrough\n${subVideoUrl.trim()}` : '',
+        subDocsUrl.trim() ? `### Presentation / Documentation\n${subDocsUrl.trim()}` : '',
+        metaComment,
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      // Safe payload matching verified schema columns on hackathon_submissions table in Supabase
+      const safePayload = {
+        hackathon_id: canonicalHackId || hackathon.id,
+        team_id: myTeam.id,
+        title: subTitle.trim(),
+        description: compiledDescription,
+        repo_url: subRepoUrl.trim() || null,
+        demo_url: subDemoUrl.trim() || null,
+        submitted_at: status === 'submitted' ? new Date().toISOString() : mySubmission?.submitted_at || null,
+      };
+
+      // Also persist to localStorage for instant recovery and offline support
+      if (typeof window !== 'undefined') {
+        try {
+          const localPayload = {
+            id: mySubmission?.id || `sub-${myTeam.id}`,
+            ...safePayload,
+            ...metaObject,
+            repository_url: subRepoUrl.trim() || null,
+          };
+          localStorage.setItem(
+            `teamforge_submission_${canonicalHackId || hackathon.id}_${myTeam.id}`,
+            JSON.stringify(localPayload)
+          );
+          if (targetChallengeId) {
+            localStorage.setItem(`teamforge_team_challenge_${myTeam.id}`, targetChallengeId);
+          }
+        } catch {}
+      }
+
+      // Upsert into Supabase hackathon_submissions table
+      if (mySubmission?.id) {
         const { error: updErr } = await supabase
           .from('hackathon_submissions')
-          .update(payload)
+          .update(safePayload)
           .eq('id', mySubmission.id);
 
-        if (updErr) throw new Error(updErr.message);
+        if (updErr) {
+          const { error: fallbackErr } = await supabase
+            .from('hackathon_submissions')
+            .update(safePayload)
+            .eq('team_id', myTeam.id);
+          if (fallbackErr) throw new Error(updErr.message);
+        }
       } else {
         const { error: insErr } = await supabase
           .from('hackathon_submissions')
-          .insert(payload);
+          .insert(safePayload);
 
-        if (insErr) throw new Error(insErr.message);
+        if (insErr) {
+          const { error: fallbackErr } = await supabase
+            .from('hackathon_submissions')
+            .update(safePayload)
+            .eq('team_id', myTeam.id);
+          if (fallbackErr) throw new Error(insErr.message);
+        }
+      }
+
+      // Attempt updating hackathon_teams if column is supported
+      if (targetChallengeId) {
+        try {
+          await supabase
+            .from('hackathon_teams')
+            .update({ challenge_id: targetChallengeId })
+            .eq('id', myTeam.id);
+        } catch {}
       }
 
       setSubmissionFeedback(
         status === 'submitted'
-          ? '🎉 Project submitted successfully! Your deliverables are now queued for jury review.'
-          : 'Project draft saved.'
+          ? '🎉 Project submitted successfully! Your deliverables and chosen problem statement are now queued for faculty review.'
+          : 'Project draft and problem statement saved.'
       );
 
       await loadWorkspace();
@@ -2746,11 +2916,20 @@ export default function HackathonWorkspacePage() {
                               <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">
                                 Team: {team?.team_name || sub.title || 'Student Squad'}
                               </span>
-                              {chal?.title && (
-                                <span className="text-[11px] text-slate-400">
-                                  Track: <strong className="text-slate-200">{chal.title}</strong>
-                                </span>
-                              )}
+                              {(() => {
+                                const resolvedChal = chal || challenges.find((c) => c.id === sub.challenge_id);
+                                const trackTitle =
+                                  resolvedChal?.title ||
+                                  sub.challenge_title ||
+                                  (sub.challenge_id === 'custom' ? 'Open Innovation Track' : null);
+                                if (!trackTitle) return null;
+                                return (
+                                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                                    <Target className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span>Track: <strong className="text-white">{trackTitle}</strong></span>
+                                  </span>
+                                );
+                              })()}
                               <span
                                 className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
                                   sub.status === 'submitted'
@@ -2941,6 +3120,109 @@ export default function HackathonWorkspacePage() {
                   <span>{submissionError}</span>
                 </div>
               )}
+
+              {/* Problem Statement Selection Selector */}
+              <div className="p-4 rounded-xl border border-charcoal-750 bg-charcoal-950/80 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label className="text-xs font-bold text-brand-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Target className="w-4 h-4 text-brand-400" />
+                    Problem Statement / Challenge Track *
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Faculty mentors &amp; judges evaluate your project against this challenge
+                  </span>
+                </div>
+
+                {challenges.length > 0 ? (
+                  <div className="space-y-3">
+                    <select
+                      className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors"
+                      value={selectedChallengeId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedChallengeId(val);
+                        if (myTeam) {
+                          handleSelectChallenge(val);
+                        }
+                        const found = challenges.find((c) => c.id === val);
+                        if (found && !subProblem.trim()) {
+                          setSubProblem(found.problem_description || (found as any).description || '');
+                        }
+                      }}
+                      disabled={isBeforeSprintStart || isSubmissionClosed || isClosed}
+                    >
+                      <option value="">-- Choose Problem Statement / Challenge Track --</option>
+                      {challenges.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title} ({c.category} • {c.difficulty})
+                        </option>
+                      ))}
+                      <option value="custom">⚡ Open Innovation Track (Custom Collegiate Problem)</option>
+                    </select>
+
+                    {/* Active Selected Challenge Preview Card */}
+                    {(() => {
+                      const activeChal = challenges.find((c) => c.id === selectedChallengeId);
+                      if (!activeChal) {
+                        if (selectedChallengeId === 'custom') {
+                          return (
+                            <div className="p-3 rounded-lg border border-brand-500/30 bg-brand-500/10 text-xs text-brand-300 flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-brand-400 shrink-0" />
+                              <span>
+                                <strong>Open Innovation Track Selected:</strong> Your team is tackling a self-defined collegiate problem statement. Describe your custom challenge and solution below.
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }
+
+                      return (
+                        <div className="p-3.5 rounded-xl border border-brand-500/30 bg-brand-500/5 text-xs space-y-2">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="font-bold text-white flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              {activeChal.title}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-charcoal-800 text-brand-300 border border-charcoal-700">
+                                {activeChal.category}
+                              </span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-charcoal-800 text-slate-300 border border-charcoal-700">
+                                {activeChal.difficulty}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-slate-300 leading-relaxed text-xs">
+                            {activeChal.problem_description || (activeChal as any).description}
+                          </p>
+
+                          {activeChal.context && (
+                            <div className="text-[11px] text-slate-400">
+                              <strong className="text-slate-300">Context:</strong> {activeChal.context}
+                            </div>
+                          )}
+
+                          {activeChal.expected_deliverables && activeChal.expected_deliverables.length > 0 && (
+                            <div className="text-[11px] text-slate-400 pt-1 border-t border-charcoal-800">
+                              <strong className="text-slate-300">Deliverables Expected:</strong>{' '}
+                              {activeChal.expected_deliverables.join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-lg border border-charcoal-800 bg-charcoal-900/60 text-xs text-slate-300 flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>
+                      <strong>Open Innovation Sprint:</strong> No specific problem statements have been pinned by faculty yet. All submissions participate under the Open Collegiate Innovation track. Detail your team&apos;s problem statement below.
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -3185,6 +3467,12 @@ export default function HackathonWorkspacePage() {
                             >
                               {sub.status}
                             </span>
+                            {sub.challenge_title && (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 flex items-center gap-1 font-medium">
+                                <Target className="w-2.5 h-2.5 text-indigo-400" />
+                                {sub.challenge_title}
+                              </span>
+                            )}
                           </div>
 
                           <h4 className="text-base font-bold text-white">{sub.title}</h4>
@@ -3303,11 +3591,17 @@ export default function HackathonWorkspacePage() {
                                 #{idx + 1}
                               </span>
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <h4 className="text-base font-bold text-white">{item.title}</h4>
                                   <span className="text-xs text-brand-300 font-semibold">
                                     • {item.team_name}
                                   </span>
+                                  {item.challenge_title && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 flex items-center gap-1 font-medium">
+                                      <Target className="w-2.5 h-2.5 text-indigo-400" />
+                                      {item.challenge_title}
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-xs text-slate-400 line-clamp-1">{item.pitch}</p>
                               </div>

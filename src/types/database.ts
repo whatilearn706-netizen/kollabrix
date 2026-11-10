@@ -523,6 +523,7 @@ export interface HackathonTeam {
   id: string;
   hackathon_id: string;
   challenge_id?: string | null;
+  challenge_title?: string | null;
   team_name: string;
   description?: string | null;
   leader_id: string;
@@ -550,6 +551,7 @@ export interface HackathonSubmission {
   hackathon_id: string;
   team_id: string;
   challenge_id?: string | null;
+  challenge_title?: string | null;
   title: string;
   pitch: string;
   problem_statement: string;
