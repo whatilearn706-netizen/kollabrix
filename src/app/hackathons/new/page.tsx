@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { isFacultyUser } from '@/lib/auth/faculty';
 import { Hackathon, HackathonMode } from '@/types/database';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -160,7 +161,7 @@ function DateTimeField({
 
 export default function NewHackathonPage() {
   const router = useRouter();
-  const { user, profile, openAuthModal } = useAuth();
+  const { user, profile, isLoading: authLoading, openAuthModal } = useAuth();
 
   const [title, setTitle] = useState('');
   const [organizer, setOrganizer] = useState(
@@ -211,15 +212,7 @@ export default function NewHackathonPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [hostRole, setHostRole] = useState<'faculty' | 'club_lead' | 'admin'>('faculty');
 
-  const isTeacher = Boolean(
-    user &&
-      (profile?.role === 'teacher' ||
-        (profile as any)?.role === 'faculty' ||
-        profile?.role === 'admin' ||
-        Boolean(profile?.faculty_verified) ||
-        hostRole === 'faculty' ||
-        hostRole === 'admin')
-  );
+  const isTeacher = isFacultyUser(user, profile);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -378,7 +371,16 @@ export default function NewHackathonPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  if (user && profile && !isTeacher) {
+  if (authLoading) {
+    return (
+      <div className="max-w-xl mx-auto my-32 p-8 text-center space-y-4">
+        <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs text-slate-400 font-medium">Verifying faculty authorization...</p>
+      </div>
+    );
+  }
+
+  if (!user || !isTeacher) {
     return (
       <div className="max-w-xl mx-auto my-20 p-8 rounded-3xl bg-slate-50 dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 text-center space-y-4 shadow-sm">
         <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto">
@@ -388,14 +390,23 @@ export default function NewHackathonPage() {
           Faculty Authorization Required
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-          Hosting college hackathons is restricted to verified faculty members, professors, and department administrators. As a student, you can participate, form teams, and submit projects in open hackathons.
+          Hosting college hackathons is restricted exclusively to verified faculty members, professors, and department administrators. As a student, you can participate, form teams, and submit projects in open hackathons.
         </p>
-        <div className="pt-2">
+        <div className="pt-2 flex items-center justify-center gap-3">
           <Link href="/hackathons">
             <Button variant="primary" size="sm">
               Back to Hackathons
             </Button>
           </Link>
+          {!user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openAuthModal('login')}
+            >
+              Sign In as Faculty
+            </Button>
+          )}
         </div>
       </div>
     );

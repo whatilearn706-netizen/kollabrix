@@ -6,9 +6,9 @@ import { Profile } from '@/types/database';
  * 
  * Rules:
  * 1. Must be authenticated with a valid user.
- * 2. Profile role is 'teacher', or faculty_verified is true.
- * 3. Regular students (profile.role === 'student') are explicitly NOT faculty unless elevated.
- * 5. Per-user verified token in localStorage is honored only if profile is not explicitly 'student'.
+ * 2. Profile role is 'teacher', 'faculty', 'admin', or faculty_verified is true.
+ * 3. Platform owner (goyalmayank142@gmail.com) is always elevated.
+ * 4. Regular students (profile.role === 'student' and not faculty_verified) are strictly blocked.
  */
 export function isFacultyUser(
   user: User | null | undefined,
@@ -16,11 +16,19 @@ export function isFacultyUser(
 ): boolean {
   if (!user) return false;
 
-  // 1. Explicit verified educator status in database
-  if (profile?.role === 'teacher' || Boolean(profile?.faculty_verified)) {
+  const email = user.email?.toLowerCase();
+  if (email === 'goyalmayank142@gmail.com') return true;
+
+  // Explicit verified educator / admin status in database
+  if (
+    profile?.role === 'teacher' ||
+    (profile as any)?.role === 'faculty' ||
+    profile?.role === 'admin' ||
+    Boolean(profile?.faculty_verified)
+  ) {
     return true;
   }
 
-  // 2. Regular students and unverified accounts are strictly blocked
+  // Regular students and unverified accounts are strictly not faculty
   return false;
 }

@@ -38,18 +38,13 @@ import {
 } from 'lucide-react';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 export default function HackathonsPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { theme } = useSiteTheme();
-  const isTeacherOrAdmin = Boolean(
-    user &&
-      (profile?.role === 'teacher' ||
-        (profile as any)?.role === 'faculty' ||
-        profile?.role === 'admin' ||
-        Boolean(profile?.faculty_verified))
-  );
+  const isTeacherOrAdmin = isFacultyUser(user, profile);
 
   // Instant In-Memory / Stale-While-Revalidate Cache
   const cachedHackathons = getPageCache<Hackathon[]>('linkora_hackathons_list');
@@ -466,17 +461,19 @@ export default function HackathonsPage() {
             Refresh Events
           </Button>
 
-          <Link href="/hackathons/new">
-            <Button
-              variant="primary"
-              size="sm"
-              style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-              className="text-white font-bold shadow-xs transition-all cursor-pointer"
-              leftIcon={<PlusCircle className="w-4 h-4" />}
-            >
-              Host College Hackathon
-            </Button>
-          </Link>
+          {isTeacherOrAdmin && (
+            <Link href="/hackathons/new">
+              <Button
+                variant="primary"
+                size="sm"
+                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+                className="text-white font-bold shadow-xs transition-all cursor-pointer"
+                leftIcon={<PlusCircle className="w-4 h-4" />}
+              >
+                Host College Hackathon
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -704,7 +701,9 @@ export default function HackathonsPage() {
                   ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
                   : activeTab === 'my-events'
                   ? 'Enter an event join code or browse open competitions to participate with campus teammates.'
-                  : 'Faculty-hosted college hackathons and open student competitions will appear here. Click "Sponsored" to view enterprise challenges, or host a new college hackathon!'}
+                  : isTeacherOrAdmin
+                  ? 'Faculty-hosted college hackathons and open student competitions will appear here. Click "Sponsored" to view enterprise challenges, or host a new college hackathon!'
+                  : 'Faculty-hosted college hackathons and open student competitions will appear here. Click "Sponsored" to view enterprise challenges, or check back soon for campus competitions!'}
               </p>
               {activeTab === 'all' && corporateHackathons.length > 0 && (
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
@@ -720,16 +719,18 @@ export default function HackathonsPage() {
                   >
                     View Sponsored Challenges ({corporateHackathons.length})
                   </Button>
-                  <Link href="/hackathons/new">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs font-bold"
-                      leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
-                    >
-                      Host College Hackathon
-                    </Button>
-                  </Link>
+                  {isTeacherOrAdmin && (
+                    <Link href="/hackathons/new">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs font-bold"
+                        leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
+                      >
+                        Host College Hackathon
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

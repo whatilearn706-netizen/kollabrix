@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { isFacultyUser } from '@/lib/auth/faculty';
 import { Hackathon, HackathonMode } from '@/types/database';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -184,14 +185,7 @@ export function CreateHackathonModal({
       return;
     }
 
-    const isFaculty = Boolean(
-      profile?.role === 'teacher' ||
-        (profile as any)?.role === 'faculty' ||
-        profile?.role === 'admin' ||
-        Boolean(profile?.faculty_verified)
-    );
-
-    if (!isFaculty) {
+    if (!isFacultyUser(user, profile)) {
       setError('Only verified college faculty members and administrators are authorized to host hackathons.');
       return;
     }

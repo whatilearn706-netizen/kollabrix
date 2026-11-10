@@ -70,15 +70,13 @@ export async function POST(request: NextRequest) {
           creatorProfile?.role === 'teacher' ||
           creatorProfile?.role === 'faculty' ||
           creatorProfile?.role === 'admin' ||
-          Boolean(creatorProfile?.faculty_verified) ||
-          body.isFacultyHost === true;
+          Boolean(creatorProfile?.faculty_verified);
 
-        // Auto-upgrade host profile to faculty status if self-declared as event organizer
-        if (creatorProfile && !creatorProfile.faculty_verified && body.isFacultyHost) {
-          await dbClient
-            .from('profiles')
-            .update({ faculty_verified: true, role: 'faculty' })
-            .eq('user_id', creatorId);
+        if (creatorProfile && !isFaculty) {
+          return NextResponse.json(
+            { error: 'Forbidden: Hosting college hackathons is restricted to verified faculty members and administrators.' },
+            { status: 403 }
+          );
         }
       } catch (authErr) {
         console.warn('Faculty verification check notice:', authErr);
