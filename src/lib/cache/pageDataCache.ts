@@ -196,12 +196,18 @@ export async function prefetchHackathonsData(): Promise<void> {
       const title = (h.title || '').toLowerCase().trim();
       const webCode = h.website_url ? h.website_url.split('/h/')[1]?.split(/[?#]/)[0]?.toLowerCase().trim() : '';
 
-      return (
-        (id && deletedSet.has(id)) ||
-        (joinCode && deletedSet.has(joinCode)) ||
-        (title && (deletedSet.has(title) || deletedTitlesSet.has(title))) ||
-        (webCode && deletedSet.has(webCode))
-      );
+      // Direct ID or Join Code match is authoritative
+      if (id && deletedSet.has(id)) return true;
+      if (joinCode && deletedSet.has(joinCode)) return true;
+      if (webCode && deletedSet.has(webCode)) return true;
+
+      // Title-based deletion applies ONLY to mock/curated hackathons without a genuine database UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(h.id);
+      if (!isUUID && title && (deletedSet.has(title) || deletedTitlesSet.has(title))) {
+        return true;
+      }
+
+      return false;
     };
 
     let localHacks: Hackathon[] = [];
