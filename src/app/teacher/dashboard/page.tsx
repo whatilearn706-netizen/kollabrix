@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -85,10 +86,19 @@ const FEEDBACK_TYPES: MentoringFeedbackType[] = [
   'Commendation',
 ];
 
-export default function TeacherDashboardPage() {
+function TeacherDashboardContent() {
   const { user, profile, refreshProfile, openAuthModal } = useAuth();
+  const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<'projects' | 'problems' | 'feedback' | 'hackathons' | 'icpc'>('projects');
+
+  // Synchronize tab from URL query params (e.g. /teacher/dashboard?tab=hackathons)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['projects', 'problems', 'feedback', 'hackathons', 'icpc'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
   const [projects, setProjects] = useState<ProjectWithDetails[]>([]);
   const [myProblems, setMyProblems] = useState<ProblemStatement[]>([]);
   const [myNotes, setMyNotes] = useState<ProjectMentoringNote[]>([]);
@@ -1894,5 +1904,19 @@ export default function TeacherDashboardPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function TeacherDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+        </div>
+      }
+    >
+      <TeacherDashboardContent />
+    </Suspense>
   );
 }

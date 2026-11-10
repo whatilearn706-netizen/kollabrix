@@ -562,25 +562,16 @@ export default function HackathonWorkspacePage() {
       let allTeams: TeamWithMembers[] = [];
       if (isCanonicalUUID) {
         try {
-          let { data: teamData, error: teamFetchErr } = await supabase
+          const { data: teamData, error: teamFetchErr } = await supabase
             .from('hackathon_teams')
             .select(`
               *,
-              challenge:hackathon_challenges(*),
               members:hackathon_team_members(*)
             `)
             .eq('hackathon_id', canonicalHackId);
 
           if (teamFetchErr) {
-            console.warn('Teams fetch with challenge relation failed; retrying plain fetch:', teamFetchErr.message);
-            const fallbackFetch = await supabase
-              .from('hackathon_teams')
-              .select(`
-                *,
-                members:hackathon_team_members(*)
-              `)
-              .eq('hackathon_id', canonicalHackId);
-            teamData = fallbackFetch.data;
+            console.warn('Teams fetch error:', teamFetchErr.message);
           }
 
           if (teamData && teamData.length > 0) {
