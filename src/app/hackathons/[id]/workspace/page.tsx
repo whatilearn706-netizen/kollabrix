@@ -250,21 +250,34 @@ export default function HackathonWorkspacePage() {
       let deletedSet = new Set<string>();
       if (typeof window !== 'undefined') {
         try {
-          const localDel = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
-          deletedSet = new Set(localDel.map((s: string) => String(s).toLowerCase()));
+          const localDel: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
+          const sanitizedDel = localDel.filter((item) => {
+            const low = String(item).toLowerCase().trim();
+            return (
+              low !== 'november 26 sprint' &&
+              low !== 'november 27 sprint' &&
+              low !== 'november 27 campus innovation sprint' &&
+              low !== 'sprint27'
+            );
+          });
+          if (sanitizedDel.length !== localDel.length) {
+            localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(sanitizedDel));
+          }
+          deletedSet = new Set(sanitizedDel.map((s: string) => String(s).toLowerCase().trim()));
         } catch {}
       }
 
-      // 1. Fetch Hackathon from Supabase safely
+      // 1. Fetch Hackathon safely with multi-tiered resolution
       let currentHack: Hackathon | null = null;
-      const isParamUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hackathonId);
+      const cleanId = (hackathonId || '').trim();
+      const isParamUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
       try {
         if (isParamUUID) {
           const { data: hackData } = await supabase
             .from('hackathons')
             .select('*')
-            .eq('id', hackathonId)
+            .eq('id', cleanId)
             .maybeSingle();
 
           if (hackData) currentHack = hackData as Hackathon;
@@ -273,7 +286,7 @@ export default function HackathonWorkspacePage() {
           const { data: hackDataByCode } = await supabase
             .from('hackathons')
             .select('*')
-            .eq('join_code', hackathonId)
+            .eq('join_code', cleanId)
             .maybeSingle();
 
           if (hackDataByCode) currentHack = hackDataByCode as Hackathon;
@@ -282,17 +295,66 @@ export default function HackathonWorkspacePage() {
         console.warn('Error fetching hackathon from Supabase:', err);
       }
 
+      // If not found by direct id or join_code and not UUID, check website_url and metadata description
+      if (!currentHack && !isParamUUID) {
+        try {
+          const { data: byUrl } = await supabase
+            .from('hackathons')
+            .select('*')
+            .ilike('website_url', `%/h/${cleanId}%`)
+            .limit(1)
+            .maybeSingle();
+          if (byUrl) currentHack = byUrl as Hackathon;
+        } catch {}
+
+        if (!currentHack) {
+          try {
+            const { data: byDesc } = await supabase
+              .from('hackathons')
+              .select('*')
+              .ilike('description', `%"join_code":"${cleanId}"%`)
+              .limit(1)
+              .maybeSingle();
+            if (byDesc) currentHack = byDesc as Hackathon;
+          } catch {}
+        }
+      }
+
+      // LocalStorage created hackathons fallback
       if (!currentHack && typeof window !== 'undefined') {
         try {
           const localHacks = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
-          const match = localHacks.find((h: any) => h.id === hackathonId || h.join_code === hackathonId);
+          const match = localHacks.find(
+            (h: any) => h.id === cleanId || h.join_code === cleanId || (h.id && h.id.toLowerCase() === cleanId.toLowerCase())
+          );
           if (match) currentHack = match;
         } catch {}
       }
 
+      // Curated catalog fallback
       if (!currentHack) {
-        const curated = CURATED_HACKATHONS.find((ch) => ch.id === hackathonId || ch.join_code === hackathonId);
+        const curated = CURATED_HACKATHONS.find(
+          (ch) => ch.id === cleanId || ch.join_code === cleanId || ch.id.toLowerCase() === cleanId.toLowerCase()
+        );
         if (curated) currentHack = curated as Hackathon;
+      }
+
+      // Fallback: Query /api/hackathons endpoint
+      if (!currentHack) {
+        try {
+          const res = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (res.ok && data.success && Array.isArray(data.hackathons)) {
+            const found = data.hackathons.find(
+              (h: any) =>
+                h.id === cleanId ||
+                h.join_code === cleanId ||
+                (h.id && h.id.toLowerCase() === cleanId.toLowerCase()) ||
+                (h.join_code && h.join_code.toLowerCase() === cleanId.toLowerCase())
+            );
+            if (found) currentHack = found as Hackathon;
+          }
+        } catch {}
       }
 
       if (!currentHack) {
@@ -328,12 +390,16 @@ export default function HackathonWorkspacePage() {
         } catch {}
       }
 
-      if (
-        currentHack &&
-        (deletedSet.has((currentHack.id || '').toLowerCase()) ||
-          deletedSet.has((currentHack.join_code || '').toLowerCase()) ||
-          deletedSet.has((currentHack.title || '').trim().toLowerCase()))
-      ) {
+      // Authoritative Deletion Check:
+      // A genuine database UUID hackathon is NEVER deleted by title matching!
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentHack.id);
+      const isDirectIdDeleted = (
+        deletedSet.has((currentHack.id || '').toLowerCase().trim()) ||
+        (currentHack.join_code && deletedSet.has(currentHack.join_code.toLowerCase().trim()))
+      );
+      const isTitleDeleted = !isUUID && deletedSet.has((currentHack.title || '').trim().toLowerCase());
+
+      if (isDirectIdDeleted || isTitleDeleted) {
         setError('This hackathon has been removed.');
         setIsLoading(false);
         return;
@@ -580,85 +646,36 @@ export default function HackathonWorkspacePage() {
         } catch {}
       }
 
-      // Check if current user is an organizer / faculty host
-      const userIsOrganizer = Boolean(
-        user && (
-          currentHack?.creator_id === user.id ||
-          participants.some((p) => p.user_id === user.id && p.role === 'organizer') ||
-          profile?.role === 'teacher' ||
-          (profile as any)?.role === 'faculty' ||
-          Boolean(profile?.faculty_verified)
-        )
-      );
-
-      if (userIsOrganizer) {
-        // Organizers manage teams — they do not have a participant builder team.
-        // Clean out any phantom auto-created organizer team completely.
-        const phantomTeams = allTeams.filter(
-          (t) => t.leader_id === user?.id || t.members?.some((m) => m.user_id === user?.id)
+      // Set all teams and associate user's team without destructive auto-deletion
+      setTeams(allTeams);
+      if (user) {
+        const userTeam = allTeams.find((t) =>
+          t.members?.some((m) => m.user_id === user.id) || t.leader_id === user.id
         );
+        setMyTeam(userTeam || null);
 
-        allTeams = allTeams.filter(
-          (t) => t.leader_id !== user?.id && !t.members?.some((m) => m.user_id === user?.id)
-        );
-        setTeams(allTeams);
-        setMyTeam(null);
-
-        // Clean out local storage and asynchronously prune from database
-        if (typeof window !== 'undefined' && user?.id) {
+        // If user has team, fetch team submission
+        if (userTeam) {
           try {
-            const k1 = `teamforge_teams_${canonicalHackId}`;
-            const k2 = `teamforge_teams_${hackathonId}`;
-            [k1, k2].forEach((k) => {
-              const raw = JSON.parse(localStorage.getItem(k) || '[]');
-              if (Array.isArray(raw)) {
-                const filtered = raw.filter((t: any) => t.leader_id !== user.id && !t.members?.some((m: any) => m.user_id === user.id));
-                localStorage.setItem(k, JSON.stringify(filtered));
-              }
-            });
+            const { data: subData } = await supabase
+              .from('hackathon_submissions')
+              .select('*')
+              .eq('team_id', userTeam.id)
+              .maybeSingle();
+
+            if (subData) {
+              setMySubmission(subData as HackathonSubmission);
+              setSubTitle(subData.title || '');
+              setSubPitch(subData.pitch || '');
+              setSubProblem(subData.problem_statement || '');
+              setSubSolution(subData.solution_description || '');
+              setSubTechStack((subData.tech_stack || []).join(', '));
+              setSubRepoUrl(subData.repository_url || '');
+              setSubDemoUrl(subData.demo_url || '');
+              setSubVideoUrl(subData.video_url || '');
+              setSubDocsUrl(subData.documentation_url || '');
+            }
           } catch {}
-
-          if (phantomTeams.length > 0) {
-            phantomTeams.forEach((pt) => {
-              fetch('/api/hackathons/teams/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teamId: pt.id }),
-              }).catch(() => {});
-            });
-          }
-        }
-      } else {
-        setTeams(allTeams);
-        if (user) {
-          const userTeam = allTeams.find((t) =>
-            t.members?.some((m) => m.user_id === user.id)
-          );
-          setMyTeam(userTeam || null);
-
-          // If user has team, fetch team submission
-          if (userTeam) {
-            try {
-              const { data: subData } = await supabase
-                .from('hackathon_submissions')
-                .select('*')
-                .eq('team_id', userTeam.id)
-                .maybeSingle();
-
-              if (subData) {
-                setMySubmission(subData as HackathonSubmission);
-                setSubTitle(subData.title || '');
-                setSubPitch(subData.pitch || '');
-                setSubProblem(subData.problem_statement || '');
-                setSubSolution(subData.solution_description || '');
-                setSubTechStack((subData.tech_stack || []).join(', '));
-                setSubRepoUrl(subData.repository_url || '');
-                setSubDemoUrl(subData.demo_url || '');
-                setSubVideoUrl(subData.video_url || '');
-                setSubDocsUrl(subData.documentation_url || '');
-              }
-            } catch {}
-          }
         }
       }
 

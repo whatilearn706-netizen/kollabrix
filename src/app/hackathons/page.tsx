@@ -125,9 +125,15 @@ export default function HackathonsPage() {
           localStorage.removeItem('linkora_cache_linkora_hackathons_list');
           sessionStorage.removeItem('linkora_cache_linkora_hackathons_list');
           const localDeleted: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
-          const sanitizedDeleted = localDeleted.filter(
-            (item) => item.toLowerCase().trim() !== 'november 27 sprint'
-          );
+          const sanitizedDeleted = localDeleted.filter((item) => {
+            const low = item.toLowerCase().trim();
+            return (
+              low !== 'november 26 sprint' &&
+              low !== 'november 27 sprint' &&
+              low !== 'november 27 campus innovation sprint' &&
+              low !== 'sprint27'
+            );
+          });
           if (sanitizedDeleted.length !== localDeleted.length) {
             localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(sanitizedDeleted));
           }

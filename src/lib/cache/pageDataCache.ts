@@ -182,7 +182,19 @@ export async function prefetchHackathonsData(): Promise<void> {
     if (typeof window !== 'undefined') {
       try {
         const localDeleted: string[] = JSON.parse(localStorage.getItem('teamforge_deleted_hackathons') || '[]');
-        deletedIdsList.push(...localDeleted);
+        const sanitizedDeleted = localDeleted.filter((item) => {
+          const low = item.toLowerCase().trim();
+          return (
+            low !== 'november 26 sprint' &&
+            low !== 'november 27 sprint' &&
+            low !== 'november 27 campus innovation sprint' &&
+            low !== 'sprint27'
+          );
+        });
+        if (sanitizedDeleted.length !== localDeleted.length) {
+          localStorage.setItem('teamforge_deleted_hackathons', JSON.stringify(sanitizedDeleted));
+        }
+        deletedIdsList.push(...sanitizedDeleted);
       } catch {}
     }
 
