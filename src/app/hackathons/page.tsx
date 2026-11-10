@@ -35,6 +35,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
+  GraduationCap,
 } from 'lucide-react';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
@@ -287,20 +288,27 @@ export default function HackathonsPage() {
     return Array.from(set).sort();
   }, [hackathons]);
 
-  // Private hackathons list
+  // Hackathons hosted by this user as Faculty / Organizer (Managed strictly in Faculty Desk)
+  const myHostedHackathons = useMemo(() => {
+    if (!user?.id) return [];
+    return hackathons.filter((h) => h.creator_id === user.id);
+  }, [hackathons, user?.id]);
+
+  // Private hackathons list (Excludes user's hosted events)
   const privateHackathons = useMemo(() => {
-    return hackathons.filter((h) => h.access_type === 'private');
-  }, [hackathons]);
+    return hackathons.filter((h) => h.access_type === 'private' && (!user?.id || h.creator_id !== user.id));
+  }, [hackathons, user?.id]);
 
-  // Corporate / Sponsored hackathons list
+  // Corporate / Sponsored hackathons list (Excludes user's hosted events)
   const corporateHackathons = useMemo(() => {
-    return hackathons.filter((h) => extractSponsoredMeta(h).isSponsored);
-  }, [hackathons]);
+    return hackathons.filter((h) => extractSponsoredMeta(h).isSponsored && (!user?.id || h.creator_id !== user.id));
+  }, [hackathons, user?.id]);
 
-  // Free / Standard Collegiate Competitions list (Excludes sponsored & other private events, includes creator's events)
+  // Free / Standard Collegiate Competitions list
+  // Note: Faculty-hosted events are filtered out for the host so they manage them via Faculty Desk
   const competitionHackathons = useMemo(() => {
     return hackathons.filter(
-      (h) => !extractSponsoredMeta(h).isSponsored && (h.access_type !== 'private' || h.creator_id === user?.id)
+      (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private' && (!user?.id || h.creator_id !== user.id)
     );
   }, [hackathons, user?.id]);
 
@@ -315,18 +323,21 @@ export default function HackathonsPage() {
   // Tab-scoped hackathons for real-time live vs past counters
   const tabScopedHackathons = useMemo(() => {
     return hackathons.filter((h) => {
+      // Never show user's own hosted hackathons in student feed tabs
+      if (user?.id && h.creator_id === user.id) return false;
+
       const isSponsored = extractSponsoredMeta(h).isSponsored;
       const isPrivate = h.access_type === 'private';
 
       if (activeTab === 'all') {
         if (isSponsored) return false;
-        if (isPrivate && h.creator_id !== user?.id) return false;
+        if (isPrivate) return false;
       } else if (activeTab === 'corporate') {
         if (!isSponsored) return false;
       } else if (activeTab === 'private') {
         if (!isPrivate) return false;
       } else if (activeTab === 'my-events') {
-        if (!enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
+        if (!enrolledIds.includes(h.id)) return false;
       } else if (activeTab === 'saved') {
         if (!savedIds.includes(h.id)) return false;
       }
@@ -346,13 +357,13 @@ export default function HackathonsPage() {
   useEffect(() => {
     if (!hasUserSelectedTab && hackathons.length > 0) {
       const hasCompetitions = hackathons.some(
-        (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private'
+        (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private' && (!user?.id || h.creator_id !== user.id)
       );
       if (!hasCompetitions) {
         setActiveTab('corporate');
       }
     }
-  }, [hackathons, hasUserSelectedTab]);
+  }, [hackathons, hasUserSelectedTab, user?.id]);
 
   // Filtered list based on active tab, timeline (live vs past), and search filters
   const filteredHackathons = useMemo(() => {
@@ -360,6 +371,9 @@ export default function HackathonsPage() {
 
     return hackathons
       .filter((h) => {
+        // Faculty host exclusion: never display hosted hackathon in student browsing feed for the host
+        if (user?.id && h.creator_id === user.id) return false;
+
         const isSponsored = extractSponsoredMeta(h).isSponsored;
         const isPrivate = h.access_type === 'private';
 
@@ -367,7 +381,7 @@ export default function HackathonsPage() {
         if (activeTab === 'all') {
           // "Competition" tab: ONLY normal free collegiate competitions (exclude sponsored & other private events)
           if (isSponsored) return false;
-          if (isPrivate && h.creator_id !== user?.id) return false;
+          if (isPrivate) return false;
         } else if (activeTab === 'corporate') {
           // "Sponsored" tab: ONLY company sponsored hackathons
           if (!isSponsored) return false;
@@ -375,7 +389,7 @@ export default function HackathonsPage() {
           // "Private Campus Events" tab: ONLY private passcoded campus events
           if (!isPrivate) return false;
         } else if (activeTab === 'my-events') {
-          if (!enrolledIds.includes(h.id) && h.creator_id !== user?.id) return false;
+          if (!enrolledIds.includes(h.id)) return false;
         } else if (activeTab === 'saved') {
           if (!savedIds.includes(h.id)) return false;
         }
@@ -485,6 +499,19 @@ export default function HackathonsPage() {
           </Button>
 
           {isTeacherOrAdmin && (
+            <Link href="/teacher/dashboard?tab=hackathons">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold"
+                leftIcon={<GraduationCap className="w-3.5 h-3.5" />}
+              >
+                Faculty Desk
+              </Button>
+            </Link>
+          )}
+
+          {isTeacherOrAdmin && (
             <Link href="/hackathons/new">
               <Button
                 variant="primary"
@@ -499,6 +526,42 @@ export default function HackathonsPage() {
           )}
         </div>
       </div>
+
+      {/* Faculty Organizer Notice: When faculty hosts a hackathon, they manage it from Faculty Desk */}
+      {myHostedHackathons.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/35 flex items-center justify-between gap-4 flex-wrap shadow-lg">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0 shadow-inner">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                  Faculty Organizer Desk
+                </h4>
+                <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  {myHostedHackathons.length} Hosted Hackathon{myHostedHackathons.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                You are hosting {myHostedHackathons.map((h) => `“${h.title}”`).join(', ')}. Your hosted hackathons are managed exclusively from your <strong className="text-amber-400">Faculty Desk</strong> so you can easily review student teams, grade submissions, and publish official results.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <Link href="/teacher/dashboard?tab=hackathons">
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+              >
+                Open Faculty Desk
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Tabs & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-2">
@@ -697,7 +760,7 @@ export default function HackathonsPage() {
                   <HackathonCard
                     hackathon={hackathon}
                     isSaved={savedIds.includes(hackathon.id)}
-                    isEnrolled={enrolledIds.includes(hackathon.id) || hackathon.creator_id === user?.id}
+                    isEnrolled={enrolledIds.includes(hackathon.id) && hackathon.creator_id !== user?.id}
                     onToggleSave={handleToggleSave}
                   />
                 </div>
@@ -706,10 +769,18 @@ export default function HackathonsPage() {
           ) : (
             <div className="p-12 rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 text-center space-y-4 shadow-sm my-6 max-w-lg mx-auto">
               <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-charcoal-800 border border-slate-200 dark:border-charcoal-700 flex items-center justify-center mx-auto text-slate-500 dark:text-slate-400">
-                {activeTab === 'private' ? <Lock className="w-6 h-6 text-amber-500" /> : <Trophy className="w-6 h-6" />}
+                {myHostedHackathons.length > 0 && activeTab === 'all' ? (
+                  <GraduationCap className="w-6 h-6 text-amber-500" />
+                ) : activeTab === 'private' ? (
+                  <Lock className="w-6 h-6 text-amber-500" />
+                ) : (
+                  <Trophy className="w-6 h-6" />
+                )}
               </div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">
-                {activeTab === 'corporate'
+                {myHostedHackathons.length > 0 && activeTab === 'all'
+                  ? 'Your Hosted Hackathon is Live on Campus!'
+                  : activeTab === 'corporate'
                   ? 'No Sponsored Hackathons Found'
                   : activeTab === 'private'
                   ? 'No Private Campus Hackathons Found'
@@ -718,7 +789,9 @@ export default function HackathonsPage() {
                   : 'No Collegiate Competitions Available'}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
-                {activeTab === 'corporate'
+                {myHostedHackathons.length > 0 && activeTab === 'all'
+                  ? `As the faculty organizer, your event ${myHostedHackathons.map((h) => `“${h.title}”`).join(', ')} is live for student registrations and team formation. Manage student teams, challenges, and evaluations from your Faculty Desk.`
+                  : activeTab === 'corporate'
                   ? 'Corporate and enterprise sponsored challenges with cash prize pools and direct hiring tracks will appear here.'
                   : activeTab === 'private'
                   ? 'Have an access passcode or link from your professor? Use the passcode portal at the top to enter your campus event.'
@@ -728,7 +801,30 @@ export default function HackathonsPage() {
                   ? 'Faculty-hosted college hackathons and open student competitions will appear here. Click "Sponsored" to view enterprise challenges, or host a new college hackathon!'
                   : 'Faculty-hosted college hackathons and open student competitions will appear here. Click "Sponsored" to view enterprise challenges, or check back soon for campus competitions!'}
               </p>
-              {activeTab === 'all' && corporateHackathons.length > 0 && (
+              {myHostedHackathons.length > 0 && activeTab === 'all' ? (
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <Link href="/teacher/dashboard?tab=hackathons">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md"
+                      leftIcon={<GraduationCap className="w-3.5 h-3.5" />}
+                    >
+                      Open Faculty Desk
+                    </Button>
+                  </Link>
+                  <Link href="/hackathons/new">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs font-bold"
+                      leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
+                    >
+                      Host Another Hackathon
+                    </Button>
+                  </Link>
+                </div>
+              ) : activeTab === 'all' && corporateHackathons.length > 0 ? (
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
                   <Button
                     variant="primary"
@@ -755,7 +851,7 @@ export default function HackathonsPage() {
                     </Link>
                   )}
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>
