@@ -48,6 +48,27 @@ import {
 } from 'lucide-react';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
+/**
+ * Formats date and time in a crisp, localized, 12-hour format with AM/PM
+ * e.g. "10 Nov 2026 • 10:50 PM"
+ */
+function formatEventDateTime(dateStr?: string | null): string {
+  if (!dateStr) return 'TBA';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'TBA';
+  const dateFormatted = d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timeFormatted = d.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  return `${dateFormatted} • ${timeFormatted}`;
+}
+
 export default function HackathonDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -393,20 +414,30 @@ export default function HackathonDetailPage() {
 
   // Deadline countdown calculations
   const countdown = useMemo(() => {
-    if (!hackathon) return { days: 0, hours: 0, isClosed: false, isUrgent: false };
+    if (!hackathon) return { days: 0, hours: 0, minutes: 0, formatted: '', isClosed: false, isUrgent: false };
     const deadline = new Date(hackathon.registration_deadline).getTime();
     const now = Date.now();
     const diff = deadline - now;
 
     if (diff <= 0) {
-      return { days: 0, hours: 0, isClosed: true, isUrgent: false };
+      return { days: 0, hours: 0, minutes: 0, formatted: 'Registration Closed', isClosed: true, isUrgent: false };
     }
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const isUrgent = days <= 7;
 
-    return { days, hours, isClosed: false, isUrgent };
+    let formatted = '';
+    if (days > 0) {
+      formatted = `${days}d ${hours}h left`;
+    } else if (hours > 0) {
+      formatted = `${hours}h ${minutes}m left`;
+    } else {
+      formatted = `${Math.max(1, minutes)}m left`;
+    }
+
+    return { days, hours, minutes, formatted, isClosed: false, isUrgent };
   }, [hackathon]);
 
   // Handle Share / Copy Link
@@ -1195,14 +1226,10 @@ export default function HackathonDetailPage() {
                       1
                     </div>
                     <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4 className="text-xs font-bold text-white">Registration Deadline</h4>
-                        <span className="text-[10px] font-mono text-amber-400 font-semibold">
-                          {new Date(hackathon.registration_deadline).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                        <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                          {formatEventDateTime(hackathon.registration_deadline)}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
@@ -1217,14 +1244,10 @@ export default function HackathonDetailPage() {
                       2
                     </div>
                     <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4 className="text-xs font-bold text-white">Hackathon Opening Ceremony & Sprint Start</h4>
-                        <span className="text-[10px] font-mono text-emerald-400 font-semibold">
-                          {new Date(hackathon.start_date).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                        <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          {formatEventDateTime(hackathon.start_date)}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
@@ -1239,15 +1262,11 @@ export default function HackathonDetailPage() {
                       3
                     </div>
                     <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4 className="text-xs font-bold text-white">Deliverable Submission Deadline</h4>
-                        <span className="text-[10px] font-mono text-purple-400 font-semibold">
+                        <span className="text-[10px] font-mono text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
                           {hackathon.end_date
-                            ? new Date(hackathon.end_date).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })
+                            ? formatEventDateTime(hackathon.end_date)
                             : 'Sprint Finale'}
                         </span>
                       </div>
@@ -1316,7 +1335,7 @@ export default function HackathonDetailPage() {
               {/* Floating Pill on Top-Left of Card (Unstop Signature Match) */}
               <div className="absolute top-0 left-5 z-20 px-3.5 py-1 rounded-full bg-black text-white text-[11px] font-mono font-black border border-charcoal-700 shadow-xl flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{countdown.isClosed ? 'Registration Closed' : `${countdown.days} Days Left`}</span>
+                <span>{countdown.isClosed ? 'Registration Closed' : countdown.formatted}</span>
               </div>
 
               {/* Floating Registered Counter on Top-Right (Red Marked Item - Real Database Count) */}
@@ -1390,7 +1409,7 @@ export default function HackathonDetailPage() {
                           <span>Registered • Workspace Opens at Start Date</span>
                         </div>
                         <p className="text-[11px] text-center text-slate-400 font-medium leading-relaxed">
-                          Hackathon officially begins on {new Date(hackathon.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. Workspace unlocks at launch!
+                          Hackathon officially begins on {formatEventDateTime(hackathon.start_date)}. Workspace unlocks at launch!
                         </p>
                       </div>
                     )
@@ -1421,6 +1440,30 @@ export default function HackathonDetailPage() {
                       )}
                     </button>
                   )}
+                </div>
+
+                {/* Registration Closes Indicator Card (Blue Marked Area in Image 3) */}
+                <div className="p-3.5 rounded-2xl bg-charcoal-950/90 border border-charcoal-800 hover:border-charcoal-700 transition-all flex items-center justify-between gap-3 shadow-inner">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${countdown.isClosed ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">
+                        Registration Closes
+                      </span>
+                      <span className="text-xs font-bold text-white font-mono block truncate">
+                        {formatEventDateTime(hackathon.registration_deadline)}
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border shrink-0 ${
+                    countdown.isClosed
+                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                  }`}>
+                    {countdown.isClosed ? 'Closed' : countdown.formatted}
+                  </span>
                 </div>
 
                 {/* Unstop Social Proof Registration Counter (Real Registered Count) */}
