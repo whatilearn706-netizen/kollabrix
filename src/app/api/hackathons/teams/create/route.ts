@@ -49,53 +49,36 @@ export async function POST(request: NextRequest) {
 
     const admin = getAdminClient();
     const teamId = crypto.randomUUID();
-    const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const inviteCode = teamId.replace(/-/g, '').substring(0, 6).toUpperCase();
 
-    // Prepare team payload
+    // Prepare team payload with only verified database schema columns:
+    // id, hackathon_id, name, team_name, leader_id
     const teamPayload: Record<string, any> = {
       id: teamId,
       hackathon_id: hackathonId,
+      name: teamName.trim(),
       team_name: teamName.trim(),
-      description: description?.trim() || null,
       leader_id: leaderUserId || null,
-      invite_code: inviteCode,
     };
-    if (challengeId) {
-      teamPayload.challenge_id = challengeId;
-    }
 
     // Insert team with explicit cryptographically secure UUID
-    let { data: newTeam, error: teamErr } = await admin
+    const { data: newTeam, error: teamErr } = await admin
       .from('hackathon_teams')
       .insert(teamPayload)
       .select('*')
       .single();
-
-    // Resilient fallback: If the database schema does not have the 'challenge_id' column,
-    // retry insertion without challenge_id to avoid blocking team registration
-    if (teamErr && (teamErr.message?.includes('challenge_id') || (teamErr as any)?.details?.includes('challenge_id'))) {
-      console.warn('hackathon_teams schema missing challenge_id; retrying insertion without it:', teamErr.message);
-      delete teamPayload.challenge_id;
-      const retryResult = await admin
-        .from('hackathon_teams')
-        .insert(teamPayload)
-        .select('*')
-        .single();
-      newTeam = retryResult.data;
-      teamErr = retryResult.error;
-    }
 
     if (teamErr) {
       return NextResponse.json({ error: teamErr.message }, { status: 500 });
     }
 
     if (leaderUserId && newTeam?.id) {
-      // 1. Add leader to hackathon_team_members
+      // 1. Add leader to hackathon_team_members (columns: team_id, user_id, role, joined_at)
       await admin.from('hackathon_team_members').insert({
         team_id: newTeam.id,
-        hackathon_id: hackathonId,
         user_id: leaderUserId,
         role: 'Leader',
+        joined_at: new Date().toISOString(),
       });
 
       // 2. Pre-seed projects & project_members for instant, error-free workspace access
@@ -128,7 +111,10 @@ export async function POST(request: NextRequest) {
 
     const teamResponse = {
       ...newTeam,
+      team_name: teamName.trim(),
+      description: description?.trim() || null,
       challenge_id: challengeId || newTeam?.challenge_id || null,
+      invite_code: inviteCode,
     };
     return NextResponse.json({ success: true, team: teamResponse });
   } catch (err: any) {
