@@ -150,9 +150,11 @@ export async function POST(request: NextRequest) {
 
     const resolvedResultsDate = parseToIso(resultsDate || results_date, clientTimezoneOffset);
     const parsedStartDate = parseToIso(startDate, clientTimezoneOffset) || new Date().toISOString();
-    const parsedEndDate = parseToIso(endDate, clientTimezoneOffset);
     const parsedRegDeadline = parseToIso(registrationDeadline, clientTimezoneOffset) || parsedStartDate;
     const parsedSubDeadline = parseToIso(submissionDeadline, clientTimezoneOffset);
+    const rawParsedEndDate = parseToIso(endDate, clientTimezoneOffset);
+    // Align timeline conclusion: end_date reflects the true final milestone (results date or submission deadline)
+    const parsedEndDate = resolvedResultsDate || parsedSubDeadline || rawParsedEndDate || parsedStartDate;
 
     // Embed resilient metadata comment (safe fields only; passwords remain strictly in protected columns)
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
@@ -181,6 +183,7 @@ export async function POST(request: NextRequest) {
       end_date: parsedEndDate,
       registration_deadline: parsedRegDeadline,
       submission_deadline: parsedSubDeadline,
+      results_date: resolvedResultsDate,
       eligibility: eligibility.trim(),
       themes,
       prize_pool: prizePool?.trim() || null,
@@ -225,6 +228,7 @@ export async function POST(request: NextRequest) {
           end_date: parsedEndDate,
           registration_deadline: parsedRegDeadline,
           submission_deadline: parsedSubDeadline,
+          results_date: resolvedResultsDate,
           eligibility: eligibility.trim(),
           themes,
           prize_pool: prizePool?.trim() || null,

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
+import { getHackathonTimelineEndDate } from '@/lib/hackathons/hackathonStatus';
 
 interface HackathonCardProps {
   hackathon: Hackathon;
@@ -284,12 +285,15 @@ export function HackathonCard({
                   month: 'short',
                   day: 'numeric',
                 })}
-                {hackathon.end_date
-                  ? ` – ${new Date(hackathon.end_date).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })}`
-                  : ''}
+                {(() => {
+                  const finalDate = getHackathonTimelineEndDate(hackathon);
+                  return finalDate
+                    ? ` – ${new Date(finalDate).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}`
+                    : '';
+                })()}
               </span>
             </div>
 
@@ -372,7 +376,10 @@ export function HackathonCard({
                   Event Period:{' '}
                   <span style={{ color: theme.headingColor }} className="font-bold">
                     {new Date(hackathon.start_date).toLocaleDateString()}
-                    {hackathon.end_date ? ` — ${new Date(hackathon.end_date).toLocaleDateString()}` : ''}
+                    {(() => {
+                      const finalDate = getHackathonTimelineEndDate(hackathon);
+                      return finalDate ? ` — ${new Date(finalDate).toLocaleDateString()}` : '';
+                    })()}
                   </span>
                 </div>
               </div>

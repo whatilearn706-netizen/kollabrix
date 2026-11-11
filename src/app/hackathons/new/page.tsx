@@ -313,6 +313,8 @@ export default function NewHackathonPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
+      const realEndDate = resultsDate || submissionDeadline || endDate;
+
       const response = await fetch('/api/hackathons/create', {
         method: 'POST',
         headers: {
@@ -328,7 +330,7 @@ export default function NewHackathonPage() {
           mode,
           location: location.trim() || null,
           startDate: toUtcIso(startDate),
-          endDate: toUtcIso(endDate),
+          endDate: toUtcIso(realEndDate),
           registrationDeadline: toUtcIso(registrationDeadline),
           submissionDeadline: toUtcIso(submissionDeadline),
           resultsDate: toUtcIso(resultsDate),
@@ -380,7 +382,7 @@ export default function NewHackathonPage() {
             mode,
             location: location.trim() || null,
             start_date: toUtcIso(startDate),
-            end_date: toUtcIso(endDate),
+            end_date: toUtcIso(realEndDate),
             registration_deadline: toUtcIso(registrationDeadline),
             submission_deadline: toUtcIso(submissionDeadline),
             results_date: toUtcIso(resultsDate),
