@@ -181,11 +181,11 @@ export default function HackathonsPage() {
         } catch {}
       }
 
-      // 5. Combine and deduplicate surviving hackathons
+      // 5. Combine and deduplicate surviving hackathons (Server activeList is authoritative)
       const seenIds = new Set<string>();
       const deduped: Hackathon[] = [];
 
-      const candidateList = activeList.length > 0 ? [...localHacks, ...activeList] : [...localHacks, ...CURATED_HACKATHONS];
+      const candidateList = activeList.length > 0 ? [...activeList, ...localHacks] : [...localHacks, ...CURATED_HACKATHONS];
 
       for (const item of candidateList) {
         if (item && item.id && !seenIds.has(item.id.toLowerCase())) {
@@ -241,10 +241,12 @@ export default function HackathonsPage() {
     if (typeof window !== 'undefined') {
       window.addEventListener('teamforge_hackathon_deleted', handleDeletedEvent);
       window.addEventListener('teamforge_hackathon_restored', handleDeletedEvent);
+      window.addEventListener('teamforge_hackathon_updated', handleDeletedEvent);
       window.addEventListener('storage', handleDeletedEvent);
       return () => {
         window.removeEventListener('teamforge_hackathon_deleted', handleDeletedEvent);
         window.removeEventListener('teamforge_hackathon_restored', handleDeletedEvent);
+        window.removeEventListener('teamforge_hackathon_updated', handleDeletedEvent);
         window.removeEventListener('storage', handleDeletedEvent);
       };
     }
@@ -314,9 +316,38 @@ export default function HackathonsPage() {
 
   // Helper: check if a hackathon is concluded / past
   const isPastEvent = (h: Hackathon): boolean => {
-    if (h.status === 'Archived') {
+    if (!h) return false;
+    const status = (h.status || '').toLowerCase();
+    if (status === 'archived' || status === 'ended' || status === 'completed' || status === 'closed') {
       return true;
     }
+
+    // 1. If official results are published, it is automatically a PAST event!
+    if (h.results_published) {
+      return true;
+    }
+
+    // 2. Extract results_date from all available properties or embedded HACKATHON_META
+    let resDate = h.results_date || (h as any).resultsDate || (h as any).result_date;
+    if (!resDate && h.description && h.description.includes('HACKATHON_META:')) {
+      try {
+        const match = h.description.match(/<!-- HACKATHON_META:(.*?) -->/);
+        if (match && match[1]) {
+          const parsed = JSON.parse(match[1]);
+          if (parsed.results_date) resDate = parsed.results_date;
+          if (parsed.results_published) return true;
+        }
+      } catch {}
+    }
+
+    // 3. If result announcement date & time has arrived, it is automatically PAST!
+    if (resDate) {
+      const resTime = new Date(resDate).getTime();
+      if (!isNaN(resTime) && Date.now() >= resTime) {
+        return true;
+      }
+    }
+
     return isHackathonClosed(h) || isHackathonArchivedFromFeed(h);
   };
 

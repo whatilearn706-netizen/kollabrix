@@ -49,6 +49,17 @@ export function HackathonCard({
   const isClosed = diffDays < 0;
   const isUrgent = diffDays >= 0 && diffDays <= 7;
 
+  const isPast =
+    hackathon.status === 'Archived' ||
+    (hackathon.status as string) === 'Ended' ||
+    (hackathon.status as string) === 'Completed' ||
+    Boolean(hackathon.results_published) ||
+    Boolean(
+      hackathon.results_date &&
+      !isNaN(new Date(hackathon.results_date).getTime()) &&
+      now.getTime() >= new Date(hackathon.results_date).getTime()
+    );
+
   const sponsoredMeta = extractSponsoredMeta(hackathon);
   const isSponsored = sponsoredMeta.isSponsored;
   const themeStyle = sponsoredMeta.theme;
@@ -211,10 +222,15 @@ export function HackathonCard({
               )}
             </div>
 
-            {/* Deadline Countdown */}
+            {/* Deadline Countdown / Concluded State */}
             <div className="flex items-center gap-1 text-[10px] font-mono">
               <Clock className="w-3 h-3 opacity-60" />
-              {isClosed ? (
+              {isPast ? (
+                <span className="text-amber-400 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1">
+                  <Trophy className="w-2.5 h-2.5 text-amber-400" />
+                  Concluded • Results Declared
+                </span>
+              ) : isClosed ? (
                 <span className="text-red-400 font-bold bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
                   Registration Closed
                 </span>
