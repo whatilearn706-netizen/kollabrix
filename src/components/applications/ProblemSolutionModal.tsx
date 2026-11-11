@@ -60,6 +60,44 @@ export function ProblemSolutionModal({
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const draftKey = `tf_draft_solution_${problemId}`;
+
+  // Restore draft from localStorage on open/mount
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !isOpen) return;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (typeof d.title === 'string' && d.title) setTitle(d.title);
+        if (typeof d.solutionWriteup === 'string' && d.solutionWriteup) setSolutionWriteup(d.solutionWriteup);
+        if (typeof d.repoUrl === 'string') setRepoUrl(d.repoUrl);
+        if (typeof d.demoUrl === 'string') setDemoUrl(d.demoUrl);
+        if (typeof d.videoUrl === 'string') setVideoUrl(d.videoUrl);
+        if (typeof d.teamName === 'string' && d.teamName && !userTeam?.title) setTeamName(d.teamName);
+      }
+    } catch {}
+  }, [draftKey, isOpen, userTeam?.title]);
+
+  // Persist draft to localStorage on change
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!title && !repoUrl && !demoUrl && !videoUrl && solutionWriteup.includes('1. Solution Architecture & Approach')) return;
+    try {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          title,
+          solutionWriteup,
+          repoUrl,
+          demoUrl,
+          videoUrl,
+          teamName: userTeam?.title || teamName,
+        })
+      );
+    } catch {}
+  }, [draftKey, title, solutionWriteup, repoUrl, demoUrl, videoUrl, userTeam?.title, teamName]);
+
   // Sync team name if userTeam changes
   React.useEffect(() => {
     if (userTeam?.title) {
@@ -137,6 +175,10 @@ export function ProblemSolutionModal({
           })
         );
       }
+
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {}
 
       setIsSuccess(true);
       if (onSuccess) onSuccess();
@@ -357,27 +399,33 @@ export function ProblemSolutionModal({
             )}
 
             {/* Actions */}
-            <div className="pt-3 flex items-center justify-end gap-3 border-t border-charcoal-800">
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="text-slate-300 hover:text-white"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                type="submit"
-                isLoading={isSubmitting}
-                leftIcon={<Send className="w-3.5 h-3.5" />}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5"
-              >
-                Apply the Answer
-              </Button>
+            <div className="pt-3 flex items-center justify-between gap-3 border-t border-charcoal-800">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Draft auto-saved</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  className="text-slate-300 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="primary"
+                  isLoading={isSubmitting}
+                  leftIcon={<Send className="w-3.5 h-3.5" />}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5"
+                >
+                  Apply the Answer
+                </Button>
+              </div>
             </div>
           </form>
         )}

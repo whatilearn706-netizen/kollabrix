@@ -120,6 +120,7 @@ export default function HackathonWorkspacePage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'challenges' | 'team' | 'submission' | 'judging'>(initialTab);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedOnceRef = React.useRef(false);
 
   // Dynamic ticking clock for automatic deadline & result announcement detection
   const [currentTime, setCurrentTime] = useState(() => Date.now());
@@ -314,7 +315,9 @@ export default function HackathonWorkspacePage() {
     }
 
     try {
-      setIsLoading(true);
+      if (!hasLoadedOnceRef.current) {
+        setIsLoading(true);
+      }
       setError(null);
 
       let deletedSet = new Set<string>();
@@ -954,6 +957,7 @@ export default function HackathonWorkspacePage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error loading hackathon workspace.');
     } finally {
+      hasLoadedOnceRef.current = true;
       setIsLoading(false);
     }
   }, [hackathonId, user]);

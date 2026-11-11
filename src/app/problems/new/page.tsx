@@ -64,6 +64,52 @@ export default function NewProblemStatementPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const DRAFT_KEY = 'tf_draft_faculty_problem';
+
+  // Restore draft from localStorage on mount
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (typeof d.title === 'string' && d.title) setTitle(d.title);
+        if (typeof d.description === 'string' && d.description) setDescription(d.description);
+        if (d.category) setCategory(d.category);
+        if (d.difficulty) setDifficulty(d.difficulty);
+        if (d.status) setStatus(d.status);
+        if (Array.isArray(d.requiredSkills) && d.requiredSkills.length > 0) setRequiredSkills(d.requiredSkills);
+        if (typeof d.deadline === 'string') setDeadline(d.deadline);
+        if (typeof d.teamSize === 'string') setTeamSize(d.teamSize);
+        if (typeof d.minTeamSize === 'number') setMinTeamSize(d.minTeamSize);
+        if (typeof d.maxTeamSize === 'number') setMaxTeamSize(d.maxTeamSize);
+      }
+    } catch {}
+  }, []);
+
+  // Auto-save draft on every change
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!title.trim() && description.includes('Describe the background and importance of this problem statement')) return;
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          title,
+          description,
+          category,
+          difficulty,
+          status,
+          requiredSkills,
+          deadline,
+          teamSize,
+          minTeamSize,
+          maxTeamSize,
+        })
+      );
+    } catch {}
+  }, [title, description, category, difficulty, status, requiredSkills, deadline, teamSize, minTeamSize, maxTeamSize]);
+
   // Faculty verification state for non-teacher users
   const [facultyCode, setFacultyCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -214,6 +260,9 @@ export default function NewProblemStatementPage() {
       const resData = await res.json();
 
       if (res.ok && resData.success && resData.problem?.id) {
+        try {
+          localStorage.removeItem(DRAFT_KEY);
+        } catch {}
         router.push(`/problems/${resData.problem.id}`);
         return;
       }
@@ -228,6 +277,10 @@ export default function NewProblemStatementPage() {
       if (insertError) {
         throw new Error(resData?.error || insertError.message);
       }
+
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {}
 
       if (data?.id) {
         router.push(`/problems/${data.id}`);
@@ -551,20 +604,26 @@ export default function NewProblemStatementPage() {
           </div>
 
           {/* Submission Bar */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-charcoal-800">
-            <Link href="/problems">
-              <Button variant="ghost" type="button">
-                Cancel
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-charcoal-800">
+            <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Draft auto-saved to your browser</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/problems">
+                <Button variant="ghost" type="button">
+                  Cancel
+                </Button>
+              </Link>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isLoading}
+                leftIcon={<Send className="w-4 h-4" />}
+              >
+                {status === 'Published' ? 'Publish Problem Statement' : 'Save as Draft'}
               </Button>
-            </Link>
-            <Button
-              type="submit"
-              variant="primary"
-              isLoading={isLoading}
-              leftIcon={<Send className="w-4 h-4" />}
-            >
-              {status === 'Published' ? 'Publish Problem Statement' : 'Save as Draft'}
-            </Button>
+            </div>
           </div>
         </form>
       )}
