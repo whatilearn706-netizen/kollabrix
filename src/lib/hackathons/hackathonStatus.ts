@@ -1,12 +1,54 @@
 import { Hackathon } from '@/types/database';
 
 /**
+ * Returns the true concluding date of the hackathon timeline.
+ * If results_date is set, the timeline concludes at results_date (when winners are announced).
+ * Otherwise, it concludes at submission_deadline (when deliverables close), falling back to end_date.
+ */
+export function getHackathonTimelineEndDate(hackathon: Partial<Hackathon> | null | undefined): string | null {
+  if (!hackathon) return null;
+  return (
+    hackathon.results_date ||
+    (hackathon as any).resultsDate ||
+    hackathon.submission_deadline ||
+    (hackathon as any).submissionDeadline ||
+    hackathon.end_date ||
+    (hackathon as any).endDate ||
+    null
+  );
+}
+
+/**
  * Normalizes hackathon deadlines if dates were entered with an off-by-one month
  * or inverted sequence (e.g. submission deadline placed in October when hackathon is in November).
+ * Also synchronizes the timeline conclusion with results_date and submission_deadline.
  */
 export function normalizeHackathonDeadlines<T extends Partial<Hackathon> | null | undefined>(hackathon: T): T {
   if (!hackathon) return hackathon;
   const copy = { ...hackathon } as any;
+
+  // Extract embedded metadata dates if available
+  if (copy.description && typeof copy.description === 'string' && copy.description.includes('<!-- HACKATHON_META:')) {
+    try {
+      const metaMatch = copy.description.match(/<!-- HACKATHON_META:([\s\S]*?)-->/);
+      if (metaMatch && metaMatch[1]) {
+        const meta = JSON.parse(metaMatch[1]);
+        if (!copy.results_date && (meta.results_date || meta.resultsDate)) {
+          copy.results_date = meta.results_date || meta.resultsDate;
+        }
+        if (!copy.submission_deadline && (meta.submission_deadline || meta.submissionDeadline)) {
+          copy.submission_deadline = meta.submission_deadline || meta.submissionDeadline;
+        }
+      }
+    } catch {}
+  }
+
+  // Ensure end_date reflects the official timeline conclusion
+  const timelineConclusion = copy.results_date || copy.resultsDate || copy.submission_deadline || copy.submissionDeadline;
+  if (timelineConclusion) {
+    copy.end_date = timelineConclusion;
+    copy.endDate = timelineConclusion;
+  }
 
   const rawSub = copy.submission_deadline || copy.submissionDeadline;
   const rawStart = copy.start_date || copy.startDate;

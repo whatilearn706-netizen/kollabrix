@@ -9,7 +9,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 import { Hackathon } from '@/types/database';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
-import { normalizeHackathonDeadlines } from '@/lib/hackathons/hackathonStatus';
+import { normalizeHackathonDeadlines, getHackathonTimelineEndDate } from '@/lib/hackathons/hackathonStatus';
 import { Button } from '@/components/ui/Button';
 import {
   Trophy,
@@ -1095,12 +1095,15 @@ export default function HackathonDetailPage() {
                       day: 'numeric',
                     })}{' '}
                     –{' '}
-                    {hackathon.end_date
-                      ? new Date(hackathon.end_date).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      : 'TBA'}
+                    {(() => {
+                      const finalDate = getHackathonTimelineEndDate(hackathon);
+                      return finalDate
+                        ? new Date(finalDate).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'TBA';
+                    })()}
                   </span>
                 </div>
 
