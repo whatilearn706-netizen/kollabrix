@@ -6,6 +6,7 @@ export interface QuestionMatchCriteria {
   selectedTags?: string[];
   difficulty?: 'easy' | 'medium' | 'hard';
   timeLimit?: number;
+  seenQuestionIds?: string[];
 }
 
 /**
@@ -106,6 +107,10 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
 
 /**
  * Selects the best question matching the player's configured arena, tags, difficulty, and duration.
+ * Strictly guarantees randomized, non-repeating selection:
+ * - Never returns questions in static database addition order.
+ * - Excludes questions already seen in recent matches until all matching questions have been played.
+ * - When all questions in the matching pool have been exhausted, automatically cycles/resets the pool.
  */
 export function selectBestQuestion(
   allQuestions: DuelQuestion[],
@@ -124,7 +129,7 @@ export function selectBestQuestion(
 
   const pool = arenaPool.length > 0 ? arenaPool : list;
 
-  // Score each candidate
+  // Score each candidate against criteria
   let maxScore = -Infinity;
   const scored = pool.map((q) => {
     const s = scoreQuestion(q, criteria);
@@ -132,15 +137,29 @@ export function selectBestQuestion(
     return { question: q, score: s };
   });
 
-  // Top candidates
+  // Top candidates: take questions matching top score threshold (exact match or near-exact match)
+  const topScoreThreshold = maxScore - 40;
   const bestCandidates = scored
-    .filter((item) => item.score === maxScore)
+    .filter((item) => item.score >= topScoreThreshold)
     .map((item) => item.question);
 
+  const seenSet = new Set(
+    (criteria.seenQuestionIds || []).map((id) => String(id).toLowerCase().trim())
+  );
+
+  // Separate top candidates into unseen vs already played
+  const unseenCandidates = bestCandidates.filter(
+    (q) => q && q.id && !seenSet.has(q.id.toLowerCase().trim())
+  );
+
+  // If there are unseen questions, pick randomly from them (no duplicates!)
+  // If ALL matching candidates have already been played, cycle resets: pick randomly from all best candidates!
+  const candidatePool = unseenCandidates.length > 0 ? unseenCandidates : bestCandidates;
+
   const chosen =
-    bestCandidates.length > 0
-      ? bestCandidates[Math.floor(Math.random() * bestCandidates.length)]
-      : pool[0] || DEFAULT_ARENA_QUESTIONS[0];
+    candidatePool.length > 0
+      ? candidatePool[Math.floor(Math.random() * candidatePool.length)]
+      : pool[Math.floor(Math.random() * pool.length)] || DEFAULT_ARENA_QUESTIONS[0];
 
   // Override timeLimitSeconds to strictly match the room's duration (e.g. 180s, 300s, 600s)
   const matchDuration = Number(criteria.timeLimit) || Number(chosen.timeLimitSeconds) || 300;
@@ -152,7 +171,35 @@ export function selectBestQuestion(
 }
 
 /**
- * Filters and sorts questions for API query response, ranking best matches first.
+ * Helper to update seen questions history and cycle/reset when all pool questions have been played.
+ */
+export function updateSeenQuestionsHistory(
+  currentSeenIds: string[],
+  newQuestionId: string,
+  matchingQuestionIds: string[]
+): string[] {
+  const seenSet = new Set(currentSeenIds.map((id) => String(id).toLowerCase().trim()));
+  seenSet.add(newQuestionId.toLowerCase().trim());
+
+  if (matchingQuestionIds.length > 0) {
+    const matchingSet = new Set(matchingQuestionIds.map((id) => String(id).toLowerCase().trim()));
+    const allSeen = Array.from(matchingSet).every((id) => seenSet.has(id));
+
+    // When all questions in the matching pool have been seen, reset the matching pool IDs
+    // so that the next cycle starts completely fresh!
+    if (allSeen) {
+      matchingSet.forEach((id) => {
+        seenSet.delete(id);
+      });
+    }
+  }
+
+  return Array.from(seenSet);
+}
+
+/**
+ * Filters and sorts questions for API query response, ranking best matches first
+ * while randomizing questions with equal score and prioritizing unseen questions.
  */
 export function filterAndRankQuestions(
   allQuestions: DuelQuestion[],
@@ -172,16 +219,35 @@ export function filterAndRankQuestions(
 
   const pool = arenaPool.length > 0 ? arenaPool : list;
 
-  const scored = pool.map((q) => ({
-    question: {
-      ...q,
-      timeLimitSeconds: criteria.timeLimit ? matchDuration : q.timeLimitSeconds,
-    },
-    score: scoreQuestion(q, criteria),
-  }));
+  const seenSet = new Set(
+    (criteria.seenQuestionIds || []).map((id) => String(id).toLowerCase().trim())
+  );
 
-  // Sort descending by score
-  scored.sort((a, b) => b.score - a.score);
+  const scored = pool.map((q) => {
+    const s = scoreQuestion(q, criteria);
+    const isUnseen = q.id && !seenSet.has(q.id.toLowerCase().trim());
+    const jitter = Math.random();
+    return {
+      question: {
+        ...q,
+        timeLimitSeconds: criteria.timeLimit ? matchDuration : q.timeLimitSeconds,
+      },
+      score: s,
+      isUnseen,
+      jitter,
+    };
+  });
+
+  // Sort: Top score first, then unseen preferred, then randomized jitter (never static addition order)
+  scored.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    if (b.isUnseen !== a.isUnseen) {
+      return b.isUnseen ? 1 : -1;
+    }
+    return b.jitter - a.jitter;
+  });
 
   return scored.map((s) => s.question);
 }

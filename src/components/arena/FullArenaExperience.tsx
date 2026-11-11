@@ -54,7 +54,30 @@ import {
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
 import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
-import { selectBestQuestion } from '@/lib/arena/questionSelector';
+import { selectBestQuestion, updateSeenQuestionsHistory } from '@/lib/arena/questionSelector';
+
+const SEEN_ARENA_QUESTIONS_KEY = 'kollabrix_arena_seen_questions';
+
+function getStoredSeenQuestionIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SEEN_ARENA_QUESTIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map((id) => String(id).toLowerCase().trim()) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSeenQuestionId(newQuestionId: string, matchingQuestionIds: string[] = []) {
+  if (typeof window === 'undefined' || !newQuestionId) return;
+  try {
+    const current = getStoredSeenQuestionIds();
+    const updated = updateSeenQuestionsHistory(current, newQuestionId, matchingQuestionIds);
+    localStorage.setItem(SEEN_ARENA_QUESTIONS_KEY, JSON.stringify(updated));
+  } catch {}
+}
 import {
   playVictorySound,
   playArcadeCoinSound,
@@ -1243,12 +1266,14 @@ export function FullArenaExperience({
           ? availableQuestionsRef.current
           : DEFAULT_ARENA_QUESTIONS;
 
+      const seenIds = getStoredSeenQuestionIds();
       const initialChosen = selectBestQuestion(questionPool, {
         arena,
         bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
         selectedTags: effectiveTags,
         difficulty,
         timeLimit: matchTime,
+        seenQuestionIds: seenIds,
       });
 
       if (initialChosen) {
@@ -1266,6 +1291,20 @@ export function FullArenaExperience({
         setJavaCode(enriched.starterJava || '// Your java solution\n');
         setCppCode(enriched.starterCpp || '// Your C++ solution\n');
         setTotalTests(computeExpectedQuestionTests(enriched));
+
+        // Track seen question to guarantee non-repeating cycle for this category
+        const matchingPoolIds = questionPool
+          .filter((q) => {
+            if (q.arena !== arena) return false;
+            const diffOk = (q.difficulty || 'medium').toLowerCase() === (difficulty || 'medium').toLowerCase();
+            const qTags = (q.tags || []).map((t) => t.toLowerCase().trim());
+            const reqTags = effectiveTags.map((t) => t.toLowerCase().trim());
+            const tagsOk = reqTags.length === 0 || reqTags.every((t) => qTags.includes(t));
+            return diffOk && tagsOk;
+          })
+          .map((q) => q.id);
+
+        persistSeenQuestionId(initialChosen.id, matchingPoolIds);
       }
     } catch (e) {
       console.warn('Local question pre-selection notice:', e);
@@ -1273,6 +1312,7 @@ export function FullArenaExperience({
 
   // 3. Register authoritative room on server asynchronously
   try {
+    const seenIds = getStoredSeenQuestionIds();
     const res = await fetch('/api/arena/rooms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1289,6 +1329,7 @@ export function FullArenaExperience({
         timeLimit,
         isBotEnabled: isBotOpponentAdded,
         question: enrichedQuestionToSend,
+        seenQuestionIds: seenIds,
       }),
     });
       if (res.ok) {
@@ -1814,11 +1855,13 @@ export function FullArenaExperience({
     } else {
       // 2. Fetch question matching exact arena, tags, difficulty, and duration
       try {
+        const seenIds = getStoredSeenQuestionIds();
         const queryParams = new URLSearchParams({
           arena,
           difficulty: difficulty || 'medium',
           tags: effectiveTags.join(','),
           timeLimit: String(matchDuration),
+          seenIds: seenIds.join(','),
           _rnd: String(Date.now()),
         });
         if (arena === 'bug_hunt' && bugDomain) queryParams.set('bugDomain', bugDomain);
@@ -1836,8 +1879,14 @@ export function FullArenaExperience({
                 (reqTags.every((t) => candTags.includes(t)) && !candTags.some((t: string) => !reqTags.includes(t)));
               return diffOk && tagsOk;
             });
-            chosen = topMatches.length > 0
-              ? topMatches[Math.floor(Math.random() * topMatches.length)]
+
+            // Separate unseen vs seen to guarantee non-repeating cycle
+            const seenSet = new Set(seenIds.map((id) => id.toLowerCase()));
+            const unseen = topMatches.filter((q: any) => q && q.id && !seenSet.has(q.id.toLowerCase()));
+            const pickPool = unseen.length > 0 ? unseen : topMatches;
+
+            chosen = pickPool.length > 0
+              ? pickPool[Math.floor(Math.random() * pickPool.length)]
               : data.questions[0];
           }
         }
@@ -1851,12 +1900,14 @@ export function FullArenaExperience({
             ? availableQuestionsRef.current
             : DEFAULT_ARENA_QUESTIONS;
 
+        const seenIds = getStoredSeenQuestionIds();
         chosen = selectBestQuestion(questionPool, {
           arena,
           bugDomain,
           selectedTags: effectiveTags,
           difficulty,
           timeLimit: matchDuration,
+          seenQuestionIds: seenIds,
         });
       }
     }
@@ -1865,6 +1916,26 @@ export function FullArenaExperience({
       ...(chosen || DEFAULT_ARENA_QUESTIONS[0]),
       timeLimitSeconds: matchDuration,
     });
+
+    if (finalChosen?.id) {
+      const questionPool =
+        availableQuestionsRef.current.length > 0
+          ? availableQuestionsRef.current
+          : DEFAULT_ARENA_QUESTIONS;
+
+      const matchingPoolIds = questionPool
+        .filter((q) => {
+          if (q.arena !== arena) return false;
+          const diffOk = (q.difficulty || 'medium').toLowerCase() === (difficulty || 'medium').toLowerCase();
+          const qTags = (q.tags || []).map((t) => t.toLowerCase().trim());
+          const reqTags = effectiveTags.map((t) => t.toLowerCase().trim());
+          const tagsOk = reqTags.length === 0 || reqTags.every((t) => qTags.includes(t));
+          return diffOk && tagsOk;
+        })
+        .map((q) => q.id);
+
+      persistSeenQuestionId(finalChosen.id, matchingPoolIds);
+    }
 
     setActiveQuestion(finalChosen);
     activeQuestionRef.current = finalChosen;

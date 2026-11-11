@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     const timeLimit = searchParams.get('timeLimit') ? Number(searchParams.get('timeLimit')) : undefined;
     const tagsParam = searchParams.get('tags');
     const requestedTags = tagsParam ? tagsParam.split(',').map((t) => t.trim().toLowerCase()) : [];
+    const seenParam = searchParams.get('seenIds');
+    const seenQuestionIds = seenParam ? seenParam.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean) : [];
 
     const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
       'arena_duel_questions',
@@ -51,6 +53,7 @@ export async function GET(request: NextRequest) {
       selectedTags: requestedTags,
       difficulty,
       timeLimit,
+      seenQuestionIds,
     });
 
     return NextResponse.json(
