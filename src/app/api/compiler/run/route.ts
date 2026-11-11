@@ -1,42 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-// High-speed In-Memory Sliding-Window Rate Limiter (Anti-DDoS / Anti-Spam)
-// Max 20 compilation requests per 60 seconds per IP
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 20;
-const ipRequestHistory = new Map<string, number[]>();
-
-function checkRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: number } {
-  const now = Date.now();
-  const history = ipRequestHistory.get(ip) || [];
-  const recent = history.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
-
-  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
-    const oldestInWindow = recent[0];
-    const retryAfterSeconds = Math.ceil((oldestInWindow + RATE_LIMIT_WINDOW_MS - now) / 1000);
-    return { allowed: false, retryAfterSeconds: Math.max(1, retryAfterSeconds) };
-  }
-
-  recent.push(now);
-  ipRequestHistory.set(ip, recent);
-
-  // Periodically clean up old IP entries to prevent memory growth
-  if (ipRequestHistory.size > 1000) {
-    Array.from(ipRequestHistory.entries()).forEach(([key, timestamps]) => {
-      const active = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-      if (active.length === 0) {
-        ipRequestHistory.delete(key);
-      } else {
-        ipRequestHistory.set(key, active);
-      }
-    });
-  }
-
-  return { allowed: true };
-}
 
 interface CompileRequest {
   language: 'java' | 'cpp' | 'python' | 'javascript' | 'c';
@@ -562,26 +528,33 @@ async function executeWithWandbox(language: string, code: string, stdin: string,
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. Anti-Spam / Anti-DDoS Rate Limiting
-    const forwarded = req.headers.get('x-forwarded-for');
-    const realIp = req.headers.get('x-real-ip');
-    const clientIp = forwarded ? forwarded.split(',')[0].trim() : realIp || '127.0.0.1';
+    // 1. Collegiate Anti-Spam / Anti-DDoS Rate Limiting (Campus NAT friendly)
+    const clientIp = getClientIp(req);
+    const body: CompileRequest = await req.json();
+    const userId = (body as any)?.userId || req.headers.get('x-user-id') || null;
 
-    const rateCheck = checkRateLimit(clientIp);
+    const rateCheck = checkUserOrCampusRateLimit(
+      userId,
+      clientIp,
+      30, // 30 compilations per 60 seconds per user
+      60 * 1000,
+      3000, // Campus NAT ceiling: up to 3000 req/min for entire campus Wi-Fi
+      60 * 1000
+    );
+
     if (!rateCheck.allowed) {
+      const retrySec = Math.ceil((rateCheck.retryAfterMs || 10000) / 1000);
       return NextResponse.json(
         {
           success: false,
-          error: `Compile rate limit exceeded. Please wait ${rateCheck.retryAfterSeconds}s before compiling again.`,
+          error: `Compile rate limit exceeded. Please wait ${retrySec}s before compiling again.`,
         },
         {
           status: 429,
-          headers: { 'Retry-After': String(rateCheck.retryAfterSeconds || 10) },
+          headers: { 'Retry-After': String(retrySec) },
         }
       );
     }
-
-    const body: CompileRequest = await req.json();
     const { language, code, stdin = '' } = body;
 
     if (!code || typeof code !== 'string' || !code.trim()) {
