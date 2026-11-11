@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
       hostId = `host-${Date.now()}`,
       isTournamentRoom = false,
       matchTitle,
+      seenQuestionIds = [],
     } = body;
 
     if (!code) {
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
           selectedTags,
           difficulty,
           timeLimit: matchDuration,
+          seenQuestionIds: Array.isArray(seenQuestionIds) ? seenQuestionIds : [],
         });
       }
     } catch {
