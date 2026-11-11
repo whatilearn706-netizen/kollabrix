@@ -56,10 +56,34 @@ export function isHackathonClosed(hackathon?: Partial<Hackathon> | null): boolea
   if (status === 'closed' || status === 'ended' || status === 'completed' || status === 'archived') {
     return true;
   }
+  
+  // 1. If results are published, the competition cycle has concluded
+  if (hackathon.results_published) {
+    return true;
+  }
+
+  // 2. Extract results_date from direct property or embedded HACKATHON_META
+  let resDate = (hackathon as any).results_date || (hackathon as any).resultsDate || (hackathon as any).result_date;
+  if (!resDate && hackathon.description && hackathon.description.includes('HACKATHON_META:')) {
+    try {
+      const match = hackathon.description.match(/<!-- HACKATHON_META:(.*?) -->/);
+      if (match && match[1]) {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.results_date) resDate = parsed.results_date;
+        if (parsed.results_published) return true;
+      }
+    } catch {}
+  }
 
   const now = Date.now();
+  if (resDate) {
+    const resTime = new Date(resDate).getTime();
+    if (!isNaN(resTime) && now >= resTime) {
+      return true;
+    }
+  }
 
-  // 1. If registration deadline is still in the future, the hackathon is definitely OPEN
+  // 3. If registration deadline is still in the future, the hackathon is definitely OPEN
   const regDeadline = hackathon.registration_deadline || (hackathon as any).registrationDeadline;
   if (regDeadline) {
     const regTime = new Date(regDeadline).getTime();

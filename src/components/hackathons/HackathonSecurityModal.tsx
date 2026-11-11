@@ -14,6 +14,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Award,
+  Archive,
 } from 'lucide-react';
 
 interface HackathonSecurityModalProps {
@@ -32,6 +33,7 @@ export function HackathonSecurityModal({
   const [newPassword, setNewPassword] = useState('');
   const [isJoinActive, setIsJoinActive] = useState<boolean>(hackathon?.is_join_active ?? true);
   const [resultsPublished, setResultsPublished] = useState<boolean>(hackathon?.results_published ?? false);
+  const [status, setStatus] = useState<string>(hackathon?.status || 'Published');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -42,6 +44,7 @@ export function HackathonSecurityModal({
     if (hackathon) {
       setIsJoinActive(hackathon.is_join_active ?? true);
       setResultsPublished(hackathon.results_published ?? false);
+      setStatus(hackathon.status || 'Published');
       setNewPassword('');
       setError(null);
       setSuccess(null);
@@ -81,6 +84,7 @@ export function HackathonSecurityModal({
           newPassword: newPassword.trim() || undefined,
           isJoinActive,
           resultsPublished,
+          status,
         }),
       });
 
@@ -90,10 +94,11 @@ export function HackathonSecurityModal({
         throw new Error(data.error || 'Failed to update access settings.');
       }
 
-      setSuccess('Access settings updated successfully.');
+      setSuccess('Access & lifecycle settings updated successfully.');
       onUpdated({
         is_join_active: isJoinActive,
         results_published: resultsPublished,
+        status: status as any,
       });
 
       setNewPassword('');
@@ -214,6 +219,32 @@ export function HackathonSecurityModal({
               className="text-brand-400 hover:text-brand-300"
             >
               {resultsPublished ? (
+                <ToggleRight className="w-8 h-8 text-amber-400" />
+              ) : (
+                <ToggleLeft className="w-8 h-8 text-slate-500" />
+              )}
+            </button>
+          </div>
+
+          {/* Move to Past Hackathons (Event Lifecycle Conclude) */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-charcoal-900/60 border border-charcoal-800">
+            <div>
+              <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Archive className="w-3.5 h-3.5 text-amber-400" />
+                Conclude Event (Move to Past Hackathons)
+              </div>
+              <div className="text-[11px] text-slate-400">
+                {status === 'Archived'
+                  ? 'Concluded • Displayed in Past Hackathons tab'
+                  : 'Active • Displayed in Live Hackathons directory'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStatus(status === 'Archived' ? 'Published' : 'Archived')}
+              className="text-brand-400 hover:text-brand-300"
+            >
+              {status === 'Archived' ? (
                 <ToggleRight className="w-8 h-8 text-amber-400" />
               ) : (
                 <ToggleLeft className="w-8 h-8 text-slate-500" />

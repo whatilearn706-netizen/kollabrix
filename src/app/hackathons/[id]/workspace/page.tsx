@@ -59,6 +59,8 @@ import {
   Search,
   LayoutDashboard,
   Target,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 import { AddChallengeModal } from '@/components/hackathons/AddChallengeModal';
 import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementModal';
@@ -203,6 +205,8 @@ export default function HackathonWorkspacePage() {
   const [isAddChallengeOpen, setIsAddChallengeOpen] = useState(false);
   const [isPostAnnouncementOpen, setIsPostAnnouncementOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isConcluding, setIsConcluding] = useState(false);
+  const [concludeBanner, setConcludeBanner] = useState<string | null>(null);
   const [selectedSubmissionForEval, setSelectedSubmissionForEval] = useState<(HackathonSubmission & { team_name?: string }) | null>(null);
 
   // Team creation / join state
@@ -1668,6 +1672,74 @@ export default function HackathonWorkspacePage() {
     }
   };
 
+  // Toggle Conclude / Reopen Hackathon
+  const handleToggleConclude = async (conclude: boolean) => {
+    if (!hackathon) return;
+    setIsConcluding(true);
+    try {
+      const response = await fetch('/api/hackathons/rotate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hackathonId: hackathon.id,
+          status: conclude ? 'Archived' : 'Published',
+          resultsPublished: conclude ? true : hackathon.results_published,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update hackathon lifecycle status.');
+      }
+
+      const nextStatus = conclude ? 'Archived' : 'Published';
+      const nextResultsPublished = conclude ? true : hackathon.results_published;
+
+      setHackathon((prev) => (prev ? {
+        ...prev,
+        status: nextStatus as any,
+        results_published: nextResultsPublished,
+      } : prev));
+
+      // Invalidate cache so hackathons directory reflects Past / Live immediately
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('kollabrix_hackathons_v3');
+          sessionStorage.removeItem('kollabrix_hackathons_v3');
+
+          const raw = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
+          const updated = raw.map((h: any) =>
+            h.id === hackathon.id
+              ? { ...h, status: nextStatus, results_published: nextResultsPublished }
+              : h
+          );
+          localStorage.setItem('teamforge_created_hackathons', JSON.stringify(updated));
+
+          window.dispatchEvent(new Event('teamforge_hackathon_updated'));
+        } catch {}
+      }
+
+      setConcludeBanner(
+        conclude
+          ? '🏆 Hackathon has been officially Concluded and moved to Past Hackathons. Leaderboard and project submissions are permanently archived.'
+          : '🟢 Hackathon reopened to Live status in the active hackathons feed.'
+      );
+      setTimeout(() => setConcludeBanner(null), 8000);
+
+      aicSocketRef.current?.broadcast('workspace_update', {
+        action: 'hackathon_lifecycle_updated',
+        status: nextStatus,
+        resultsPublished: nextResultsPublished,
+      });
+
+      await loadWorkspace();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error updating hackathon status.');
+    } finally {
+      setIsConcluding(false);
+    }
+  };
+
   // Compute Leaderboard Rankings
   const leaderboard = useMemo(() => {
     if (!allSubmissions.length) return [];
@@ -1823,18 +1895,62 @@ export default function HackathonWorkspacePage() {
             )}
 
             {isOrganizer && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsSecurityModalOpen(true)}
-                leftIcon={<Shield className="w-3.5 h-3.5 text-amber-400" />}
-              >
-                Access & Security
-              </Button>
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
+                {hackathon.status === 'Archived' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleToggleConclude(false)}
+                    isLoading={isConcluding}
+                    leftIcon={<RotateCcw className="w-3.5 h-3.5 text-emerald-400" />}
+                    className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-xs shadow-xs"
+                    title="Reopen hackathon to Live Hackathons feed"
+                  >
+                    Reopen to Live
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleToggleConclude(true)}
+                    isLoading={isConcluding}
+                    leftIcon={<Archive className="w-3.5 h-3.5 text-amber-400" />}
+                    className="border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-xs shadow-xs"
+                    title="Conclude hackathon and move to Past Hackathons tab"
+                  >
+                    Move to Past
+                  </Button>
+                )}
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsSecurityModalOpen(true)}
+                  leftIcon={<Shield className="w-3.5 h-3.5 text-amber-400" />}
+                >
+                  Access & Security
+                </Button>
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Conclude / Reopen Notification Banner */}
+      {concludeBanner && (
+        <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>{concludeBanner}</span>
+          </div>
+          <button
+            onClick={() => setConcludeBanner(null)}
+            className="text-slate-400 hover:text-white text-xs font-mono px-2 py-0.5 rounded hover:bg-charcoal-800"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* WORKSPACE MAIN BODY: LEFT VERTICAL SIDEBAR TABS + RIGHT ACTIVE CONTENT */}
