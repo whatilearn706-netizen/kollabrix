@@ -270,6 +270,36 @@ export async function POST(request: NextRequest) {
           description: 'Problem statement metadata (team size ranges, faculty limits)',
           updated_at: new Date().toISOString(),
         });
+
+        // Un-tombstone if a problem with this id or title was previously deleted
+        try {
+          const { data: delRow } = await adminClient
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'deleted_problems')
+            .maybeSingle();
+
+          if (delRow?.value) {
+            const raw = delRow.value;
+            const normTitle = (title || '').trim().toLowerCase();
+            const normId = (created.id || '').toLowerCase();
+            const filteredTitles = (raw.deletedTitles || []).filter((t: string) => t.trim().toLowerCase() !== normTitle);
+            const filteredIds = (raw.deletedIds || []).filter((id: string) => id.trim().toLowerCase() !== normId && id.trim().toLowerCase() !== normTitle);
+            if (filteredTitles.length !== (raw.deletedTitles || []).length || filteredIds.length !== (raw.deletedIds || []).length) {
+              await adminClient
+                .from('platform_settings')
+                .update({
+                  value: {
+                    ...raw,
+                    deletedTitles: filteredTitles,
+                    deletedIds: filteredIds,
+                  },
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('key', 'deleted_problems');
+            }
+          }
+        } catch {}
       } catch (metaErr) {
         console.warn('Notice saving problem_statement_metadata:', metaErr);
       }
