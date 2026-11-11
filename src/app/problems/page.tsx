@@ -112,15 +112,9 @@ export default function ProblemStatementsPage() {
         }
       } catch {}
 
-      const existingIds = new Set(list.map((p) => p.id));
-      for (const demo of DEMO_PROBLEMS) {
-        if (!existingIds.has(demo.id)) {
-          list.push(demo);
-        }
-      }
-
       // Check deleted problems tombstone
-      let deletedSet = new Set<string>();
+      let deletedIdsSet = new Set<string>();
+      let deletedTitlesSet = new Set<string>();
       try {
         const { data: sRow } = await supabase
           .from('platform_settings')
@@ -132,16 +126,23 @@ export default function ProblemStatementsPage() {
           const raw = sRow.value;
           const ids: string[] = Array.isArray(raw.deletedIds) ? raw.deletedIds : [];
           const titles: string[] = Array.isArray(raw.deletedTitles) ? raw.deletedTitles : [];
-          deletedSet = new Set([...ids, ...titles].map((s: string) => s.trim().toLowerCase()));
+          deletedIdsSet = new Set(ids.map((s: string) => s.trim().toLowerCase()));
+          deletedTitlesSet = new Set(titles.map((s: string) => s.trim().toLowerCase()));
         }
       } catch {}
 
-      if (deletedSet.size > 0) {
-        list = list.filter(
-          (p) =>
-            !deletedSet.has((p.id || '').toLowerCase()) &&
-            !deletedSet.has((p.title || '').trim().toLowerCase())
-        );
+      // Real database & community problems are ONLY filtered if their exact ID was deleted.
+      // They must NEVER be filtered by title tombstone so active faculty problems are always visible.
+      list = list.filter((p) => !deletedIdsSet.has((p.id || '').toLowerCase()));
+
+      // Add DEMO_PROBLEMS only if not already in list and not tombstoned
+      const existingIds = new Set(list.map((p) => p.id));
+      for (const demo of DEMO_PROBLEMS) {
+        const isIdDeleted = deletedIdsSet.has(demo.id.toLowerCase());
+        const isTitleDeleted = deletedTitlesSet.has(demo.title.trim().toLowerCase());
+        if (!existingIds.has(demo.id) && !isIdDeleted && !isTitleDeleted) {
+          list.push(demo);
+        }
       }
 
       // Enrich metadata (team size, custom ranges)
@@ -216,8 +217,9 @@ export default function ProblemStatementsPage() {
 
   const filteredProblems = useMemo(() => {
     return problems.filter((p) => {
-      // Filter out drafts if not author
-      if (p.status !== 'Published' && p.author_id !== user?.id) {
+      // Filter out drafts if not author (case-resilient check for Published / published)
+      const isPublished = !p.status || p.status.toLowerCase() === 'published';
+      if (!isPublished && p.author_id !== user?.id) {
         return false;
       }
 

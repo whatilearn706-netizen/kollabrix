@@ -118,9 +118,14 @@ export async function GET(request: NextRequest) {
 
   // Filter out any tombstoned/deleted problems
   const filtered = merged.filter((p) => {
-    const idMatch = p.id && deletedSet.has(p.id.toLowerCase());
-    const titleMatch = p.title && deletedSet.has(p.title.trim().toLowerCase());
-    return !idMatch && !titleMatch;
+    const idMatch = p.id && deletedData.deletedIds.some((did) => did.toLowerCase() === p.id.toLowerCase());
+    if (idMatch) return false;
+    // Only check title match for mock demo problems (never block real DB problems by title)
+    if (p.is_demo) {
+      const titleMatch = p.title && (deletedData.deletedTitles || []).some((dt) => dt.trim().toLowerCase() === p.title.trim().toLowerCase());
+      return !titleMatch;
+    }
+    return true;
   });
 
   return NextResponse.json({
