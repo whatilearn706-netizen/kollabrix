@@ -534,7 +534,7 @@ export default function ProblemStatementsPage() {
                             Applied
                           </Button>
                         ) : (
-                          <Link href={`/problems/${problem.id}`}>
+                          <Link href={`/problems/${problem.id}?apply=true`}>
                             <Button
                               variant="primary"
                               size="sm"
