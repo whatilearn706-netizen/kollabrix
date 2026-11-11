@@ -512,9 +512,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const rawSession = localStorage.getItem('linkora_auth_session');
 
         if (rawUser) {
-          setUser(JSON.parse(rawUser));
-          if (rawProfile) setProfile(JSON.parse(rawProfile));
-          if (rawSession) setSession(JSON.parse(rawSession));
+          try {
+            const parsedUser = JSON.parse(rawUser);
+            setUser((prev) => {
+              if (prev && parsedUser && prev.id === parsedUser.id && prev.email === parsedUser.email) {
+                return prev; // Preserve identity to prevent unmounting and re-fetching across the app
+              }
+              return parsedUser;
+            });
+          } catch {}
+
+          if (rawProfile) {
+            try {
+              const parsedProfile = JSON.parse(rawProfile);
+              setProfile((prev) => {
+                if (
+                  prev &&
+                  parsedProfile &&
+                  prev.user_id === parsedProfile.user_id &&
+                  prev.role === parsedProfile.role &&
+                  prev.display_name === parsedProfile.display_name &&
+                  prev.updated_at === parsedProfile.updated_at
+                ) {
+                  return prev; // Preserve identity
+                }
+                return parsedProfile;
+              });
+            } catch {}
+          }
+
+          if (rawSession) {
+            try {
+              const parsedSession = JSON.parse(rawSession);
+              setSession((prev) => {
+                if (prev && parsedSession && prev.access_token === parsedSession.access_token) {
+                  return prev; // Preserve identity
+                }
+                return parsedSession;
+              });
+            } catch {}
+          }
         } else if (document.cookie.includes('linkora_user_session=true')) {
           // If persistent cookie exists, preserve the logged-in session!
           const userIdMatch = document.cookie.match(/linkora_user_id=([^;]+)/);

@@ -67,6 +67,8 @@ export default function ProblemStatementDetailPage() {
   );
 
   const [isLoading, setIsLoading] = useState(() => !Boolean(demoMatch));
+  const hasLoadedDataOnceRef = React.useRef(false);
+  const hasLoadedSolutionsOnceRef = React.useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -117,7 +119,9 @@ export default function ProblemStatementDetailPage() {
     }
 
     try {
-      setIsLoading(true);
+      if (!hasLoadedDataOnceRef.current && !problem) {
+        setIsLoading(true);
+      }
 
       const { data: probData, error: probError } = await supabase
         .from('problem_statements')
@@ -260,6 +264,7 @@ export default function ProblemStatementDetailPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load problem statement.');
     } finally {
+      hasLoadedDataOnceRef.current = true;
       setIsLoading(false);
     }
   }, [id]);
@@ -267,7 +272,9 @@ export default function ProblemStatementDetailPage() {
   const loadSolutions = useCallback(async () => {
     if (!id) return;
     try {
-      setIsLoadingSolutions(true);
+      if (!hasLoadedSolutionsOnceRef.current && solutions.length === 0) {
+        setIsLoadingSolutions(true);
+      }
       let token: string | null = null;
       if (isSupabaseConfigured()) {
         try {
@@ -299,6 +306,7 @@ export default function ProblemStatementDetailPage() {
     } catch (e) {
       console.warn('Notice loading solutions:', e);
     } finally {
+      hasLoadedSolutionsOnceRef.current = true;
       setIsLoadingSolutions(false);
     }
   }, [id, user]);

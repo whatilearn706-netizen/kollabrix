@@ -50,6 +50,50 @@ export function AddChallengeModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const draftKey = `tf_draft_challenge_${hackathonId}`;
+
+  // Restore draft from localStorage on mount/open
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !isOpen) return;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (typeof d.title === 'string' && d.title) setTitle(d.title);
+        if (typeof d.problemDescription === 'string' && d.problemDescription) setProblemDescription(d.problemDescription);
+        if (typeof d.context === 'string') setContext(d.context);
+        if (d.category) setCategory(d.category);
+        if (d.difficulty) setDifficulty(d.difficulty);
+        if (typeof d.deliverablesInput === 'string') setDeliverablesInput(d.deliverablesInput);
+        if (typeof d.skillsInput === 'string') setSkillsInput(d.skillsInput);
+        if (typeof d.criteria === 'string') setCriteria(d.criteria);
+        if (typeof d.resourcesInput === 'string') setResourcesInput(d.resourcesInput);
+      }
+    } catch {}
+  }, [draftKey, isOpen]);
+
+  // Persist draft to localStorage on every change
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!title && !problemDescription && !context && !criteria) return;
+    try {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          title,
+          problemDescription,
+          context,
+          category,
+          difficulty,
+          deliverablesInput,
+          skillsInput,
+          criteria,
+          resourcesInput,
+        })
+      );
+    } catch {}
+  }, [draftKey, title, problemDescription, context, category, difficulty, deliverablesInput, skillsInput, criteria, resourcesInput]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,7 +241,11 @@ export function AddChallengeModal({
         } catch {}
       }
 
-      // Reset form
+      // Reset form & remove draft
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {}
+
       setTitle('');
       setProblemDescription('');
       setContext('');
@@ -339,19 +387,25 @@ export function AddChallengeModal({
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-3 border-t border-charcoal-800">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            size="sm"
-            isLoading={isLoading}
-            leftIcon={<PlusCircle className="w-4 h-4" />}
-          >
-            Publish Problem Statement
-          </Button>
+        <div className="flex items-center justify-between pt-3 border-t border-charcoal-800">
+          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400/90 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Draft auto-saved</span>
+          </div>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isLoading}
+              leftIcon={<PlusCircle className="w-4 h-4" />}
+            >
+              Publish Problem Statement
+            </Button>
+          </div>
         </div>
       </form>
     </Modal>
