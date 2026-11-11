@@ -31,7 +31,9 @@ interface ProblemTeamModalProps {
   problemDifficulty?: string;
   requiredSkills?: string[];
   expectedTeamSize?: string | null;
+  isApplyingAnswerFlow?: boolean;
   onSuccess?: (createdTeam: any) => void;
+  onContinueToApplyAnswer?: (createdTeam: any) => void;
 }
 
 const COMMON_ROLES = [
@@ -65,7 +67,9 @@ export function ProblemTeamModal({
   problemDifficulty = 'Intermediate',
   requiredSkills = [],
   expectedTeamSize,
+  isApplyingAnswerFlow = false,
   onSuccess,
+  onContinueToApplyAnswer,
 }: ProblemTeamModalProps) {
   const { user, profile, openAuthModal } = useAuth();
 
@@ -94,6 +98,7 @@ export function ProblemTeamModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdProject, setCreatedProject] = useState<any>(null);
+  const [existingSquad, setExistingSquad] = useState<any>(null);
 
   if (!isOpen) return null;
 
@@ -135,6 +140,7 @@ export function ProblemTeamModal({
           .eq('owner_id', user.id);
 
         if (existingUserTeams && existingUserTeams.length > 0) {
+          setExistingSquad(existingUserTeams[0]);
           setError(`You have already formed a squad ("${existingUserTeams[0].title}") for this problem statement. Each student is limited to 1 team per challenge.`);
           setIsSubmitting(false);
           return;
@@ -149,6 +155,7 @@ export function ProblemTeamModal({
         const localTeams = JSON.parse(localStorage.getItem(`tf_problem_teams_${problemId}`) || '[]');
         const owned = localTeams.find((t: any) => t && (t.owner_id === user.id || t.owner?.user_id === user.id));
         if (owned) {
+          setExistingSquad(owned);
           setError(`You have already formed a squad ("${owned.title}") for this problem statement. Each student is limited to 1 team per challenge.`);
           setIsSubmitting(false);
           return;
@@ -264,11 +271,19 @@ export function ProblemTeamModal({
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-brand-400 mb-1 font-bold">
               <Users className="w-3.5 h-3.5" />
-              <span>Collegiate Challenge Squad</span>
+              <span>
+                {isApplyingAnswerFlow
+                  ? 'Step 1 of 2 • Squad Formation Required'
+                  : 'Collegiate Challenge Squad'}
+              </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white">Form a Student Team</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              {isApplyingAnswerFlow ? 'Form Team to Apply Answer' : 'Form a Student Team'}
+            </h2>
             <p className="text-xs text-slate-300 mt-1 line-clamp-1 font-medium">
-              Challenge: <strong className="text-brand-300">{problemTitle}</strong>
+              {isApplyingAnswerFlow
+                ? 'Challenge answer submissions require a registered student team. Register your squad below to proceed.'
+                : `Challenge: ${problemTitle}`}
             </p>
           </div>
           <button
@@ -295,15 +310,43 @@ export function ProblemTeamModal({
             </div>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href={`/projects/${createdProject.id}/workspace`}>
+              {isApplyingAnswerFlow && onContinueToApplyAnswer ? (
                 <Button
                   variant="primary"
-                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold px-6"
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 shadow-md"
                   rightIcon={<ArrowRight className="w-4 h-4" />}
+                  onClick={() => {
+                    onClose();
+                    onContinueToApplyAnswer(createdProject);
+                  }}
                 >
-                  Open Team Workspace
+                  Proceed to Apply Answer Now →
                 </Button>
-              </Link>
+              ) : (
+                <>
+                  <Link href={`/projects/${createdProject.id}/workspace`}>
+                    <Button
+                      variant="primary"
+                      className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold px-6"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      Open Team Workspace
+                    </Button>
+                  </Link>
+                  {onContinueToApplyAnswer && (
+                    <Button
+                      variant="secondary"
+                      className="w-full sm:w-auto bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 font-bold text-xs"
+                      onClick={() => {
+                        onClose();
+                        onContinueToApplyAnswer(createdProject);
+                      }}
+                    >
+                      Apply Answer With This Team →
+                    </Button>
+                  )}
+                </>
+              )}
               <Button
                 variant="outline"
                 className="w-full sm:w-auto border-charcoal-700 text-slate-200 hover:text-white hover:bg-charcoal-800"
@@ -315,7 +358,36 @@ export function ProblemTeamModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
+            {existingSquad && (
+              <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-bold text-white">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Existing Registered Squad: <strong>{existingSquad.title}</strong></span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">1 Team Limit</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  You are already the registered leader of <strong>&ldquo;{existingSquad.title}&rdquo;</strong> for this problem statement. You can proceed directly to apply your team&apos;s answer now.
+                </p>
+                {onContinueToApplyAnswer && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                    rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                    onClick={() => {
+                      onClose();
+                      onContinueToApplyAnswer(existingSquad);
+                    }}
+                  >
+                    Proceed to Apply Answer with &ldquo;{existingSquad.title}&rdquo; →
+                  </Button>
+                )}
+              </div>
+            )}
+            {error && !existingSquad && (
               <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-200 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                 <span>{error}</span>

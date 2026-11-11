@@ -13,8 +13,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProblemSolutionModal } from '@/components/applications/ProblemSolutionModal';
 import { ProblemTeamModal } from '@/components/applications/ProblemTeamModal';
+import { ProblemSolutionDetailModal } from '@/components/applications/ProblemSolutionDetailModal';
 import {
   FileCode2,
+  FileText,
   GraduationCap,
   Calendar,
   Layers,
@@ -81,6 +83,9 @@ export default function ProblemStatementDetailPage() {
   const [isLoadingSolutions, setIsLoadingSolutions] = useState(false);
   const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [selectedSolutionForView, setSelectedSolutionForView] = useState<ProblemSolution | null>(null);
+  const [pendingApplyAfterTeam, setPendingApplyAfterTeam] = useState(false);
+  const [activeUserTeam, setActiveUserTeam] = useState<Project | null>(null);
   const [myProjects, setMyProjects] = useState<Project[]>([]);
 
   // Results & Live Winner state
@@ -368,6 +373,7 @@ export default function ProblemStatementDetailPage() {
     return (
       tacklingProjects.find((t: any) => {
         if (!t) return false;
+        if (t.problem_statement_id && t.problem_statement_id !== id) return false;
         const isOwner = t.owner_id === user.id || t.owner?.user_id === user.id || t.leader_id === user.id;
         if (isOwner) return true;
         if (Array.isArray(t.members) && t.members.some((m: any) => m && (m.user_id === user.id || m.id === user.id))) {
@@ -379,20 +385,41 @@ export default function ProblemStatementDetailPage() {
         return false;
       }) || null
     );
-  }, [user, tacklingProjects]);
+  }, [user, tacklingProjects, id]);
+
+  const effectiveUserTeam = activeUserTeam || userTeam;
 
   const handleOpenApplyAnswer = () => {
     if (!user) {
       openAuthModal();
       return;
     }
-    if (!userTeam) {
-      setActionError('You must first form or join a student squad for this problem statement before applying an answer.');
+    if (!effectiveUserTeam) {
+      setPendingApplyAfterTeam(true);
+      setActionSuccess('Step 1 of 2: Please first form or register your student team for this challenge.');
       setIsTeamModalOpen(true);
       return;
     }
     setIsSolutionModalOpen(true);
   };
+
+  // Handle direct ?apply=true URL trigger
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user && !isLoading && !isLoadingSolutions) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('apply') === 'true' && !hasApplied) {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+
+        if (!effectiveUserTeam) {
+          setPendingApplyAfterTeam(true);
+          setIsTeamModalOpen(true);
+        } else {
+          setIsSolutionModalOpen(true);
+        }
+      }
+    }
+  }, [user, isLoading, isLoadingSolutions, hasApplied, effectiveUserTeam]);
 
   // Student Privacy / Answer Isolation:
   // Faculty author sees all submissions; students ONLY see their own team's submission
@@ -542,6 +569,12 @@ export default function ProblemStatementDetailPage() {
       setWinnerRemarks(sol.mentor_feedback);
     }
     setActionSuccess(`Loaded deliverables from team "${sol.team_name}". Review details below and click Save Winner or Tap Live!`);
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById('faculty-results-section');
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    }
   };
 
   if (isLoading) {
@@ -882,7 +915,7 @@ export default function ProblemStatementDetailPage() {
                   Applied
                 </Button>
               </div>
-            ) : !userTeam ? (
+            ) : !effectiveUserTeam ? (
               <div className="space-y-3">
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-amber-300">
@@ -901,7 +934,10 @@ export default function ProblemStatementDetailPage() {
                   leftIcon={<Users className="w-4 h-4" />}
                   onClick={() => {
                     if (!user) openAuthModal();
-                    else setIsTeamModalOpen(true);
+                    else {
+                      setPendingApplyAfterTeam(true);
+                      setIsTeamModalOpen(true);
+                    }
                   }}
                 >
                   Form / Join Student Team
@@ -910,7 +946,7 @@ export default function ProblemStatementDetailPage() {
             ) : (
               <div className="space-y-2.5">
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300">
-                  <span className="truncate max-w-[170px]">Squad: <strong className="text-white">{userTeam.title}</strong></span>
+                  <span className="truncate max-w-[170px]">Squad: <strong className="text-white">{effectiveUserTeam.title}</strong></span>
                   <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-mono text-emerald-300 border border-emerald-500/30 font-bold">Verified</span>
                 </div>
 
@@ -1308,7 +1344,7 @@ export default function ProblemStatementDetailPage() {
                   {solutions.map((sol) => (
                     <div
                       key={sol.id}
-                      className="p-6 rounded-2xl border border-charcoal-750 bg-charcoal-900/70 hover:border-charcoal-600 transition-all space-y-4 shadow-sm"
+                      className="p-5 sm:p-6 rounded-2xl border border-charcoal-750 bg-charcoal-900/70 hover:border-charcoal-600 transition-all space-y-3.5 shadow-sm"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -1329,8 +1365,18 @@ export default function ProblemStatementDetailPage() {
                           </p>
                         </div>
 
-                        {/* Links and Faculty Crown action */}
+                        {/* Action buttons */}
                         <div className="flex items-center gap-2 flex-wrap">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                            leftIcon={<FileText className="w-3.5 h-3.5 text-white" />}
+                            onClick={() => setSelectedSolutionForView(sol)}
+                          >
+                            View Full Detailed Solution
+                          </Button>
+
                           {sol.repo_url && (
                             <a
                               href={safeExternalUrl(sol.repo_url)}
@@ -1378,9 +1424,18 @@ export default function ProblemStatementDetailPage() {
                         </div>
                       </div>
 
-                      {/* Solution Writeup */}
-                      <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-slate-100 leading-relaxed whitespace-pre-wrap font-mono">
-                        {sol.solution_writeup || 'No write-up provided.'}
+                      {/* Solution Preview Snippet */}
+                      <div className="p-3.5 rounded-xl bg-charcoal-850/90 border border-charcoal-750 text-xs text-slate-200 leading-relaxed">
+                        <p className="line-clamp-2 font-mono whitespace-pre-wrap text-slate-300">
+                          {sol.solution_writeup || 'No write-up provided.'}
+                        </p>
+                        <button
+                          onClick={() => setSelectedSolutionForView(sol)}
+                          className="mt-2 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 transition-colors"
+                        >
+                          <span>Open full solution write-up &amp; architecture</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
                       </div>
 
                       {/* Mentor Feedback (if present) */}
@@ -1404,7 +1459,7 @@ export default function ProblemStatementDetailPage() {
                   {visibleSolutions.map((sol) => (
                     <div
                       key={sol.id}
-                      className="p-6 rounded-2xl border border-emerald-500/40 bg-charcoal-900/80 shadow-md space-y-4"
+                      className="p-5 sm:p-6 rounded-2xl border border-emerald-500/40 bg-charcoal-900/80 shadow-md space-y-3.5"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -1425,6 +1480,15 @@ export default function ProblemStatementDetailPage() {
 
                         {/* Action Links */}
                         <div className="flex items-center gap-2 flex-wrap">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                            leftIcon={<FileText className="w-3.5 h-3.5 text-white" />}
+                            onClick={() => setSelectedSolutionForView(sol)}
+                          >
+                            View Full Detailed Solution
+                          </Button>
                           {sol.repo_url && (
                             <a
                               href={safeExternalUrl(sol.repo_url)}
@@ -1461,9 +1525,18 @@ export default function ProblemStatementDetailPage() {
                         </div>
                       </div>
 
-                      {/* Solution Writeup */}
-                      <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 text-xs text-slate-100 leading-relaxed whitespace-pre-wrap font-mono">
-                        {sol.solution_writeup || 'No write-up provided.'}
+                      {/* Solution Preview Snippet */}
+                      <div className="p-3.5 rounded-xl bg-charcoal-850/90 border border-charcoal-750 text-xs text-slate-200 leading-relaxed">
+                        <p className="line-clamp-2 font-mono whitespace-pre-wrap text-slate-300">
+                          {sol.solution_writeup || 'No write-up provided.'}
+                        </p>
+                        <button
+                          onClick={() => setSelectedSolutionForView(sol)}
+                          className="mt-2 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 transition-colors"
+                        >
+                          <span>Open full solution write-up &amp; architecture</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
                       </div>
 
                       {/* Mentor Feedback (if present) */}
@@ -1656,16 +1729,33 @@ export default function ProblemStatementDetailPage() {
       {/* Form a Student Team Modal (Inside the Problem) */}
       <ProblemTeamModal
         isOpen={isTeamModalOpen}
-        onClose={() => setIsTeamModalOpen(false)}
+        onClose={() => {
+          setIsTeamModalOpen(false);
+          setPendingApplyAfterTeam(false);
+        }}
         problemId={problem.id}
         problemTitle={problem.title}
         problemCategory={problem.category}
         problemDifficulty={problem.difficulty}
         requiredSkills={problem.required_skills}
         expectedTeamSize={problem.team_size || (problem.min_team_size && problem.max_team_size ? `${problem.min_team_size} – ${problem.max_team_size} Students` : '1 – 2 Students')}
+        isApplyingAnswerFlow={pendingApplyAfterTeam}
+        onContinueToApplyAnswer={(createdTeam) => {
+          setActiveUserTeam(createdTeam);
+          setTacklingProjects((prev) => [createdTeam, ...prev]);
+          setIsTeamModalOpen(false);
+          setPendingApplyAfterTeam(false);
+          setIsSolutionModalOpen(true);
+        }}
         onSuccess={(createdTeam) => {
+          setActiveUserTeam(createdTeam);
           setTacklingProjects((prev) => [createdTeam, ...prev]);
           setActionSuccess(`Team "${createdTeam.title}" formed for this challenge!`);
+          if (pendingApplyAfterTeam) {
+            setIsTeamModalOpen(false);
+            setPendingApplyAfterTeam(false);
+            setIsSolutionModalOpen(true);
+          }
         }}
       />
 
@@ -1676,12 +1766,28 @@ export default function ProblemStatementDetailPage() {
         problemId={problem.id}
         problemTitle={problem.title}
         myProjects={myProjects}
-        userTeam={userTeam}
-        onOpenTeamModal={() => setIsTeamModalOpen(true)}
+        userTeam={effectiveUserTeam}
+        onOpenTeamModal={() => {
+          setIsSolutionModalOpen(false);
+          setPendingApplyAfterTeam(true);
+          setIsTeamModalOpen(true);
+        }}
         onSuccess={() => {
           setHasApplied(true);
           loadSolutions();
           setActionSuccess('Deliverables submitted! Your team has applied the answer.');
+        }}
+      />
+
+      {/* Detailed Solution Inspection Modal */}
+      <ProblemSolutionDetailModal
+        isOpen={Boolean(selectedSolutionForView)}
+        onClose={() => setSelectedSolutionForView(null)}
+        solution={selectedSolutionForView}
+        problemTitle={problem.title}
+        isAuthor={isAuthor}
+        onCrownWinner={(sol) => {
+          handleSelectSolutionAsWinner(sol);
         }}
       />
     </div>
