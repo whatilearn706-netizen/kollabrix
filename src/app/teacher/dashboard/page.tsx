@@ -52,6 +52,7 @@ import {
   Eye,
   Terminal,
   ShieldAlert,
+  Trash2,
 } from 'lucide-react';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
@@ -109,6 +110,7 @@ function TeacherDashboardContent() {
   const [isCreateIcpcOpen, setIsCreateIcpcOpen] = useState(false);
   const [securityModalHackathon, setSecurityModalHackathon] = useState<Hackathon | null>(null);
   const [copiedJoinCode, setCopiedJoinCode] = useState<string | null>(null);
+  const [deletingContestId, setDeletingContestId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
@@ -469,22 +471,47 @@ function TeacherDashboardContent() {
         console.warn('Problem solutions load notice:', err);
       }
 
-      // 7. Fetch ICPC Contests authored by this teacher
+      // 7. Fetch ICPC Contests authored strictly by this teacher (personal faculty desk)
       try {
-        const icpcRes = await fetch(`/api/icpc?_t=${Date.now()}`);
+        const url = user?.id
+          ? `/api/icpc?author_id=${user.id}&_t=${Date.now()}`
+          : `/api/icpc?_t=${Date.now()}`;
+        const icpcRes = await fetch(url);
         const icpcData = await icpcRes.json();
         if (icpcRes.ok && icpcData.success && Array.isArray(icpcData.contests)) {
-          setMyIcpcContests(icpcData.contests);
+          // Strictly filter for contests authored by THIS faculty member
+          const myContests = icpcData.contests.filter((c: any) => {
+            if (!user?.id) return false;
+            // Exclude platform default/curated practice questions
+            const isCuratedDefault =
+              c.id === 'icpc-regional-collegiate-2026' ||
+              c.id === 'icpc-amazon-sde-oa-sim' ||
+              c.id === 'icpc-tcs-codevita-qualifier' ||
+              (!c.creatorId && !c.authorId);
+            if (isCuratedDefault) return false;
+
+            const matchesId = c.creatorId === user.id || c.authorId === user.id;
+            const matchesOrganizer =
+              c.organizer &&
+              ((profile?.display_name && c.organizer.toLowerCase().trim() === profile.display_name.toLowerCase().trim()) ||
+               (profile?.username && c.organizer.toLowerCase().trim() === profile.username.toLowerCase().trim()));
+
+            return Boolean(matchesId || matchesOrganizer);
+          });
+          setMyIcpcContests(myContests);
+        } else {
+          setMyIcpcContests([]);
         }
       } catch (err) {
         console.warn('ICPC contests load notice:', err);
+        setMyIcpcContests([]);
       }
     } catch {
       // Graceful fallback
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     loadDashboardData();
@@ -647,6 +674,36 @@ function TeacherDashboardContent() {
       );
     } catch (err) {
       console.warn('Error reviewing problem applicant:', err);
+    }
+  };
+
+  const handleDeleteContest = async (contestId: string, contestTitle: string) => {
+    if (!confirm(`Are you sure you want to remove the contest "${contestTitle}" from your faculty desk?`)) return;
+    setDeletingContestId(contestId);
+    try {
+      let token: string | null = null;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        token = sessionData?.session?.access_token || null;
+      } catch {}
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/icpc?contestId=${contestId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMyIcpcContests((prev) => prev.filter((c) => c.id !== contestId));
+      } else {
+        alert(data.error || 'Failed to remove contest.');
+      }
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error removing contest.');
+    } finally {
+      setDeletingContestId(null);
     }
   };
 
@@ -1618,10 +1675,21 @@ function TeacherDashboardContent() {
                       }`}>
                         {contest.status === 'live' ? '🟢 Live' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Past'}
                       </span>
-                      <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{contest.participantCount} students</span>
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{contest.participantCount} students</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteContest(contest.id, contest.title)}
+                          disabled={deletingContestId === contest.id}
+                          className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                          title="Remove contest from desk"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <h4 className="text-sm font-bold text-white line-clamp-1">{contest.title}</h4>
