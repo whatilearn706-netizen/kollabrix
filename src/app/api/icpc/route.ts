@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const includeEmpty = url.searchParams.get('includeEmpty') === 'true';
+    const authorId = url.searchParams.get('author_id') || url.searchParams.get('creator_id');
 
     let dbContests: IcpcContest[] = [];
     let isArenaLive = memoryIsArenaLive;
@@ -114,8 +115,10 @@ export async function GET(request: NextRequest) {
       });
     } catch (e) {}
 
-    // Merge: custom teacher contests first, followed by curated contests
-    const rawContests = [...dbContests, ...memoryContests, ...CURATED_ICPC_CONTESTS];
+    // If querying for a specific faculty member's contests, do NOT include default curated practice questions
+    const rawContests = authorId
+      ? [...dbContests, ...memoryContests]
+      : [...dbContests, ...memoryContests, ...CURATED_ICPC_CONTESTS];
     
     // Deduplicate and filter out deleted contests and problems
     const seen = new Set<string>();
@@ -123,6 +126,13 @@ export async function GET(request: NextRequest) {
 
     for (const c of rawContests) {
       if (!c || !c.id || seen.has(c.id) || deletedContestIds.has(c.id)) continue;
+
+      // When scoped to an author (Faculty Desk), only return contests authored by that teacher
+      if (authorId) {
+        const matchesAuthor = c.creatorId === authorId || c.authorId === authorId;
+        if (!matchesAuthor) continue;
+      }
+
       seen.add(c.id);
 
       // Filter out deleted problems
@@ -214,6 +224,7 @@ export async function POST(request: NextRequest) {
     const auth = await verifyAdminSession(request);
     let isAuthorized = auth.authorized;
 
+    let authenticatedUserId: string | null = null;
     if (!isAuthorized) {
       const authHeader = request.headers.get('authorization') || '';
       let token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
@@ -251,6 +262,7 @@ export async function POST(request: NextRequest) {
           try {
             const { data: userData } = await client.auth.getUser(token);
             if (userData?.user) {
+              authenticatedUserId = userData.user.id;
               const { data: prof } = await client
                 .from('profiles')
                 .select('role, faculty_verified')
@@ -322,6 +334,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const finalCreatorId = creatorId || authenticatedUserId || undefined;
+
     const newContest: IcpcContest = {
       id: `icpc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
@@ -329,6 +343,8 @@ export async function POST(request: NextRequest) {
       organizer: body.organizer || 'Verified Faculty Member',
       organizerRole: body.organizerRole || 'Faculty Mentor & Contest Director',
       college: college || 'Partner Collegiate Network',
+      authorId: finalCreatorId,
+      creatorId: finalCreatorId,
       contestType: isPractice ? 'practice' : 'contest',
       category: body.category || (body.companyTag ? 'placement' : visibility === 'passcode' ? 'faculty' : 'icpc'),
       companyTag: body.companyTag || undefined,
@@ -393,13 +409,75 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: Remove a problem, remove a contest, clear all, or reset defaults (Admin Only)
+// DELETE: Remove a problem, remove a contest, clear all, or reset defaults (Faculty & Admin)
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await verifyAdminSession(request);
-    if (!auth.authorized) {
+    let isAuthorized = auth.authorized;
+    let requesterUserId: string | null = null;
+
+    if (!isAuthorized) {
+      const authHeader = request.headers.get('authorization') || '';
+      let token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
+
+      if (!token) {
+        try {
+          const cookies = request.cookies.getAll();
+          for (const c of cookies) {
+            if (c.name.includes('-auth-token') || c.name.startsWith('sb-')) {
+              try {
+                const raw = decodeURIComponent(c.value);
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed[0]) {
+                  token = parsed[0];
+                  break;
+                } else if (parsed && parsed.access_token) {
+                  token = parsed.access_token;
+                  break;
+                }
+              } catch {
+                if (c.value && c.value.length > 40) {
+                  token = c.value;
+                  break;
+                }
+              }
+            }
+          }
+        } catch {}
+      }
+
+      if (token && isSupabaseConfigured()) {
+        const client = getSupabaseClient();
+        if (client) {
+          try {
+            const { data: userData } = await client.auth.getUser(token);
+            if (userData?.user) {
+              requesterUserId = userData.user.id;
+              const { data: prof } = await client
+                .from('profiles')
+                .select('role, faculty_verified')
+                .eq('user_id', userData.user.id)
+                .maybeSingle();
+
+              if (
+                prof?.role === 'teacher' ||
+                prof?.role === 'admin' ||
+                prof?.role === 'faculty' ||
+                prof?.role === 'professor' ||
+                prof?.faculty_verified === true ||
+                userData.user.email?.toLowerCase().includes('kollabrix')
+              ) {
+                isAuthorized = true;
+              }
+            }
+          } catch {}
+        }
+      }
+    }
+
+    if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden: Only administrators can delete ICPC contests or problems.' },
+        { success: false, error: 'Forbidden: Only verified faculty mentors or administrators can delete ICPC contests or problems.' },
         { status: 403 }
       );
     }
