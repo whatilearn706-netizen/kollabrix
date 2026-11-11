@@ -267,11 +267,6 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
       return;
     }
 
-    if (!problemStatementId && problemStatements.length > 0) {
-      setError('Please select the college problem statement or challenge that your team is tackling.');
-      return;
-    }
-
     if (desiredTeamSize < currentTeamSize) {
       setError('Desired team size cannot be smaller than current team size.');
       return;
@@ -759,14 +754,15 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
         {/* Problem Statement Selection */}
         <div className="pt-2 border-t border-slate-100">
-          <label className="block text-sm font-bold text-slate-700 mb-1.5">
-            College Problem Statement / Challenge Tackled
+          <label className="block text-sm font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+            <span>College Problem Statement / Challenge Tackled</span>
+            <span className="text-xs font-normal text-slate-400">Optional</span>
           </label>
           <Select
             value={problemStatementId}
             onChange={(e) => setProblemStatementId(e.target.value)}
             options={[
-              { value: '', label: '-- Select a Problem Statement Challenge --' },
+              { value: '', label: '-- None (Independent Student Project / Open Innovation) --' },
               ...problemStatements.map((ps) => ({
                 value: ps.id,
                 label: `[${ps.category}] ${ps.title}`,
@@ -774,7 +770,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
             ]}
           />
           <p className="text-xs text-slate-500 mt-1">
-            Linking your team project to a faculty challenge statement allows the supervising mentor to evaluate deliverables, review progress, and commend your team.
+            Optional: Linking your team project to a faculty challenge statement allows supervising mentors to evaluate deliverables and review progress.
           </p>
         </div>
       </div>
