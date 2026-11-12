@@ -41,9 +41,32 @@ export async function POST(request: NextRequest) {
     });
 
     let isSuspended = false;
+    let isDeleted = false;
     let reason = 'Your account has been suspended by administration. Access has been revoked.';
 
+    // 0. Check deleted_user_ids tombstone registry (instant detection if admin deleted this user)
+    try {
+      const { data: delSetting } = await adminClient
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'deleted_user_ids')
+        .maybeSingle();
+
+      if (Array.isArray(delSetting?.value) && delSetting.value.includes(userId)) {
+        return NextResponse.json(
+          {
+            success: true,
+            isSuspended: false,
+            isDeleted: true,
+            reason: 'Your account was deleted by platform administration. All local sessions have been reset.',
+          },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+    } catch (e) {}
+
     // 1. Check profiles table with admin privileges
+    let profileFound = false;
     try {
       const { data: prof } = await adminClient
         .from('profiles')
@@ -51,11 +74,32 @@ export async function POST(request: NextRequest) {
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (prof && (prof.is_suspended === true || prof.status === 'suspended')) {
-        isSuspended = true;
-        if (prof.suspension_reason) reason = prof.suspension_reason;
+      if (prof) {
+        profileFound = true;
+        if (prof.is_suspended === true || prof.status === 'suspended') {
+          isSuspended = true;
+          if (prof.suspension_reason) reason = prof.suspension_reason;
+        }
       }
     } catch (e) {}
+
+    // 1b. If profile does not exist in DB, verify if auth.users was also deleted
+    if (!profileFound && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { data: authUser, error: authUserErr } = await adminClient.auth.admin.getUserById(userId);
+        if (authUserErr || !authUser?.user) {
+          return NextResponse.json(
+            {
+              success: true,
+              isSuspended: false,
+              isDeleted: true,
+              reason: 'Your account was deleted by platform administration.',
+            },
+            { headers: NO_CACHE_HEADERS }
+          );
+        }
+      } catch (e) {}
+    }
 
     // 2. Check platform_settings suspended list
     if (!isSuspended) {
@@ -95,6 +139,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         isSuspended,
+        isDeleted: false,
         reason: isSuspended ? reason : null,
       },
       { headers: NO_CACHE_HEADERS }

@@ -317,6 +317,28 @@ export async function POST(request: NextRequest) {
         console.warn('Auth deletion notice:', authDelErr);
       }
 
+      // 4b. Record in deleted_user_ids tombstone registry to instantly invalidate active sessions
+      try {
+        const { data: delSetting } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'deleted_user_ids')
+          .maybeSingle();
+
+        const currentDeletedList: string[] = Array.isArray(delSetting?.value) ? delSetting.value : [];
+        if (!currentDeletedList.includes(targetUserId)) {
+          const updatedDeletedList = [...currentDeletedList, targetUserId];
+          await client
+            .from('platform_settings')
+            .upsert(
+              { key: 'deleted_user_ids', value: updatedDeletedList, updated_at: new Date().toISOString() },
+              { onConflict: 'key' }
+            );
+        }
+      } catch (delRegErr) {
+        console.warn('Deleted user registry update notice:', delRegErr);
+      }
+
       // 5. Clean up from platform_settings registry
       try {
         const { data: pData } = await client

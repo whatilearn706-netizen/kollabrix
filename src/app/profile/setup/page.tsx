@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ProtectedPageGuard } from '@/components/auth/ProtectedPageGuard';
 import { MandatoryOnboardingModal } from '@/components/profile/MandatoryOnboardingModal';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { isProfileComplete } from '@/lib/auth/profileStatus';
 import { Sparkles } from 'lucide-react';
 
 export default function ProfileSetupPage() {
@@ -14,15 +15,7 @@ export default function ProfileSetupPage() {
   useEffect(() => {
     if (isLoading || !user) return;
 
-    const isDone = Boolean(
-      (typeof window !== 'undefined' && (
-        localStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true' ||
-        localStorage.getItem(`kollabrix_profile_created_${user.id}`) === 'true'
-      )) ||
-      profile?.username ||
-      profile?.college ||
-      (profile?.skills && profile.skills.length > 0)
-    );
+    const isDone = isProfileComplete(profile, user);
 
     if (isDone) {
       router.replace('/explore');

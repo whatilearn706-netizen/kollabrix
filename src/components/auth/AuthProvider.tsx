@@ -5,6 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { Profile } from '@/types/database';
+import { isProfileComplete } from '@/lib/auth/profileStatus';
 import { AlertTriangle } from 'lucide-react';
 
 interface AuthContextType {
@@ -216,12 +217,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const performForcedSignOut = useCallback(async (reason?: string) => {
-    const notice = reason || 'Your account has been suspended. Access has been revoked.';
-    setSuspendedNotice(notice);
+  const performForcedSignOut = useCallback(async (reason?: string, isDeleted = false) => {
+    const notice = reason || (isDeleted ? 'Your account has been deleted by an administrator.' : 'Your account has been suspended. Access has been revoked.');
+    if (!isDeleted) {
+      setSuspendedNotice(notice);
+    }
     if (typeof window !== 'undefined') {
       try {
-        sessionStorage.setItem('linkora_suspended_notice', notice);
+        if (!isDeleted) {
+          sessionStorage.setItem('linkora_suspended_notice', notice);
+        }
         localStorage.setItem('linkora_explicit_signout', 'true');
         sessionStorage.setItem('linkora_signing_out', 'true');
         localStorage.removeItem('linkora_auth_user');
@@ -229,6 +234,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('linkora_auth_user_email');
         localStorage.removeItem('linkora_auth_session');
         localStorage.removeItem('linkora_auth_profile');
+
+        // Clear all user onboarding & profile completion flags so everything resets completely
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach((k) => {
+          if (k.startsWith('kollabrix_onboarding_') || k.startsWith('kollabrix_profile_')) {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.removeItem('kollabrix_tab_active_session');
+
         const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         document.cookie = 'linkora_user_session=' + expCookie;
         document.cookie = 'linkora_user_email=' + expCookie;
@@ -243,6 +258,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (isSupabaseConfigured()) {
       await supabase.auth.signOut().catch(() => {});
+    }
+
+    if (isDeleted && typeof window !== 'undefined') {
+      window.location.replace('/login');
     }
   }, []);
 
@@ -270,9 +289,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(data as Profile);
         try {
           localStorage.setItem('linkora_auth_profile', JSON.stringify(data));
+          if (isProfileComplete(data as Profile, currentUser)) {
+            localStorage.setItem(`kollabrix_onboarding_done_${userId}`, 'true');
+            localStorage.setItem(`kollabrix_profile_created_${userId}`, 'true');
+          } else {
+            localStorage.removeItem(`kollabrix_onboarding_done_${userId}`);
+            localStorage.removeItem(`kollabrix_profile_created_${userId}`);
+          }
         } catch (e) {}
         return data as Profile;
       }
+
+      // If profile record does not exist yet, check if this user was deleted by administration
+      try {
+        const res = await fetch('/api/auth/check-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const statusData = await res.json();
+          if (statusData.isDeleted) {
+            await performForcedSignOut(statusData.reason || 'This account was removed by platform administration.', true);
+            return null;
+          }
+        }
+      } catch (e) {}
 
       // If profile record does not exist yet (e.g. trigger didn't run), create initial record
       if (currentUser) {
@@ -303,7 +346,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           display_name: initialDisplayName,
           avatar_url: initialAvatar,
           role: 'student',
-          bio: 'College builder excited to collaborate on Kollabrix projects.',
+          bio: '',
+          college: null,
+          course: null,
+          academic_year: null,
           skills: [],
           interests: [],
           preferred_roles: [],
@@ -319,6 +365,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(created as Profile);
           try {
             localStorage.setItem('linkora_auth_profile', JSON.stringify(created));
+            // Ensure onboarding is required for new users
+            localStorage.removeItem(`kollabrix_onboarding_done_${userId}`);
+            localStorage.removeItem(`kollabrix_profile_created_${userId}`);
           } catch (e) {}
           return created as Profile;
         }
@@ -379,8 +428,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             persistSessionData(currentSession.user, currentSession, p);
             if (typeof window !== 'undefined') {
               sessionStorage.setItem('kollabrix_tab_active_session', 'true');
-              localStorage.setItem(`kollabrix_onboarding_done_${currentSession.user.id}`, 'true');
-              localStorage.setItem(`kollabrix_profile_created_${currentSession.user.id}`, 'true');
+              if (isProfileComplete(p, currentSession.user)) {
+                localStorage.setItem(`kollabrix_onboarding_done_${currentSession.user.id}`, 'true');
+                localStorage.setItem(`kollabrix_profile_created_${currentSession.user.id}`, 'true');
+              } else {
+                localStorage.removeItem(`kollabrix_onboarding_done_${currentSession.user.id}`);
+                localStorage.removeItem(`kollabrix_profile_created_${currentSession.user.id}`);
+              }
             }
           }
         }).finally(() => {
@@ -401,8 +455,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setProfile(parsedProfile);
               if (typeof window !== 'undefined') {
                 sessionStorage.setItem('kollabrix_tab_active_session', 'true');
-                localStorage.setItem(`kollabrix_onboarding_done_${parsedUser.id}`, 'true');
-                localStorage.setItem(`kollabrix_profile_created_${parsedUser.id}`, 'true');
+                if (isProfileComplete(parsedProfile, parsedUser)) {
+                  localStorage.setItem(`kollabrix_onboarding_done_${parsedUser.id}`, 'true');
+                  localStorage.setItem(`kollabrix_profile_created_${parsedUser.id}`, 'true');
+                } else {
+                  localStorage.removeItem(`kollabrix_onboarding_done_${parsedUser.id}`);
+                  localStorage.removeItem(`kollabrix_profile_created_${parsedUser.id}`);
+                }
               }
             }
 
@@ -423,8 +482,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         persistSessionData(data.session!.user, data.session, p);
                         if (typeof window !== 'undefined') {
                           sessionStorage.setItem('kollabrix_tab_active_session', 'true');
-                          localStorage.setItem(`kollabrix_onboarding_done_${data.session!.user.id}`, 'true');
-                          localStorage.setItem(`kollabrix_profile_created_${data.session!.user.id}`, 'true');
+                          if (isProfileComplete(p, data.session!.user)) {
+                            localStorage.setItem(`kollabrix_onboarding_done_${data.session!.user.id}`, 'true');
+                            localStorage.setItem(`kollabrix_profile_created_${data.session!.user.id}`, 'true');
+                          } else {
+                            localStorage.removeItem(`kollabrix_onboarding_done_${data.session!.user.id}`);
+                            localStorage.removeItem(`kollabrix_profile_created_${data.session!.user.id}`);
+                          }
                         }
                       }
                     });
@@ -592,6 +656,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           if (res.ok) {
             const data = await res.json();
+            if (data.isDeleted) {
+              await performForcedSignOut(data.reason || 'This account was deleted by platform administration.', true);
+              return;
+            }
             if (data.isSuspended) {
               await performForcedSignOut(data.reason || 'This account has been suspended.');
               return;
@@ -612,20 +680,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
     };
 
-    // Throttled suspension check every 15 minutes or tab focus (avoids consuming concurrent Supabase Realtime sockets)
-    const suspensionInterval = setInterval(checkSuspensionRealtime, 900000);
+    // Account status check every 30 seconds or tab focus to immediately catch deletions or suspensions
+    const suspensionInterval = setInterval(checkSuspensionRealtime, 30000);
+    const handleStatusSync = () => {
+      syncAcrossTabs();
+      checkSuspensionRealtime();
+    };
 
     window.addEventListener('storage', syncAcrossTabs);
-    window.addEventListener('focus', syncAcrossTabs);
-    window.addEventListener('visibilitychange', syncAcrossTabs);
+    window.addEventListener('focus', handleStatusSync);
+    window.addEventListener('visibilitychange', handleStatusSync);
     window.addEventListener('linkora_auth_updated', syncAcrossTabs);
 
     return () => {
       subscription.unsubscribe();
       clearInterval(suspensionInterval);
       window.removeEventListener('storage', syncAcrossTabs);
-      window.removeEventListener('focus', syncAcrossTabs);
-      window.removeEventListener('visibilitychange', syncAcrossTabs);
+      window.removeEventListener('focus', handleStatusSync);
+      window.removeEventListener('visibilitychange', handleStatusSync);
       window.removeEventListener('linkora_auth_updated', syncAcrossTabs);
     };
   }, [fetchProfile, performForcedSignOut, user?.id, user?.email]);
