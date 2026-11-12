@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
 import { SquadShareModal } from '@/components/projects/SquadShareModal';
 import { ProjectCertificateModal } from '@/components/workspace/ProjectCertificateModal';
+import { stripHackathonMeta } from '@/lib/workspaces/workspaceOrigin';
 import {
   Users,
   ShieldCheck,
@@ -266,7 +267,7 @@ export default function WorkspaceOverviewPage() {
           </div>
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-            {project.description}
+            {stripHackathonMeta(project.description)}
           </p>
 
           <div className="pt-3 border-t border-charcoal-800 flex flex-wrap items-center gap-6 text-xs text-slate-400">

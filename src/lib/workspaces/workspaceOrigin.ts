@@ -40,6 +40,18 @@ export function extractHackathonMeta(description?: string | null): HackathonTeam
 }
 
 /**
+ * Strips internal embedded comments (e.g. <!-- HACKATHON_TEAM_META:... -->)
+ * so descriptions render cleanly in workspace, project pages, and modals without leaking raw HTML comments.
+ */
+export function stripHackathonMeta(description?: string | null): string {
+  if (!description) return '';
+  return description
+    .replace(/<!--\s*HACKATHON_TEAM_META:[\s\S]*?-->/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .trim();
+}
+
+/**
  * Extracts faculty problem statement title from formatted project descriptions.
  */
 export function extractFacultyProblemTitle(description?: string | null): string | null {

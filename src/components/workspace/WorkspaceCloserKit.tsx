@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Project, ProjectMember } from '@/types/database';
 import { Button } from '@/components/ui/Button';
+import { stripHackathonMeta } from '@/lib/workspaces/workspaceOrigin';
 import {
   Sparkles,
   FileCode,
@@ -60,7 +61,7 @@ export function WorkspaceCloserKit({ project, members, currentUserId }: Workspac
   const [readmePreviewMode, setReadmePreviewMode] = useState<'preview' | 'raw'>('preview');
   const [copiedReadme, setCopiedReadme] = useState(false);
   const [customTagline, setCustomTagline] = useState(
-    project.description || 'A next-generation collegiate engineering solution built on Kollabrix.'
+    stripHackathonMeta(project.description) || 'A next-generation collegiate engineering solution built on Kollabrix.'
   );
   const [installCommand, setInstallCommand] = useState('npm install && npm run dev');
   const [licenseType, setLicenseType] = useState('MIT License');
@@ -941,7 +942,7 @@ Distributed under the **${licenseType}**. Built with pride for collegiate hackat
                       <span>🚀 Overview</span>
                     </h2>
                     <p className="text-slate-300 leading-relaxed">
-                      {project.description ||
+                      {stripHackathonMeta(project.description) ||
                         'A high-performance engineering initiative built for collegiate hackathons and production impact.'}
                     </p>
                   </div>
