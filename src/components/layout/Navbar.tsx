@@ -315,24 +315,26 @@ export function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2.5">
-              {/* Configurable Brand CTA Button */}
-              <button
-                type="button"
-                onClick={handleStartProjectClick}
-                style={{
-                  borderRadius: theme.borderRadius,
-                  backgroundColor: isNavbarDark ? undefined : theme.brandColor,
-                }}
-                className={clsx(
-                  "inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
-                  isNavbarDark
-                    ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
-                    : "shadow-xs"
-                )}
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-white" />
-                <span>{theme.navbarCtaText || 'Start Project'}</span>
-              </button>
+              {/* Configurable Brand CTA Button (Students Only) */}
+              {!isFaculty && (
+                <button
+                  type="button"
+                  onClick={handleStartProjectClick}
+                  style={{
+                    borderRadius: theme.borderRadius,
+                    backgroundColor: isNavbarDark ? undefined : theme.brandColor,
+                  }}
+                  className={clsx(
+                    "inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
+                    isNavbarDark
+                      ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
+                      : "shadow-xs"
+                  )}
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-white" />
+                  <span>{theme.navbarCtaText || 'Start Project'}</span>
+                </button>
+              )}
 
               <NotificationBell />
 
@@ -702,21 +704,23 @@ export function Navbar() {
           <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
           {user ? (
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                handleStartProjectClick();
-              }}
-              style={{
-                backgroundColor: theme.brandColor,
-                borderRadius: theme.borderRadius,
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3 text-white font-bold text-sm shadow-md"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>{theme.navbarCtaText || 'Start a Project'}</span>
-            </button>
+            !isFaculty && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleStartProjectClick();
+                }}
+                style={{
+                  backgroundColor: theme.brandColor,
+                  borderRadius: theme.borderRadius,
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 text-white font-bold text-sm shadow-md"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>{theme.navbarCtaText || 'Start a Project'}</span>
+              </button>
+            )
           ) : (
             <div className="pt-1">
               <button

@@ -43,6 +43,7 @@ import {
   WorkspaceOriginInfo,
 } from '@/lib/workspaces/workspaceOrigin';
 import { WorkspaceCard, EnrichedWorkspaceItem } from '@/components/workspaces/WorkspaceCard';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 interface UserHackathonSprint {
   hackathon_id: string;
@@ -58,7 +59,8 @@ interface UserHackathonSprint {
 }
 
 function MyProjectsContent() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isFaculty = isFacultyUser(user, profile);
   const cachedWorkspace = user?.id ? getPageCache<any>(`linkora_user_workspace_${user.id}`) : null;
 
   const [allWorkspaces, setAllWorkspaces] = useState<EnrichedWorkspaceItem[]>(() => cachedWorkspace?.allWorkspaces || []);
@@ -836,11 +838,13 @@ function MyProjectsContent() {
           </p>
         </div>
 
-        <Link href="/projects/new">
-          <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
-            Start New Project
-          </Button>
-        </Link>
+        {!isFaculty && (
+          <Link href="/projects/new">
+            <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+              Start New Project
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Primary Category Tabs: Working Now vs Done (Results Announced) vs Registered vs Permanent */}
@@ -1303,11 +1307,13 @@ function MyProjectsContent() {
               </button>
             </div>
 
-            <Link href="/projects/new">
-              <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
-                Create New Project
-              </Button>
-            </Link>
+            {!isFaculty && (
+              <Link href="/projects/new">
+                <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                  Create New Project
+                </Button>
+              </Link>
+            )}
           </div>
 
           {filteredPermanentProjects.length === 0 ? (
@@ -1318,11 +1324,13 @@ function MyProjectsContent() {
                 Start your own project to assemble a long-term development team, or explore active projects looking for engineering talent.
               </p>
               <div className="pt-2 flex justify-center gap-3">
-                <Link href="/projects/new">
-                  <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
-                    Create a Project
-                  </Button>
-                </Link>
+                {!isFaculty && (
+                  <Link href="/projects/new">
+                    <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                      Create a Project
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/explore">
                   <Button variant="outline" size="sm">
                     Explore Projects
