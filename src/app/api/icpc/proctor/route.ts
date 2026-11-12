@@ -258,7 +258,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Telegram test message successfully sent! Check your Telegram app.' });
     }
 
-    // 1. Heartbeat from student client
+    // 1a. Contestant enters arena fresh or starts new attempt - resets any stale status
+    if (action === 'init_session') {
+      const {
+        studentId = 'anonymous',
+        studentName = 'Contestant',
+        studentEmail,
+        college,
+        contestId = 'icpc-arena',
+        contestTitle = 'ICPC Contest',
+      } = body;
+
+      const activeMap = await loadActiveSessions();
+      activeMap[studentId] = {
+        id: studentId,
+        studentId,
+        studentName,
+        studentEmail,
+        college,
+        contestId,
+        contestTitle,
+        problemTitle: '',
+        warningCount: 0,
+        status: 'active',
+        startedNotified: true,
+        lastHeartbeat: new Date().toISOString(),
+      };
+      await saveActiveSessions(activeMap);
+      return NextResponse.json({ success: true, status: 'active' });
+    }
+
+    // 1b. Heartbeat from student client
     if (action === 'heartbeat') {
       const {
         studentId = 'anonymous',
@@ -291,7 +321,22 @@ export async function POST(request: NextRequest) {
       };
 
       const cautionMessage = existing.cautionMessage;
-      const isDemolished = existing.status === 'demolished';
+      let isDemolished = false;
+
+      // Check if student was demolished by proctor in this active session
+      if (existing.status === 'demolished') {
+        const timeSinceHeartbeat = Date.now() - new Date(existing.lastHeartbeat).getTime();
+        const isSameContest = existing.contestId === contestId;
+        // Only enforce demolished if it is the SAME contest and was within the active session window (< 90s)
+        if (isSameContest && timeSinceHeartbeat < 90 * 1000) {
+          isDemolished = true;
+        } else {
+          // Stale demolished status or new contest - auto-heal to active
+          existing.status = 'active';
+          existing.warningCount = 0;
+          isDemolished = false;
+        }
+      }
 
       // Clear caution once read so it triggers modal once
       if (existing.cautionMessage) {
