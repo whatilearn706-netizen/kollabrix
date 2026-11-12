@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import { invalidatePageCache } from '@/lib/cache/pageDataCache';
+import { isProfileComplete as checkProfileComplete } from '@/lib/auth/profileStatus';
 import {
   Sparkles,
   ArrowRight,
@@ -107,33 +108,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       return;
     }
 
-    // Check if user has permanently completed or dismissed onboarding in persistent storage
-    const isPermanentlyDone = typeof window !== 'undefined' && (
-      localStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true' ||
-      localStorage.getItem(`kollabrix_profile_created_${user.id}`) === 'true' ||
-      sessionStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true' ||
-      user?.user_metadata?.onboarding_completed === true ||
-      user?.user_metadata?.profile_completed === true
-    );
+    // Check if user has genuinely completed profile setup (must have real college affiliation and technical skills)
+    const isCompleted = checkProfileComplete(profile, user);
 
-    if (isPermanentlyDone) {
-      setIsOpen(false);
-      return;
-    }
-
-    // Check if profile record already exists in database with identifying info
-    const hasExistingProfile = Boolean(
-      profile && (
-        (profile.username && profile.username.trim().length > 0) ||
-        (profile.display_name && profile.display_name.trim().length > 0) ||
-        (profile.college && profile.college.trim().length > 0) ||
-        (profile.skills && profile.skills.length > 0) ||
-        (profile.bio && profile.bio.trim().length > 0) ||
-        profile.created_at
-      )
-    );
-
-    if (hasExistingProfile) {
+    if (isCompleted) {
       if (typeof window !== 'undefined') {
         localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
         localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
@@ -142,7 +120,17 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       return;
     }
 
-    // Only brand new accounts without any profile ever see the initial onboarding
+    // Check if user temporarily snoozed onboarding in this active browser session
+    const isSnoozed = typeof window !== 'undefined' && (
+      sessionStorage.getItem(`kollabrix_onboarding_snoozed_${user.id}`) === 'true'
+    );
+
+    if (isSnoozed) {
+      setIsOpen(false);
+      return;
+    }
+
+    // First-time logins, brand new registrations, or reset accounts MUST fill their profile details!
     setIsOpen(true);
   }, [user, profile, isLoading, forceOpen, mode]);
 
@@ -197,14 +185,18 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
   const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
   const hasSkills = Boolean(profile?.skills && profile.skills.length > 0);
-  const isProfileComplete = hasCollege && hasSkills;
+  const hasCompletedProfile = checkProfileComplete(profile, user);
   const canClose = true;
 
   const handleDismiss = () => {
     if (user?.id && typeof window !== 'undefined') {
-      localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
-      localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
-      sessionStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+      if (checkProfileComplete(profile, user)) {
+        localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+        localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
+      } else {
+        // Incomplete profile: only snooze for this active session so they are prompted again on future visits
+        sessionStorage.setItem(`kollabrix_onboarding_snoozed_${user.id}`, 'true');
+      }
     }
     setIsOpen(false);
   };
