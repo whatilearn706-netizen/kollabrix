@@ -114,11 +114,20 @@ export async function POST(request: NextRequest) {
           status: 'In Progress',
         }, { onConflict: 'id' });
 
-        await admin.from('project_members').upsert({
-          project_id: newTeam.id,
-          user_id: leaderUserId,
-          role: 'Project Lead',
-        }, { onConflict: 'project_id,user_id' });
+        const { data: existingLead } = await admin
+          .from('project_members')
+          .select('id')
+          .eq('project_id', newTeam.id)
+          .eq('user_id', leaderUserId)
+          .maybeSingle();
+
+        if (!existingLead) {
+          await admin.from('project_members').insert({
+            project_id: newTeam.id,
+            user_id: leaderUserId,
+            role: 'Project Lead',
+          });
+        }
       } catch (seedErr) {
         // Non-blocking: Workspace layout self-heals as secondary safety net
       }

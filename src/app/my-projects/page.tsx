@@ -495,16 +495,69 @@ function MyProjectsContent() {
             team:hackathon_teams(
               id,
               team_name,
-              invite_code,
+              name,
+              leader_id,
+              created_at,
               hackathon:hackathons(*),
               members:hackathon_team_members(
                 user_id,
-                role,
-                profile:profiles(user_id, display_name, avatar_url)
+                role
               )
             )
           `)
           .eq('user_id', currentUserId);
+
+        // B. Check hackathon_teams where user is the leader
+        const { data: leaderTeams } = await supabase
+          .from('hackathon_teams')
+          .select(`
+            id,
+            team_name,
+            name,
+            leader_id,
+            created_at,
+            hackathon:hackathons(*),
+            members:hackathon_team_members(
+              user_id,
+              role
+            )
+          `)
+          .eq('leader_id', currentUserId);
+
+        // Batch fetch profile details for all team members
+        const allMemberUserIds = new Set<string>();
+        if (Array.isArray(memberTeams)) {
+          for (const item of memberTeams as any[]) {
+            for (const m of item.team?.members || []) {
+              if (m.user_id) allMemberUserIds.add(m.user_id);
+            }
+          }
+        }
+        if (Array.isArray(leaderTeams)) {
+          for (const t of leaderTeams as any[]) {
+            for (const m of t?.members || []) {
+              if (m.user_id) allMemberUserIds.add(m.user_id);
+            }
+          }
+        }
+
+        const memberProfilesMap = new Map<string, { display_name: string; avatar_url: string | null }>();
+        if (allMemberUserIds.size > 0) {
+          try {
+            const { data: profs } = await supabase
+              .from('profiles')
+              .select('user_id, display_name, avatar_url')
+              .in('user_id', Array.from(allMemberUserIds));
+            if (Array.isArray(profs)) {
+              for (const p of profs) {
+                memberProfilesMap.set(p.user_id, {
+                  display_name: p.display_name || 'Student',
+                  avatar_url: p.avatar_url || null,
+                });
+              }
+            }
+          } catch {}
+        }
 
         if (Array.isArray(memberTeams)) {
           for (const item of memberTeams) {
@@ -515,17 +568,19 @@ function MyProjectsContent() {
                 continue;
               }
               const resultsAnnounced = isHackathonResultsAnnounced(h);
+              const derivedInviteCode = t.invite_code || (t.id ? t.id.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
+              const tName = t.team_name || t.name || 'Hackathon Squad';
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
-                display_name: m.profile?.display_name || 'Student',
-                avatar_url: m.profile?.avatar_url || null,
+                display_name: memberProfilesMap.get(m.user_id)?.display_name || 'Student',
+                avatar_url: memberProfilesMap.get(m.user_id)?.avatar_url || null,
               }));
 
               hackathonSprintMap.set(h.id, {
                 hackathon_id: h.id,
                 team_id: t.id,
-                team_name: t.team_name,
-                invite_code: t.invite_code,
+                team_name: tName,
+                invite_code: derivedInviteCode,
                 role: item.role || 'Member',
                 hackathon: h,
                 team: t,
@@ -537,48 +592,32 @@ function MyProjectsContent() {
               // Also ensure squad is represented in workspaceMap
               if (!workspaceMap.has(t.id)) {
                 const origin = resolveWorkspaceOrigin(
-                  { id: t.id, title: t.team_name, hackathon_id: h.id, category: 'Hackathon Sprint' },
+                  { id: t.id, title: tName, hackathon_id: h.id, category: 'Hackathon Sprint' },
                   { hackathons: allHackathons, problemStatements: allProblems }
                 );
                 workspaceMap.set(t.id, {
                   id: t.id,
-                  title: t.team_name,
-                  summary: `Hackathon Team Sprint: ${h.title} — ${t.team_name}`,
+                  title: tName,
+                  summary: `Hackathon Team Sprint: ${h.title} — ${tName}`,
                   category: 'Other',
                   status: resultsAnnounced ? 'Completed' : 'In Progress',
-                  current_team_size: membersList.length,
+                  current_team_size: membersList.length || 2,
                   desired_team_size: h.max_team_size || 4,
                   created_at: t.created_at || new Date().toISOString(),
-                  isOwner: item.role === 'Leader',
+                  isOwner: item.role === 'Leader' || t.leader_id === currentUserId,
                   userRole: item.role || 'Contributor',
-                  invite_code: t.invite_code,
+                  invite_code: derivedInviteCode,
                   members: membersList,
                   origin,
                 });
               } else {
                 const cur = workspaceMap.get(t.id)!;
-                cur.invite_code = t.invite_code;
+                cur.invite_code = derivedInviteCode;
                 cur.members = membersList;
               }
             }
           }
         }
-
-        // B. Check hackathon_teams where user is the leader
-        const { data: leaderTeams } = await supabase
-          .from('hackathon_teams')
-          .select(`
-            id,
-            team_name,
-            invite_code,
-            hackathon:hackathons(*),
-            members:hackathon_team_members(
-              user_id,
-              role,
-              profile:profiles(user_id, display_name, avatar_url)
-            )
-          `)
-          .eq('leader_id', currentUserId);
 
         if (Array.isArray(leaderTeams)) {
           for (const t of leaderTeams as any[]) {
@@ -588,18 +627,20 @@ function MyProjectsContent() {
                 continue;
               }
               const resultsAnnounced = isHackathonResultsAnnounced(h);
+              const derivedInviteCode = t.invite_code || (t.id ? t.id.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
+              const tName = t.team_name || t.name || 'Hackathon Squad';
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
-                display_name: m.profile?.display_name || 'Student',
-                avatar_url: m.profile?.avatar_url || null,
+                display_name: memberProfilesMap.get(m.user_id)?.display_name || 'Student',
+                avatar_url: memberProfilesMap.get(m.user_id)?.avatar_url || null,
               }));
 
               if (!hackathonSprintMap.has(h.id)) {
                 hackathonSprintMap.set(h.id, {
                   hackathon_id: h.id,
                   team_id: t.id,
-                  team_name: t.team_name,
-                  invite_code: t.invite_code,
+                  team_name: tName,
+                  invite_code: derivedInviteCode,
                   role: 'Leader',
                   hackathon: h,
                   team: t,
@@ -611,13 +652,13 @@ function MyProjectsContent() {
 
               if (!workspaceMap.has(t.id)) {
                 const origin = resolveWorkspaceOrigin(
-                  { id: t.id, title: t.team_name, hackathon_id: h.id, category: 'Hackathon Sprint' },
+                  { id: t.id, title: tName, hackathon_id: h.id, category: 'Hackathon Sprint' },
                   { hackathons: allHackathons, problemStatements: allProblems }
                 );
                 workspaceMap.set(t.id, {
                   id: t.id,
-                  title: t.team_name,
-                  summary: `Hackathon Team Sprint: ${h.title} — ${t.team_name}`,
+                  title: tName,
+                  summary: `Hackathon Team Sprint: ${h.title} — ${tName}`,
                   category: 'Other',
                   status: resultsAnnounced ? 'Completed' : 'In Progress',
                   current_team_size: membersList.length || 1,
@@ -625,13 +666,13 @@ function MyProjectsContent() {
                   created_at: t.created_at || new Date().toISOString(),
                   isOwner: true,
                   userRole: 'Team Lead',
-                  invite_code: t.invite_code,
+                  invite_code: derivedInviteCode,
                   members: membersList,
                   origin,
                 });
               } else {
                 const cur = workspaceMap.get(t.id)!;
-                cur.invite_code = t.invite_code;
+                cur.invite_code = derivedInviteCode;
                 cur.members = membersList;
               }
             }
@@ -662,21 +703,22 @@ function MyProjectsContent() {
                 try {
                   const { data: tData } = await supabase
                     .from('hackathon_teams')
-                    .select('id, team_name, invite_code, leader_id')
+                    .select('id, team_name, name, leader_id')
                     .eq('id', p.team_id)
                     .maybeSingle();
                   if (tData) {
-                    actualTeamName = tData.team_name;
+                    actualTeamName = tData.team_name || tData.name || 'Hackathon Squad';
                     teamObj = tData;
                   }
                 } catch (e) {}
               }
               const closed = isHackathonResultsAnnounced(h);
+              const derivedInvite = p.team_id ? p.team_id.replace(/-/g, '').substring(0, 6).toUpperCase() : null;
               hackathonSprintMap.set(h.id, {
                 hackathon_id: h.id,
                 team_id: p.team_id || null,
                 team_name: actualTeamName,
-                invite_code: teamObj?.invite_code || null,
+                invite_code: derivedInvite,
                 role: p.role || (teamObj?.leader_id === currentUserId ? 'Leader' : 'Participant'),
                 hackathon: h,
                 team: teamObj,
@@ -684,6 +726,29 @@ function MyProjectsContent() {
                 isClosed: closed,
                 timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
               });
+
+              // Also ensure squad is represented in workspaceMap if user has a team
+              if (p.team_id && !workspaceMap.has(p.team_id)) {
+                const origin = resolveWorkspaceOrigin(
+                  { id: p.team_id, title: actualTeamName, hackathon_id: h.id, category: 'Hackathon Sprint' },
+                  { hackathons: allHackathons, problemStatements: allProblems }
+                );
+                workspaceMap.set(p.team_id, {
+                  id: p.team_id,
+                  title: actualTeamName,
+                  summary: `Hackathon Team Sprint: ${h.title} — ${actualTeamName}`,
+                  category: 'Other',
+                  status: closed ? 'Completed' : 'In Progress',
+                  current_team_size: 2,
+                  desired_team_size: h.max_team_size || 4,
+                  created_at: new Date().toISOString(),
+                  isOwner: teamObj?.leader_id === currentUserId,
+                  userRole: p.role || 'Contributor',
+                  invite_code: derivedInvite,
+                  members: [],
+                  origin,
+                });
+              }
             }
           }
         }
