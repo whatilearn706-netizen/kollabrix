@@ -39,6 +39,7 @@ import {
   ChevronLeft,
   Maximize2,
   Monitor,
+  Camera,
 } from 'lucide-react';
 import { IcpcContest, IcpcProblem, ContestSubmission, StudentIcpcProgress } from '@/types/icpc';
 import { IcpcProctorGuard, checkSuspiciousPaste } from '@/components/icpc/IcpcProctorGuard';
@@ -89,6 +90,10 @@ export default function IcpcCollegiateArenaPage() {
   const [leaderboardTab, setLeaderboardTab] = useState<'weekly' | 'all-time'>('weekly');
   const [passcodeModalContest, setPasscodeModalContest] = useState<IcpcContest | null>(null);
   const [upcomingLockedContest, setUpcomingLockedContest] = useState<IcpcContest | null>(null);
+  const [questionPreview, setQuestionPreview] = useState<{
+    contest: IcpcContest;
+    problem: IcpcProblem;
+  } | null>(null);
 
   function formatContestSchedule(iso?: string) {
     if (!iso) return 'Scheduled Soon';
@@ -315,6 +320,43 @@ export default function IcpcCollegiateArenaPage() {
     }
   };
 
+  const handleInitiateArena = (contest: IcpcContest, problem?: IcpcProblem) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    const isUpcoming =
+      contest.status === 'upcoming' ||
+      (contest.contestType !== 'practice' &&
+        contest.startTime &&
+        new Date() < new Date(contest.startTime));
+    if (isUpcoming) {
+      const uRole = (profile?.role || '').toLowerCase();
+      const isCreatorOrAdmin =
+        uRole === 'admin' ||
+        (user?.id && (contest.creatorId === user.id || contest.authorId === user.id));
+      if (!isCreatorOrAdmin) {
+        setUpcomingLockedContest(contest);
+        return;
+      }
+    }
+    if (contest.visibility === 'passcode' && !unlockedContests[contest.id]) {
+      setPasscodeModalContest(contest);
+      setPendingProblem(problem || contest.problems[0] || null);
+      setEnteredPasscode('');
+      setPasscodeError('');
+      return;
+    }
+
+    const targetProblem =
+      problem ||
+      contest.problems.find((p) => !progress.solvedProblemIds.includes(p.id)) ||
+      contest.problems[0];
+
+    if (!targetProblem) return;
+    setQuestionPreview({ contest, problem: targetProblem });
+  };
+
   const handleOpenProblem = (contest: IcpcContest, problem: IcpcProblem) => {
     if (!user) {
       setShowAuthModal(true);
@@ -396,30 +438,7 @@ export default function IcpcCollegiateArenaPage() {
     setPasscodeError('');
 
     if (problemToOpen) {
-      try {
-        if (typeof document !== 'undefined' && !document.fullscreenElement) {
-          const el = document.documentElement;
-          if (el.requestFullscreen) {
-            el.requestFullscreen().catch(() => {});
-          } else if ((el as any).webkitRequestFullscreen) {
-            (el as any).webkitRequestFullscreen();
-          }
-        }
-      } catch (err) {}
-      setSelectedContest(contestToOpen);
-      setActiveProblem(problemToOpen);
-      setSolverTab('editor');
-      setConsoleOutput({ status: 'idle', message: '' });
-      setNextQuestionPrompt(null);
-
-      const targetKey = `${problemToOpen.id}_${selectedLanguage}`;
-      const existingDraft = codeDrafts[targetKey];
-      if (existingDraft !== undefined) {
-        setUserCode(existingDraft);
-      } else {
-        const starter = getCleanStarter(problemToOpen, selectedLanguage);
-        setUserCode(starter);
-      }
+      setQuestionPreview({ contest: contestToOpen, problem: problemToOpen });
     }
   };
 
@@ -1171,12 +1190,7 @@ export default function IcpcCollegiateArenaPage() {
                                 setUpcomingLockedContest(contest);
                                 return;
                               }
-                              try {
-                                if (typeof document !== 'undefined' && !document.fullscreenElement) {
-                                  document.documentElement.requestFullscreen().catch(() => {});
-                                }
-                              } catch (e) {}
-                              handleOpenProblem(contest, problem);
+                              handleInitiateArena(contest, problem);
                             }}
                             className={`p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800 transition-all flex items-center justify-between gap-3 ${
                               isUpcoming
@@ -1206,7 +1220,12 @@ export default function IcpcCollegiateArenaPage() {
 
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-[11px] font-mono text-slate-400">+{problem.points} pts</span>
-                              {isUpcoming ? (
+                              {progress.solvedProblemIds.includes(problem.id) ? (
+                                <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold select-none">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                  <span>Solved</span>
+                                </div>
+                              ) : isUpcoming ? (
                                 <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono font-bold select-none">
                                   <Lock className="w-2.5 h-2.5 text-indigo-400" />
                                   <span>Locked</span>
@@ -1217,12 +1236,7 @@ export default function IcpcCollegiateArenaPage() {
                                   variant="outline"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    try {
-                                      if (typeof document !== 'undefined' && !document.fullscreenElement) {
-                                        document.documentElement.requestFullscreen().catch(() => {});
-                                      }
-                                    } catch (err) {}
-                                    handleOpenProblem(contest, problem);
+                                    handleInitiateArena(contest, problem);
                                   }}
                                   className="text-[10px] h-6 px-2 border-cyan-500/30 text-cyan-300 group-hover/prob:bg-cyan-500/20"
                                 >
@@ -1241,56 +1255,68 @@ export default function IcpcCollegiateArenaPage() {
                     <span className="text-[11px] font-mono text-slate-500">
                       Scoring: {(contest.scoringType || 'icpc').toUpperCase()}
                     </span>
-                    {isUpcoming ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setUpcomingLockedContest(contest)}
-                        className="bg-indigo-950/40 border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/40 font-mono text-xs cursor-pointer shadow-xs"
-                        leftIcon={<Clock className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
-                      >
-                        <span>Opens {formatContestSchedule(contest.startTime)}</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => {
-                          if (!user) {
-                            setShowAuthModal(true);
-                            return;
+                    {(() => {
+                      const isContestFullySolved =
+                        contest.problems.length > 0 &&
+                        contest.problems.every((p) => progress.solvedProblemIds.includes(p.id));
+                      const solvedCount = contest.problems.filter((p) =>
+                        progress.solvedProblemIds.includes(p.id)
+                      ).length;
+
+                      if (isUpcoming) {
+                        return (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setUpcomingLockedContest(contest)}
+                            className="bg-indigo-950/40 border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/40 font-mono text-xs cursor-pointer shadow-xs"
+                            leftIcon={<Clock className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
+                          >
+                            <span>Opens {formatContestSchedule(contest.startTime)}</span>
+                          </Button>
+                        );
+                      }
+
+                      return (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => {
+                            handleInitiateArena(contest);
+                          }}
+                          rightIcon={
+                            !user ? (
+                              <Lock className="w-3.5 h-3.5 text-cyan-200" />
+                            ) : contest.visibility === 'passcode' && !unlockedContests[contest.id] ? (
+                              <Lock className="w-3.5 h-3.5 text-purple-200" />
+                            ) : isContestFullySolved ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                            ) : (
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            )
                           }
-                          if (contest.problems.length > 0) {
-                            try {
-                              if (typeof document !== 'undefined' && !document.fullscreenElement) {
-                                document.documentElement.requestFullscreen().catch(() => {});
-                              }
-                            } catch (e) {}
-                            handleOpenProblem(contest, contest.problems[0]);
+                          className={
+                            !user
+                              ? 'bg-charcoal-800 text-slate-300 font-bold text-xs'
+                              : contest.visibility === 'passcode' && !unlockedContests[contest.id]
+                              ? 'bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs'
+                              : isContestFullySolved
+                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20'
+                              : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs'
                           }
-                        }}
-                        rightIcon={
-                          !user ? (
-                            <Lock className="w-3.5 h-3.5 text-cyan-200" />
-                          ) : contest.visibility === 'passcode' && !unlockedContests[contest.id] ? (
-                            <Lock className="w-3.5 h-3.5 text-purple-200" />
-                          ) : (
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          )
-                        }
-                        className={
-                          contest.visibility === 'passcode' && !unlockedContests[contest.id]
-                            ? 'bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs'
-                            : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs'
-                        }
-                      >
-                        {!user
-                          ? 'Log In to Enter Arena'
-                          : contest.visibility === 'passcode' && !unlockedContests[contest.id]
-                          ? 'Enter with Passcode'
-                          : 'Enter Arena'}
-                      </Button>
-                    )}
+                        >
+                          {!user
+                            ? 'Log In to Enter Arena'
+                            : contest.visibility === 'passcode' && !unlockedContests[contest.id]
+                            ? 'Enter with Passcode'
+                            : isContestFullySolved
+                            ? `✓ Submitted (${solvedCount}/${contest.problems.length}) • Review Arena`
+                            : solvedCount > 0
+                            ? `Enter Arena (${solvedCount}/${contest.problems.length} Done)`
+                            : 'Enter Arena'}
+                        </Button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -2232,6 +2258,210 @@ export default function IcpcCollegiateArenaPage() {
               >
                 Understood, I&apos;ll Return When Live
               </Button>
+            </div>
+          )}
+        </Modal>
+
+        {/* Question & Assessment Details Preview Modal (Dual-Lens Entry Gate) */}
+        <Modal
+          isOpen={Boolean(questionPreview)}
+          onClose={() => setQuestionPreview(null)}
+          title="Collegiate Assessment Brief"
+          maxWidth="2xl"
+        >
+          {questionPreview && (
+            <div className="p-2 sm:p-4 space-y-5 text-left">
+              {/* Contest Context Banner */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider block">
+                    {questionPreview.contest.title}
+                  </span>
+                  <span className="text-xs text-slate-300 font-mono">
+                    Organized by {questionPreview.contest.organizer} • {questionPreview.contest.college}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-bold">
+                    ⏱ {questionPreview.contest.durationMinutes} Mins
+                  </span>
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 font-bold">
+                    {(questionPreview.contest.scoringType || 'icpc').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Problem Switcher Tabs (if contest has multiple problems) */}
+              {questionPreview.contest.problems.length > 1 && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                    Problem Set ({questionPreview.contest.problems.length} Problems):
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {questionPreview.contest.problems.map((prob, idx) => {
+                      const isSelected = prob.id === questionPreview.problem.id;
+                      const isProbSolved = progress.solvedProblemIds.includes(prob.id);
+                      return (
+                        <button
+                          key={prob.id}
+                          type="button"
+                          onClick={() => setQuestionPreview({ contest: questionPreview.contest, problem: prob })}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                            isSelected
+                              ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20 border border-cyan-400'
+                              : isProbSolved
+                              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25'
+                              : 'bg-charcoal-800 text-slate-300 border border-charcoal-700 hover:text-white hover:bg-charcoal-750'
+                          }`}
+                        >
+                          <span>{String.fromCharCode(65 + idx)}. {prob.title}</span>
+                          {isProbSolved ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <span className="text-[10px] opacity-75">+{prob.points}pts</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Problem Header & Badges */}
+              <div className="p-4 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-black text-white tracking-tight">
+                    {questionPreview.problem.title}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                        questionPreview.problem.difficulty === 'Easy'
+                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                          : questionPreview.problem.difficulty === 'Hard'
+                          ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                          : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                      }`}
+                    >
+                      {questionPreview.problem.difficulty}
+                    </span>
+                    <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
+                      +{questionPreview.problem.points} ICPC Points
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400 pt-1 border-t border-charcoal-800/80">
+                  <span>⏱ CPU Limit: <strong className="text-white">{questionPreview.problem.timeLimit || '2.0s'}</strong></span>
+                  <span>💾 Memory Limit: <strong className="text-white">{questionPreview.problem.memoryLimit || '256MB'}</strong></span>
+                  {questionPreview.problem.tags && questionPreview.problem.tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {questionPreview.problem.tags.map((tag) => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-md bg-charcoal-950 text-slate-300 border border-charcoal-800">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Problem Statement */}
+                <div className="pt-2 text-xs text-slate-200 leading-relaxed whitespace-pre-line max-h-60 overflow-y-auto pr-1">
+                  {questionPreview.problem.description}
+                </div>
+
+                {/* Input / Output Format */}
+                {(questionPreview.problem.inputFormat || questionPreview.problem.outputFormat) && (
+                  <div className="space-y-2 pt-2 border-t border-charcoal-800/60 text-xs">
+                    {questionPreview.problem.inputFormat && (
+                      <div>
+                        <strong className="text-slate-400 font-mono text-[11px] block">Input Format:</strong>
+                        <p className="text-slate-300 font-mono text-[11px] whitespace-pre-line">{questionPreview.problem.inputFormat}</p>
+                      </div>
+                    )}
+                    {questionPreview.problem.outputFormat && (
+                      <div>
+                        <strong className="text-slate-400 font-mono text-[11px] block">Output Format:</strong>
+                        <p className="text-slate-300 font-mono text-[11px] whitespace-pre-line">{questionPreview.problem.outputFormat}</p>
+                      </div>
+                    )}
+                    {questionPreview.problem.constraints && (
+                      <div>
+                        <strong className="text-slate-400 font-mono text-[11px] block">Constraints:</strong>
+                        <p className="text-slate-300 font-mono text-[11px] whitespace-pre-line">{questionPreview.problem.constraints}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Sample I/O */}
+                {(questionPreview.problem.sampleInput || questionPreview.problem.sampleOutput) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    {questionPreview.problem.sampleInput && (
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Sample Input:</span>
+                        <pre className="p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-800 text-[11px] font-mono text-cyan-300 overflow-x-auto">
+                          {questionPreview.problem.sampleInput}
+                        </pre>
+                      </div>
+                    )}
+                    {questionPreview.problem.sampleOutput && (
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Sample Output:</span>
+                        <pre className="p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-800 text-[11px] font-mono text-emerald-300 overflow-x-auto">
+                          {questionPreview.problem.sampleOutput}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Dual-Lens Proctoring Gate Notice */}
+              <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0 mt-0.5">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                    <span>Dual-Lens Proctoring Gate</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                      Anti-Cheat Active
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Tapping <strong className="text-cyan-300">&quot;Enter Arena&quot;</strong> will engage full-screen examination mode and prompt you to grant <strong>Webcam</strong> access and <strong>Entire Screen Share</strong> before you can write code.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setQuestionPreview(null)}
+                  className="border-charcoal-700 text-slate-300 hover:text-white text-xs px-4"
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    const { contest, problem } = questionPreview;
+                    setQuestionPreview(null);
+                    handleOpenProblem(contest, problem);
+                  }}
+                  className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-extrabold text-xs px-5 shadow-lg shadow-cyan-500/20 flex items-center gap-2 cursor-pointer"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Enter Arena</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
         </Modal>
