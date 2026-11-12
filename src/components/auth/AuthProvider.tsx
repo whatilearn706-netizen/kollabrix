@@ -375,21 +375,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         persistSessionData(currentSession.user, currentSession, profile);
         fetchProfile(currentSession.user.id, currentSession.user).then((p) => {
           if (p) {
-            const isTabActive = typeof window !== 'undefined' && sessionStorage.getItem('kollabrix_tab_active_session') === 'true';
-            const hasCollege = Boolean(p.college && p.college.trim().length > 0);
-            const hasSkills = Boolean(p.skills && Array.isArray(p.skills) && p.skills.length > 0);
-            const isProfileComplete = hasCollege && hasSkills;
-
-            // If user closed the tab while onboarding was incomplete, silently evict session on next visit
-            if (!isProfileComplete && !isTabActive) {
-              performSilentSignOut();
-              return;
-            }
-
-            if (isProfileComplete && typeof window !== 'undefined') {
-              sessionStorage.setItem('kollabrix_tab_active_session', 'true');
-            }
+            setProfile(p);
             persistSessionData(currentSession.user, currentSession, p);
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+              localStorage.setItem(`kollabrix_onboarding_done_${currentSession.user.id}`, 'true');
+              localStorage.setItem(`kollabrix_profile_created_${currentSession.user.id}`, 'true');
+            }
           }
         }).finally(() => {
           setIsLoading(false);
@@ -401,23 +393,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const cachedProfile = localStorage.getItem('linkora_auth_profile');
           const cachedSession = localStorage.getItem('linkora_auth_session');
           if (cachedUser) {
+            const parsedUser = JSON.parse(cachedUser);
             const parsedProfile = cachedProfile ? JSON.parse(cachedProfile) : null;
-            const isTabActive = typeof window !== 'undefined' && sessionStorage.getItem('kollabrix_tab_active_session') === 'true';
-            const hasCollege = Boolean(parsedProfile?.college && parsedProfile.college.trim().length > 0);
-            const hasSkills = Boolean(parsedProfile?.skills && Array.isArray(parsedProfile.skills) && parsedProfile.skills.length > 0);
-            const isProfileComplete = hasCollege && hasSkills;
 
-            if (!isProfileComplete && !isTabActive) {
-              performSilentSignOut();
-              setIsLoading(false);
-              return;
+            setUser(parsedUser);
+            if (parsedProfile) {
+              setProfile(parsedProfile);
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+                localStorage.setItem(`kollabrix_onboarding_done_${parsedUser.id}`, 'true');
+                localStorage.setItem(`kollabrix_profile_created_${parsedUser.id}`, 'true');
+              }
             }
 
-            setUser(JSON.parse(cachedUser));
-            if (cachedProfile) setProfile(parsedProfile);
-            if (isProfileComplete && typeof window !== 'undefined') {
-              sessionStorage.setItem('kollabrix_tab_active_session', 'true');
-            }
             if (cachedSession) {
               const parsed = JSON.parse(cachedSession);
               setSession(parsed);
@@ -429,10 +417,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   if (data?.session?.user) {
                     setUser(data.session.user);
                     setSession(data.session);
+                    fetchProfile(data.session.user.id, data.session.user).then((p) => {
+                      if (p) {
+                        setProfile(p);
+                        persistSessionData(data.session!.user, data.session, p);
+                        if (typeof window !== 'undefined') {
+                          sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+                          localStorage.setItem(`kollabrix_onboarding_done_${data.session!.user.id}`, 'true');
+                          localStorage.setItem(`kollabrix_profile_created_${data.session!.user.id}`, 'true');
+                        }
+                      }
+                    });
                   }
                 }).catch(() => {});
               }
             }
+            setIsLoading(false);
+            return;
           }
         } catch (e) {}
         setIsLoading(false);

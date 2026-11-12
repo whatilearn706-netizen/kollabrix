@@ -14,11 +14,17 @@ export default function ProfileSetupPage() {
   useEffect(() => {
     if (isLoading || !user) return;
 
-    const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
-    const hasSkills = Boolean(profile?.skills && Array.isArray(profile.skills) && profile.skills.length > 0);
-    const hasUsername = Boolean(profile?.username && profile.username.trim().length > 0);
+    const isDone = Boolean(
+      (typeof window !== 'undefined' && (
+        localStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true' ||
+        localStorage.getItem(`kollabrix_profile_created_${user.id}`) === 'true'
+      )) ||
+      profile?.username ||
+      profile?.college ||
+      (profile?.skills && profile.skills.length > 0)
+    );
 
-    if (hasCollege && hasSkills && hasUsername) {
+    if (isDone) {
       router.replace('/explore');
     }
   }, [user, profile, isLoading, router]);

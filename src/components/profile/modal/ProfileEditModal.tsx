@@ -103,17 +103,48 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       return;
     }
 
-    const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
-    const hasSkills = Boolean(profile?.skills && Array.isArray(profile.skills) && profile.skills.length > 0);
-    const hasUsername = Boolean(profile?.username && profile.username.trim().length > 0);
-
-    const isIncomplete = !hasCollege || !hasSkills || !hasUsername;
-    const sessionCompleted = typeof window !== 'undefined' && sessionStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true';
-
-    if (isIncomplete && !sessionCompleted) {
-      setIsOpen(true);
+    if (mode === 'edit') {
+      return;
     }
-  }, [user, profile, isLoading, forceOpen]);
+
+    // Check if user has permanently completed or dismissed onboarding in persistent storage
+    const isPermanentlyDone = typeof window !== 'undefined' && (
+      localStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true' ||
+      localStorage.getItem(`kollabrix_profile_created_${user.id}`) === 'true' ||
+      sessionStorage.getItem(`kollabrix_onboarding_done_${user.id}`) === 'true' ||
+      user?.user_metadata?.onboarding_completed === true ||
+      user?.user_metadata?.profile_completed === true
+    );
+
+    if (isPermanentlyDone) {
+      setIsOpen(false);
+      return;
+    }
+
+    // Check if profile record already exists in database with identifying info
+    const hasExistingProfile = Boolean(
+      profile && (
+        (profile.username && profile.username.trim().length > 0) ||
+        (profile.display_name && profile.display_name.trim().length > 0) ||
+        (profile.college && profile.college.trim().length > 0) ||
+        (profile.skills && profile.skills.length > 0) ||
+        (profile.bio && profile.bio.trim().length > 0) ||
+        profile.created_at
+      )
+    );
+
+    if (hasExistingProfile) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+        localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
+      }
+      setIsOpen(false);
+      return;
+    }
+
+    // Only brand new accounts without any profile ever see the initial onboarding
+    setIsOpen(true);
+  }, [user, profile, isLoading, forceOpen, mode]);
 
   // 3. Hydrate form fields from profile
   useEffect(() => {
@@ -167,7 +198,16 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
   const hasSkills = Boolean(profile?.skills && profile.skills.length > 0);
   const isProfileComplete = hasCollege && hasSkills;
-  const canClose = mode === 'edit' || isProfileComplete;
+  const canClose = true;
+
+  const handleDismiss = () => {
+    if (user?.id && typeof window !== 'undefined') {
+      localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+      localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
+      sessionStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+    }
+    setIsOpen(false);
+  };
 
   // Validation before advancing steps
   const validateCurrentStep = (step: number): boolean => {
@@ -180,37 +220,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       const cleanU = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
       if (!cleanU || cleanU.length < 3) {
         setErrorMessage('Username must be at least 3 characters.');
-        return false;
-      }
-    } else if (step === 2) {
-      if (!college.trim()) {
-        setErrorMessage('Please specify your college or university name.');
-        return false;
-      }
-    } else if (step === 3) {
-      if (!academicYear) {
-        setErrorMessage('Please select your academic year.');
-        return false;
-      }
-      if (!course.trim()) {
-        setErrorMessage('Please select or specify your degree / course.');
-        return false;
-      }
-    } else if (step === 4) {
-      if (skills.length < 2) {
-        setErrorMessage(
-          skills.length === 0
-            ? 'Please write or select at least 2 technical skills you know.'
-            : 'Please write or select at least 1 more technical skill (minimum 2 required).'
-        );
-        return false;
-      }
-      if (interests.length < 1) {
-        setErrorMessage('Please select or write at least 1 interest or passion area.');
-        return false;
-      }
-      if (preferredRoles.length < 1) {
-        setErrorMessage('Please select or write at least 1 preferred project role.');
         return false;
       }
     }
@@ -236,28 +245,55 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
   // Submit and save profile
   const handleSaveProfile = async () => {
-    if (!validateCurrentStep(5)) return;
     if (!user) return;
 
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
 
-      const cleanU = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const rawDisplay =
+        displayName.trim() ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split('@')[0] ||
+        'Student Builder';
+
+      const cleanU = (
+        username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') ||
+        user.user_metadata?.username ||
+        user.email?.split('@')[0]?.replace(/[^a-z0-9_-]/g, '').toLowerCase() ||
+        'builder'
+      ).slice(0, 24);
+
       const assignedRole = profile?.role || 'student';
 
       const payload = {
         user_id: user.id,
-        display_name: displayName.trim(),
+        display_name: rawDisplay,
         username: cleanU,
-        avatar_url: avatarUrl || null,
-        bio: bio.trim(),
-        college: college.trim(),
-        academic_year: academicYear,
-        course: course.trim(),
-        skills,
-        interests,
-        preferred_roles: preferredRoles,
+        avatar_url: avatarUrl || user.user_metadata?.avatar_url || null,
+        bio: bio.trim() || profile?.bio || 'College builder excited to collaborate on Kollabrix projects.',
+        college: college.trim() || profile?.college || 'Collegiate Institution',
+        academic_year: academicYear || profile?.academic_year || '1st Year (Freshman)',
+        course: course.trim() || profile?.course || 'Engineering / Technology',
+        skills:
+          skills.length > 0
+            ? skills
+            : profile?.skills && profile.skills.length > 0
+            ? profile.skills
+            : ['Web Development', 'Problem Solving'],
+        interests:
+          interests.length > 0
+            ? interests
+            : profile?.interests && profile.interests.length > 0
+            ? profile.interests
+            : ['Hackathons', 'Open Source'],
+        preferred_roles:
+          preferredRoles.length > 0
+            ? preferredRoles
+            : profile?.preferred_roles && profile.preferred_roles.length > 0
+            ? profile.preferred_roles
+            : ['Frontend Developer'],
         github_url: githubUrl.trim() || null,
         linkedin_url: linkedinUrl.trim() || null,
         portfolio_url: portfolioUrl.trim() || null,
@@ -363,28 +399,45 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             verificationType: 'student_id',
-            collegeName: college.trim() || 'Collegiate Institution',
+            collegeName: payload.college,
             studentRollNumber: studentRollNo.trim() || 'ROLL-PENDING',
             idCardImage: studentIdUrl,
             userId: user.id,
             username: cleanU,
-            studentName: displayName.trim(),
-            course: course.trim(),
-            academicYear,
+            studentName: rawDisplay,
+            course: payload.course,
+            academicYear: payload.academic_year,
             email: user.email,
           }),
         }).catch((err) => console.warn('Admin student queue notification note:', err));
       }
 
-      // Mark session complete & upgrade cookies to 1-year persistent
+      // Mark session complete & upgrade cookies to 1-year persistent across all storage layers
       try {
-        sessionStorage.setItem('kollabrix_tab_active_session', 'true');
-        sessionStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
-        localStorage.setItem('linkora_auth_profile', JSON.stringify({ ...profile, ...payload }));
-        document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
-        document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
-        document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('kollabrix_tab_active_session', 'true');
+          sessionStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+          localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
+          localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
+          localStorage.setItem('linkora_auth_profile', JSON.stringify({ ...profile, ...payload }));
+          document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
+          document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
+          document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
+        }
       } catch (e) {}
+
+      if (isSupabaseConfigured()) {
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              onboarding_completed: true,
+              profile_completed: true,
+              display_name: rawDisplay,
+              username: cleanU,
+            },
+          });
+        } catch (metaErr) {}
+      }
 
       invalidatePageCache();
       window.dispatchEvent(new Event('linkora_auth_updated'));
@@ -462,16 +515,14 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 </div>
 
                 {/* Minimal Close Button */}
-                {canClose && (
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                    title="Close"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Ultra-Clean Segmented Progress Line */}
@@ -588,42 +639,38 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
                   </button>
-                ) : canClose ? (
+                ) : (
                   <button
                     type="button"
-                    onClick={() => setIsOpen(false)}
+                    onClick={handleDismiss}
                     className="h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white text-xs font-semibold transition-colors"
                   >
-                    Cancel
+                    Close
                   </button>
-                ) : (
-                  <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Complete setup to unlock</span>
-                  </div>
                 )}
               </div>
 
-              <div>
+              <div className="flex items-center gap-2">
                 {currentStep < 5 ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/25 transition-all"
-                  >
-                    <span>
-                      {currentStep === 4
-                        ? skills.length < 2
-                          ? `Next: Add ${2 - skills.length} More Skill${2 - skills.length === 1 ? '' : 's'}`
-                          : interests.length < 1
-                          ? 'Next: Select 1 Interest'
-                          : preferredRoles.length < 1
-                          ? 'Next: Select 1 Role'
-                          : 'Next: Online Links'
-                        : `Next: ${STEP_TITLES[currentStep].tag}`}
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleSaveProfile}
+                      className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+                      title="Save entered details and finish now"
+                    >
+                      {isSubmitting ? 'Saving...' : 'Save & Finish'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/25 transition-all"
+                    >
+                      <span>Next: {STEP_TITLES[currentStep].tag}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
