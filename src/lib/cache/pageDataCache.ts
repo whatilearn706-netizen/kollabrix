@@ -4,6 +4,7 @@ import { parseDeletedHackathons } from '@/lib/admin/hackathonSettings';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { DEMO_PROJECTS } from '@/data/mockProjects';
 import { Project, Profile, Hackathon, ExploreConfig } from '@/types/database';
+import { isFacultyProfile } from '@/lib/teammateMatching';
 
 interface CacheEntry<T> {
   data: T;
@@ -429,6 +430,7 @@ export async function prefetchTeammatesData(): Promise<void> {
             !p.is_suspended &&
             p.status !== 'suspended' &&
             !suspendedIds.includes(p.user_id) &&
+            !isFacultyProfile(p) &&
             Boolean(p.user_id && (p.username || p.display_name))
         )
         .map((p) => {

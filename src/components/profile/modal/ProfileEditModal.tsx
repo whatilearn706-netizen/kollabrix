@@ -17,6 +17,7 @@ import {
   ExternalLink,
   GraduationCap,
   Briefcase,
+  Lock,
 } from 'lucide-react';
 
 import { Step1Identity } from './Step1Identity';
@@ -358,6 +359,26 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           }
         } catch (vErr) {
           console.warn('Auto passcode verification check note:', vErr);
+        }
+      }
+
+      // STRICT FACULTY ENFORCEMENT:
+      // Faculty profiles can never be finalized without verified faculty access (Passcode or DigiLocker).
+      // If unverified, the user must verify or continue as a student.
+      if (userRoleType === 'faculty') {
+        const hasFacultyAccess =
+          verifiedStatus ||
+          isFacultyPasscodeVerified ||
+          Boolean(profile?.faculty_verified) ||
+          profile?.role === 'teacher';
+
+        if (!hasFacultyAccess) {
+          setErrorMessage(
+            'Faculty Verification Required: You cannot complete a faculty profile without verified faculty access (Campus Passcode or DigiLocker). Please verify in Step 4, or switch to Student mode to continue.'
+          );
+          setCurrentStep(4);
+          setIsSubmitting(false);
+          return;
         }
       }
 
@@ -924,15 +945,17 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               <div className="flex items-center gap-2">
                 {currentStep < maxSteps ? (
                   <>
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={handleSaveProfile}
-                      className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
-                      title="Save entered details and finish now"
-                    >
-                      {isSubmitting ? 'Saving...' : 'Save & Finish'}
-                    </button>
+                    {userRoleType === 'student' && (
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleSaveProfile}
+                        className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
+                        title="Save entered details and finish now"
+                      >
+                        {isSubmitting ? 'Saving...' : 'Save & Finish'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleNext}
@@ -947,25 +970,47 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     </button>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={handleSaveProfile}
-                    className={`h-10 px-6 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 cursor-pointer ${
-                      userRoleType === 'faculty'
-                        ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/25'
-                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25'
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <span>Saving Profile...</span>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>{userRoleType === 'faculty' ? 'Complete Faculty Setup' : 'Save & Complete Profile'}</span>
-                      </>
+                  <>
+                    {userRoleType === 'faculty' && !isFacultyPasscodeVerified && !profile?.faculty_verified && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserRoleType('student');
+                          setCurrentStep(1);
+                          setErrorMessage(null);
+                        }}
+                        className="h-10 px-3 sm:px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Cannot verify faculty? Switch to student profile"
+                      >
+                        <GraduationCap className="w-3.5 h-3.5" />
+                        <span>Go as Student</span>
+                      </button>
                     )}
-                  </button>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleSaveProfile}
+                      className={`h-10 px-6 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 cursor-pointer ${
+                        userRoleType === 'faculty'
+                          ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/25'
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25'
+                      }`}
+                    >
+                      {isSubmitting ? (
+                        <span>Saving Profile...</span>
+                      ) : userRoleType === 'faculty' && !isFacultyPasscodeVerified && !profile?.faculty_verified ? (
+                        <>
+                          <Lock className="w-4 h-4 text-purple-200" />
+                          <span>Verify to Complete</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>{userRoleType === 'faculty' ? 'Complete Faculty Setup' : 'Save & Complete Profile'}</span>
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>

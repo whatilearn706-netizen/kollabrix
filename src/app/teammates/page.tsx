@@ -9,6 +9,7 @@ import { Profile, Project, TeammateMatch } from '@/types/database';
 import {
   calculateProjectTeammateMatch,
   calculatePeerTeammateMatch,
+  isFacultyProfile,
 } from '@/lib/teammateMatching';
 import { TeammateCard } from '@/components/teammates/TeammateCard';
 import { InviteTeammateModal } from '@/components/teammates/InviteTeammateModal';
@@ -51,7 +52,9 @@ export default function TeammatesPage() {
   const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v2');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
-    cachedProfiles ? cachedProfiles.filter(isCompleteProfile) : []
+    cachedProfiles
+      ? cachedProfiles.filter((p) => isCompleteProfile(p) && !isFacultyProfile(p))
+      : []
   );
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('peer');
@@ -68,6 +71,7 @@ export default function TeammatesPage() {
   const [inviteModalScore, setInviteModalScore] = useState<number | undefined>();
 
   const [suspendedUserIds, setSuspendedUserIds] = useState<string[]>([]);
+  const [facultyUserIds, setFacultyUserIds] = useState<string[]>([]);
 
   // Load profiles, user projects, and invitations
   const loadData = async () => {
@@ -96,6 +100,39 @@ export default function TeammatesPage() {
             }
           }
         } catch {}
+
+        // Fetch verified faculty registries from platform_settings
+        const knownFacultyIds = new Set<string>();
+        try {
+          const { data: fData } = await supabase
+            .from('platform_settings')
+            .select('key, value')
+            .in('key', ['faculty_access_passcodes', 'digilocker_verifications', 'admin_faculty_registry']);
+
+          if (Array.isArray(fData)) {
+            for (const row of fData) {
+              if (row.key === 'digilocker_verifications' && Array.isArray(row.value)) {
+                row.value.forEach((d: any) => {
+                  if (d.userId) knownFacultyIds.add(d.userId);
+                });
+              }
+              if (row.key === 'faculty_access_passcodes') {
+                const passcodes = (row.value as any)?.passcodes;
+                if (Array.isArray(passcodes)) {
+                  passcodes.forEach((p: any) => {
+                    if (Array.isArray(p.used_by_user_ids)) {
+                      p.used_by_user_ids.forEach((uid: string) => knownFacultyIds.add(uid));
+                    }
+                  });
+                }
+              }
+              if (row.key === 'admin_faculty_registry' && Array.isArray(row.value)) {
+                row.value.forEach((id: string) => knownFacultyIds.add(id));
+              }
+            }
+          }
+        } catch {}
+        setFacultyUserIds(Array.from(knownFacultyIds));
 
         // 1. Fetch genuine registered users from database, strictly excluding suspended accounts
         const { data: profs } = await supabase
@@ -137,6 +174,9 @@ export default function TeammatesPage() {
                 !p.is_suspended &&
                 p.status !== 'suspended' &&
                 !suspendedIds.includes(p.user_id) &&
+                !knownFacultyIds.has(p.user_id) &&
+                !isFacultyProfile(p) &&
+                p.user_id !== user?.id &&
                 isCompleteProfile(p)
             )
             .map((p) => {
@@ -146,7 +186,7 @@ export default function TeammatesPage() {
               return { ...p, college_verified: isVerified };
             });
 
-          // Only genuine registered users from the database are displayed
+          // Only genuine registered student users from the database are displayed
           setAllProfiles(activeProfs);
           setPageCache('kollabrix_teammates_real_v2', activeProfs);
         } else {
@@ -287,23 +327,15 @@ export default function TeammatesPage() {
     const results: TeammateMatch[] = [];
 
     for (const cand of allProfiles) {
-      // Strictly exclude any suspended, non-active, or incomplete profiles
+      // Strictly exclude self, suspended, faculty, or incomplete profiles
       if (
+        cand.user_id === user?.id ||
         cand.is_suspended ||
         cand.status === 'suspended' ||
         suspendedUserIds.includes(cand.user_id) ||
+        facultyUserIds.includes(cand.user_id) ||
+        isFacultyProfile(cand) ||
         !isCompleteProfile(cand)
-      ) {
-        continue;
-      }
-
-      // Exclude verified faculty and professors from peer student squad matchmaking
-      const candRole = (cand.role || '').toLowerCase();
-      if (
-        candRole === 'teacher' ||
-        candRole === 'faculty' ||
-        candRole === 'professor' ||
-        cand.faculty_verified
       ) {
         continue;
       }
@@ -322,22 +354,20 @@ export default function TeammatesPage() {
         if (match) results.push(match);
       } else {
         // Unauthenticated visitor view: show general profile score
-        if (cand.user_id !== user?.id) {
-          results.push({
-            profile: cand,
-            match_score: 75,
-            matching_skills: (cand.skills || []).slice(0, 3),
-            matching_roles: (cand.preferred_roles || []).slice(0, 1),
-            matching_interests: (cand.interests || []).slice(0, 2),
-            reasons: ['Active campus builder with verified skills'],
-          });
-        }
+        results.push({
+          profile: cand,
+          match_score: 75,
+          matching_skills: (cand.skills || []).slice(0, 3),
+          matching_roles: (cand.preferred_roles || []).slice(0, 1),
+          matching_interests: (cand.interests || []).slice(0, 2),
+          reasons: ['Active campus builder with verified skills'],
+        });
       }
     }
 
     // Sort by match score descending
     return results.sort((a, b) => b.match_score - a.match_score);
-  }, [allProfiles, activeProject, profile, user, existingMemberIds, matchWeights, suspendedUserIds]);
+  }, [allProfiles, activeProject, profile, user, existingMemberIds, matchWeights, suspendedUserIds, facultyUserIds]);
 
   // Extract unique skills and roles from available candidates for filters
   const availableSkills = useMemo(() => {
