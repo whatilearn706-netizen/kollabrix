@@ -168,12 +168,43 @@ export function resolveWorkspaceOrigin(
     const probTitle = matchedProblem?.title || facultyTitleInDesc || 'Faculty Research Challenge';
     const probOrganizer = matchedProblem?.author?.display_name || 'Faculty Research Dept';
     const probStatus = (matchedProblem?.status || '').toLowerCase();
-    const isEvaluated =
-      probStatus === 'completed' ||
-      probStatus === 'closed' ||
-      probStatus === 'evaluated' ||
-      item.status === 'Completed' ||
-      (matchedProblem?.deadline && new Date(matchedProblem.deadline).getTime() < Date.now());
+    const rawDeadline =
+      matchedProblem?.deadline ||
+      (item as any)?.problem?.deadline ||
+      (item as any)?.deadline ||
+      null;
+
+    let probDeadlineDate: Date | null = null;
+    if (rawDeadline && typeof rawDeadline === 'string' && rawDeadline.trim()) {
+      const trimmed = rawDeadline.trim();
+      const d = new Date(trimmed);
+      if (!isNaN(d.getTime())) {
+        // If date only (no time or timezone specified), treat as inclusive end of day
+        if (!trimmed.includes('T') && !trimmed.includes(':')) {
+          d.setHours(23, 59, 59, 999);
+        }
+        probDeadlineDate = d;
+      }
+    }
+
+    const hasValidDeadline = Boolean(probDeadlineDate);
+    const isDeadlineOver = hasValidDeadline ? probDeadlineDate!.getTime() <= Date.now() : false;
+
+    // Faculty problem workspaces must NOT go to "Done" until the deadline is over!
+    let isEvaluated = false;
+    if (hasValidDeadline) {
+      // If a deadline is configured, the challenge workspace remains active until the deadline has concluded,
+      // or if the faculty explicitly closed / evaluated the challenge.
+      isEvaluated = isDeadlineOver || probStatus === 'closed' || probStatus === 'evaluated';
+    } else {
+      // If no deadline is specified, it concludes only when explicitly closed or evaluated
+      isEvaluated = probStatus === 'completed' || probStatus === 'closed' || probStatus === 'evaluated';
+    }
+
+    let timeRemainingStr: string | null = null;
+    if (hasValidDeadline && !isDeadlineOver && probDeadlineDate) {
+      timeRemainingStr = formatTimeRemaining(probDeadlineDate.toISOString());
+    }
 
     return {
       originType: 'faculty_problem',
@@ -184,6 +215,7 @@ export function resolveWorkspaceOrigin(
       originWorkspaceLink: `/projects/${item.id}/workspace`,
       isResultsAnnounced: Boolean(isEvaluated),
       isClosed: Boolean(isEvaluated),
+      timeRemaining: timeRemainingStr,
       badgeLabel: `🎓 Faculty Challenge: ${probTitle}`,
       subLabel: `Mentored by ${probOrganizer}`,
     };
