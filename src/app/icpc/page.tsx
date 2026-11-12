@@ -837,7 +837,7 @@ export default function IcpcCollegiateArenaPage() {
                   Solve company placement OA challenges, take faculty lab assessments with anti-cheat, and sharpen your algorithmic skills.
                 </p>
 
-                <div className="flex items-center gap-3 pt-1">
+                <div className="flex items-center gap-3 pt-1 flex-wrap">
                   <Button
                     variant="primary"
                     size="md"
@@ -847,6 +847,18 @@ export default function IcpcCollegiateArenaPage() {
                   >
                     Host Faculty Lab
                   </Button>
+                  {isFacultyUser && (
+                    <Link href="/teacher/dashboard?tab=icpc">
+                      <Button
+                        variant="outline"
+                        size="md"
+                        leftIcon={<ShieldAlert className="w-4 h-4 text-cyan-400" />}
+                        className="border-cyan-500/40 text-cyan-300 hover:text-white hover:bg-cyan-500/20 font-bold px-4 py-2.5 rounded-xl text-xs"
+                      >
+                        🛡️ Faculty Proctor Desk
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
 
@@ -1296,10 +1308,19 @@ export default function IcpcCollegiateArenaPage() {
                   </div>
 
                   {/* Card Bottom CTA */}
-                  <div className="pt-3 border-t border-charcoal-800/80 flex items-center justify-between text-xs">
-                    <span className="text-[11px] font-mono text-slate-500">
-                      Scoring: {(contest.scoringType || 'icpc').toUpperCase()}
-                    </span>
+                  <div className="pt-3 border-t border-charcoal-800/80 flex items-center justify-between text-xs gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-mono text-slate-500">
+                        Scoring: {(contest.scoringType || 'icpc').toUpperCase()}
+                      </span>
+                      {isFacultyUser && (contest.category === 'faculty' || contest.visibility === 'passcode') && (
+                        <Link href="/teacher/dashboard?tab=icpc">
+                          <span className="text-[10px] font-mono font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer">
+                            🛡️ Proctor Desk
+                          </span>
+                        </Link>
+                      )}
+                    </div>
                     {(() => {
                       const isContestFullySolved =
                         contest.problems.length > 0 &&

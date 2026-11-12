@@ -58,6 +58,7 @@ import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationM
 import { CreateHackathonModal } from '@/components/hackathons/CreateHackathonModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
+import { FacultyProctorWatchdogModal } from '@/components/teacher/FacultyProctorWatchdogModal';
 import { IcpcContest } from '@/types/icpc';
 import { Hackathon } from '@/types/database';
 import { isFacultyUser } from '@/lib/auth/faculty';
@@ -108,6 +109,13 @@ function TeacherDashboardContent() {
   const [myIcpcContests, setMyIcpcContests] = useState<IcpcContest[]>([]);
   const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false);
   const [isCreateIcpcOpen, setIsCreateIcpcOpen] = useState(false);
+  const [isProctorWatchdogOpen, setIsProctorWatchdogOpen] = useState(false);
+  const [proctorWatchdogContestId, setProctorWatchdogContestId] = useState<string | null>(null);
+
+  const handleOpenProctorWatchdog = (contestId: string | null) => {
+    setProctorWatchdogContestId(contestId);
+    setIsProctorWatchdogOpen(true);
+  };
   const [securityModalHackathon, setSecurityModalHackathon] = useState<Hackathon | null>(null);
   const [copiedJoinCode, setCopiedJoinCode] = useState<string | null>(null);
   const [deletingContestId, setDeletingContestId] = useState<string | null>(null);
@@ -1637,13 +1645,22 @@ function TeacherDashboardContent() {
                 Upload and schedule competitive programming challenges with custom problem statements, constraints, and testcases.
               </p>
             </div>
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenProctorWatchdog(null)}
+                leftIcon={<ShieldAlert className="w-3.5 h-3.5 text-cyan-400" />}
+                className="border-cyan-500/40 text-cyan-300 hover:text-white hover:bg-cyan-500/20 font-bold text-xs"
+              >
+                🛡️ Live Proctor Watchdog
+              </Button>
               <Link href="/icpc">
                 <Button
                   variant="outline"
                   size="sm"
                   leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
-                  className="border-charcoal-700 text-slate-300 hover:text-white"
+                  className="border-charcoal-700 text-slate-300 hover:text-white text-xs"
                 >
                   Open Competitive Practice
                 </Button>
@@ -1653,7 +1670,7 @@ function TeacherDashboardContent() {
                 size="sm"
                 onClick={() => setIsCreateIcpcOpen(true)}
                 leftIcon={<PlusCircle className="w-3.5 h-3.5 text-cyan-300" />}
-                className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold"
+                className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs"
               >
                 Upload Faculty Lab
               </Button>
@@ -1734,15 +1751,27 @@ function TeacherDashboardContent() {
                     </div>
                   </div>
 
-                  <Link href="/icpc">
+                  <div className="space-y-2 pt-2 border-t border-charcoal-750">
                     <Button
-                      variant="outline"
+                      variant="primary"
                       size="sm"
-                      className="w-full border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-bold"
+                      onClick={() => handleOpenProctorWatchdog(contest.id)}
+                      leftIcon={<ShieldAlert className="w-3.5 h-3.5 text-cyan-200" />}
+                      className="w-full bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 font-mono font-bold text-xs"
                     >
-                      View in Competitive Practice →
+                      🛡️ Live Anti-Cheat Proctor
                     </Button>
-                  </Link>
+
+                    <Link href="/icpc" className="block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-charcoal-700 text-slate-300 hover:text-white font-bold text-xs"
+                      >
+                        View in Competitive Practice →
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
@@ -2013,6 +2042,13 @@ function TeacherDashboardContent() {
           setIsCreateIcpcOpen(false);
           await loadDashboardData();
         }}
+      />
+
+      <FacultyProctorWatchdogModal
+        isOpen={isProctorWatchdogOpen}
+        onClose={() => setIsProctorWatchdogOpen(false)}
+        facultyContests={myIcpcContests}
+        initialContestId={proctorWatchdogContestId}
       />
 
       <HackathonSecurityModal
