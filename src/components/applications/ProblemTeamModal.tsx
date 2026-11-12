@@ -91,8 +91,6 @@ export function ProblemTeamModal({
   }, [teamRange]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Frontend Developer', 'Backend Developer']);
   const [customRoleInput, setCustomRoleInput] = useState('');
-  const [postToExplore, setPostToExplore] = useState(false);
-  const [recruitmentHeadline, setRecruitmentHeadline] = useState('');
   const [commsLink, setCommsLink] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,7 +164,6 @@ export function ProblemTeamModal({
     try {
       const summaryText =
         concept.trim() ||
-        (postToExplore && recruitmentHeadline.trim()) ||
         `Student squad tackling faculty challenge: ${problemTitle}`;
 
       const descriptionText = `### Squad Mission & Approach\n${

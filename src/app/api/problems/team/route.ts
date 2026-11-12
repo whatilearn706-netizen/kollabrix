@@ -150,7 +150,6 @@ export async function POST(request: NextRequest) {
     // 3. Assemble project description and payload
     const summaryText =
       concept.trim() ||
-      (postToExplore && teamName.trim()) ||
       `Student squad tackling faculty challenge: ${problemTitle}`;
 
     const descriptionText = `### Squad Mission & Approach\n${
@@ -166,7 +165,7 @@ export async function POST(request: NextRequest) {
       description: descriptionText,
       category,
       difficulty,
-      status: postToExplore ? 'Recruiting' : 'In Progress',
+      status: 'In Progress',
       technologies: technologies.length > 0 ? technologies : ['Full Stack'],
       required_skills: technologies.length > 0 ? technologies : ['Software Engineering'],
       desired_roles: selectedRoles.length > 0 ? selectedRoles : ['Developer'],
