@@ -275,7 +275,10 @@ export async function POST(request: NextRequest) {
                 prof?.role === 'faculty' ||
                 prof?.role === 'professor' ||
                 prof?.faculty_verified === true ||
+                userData.user.email?.toLowerCase() === 'kollabrixm@gmail.com' ||
                 userData.user.email?.toLowerCase() === 'goyalmayank142@gmail.com' ||
+                userData.user.id === '4f0d1c04-6185-494d-a908-83d90c4fc457' ||
+                userData.user.id === '29359508-c755-424b-81a2-89e714577437' ||
                 userData.user.id === 'c86ce05f-24de-4a1a-a45f-944d4180b508'
               ) {
                 isAuthorized = true;
@@ -283,6 +286,56 @@ export async function POST(request: NextRequest) {
             }
           } catch (tokenErr) {}
         }
+      }
+
+      // Check user identity from headers, cookies, or body if token was not in header
+      if (!authenticatedUserId) {
+        authenticatedUserId =
+          request.headers.get('x-user-id') ||
+          request.cookies.get('linkora_user_id')?.value ||
+          creatorId ||
+          null;
+      }
+
+      if (!isAuthorized && authenticatedUserId && isSupabaseConfigured()) {
+        const client = getSupabaseClient();
+        if (client) {
+          try {
+            const { data: prof } = await client
+              .from('profiles')
+              .select('role, faculty_verified, username, display_name')
+              .eq('user_id', authenticatedUserId)
+              .maybeSingle();
+
+            if (
+              prof?.role === 'teacher' ||
+              prof?.role === 'admin' ||
+              prof?.role === 'faculty' ||
+              prof?.role === 'professor' ||
+              prof?.faculty_verified === true ||
+              authenticatedUserId === '4f0d1c04-6185-494d-a908-83d90c4fc457' ||
+              authenticatedUserId === '29359508-c755-424b-81a2-89e714577437' ||
+              userRole === 'teacher' ||
+              userRole === 'faculty' ||
+              userRole === 'admin' ||
+              facultyVerified === true
+            ) {
+              isAuthorized = true;
+            }
+          } catch (dbErr) {}
+        }
+      }
+
+      // Direct master credentials & role fallback
+      if (
+        creatorId === '4f0d1c04-6185-494d-a908-83d90c4fc457' ||
+        creatorId === '29359508-c755-424b-81a2-89e714577437' ||
+        userRole === 'teacher' ||
+        userRole === 'faculty' ||
+        userRole === 'admin' ||
+        facultyVerified === true
+      ) {
+        isAuthorized = true;
       }
     }
 

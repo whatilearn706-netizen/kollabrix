@@ -61,11 +61,14 @@ import {
   Target,
   Archive,
   RotateCcw,
+  Rocket,
+  Eye,
 } from 'lucide-react';
 import { AddChallengeModal } from '@/components/hackathons/AddChallengeModal';
 import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementModal';
 import { EvaluationModal } from '@/components/hackathons/EvaluationModal';
 import { HackathonSecurityModal } from '@/components/hackathons/HackathonSecurityModal';
+import { PublishHackathonToExploreModal } from '@/components/hackathons/PublishHackathonToExploreModal';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
 import { isHackathonClosed, normalizeHackathonDeadlines } from '@/lib/hackathons/hackathonStatus';
@@ -106,6 +109,32 @@ export default function HackathonWorkspacePage() {
   const [allSubmissions, setAllSubmissions] = useState<(HackathonSubmission & { team_name?: string })[]>([]);
   const [criteria, setCriteria] = useState<HackathonJudgingCriteria[]>([]);
   const [evaluations, setEvaluations] = useState<HackathonEvaluation[]>([]);
+
+  // Explore Listing states for Hackathon Squad
+  const [isPublishExploreOpen, setIsPublishExploreOpen] = useState(false);
+  const [isTeamPublishedToExplore, setIsTeamPublishedToExplore] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && myTeam?.id) {
+      const isLocal = localStorage.getItem(`tf_hackathon_team_explore_${myTeam.id}`) === 'true';
+      if (isLocal) setIsTeamPublishedToExplore(true);
+
+      if (isSupabaseConfigured()) {
+        supabase
+          .from('projects')
+          .select('id, status, summary')
+          .eq('id', myTeam.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data && data.status === 'Recruiting' && !data.summary?.startsWith('Hackathon Team Sprint:')) {
+              setIsTeamPublishedToExplore(true);
+            } else if (data && data.status !== 'Recruiting' && !isLocal) {
+              setIsTeamPublishedToExplore(false);
+            }
+          });
+      }
+    }
+  }, [myTeam?.id]);
 
   const searchParams = useSearchParams();
   const urlTab = searchParams.get('tab') as any;
@@ -2754,6 +2783,58 @@ export default function HackathonWorkspacePage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Optional: List Squad on Explore (to recruit teammates) */}
+                {!isClosed && (
+                  <div className="mt-4 p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Rocket className="w-4 h-4 text-brand-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          Campus Teammate Recruitment
+                        </span>
+                        {isTeamPublishedToExplore && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            ● Live on Explore
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                        {isTeamPublishedToExplore
+                          ? 'Your squad is currently listed on the campus Explore Projects page. Students can discover your open roles and apply to join your team.'
+                          : 'Need more teammates? You can list your squad on the Explore Projects page so students across college can discover and apply to your open roles.'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+                      {isTeamPublishedToExplore && (
+                        <Link href="/explore">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-slate-300 hover:text-white border border-charcoal-800 hover:border-charcoal-700 text-xs"
+                            leftIcon={<Eye className="w-3.5 h-3.5 text-brand-400" />}
+                          >
+                            View on Explore
+                          </Button>
+                        </Link>
+                      )}
+                      <Button
+                        variant={isTeamPublishedToExplore ? 'outline' : 'primary'}
+                        size="sm"
+                        onClick={() => setIsPublishExploreOpen(true)}
+                        className={
+                          isTeamPublishedToExplore
+                            ? 'border-brand-500/40 text-brand-300 hover:bg-brand-500/10 text-xs font-bold'
+                            : 'bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-sm'
+                        }
+                        leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+                      >
+                        {isTeamPublishedToExplore ? 'Manage Listing' : 'List on Explore →'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : isClosed ? (
@@ -4068,6 +4149,20 @@ export default function HackathonWorkspacePage() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* Modal: Publish Hackathon Squad to Explore */}
+      {myTeam && hackathon && (
+        <PublishHackathonToExploreModal
+          isOpen={isPublishExploreOpen}
+          onClose={() => setIsPublishExploreOpen(false)}
+          team={myTeam}
+          hackathon={hackathon}
+          isPublished={isTeamPublishedToExplore}
+          onStatusChange={(published) => {
+            setIsTeamPublishedToExplore(published);
+          }}
+        />
       )}
     </div>
   );
