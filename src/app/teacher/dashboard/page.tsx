@@ -237,10 +237,31 @@ function TeacherDashboardContent() {
             mentor_id
           )
         `)
+        .neq('category', 'Hackathon Sprint')
+        .not('category', 'ilike', '%hackathon%')
+        .not('summary', 'ilike', 'Hackathon%')
         .order('created_at', { ascending: false });
 
       if (!projError && projData) {
-        setProjects(projData as unknown as ProjectWithDetails[]);
+        // Exclude hackathon sprint squads and temporary event teams so Student Projects only displays genuine student projects
+        const genuineProjects = (projData as any[]).filter((p) => {
+          const cat = (p.category || '').toLowerCase();
+          const summary = (p.summary || '').toLowerCase();
+          const desc = p.description || '';
+          if (
+            p.category === 'Hackathon Sprint' ||
+            cat.includes('hackathon') ||
+            summary.startsWith('hackathon team sprint') ||
+            summary.includes('hackathon') ||
+            desc.includes('HACKATHON_TEAM_META') ||
+            desc.includes('### Hackathon Event') ||
+            Boolean(p.hackathon_id)
+          ) {
+            return false;
+          }
+          return true;
+        });
+        setProjects(genuineProjects as unknown as ProjectWithDetails[]);
       }
 
       // 2. Fetch problems authored by this teacher (or all published problems for general visitors)
