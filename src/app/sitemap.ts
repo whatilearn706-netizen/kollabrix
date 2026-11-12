@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kollabrix.in';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.kollabrix.in';
   const currentDate = new Date().toISOString();
 
   return [
