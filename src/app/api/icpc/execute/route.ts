@@ -95,21 +95,49 @@ export async function POST(request: NextRequest) {
     const b64Stdin = Buffer.from(stdin || '').toString('base64');
     const b64Expected = expectedOutput ? Buffer.from(cleanOutput(expectedOutput)).toString('base64') : null;
 
-    // Call Judge0 CE public engine with base64 encoding enabled
-    const judge0Res = await fetch('https://ce.judge0.com/submissions?base64_encoded=true&wait=true', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        source_code: b64Source,
-        language_id: langConfig.id,
-        stdin: b64Stdin,
-        ...(b64Expected ? { expected_output: b64Expected } : {}),
-        cpu_time_limit: 2.0,
-        memory_limit: 256000,
-      }),
-    });
+    // 1. Try dedicated AIC Cloud private compiler first (0ms queue, dedicated resources)
+    let judge0Res: Response | null = null;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6500);
+      judge0Res = await fetch('https://api.kollabrix.in/submissions?base64_encoded=true&wait=true', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          source_code: b64Source,
+          language_id: langConfig.id,
+          stdin: b64Stdin,
+          ...(b64Expected ? { expected_output: b64Expected } : {}),
+          cpu_time_limit: 2.0,
+          memory_limit: 256000,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!judge0Res.ok) judge0Res = null;
+    } catch {
+      judge0Res = null;
+    }
+
+    // 2. Fallback to public Judge0 if private server is temporarily unreachable
+    if (!judge0Res) {
+      judge0Res = await fetch('https://ce.judge0.com/submissions?base64_encoded=true&wait=true', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          source_code: b64Source,
+          language_id: langConfig.id,
+          stdin: b64Stdin,
+          ...(b64Expected ? { expected_output: b64Expected } : {}),
+          cpu_time_limit: 2.0,
+          memory_limit: 256000,
+        }),
+      });
+    }
 
     if (!judge0Res.ok) {
       const errText = await judge0Res.text();
