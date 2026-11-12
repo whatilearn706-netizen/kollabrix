@@ -26,6 +26,7 @@ import {
   GraduationCap,
   ShieldCheck,
   AlertCircle,
+  AlertTriangle,
   ExternalLink,
   Lock,
   Flame,
@@ -166,6 +167,7 @@ export default function IcpcCollegiateArenaPage() {
     totalSolved: number;
     totalPoints: number;
   } | null>(null);
+  const [pasteWarning, setPasteWarning] = useState<string | null>(null);
 
   const userRole = (profile?.role as string) || '';
   const isFacultyUser =
@@ -1741,7 +1743,7 @@ export default function IcpcCollegiateArenaPage() {
                               severity: 'high',
                             }),
                           }).catch(() => {});
-                          alert(`⚠️ Proctoring Alert: Suspicious external code paste detected!\n${check.reason}\nThis incident has been logged for proctor review.`);
+                          setPasteWarning(check.reason);
                         }
                       }}
                       placeholder={
@@ -1940,6 +1942,51 @@ export default function IcpcCollegiateArenaPage() {
             </div>
           </div>
         </Modal>
+
+        {/* Suspicious External Paste Warning Modal (Restores & Guarantees Full-Screen on OK) */}
+        {pasteWarning && (
+          <div className="fixed inset-0 z-[600] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-150">
+            <div className="max-w-md w-full bg-charcoal-900 border-2 border-amber-500 rounded-3xl p-6 space-y-4 shadow-2xl shadow-amber-500/25 text-center animate-in zoom-in-95 duration-150">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400">
+                <AlertTriangle className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 text-left">
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Proctoring Alert: External Code Paste Detected</span>
+                </div>
+                <p className="text-xs text-slate-200 leading-relaxed font-mono bg-charcoal-950 p-3 rounded-xl border border-charcoal-800 whitespace-pre-line">
+                  {pasteWarning}
+                </p>
+                <p className="text-[11px] text-slate-400 pt-1 leading-snug">
+                  This incident has been logged for proctor review. Tapping OK will automatically return you to full-screen mode to resume your contest.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-extrabold text-xs py-3 rounded-xl shadow-lg shadow-amber-500/30 cursor-pointer"
+                onClick={async () => {
+                  setPasteWarning(null);
+                  try {
+                    if (typeof document !== 'undefined' && !document.fullscreenElement) {
+                      const el = document.documentElement;
+                      if (el.requestFullscreen) {
+                        await el.requestFullscreen();
+                      } else if ((el as any).webkitRequestFullscreen) {
+                        await (el as any).webkitRequestFullscreen();
+                      }
+                    }
+                  } catch (err) {
+                    console.warn('Failed to restore fullscreen after paste warning:', err);
+                  }
+                }}
+              >
+                OK (Return to Full-Screen Arena)
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Student Account Required Modal */}
         <Modal
