@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase as defaultClient } from '@/lib/supabase/client';
 import { createClient } from '@supabase/supabase-js';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import {
+  isSupabaseConfigured,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_ANON_KEY,
+} from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { ProblemSolution } from '@/types/database';
 import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const runtime = 'nodejs';
+
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 /**
  * GET /api/problems/solutions
@@ -185,6 +200,7 @@ export async function POST(request: NextRequest) {
       video_url,
       team_members = [],
       author_id,
+      publish_to_explore = false,
     } = body;
 
     // User-ID rate limiting allows 1000+ students on campus Wi-Fi without false 429 blocks
@@ -355,6 +371,67 @@ export async function POST(request: NextRequest) {
 
     if (saveErr) {
       throw new Error(`Failed to save solution to cloud registry: ${saveErr.message}`);
+    }
+
+    // If student opted to showcase this completed solution in Explore Projects
+    if (publish_to_explore && resolvedAuthorId) {
+      try {
+        const admin = getAdminClient();
+        let targetProjectId = project_id;
+
+        if (!targetProjectId) {
+          const { data: userProj } = await admin
+            .from('projects')
+            .select('id')
+            .eq('owner_id', resolvedAuthorId)
+            .eq('problem_statement_id', problem_id)
+            .maybeSingle();
+          if (userProj) targetProjectId = userProj.id;
+        }
+
+        const cleanSummary =
+          String(solution_writeup)
+            .replace(/^#+\s+/gm, '')
+            .replace(/\n+/g, ' ')
+            .trim()
+            .slice(0, 240) ||
+          `Collegiate solution for faculty challenge: ${problem_title}`;
+
+        const projectUpdate = {
+          title: String(title).trim(),
+          summary: cleanSummary,
+          description: String(solution_writeup).trim(),
+          repository_url: repo_url ? String(repo_url).trim() : null,
+          demo_url: demo_url ? String(demo_url).trim() : null,
+          documentation_url: video_url ? String(video_url).trim() : null,
+          status: 'Completed' as const,
+          problem_statement_id: null, // Cleared so it is featured in the general Explore Projects feed!
+          updated_at: new Date().toISOString(),
+        };
+
+        if (targetProjectId) {
+          await admin
+            .from('projects')
+            .update(projectUpdate)
+            .eq('id', targetProjectId);
+        } else {
+          await admin.from('projects').insert({
+            id: crypto.randomUUID(),
+            owner_id: resolvedAuthorId,
+            category: 'Web Development',
+            difficulty: 'Intermediate',
+            technologies: ['React', 'Next.js', 'TypeScript'],
+            required_skills: ['Full Stack', 'Software Engineering'],
+            desired_roles: ['Team Member'],
+            current_team_size: Array.isArray(team_members) && team_members.length > 0 ? team_members.length : 1,
+            desired_team_size: 4,
+            ...projectUpdate,
+            created_at: new Date().toISOString(),
+          });
+        }
+      } catch (expErr) {
+        console.warn('Notice publishing problem solution to Explore:', expErr);
+      }
     }
 
     return NextResponse.json({

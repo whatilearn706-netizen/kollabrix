@@ -55,6 +55,7 @@ export function ProblemSolutionModal({
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
     myProjects.length > 0 ? myProjects[0].id : ''
   );
+  const [publishToExplore, setPublishToExplore] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export function ProblemSolutionModal({
         if (typeof d.demoUrl === 'string') setDemoUrl(d.demoUrl);
         if (typeof d.videoUrl === 'string') setVideoUrl(d.videoUrl);
         if (typeof d.teamName === 'string' && d.teamName && !userTeam?.title) setTeamName(d.teamName);
+        if (typeof d.publishToExplore === 'boolean') setPublishToExplore(d.publishToExplore);
       }
     } catch {}
   }, [draftKey, isOpen, userTeam?.title]);
@@ -93,10 +95,11 @@ export function ProblemSolutionModal({
           demoUrl,
           videoUrl,
           teamName: userTeam?.title || teamName,
+          publishToExplore,
         })
       );
     } catch {}
-  }, [draftKey, title, solutionWriteup, repoUrl, demoUrl, videoUrl, userTeam?.title, teamName]);
+  }, [draftKey, title, solutionWriteup, repoUrl, demoUrl, videoUrl, userTeam?.title, teamName, publishToExplore]);
 
   // Sync team name if userTeam changes
   React.useEffect(() => {
@@ -155,6 +158,7 @@ export function ProblemSolutionModal({
           repo_url: repoUrl.trim() || null,
           demo_url: demoUrl.trim() || null,
           video_url: videoUrl.trim() || null,
+          publish_to_explore: publishToExplore,
         }),
       });
 
@@ -397,6 +401,32 @@ export function ProblemSolutionModal({
                 </select>
               </div>
             )}
+
+            {/* Ask if student wants to showcase this completed project in Explore */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-850/90 border border-charcoal-700/80 transition-all hover:border-amber-500/30">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={publishToExplore}
+                  onChange={(e) => setPublishToExplore(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-charcoal-600 bg-charcoal-900 text-amber-500 focus:ring-amber-500/20 cursor-pointer accent-amber-500"
+                />
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-xs font-bold text-white">
+                      Showcase this completed project in Explore Projects?
+                    </span>
+                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    By default, your answer stays private between your team and the professor. Check this if you want your full solution writeup, GitHub repository, and live demo published to the campus Explore page for everyone to see!
+                  </p>
+                </div>
+              </label>
+            </div>
 
             {/* Actions */}
             <div className="pt-3 flex items-center justify-between gap-3 border-t border-charcoal-800">

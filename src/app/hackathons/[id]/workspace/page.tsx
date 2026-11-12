@@ -1256,7 +1256,7 @@ export default function HackathonWorkspacePage() {
             title: newTeamName.trim(),
             summary: `Hackathon Team Sprint: ${hackathon.title} — ${newTeamName.trim()}`,
             description: `${metaSnippet}\n\n${newTeamDesc.trim() || 'Collegiate Hackathon Sprint Workspace'}\n\n### Hackathon Event\nThis workspace belongs to: **${hackathon.title}** (Organized by ${hackathon.organizer}).`,
-            category: 'Other',
+            category: 'Hackathon Sprint',
             difficulty: 'Intermediate',
             technologies: ['Next.js', 'React', 'TypeScript'],
             required_skills: ['Rapid Prototyping', 'Full-Stack'],
