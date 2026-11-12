@@ -330,6 +330,37 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         'builder'
       ).slice(0, 24);
 
+      // Auto-verify passcode if faculty user entered it but didn't tap "Verify Code" before saving
+      let verifiedStatus = isFacultyPasscodeVerified;
+      if (userRoleType === 'faculty' && !verifiedStatus && facultyPasscode.trim()) {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const vRes = await fetch('/api/faculty/verify', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              code: facultyPasscode.trim(),
+              passcode: facultyPasscode.trim(),
+              userId: user.id,
+            }),
+          });
+          const vData = await vRes.json();
+          if (vRes.ok && vData.success) {
+            verifiedStatus = true;
+            setIsFacultyPasscodeVerified(true);
+            if (user?.id) {
+              localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
+            }
+          }
+        } catch (vErr) {
+          console.warn('Auto passcode verification check note:', vErr);
+        }
+      }
+
       const assignedRole = userRoleType === 'faculty' ? 'teacher' : (profile?.role || 'student');
 
       const facultyBio =
@@ -397,7 +428,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         ...payload,
         faculty_department: facultyDepartment.trim(),
         faculty_designation: facultyDesignation.trim(),
-        faculty_verified: isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
+        faculty_verified: verifiedStatus || isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
       };
 
       let savedSuccessfully = false;
@@ -545,7 +576,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               data: {
                 faculty_department: facultyDepartment,
                 faculty_designation: facultyDesignation,
-                faculty_verified: isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
+                faculty_verified: verifiedStatus || isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
                 role: assignedRole,
               },
             });

@@ -15,6 +15,8 @@ import {
   Sparkles,
   Award,
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 
 interface FacultyStep4VerificationProps {
@@ -42,6 +44,7 @@ export function FacultyStep4Verification({
   googleScholarUrl,
   setGoogleScholarUrl,
 }: FacultyStep4VerificationProps) {
+  const { user, refreshProfile } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -59,15 +62,29 @@ export function FacultyStep4Verification({
       setVerifyError(null);
       setVerifyMessage(null);
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/faculty/verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: code }),
+        headers,
+        body: JSON.stringify({
+          code: code,
+          passcode: code,
+          facultyPasscode: code,
+          userId: user?.id,
+        }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
         setIsVerified(true);
+        if (user?.id) {
+          localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
+        }
+        await refreshProfile?.();
         setVerifyMessage(data.message || 'Faculty status verified successfully! Academic privileges unlocked.');
       } else {
         setVerifyError(data.error || 'Invalid faculty access passcode. Please check with your campus coordinator.');
@@ -266,8 +283,12 @@ export function FacultyStep4Verification({
       <FacultyVerificationModal
         isOpen={isDigiLockerOpen}
         onClose={() => setIsDigiLockerOpen(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
           setIsVerified(true);
+          if (user?.id) {
+            localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
+          }
+          await refreshProfile?.();
           setVerifyMessage('🇮🇳 DigiLocker Identity verified successfully! Faculty privileges unlocked.');
           setVerifyError(null);
           setIsDigiLockerOpen(false);

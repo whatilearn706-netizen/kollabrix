@@ -23,12 +23,14 @@ export async function POST(request: NextRequest) {
       : defaultClient;
 
     const body = await request.json();
-    const { code, userId } = body;
+    const rawCode = body.code || body.passcode || body.facultyPasscode;
+    const { userId } = body;
 
-    if (!code || typeof code !== 'string') {
+    if (!rawCode || typeof rawCode !== 'string' || !rawCode.trim()) {
       return NextResponse.json({ error: 'Faculty passcode is required.' }, { status: 400 });
     }
 
+    const code = rawCode.trim();
     const cleanCode = code.trim().toUpperCase();
     const normalized = cleanCode.replace(/[\s-_]/g, '');
 
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
       const { data: userData } = await client.auth.getUser(token);
       user = userData?.user;
     }
-    const targetUserId = user?.id;
+    const targetUserId = user?.id || userId;
 
     if (!targetUserId) {
       return NextResponse.json({ error: 'You must be signed in to verify faculty status.' }, { status: 401 });
