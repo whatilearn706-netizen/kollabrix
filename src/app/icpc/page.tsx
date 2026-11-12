@@ -1722,10 +1722,62 @@ export default function IcpcCollegiateArenaPage() {
                           setCodeDrafts((prev) => ({ ...prev, [k]: val }));
                         }
                       }}
+                      onKeyDown={(e) => {
+                        // Anti-Cheat: Intercept keyboard paste (Cmd+V / Ctrl+V)
+                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+                          e.preventDefault();
+                          const reason = 'Proctoring Alert: Keyboard paste (Cmd/Ctrl + V) blocked. Copy-pasting code into the compiler is disabled in competitive practice. Code must be typed directly.';
+                          if (selectedContest && activeProblem) {
+                            fetch('/api/icpc/proctor', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                studentId: user?.id || 'anon',
+                                studentName: profile?.display_name || user?.user_metadata?.display_name || 'Contestant',
+                                studentEmail: user?.email,
+                                college: (profile as any)?.college || 'Collegiate Builder',
+                                contestId: selectedContest.id,
+                                contestTitle: selectedContest.title,
+                                problemId: activeProblem.id,
+                                problemTitle: activeProblem.title,
+                                violationType: 'SUSPICIOUS_PASTE',
+                                details: reason,
+                                severity: 'high',
+                              }),
+                            }).catch(() => {});
+                          }
+                          setPasteWarning(reason);
+                          return;
+                        }
+
+                        // Allow tab key indentation inside code editor
+                        if (e.key === 'Tab') {
+                          e.preventDefault();
+                          const target = e.currentTarget;
+                          const start = target.selectionStart;
+                          const end = target.selectionEnd;
+                          const val = target.value;
+                          const newVal = val.substring(0, start) + '    ' + val.substring(end);
+                          setUserCode(newVal);
+                          if (activeProblem) {
+                            const k = `${activeProblem.id}_${selectedLanguage}`;
+                            setCodeDrafts((prev) => ({ ...prev, [k]: newVal }));
+                          }
+                          requestAnimationFrame(() => {
+                            target.selectionStart = target.selectionEnd = start + 4;
+                          });
+                        }
+                      }}
                       onPaste={(e) => {
+                        // Anti-Cheat: Strictly block external paste into compiler
+                        e.preventDefault();
                         const pasted = e.clipboardData?.getData('text') || '';
                         const check = checkSuspiciousPaste(pasted);
-                        if (check.isSuspicious) {
+                        const reason = check.isSuspicious
+                          ? check.reason
+                          : `Proctoring Alert: External code paste blocked (${pasted.length || 'clipboard'} characters). Copy-pasting into the competitive compiler is disabled. Code must be typed directly.`;
+
+                        if (selectedContest && activeProblem) {
                           fetch('/api/icpc/proctor', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1739,12 +1791,12 @@ export default function IcpcCollegiateArenaPage() {
                               problemId: activeProblem.id,
                               problemTitle: activeProblem.title,
                               violationType: 'SUSPICIOUS_PASTE',
-                              details: check.reason,
+                              details: reason,
                               severity: 'high',
                             }),
                           }).catch(() => {});
-                          setPasteWarning(check.reason);
                         }
+                        setPasteWarning(reason);
                       }}
                       placeholder={
                         selectedLanguage === 'python'
@@ -1953,7 +2005,7 @@ export default function IcpcCollegiateArenaPage() {
               <div className="space-y-1.5 text-left">
                 <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Proctoring Alert: External Code Paste Detected</span>
+                  <span>Proctoring Alert: External Code Paste Blocked</span>
                 </div>
                 <p className="text-xs text-slate-200 leading-relaxed font-mono bg-charcoal-950 p-3 rounded-xl border border-charcoal-800 whitespace-pre-line">
                   {pasteWarning}
