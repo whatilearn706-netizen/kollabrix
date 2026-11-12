@@ -27,7 +27,13 @@ function normalizeJavaCode(code: string): string {
 
 function cleanOutput(str?: string | null): string {
   if (!str) return '';
-  return str.replace(/\r\n/g, '\n').trim();
+  return str
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .trim();
 }
 
 export async function POST(request: NextRequest) {
@@ -161,42 +167,54 @@ export async function POST(request: NextRequest) {
     const message = result.message ? Buffer.from(result.message, 'base64').toString('utf-8') : '';
 
     const statusId = result.status?.id;
-    const statusDesc = result.status?.description || 'Unknown';
+    let statusDesc = result.status?.description || 'Unknown';
 
     let verdict: 'Accepted' | 'Wrong Answer' | 'Compilation Error' | 'Time Limit Exceeded' | 'Runtime Error' = 'Runtime Error';
     let passed = false;
 
-    if (statusId === 6) {
+    // Check compilation & syntax errors first
+    const isPythonSyntaxError = stderr && (
+      stderr.includes('SyntaxError') ||
+      stderr.includes('IndentationError') ||
+      stderr.includes('TabError')
+    );
+
+    if (statusId === 6 || isPythonSyntaxError || (compileOutput && !stdout && !stderr && statusId !== 3)) {
       verdict = 'Compilation Error';
+      statusDesc = isPythonSyntaxError ? 'Syntax Error' : (statusDesc.includes('Compilation') ? statusDesc : 'Compilation Error');
+      passed = false;
     } else if (statusId === 5) {
       verdict = 'Time Limit Exceeded';
-    } else if (statusId >= 7 && statusId <= 12) {
+      statusDesc = 'Time Limit Exceeded';
+      passed = false;
+    } else if ((statusId >= 7 && statusId <= 12) || (stderr && stderr.trim().length > 0)) {
       verdict = 'Runtime Error';
-    } else if (statusId === 3) {
-      // Judge0 accepted (or outputs matched)
-      verdict = 'Accepted';
-      passed = true;
+      statusDesc = statusDesc.includes('Runtime') ? statusDesc : 'Runtime Error (Exception / Non-zero Exit)';
+      passed = false;
     } else if (statusId === 4) {
       verdict = 'Wrong Answer';
+      statusDesc = 'Wrong Answer';
+      passed = false;
     } else {
-      // If no expected output was supplied, determine based on presence of stderr
-      if (!expectedOutput) {
-        if (!stderr && !compileOutput) {
-          verdict = 'Accepted';
-          passed = true;
-        } else {
-          verdict = stderr ? 'Runtime Error' : 'Compilation Error';
-        }
-      } else {
-        // Compare outputs manually
+      // Process ran cleanly with exit code 0 (statusId === 3 or runner OK)
+      const hasExpected = expectedOutput !== undefined && expectedOutput !== null && expectedOutput !== '';
+      if (hasExpected) {
         const cleanGot = cleanOutput(stdout);
         const cleanExp = cleanOutput(expectedOutput);
         if (cleanGot === cleanExp) {
           verdict = 'Accepted';
+          statusDesc = 'Accepted';
           passed = true;
         } else {
           verdict = 'Wrong Answer';
+          statusDesc = 'Wrong Answer (Outputs did not match)';
+          passed = false;
         }
+      } else {
+        // No expected output provided (e.g. ad-hoc run without expected)
+        verdict = 'Accepted';
+        statusDesc = 'Accepted';
+        passed = true;
       }
     }
 
