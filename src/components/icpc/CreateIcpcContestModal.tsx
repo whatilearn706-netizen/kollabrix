@@ -49,6 +49,8 @@ interface ProblemDraft {
   constraints: string;
   sampleInput: string;
   sampleOutput: string;
+  allowedLanguages?: ('cpp' | 'python' | 'java')[];
+  showEditorialForm?: boolean;
   explanation: string;
   solutionCode: string;
   solutionExplanation: string;
@@ -68,6 +70,8 @@ const DEFAULT_PROBLEM_DRAFT: ProblemDraft = {
   constraints: '1 <= N <= 10^5',
   sampleInput: '4\n1 2 3 4',
   sampleOutput: '10',
+  allowedLanguages: ['cpp', 'python', 'java'],
+  showEditorialForm: false,
   explanation: 'Sum of the array is 10.',
   solutionCode: '',
   solutionExplanation: '',
@@ -296,24 +300,36 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
         .map((r) => r.trim())
         .filter(Boolean);
 
-      const formattedProblems = problems.map((p) => ({
-        title: p.title.trim(),
-        difficulty: p.difficulty,
-        points: Number(p.points) || 100,
-        timeLimit: p.timeLimit,
-        memoryLimit: p.memoryLimit,
-        tags: p.tags.split(',').map((t) => t.trim()).filter(Boolean),
-        description: p.description.trim(),
-        inputFormat: p.inputFormat.trim(),
-        outputFormat: p.outputFormat.trim(),
-        constraints: p.constraints.trim(),
-        sampleInput: p.sampleInput.trim(),
-        sampleOutput: p.sampleOutput.trim(),
-        explanation: p.explanation.trim() || undefined,
-        solutionCode: p.solutionCode.trim() || undefined,
-        solutionExplanation: p.solutionExplanation.trim() || undefined,
-        solutionLanguage: p.solutionLanguage || 'cpp',
-      }));
+      const formattedProblems = problems.map((p) => {
+        const allowedLanguages = (p.allowedLanguages && p.allowedLanguages.length > 0)
+          ? p.allowedLanguages
+          : (['cpp', 'python', 'java'] as ('cpp' | 'python' | 'java')[]);
+
+        const isPractice = contestType === 'practice';
+        const solutionCode = !isPractice && p.solutionCode ? p.solutionCode.trim() : undefined;
+        const solutionExplanation = !isPractice && p.solutionExplanation ? p.solutionExplanation.trim() : undefined;
+        const solutionLanguage = !isPractice ? p.solutionLanguage : undefined;
+
+        return {
+          title: p.title.trim(),
+          difficulty: p.difficulty,
+          points: Number(p.points) || 100,
+          timeLimit: p.timeLimit,
+          memoryLimit: p.memoryLimit,
+          tags: p.tags.split(',').map((t) => t.trim()).filter(Boolean),
+          description: p.description.trim(),
+          inputFormat: p.inputFormat.trim(),
+          outputFormat: p.outputFormat.trim(),
+          constraints: p.constraints.trim(),
+          sampleInput: p.sampleInput.trim(),
+          sampleOutput: p.sampleOutput.trim(),
+          allowedLanguages,
+          explanation: p.explanation.trim() || undefined,
+          solutionCode,
+          solutionExplanation,
+          solutionLanguage,
+        };
+      });
 
       let token: string | null = null;
       try {
@@ -1073,6 +1089,49 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
                 </div>
 
                 <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Allowed Programming Languages for this Problem (Tap to enable/disable):
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {([
+                      { id: 'cpp', label: 'C++ (GCC 9.2)' },
+                      { id: 'python', label: 'Python 3' },
+                      { id: 'java', label: 'Java (JDK 17)' },
+                    ] as const).map((lang) => {
+                      const isSelected = (p.allowedLanguages || ['cpp', 'python', 'java']).includes(lang.id);
+                      return (
+                        <button
+                          key={lang.id}
+                          type="button"
+                          onClick={() => {
+                            const current = p.allowedLanguages || ['cpp', 'python', 'java'];
+                            let next: ('cpp' | 'python' | 'java')[];
+                            if (isSelected) {
+                              if (current.length <= 1) return;
+                              next = current.filter((l) => l !== lang.id);
+                            } else {
+                              next = [...current, lang.id];
+                            }
+                            handleProblemChange(idx, 'allowedLanguages', next);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isSelected
+                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400 shadow-xs'
+                              : 'bg-slate-100 dark:bg-charcoal-900 text-slate-500 border border-slate-300 dark:border-charcoal-700 hover:text-slate-300'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{lang.label}</span>
+                        </button>
+                      );
+                    })}
+                    <span className="text-[10px] font-mono text-slate-400 ml-1">
+                      ({(p.allowedLanguages || ['cpp', 'python', 'java']).length} language{(p.allowedLanguages || ['cpp', 'python', 'java']).length > 1 ? 's' : ''} permitted in arena)
+                    </span>
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                     Problem Statement (Markdown supported) *
                   </label>
@@ -1146,60 +1205,80 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
                   </div>
                 </div>
 
-                {/* Faculty Solution & Editorial Section */}
-                <div className="p-3.5 rounded-2xl bg-cyan-500/5 dark:bg-charcoal-900 border border-cyan-500/20 space-y-3 pt-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-cyan-400" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        💡 Official Faculty Solution & Editorial
-                      </span>
+                {/* Faculty Solution & Editorial Section (Live ICPC Contest Only) */}
+                {contestType === 'contest' && (
+                  <div className="p-3.5 rounded-2xl bg-cyan-500/5 dark:bg-charcoal-900 border border-cyan-500/20 space-y-3 pt-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-cyan-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          💡 Official Faculty Solution & Editorial
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleProblemChange(idx, 'showEditorialForm', !p.showEditorialForm)}
+                        className="text-[11px] font-mono font-bold px-3 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <span>{p.showEditorialForm ? '− Hide Editorial' : '+ Add Official Editorial Answer'}</span>
+                      </button>
                     </div>
-                    <span className="text-[10px] font-mono text-cyan-300 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20">
-                      {contestType === 'practice' ? 'Unlocked immediately in Practice' : 'Unlocks automatically after contest'}
-                    </span>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
-                        Solution Language
-                      </label>
-                      <Select
-                        value={p.solutionLanguage}
-                        onChange={(e) => handleProblemChange(idx, 'solutionLanguage', e.target.value)}
-                        options={[
-                          { value: 'cpp', label: 'C++ (Fast I/O)' },
-                          { value: 'python', label: 'Python 3' },
-                          { value: 'java', label: 'Java' },
-                        ]}
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
-                        Editorial Explanation / Algorithmic Approach
-                      </label>
-                      <Input
-                        placeholder="e.g. Optimal O(N log N) interval sweep with prefix min..."
-                        value={p.solutionExplanation}
-                        onChange={(e) => handleProblemChange(idx, 'solutionExplanation', e.target.value)}
-                      />
-                    </div>
-                  </div>
+                    {p.showEditorialForm ? (
+                      <div className="space-y-3 pt-2 border-t border-cyan-500/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                            🔒 Locked during live contest • Unlocks automatically when contest ends
+                          </span>
+                        </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
-                      Optimal Reference Code (Teacher's Solution)
-                    </label>
-                    <Textarea
-                      rows={5}
-                      className="font-mono text-xs text-cyan-300 bg-charcoal-950"
-                      placeholder={`// Provide the official reference code in ${p.solutionLanguage.toUpperCase()}...\n// This solution is displayed to students after the contest ends.`}
-                      value={p.solutionCode}
-                      onChange={(e) => handleProblemChange(idx, 'solutionCode', e.target.value)}
-                    />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
+                              Solution Language
+                            </label>
+                            <Select
+                              value={p.solutionLanguage}
+                              onChange={(e) => handleProblemChange(idx, 'solutionLanguage', e.target.value)}
+                              options={[
+                                { value: 'cpp', label: 'C++ (Fast I/O)' },
+                                { value: 'python', label: 'Python 3' },
+                                { value: 'java', label: 'Java' },
+                              ]}
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
+                              Editorial Explanation / Algorithmic Approach
+                            </label>
+                            <Input
+                              placeholder="e.g. Optimal O(N log N) interval sweep with prefix min..."
+                              value={p.solutionExplanation}
+                              onChange={(e) => handleProblemChange(idx, 'solutionExplanation', e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1 font-sans">
+                            Optimal Reference Code (Teacher's Solution)
+                          </label>
+                          <Textarea
+                            rows={5}
+                            className="font-mono text-xs text-cyan-300 bg-charcoal-950"
+                            placeholder={`// Provide the official reference code in ${p.solutionLanguage.toUpperCase()}...\n// This solution is displayed to students after the contest ends.`}
+                            value={p.solutionCode}
+                            onChange={(e) => handleProblemChange(idx, 'solutionCode', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                        Optional: Click <strong>&quot;+ Add Official Editorial Answer&quot;</strong> above to write the faculty reference code &amp; algorithmic explanation for students. It will remain securely locked until the contest timer expires in real life.
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

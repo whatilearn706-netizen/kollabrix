@@ -21,6 +21,7 @@ export interface IcpcProblem {
   sampleInput: string;
   sampleOutput: string;
   testCases?: IcpcTestCase[];
+  allowedLanguages?: ('cpp' | 'python' | 'java')[];
   starterCode?: {
     cpp?: string;
     java?: string;

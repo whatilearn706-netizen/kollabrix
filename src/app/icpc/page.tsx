@@ -289,17 +289,25 @@ export default function IcpcCollegiateArenaPage() {
       setCodeDrafts((prev) => ({ ...prev, [currentKey]: userCode }));
     }
 
+    const allowed = (newProblem.allowedLanguages && newProblem.allowedLanguages.length > 0)
+      ? newProblem.allowedLanguages
+      : (['cpp', 'python', 'java'] as ('cpp' | 'python' | 'java')[]);
+    const nextLang = allowed.includes(selectedLanguage) ? selectedLanguage : allowed[0];
+    if (nextLang !== selectedLanguage) {
+      setSelectedLanguage(nextLang);
+    }
+
     setActiveProblem(newProblem);
     setSolverTab('editor');
     setConsoleOutput({ status: 'idle', message: '' });
     setNextQuestionPrompt(null);
 
-    const targetKey = `${newProblem.id}_${selectedLanguage}`;
+    const targetKey = `${newProblem.id}_${nextLang}`;
     const existingDraft = codeDrafts[targetKey];
     if (existingDraft !== undefined) {
       setUserCode(existingDraft);
     } else {
-      const starter = getCleanStarter(newProblem, selectedLanguage);
+      const starter = getCleanStarter(newProblem, nextLang);
       setUserCode(starter);
     }
   };
@@ -394,12 +402,20 @@ export default function IcpcCollegiateArenaPage() {
     setConsoleOutput({ status: 'idle', message: '' });
     setNextQuestionPrompt(null);
 
-    const targetKey = `${problem.id}_${selectedLanguage}`;
+    const allowed = (problem.allowedLanguages && problem.allowedLanguages.length > 0)
+      ? problem.allowedLanguages
+      : (['cpp', 'python', 'java'] as ('cpp' | 'python' | 'java')[]);
+    const nextLang = allowed.includes(selectedLanguage) ? selectedLanguage : allowed[0];
+    if (nextLang !== selectedLanguage) {
+      setSelectedLanguage(nextLang);
+    }
+
+    const targetKey = `${problem.id}_${nextLang}`;
     const existingDraft = codeDrafts[targetKey];
     if (existingDraft !== undefined) {
       setUserCode(existingDraft);
     } else {
-      const starter = getCleanStarter(problem, selectedLanguage);
+      const starter = getCleanStarter(problem, nextLang);
       setUserCode(starter);
     }
   };
@@ -1464,32 +1480,34 @@ export default function IcpcCollegiateArenaPage() {
                         <span>Problem Statement</span>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setSolverTab('solution')}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          solverTab === 'solution'
-                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>💡 Official Editorial</span>
-                        {(() => {
-                          const isContestLive = selectedContest.contestType !== 'practice' && selectedContest.status === 'live' && new Date() < new Date(selectedContest.endTime);
-                          const isSolutionLocked = activeProblem.isSolutionLocked ?? isContestLive;
-                          return isSolutionLocked ? (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>Locked</span>
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              Unlocked
-                            </span>
-                          );
-                        })()}
-                      </button>
+                      {selectedContest.contestType !== 'practice' && (activeProblem.solutionCode || activeProblem.solutionExplanation || activeProblem.isSolutionLocked) && (
+                        <button
+                          type="button"
+                          onClick={() => setSolverTab('solution')}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            solverTab === 'solution'
+                              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>💡 Official Editorial</span>
+                          {(() => {
+                            const isContestEnded = selectedContest.endTime ? new Date() >= new Date(selectedContest.endTime) : false;
+                            const isSolutionLocked = !isContestEnded;
+                            return isSolutionLocked ? (
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>Locked</span>
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                Unlocked
+                              </span>
+                            );
+                          })()}
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
@@ -1553,8 +1571,8 @@ export default function IcpcCollegiateArenaPage() {
                     ) : (
                       /* Tab 2: Editorial */
                       (() => {
-                        const isContestLive = selectedContest.contestType !== 'practice' && selectedContest.status === 'live' && new Date() < new Date(selectedContest.endTime);
-                        const isSolutionLocked = activeProblem.isSolutionLocked ?? isContestLive;
+                        const isContestEnded = selectedContest.endTime ? new Date() >= new Date(selectedContest.endTime) : false;
+                        const isSolutionLocked = !isContestEnded;
 
                         if (isSolutionLocked) {
                           const minutesLeft = Math.max(0, Math.round((new Date(selectedContest.endTime).getTime() - Date.now()) / 60000));
@@ -1657,97 +1675,137 @@ export default function IcpcCollegiateArenaPage() {
                 </div>
 
                 {/* RIGHT COLUMN: Code Editor & Testbench */}
-                <div className="w-full lg:w-1/2 h-full flex flex-col bg-charcoal-900/40 overflow-hidden min-h-0">
-                  {/* Editor Toolbar (h-11) */}
-                  <div className="h-11 shrink-0 px-4 border-b border-charcoal-800 flex items-center justify-between bg-charcoal-900 select-none gap-2">
-                    {/* Language switcher */}
-                    <div className="flex items-center gap-1.5">
-                      {(['cpp', 'python', 'java'] as const).map((lang) => (
-                        <button
-                          key={lang}
-                          type="button"
-                          onClick={() => handleSelectLanguage(lang)}
-                          className={`px-2.5 py-1 rounded-lg uppercase text-xs font-mono font-bold transition-all cursor-pointer ${
-                            selectedLanguage === lang
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                              : 'text-slate-400 hover:text-white border border-transparent'
-                          }`}
-                        >
-                          {lang}
-                        </button>
-                      ))}
-                    </div>
+                {(() => {
+                  const allowedLanguages = (activeProblem.allowedLanguages && activeProblem.allowedLanguages.length > 0)
+                    ? activeProblem.allowedLanguages
+                    : (['cpp', 'python', 'java'] as ('cpp' | 'python' | 'java')[]);
 
-                    {/* Action buttons (Run & Submit) right in the Editor Toolbar */}
-                    <div className="flex items-center gap-2">
-                      <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-mono text-slate-400 mr-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>Anti-Cheat</span>
+                  const isContestTimeEnded = selectedContest.contestType !== 'practice' && Boolean(selectedContest.endTime) && new Date() >= new Date(selectedContest.endTime);
+                  const isAllContestProblemsSolved = selectedContest.problems.length > 0 && selectedContest.problems.every((p) => progress.solvedProblemIds.includes(p.id));
+                  const isArenaReadOnly = isContestTimeEnded || isAllContestProblemsSolved;
+
+                  return (
+                    <div className="w-full lg:w-1/2 h-full flex flex-col bg-charcoal-900/40 overflow-hidden min-h-0">
+                      {/* Editor Toolbar (h-11) */}
+                      <div className="h-11 shrink-0 px-4 border-b border-charcoal-800 flex items-center justify-between bg-charcoal-900 select-none gap-2">
+                        {/* Language switcher depending on allowed languages */}
+                        <div className="flex items-center gap-1.5">
+                          {allowedLanguages.map((lang) => (
+                            <button
+                              key={lang}
+                              type="button"
+                              onClick={() => handleSelectLanguage(lang)}
+                              className={`px-2.5 py-1 rounded-lg uppercase text-xs font-mono font-bold transition-all cursor-pointer ${
+                                selectedLanguage === lang
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
+                                  : 'text-slate-400 hover:text-white border border-transparent'
+                              }`}
+                            >
+                              {lang}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Action buttons (Run & Submit) right in the Editor Toolbar */}
+                        <div className="flex items-center gap-2">
+                          <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-mono text-slate-400 mr-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>Anti-Cheat</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={isArenaReadOnly}
+                            onClick={handleRunSample}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-mono font-bold transition-all shadow-xs ${
+                              isArenaReadOnly
+                                ? 'bg-charcoal-800 text-slate-500 border-charcoal-700 cursor-not-allowed'
+                                : 'bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 hover:text-white border-charcoal-700 cursor-pointer active:scale-95'
+                            }`}
+                            title={isArenaReadOnly ? 'Assessment has concluded (Read-only mode)' : 'Run sample testcase and compile code'}
+                          >
+                            <Play className={`w-3.5 h-3.5 ${isArenaReadOnly ? 'text-slate-500 fill-slate-500/20' : 'text-cyan-400 fill-cyan-400/20'}`} />
+                            <span>Run</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isArenaReadOnly}
+                            onClick={handleSubmitSolution}
+                            className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all shadow-sm ${
+                              isArenaReadOnly
+                                ? 'bg-charcoal-800 text-slate-500 border-charcoal-700 cursor-not-allowed'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/50 cursor-pointer active:scale-95'
+                            }`}
+                            title={isArenaReadOnly ? 'All problems submitted or contest time ended (Read-only mode)' : 'Submit code against all testcases'}
+                          >
+                            <CheckCircle2 className={`w-3.5 h-3.5 ${isArenaReadOnly ? 'text-slate-500' : 'text-emerald-200'}`} />
+                            <span>{isArenaReadOnly ? 'Submitted (Read-Only)' : 'Submit'}</span>
+                          </button>
+                        </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleRunSample}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 hover:text-white border border-charcoal-700 text-xs font-mono font-bold transition-all cursor-pointer shadow-xs active:scale-95"
-                        title="Run sample testcase and compile code"
-                      >
-                        <Play className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
-                        <span>Run</span>
-                      </button>
+                      {/* Next Question Auto-Advance Toast / Banner */}
+                      {nextQuestionPrompt && (
+                        <div className="px-4 py-2.5 bg-emerald-950/90 border-b border-emerald-500/40 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200 backdrop-blur-sm select-none">
+                          <div className="flex items-center gap-2 text-emerald-300 font-mono">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>
+                              <strong>Correct! Solution Accepted!</strong> Advancing to Problem {nextQuestionPrompt.nextLetter} in {nextQuestionPrompt.secondsLeft}s...
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => switchProblem(nextQuestionPrompt.nextProblem)}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                            >
+                              <span>Problem {nextQuestionPrompt.nextLetter} Now</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNextQuestionPrompt(null)}
+                              className="px-2 py-1 rounded-lg text-slate-400 hover:text-white text-xs cursor-pointer"
+                            >
+                              Stay Here
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={handleSubmitSolution}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                        title="Submit code against all testcases"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
-                        <span>Submit</span>
-                      </button>
-                    </div>
-                  </div>
+                      {/* Read-Only Status Banner when submissions are locked */}
+                      {isArenaReadOnly && (
+                        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-300 font-mono select-none">
+                          <div className="flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>
+                              {isContestTimeEnded
+                                ? '⏰ Contest Time Ended — Submissions are closed. Editor is in read-only mode.'
+                                : '🏆 Assessment Completed — All questions submitted! Editor is in read-only review mode.'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shrink-0">
+                            Read Only Mode
+                          </span>
+                        </div>
+                      )}
 
-                  {/* Next Question Auto-Advance Toast / Banner */}
-                  {nextQuestionPrompt && (
-                    <div className="px-4 py-2.5 bg-emerald-950/90 border-b border-emerald-500/40 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200 backdrop-blur-sm select-none">
-                      <div className="flex items-center gap-2 text-emerald-300 font-mono">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>
-                          <strong>Correct! Solution Accepted!</strong> Advancing to Problem {nextQuestionPrompt.nextLetter} in {nextQuestionPrompt.secondsLeft}s...
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => switchProblem(nextQuestionPrompt.nextProblem)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
-                        >
-                          <span>Problem {nextQuestionPrompt.nextLetter} Now</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNextQuestionPrompt(null)}
-                          className="px-2 py-1 rounded-lg text-slate-400 hover:text-white text-xs cursor-pointer"
-                        >
-                          Stay Here
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Full-Height Code Editor Area */}
-                  <div className="flex-1 relative min-h-0 bg-charcoal-950 flex flex-col">
-                    <textarea
-                      value={userCode}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setUserCode(val);
-                        if (activeProblem) {
-                          const k = `${activeProblem.id}_${selectedLanguage}`;
-                          setCodeDrafts((prev) => ({ ...prev, [k]: val }));
-                        }
-                      }}
+                      {/* Full-Height Code Editor Area */}
+                      <div className="flex-1 relative min-h-0 bg-charcoal-950 flex flex-col">
+                        <textarea
+                          value={userCode}
+                          readOnly={isArenaReadOnly}
+                          disabled={isArenaReadOnly}
+                          onChange={(e) => {
+                            if (isArenaReadOnly) return;
+                            const val = e.target.value;
+                            setUserCode(val);
+                            if (activeProblem) {
+                              const k = `${activeProblem.id}_${selectedLanguage}`;
+                              setCodeDrafts((prev) => ({ ...prev, [k]: val }));
+                            }
+                          }}
                       onKeyDown={(e) => {
                         // Anti-Cheat: Intercept keyboard paste (Cmd+V / Ctrl+V)
                         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
@@ -1825,7 +1883,9 @@ export default function IcpcCollegiateArenaPage() {
                         setPasteWarning(reason);
                       }}
                       placeholder={
-                        selectedLanguage === 'python'
+                        isArenaReadOnly
+                          ? 'Submissions closed for this contest session.'
+                          : selectedLanguage === 'python'
                           ? `# Write your Python 3 solution here...\n# Read from sys.stdin and print to sys.stdout\nimport sys\n\ndef solve():\n    pass\n\nif __name__ == '__main__':\n    solve()`
                           : selectedLanguage === 'java'
                           ? `// Write your Java solution here...\n// Class must be named Main\nimport java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n    }\n}`
@@ -1868,9 +1928,10 @@ export default function IcpcCollegiateArenaPage() {
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={isArenaReadOnly}
                       onClick={handleRunSample}
-                      leftIcon={<Play className="w-3.5 h-3.5 text-cyan-400" />}
-                      className="border-charcoal-700 text-slate-200 hover:text-white text-xs font-mono"
+                      leftIcon={<Play className={`w-3.5 h-3.5 ${isArenaReadOnly ? 'text-slate-500' : 'text-cyan-400'}`} />}
+                      className={`border-charcoal-700 text-xs font-mono ${isArenaReadOnly ? 'text-slate-500 cursor-not-allowed opacity-50' : 'text-slate-200 hover:text-white'}`}
                     >
                       Run Sample Testcase
                     </Button>
@@ -1879,15 +1940,18 @@ export default function IcpcCollegiateArenaPage() {
                       <Button
                         size="sm"
                         variant="primary"
+                        disabled={isArenaReadOnly}
                         onClick={handleSubmitSolution}
                         leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                        className={`font-bold text-xs shadow-md ${isArenaReadOnly ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
                       >
-                        Submit Solution
+                        {isArenaReadOnly ? 'Contest Concluded (Read-Only)' : 'Submit Solution'}
                       </Button>
                     </div>
                   </footer>
                 </div>
+              );
+            })()}
               </div>
             </div>
           </IcpcProctorGuard>
@@ -2354,6 +2418,7 @@ export default function IcpcCollegiateArenaPage() {
                 <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400 pt-1 border-t border-charcoal-800/80">
                   <span>⏱ CPU Limit: <strong className="text-white">{questionPreview.problem.timeLimit || '2.0s'}</strong></span>
                   <span>💾 Memory Limit: <strong className="text-white">{questionPreview.problem.memoryLimit || '256MB'}</strong></span>
+                  <span>💻 Allowed: <strong className="text-cyan-300 font-bold uppercase">{((questionPreview.problem.allowedLanguages && questionPreview.problem.allowedLanguages.length > 0) ? questionPreview.problem.allowedLanguages : ['cpp', 'python', 'java']).join(', ')}</strong></span>
                   {questionPreview.problem.tags && questionPreview.problem.tags.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       {questionPreview.problem.tags.map((tag) => (
