@@ -15,66 +15,41 @@ export function isFacultyProfile(p: Partial<Profile> | null | undefined): boolea
   if (!p) return false;
 
   const role = (p.role || '').toLowerCase().trim();
+
+  // If role is explicitly student, they are ALWAYS allowed as a student
+  if (role === 'student') {
+    return false;
+  }
+
+  // Explicit educator / faculty roles
   if (
     role === 'teacher' ||
     role === 'faculty' ||
-    role === 'professor' ||
-    role === 'admin' ||
-    role === 'educator' ||
-    role === 'mentor'
+    role === 'professor'
   ) {
     return true;
   }
 
-  if (Boolean((p as any).faculty_verified)) return true;
-
-  const email = ((p as any).email || '').toLowerCase().trim();
-  if (
-    email === 'goyalmayank142@gmail.com' ||
-    email === 'kollabrixm@gmail.com' ||
-    email.includes('faculty') ||
-    email.includes('professor')
-  ) {
+  // Explicit verified educator badge
+  if (Boolean((p as any).faculty_verified)) {
     return true;
   }
 
-  const username = (p.username || '').toLowerCase().trim();
-  if (
-    username === 'kollabrixm923' ||
-    username === 'kollabrixm147' ||
-    username === 'kollabrix' ||
-    username.includes('faculty') ||
-    username.includes('teacher') ||
-    username.includes('prof')
-  ) {
+  // Explicit faculty designation / department
+  if (Boolean((p as any).faculty_designation) || Boolean((p as any).faculty_department)) {
     return true;
   }
 
-  const displayName = (p.display_name || '').toLowerCase().trim();
-  if (
-    displayName.includes('kollabrix main account') ||
-    displayName.includes('faculty') ||
-    displayName.includes('professor') ||
-    displayName.includes('instructor') ||
-    displayName.includes('teacher')
-  ) {
-    return true;
-  }
-
+  // Academic year stating faculty
   const academicYear = (p.academic_year || '').toLowerCase().trim();
   if (
     academicYear.includes('faculty') ||
-    academicYear.includes('mentor') ||
-    academicYear.includes('professor')
+    academicYear.includes('academic mentor')
   ) {
     return true;
   }
 
-  const course = (p.course || '').toLowerCase().trim();
-  if (course.includes('faculty') || course.includes('academic mentor')) {
-    return true;
-  }
-
+  // Preferred roles indicating faculty titles
   const roles = (p.preferred_roles || []).map((r) => r.toLowerCase().trim());
   const facultyKeywords = [
     'professor',
@@ -82,15 +57,8 @@ export function isFacultyProfile(p: Partial<Profile> | null | undefined): boolea
     'associate professor',
     'hod',
     'dean',
-    'faculty',
-    'academic mentor',
-    'lecturer',
   ];
   if (roles.some((r) => facultyKeywords.some((k) => r.includes(k)))) {
-    return true;
-  }
-
-  if (Boolean((p as any).faculty_designation) || Boolean((p as any).faculty_department)) {
     return true;
   }
 

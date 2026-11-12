@@ -168,17 +168,24 @@ export default function TeammatesPage() {
         } catch {}
 
         if (profs && Array.isArray(profs)) {
-          const activeProfs = (profs as Profile[])
-            .filter(
-              (p) =>
-                !p.is_suspended &&
-                p.status !== 'suspended' &&
-                !suspendedIds.includes(p.user_id) &&
-                !knownFacultyIds.has(p.user_id) &&
-                !isFacultyProfile(p) &&
-                p.user_id !== user?.id &&
-                isCompleteProfile(p)
-            )
+          const list = [...(profs as Profile[])];
+          if (profile && profile.user_id && !list.some((p) => p.user_id === profile.user_id)) {
+            list.unshift(profile);
+          }
+
+          const activeProfs = list
+            .filter((p) => {
+              if (p.is_suspended || p.status === 'suspended' || suspendedIds.includes(p.user_id)) {
+                return false;
+              }
+              // Strictly exclude faculty members from student teammates directory
+              const isFaculty = p.role !== 'student' && (knownFacultyIds.has(p.user_id) || isFacultyProfile(p));
+              if (isFaculty) {
+                return false;
+              }
+              // Student accounts are allowed, including the logged-in student
+              return isCompleteProfile(p);
+            })
             .map((p) => {
               const isVerified =
                 verifiedUserIds.has(p.user_id) ||
@@ -186,7 +193,7 @@ export default function TeammatesPage() {
               return { ...p, college_verified: isVerified };
             });
 
-          // Only genuine registered student users from the database are displayed
+          // Genuine registered student users from the database are displayed
           setAllProfiles(activeProfs);
           setPageCache('kollabrix_teammates_real_v2', activeProfs);
         } else {
@@ -268,7 +275,7 @@ export default function TeammatesPage() {
       window.removeEventListener('linkora_auth_updated', handleRefresh);
       window.removeEventListener('linkora_teammates_updated', handleRefresh);
     };
-  }, [user]);
+  }, [user, profile?.role]);
 
   // Load existing project members when selected project changes
   useEffect(() => {
@@ -322,21 +329,45 @@ export default function TeammatesPage() {
 
   // Calculate matches dynamically based on selected project or peer profile
   const matches: TeammateMatch[] = useMemo(() => {
-    if (!allProfiles || allProfiles.length === 0) return [];
+    const pool = [...allProfiles];
+    // If logged-in student profile is available and not in pool, add it
+    if (
+      profile &&
+      user &&
+      !isFacultyProfile(profile) &&
+      isCompleteProfile(profile) &&
+      !pool.some((c) => c.user_id === user.id)
+    ) {
+      pool.unshift(profile);
+    }
+
+    if (pool.length === 0) return [];
 
     const results: TeammateMatch[] = [];
 
-    for (const cand of allProfiles) {
-      // Strictly exclude self, suspended, faculty, or incomplete profiles
+    for (const cand of pool) {
+      // Strictly exclude faculty or suspended accounts
+      const isFaculty = cand.role !== 'student' && (facultyUserIds.includes(cand.user_id) || isFacultyProfile(cand));
       if (
-        cand.user_id === user?.id ||
         cand.is_suspended ||
         cand.status === 'suspended' ||
         suspendedUserIds.includes(cand.user_id) ||
-        facultyUserIds.includes(cand.user_id) ||
-        isFacultyProfile(cand) ||
+        isFaculty ||
         !isCompleteProfile(cand)
       ) {
+        continue;
+      }
+
+      // If this candidate is the logged-in student user, show their card prominently with a 99% match
+      if (user && cand.user_id === user.id) {
+        results.push({
+          profile: cand,
+          match_score: 99,
+          matching_skills: (cand.skills || []).slice(0, 3),
+          matching_roles: (cand.preferred_roles || []).slice(0, 2),
+          matching_interests: (cand.interests || []).slice(0, 2),
+          reasons: ['Your active student builder profile (Visible to campus peers)'],
+        });
         continue;
       }
 
@@ -419,6 +450,7 @@ export default function TeammatesPage() {
   }, [matches, searchQuery, selectedSkill, selectedRole, minScore]);
 
   const handleOpenInvite = (candMatch: TeammateMatch) => {
+    if (user && candMatch.profile.user_id === user.id) return;
     setInviteModalCandidate(candMatch.profile);
     setInviteModalScore(candMatch.match_score);
   };
