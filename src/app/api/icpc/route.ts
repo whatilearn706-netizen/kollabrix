@@ -84,6 +84,9 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const includeEmpty = url.searchParams.get('includeEmpty') === 'true';
     const authorId = url.searchParams.get('author_id') || url.searchParams.get('creator_id');
+    const viewerId = url.searchParams.get('viewer_id') || url.searchParams.get('user_id');
+    const viewerRole = (url.searchParams.get('role') || '').toLowerCase();
+    const isTeacherOrAdmin = viewerRole === 'admin' || viewerRole === 'teacher' || viewerRole === 'faculty' || viewerRole === 'professor';
 
     let dbContests: IcpcContest[] = [];
     let isArenaLive = memoryIsArenaLive;
@@ -163,8 +166,11 @@ export async function GET(request: NextRequest) {
       }
 
       // Check anti-cheat timeline lock:
-      // If contest is live and has not ended yet, lock solutionCode to prevent leaks
-      const isContestLive = c.contestType !== 'practice' && computedStatus === 'live';
+      // If contest is live and has not ended yet, lock solutionCode for students to prevent leaks.
+      // If the viewer is the contest creator/faculty or admin, or if the contest has ended, do not mask.
+      const isCreatorViewing = Boolean(viewerId && (c.creatorId === viewerId || c.authorId === viewerId));
+      const shouldBypassLock = isTeacherOrAdmin || isCreatorViewing;
+      const isContestLive = !shouldBypassLock && c.contestType !== 'practice' && computedStatus === 'live';
 
       const sanitizedProblems = activeProblems.map((p) => {
         const cleanStarter = (p.starterCode && p.starterCode.cpp && !p.starterCode.cpp.includes('TODO:') && !p.starterCode.cpp.includes('cin >> a[i]') && !p.starterCode.cpp.includes('cin >> n >> m'))

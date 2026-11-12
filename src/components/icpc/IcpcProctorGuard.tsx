@@ -108,6 +108,7 @@ export function IcpcProctorGuard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const snapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const proctorIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -270,16 +271,19 @@ export function IcpcProctorGuard({
   const captureScreenSnapshot = useCallback((): string | undefined => {
     try {
       const screenVideo = screenVideoRef.current;
-      if (!screenVideo || screenVideo.readyState < 2) return undefined;
+      if (!screenVideo) return undefined;
+      // Accept readyState >= 1 or video having dimensions
+      if (screenVideo.readyState < 1 && screenVideo.videoWidth === 0) return undefined;
 
-      const snapCanvas = document.createElement('canvas');
+      const snapCanvas = snapCanvasRef.current || document.createElement('canvas');
+      snapCanvasRef.current = snapCanvas;
       snapCanvas.width = 480;
       snapCanvas.height = 270;
       const ctx = snapCanvas.getContext('2d');
       if (!ctx) return undefined;
 
       ctx.drawImage(screenVideo, 0, 0, 480, 270);
-      return snapCanvas.toDataURL('image/jpeg', 0.5);
+      return snapCanvas.toDataURL('image/jpeg', 0.42);
     } catch (e) {
       console.warn('Could not capture screen snapshot:', e);
       return undefined;
@@ -734,6 +738,34 @@ export function IcpcProctorGuard({
       }
     };
 
+    const broadcastScreenFrame = (activeChannel?: ReturnType<typeof supabase.channel> | null) => {
+      const ch = activeChannel || channel;
+      if (!ch) return;
+      try {
+        const screenVideo = screenVideoRef.current;
+        if (!screenVideo) return;
+        if (screenVideo.videoWidth === 0 && screenVideo.readyState < 1) return;
+
+        const snapCanvas = snapCanvasRef.current || document.createElement('canvas');
+        snapCanvasRef.current = snapCanvas;
+        snapCanvas.width = 480;
+        snapCanvas.height = 270;
+        const ctx = snapCanvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(screenVideo, 0, 0, 480, 270);
+        const dataUrl = snapCanvas.toDataURL('image/jpeg', 0.40);
+        ch.send({
+          type: 'broadcast',
+          event: 'screen_frame',
+          payload: {
+            snapshot: dataUrl,
+            connected: true,
+            timestamp: Date.now(),
+          },
+        }).catch(() => {});
+      } catch (e) {}
+    };
+
     // Connect to student's dedicated Supabase Realtime channel
     channel = supabase.channel(`icpc-proctor-${studentId}`, {
       config: { broadcast: { self: false } },
@@ -743,6 +775,7 @@ export function IcpcProctorGuard({
     channel.on('broadcast', { event: 'webrtc-request-stream' }, () => {
       if (channel) {
         startBroadcasting(channel);
+        broadcastScreenFrame(channel);
       }
     });
 
@@ -800,14 +833,25 @@ export function IcpcProctorGuard({
       }
     });
 
+    let screenFrameInterval: NodeJS.Timeout | null = null;
+
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED' && channel) {
         // Also proactively publish offer so if admin is already watching, it connects immediately
         startBroadcasting(channel);
+        broadcastScreenFrame(channel);
+        if (!screenFrameInterval) {
+          screenFrameInterval = setInterval(() => {
+            broadcastScreenFrame(channel);
+          }, 650);
+        }
       }
     });
 
     return () => {
+      if (screenFrameInterval) {
+        clearInterval(screenFrameInterval);
+      }
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -1240,7 +1284,7 @@ export function IcpcProctorGuard({
 
   return (
     <>
-      {/* ── HIDDEN CONSTANT SCREEN SHARE VIDEO ELEMENT FOR SNAPSHOT PIPELINE ── */}
+      {/* ── OFFSCREEN CONTINUOUS SCREEN SHARE VIDEO ELEMENT FOR SNAPSHOT & WEBRTC PIPELINE ── */}
       <video
         ref={(el) => {
           (screenVideoRef as any).current = el;
@@ -1252,7 +1296,16 @@ export function IcpcProctorGuard({
         autoPlay
         playsInline
         muted
-        className="hidden"
+        style={{
+          position: 'fixed',
+          top: -9999,
+          left: -9999,
+          width: 480,
+          height: 270,
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: -100,
+        }}
       />
 
       {/* ── PROCTOR PIP FLOATING WIDGET (Movable / Draggable Anywhere inside Arena) ── */}

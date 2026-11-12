@@ -305,10 +305,9 @@ int mergeIntervalsCount(vector<pair<int, int>>& intervals) {
           ? p.allowedLanguages
           : (['cpp', 'python', 'java'] as ('cpp' | 'python' | 'java')[]);
 
-        const isPractice = contestType === 'practice';
-        const solutionCode = !isPractice && p.solutionCode ? p.solutionCode.trim() : undefined;
-        const solutionExplanation = !isPractice && p.solutionExplanation ? p.solutionExplanation.trim() : undefined;
-        const solutionLanguage = !isPractice ? p.solutionLanguage : undefined;
+        const solutionCode = p.solutionCode ? p.solutionCode.trim() : undefined;
+        const solutionExplanation = p.solutionExplanation ? p.solutionExplanation.trim() : undefined;
+        const solutionLanguage = p.solutionLanguage || 'cpp';
 
         return {
           title: p.title.trim(),
