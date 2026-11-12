@@ -31,7 +31,11 @@ import {
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { CURATED_HACKATHONS } from '@/data/mockHackathons';
 import { DEMO_PROBLEMS } from '@/data/mockProblems';
-import { isHackathonClosed, formatTimeRemaining } from '@/lib/hackathons/hackathonStatus';
+import {
+  isHackathonClosed,
+  isHackathonResultsAnnounced,
+  formatTimeRemaining,
+} from '@/lib/hackathons/hackathonStatus';
 import {
   resolveWorkspaceOrigin,
   WorkspaceOriginInfo,
@@ -78,18 +82,28 @@ function MyProjectsContent() {
     return allHackathonSprints.filter((s) => !s.isClosed && !isHackathonStarted(s.hackathon));
   }, [allHackathonSprints]);
 
-  // Workspaces currently running (Hackathons underway, active faculty challenges, active projects)
+  // Helper to determine if a workspace has truly concluded and belongs in "Workspaces Done (Results Announced)"
+  const isWorkspaceDone = (w: EnrichedWorkspaceItem) => {
+    if (w.origin.originType === 'hackathon') {
+      // Hackathons only move to "Done (Results Announced)" once official results are published/announced!
+      // While submissions are closed and jury review is underway, the workspace remains active in "Working Now".
+      return Boolean(w.origin.isResultsAnnounced);
+    }
+    if (w.origin.originType === 'faculty_problem') {
+      return Boolean(w.origin.isResultsAnnounced);
+    }
+    // Permanent projects
+    return w.status === 'Completed';
+  };
+
+  // Workspaces currently running (Hackathons underway or awaiting results, active faculty challenges, active projects)
   const activeWorkspaces = useMemo(() => {
-    return allWorkspaces.filter(
-      (w) => !w.origin.isResultsAnnounced && !w.origin.isClosed && w.status !== 'Completed'
-    );
+    return allWorkspaces.filter((w) => !isWorkspaceDone(w));
   }, [allWorkspaces]);
 
   // Workspaces concluded (Hackathon results published, faculty evaluations completed, or projects finished)
   const doneWorkspaces = useMemo(() => {
-    return allWorkspaces.filter(
-      (w) => w.origin.isResultsAnnounced || w.origin.isClosed || w.status === 'Completed'
-    );
+    return allWorkspaces.filter((w) => isWorkspaceDone(w));
   }, [allWorkspaces]);
 
   // Independent permanent portfolio projects
@@ -153,7 +167,7 @@ function MyProjectsContent() {
       try {
         const { data: dbHacks } = await supabase
           .from('hackathons')
-          .select('id, title, organizer, description, mode, location, start_date, end_date, submission_deadline, registration_deadline, results_published, status, min_team_size, max_team_size, eligibility, themes');
+          .select('id, title, organizer, description, mode, location, start_date, end_date, submission_deadline, registration_deadline, results_date, results_published, status, min_team_size, max_team_size, eligibility, themes');
         if (Array.isArray(dbHacks)) {
           const dbMap = new Map(allHackathons.map((h) => [h.id, h]));
           for (const h of dbHacks) {
@@ -371,7 +385,7 @@ function MyProjectsContent() {
             const t = (item as any).team;
             const h = t?.hackathon;
             if (h?.id && t?.id) {
-              const closed = isHackathonClosed(h);
+              const resultsAnnounced = isHackathonResultsAnnounced(h);
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
                 display_name: m.profile?.display_name || 'Student',
@@ -387,7 +401,7 @@ function MyProjectsContent() {
                 hackathon: h,
                 team: t,
                 members: membersList,
-                isClosed: closed,
+                isClosed: resultsAnnounced,
                 timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
               });
 
@@ -402,7 +416,7 @@ function MyProjectsContent() {
                   title: t.team_name,
                   summary: `Hackathon Team Sprint: ${h.title} — ${t.team_name}`,
                   category: 'Other',
-                  status: closed ? 'Completed' : 'In Progress',
+                  status: resultsAnnounced ? 'Completed' : 'In Progress',
                   current_team_size: membersList.length,
                   desired_team_size: h.max_team_size || 4,
                   created_at: t.created_at || new Date().toISOString(),
@@ -441,7 +455,7 @@ function MyProjectsContent() {
           for (const t of leaderTeams as any[]) {
             const h = t?.hackathon;
             if (h?.id) {
-              const closed = isHackathonClosed(h);
+              const resultsAnnounced = isHackathonResultsAnnounced(h);
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
                 display_name: m.profile?.display_name || 'Student',
@@ -458,7 +472,7 @@ function MyProjectsContent() {
                   hackathon: h,
                   team: t,
                   members: membersList,
-                  isClosed: closed,
+                  isClosed: resultsAnnounced,
                   timeRemaining: formatTimeRemaining(h.submission_deadline || h.end_date),
                 });
               }
@@ -473,7 +487,7 @@ function MyProjectsContent() {
                   title: t.team_name,
                   summary: `Hackathon Team Sprint: ${h.title} — ${t.team_name}`,
                   category: 'Other',
-                  status: closed ? 'Completed' : 'In Progress',
+                  status: resultsAnnounced ? 'Completed' : 'In Progress',
                   current_team_size: membersList.length || 1,
                   desired_team_size: h.max_team_size || 4,
                   created_at: t.created_at || new Date().toISOString(),
@@ -522,7 +536,7 @@ function MyProjectsContent() {
                   }
                 } catch (e) {}
               }
-              const closed = isHackathonClosed(h);
+              const closed = isHackathonResultsAnnounced(h);
               hackathonSprintMap.set(h.id, {
                 hackathon_id: h.id,
                 team_id: p.team_id || null,
@@ -552,7 +566,7 @@ function MyProjectsContent() {
                   allHackathons.find((ch) => ch.id === hId || (ch as any).join_code === hId);
 
                 if (hObj) {
-                  const closed = isHackathonClosed(hObj as any);
+                  const closed = isHackathonResultsAnnounced(hObj as any);
                   hackathonSprintMap.set(hObj.id!, {
                     hackathon_id: hObj.id!,
                     team_id: null,
