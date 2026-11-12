@@ -297,6 +297,17 @@ export default function TeammatesPage() {
         continue;
       }
 
+      // Exclude verified faculty and professors from peer student squad matchmaking
+      const candRole = (cand.role || '').toLowerCase();
+      if (
+        candRole === 'teacher' ||
+        candRole === 'faculty' ||
+        candRole === 'professor' ||
+        cand.faculty_verified
+      ) {
+        continue;
+      }
+
       if (activeProject) {
         const match = calculateProjectTeammateMatch(
           cand,

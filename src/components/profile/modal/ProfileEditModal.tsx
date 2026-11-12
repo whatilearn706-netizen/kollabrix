@@ -15,6 +15,8 @@ import {
   X,
   ShieldCheck,
   ExternalLink,
+  GraduationCap,
+  Briefcase,
 } from 'lucide-react';
 
 import { Step1Identity } from './Step1Identity';
@@ -22,6 +24,9 @@ import { Step2College } from './Step2College';
 import { Step3Academics } from './Step3Academics';
 import { Step4Skills } from './Step4Skills';
 import { Step5Links } from './Step5Links';
+import { FacultyStep2Type } from './FacultyStep2Type';
+import { FacultyStep3Expertise } from './FacultyStep3Expertise';
+import { FacultyStep4Verification } from './FacultyStep4Verification';
 
 export function openProfileEditModal(initialStep: number = 1) {
   if (typeof window !== 'undefined') {
@@ -36,12 +41,19 @@ interface ProfileEditModalProps {
   mode?: 'onboarding' | 'edit';
 }
 
-const STEP_TITLES = [
+const STUDENT_STEP_TITLES = [
   { id: 1, tag: 'Identity', title: 'Profile Photo & Identity', subtitle: 'Choose how other collegiate builders will identify you' },
   { id: 2, tag: 'Campus', title: 'College Affiliation & Student ID', subtitle: 'Specify your campus and attach your student verification badge' },
   { id: 3, tag: 'Academics', title: 'Academic Year & Degree', subtitle: 'Select your study year and enter your degree or field of study' },
   { id: 4, tag: 'Skills', title: 'Technical Stack & Interests', subtitle: 'Select or write your primary skills and preferred project roles' },
   { id: 5, tag: 'Online', title: 'Developer Links & Presence', subtitle: 'Connect GitHub, LinkedIn, and personal portfolio showcases' },
+];
+
+const FACULTY_STEP_TITLES = [
+  { id: 1, tag: 'Identity', title: 'Faculty Identity & Photo', subtitle: 'Choose how students and colleagues will identify you across campus' },
+  { id: 2, tag: 'Faculty Type', title: 'Faculty Designation & Department', subtitle: 'Specify your academic title, department, and collegiate institution' },
+  { id: 3, tag: 'Expertise', title: 'Teaching & Research Focus', subtitle: 'Select your subject domains, mentorship areas, and research specializations' },
+  { id: 4, tag: 'Verification', title: 'Faculty Passcode & Profiles', subtitle: 'Enter campus verification passcode and connect academic profiles' },
 ];
 
 export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: ProfileEditModalProps) {
@@ -53,7 +65,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Form State
+  // Role Switcher State: 'student' vs 'faculty'
+  const [userRoleType, setUserRoleType] = useState<'student' | 'faculty'>('student');
+
+  // Form State (Student)
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -75,6 +90,26 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [isPortfolioPublic, setIsPortfolioPublic] = useState(true);
+
+  // Faculty Specific Form State
+  const [facultyDesignation, setFacultyDesignation] = useState(
+    profile?.faculty_designation || 'Assistant Professor'
+  );
+  const [facultyDepartment, setFacultyDepartment] = useState(
+    profile?.faculty_department || 'Computer Science & Engineering (CSE)'
+  );
+  const [employeeId, setEmployeeId] = useState('');
+  const [facultySubjects, setFacultySubjects] = useState<string[]>(
+    profile?.skills && profile.skills.length > 0
+      ? profile.skills
+      : ['Data Structures & Algorithms', 'Machine Learning & AI', 'Full Stack Web Development']
+  );
+  const [researchFocus, setResearchFocus] = useState(profile?.bio || '');
+  const [facultyPasscode, setFacultyPasscode] = useState('');
+  const [isFacultyPasscodeVerified, setIsFacultyPasscodeVerified] = useState<boolean>(
+    Boolean(profile?.faculty_verified)
+  );
+  const [googleScholarUrl, setGoogleScholarUrl] = useState('');
 
   // 1. Listen for global open triggers
   useEffect(() => {
@@ -181,7 +216,31 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       setIsPortfolioPublic(profile.is_portfolio_public);
     }
 
+    // Role detection: if already faculty/teacher, activate faculty mode
+    const userRoleStr = (((profile as any)?.role) || '').toLowerCase();
+    const isTeacher =
+      userRoleStr === 'teacher' ||
+      userRoleStr === 'faculty' ||
+      userRoleStr === 'professor' ||
+      Boolean(profile?.faculty_verified);
+    if (isTeacher) {
+      setUserRoleType('faculty');
+    }
+    if (profile?.faculty_designation) setFacultyDesignation(profile.faculty_designation);
+    if (profile?.faculty_department) setFacultyDepartment(profile.faculty_department);
+    if (profile?.faculty_verified) setIsFacultyPasscodeVerified(true);
+
   }, [user, profile]);
+
+  const activeStepTitles = userRoleType === 'faculty' ? FACULTY_STEP_TITLES : STUDENT_STEP_TITLES;
+  const maxSteps = activeStepTitles.length;
+  const currentStepMeta = activeStepTitles[Math.min(currentStep - 1, maxSteps - 1)] || activeStepTitles[0];
+
+  const handleRoleChange = (newRole: 'student' | 'faculty') => {
+    setUserRoleType(newRole);
+    setCurrentStep(1);
+    setErrorMessage(null);
+  };
 
   const hasCollege = Boolean(profile?.college && profile.college.trim().length > 0);
   const hasSkills = Boolean(profile?.skills && profile.skills.length > 0);
@@ -215,12 +274,26 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         return false;
       }
     }
+    if (userRoleType === 'faculty' && step === 2) {
+      if (!facultyDesignation.trim()) {
+        setErrorMessage('Please select or specify your faculty designation / type.');
+        return false;
+      }
+      if (!facultyDepartment.trim()) {
+        setErrorMessage('Please specify your academic department.');
+        return false;
+      }
+      if (!college.trim()) {
+        setErrorMessage('Please specify your collegiate institution / university.');
+        return false;
+      }
+    }
     return true;
   };
 
   const handleNext = () => {
     if (validateCurrentStep(currentStep)) {
-      if (currentStep < 5) {
+      if (currentStep < maxSteps) {
         setCurrentStep((prev) => prev + 1);
       } else {
         handleSaveProfile();
@@ -257,43 +330,71 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         'builder'
       ).slice(0, 24);
 
-      const assignedRole = profile?.role || 'student';
+      const assignedRole = userRoleType === 'faculty' ? 'teacher' : (profile?.role || 'student');
 
-      const payload = {
-        user_id: user.id,
-        display_name: rawDisplay,
-        username: cleanU,
-        avatar_url: avatarUrl || user.user_metadata?.avatar_url || null,
-        bio: bio.trim() || profile?.bio || 'College builder excited to collaborate on Kollabrix projects.',
-        college: college.trim() || profile?.college || 'Collegiate Institution',
-        academic_year: academicYear || profile?.academic_year || '1st Year (Freshman)',
-        course: course.trim() || profile?.course || 'Engineering / Technology',
-        skills:
-          skills.length > 0
-            ? skills
-            : profile?.skills && profile.skills.length > 0
-            ? profile.skills
-            : ['Web Development', 'Problem Solving'],
-        interests:
-          interests.length > 0
-            ? interests
-            : profile?.interests && profile.interests.length > 0
-            ? profile.interests
-            : ['Hackathons', 'Open Source'],
-        preferred_roles:
-          preferredRoles.length > 0
-            ? preferredRoles
-            : profile?.preferred_roles && profile.preferred_roles.length > 0
-            ? profile.preferred_roles
-            : ['Frontend Developer'],
-        github_url: githubUrl.trim() || null,
-        linkedin_url: linkedinUrl.trim() || null,
-        portfolio_url: portfolioUrl.trim() || null,
-        is_portfolio_public: isPortfolioPublic,
-        role: assignedRole,
-        verification_doc_type: studentIdUrl || null,
-        updated_at: new Date().toISOString(),
-      };
+      const facultyBio =
+        bio.trim() ||
+        researchFocus.trim() ||
+        `${facultyDesignation} in ${facultyDepartment} at ${college.trim() || 'Collegiate Institution'}.`;
+
+      const payload = userRoleType === 'faculty'
+        ? {
+            user_id: user.id,
+            display_name: rawDisplay,
+            username: cleanU,
+            avatar_url: avatarUrl || user.user_metadata?.avatar_url || null,
+            bio: facultyBio,
+            college: college.trim() || profile?.college || 'Collegiate Institution',
+            course: facultyDepartment.trim() || 'Engineering & Technology',
+            academic_year: 'Faculty / Academic Mentor',
+            skills: facultySubjects.length > 0 ? facultySubjects : ['Academic Mentorship', 'Research'],
+            interests: facultySubjects.length > 0 ? facultySubjects : ['Collegiate Hackathons', 'Student Research'],
+            preferred_roles: [facultyDesignation || 'Academic Mentor'],
+            github_url: githubUrl.trim() || null,
+            linkedin_url: linkedinUrl.trim() || null,
+            portfolio_url: (portfolioUrl.trim() || googleScholarUrl.trim()) || null,
+            is_portfolio_public: true,
+            role: assignedRole,
+            faculty_designation: facultyDesignation.trim(),
+            faculty_department: facultyDepartment.trim(),
+            faculty_verified: isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
+            updated_at: new Date().toISOString(),
+          }
+        : {
+            user_id: user.id,
+            display_name: rawDisplay,
+            username: cleanU,
+            avatar_url: avatarUrl || user.user_metadata?.avatar_url || null,
+            bio: bio.trim() || profile?.bio || 'College builder excited to collaborate on Kollabrix projects.',
+            college: college.trim() || profile?.college || 'Collegiate Institution',
+            academic_year: academicYear || profile?.academic_year || '1st Year (Freshman)',
+            course: course.trim() || profile?.course || 'Engineering / Technology',
+            skills:
+              skills.length > 0
+                ? skills
+                : profile?.skills && profile.skills.length > 0
+                ? profile.skills
+                : ['Web Development', 'Problem Solving'],
+            interests:
+              interests.length > 0
+                ? interests
+                : profile?.interests && profile.interests.length > 0
+                ? profile.interests
+                : ['Hackathons', 'Open Source'],
+            preferred_roles:
+              preferredRoles.length > 0
+                ? preferredRoles
+                : profile?.preferred_roles && profile.preferred_roles.length > 0
+                ? profile.preferred_roles
+                : ['Frontend Developer'],
+            github_url: githubUrl.trim() || null,
+            linkedin_url: linkedinUrl.trim() || null,
+            portfolio_url: portfolioUrl.trim() || null,
+            is_portfolio_public: isPortfolioPublic,
+            role: assignedRole,
+            verification_doc_type: studentIdUrl || null,
+            updated_at: new Date().toISOString(),
+          };
 
       let savedSuccessfully = false;
 
@@ -337,10 +438,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
         let upsertErr: any = null;
         if (existingProf) {
-          const updateRes = await supabase.from('profiles').update(payload).eq('user_id', payload.user_id);
+          const updateRes = await supabase.from('profiles').update(payload as any).eq('user_id', payload.user_id);
           upsertErr = updateRes.error;
         } else {
-          const insertRes = await supabase.from('profiles').insert(payload);
+          const insertRes = await supabase.from('profiles').insert(payload as any);
           upsertErr = insertRes.error;
         }
 
@@ -441,8 +542,12 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       setTimeout(() => {
         setIsOpen(false);
         setIsSuccess(false);
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/profile/setup')) {
-          window.location.replace('/explore');
+        if (typeof window !== 'undefined') {
+          if (userRoleType === 'faculty') {
+            window.location.replace('/teacher/dashboard');
+          } else if (window.location.pathname.startsWith('/profile/setup')) {
+            window.location.replace('/explore');
+          }
         }
       }, 1200);
     } catch (err: any) {
@@ -455,30 +560,50 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
   if (!isOpen) return null;
 
-  const currentStepMeta = STEP_TITLES[currentStep - 1];
-
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/85 backdrop-blur-2xl animate-fade-in select-none">
       {/* Sleek Floating Modal Window */}
       <div className="relative w-full max-w-2xl my-auto rounded-3xl bg-[#080C14] border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.95)] p-6 sm:p-8 text-white overflow-hidden">
-        {/* Top Radiant Amber Edge Glow */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-[0_0_18px_rgba(245,158,11,0.85)]" />
+        {/* Top Radiant Edge Glow (Amber for Student, Purple for Faculty) */}
+        <div
+          className={`absolute top-0 left-0 right-0 h-[3px] transition-all duration-300 ${
+            userRoleType === 'faculty'
+              ? 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-600 shadow-[0_0_18px_rgba(168,85,247,0.85)]'
+              : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-[0_0_18px_rgba(245,158,11,0.85)]'
+          }`}
+        />
 
         {/* Ambient Backlight Halo */}
-        <div className="absolute -top-32 -left-32 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div
+          className={`absolute -top-32 -left-32 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-colors duration-300 ${
+            userRoleType === 'faculty' ? 'bg-purple-500/10' : 'bg-amber-500/10'
+          }`}
+        />
+        <div
+          className={`absolute -bottom-32 -right-32 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-colors duration-300 ${
+            userRoleType === 'faculty' ? 'bg-fuchsia-600/10' : 'bg-orange-600/10'
+          }`}
+        />
 
         {/* Success State Celebration */}
         {isSuccess ? (
           <div className="py-14 flex flex-col items-center justify-center text-center space-y-4 animate-scale-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.4)]">
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${
+                userRoleType === 'faculty'
+                  ? 'bg-purple-500/20 border border-purple-500/40 text-purple-400 shadow-purple-500/20'
+                  : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shadow-emerald-500/20'
+              }`}
+            >
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-black text-white tracking-tight">
-              Collegiate Profile Saved!
+              {userRoleType === 'faculty' ? 'Faculty Profile Activated!' : 'Collegiate Profile Saved!'}
             </h3>
             <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
-              Your profile changes have synced across the campus network. Welcome to Kollabrix!
+              {userRoleType === 'faculty'
+                ? 'Your faculty profile is ready. You now have full access to problem authoring and mentor tools.'
+                : 'Your profile changes have synced across the campus network. Welcome to Kollabrix!'}
             </p>
             <button
               type="button"
@@ -486,20 +611,30 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 setIsOpen(false);
                 setIsSuccess(false);
               }}
-              className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/25"
+              className={`mt-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md ${
+                userRoleType === 'faculty'
+                  ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-purple-500/25'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-amber-500/25'
+              }`}
             >
-              <span>Enter Platform</span>
+              <span>{userRoleType === 'faculty' ? 'Go to Faculty Desk' : 'Enter Platform'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : (
           <div className="space-y-6 relative z-10">
-            {/* Header: Clean Segmented Progress Bar & Title (No Cluttered Market Pills!) */}
+            {/* Header: Segmented Progress Bar & Title + Role Switcher (Positioned exactly as marked) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                    Step {currentStep} of {STEP_TITLES.length}
+                  <span
+                    className={`text-[10px] font-mono font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border transition-colors ${
+                      userRoleType === 'faculty'
+                        ? 'bg-purple-500/15 border-purple-500/30 text-purple-300'
+                        : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                    }`}
+                  >
+                    Step {currentStep} of {maxSteps}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
                     {currentStepMeta.tag}
@@ -510,16 +645,19 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 <button
                   type="button"
                   onClick={handleDismiss}
-                  className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                  className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   title="Close"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Ultra-Clean Segmented Progress Line */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {STEP_TITLES.map((s) => {
+              {/* Dynamic Segmented Progress Line */}
+              <div
+                className="grid gap-1.5"
+                style={{ gridTemplateColumns: `repeat(${maxSteps}, minmax(0, 1fr))` }}
+              >
+                {activeStepTitles.map((s) => {
                   const isCurrent = currentStep === s.id;
                   const isPast = currentStep > s.id;
                   return (
@@ -527,9 +665,13 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                       key={s.id}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
                         isCurrent
-                          ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                          ? userRoleType === 'faculty'
+                            ? 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]'
+                            : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
                           : isPast
-                          ? 'bg-amber-500/40'
+                          ? userRoleType === 'faculty'
+                            ? 'bg-purple-500/40'
+                            : 'bg-amber-500/40'
                           : 'bg-white/10'
                       }`}
                     />
@@ -537,14 +679,45 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 })}
               </div>
 
-              {/* Step Title & Subtitle */}
-              <div className="pt-1">
-                <h3 className="text-lg font-black text-white tracking-tight">
-                  {currentStepMeta.title}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {currentStepMeta.subtitle}
-                </p>
+              {/* Step Title & Subtitle + Role Switcher Toggle (placed where marked) */}
+              <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-black text-white tracking-tight">
+                    {currentStepMeta.title}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {currentStepMeta.subtitle}
+                  </p>
+                </div>
+
+                {/* Role Switcher Button: Student vs Faculty */}
+                <div className="inline-flex items-center p-1 rounded-2xl bg-white/[0.04] border border-white/10 shrink-0 self-start sm:self-auto shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => handleRoleChange('student')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      userRoleType === 'student'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-amber-500/25'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>Student</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRoleChange('faculty')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      userRoleType === 'faculty'
+                        ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-md shadow-purple-500/25'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Briefcase className="w-3.5 h-3.5" />
+                    <span>Faculty</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -571,52 +744,98 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 />
               )}
 
-              {currentStep === 2 && (
-                <Step2College
-                  college={college}
-                  setCollege={setCollege}
-                  studentIdUrl={studentIdUrl}
-                  setStudentIdUrl={setStudentIdUrl}
-                  studentRollNo={studentRollNo}
-                  setStudentRollNo={setStudentRollNo}
-                  displayName={displayName}
-                  username={username}
-                />
+              {/* Student Flow (Steps 2..5) */}
+              {userRoleType === 'student' && (
+                <>
+                  {currentStep === 2 && (
+                    <Step2College
+                      college={college}
+                      setCollege={setCollege}
+                      studentIdUrl={studentIdUrl}
+                      setStudentIdUrl={setStudentIdUrl}
+                      studentRollNo={studentRollNo}
+                      setStudentRollNo={setStudentRollNo}
+                      displayName={displayName}
+                      username={username}
+                    />
+                  )}
+
+                  {currentStep === 3 && (
+                    <Step3Academics
+                      academicYear={academicYear}
+                      setAcademicYear={setAcademicYear}
+                      course={course}
+                      setCourse={setCourse}
+                    />
+                  )}
+
+                  {currentStep === 4 && (
+                    <Step4Skills
+                      skills={skills}
+                      setSkills={setSkills}
+                      interests={interests}
+                      setInterests={setInterests}
+                      preferredRoles={preferredRoles}
+                      setPreferredRoles={setPreferredRoles}
+                    />
+                  )}
+
+                  {currentStep === 5 && (
+                    <Step5Links
+                      githubUrl={githubUrl}
+                      setGithubUrl={setGithubUrl}
+                      linkedinUrl={linkedinUrl}
+                      setLinkedinUrl={setLinkedinUrl}
+                      portfolioUrl={portfolioUrl}
+                      setPortfolioUrl={setPortfolioUrl}
+                      isPortfolioPublic={isPortfolioPublic}
+                      setIsPortfolioPublic={setIsPortfolioPublic}
+                    />
+                  )}
+                </>
               )}
 
-              {currentStep === 3 && (
-                <Step3Academics
-                  academicYear={academicYear}
-                  setAcademicYear={setAcademicYear}
-                  course={course}
-                  setCourse={setCourse}
-                />
-              )}
+              {/* Faculty Flow (Steps 2..4) */}
+              {userRoleType === 'faculty' && (
+                <>
+                  {currentStep === 2 && (
+                    <FacultyStep2Type
+                      college={college}
+                      setCollege={setCollege}
+                      facultyDesignation={facultyDesignation}
+                      setFacultyDesignation={setFacultyDesignation}
+                      facultyDepartment={facultyDepartment}
+                      setFacultyDepartment={setFacultyDepartment}
+                      employeeId={employeeId}
+                      setEmployeeId={setEmployeeId}
+                    />
+                  )}
 
-              {currentStep === 4 && (
-                <Step4Skills
-                  skills={skills}
-                  setSkills={setSkills}
-                  interests={interests}
-                  setInterests={setInterests}
-                  preferredRoles={preferredRoles}
-                  setPreferredRoles={setPreferredRoles}
-                />
-              )}
+                  {currentStep === 3 && (
+                    <FacultyStep3Expertise
+                      facultySubjects={facultySubjects}
+                      setFacultySubjects={setFacultySubjects}
+                      researchFocus={researchFocus}
+                      setResearchFocus={setResearchFocus}
+                    />
+                  )}
 
-              {currentStep === 5 && (
-                <Step5Links
-                  githubUrl={githubUrl}
-                  setGithubUrl={setGithubUrl}
-                  linkedinUrl={linkedinUrl}
-                  setLinkedinUrl={setLinkedinUrl}
-                  portfolioUrl={portfolioUrl}
-                  setPortfolioUrl={setPortfolioUrl}
-                  isPortfolioPublic={isPortfolioPublic}
-                  setIsPortfolioPublic={setIsPortfolioPublic}
-                />
+                  {currentStep === 4 && (
+                    <FacultyStep4Verification
+                      facultyPasscode={facultyPasscode}
+                      setFacultyPasscode={setFacultyPasscode}
+                      isVerified={isFacultyPasscodeVerified}
+                      setIsVerified={setIsFacultyPasscodeVerified}
+                      linkedinUrl={linkedinUrl}
+                      setLinkedinUrl={setLinkedinUrl}
+                      portfolioUrl={portfolioUrl}
+                      setPortfolioUrl={setPortfolioUrl}
+                      googleScholarUrl={googleScholarUrl}
+                      setGoogleScholarUrl={setGoogleScholarUrl}
+                    />
+                  )}
+                </>
               )}
-
             </div>
 
             {/* Bottom Footer Actions */}
@@ -626,7 +845,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    className="h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -635,7 +854,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                   <button
                     type="button"
                     onClick={handleDismiss}
-                    className="h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white text-xs font-semibold transition-colors"
+                    className="h-10 px-4 rounded-xl bg-white/[0.04] hover:bg-white/10 text-slate-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                   >
                     Close
                   </button>
@@ -643,13 +862,13 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               </div>
 
               <div className="flex items-center gap-2">
-                {currentStep < 5 ? (
+                {currentStep < maxSteps ? (
                   <>
                     <button
                       type="button"
                       disabled={isSubmitting}
                       onClick={handleSaveProfile}
-                      className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+                      className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
                       title="Save entered details and finish now"
                     >
                       {isSubmitting ? 'Saving...' : 'Save & Finish'}
@@ -657,9 +876,13 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/25 transition-all"
+                      className={`h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer ${
+                        userRoleType === 'faculty'
+                          ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white shadow-purple-500/25'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-amber-500/25'
+                      }`}
                     >
-                      <span>Next: {STEP_TITLES[currentStep].tag}</span>
+                      <span>Next: {activeStepTitles[currentStep]?.tag || 'Next'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </>
@@ -668,14 +891,18 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleSaveProfile}
-                    className="h-10 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50"
+                    className={`h-10 px-6 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 cursor-pointer ${
+                      userRoleType === 'faculty'
+                        ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/25'
+                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25'
+                    }`}
                   >
                     {isSubmitting ? (
                       <span>Saving Profile...</span>
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Save &amp; Complete Profile</span>
+                        <span>{userRoleType === 'faculty' ? 'Complete Faculty Setup' : 'Save & Complete Profile'}</span>
                       </>
                     )}
                   </button>
