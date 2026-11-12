@@ -171,17 +171,23 @@ export async function GET(request: NextRequest) {
           ? p.starterCode
           : BLANK_STARTER_CODE;
 
+        const allowedLangs: ('cpp' | 'python' | 'java')[] = Array.isArray(p.allowedLanguages) && p.allowedLanguages.length > 0
+          ? (p.allowedLanguages as ('cpp' | 'python' | 'java')[])
+          : ['cpp', 'python', 'java'];
+
         if (isContestLive) {
           // Mask solution code & explanation while live contest is actively underway
           const { solutionCode, solutionExplanation, ...rest } = p;
           return {
             ...rest,
+            allowedLanguages: allowedLangs,
             starterCode: cleanStarter,
             isSolutionLocked: true,
           };
         }
         return {
           ...p,
+          allowedLanguages: allowedLangs,
           starterCode: cleanStarter,
           isSolutionLocked: false,
         };
@@ -433,6 +439,7 @@ export async function POST(request: NextRequest) {
         solutionCode: p.solutionCode?.trim() || undefined,
         solutionExplanation: p.solutionExplanation?.trim() || undefined,
         solutionLanguage: p.solutionLanguage || 'cpp',
+        allowedLanguages: Array.isArray(p.allowedLanguages) && p.allowedLanguages.length > 0 ? p.allowedLanguages : ['cpp', 'python', 'java'],
       })),
     };
 
