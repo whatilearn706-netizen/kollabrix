@@ -184,14 +184,38 @@ export async function DELETE(request: NextRequest) {
         await client.from('problem_applications').delete().eq('problem_statement_id', problemId);
       } catch {}
       try {
-        await client
+        // Collect all project/workspace IDs linked to this problem statement
+        const projectIdsToDelete = new Set<string>();
+
+        const { data: probProjects } = await client
           .from('projects')
-          .update({ problem_statement_id: null })
+          .select('id')
           .eq('problem_statement_id', problemId);
+        (probProjects || []).forEach((p: any) => projectIdsToDelete.add(p.id));
+
+        if (problemTitle && problemTitle !== 'Problem Statement') {
+          const { data: descProjects } = await client
+            .from('projects')
+            .select('id')
+            .ilike('description', `%This team is directly tackling:%${problemTitle}%`);
+          (descProjects || []).forEach((p: any) => projectIdsToDelete.add(p.id));
+        }
+
+        const allProjIds = Array.from(projectIdsToDelete);
+        if (allProjIds.length > 0) {
+          try { await client.from('project_tasks').delete().in('project_id', allProjIds); } catch {}
+          try { await client.from('project_milestones').delete().in('project_id', allProjIds); } catch {}
+          try { await client.from('project_discussions').delete().in('project_id', allProjIds); } catch {}
+          try { await client.from('project_mentoring_notes').delete().in('project_id', allProjIds); } catch {}
+          try { await client.from('project_members').delete().in('project_id', allProjIds); } catch {}
+          try { await client.from('projects').delete().in('id', allProjIds); } catch {}
+        }
       } catch {}
+
       try {
         await client.from('problem_statements').delete().eq('id', problemId);
       } catch {}
+
       try {
         const { data: commRow } = await client
           .from('platform_settings')
@@ -204,6 +228,29 @@ export async function DELETE(request: NextRequest) {
           await client.from('platform_settings').upsert({
             key: 'community_problem_statements',
             value: updatedComm,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch {}
+
+      try {
+        const { data: regRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_teams_registry')
+          .maybeSingle();
+
+        if (Array.isArray(regRow?.value)) {
+          const updatedReg = regRow.value.filter((t: any) => {
+            if (!t) return false;
+            if (t.problem_statement_id === problemId) return false;
+            if (t.problem_statement?.id === problemId) return false;
+            if (problemTitle && t.description?.includes(problemTitle)) return false;
+            return true;
+          });
+          await client.from('platform_settings').upsert({
+            key: 'problem_teams_registry',
+            value: updatedReg,
             updated_at: new Date().toISOString(),
           });
         }
