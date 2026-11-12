@@ -38,6 +38,8 @@ import {
 } from '@/lib/hackathons/hackathonStatus';
 import {
   resolveWorkspaceOrigin,
+  extractHackathonMeta,
+  extractFacultyProblemTitle,
   WorkspaceOriginInfo,
 } from '@/lib/workspaces/workspaceOrigin';
 import { WorkspaceCard, EnrichedWorkspaceItem } from '@/components/workspaces/WorkspaceCard';
@@ -195,6 +197,99 @@ function MyProjectsContent() {
         console.warn('Could not load remote problems:', err);
       }
 
+      // 1b. Fetch platform tombstones for deleted hackathons and problem statements
+      let deletedHackIds = new Set<string>();
+      let deletedHackTitles = new Set<string>();
+      let deletedProblemIds = new Set<string>();
+      let deletedProblemTitles = new Set<string>();
+
+      try {
+        const { data: tombstoneRows } = await supabase
+          .from('platform_settings')
+          .select('key, value')
+          .in('key', ['deleted_hackathons', 'deleted_problems']);
+
+        for (const row of tombstoneRows || []) {
+          if (row.key === 'deleted_hackathons' && row.value) {
+            const raw = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+            (raw.deletedIds || []).forEach((id: string) => deletedHackIds.add(String(id).trim().toLowerCase()));
+            (raw.deletedTitles || []).forEach((t: string) => deletedHackTitles.add(String(t).trim().toLowerCase()));
+          }
+          if (row.key === 'deleted_problems' && row.value) {
+            const raw = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+            (raw.deletedIds || []).forEach((id: string) => deletedProblemIds.add(String(id).trim().toLowerCase()));
+            (raw.deletedTitles || []).forEach((t: string) => deletedProblemTitles.add(String(t).trim().toLowerCase()));
+          }
+        }
+      } catch {}
+
+      // Filter active hackathons and problems lists so deleted items never establish active provenance
+      allHackathons = allHackathons.filter(
+        (h) => !deletedHackIds.has((h.id || '').toLowerCase()) && !deletedHackTitles.has((h.title || '').trim().toLowerCase())
+      );
+      allProblems = allProblems.filter(
+        (p) => !deletedProblemIds.has((p.id || '').toLowerCase()) && !deletedProblemTitles.has((p.title || '').trim().toLowerCase())
+      );
+
+      // Helper: Determines if a workspace was made on a deleted hackathon or deleted faculty problem
+      const isWorkspaceOrphaned = (item: any): boolean => {
+        if (!item) return false;
+        const desc = item.description || '';
+        const summary = item.summary || '';
+        const cat = (item.category || '').toLowerCase();
+
+        // 1. Hackathon provenance check
+        const hackMeta = extractHackathonMeta(desc);
+        const hackId = (hackMeta?.hackathon_id || item.hackathon_id || '').toLowerCase().trim();
+        const hackTitle = (
+          hackMeta?.hackathon_title ||
+          (summary.includes('—') ? summary.split('Hackathon Team Sprint:')[1]?.split('—')[0]?.trim() : '')
+        ).toLowerCase().trim();
+
+        const isHackathonTagged =
+          Boolean(hackMeta) ||
+          Boolean(hackId) ||
+          cat === 'hackathon sprint' ||
+          summary.startsWith('hackathon team sprint');
+
+        if (isHackathonTagged) {
+          if (hackId && deletedHackIds.has(hackId)) return true;
+          if (hackTitle && deletedHackTitles.has(hackTitle)) return true;
+
+          // If it references a specific hackathon ID not in active hackathons list
+          if (hackId) {
+            const exists = allHackathons.some((h) => (h.id || '').toLowerCase() === hackId);
+            if (!exists) return true;
+          }
+          if (hackTitle && !hackId) {
+            const exists = allHackathons.some((h) => (h.title || '').trim().toLowerCase() === hackTitle);
+            if (!exists) return true;
+          }
+        }
+
+        // 2. Faculty Problem provenance check
+        const probId = (item.problem_statement_id || (item.problem_statement && item.problem_statement.id) || '').toLowerCase().trim();
+        const facultyTitle = (extractFacultyProblemTitle(desc) || '').toLowerCase().trim();
+        const isFacultyTagged = Boolean(probId) || Boolean(facultyTitle) || cat === 'faculty industry problem';
+
+        if (isFacultyTagged) {
+          if (probId && deletedProblemIds.has(probId)) return true;
+          if (facultyTitle && deletedProblemTitles.has(facultyTitle)) return true;
+
+          // If it references a specific problem ID not in active problems list
+          if (probId) {
+            const exists = allProblems.some((pr) => (pr.id || '').toLowerCase() === probId);
+            if (!exists) return true;
+          }
+          if (facultyTitle && !probId) {
+            const exists = allProblems.some((pr) => (pr.title || '').trim().toLowerCase() === facultyTitle);
+            if (!exists) return true;
+          }
+        }
+
+        return false;
+      };
+
       // 2. Fetch projects owned by current user
       const { data: ownedData } = await supabase
         .from('projects')
@@ -206,6 +301,11 @@ function MyProjectsContent() {
 
       if (Array.isArray(ownedData)) {
         for (const p of ownedData as Project[]) {
+          if (isWorkspaceOrphaned(p)) {
+            // Automatically clean up deleted event workspaces from database so account is cleanly organized
+            supabase.from('projects').delete().eq('id', p.id).then();
+            continue;
+          }
           const origin = resolveWorkspaceOrigin(p, {
             hackathons: allHackathons,
             problemStatements: allProblems,
@@ -240,6 +340,7 @@ function MyProjectsContent() {
             (p: any) => p && (p.owner_id === currentUserId || p.owner?.user_id === currentUserId)
           );
           for (const pt of userProblemTeams) {
+            if (isWorkspaceOrphaned(pt)) continue;
             const origin = resolveWorkspaceOrigin(pt, {
               hackathons: allHackathons,
               problemStatements: allProblems,
@@ -275,6 +376,7 @@ function MyProjectsContent() {
               if (Array.isArray(list)) {
                 for (const t of list) {
                   if (t && (t.owner_id === currentUserId || t.owner?.user_id === currentUserId)) {
+                    if (isWorkspaceOrphaned(t)) continue;
                     if (!workspaceMap.has(t.id)) {
                       const origin = resolveWorkspaceOrigin(t, {
                         hackathons: allHackathons,
@@ -331,6 +433,7 @@ function MyProjectsContent() {
         for (const m of memberData) {
           const proj = m.project as unknown as Project;
           if (proj && proj.owner_id !== currentUserId) {
+            if (isWorkspaceOrphaned(proj)) continue;
             const origin = resolveWorkspaceOrigin(proj, {
               hackathons: allHackathons,
               problemStatements: allProblems,
@@ -385,6 +488,9 @@ function MyProjectsContent() {
             const t = (item as any).team;
             const h = t?.hackathon;
             if (h?.id && t?.id) {
+              if (deletedHackIds.has(h.id.toLowerCase()) || !allHackathons.some((ah) => (ah.id || '').toLowerCase() === h.id.toLowerCase())) {
+                continue;
+              }
               const resultsAnnounced = isHackathonResultsAnnounced(h);
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
@@ -455,6 +561,9 @@ function MyProjectsContent() {
           for (const t of leaderTeams as any[]) {
             const h = t?.hackathon;
             if (h?.id) {
+              if (deletedHackIds.has(h.id.toLowerCase()) || !allHackathons.some((ah) => (ah.id || '').toLowerCase() === h.id.toLowerCase())) {
+                continue;
+              }
               const resultsAnnounced = isHackathonResultsAnnounced(h);
               const membersList = (t.members || []).map((m: any) => ({
                 user_id: m.user_id,
@@ -521,6 +630,9 @@ function MyProjectsContent() {
           for (const p of partData as any[]) {
             const h = p?.hackathon;
             if (h?.id && !hackathonSprintMap.has(h.id)) {
+              if (deletedHackIds.has(h.id.toLowerCase()) || !allHackathons.some((ah) => (ah.id || '').toLowerCase() === h.id.toLowerCase())) {
+                continue;
+              }
               let actualTeamName = 'Participant (Click to Form Squad)';
               let teamObj: any = null;
               if (p.team_id) {
@@ -559,8 +671,17 @@ function MyProjectsContent() {
             const enrolledArr: string[] = JSON.parse(localStorage.getItem('teamforge_enrolled_hackathons') || '[]');
             const localCreated: any[] = JSON.parse(localStorage.getItem('teamforge_created_hackathons') || '[]');
 
-            for (const hId of enrolledArr) {
-              if (hId && !hackathonSprintMap.has(hId)) {
+            // Clean up localStorage from any deleted hackathons
+            const cleanedEnrolled = enrolledArr.filter(
+              (id) => !deletedHackIds.has(String(id).toLowerCase().trim()) && allHackathons.some((ah) => (ah.id || '').toLowerCase() === String(id).toLowerCase().trim())
+            );
+            if (cleanedEnrolled.length !== enrolledArr.length) {
+              localStorage.setItem('teamforge_enrolled_hackathons', JSON.stringify(cleanedEnrolled));
+            }
+
+            for (const hId of cleanedEnrolled) {
+              const cleanHId = String(hId || '').toLowerCase().trim();
+              if (cleanHId && !deletedHackIds.has(cleanHId) && !hackathonSprintMap.has(hId)) {
                 let hObj =
                   localCreated.find((lh) => lh.id === hId || lh.join_code === hId) ||
                   allHackathons.find((ch) => ch.id === hId || (ch as any).join_code === hId);

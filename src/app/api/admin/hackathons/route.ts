@@ -202,11 +202,38 @@ export async function DELETE(request: NextRequest) {
     const effectiveJoinCode = existing?.join_code || joinCode;
     const effectiveUrlCode = existing?.website_url ? existing.website_url.split('/h/')[1]?.split(/[?#]/)[0] : null;
 
-    // 2. Cascade delete participants, teams, and submissions if any in the database
+    // 2. Cascade delete participants, teams, workspace projects, and submissions if any in the database
     try {
-      await client.from('hackathon_submissions').delete().eq('hackathon_id', hackathonId);
-      await client.from('hackathon_teams').delete().eq('hackathon_id', hackathonId);
-      await client.from('hackathon_participants').delete().eq('hackathon_id', hackathonId);
+      const { data: teamRows } = await client
+        .from('hackathon_teams')
+        .select('id')
+        .eq('hackathon_id', hackathonId);
+      const teamIds = (teamRows || []).map((t: any) => t.id).filter(Boolean);
+
+      const projectIdsToDelete = new Set<string>(teamIds);
+
+      try {
+        const { data: linkedProjects } = await client
+          .from('projects')
+          .select('id')
+          .or(`description.ilike.%HACKATHON_TEAM_META%${hackathonId}%,summary.ilike.%Hackathon Team Sprint: ${hackathonTitle}%`);
+        (linkedProjects || []).forEach((lp: any) => projectIdsToDelete.add(lp.id));
+      } catch {}
+
+      const allProjIds = Array.from(projectIdsToDelete);
+      if (allProjIds.length > 0) {
+        try { await client.from('project_tasks').delete().in('project_id', allProjIds); } catch {}
+        try { await client.from('project_milestones').delete().in('project_id', allProjIds); } catch {}
+        try { await client.from('project_discussions').delete().in('project_id', allProjIds); } catch {}
+        try { await client.from('project_mentoring_notes').delete().in('project_id', allProjIds); } catch {}
+        try { await client.from('project_members').delete().in('project_id', allProjIds); } catch {}
+        try { await client.from('projects').delete().in('id', allProjIds); } catch {}
+      }
+
+      try { await client.from('hackathon_submissions').delete().eq('hackathon_id', hackathonId); } catch {}
+      try { await client.from('hackathon_team_members').delete().in('team_id', teamIds); } catch {}
+      try { await client.from('hackathon_teams').delete().eq('hackathon_id', hackathonId); } catch {}
+      try { await client.from('hackathon_participants').delete().eq('hackathon_id', hackathonId); } catch {}
     } catch {
       // Continue to parent deletion
     }
@@ -301,6 +328,30 @@ export async function DELETE(request: NextRequest) {
             return !matchId && !matchCode;
           });
           await updateMasterControlSubkey('hackathons', remaining);
+        }
+      } catch {}
+
+      // Also clean up any squads from problem_teams_registry
+      try {
+        const { data: regRow } = await client
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_teams_registry')
+          .maybeSingle();
+
+        if (Array.isArray(regRow?.value)) {
+          const cleaned = regRow.value.filter((pt: any) => {
+            if (!pt) return false;
+            if (pt.hackathon_id === hackathonId) return false;
+            if (pt.description?.includes(hackathonId)) return false;
+            if (hackathonTitle && pt.summary?.includes(hackathonTitle)) return false;
+            return true;
+          });
+          await client.from('platform_settings').upsert({
+            key: 'problem_teams_registry',
+            value: cleaned,
+            updated_at: new Date().toISOString(),
+          });
         }
       } catch {}
     } catch (settingErr) {
