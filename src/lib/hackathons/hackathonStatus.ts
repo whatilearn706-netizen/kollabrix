@@ -174,6 +174,50 @@ export function isHackathonClosed(hackathon?: Partial<Hackathon> | null): boolea
 }
 
 /**
+ * Authoritative check to determine if hackathon results are officially announced.
+ * Returns true ONLY if:
+ * 1. results_published is explicitly true, OR
+ * 2. results_date (or embedded HACKATHON_META results_date) has arrived in wall-clock time
+ */
+export function isHackathonResultsAnnounced(hackathon?: Partial<Hackathon> | null): boolean {
+  if (!hackathon) return false;
+  if (hackathon.results_published === true) return true;
+
+  let resDateStr: string | null =
+    hackathon.results_date ||
+    (hackathon as any).resultsDate ||
+    (hackathon as any).result_date ||
+    null;
+
+  if (
+    !resDateStr &&
+    hackathon.description &&
+    typeof hackathon.description === 'string' &&
+    hackathon.description.includes('HACKATHON_META:')
+  ) {
+    try {
+      const match = hackathon.description.match(/<!--\s*HACKATHON_META:([\s\S]*?)-->/);
+      if (match && match[1]) {
+        const meta = JSON.parse(match[1]);
+        if (meta.results_published === true) return true;
+        if (meta.results_date || meta.resultsDate) {
+          resDateStr = meta.results_date || meta.resultsDate;
+        }
+      }
+    } catch {}
+  }
+
+  if (resDateStr) {
+    const resTime = new Date(resDateStr).getTime();
+    if (!isNaN(resTime) && Date.now() >= resTime) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Checks if a hackathon has completed its cycle and should be removed from the active college feed.
  * A hackathon remains visible while open, while in evaluation, and until the day after results are announced.
  * The day after results are announced (results_date + 24 hours), it automatically disappears from the active directory.

@@ -1,5 +1,9 @@
 import { Hackathon, Project } from '@/types/database';
-import { isHackathonClosed, formatTimeRemaining } from '@/lib/hackathons/hackathonStatus';
+import {
+  isHackathonClosed,
+  isHackathonResultsAnnounced,
+  formatTimeRemaining,
+} from '@/lib/hackathons/hackathonStatus';
 
 export type WorkspaceOriginType = 'hackathon' | 'faculty_problem' | 'permanent';
 
@@ -7,6 +11,8 @@ export interface HackathonTeamMetadata {
   hackathon_id?: string;
   hackathon_title?: string;
   organizer?: string;
+  results_published?: boolean;
+  results_date?: string | null;
 }
 
 export interface WorkspaceOriginInfo {
@@ -106,9 +112,31 @@ export function resolveWorkspaceOrigin(
     const canonicalHackId = matchedHack?.id || targetHackId || item.id;
     const hackTitle = matchedHack?.title || targetHackTitle || hackMeta?.hackathon_title || 'Campus Hackathon Sprint';
     const hackOrganizer = matchedHack?.organizer || hackMeta?.organizer || 'Faculty Organizers';
-    const resultsPublished = Boolean(matchedHack?.results_published);
-    const closed = matchedHack ? isHackathonClosed(matchedHack) : false;
-    const isDone = resultsPublished || closed || item.status === 'Completed';
+    const resultsAnnounced = matchedHack
+      ? isHackathonResultsAnnounced(matchedHack)
+      : Boolean(
+          hackMeta?.results_published ||
+          (hackMeta as any)?.results_announced ||
+          (hackMeta?.results_date && new Date(hackMeta.results_date).getTime() <= Date.now())
+        );
+
+    // Compute remaining time or jury review status
+    let timeRemainingStr: string | null = null;
+    if (matchedHack) {
+      const subDead = matchedHack.submission_deadline || matchedHack.end_date;
+      const subPassed = subDead ? new Date(subDead).getTime() <= Date.now() : false;
+      const resDate = matchedHack.results_date || (matchedHack as any).resultsDate;
+
+      if (!resultsAnnounced && subPassed) {
+        if (resDate && new Date(resDate).getTime() > Date.now()) {
+          timeRemainingStr = `Results in ${formatTimeRemaining(resDate)}`;
+        } else {
+          timeRemainingStr = 'Jury Review Underway';
+        }
+      } else {
+        timeRemainingStr = formatTimeRemaining(subDead);
+      }
+    }
 
     return {
       originType: 'hackathon',
@@ -117,9 +145,9 @@ export function resolveWorkspaceOrigin(
       originOrganizer: hackOrganizer,
       originLink: `/hackathons/${canonicalHackId}`,
       originWorkspaceLink: `/projects/${item.id}/workspace`,
-      isResultsAnnounced: resultsPublished || isDone,
-      isClosed: closed || isDone,
-      timeRemaining: matchedHack ? formatTimeRemaining(matchedHack.submission_deadline || matchedHack.end_date) : null,
+      isResultsAnnounced: resultsAnnounced,
+      isClosed: resultsAnnounced,
+      timeRemaining: timeRemainingStr,
       badgeLabel: `🏆 Hackathon Sprint: ${hackTitle}`,
       subLabel: `Organized by ${hackOrganizer}`,
     };

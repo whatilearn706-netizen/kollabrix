@@ -137,8 +137,8 @@ export function WorkspaceCard({
             ) : isHackathon ? (
               <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span>Active Sprint</span>
-                {origin.timeRemaining && (
+                <span>{origin.timeRemaining === 'Jury Review Underway' ? 'Jury Review' : 'Active Sprint'}</span>
+                {origin.timeRemaining && origin.timeRemaining !== 'Jury Review Underway' && (
                   <span className="text-amber-200/80 hidden sm:inline">• {origin.timeRemaining}</span>
                 )}
               </span>
