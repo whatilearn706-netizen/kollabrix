@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { TeammateMatch } from '@/types/database';
 import { Avatar } from '@/components/ui/Avatar';
 import { useSiteTheme, isColorDark } from '@/components/theme/SiteThemeProvider';
+import { useAuth } from '@/components/auth/AuthProvider';
 import {
   Sparkles,
   ExternalLink,
   UserPlus,
   CheckCircle2,
   GraduationCap,
+  User,
 } from 'lucide-react';
 import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 
@@ -22,7 +24,10 @@ interface TeammateCardProps {
 
 export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCardProps) {
   const { theme, isDark } = useSiteTheme();
+  const { user } = useAuth();
   const { profile, match_score, matching_skills, matching_roles, reasons } = match;
+
+  const isCurrentUser = Boolean(user?.id && (profile.user_id === user.id || (profile as any).id === user.id));
 
   const isCardDark = isDark || isColorDark(theme.surfaceColor);
   const teammateNameColor = isCardDark ? '#ffffff' : (theme.headingColor || '#1C1917');
@@ -61,16 +66,23 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
               />
             </Link>
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/profile/${profile.username}`}
-                style={{ color: teammateNameColor }}
-                className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${
-                  isCardDark ? 'text-white site-heading-white' : ''
-                }`}
-                title={profile.display_name}
-              >
-                {profile.display_name}
-              </Link>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Link
+                  href={`/profile/${profile.username}`}
+                  style={{ color: teammateNameColor }}
+                  className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${
+                    isCardDark ? 'text-white site-heading-white' : ''
+                  }`}
+                  title={profile.display_name}
+                >
+                  {profile.display_name}
+                </Link>
+                {isCurrentUser && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    You
+                  </span>
+                )}
+              </div>
               <p style={{ color: teammateUsernameColor }} className="text-xs font-mono font-bold truncate">
                 @{profile.username}
               </p>
@@ -268,7 +280,21 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
           <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform opacity-70" />
         </Link>
 
-        {isInvited ? (
+        {isCurrentUser ? (
+          <Link
+            href={`/profile/${profile.username}`}
+            style={{
+              backgroundColor: `${theme.brandColor}15`,
+              borderColor: `${theme.brandColor}40`,
+              borderRadius: theme.borderRadius,
+              color: theme.brandColor,
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold border transition-all duration-150 hover:brightness-110 active:scale-95 shrink-0"
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Your Profile</span>
+          </Link>
+        ) : isInvited ? (
           <span className="text-xs text-emerald-500 flex items-center gap-1.5 font-bold bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 select-none">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             <span>Invited</span>
