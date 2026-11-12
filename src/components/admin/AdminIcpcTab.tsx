@@ -116,6 +116,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
   // WebRTC 60FPS Live Proctor Theater State
   const [theaterSession, setTheaterSession] = useState<ActiveProctorSession | null>(null);
   const [isWebRtcConnected, setIsWebRtcConnected] = useState<boolean>(false);
+  const [isWebRtcVideoActive, setIsWebRtcVideoActive] = useState<boolean>(false);
   const [isWebRtcConnecting, setIsWebRtcConnecting] = useState<boolean>(false);
   const [webRtcError, setWebRtcError] = useState<string | null>(null);
   const theaterVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -600,12 +601,20 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
     }
   };
 
-  // Sync theaterSession with latest activeSessions state
+  // Sync theaterSession with latest activeSessions state without overwriting real-time WebSocket snapshots
   useEffect(() => {
     if (theaterSession) {
       const fresh = activeSessions.find((s) => s.studentId === theaterSession.studentId);
       if (fresh) {
-        setTheaterSession(fresh);
+        setTheaterSession((prev) => {
+          if (!prev) return fresh;
+          return {
+            ...fresh,
+            screenSnapshot: prev.screenSnapshot || fresh.screenSnapshot,
+            sideCameraSnapshot: prev.sideCameraSnapshot || fresh.sideCameraSnapshot,
+            sideCameraConnected: prev.sideCameraConnected ?? fresh.sideCameraConnected,
+          };
+        });
       }
     }
   }, [activeSessions]);
@@ -618,6 +627,7 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
         theaterPcRef.current = null;
       }
       setIsWebRtcConnected(false);
+      setIsWebRtcVideoActive(false);
       setIsWebRtcConnecting(false);
       return;
     }
@@ -669,6 +679,16 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
             theaterVideoRef.current.play().catch(() => {});
             setIsWebRtcConnected(true);
             setIsWebRtcConnecting(false);
+            if (event.track) {
+              event.track.onunmute = () => {
+                if (theaterVideoRef.current) {
+                  theaterVideoRef.current.play().catch(() => {});
+                  if (theaterVideoRef.current.videoWidth > 0) {
+                    setIsWebRtcVideoActive(true);
+                  }
+                }
+              };
+            }
           }
         };
 
@@ -722,6 +742,20 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
               pendingCandidates.push(candidate);
             }
           }
+        });
+
+        // Listen for live contestant screen frames broadcast in real-time by student's laptop
+        channel.on('broadcast', { event: 'screen_frame' }, (msg: any) => {
+          const { snapshot, connected } = msg?.payload || {};
+          if (!isMounted) return;
+          setTheaterSession((prev) => {
+            if (!prev || prev.studentId !== studentId) return prev;
+            return {
+              ...prev,
+              screenConnected: connected ?? true,
+              screenSnapshot: snapshot || prev.screenSnapshot,
+            };
+          });
         });
 
         // Listen for live side camera video frames broadcast in real-time by mobile phone
@@ -2344,39 +2378,45 @@ export function AdminIcpcTab({ authToken }: AdminIcpcTabProps) {
 
           {/* Dual-Lens Theater Grid: Left (Screen), Right (Side Camera Desk & Lap) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* 1. Fluid WebRTC Screen Stream */}
+            {/* 1. Fluid WebRTC + Real-Time Snapshot Screen Stream */}
             <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-charcoal-750 flex items-center justify-center shadow-2xl">
+              {theaterSession?.screenSnapshot ? (
+                <img
+                  src={theaterSession.screenSnapshot}
+                  alt="Live Contestant Screen Stream"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2 p-4 text-center">
+                  <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
+                  <div className="text-xs font-bold text-white">Connecting Real-Time Screen Stream...</div>
+                  <div className="text-[10px] text-slate-400 font-mono">P2P 60FPS WebRTC handshake in progress</div>
+                </div>
+              )}
+
+              {/* Seamless WebRTC Video Layer over real-time snapshot */}
               <video
                 ref={theaterVideoRef}
                 autoPlay
                 playsInline
                 muted
-                className={`w-full h-full object-contain ${isWebRtcConnected ? 'block' : 'hidden'}`}
+                onLoadedMetadata={(e) => {
+                  if (e.currentTarget.videoWidth > 0) {
+                    setIsWebRtcVideoActive(true);
+                  }
+                }}
+                className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
+                  isWebRtcVideoActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
               />
-
-              {!isWebRtcConnected && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
-                  {theaterSession?.screenSnapshot ? (
-                    <img
-                      src={theaterSession.screenSnapshot}
-                      alt="Screen Snapshot Preview"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center space-y-2 p-4 text-center">
-                      <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
-                      <div className="text-xs font-bold text-white">Connecting Real-Time Screen Stream...</div>
-                      <div className="text-[10px] text-slate-400 font-mono">P2P 60FPS WebRTC handshake in progress</div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/80 backdrop-blur border border-white/10 text-[9px] font-mono text-white pointer-events-none z-10">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                 <span className="font-bold">CONTESTANT SCREEN</span>
                 <span className="text-slate-500">|</span>
-                <span className="text-emerald-400">{isWebRtcConnected ? '60 FPS Live' : 'Live Stream'}</span>
+                <span className="text-emerald-400">
+                  {isWebRtcVideoActive ? '60 FPS Live' : theaterSession?.screenSnapshot ? 'Live Feed' : 'Connecting'}
+                </span>
               </div>
             </div>
 

@@ -240,7 +240,9 @@ export default function IcpcCollegiateArenaPage() {
   useEffect(() => {
     async function loadContests() {
       try {
-        const res = await fetch(`/api/icpc?_t=${Date.now()}`);
+        const uRole = (profile?.role || '').toLowerCase();
+        const authQuery = user?.id ? `&viewer_id=${encodeURIComponent(user.id)}&role=${encodeURIComponent(uRole)}` : '';
+        const res = await fetch(`/api/icpc?_t=${Date.now()}${authQuery}`);
         const data = await res.json();
         if (data.success && Array.isArray(data.contests)) {
           setContests(data.contests);
@@ -258,7 +260,34 @@ export default function IcpcCollegiateArenaPage() {
       }
     }
     loadContests();
-  }, []);
+  }, [user?.id, profile?.role]);
+
+  // Load official editorial code & explanation as soon as contest ends or editorial tab is opened
+  useEffect(() => {
+    if (!selectedContest || !activeProblem) return;
+    const isContestEnded = selectedContest.endTime ? new Date() >= new Date(selectedContest.endTime) : true;
+    const isMissingCode = !activeProblem.solutionCode || !activeProblem.solutionExplanation;
+
+    if (solverTab === 'solution' && isMissingCode && isContestEnded) {
+      const uRole = (profile?.role || '').toLowerCase();
+      const authQuery = user?.id ? `&viewer_id=${encodeURIComponent(user.id)}&role=${encodeURIComponent(uRole)}` : '';
+      fetch(`/api/icpc?_t=${Date.now()}${authQuery}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.contests)) {
+            const updated = data.contests.find((c: IcpcContest) => c.id === selectedContest.id);
+            if (updated) {
+              setSelectedContest(updated);
+              const updatedProb = updated.problems.find((p: IcpcProblem) => p.id === activeProblem.id);
+              if (updatedProb && (updatedProb.solutionCode || updatedProb.solutionExplanation)) {
+                setActiveProblem(updatedProb);
+              }
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [solverTab, selectedContest?.id, selectedContest?.endTime, activeProblem?.id, activeProblem?.solutionCode, user?.id, profile?.role]);
 
   const handleHostContestClick = () => {
     if (isFacultyUser) {
