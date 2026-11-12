@@ -530,7 +530,7 @@ export async function POST(request: NextRequest) {
         await admin
           .from('projects')
           .update({
-            status: 'Completed',
+            status: 'In Progress',
             problem_statement_id: problem_id, // Preserved so it remains strictly scoped to faculty challenge
             updated_at: new Date().toISOString(),
           })

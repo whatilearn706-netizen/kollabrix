@@ -197,6 +197,27 @@ function MyProjectsContent() {
         console.warn('Could not load remote problems:', err);
       }
 
+      // Also merge community & faculty problem statements from platform_settings
+      try {
+        const { data: commRow } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'community_problem_statements')
+          .maybeSingle();
+
+        if (commRow?.value && Array.isArray(commRow.value)) {
+          const pMap = new Map(allProblems.map((p) => [p.id, p]));
+          for (const cp of commRow.value) {
+            if (cp && cp.id) {
+              pMap.set(cp.id, { ...(pMap.get(cp.id) || {}), ...cp });
+            }
+          }
+          allProblems = Array.from(pMap.values());
+        }
+      } catch (commErr) {
+        console.warn('Could not load community problems:', commErr);
+      }
+
       // 1b. Fetch platform tombstones for deleted hackathons and problem statements
       let deletedHackIds = new Set<string>();
       let deletedHackTitles = new Set<string>();

@@ -146,6 +146,9 @@ export function WorkspaceCard({
               <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
                 <span>Active Challenge</span>
+                {origin.timeRemaining && origin.timeRemaining !== 'Ended' && (
+                  <span className="text-purple-200/80 hidden sm:inline">• {origin.timeRemaining}</span>
+                )}
               </span>
             ) : (
               <Badge variant="category">{item.category}</Badge>
