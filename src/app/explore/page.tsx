@@ -37,9 +37,35 @@ export default function ExploreProjectsPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache
-  const cachedProjects = getPageCache<Project[]>('linkora_explore_projects_p1');
+  const rawCachedProjects = getPageCache<Project[]>('linkora_explore_projects_p1');
   const cachedCount = getPageCache<number>('linkora_explore_count_p1');
   const cachedConfig = getPageCache<ExploreConfig>('linkora_explore_config');
+
+  // Sanitize cached projects on mount so no in-progress faculty challenge squads or hackathons leak
+  const cachedProjects = React.useMemo(() => {
+    if (!Array.isArray(rawCachedProjects)) return null;
+    return rawCachedProjects.filter((p) => {
+      if (!p) return false;
+      const cat = (p.category || '').toLowerCase();
+      const sum = (p.summary || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      if (
+        p.problem_statement_id ||
+        (p as any).problem_statement ||
+        cat === 'hackathon sprint' ||
+        cat === 'faculty industry problem' ||
+        cat.includes('hackathon') ||
+        sum.includes('hackathon team sprint') ||
+        sum.includes('faculty challenge') ||
+        sum.includes('tackling faculty') ||
+        desc.includes('squad mission & approach') ||
+        desc.includes('### looking for team members')
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [rawCachedProjects]);
 
   // Dynamic Explore configuration
   const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(() => cachedConfig);
@@ -285,12 +311,14 @@ export default function ExploreProjectsPage() {
               return false;
             }
           }
-          // Strictly exclude any hackathon sprint or faculty challenge items from Explore
+          // Strictly exclude any hackathon sprint or in-progress faculty challenge squads from Explore
           const cat = (p.category || '').toLowerCase();
           const sum = (p.summary || '').toLowerCase();
           const tit = (p.title || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
           if (
             p.problem_statement_id ||
+            (p as any).problem_statement ||
             cat === 'hackathon sprint' ||
             cat === 'faculty industry problem' ||
             cat.includes('hackathon') ||
@@ -299,7 +327,9 @@ export default function ExploreProjectsPage() {
             sum.includes('faculty challenge') ||
             sum.includes('tackling faculty') ||
             tit.includes('hackathon') ||
-            tit.includes('faculty')
+            tit.includes('faculty') ||
+            desc.includes('squad mission & approach') ||
+            desc.includes('### looking for team members')
           ) {
             return false;
           }

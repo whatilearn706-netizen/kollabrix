@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/Button';
@@ -224,12 +225,34 @@ export function ProblemSolutionModal({
             <h3 className="text-xl font-black text-white">Answer Applied Successfully!</h3>
             <p className="text-xs text-slate-200 max-w-md mx-auto leading-relaxed">
               Your team (<strong className="text-emerald-300">{teamName}</strong>) has directly applied the answer.
-              The supervising faculty member can now review your overview, source code, and live demo.
+              {publishToExplore ? (
+                <span>
+                  {' '}It has also been published as a permanent <strong className="text-amber-300">Completed Project</strong> on Explore!
+                </span>
+              ) : (
+                <span>
+                  {' '}It remains private between your squad workspace and the supervising professor (not published to Explore).
+                </span>
+              )}
             </p>
-            <div className="pt-4 flex justify-center">
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {publishToExplore && (
+                <Link href="/explore">
+                  <Button
+                    variant="primary"
+                    className="bg-brand-600 hover:bg-brand-500 text-white font-bold px-6 shadow-md"
+                  >
+                    View in Explore →
+                  </Button>
+                </Link>
+              )}
               <Button
-                variant="primary"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6"
+                variant={publishToExplore ? 'secondary' : 'primary'}
+                className={
+                  publishToExplore
+                    ? 'border-charcoal-700 text-slate-200 hover:text-white font-bold px-6'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6'
+                }
                 onClick={() => {
                   onClose();
                   setIsSuccess(false);
@@ -380,8 +403,8 @@ export function ProblemSolutionModal({
               />
             </div>
 
-            {/* Optional Attach Workspace */}
-            {myProjects.length > 0 && (
+            {/* Optional Attach Workspace (Only if no active squad detected) */}
+            {!userTeam && myProjects.length > 0 && (
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300 block flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-indigo-400" />
@@ -402,30 +425,78 @@ export function ProblemSolutionModal({
               </div>
             )}
 
-            {/* Ask if student wants to showcase this completed project in Explore */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-850/90 border border-charcoal-700/80 transition-all hover:border-amber-500/30">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={publishToExplore}
-                  onChange={(e) => setPublishToExplore(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-charcoal-600 bg-charcoal-900 text-amber-500 focus:ring-amber-500/20 cursor-pointer accent-amber-500"
-                />
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-xs font-bold text-white">
-                      Showcase this completed project in Explore Projects?
-                    </span>
-                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400">
-                      Optional
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    By default, your answer stays private between your team and the professor. Check this if you want your full solution writeup, GitHub repository, and live demo published to the campus Explore page for everyone to see!
-                  </p>
+            {/* Prompt: Do you want it to be as a permanent project in Explore? (Yes / No) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-850/95 border border-charcoal-700/90 space-y-3 shadow-inner">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Add this as a permanent project in Explore?
+                  </span>
                 </div>
-              </label>
+                <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                  Choose whether you want this completed solution deliverable to be publicly featured in the Explore Projects section.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Option NO */}
+                <button
+                  type="button"
+                  onClick={() => setPublishToExplore(false)}
+                  className={`p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
+                    !publishToExplore
+                      ? 'bg-charcoal-800 border-emerald-500 shadow-md ring-1 ring-emerald-500/30'
+                      : 'bg-charcoal-900/60 border-charcoal-700/80 hover:border-charcoal-600 opacity-70'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full border mt-0.5 flex items-center justify-center shrink-0 ${
+                      !publishToExplore ? 'border-emerald-400 bg-emerald-500/20' : 'border-slate-500'
+                    }`}
+                  >
+                    {!publishToExplore && <div className="w-2 h-2 rounded-full bg-emerald-400" />}
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>No — Keep Private</span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-400 leading-snug">
+                      Stays private to your team workspace & faculty grading. Will <strong>NOT</strong> appear in Explore.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Option YES */}
+                <button
+                  type="button"
+                  onClick={() => setPublishToExplore(true)}
+                  className={`p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
+                    publishToExplore
+                      ? 'bg-emerald-950/40 border-emerald-400 shadow-md ring-1 ring-emerald-400/40'
+                      : 'bg-charcoal-900/60 border-charcoal-700/80 hover:border-charcoal-600 opacity-70'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full border mt-0.5 flex items-center justify-center shrink-0 ${
+                      publishToExplore ? 'border-emerald-400 bg-emerald-500' : 'border-slate-500'
+                    }`}
+                  >
+                    {publishToExplore && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>Yes — Add to Explore</span>
+                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                        Permanent
+                      </span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-300 leading-snug">
+                      Automatically exports these exact details (code repo, live demo, and writeup) to Explore as a <strong>Completed Project</strong>!
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* Actions */}

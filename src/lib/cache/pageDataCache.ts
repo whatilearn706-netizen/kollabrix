@@ -285,6 +285,13 @@ export async function prefetchExploreData(): Promise<void> {
       `,
         { count: 'exact' }
       )
+      .is('problem_statement_id', null)
+      .neq('category', 'Hackathon Sprint')
+      .neq('category', 'Faculty Industry Problem')
+      .not('category', 'ilike', '%hackathon%')
+      .not('summary', 'ilike', 'Hackathon%')
+      .not('summary', 'ilike', '%faculty challenge%')
+      .not('summary', 'ilike', '%tackling faculty%')
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false })
       .range(0, 11);
@@ -327,11 +334,33 @@ export async function prefetchExploreData(): Promise<void> {
         }
       } catch {}
 
-      const cleanData = (data as Project[]).filter(
-        (p) =>
-          !deletedSet.has((p.id || '').toLowerCase()) &&
-          !deletedSet.has((p.title || '').trim().toLowerCase())
-      );
+      const cleanData = (data as Project[]).filter((p) => {
+        if (!p) return false;
+        if (
+          deletedSet.has((p.id || '').toLowerCase()) ||
+          deletedSet.has((p.title || '').trim().toLowerCase())
+        ) {
+          return false;
+        }
+        const cat = (p.category || '').toLowerCase();
+        const sum = (p.summary || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        if (
+          p.problem_statement_id ||
+          (p as any).problem_statement ||
+          cat === 'hackathon sprint' ||
+          cat === 'faculty industry problem' ||
+          cat.includes('hackathon') ||
+          sum.includes('hackathon team sprint') ||
+          sum.includes('faculty challenge') ||
+          sum.includes('tackling faculty') ||
+          desc.includes('squad mission & approach') ||
+          desc.includes('### looking for team members')
+        ) {
+          return false;
+        }
+        return true;
+      });
 
       const verifiedProjects = cleanData.map((proj) => {
         const isOwnerVerified =

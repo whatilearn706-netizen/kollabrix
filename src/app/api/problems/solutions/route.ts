@@ -373,65 +373,200 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to save solution to cloud registry: ${saveErr.message}`);
     }
 
-    // If student opted to showcase this completed solution in Explore Projects
-    if (publish_to_explore && resolvedAuthorId) {
+    // Handle Explore publishing preference: Yes (Permanent Project on Explore) vs No (Private to Faculty & Workspace)
+    try {
+      const admin = getAdminClient();
+      let targetProjectId = project_id;
+
+      if (!targetProjectId) {
+        const { data: userProj } = await admin
+          .from('projects')
+          .select('id')
+          .eq('owner_id', resolvedAuthorId)
+          .eq('problem_statement_id', problem_id)
+          .maybeSingle();
+        if (userProj) targetProjectId = userProj.id;
+      }
+
+      // Fetch challenge category & skills context
+      let probCategory = 'Web Development';
+      let probDifficulty = 'Intermediate';
+      let probSkills = ['Full Stack', 'Software Engineering'];
+      let probTech = ['React', 'Next.js', 'TypeScript'];
+      let actualTeamSize = 1;
+
       try {
-        const admin = getAdminClient();
-        let targetProjectId = project_id;
+        const { data: probRow } = await admin
+          .from('problem_statements')
+          .select('category, difficulty, required_skills')
+          .eq('id', problem_id)
+          .maybeSingle();
 
-        if (!targetProjectId) {
-          const { data: userProj } = await admin
-            .from('projects')
-            .select('id')
-            .eq('owner_id', resolvedAuthorId)
-            .eq('problem_statement_id', problem_id)
-            .maybeSingle();
-          if (userProj) targetProjectId = userProj.id;
+        if (probRow) {
+          if (probRow.category) probCategory = probRow.category;
+          if (probRow.difficulty) probDifficulty = probRow.difficulty;
+          if (Array.isArray(probRow.required_skills) && probRow.required_skills.length > 0) {
+            probSkills = probRow.required_skills;
+            probTech = probRow.required_skills;
+          }
         }
+      } catch {}
 
-        const cleanSummary =
-          String(solution_writeup)
-            .replace(/^#+\s+/gm, '')
-            .replace(/\n+/g, ' ')
-            .trim()
-            .slice(0, 240) ||
-          `Collegiate solution for faculty challenge: ${problem_title}`;
+      try {
+        const { data: regRow } = await admin
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_teams_registry')
+          .maybeSingle();
 
+        if (Array.isArray(regRow?.value)) {
+          const foundTeam = regRow.value.find((t: any) => t && (t.id === targetProjectId || t.title === team_name));
+          if (foundTeam) {
+            if (foundTeam.category) probCategory = foundTeam.category;
+            if (foundTeam.difficulty) probDifficulty = foundTeam.difficulty;
+            if (Array.isArray(foundTeam.technologies) && foundTeam.technologies.length > 0) {
+              probTech = foundTeam.technologies;
+            }
+            if (Array.isArray(foundTeam.required_skills) && foundTeam.required_skills.length > 0) {
+              probSkills = foundTeam.required_skills;
+            }
+            if (foundTeam.current_team_size) actualTeamSize = foundTeam.current_team_size;
+          }
+        }
+      } catch {}
+
+      const cleanSummary =
+        String(solution_writeup)
+          .replace(/^#+\s+/gm, '')
+          .replace(/\n+/g, ' ')
+          .trim()
+          .slice(0, 240) ||
+        `Collegiate solution for faculty challenge: ${problem_title}`;
+
+      if (publish_to_explore && resolvedAuthorId) {
+        // --- YES: Export as a permanent Completed Project on Explore ---
         const projectUpdate = {
           title: String(title).trim(),
           summary: cleanSummary,
           description: String(solution_writeup).trim(),
+          category: probCategory,
+          difficulty: probDifficulty,
+          technologies: probTech,
+          required_skills: probSkills,
           repository_url: repo_url ? String(repo_url).trim() : null,
           demo_url: demo_url ? String(demo_url).trim() : null,
           documentation_url: video_url ? String(video_url).trim() : null,
           status: 'Completed' as const,
           problem_statement_id: null, // Cleared so it is featured in the general Explore Projects feed!
+          current_team_size: Math.max(actualTeamSize, Array.isArray(team_members) ? team_members.length : 1),
           updated_at: new Date().toISOString(),
         };
 
+        // Remove from deleted tombstone if previously flagged
+        try {
+          const { data: delRow } = await admin
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'deleted_projects')
+            .maybeSingle();
+
+          if (delRow?.value) {
+            const raw = delRow.value;
+            const targetLower = String(title).trim().toLowerCase();
+            const idLower = String(targetProjectId).toLowerCase();
+
+            if (
+              (Array.isArray(raw.deletedIds) && raw.deletedIds.includes(idLower)) ||
+              (Array.isArray(raw.deletedTitles) && raw.deletedTitles.includes(targetLower))
+            ) {
+              const updatedIds = (raw.deletedIds || []).filter((id: string) => id !== idLower);
+              const updatedTitles = (raw.deletedTitles || []).filter((t: string) => t !== targetLower);
+              const newDeletedAt = { ...(raw.deletedAt || {}) };
+              delete newDeletedAt[idLower];
+              delete newDeletedAt[targetLower];
+
+              await admin.from('platform_settings').upsert({
+                key: 'deleted_projects',
+                value: {
+                  deletedAt: newDeletedAt,
+                  deletedIds: updatedIds,
+                  deletedTitles: updatedTitles,
+                },
+                updated_at: new Date().toISOString(),
+              });
+            }
+          }
+        } catch {}
+
         if (targetProjectId) {
-          await admin
+          const { data: updated } = await admin
             .from('projects')
             .update(projectUpdate)
-            .eq('id', targetProjectId);
+            .eq('id', targetProjectId)
+            .select();
+
+          if (!updated || updated.length === 0) {
+            await admin.from('projects').insert({
+              id: targetProjectId,
+              owner_id: resolvedAuthorId,
+              desired_roles: ['Full Stack Developer'],
+              desired_team_size: Math.max(4, actualTeamSize),
+              ...projectUpdate,
+              created_at: new Date().toISOString(),
+            });
+          }
         } else {
           await admin.from('projects').insert({
             id: crypto.randomUUID(),
             owner_id: resolvedAuthorId,
-            category: 'Web Development',
-            difficulty: 'Intermediate',
-            technologies: ['React', 'Next.js', 'TypeScript'],
-            required_skills: ['Full Stack', 'Software Engineering'],
-            desired_roles: ['Team Member'],
-            current_team_size: Array.isArray(team_members) && team_members.length > 0 ? team_members.length : 1,
+            desired_roles: ['Full Stack Developer'],
             desired_team_size: 4,
             ...projectUpdate,
             created_at: new Date().toISOString(),
           });
         }
-      } catch (expErr) {
-        console.warn('Notice publishing problem solution to Explore:', expErr);
+      } else if (!publish_to_explore && targetProjectId) {
+        // --- NO: Keep private to faculty challenge desk and team workspace (NEVER in Explore) ---
+        await admin
+          .from('projects')
+          .update({
+            status: 'Completed',
+            problem_statement_id: problem_id, // Preserved so it remains strictly scoped to faculty challenge
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', targetProjectId);
       }
+
+      // Update status in problem_teams_registry for faculty & squad view
+      try {
+        const { data: regRow } = await admin
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'problem_teams_registry')
+          .maybeSingle();
+
+        if (Array.isArray(regRow?.value)) {
+          const updatedReg = regRow.value.map((t: any) => {
+            if (t.id === targetProjectId || (t.owner_id === resolvedAuthorId && t.problem_statement_id === problem_id)) {
+              return {
+                ...t,
+                status: 'Completed',
+                demo_url: demo_url ? String(demo_url).trim() : t.demo_url,
+                repository_url: repo_url ? String(repo_url).trim() : t.repository_url,
+                is_permanent_project: Boolean(publish_to_explore),
+              };
+            }
+            return t;
+          });
+          await admin.from('platform_settings').upsert({
+            key: 'problem_teams_registry',
+            value: updatedReg,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch {}
+    } catch (expErr) {
+      console.warn('Notice processing problem solution Explore option:', expErr);
     }
 
     return NextResponse.json({
