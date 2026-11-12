@@ -1447,18 +1447,42 @@ export default function HackathonWorkspacePage() {
 
       // 2. Insert member in Supabase (verified columns: team_id, user_id, role, joined_at)
       if (isUUID) {
-        const { error: joinErr } = await supabase
-          .from('hackathon_team_members')
-          .insert({
-            team_id: targetTeam.id,
-            user_id: user.id,
-            role: 'Member',
-            joined_at: new Date().toISOString(),
+        let joinedViaApi = false;
+        try {
+          const res = await fetch('/api/hackathons/teams/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teamId: targetTeam.id,
+              inviteCode: codeToUse,
+              hackathonId: canonicalHackId,
+              userId: user.id,
+            }),
           });
+          const resData = await res.json();
+          if (res.ok) {
+            joinedViaApi = true;
+          } else {
+            console.warn('Join API error, falling back:', resData.error);
+          }
+        } catch (apiErr) {
+          console.warn('Join API call failed, falling back:', apiErr);
+        }
 
-        if (joinErr) {
-          console.error('Supabase join error:', joinErr);
-          throw new Error(joinErr.message);
+        if (!joinedViaApi) {
+          const { error: joinErr } = await supabase
+            .from('hackathon_team_members')
+            .insert({
+              team_id: targetTeam.id,
+              user_id: user.id,
+              role: 'Member',
+              joined_at: new Date().toISOString(),
+            });
+
+          if (joinErr && !joinErr.message.includes('duplicate')) {
+            console.error('Supabase join error:', joinErr);
+            throw new Error(joinErr.message);
+          }
         }
 
         // Also sync hackathon_participants
@@ -1470,12 +1494,21 @@ export default function HackathonWorkspacePage() {
             team_id: targetTeam.id,
           }, { onConflict: 'hackathon_id,user_id' });
 
-          // Also sync project_members for instant workspace access
-          await supabase.from('project_members').upsert({
-            project_id: targetTeam.id,
-            user_id: user.id,
-            role: 'Contributor',
-          }, { onConflict: 'project_id,user_id' });
+          // Also check and insert project_members
+          const { data: existingPm } = await supabase
+            .from('project_members')
+            .select('id')
+            .eq('project_id', targetTeam.id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (!existingPm) {
+            await supabase.from('project_members').insert({
+              project_id: targetTeam.id,
+              user_id: user.id,
+              role: 'Contributor',
+            });
+          }
         } catch (pErr) {
           console.warn('Sync participant error:', pErr);
         }

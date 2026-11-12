@@ -502,6 +502,70 @@ export default function WorkspaceLayout({
         return true;
       });
 
+      // For hackathon projects/sprints, also check hackathon_team_members so all teammates appear in roster
+      let hackTeamMembers: any[] = [];
+      try {
+        const { data: htmData } = await supabase
+          .from('hackathon_team_members')
+          .select('id, team_id, user_id, role, joined_at')
+          .eq('team_id', projectId);
+        if (Array.isArray(htmData) && htmData.length > 0) {
+          hackTeamMembers = htmData;
+        }
+      } catch (e) {}
+
+      if (hackTeamMembers.length > 0) {
+        const existingMemberIds = new Set(memList.map((m: any) => m.user_id));
+        const missingUserIds = hackTeamMembers
+          .map((htm) => htm.user_id)
+          .filter((uid) => uid && !existingMemberIds.has(uid));
+
+        let fetchedProfiles: any[] = [];
+        if (missingUserIds.length > 0) {
+          try {
+            const { data: profs } = await supabase
+              .from('profiles')
+              .select('user_id, username, display_name, avatar_url, bio, college, course, skills, interests, is_suspended, status')
+              .in('user_id', missingUserIds);
+            if (Array.isArray(profs)) fetchedProfiles = profs;
+          } catch {}
+        }
+
+        const profileMap = new Map(fetchedProfiles.map((p) => [p.user_id, p]));
+
+        for (const htm of hackTeamMembers) {
+          if (!existingMemberIds.has(htm.user_id)) {
+            const prof = profileMap.get(htm.user_id);
+            if (prof?.is_suspended || prof?.status === 'suspended' || suspendedIds.includes(htm.user_id)) {
+              continue;
+            }
+            const isLead = htm.role === 'Leader' || projData.owner_id === htm.user_id;
+            memList.push({
+              id: htm.id || `htm-${htm.user_id}`,
+              project_id: projectId,
+              user_id: htm.user_id,
+              role: isLead ? 'Project Lead' : (htm.role || 'Contributor'),
+              joined_at: htm.joined_at || new Date().toISOString(),
+              profile: prof || {
+                user_id: htm.user_id,
+                username: isLead ? 'teamlead' : 'member',
+                display_name: isLead ? 'Team Lead' : 'Team Member',
+                college: 'Collegiate Institution',
+                role: 'student',
+              },
+            } as any);
+            existingMemberIds.add(htm.user_id);
+
+            // Self-heal: insert missing member into project_members
+            supabase.from('project_members').insert({
+              project_id: projectId,
+              user_id: htm.user_id,
+              role: isLead ? 'Project Lead' : 'Contributor',
+            }).then();
+          }
+        }
+      }
+
       const isOwner = projData.owner_id === currentUserId;
       let finalMemList = memList;
       if (finalMemList.length === 0 && isOwner) {
@@ -525,16 +589,24 @@ export default function WorkspaceLayout({
 
       setMembers(finalMemList);
 
+      // Keep project team size in sync
+      if (projData && finalMemList.length > (projData.current_team_size || 0)) {
+        projData.current_team_size = finalMemList.length;
+        setProject({ ...projData, current_team_size: finalMemList.length });
+        supabase.from('projects').update({ current_team_size: finalMemList.length }).eq('id', projectId).then();
+      }
+
       const userMember = finalMemList.find((m) => m.user_id === currentUserId) || null;
       setCurrentUserMember(userMember);
       const isCurrentUserSuspended = suspendedIds.includes(currentUserId);
-      const hasMembership = Boolean(userMember) && !isCurrentUserSuspended;
+      const isHackTeamUser = hackTeamMembers.some((m) => m.user_id === currentUserId);
+      const hasMembership = (Boolean(userMember) || isHackTeamUser) && !isCurrentUserSuspended;
 
       if ((isOwner || hasMembership) && !isCurrentUserSuspended) {
         setIsAuthorized(true);
 
         // Self-heal: If user is owner but not in project_members, register as Project Lead
-        if (isOwner && !hasMembership) {
+        if (isOwner && !userMember) {
           try {
             await supabase.from('project_members').insert({
               project_id: projectId,
