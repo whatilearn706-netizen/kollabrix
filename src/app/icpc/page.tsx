@@ -460,24 +460,24 @@ export default function IcpcCollegiateArenaPage() {
         return;
       }
 
-      if (result.status === 'Accepted') {
+      if (result.status === 'Accepted' && result.passed === true) {
         setConsoleOutput({
           status: 'success',
           message: `✅ Sample Testcase Passed!\n\nStandard Input:\n${activeProblem.sampleInput}\n\nYour Output:\n${result.stdout || '(no output)'}\n\nExpected Output:\n${activeProblem.sampleOutput}\n\nCompiler / VM: ${result.compilerOutput ? '\n' + result.compilerOutput + '\n' : 'Zero warnings.'}\nExecution Time: ${result.time} | Memory: ${result.memory}`,
         });
       } else {
         let details = '';
-        if (result.compile_output) {
-          details = `Compilation Diagnostics:\n${result.compile_output}`;
-        } else if (result.stderr) {
-          details = `Runtime Error / Exception:\n${result.stderr}`;
+        if (result.status === 'Compilation Error' && (result.compile_output || result.compileOutput || result.stderr)) {
+          details = `Compilation Diagnostics:\n${result.compile_output || result.compileOutput || result.stderr}`;
+        } else if (result.status === 'Runtime Error' && (result.stderr || result.message)) {
+          details = `Runtime Error / Exception:\n${result.stderr || result.message}`;
         } else {
-          details = `Input:\n${activeProblem.sampleInput}\n\nYour Output:\n${result.stdout || '(no output)'}\n\nExpected Output:\n${activeProblem.sampleOutput}`;
+          details = `Standard Input:\n${activeProblem.sampleInput}\n\nYour Output:\n${result.stdout || '(no output)'}\n\nExpected Output:\n${activeProblem.sampleOutput}`;
         }
 
         setConsoleOutput({
           status: 'error',
-          message: `❌ Verdict: ${result.status} (${result.statusDescription})\n\n${details}\n\nExecution Time: ${result.time || 'N/A'} | Memory: ${result.memory || 'N/A'}`,
+          message: `❌ Verdict: ${result.status || 'Wrong Answer'} (${result.statusDescription || 'Outputs did not match'})\n\n${details}\n\nExecution Time: ${result.time || 'N/A'} | Memory: ${result.memory || 'N/A'}`,
         });
       }
     } catch (err: any) {
@@ -537,7 +537,7 @@ export default function IcpcCollegiateArenaPage() {
         if (result.time && result.time > maxTime) maxTime = result.time;
         if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
 
-        if (result.status === 'Accepted') {
+        if (result.status === 'Accepted' && result.passed === true) {
           passedCount++;
         } else {
           failedResult = result;
@@ -631,10 +631,10 @@ export default function IcpcCollegiateArenaPage() {
         setNextQuestionPrompt(null);
         const tc = testCases[failedCaseIndex - 1];
         let details = '';
-        if (failedResult.compile_output) {
-          details = `Compilation Diagnostics:\n${failedResult.compile_output}`;
-        } else if (failedResult.stderr) {
-          details = `Runtime Error on Testcase #${failedCaseIndex}:\n${failedResult.stderr}`;
+        if (failedResult.status === 'Compilation Error' && (failedResult.compile_output || failedResult.compileOutput || failedResult.stderr)) {
+          details = `Compilation Diagnostics:\n${failedResult.compile_output || failedResult.compileOutput || failedResult.stderr}`;
+        } else if (failedResult.status === 'Runtime Error' && (failedResult.stderr || failedResult.message)) {
+          details = `Runtime Error on Testcase #${failedCaseIndex}:\n${failedResult.stderr || failedResult.message}`;
         } else {
           if (tc.isHidden) {
             details = `Failed on Hidden Testcase #${failedCaseIndex}.\n(Hidden testcase details are veiled to preserve competitive integrity)`;
