@@ -144,6 +144,27 @@ export async function POST(request: NextRequest) {
       sanitizedPayload.is_portfolio_public = true;
     }
 
+    // Capture custom faculty/verification attributes before DB operation
+    const customFacultyFields: Record<string, any> = {};
+    if (sanitizedPayload.faculty_department !== undefined) {
+      customFacultyFields.faculty_department = sanitizedPayload.faculty_department;
+      if (!sanitizedPayload.course && sanitizedPayload.faculty_department) {
+        sanitizedPayload.course = sanitizedPayload.faculty_department;
+      }
+      delete sanitizedPayload.faculty_department;
+    }
+    if (sanitizedPayload.faculty_designation !== undefined) {
+      customFacultyFields.faculty_designation = sanitizedPayload.faculty_designation;
+      if (!sanitizedPayload.preferred_roles || sanitizedPayload.preferred_roles.length === 0) {
+        sanitizedPayload.preferred_roles = [sanitizedPayload.faculty_designation];
+      }
+      delete sanitizedPayload.faculty_designation;
+    }
+    if (sanitizedPayload.faculty_verified !== undefined) {
+      customFacultyFields.faculty_verified = sanitizedPayload.faculty_verified;
+      delete sanitizedPayload.faculty_verified;
+    }
+
     const supabaseAdmin = getAdminClient();
 
     // Check if the profile already exists
@@ -187,6 +208,9 @@ export async function POST(request: NextRequest) {
       delete safePayload.linkedin_url;
       delete safePayload.verification_doc_type;
       delete safePayload.college_verified;
+      delete safePayload.faculty_department;
+      delete safePayload.faculty_designation;
+      delete safePayload.faculty_verified;
 
       if (existingProfile) {
         const retryRes = await supabaseAdmin
@@ -208,12 +232,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Safely sync custom faculty attributes into auth user metadata for permanent persistence
+    if (sanitizedPayload.user_id && Object.keys(customFacultyFields).length > 0) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(sanitizedPayload.user_id, {
+          user_metadata: customFacultyFields,
+        });
+      } catch (metaErr) {
+        console.warn('User metadata faculty sync note:', metaErr);
+      }
+    }
+
     if (error) {
       console.error('Server profile save error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, profile: data });
+    return NextResponse.json({ success: true, profile: { ...data, ...customFacultyFields } });
   } catch (err: any) {
     console.error('Profile save exception:', err);
     return NextResponse.json({ success: false, error: err.message || 'Failed to save profile' }, { status: 500 });

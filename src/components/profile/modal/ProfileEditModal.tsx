@@ -53,7 +53,7 @@ const FACULTY_STEP_TITLES = [
   { id: 1, tag: 'Identity', title: 'Faculty Identity & Photo', subtitle: 'Choose how students and colleagues will identify you across campus' },
   { id: 2, tag: 'Faculty Type', title: 'Faculty Designation & Department', subtitle: 'Specify your academic title, department, and collegiate institution' },
   { id: 3, tag: 'Expertise', title: 'Teaching & Research Focus', subtitle: 'Select your subject domains, mentorship areas, and research specializations' },
-  { id: 4, tag: 'Verification', title: 'Faculty Passcode & Profiles', subtitle: 'Enter campus verification passcode and connect academic profiles' },
+  { id: 4, tag: 'Faculty Portal', title: 'Faculty Verification & DigiLocker', subtitle: 'Authenticate via National DigiLocker or campus passcode, and connect academic profiles' },
 ];
 
 export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: ProfileEditModalProps) {
@@ -337,7 +337,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         researchFocus.trim() ||
         `${facultyDesignation} in ${facultyDepartment} at ${college.trim() || 'Collegiate Institution'}.`;
 
-      const payload = userRoleType === 'faculty'
+      const payload: Record<string, any> = userRoleType === 'faculty'
         ? {
             user_id: user.id,
             display_name: rawDisplay,
@@ -355,9 +355,6 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             portfolio_url: (portfolioUrl.trim() || googleScholarUrl.trim()) || null,
             is_portfolio_public: true,
             role: assignedRole,
-            faculty_designation: facultyDesignation.trim(),
-            faculty_department: facultyDepartment.trim(),
-            faculty_verified: isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
             updated_at: new Date().toISOString(),
           }
         : {
@@ -396,6 +393,13 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             updated_at: new Date().toISOString(),
           };
 
+      const requestPayload = {
+        ...payload,
+        faculty_department: facultyDepartment.trim(),
+        faculty_designation: facultyDesignation.trim(),
+        faculty_verified: isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
+      };
+
       let savedSuccessfully = false;
 
       // 1. Primary: Save via dedicated server route using service role key (bypasses RLS safely)
@@ -414,7 +418,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         const srvRes = await fetch('/api/profile/save', {
           method: 'POST',
           headers,
-          body: JSON.stringify(payload),
+          body: JSON.stringify(requestPayload),
         });
         const srvData = await srvRes.json().catch(() => ({}));
         if (srvRes.ok && srvData.success) {
@@ -457,6 +461,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           delete safePayload.linkedin_url;
           delete safePayload.verification_doc_type;
           delete safePayload.college_verified;
+          delete safePayload.faculty_department;
+          delete safePayload.faculty_designation;
+          delete safePayload.faculty_verified;
 
           if (existingProf) {
             const retryRes = await supabase.from('profiles').update(safePayload).eq('user_id', payload.user_id);
@@ -516,11 +523,33 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
           document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
           document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';
+
+          if (userRoleType === 'faculty') {
+            if (isFacultyPasscodeVerified) {
+              localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
+            }
+            if (facultyDepartment) {
+              localStorage.setItem(`linkora_faculty_dept_${user.id}`, facultyDepartment);
+            }
+            if (facultyDesignation) {
+              localStorage.setItem(`linkora_faculty_desig_${user.id}`, facultyDesignation);
+            }
+          }
         }
       } catch (e) {}
 
       if (isSupabaseConfigured()) {
         try {
+          if (userRoleType === 'faculty') {
+            await supabase.auth.updateUser({
+              data: {
+                faculty_department: facultyDepartment,
+                faculty_designation: facultyDesignation,
+                faculty_verified: isFacultyPasscodeVerified || Boolean(profile?.faculty_verified),
+                role: assignedRole,
+              },
+            });
+          }
           await supabase.auth.updateUser({
             data: {
               onboarding_completed: true,
