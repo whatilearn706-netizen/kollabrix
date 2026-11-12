@@ -38,20 +38,20 @@ export default function ExploreProjectsPage() {
   const { theme } = useSiteTheme();
   const isFaculty = isFacultyUser(user, profile);
 
-  // Instant In-Memory / Stale-While-Revalidate Cache
-  const rawCachedProjects = getPageCache<Project[]>('linkora_explore_projects_p1');
-  const cachedCount = getPageCache<number>('linkora_explore_count_p1');
-  const cachedConfig = getPageCache<ExploreConfig>('linkora_explore_config');
+  // Dynamic Explore configuration
+  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(() => {
+    return getPageCache<ExploreConfig>('linkora_explore_config');
+  });
 
-  // Sanitize cached projects on mount so no in-progress faculty challenge squads or hackathons leak
-  const cachedProjects = React.useMemo(() => {
-    if (!Array.isArray(rawCachedProjects)) return null;
-    return rawCachedProjects.filter((p) => {
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const raw = getPageCache<Project[]>('linkora_explore_projects_p1');
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    return raw.filter((p) => {
       if (!p) return false;
       const cat = (p.category || '').toLowerCase();
       const sum = (p.summary || '').toLowerCase();
       const desc = (p.description || '').toLowerCase();
-      if (
+      return !(
         p.problem_statement_id ||
         (p as any).problem_statement ||
         cat === 'hackathon sprint' ||
@@ -62,20 +62,22 @@ export default function ExploreProjectsPage() {
         sum.includes('tackling faculty') ||
         desc.includes('squad mission & approach') ||
         desc.includes('### looking for team members')
-      ) {
-        return false;
-      }
-      return true;
+      );
     });
-  }, [rawCachedProjects]);
+  });
 
-  // Dynamic Explore configuration
-  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(() => cachedConfig);
+  const [totalCount, setTotalCount] = useState<number>(() => {
+    const cachedCount = getPageCache<number>('linkora_explore_count_p1');
+    return typeof cachedCount === 'number' ? cachedCount : 0;
+  });
 
-  const [projects, setProjects] = useState<Project[]>(() => cachedProjects || []);
-  const [totalCount, setTotalCount] = useState<number>(() => cachedCount || (cachedProjects ? cachedProjects.length : 0));
-  const [isLoading, setIsLoading] = useState<boolean>(() => !cachedProjects);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    const raw = getPageCache<Project[]>('linkora_explore_projects_p1');
+    return !Array.isArray(raw) || raw.length === 0;
+  });
+
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const [filters, setFilters] = useState<ProjectFilterOptions>({
     search: '',
@@ -118,8 +120,8 @@ export default function ExploreProjectsPage() {
 
   // 2. Scalable database-backed pagination query
   const fetchProjects = useCallback(async () => {
-    // Only flash skeleton if no cached projects or user is actively filtering
-    if (projects.length === 0 || !isDefaultView) {
+    // Only flash skeleton on initial load if we don't have projects, or when user is actively filtering
+    if (!hasLoadedRef.current || !isDefaultView) {
       setIsLoading(true);
     }
     setFetchError(null);
@@ -352,6 +354,10 @@ export default function ExploreProjectsPage() {
           const cleanDemo = filterDeleted(DEMO_PROJECTS);
           setProjects(cleanDemo.slice(0, pageSize));
           setTotalCount(cleanDemo.length);
+          if (isDefaultView) {
+            setPageCache('linkora_explore_projects_p1', cleanDemo.slice(0, pageSize));
+            setPageCache('linkora_explore_count_p1', cleanDemo.length);
+          }
         } else {
           const verifiedProjects = cleanData.map((proj) => {
             const isOwnerVerified =
@@ -382,22 +388,14 @@ export default function ExploreProjectsPage() {
         setPageCache('linkora_explore_count_p1', DEMO_PROJECTS.length);
       }
     } finally {
+      hasLoadedRef.current = true;
       setIsLoading(false);
     }
-  }, [filters, pageSize]);
-
-  const initialMountRef = useRef(true);
+  }, [filters, pageSize, isDefaultView]);
 
   useEffect(() => {
-    // If we already have fresh cached data on initial mount, skip immediate duplicate network query
-    if (initialMountRef.current) {
-      initialMountRef.current = false;
-      if (isDefaultView && cachedProjects && cachedProjects.length > 0) {
-        return;
-      }
-    }
     fetchProjects();
-  }, [fetchProjects, isDefaultView, cachedProjects]);
+  }, [fetchProjects]);
 
   // Total pages calculation
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -473,7 +471,10 @@ export default function ExploreProjectsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchProjects()}
+            onClick={() => {
+              setIsLoading(true);
+              fetchProjects();
+            }}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
             disabled={isLoading}
             className="border-slate-200 text-slate-700 hover:text-slate-900 font-bold"
