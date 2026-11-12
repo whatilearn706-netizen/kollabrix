@@ -557,6 +557,26 @@ export function IcpcProctorGuard({
 
     setShowEntranceModal(false);
     setShowSideCameraModal(true);
+    setIsTerminated(false);
+    setIsDemolishedByAdmin(false);
+
+    // Initialize fresh proctor session with server
+    try {
+      fetch('/api/icpc/proctor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'init_session',
+          studentId,
+          studentName,
+          studentEmail,
+          college,
+          contestId,
+          contestTitle,
+        }),
+      }).catch(() => {});
+    } catch {}
+
     await requestArenaFullscreen();
     if (typeof navigator !== 'undefined' && (navigator as any).keyboard && (navigator as any).keyboard.lock) {
       (navigator as any).keyboard.lock().catch(() => {});
@@ -1851,6 +1871,8 @@ export function IcpcProctorGuard({
               variant="primary"
               size="lg"
               onClick={() => {
+                setIsTerminated(false);
+                setIsDemolishedByAdmin(false);
                 if (typeof document !== 'undefined' && document.fullscreenElement) {
                   document.exitFullscreen().catch(() => {});
                 }
