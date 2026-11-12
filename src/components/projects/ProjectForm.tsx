@@ -65,22 +65,6 @@ function generateUUID(): string {
 export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps) {
   const router = useRouter();
   const { user, profile, openAuthModal } = useAuth();
-  const isVerifiedTeacher = Boolean(
-    profile?.role === 'teacher' ||
-      profile?.faculty_verified ||
-      (typeof window !== 'undefined' && localStorage.getItem('teamforge_verified_faculty') === 'true')
-  );
-  const [creatorRole, setCreatorRole] = useState<'student' | 'teacher'>(() =>
-    isVerifiedTeacher ? 'teacher' : 'student'
-  );
-  const [isFacultyModalOpen, setIsFacultyModalOpen] = useState(false);
-  const [isMentorModalOpen, setIsMentorModalOpen] = useState(false);
-
-  React.useEffect(() => {
-    if (isVerifiedTeacher) {
-      setCreatorRole('teacher');
-    }
-  }, [isVerifiedTeacher]);
 
   const [formCategories, setFormCategories] = useState<string[]>(CATEGORIES);
 
@@ -228,10 +212,6 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
     } catch {
       return false;
     }
-  };
-
-  const handleSelectTeacherRole = () => {
-    setIsMentorModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -386,38 +366,7 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         }, 800);
       } else {
         // Insert new project
-        let createdProblemId: string | null = null;
-
         invalidatePageCache();
-
-        if (creatorRole === 'teacher') {
-          // 1. Create entry in Teacher section (problem_statements)
-          try {
-            const probId = generateUUID();
-            const { data: createdProb, error: probErr } = await supabase
-              .from('problem_statements')
-              .insert({
-                id: probId,
-                author_id: activeUserId,
-                title: title.trim(),
-                description: description.trim(),
-                category,
-                difficulty,
-                required_skills: requiredSkills.length > 0 ? requiredSkills : ['Technical Leadership'],
-                deadline: applicationDeadline || null,
-                status: 'Published',
-              })
-              .select('id')
-              .single();
-
-            if (!probErr && createdProb) {
-              createdProblemId = createdProb.id;
-              payload.problem_statement_id = createdProb.id;
-            }
-          } catch (e) {
-            console.warn('Teacher section problem creation notice:', e);
-          }
-        }
 
         const newProjectId = generateUUID();
         const insertPayload = {
@@ -443,23 +392,11 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
 
         invalidatePageCache();
 
-        if (creatorRole === 'teacher') {
-          setSuccess('Faculty Challenge & Project published successfully to the Teacher Section!');
-          setTimeout(() => {
-            if (createdProblemId) {
-              router.push(`/problems/${createdProblemId}`);
-            } else {
-              router.push('/teacher/dashboard');
-            }
-            router.refresh();
-          }, 800);
-        } else {
-          setSuccess('Project published successfully!');
-          setTimeout(() => {
-            router.push(`/projects/${created.id}`);
-            router.refresh();
-          }, 800);
-        }
+        setSuccess('Project published successfully!');
+        setTimeout(() => {
+          router.push(`/projects/${created.id}`);
+          router.refresh();
+        }, 800);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred while saving the project.');
@@ -482,97 +419,6 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 text-sm text-emerald-300">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           <span>{success}</span>
-        </div>
-      )}
-
-      {/* Creator Track Selector (New Project only) */}
-      {!isEditing && (
-        <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 space-y-5 shadow-sm">
-          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <span>Project Creator Track</span>
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200 font-bold">
-                  Role Identification
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Are you creating this project as a Student or as a Teacher / Mentor / Professor?
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Student Track */}
-            <button
-              type="button"
-              onClick={() => setCreatorRole('student')}
-              className={`p-5 rounded-2xl border-2 text-left transition-all ${
-                creatorRole === 'student'
-                  ? 'border-violet-500 bg-violet-50/70 text-violet-950 shadow-md ring-2 ring-violet-500/20'
-                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-violet-100 border border-violet-200 flex items-center justify-center text-violet-600 shrink-0">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">Student / Maker</h4>
-                  <span className="text-[11px] font-semibold text-violet-600">Undergraduate / Graduate</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Build a semester project, form a student team, and recruit peers across campus departments.
-              </p>
-            </button>
-
-            {/* Teacher / Mentor / Professor Track */}
-            <button
-              type="button"
-              onClick={handleSelectTeacherRole}
-              className={`p-5 rounded-2xl border-2 text-left transition-all ${
-                creatorRole === 'teacher'
-                  ? 'border-indigo-500 bg-indigo-50/70 text-indigo-950 shadow-md ring-2 ring-indigo-500/20'
-                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">Teacher / Mentor / Professor</h4>
-                    <span className="text-[10px] text-indigo-600 font-semibold">
-                      {isVerifiedTeacher || profile?.role === 'teacher' || profile?.faculty_verified
-                        ? '✓ Verified Faculty'
-                        : profile?.birth_year && profile.birth_year > 2003
-                        ? `Student (Born ${profile.birth_year})`
-                        : 'Requires Faculty Passcode or DigiLocker'}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold">
-                  Go to Mentor Portal &rarr;
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Lead a faculty-supervised capstone or research initiative. Click to open the Mentor Portal prompt.
-              </p>
-            </button>
-          </div>
-
-          {creatorRole === 'teacher' && (
-            <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900 flex items-center justify-between font-medium">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>
-                  Authenticated as <strong>Verified Faculty Member</strong>. This project will carry the official Faculty Mentor badge.
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -789,161 +635,12 @@ export function ProjectForm({ initialData, isEditing = false }: ProjectFormProps
           type="submit"
           size="lg"
           isLoading={isLoading}
-          leftIcon={creatorRole === 'teacher' ? <GraduationCap className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          className={
-            creatorRole === 'teacher'
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black shadow-md border-0'
-              : 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-black shadow-md border-0'
-          }
+          leftIcon={<Save className="w-4 h-4" />}
+          className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-black shadow-md border-0"
         >
-          {isEditing
-            ? 'Save Changes'
-            : creatorRole === 'teacher'
-            ? 'Publish to Teacher Section'
-            : 'Publish Student Project'}
+          {isEditing ? 'Save Changes' : 'Publish Student Project'}
         </Button>
       </div>
-
-      {/* Go to Mentor Portal Popup */}
-      <Modal
-        isOpen={isMentorModalOpen}
-        onClose={() => setIsMentorModalOpen(false)}
-        title="Go to Mentor Portal"
-        maxWidth="md"
-      >
-        <div className="space-y-4 pt-1">
-          {!isVerifiedTeacher && profile?.birth_year && profile.birth_year > 2003 ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 space-y-2">
-                <div className="flex items-center gap-2 text-red-300 font-semibold text-sm">
-                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-                  <span>Student Account (Born {profile.birth_year})</span>
-                </div>
-                <p className="text-xs text-red-200/90 leading-relaxed">
-                  Your verification records confirm your birth year is <strong>{profile.birth_year}</strong> (Age: {2026 - profile.birth_year} years). Institutional faculty rules require verification via an institutional faculty passcode or verified mentor credentials.
-                </p>
-                <p className="text-xs text-slate-300">
-                  You can explore published faculty challenges in the Mentor Portal, or proceed proposing this project as a Student.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="w-full sm:flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
-                  onClick={() => {
-                    setIsMentorModalOpen(false);
-                    router.push('/teacher/dashboard');
-                  }}
-                  leftIcon={<GraduationCap className="w-4 h-4" />}
-                >
-                  Go to Mentor Portal
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full sm:flex-1"
-                  onClick={() => {
-                    setCreatorRole('student');
-                    setIsMentorModalOpen(false);
-                  }}
-                >
-                  Continue as Student
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-xs text-indigo-200">
-                <GraduationCap className="w-6 h-6 text-indigo-400 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold text-sm text-white">Looking for the Mentor Portal?</p>
-                  <p className="text-slate-300 leading-relaxed">
-                    Faculty members, mentors, and professors manage official problem statements, review student capstones, and post feedback directly inside the <strong>Mentor Portal</strong>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-charcoal-800/80 border border-charcoal-700/80 space-y-2 text-xs text-slate-300">
-                <p className="font-medium text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Mentor Portal Features:</span>
-                </p>
-                <ul className="space-y-1.5 list-disc list-inside text-slate-400">
-                  <li>Post official College Problem Statements for student teams</li>
-                  <li>Monitor student milestone submissions & evidence</li>
-                  <li>Provide faculty mentoring notes & capstone guidance</li>
-                </ul>
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 text-sm shadow-lg shadow-indigo-600/20"
-                  onClick={() => {
-                    setIsMentorModalOpen(false);
-                    router.push('/teacher/dashboard');
-                  }}
-                  leftIcon={<GraduationCap className="w-5 h-5 text-indigo-200" />}
-                >
-                  Go to Mentor Portal
-                </Button>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-charcoal-800" />
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">or continue on this form</span>
-                  <div className="flex-1 h-px bg-charcoal-800" />
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2.5">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:flex-1 text-xs border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10"
-                    onClick={() => {
-                      setIsMentorModalOpen(false);
-                      if (isVerifiedTeacher) {
-                        setCreatorRole('teacher');
-                      } else {
-                        setIsFacultyModalOpen(true);
-                      }
-                    }}
-                    leftIcon={<ShieldCheck className="w-4 h-4 text-indigo-400" />}
-                  >
-                    {isVerifiedTeacher ? 'Publish Here as Faculty' : 'Verify Faculty ID First'}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full sm:flex-1 text-xs text-slate-400 hover:text-white"
-                    onClick={() => {
-                      setCreatorRole('student');
-                      setIsMentorModalOpen(false);
-                    }}
-                  >
-                    Keep as Student Project
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      {/* Faculty Age & Document Verification Modal */}
-      <FacultyVerificationModal
-        isOpen={isFacultyModalOpen}
-        onClose={() => setIsFacultyModalOpen(false)}
-        onSuccess={() => {
-          setCreatorRole('teacher');
-        }}
-        onContinueAsStudent={() => {
-          setCreatorRole('student');
-        }}
-      />
     </form>
   );
 }

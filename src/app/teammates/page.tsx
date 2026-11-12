@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 // Helper: Checks if a profile is genuine and active (not suspended)
 function isCompleteProfile(p: Profile | null | undefined): boolean {
@@ -494,17 +495,19 @@ export default function TeammatesPage() {
           >
             Refresh Candidates
           </Button>
-          <Link href="/projects/new">
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<FolderPlus className="w-4 h-4" />}
-              style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-              className="text-white font-bold shadow-xs transition-all"
-            >
-              Start New Project
-            </Button>
-          </Link>
+          {!isFacultyUser(user, profile) && (
+            <Link href="/projects/new">
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<FolderPlus className="w-4 h-4" />}
+                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+                className="text-white font-bold shadow-xs transition-all"
+              >
+                Start New Project
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

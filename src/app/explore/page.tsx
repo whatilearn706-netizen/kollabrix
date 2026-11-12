@@ -29,12 +29,14 @@ import {
 } from 'lucide-react';
 
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
+import { isFacultyUser } from '@/lib/auth/faculty';
 
 const DEFAULT_PAGE_SIZE = 12;
 
 export default function ExploreProjectsPage() {
-  const { user, openAuthModal } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
   const { theme } = useSiteTheme();
+  const isFaculty = isFacultyUser(user, profile);
 
   // Instant In-Memory / Stale-While-Revalidate Cache
   const rawCachedProjects = getPageCache<Project[]>('linkora_explore_projects_p1');
@@ -479,29 +481,31 @@ export default function ExploreProjectsPage() {
             Refresh
           </Button>
 
-          {user ? (
-            <Link href="/projects/new">
+          {!isFaculty && (
+            user ? (
+              <Link href="/projects/new">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<PlusCircle className="w-4 h-4" />}
+                  style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
+                  className="text-white font-bold shadow-xs transition-all"
+                >
+                  Start a Project
+                </Button>
+              </Link>
+            ) : (
               <Button
                 variant="primary"
                 size="sm"
+                onClick={handleCreateProjectClick}
                 leftIcon={<PlusCircle className="w-4 h-4" />}
                 style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
                 className="text-white font-bold shadow-xs transition-all"
               >
                 Start a Project
               </Button>
-            </Link>
-          ) : (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleCreateProjectClick}
-              leftIcon={<PlusCircle className="w-4 h-4" />}
-              style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-              className="text-white font-bold shadow-xs transition-all"
-            >
-              Start a Project
-            </Button>
+            )
           )}
         </div>
       </div>
@@ -567,7 +571,7 @@ export default function ExploreProjectsPage() {
                 <Button variant="outline" size="sm" onClick={handleClearFilters} className="font-bold border-slate-200 dark:border-charcoal-700">
                   Clear All Filters
                 </Button>
-                {user ? (
+                {user && !isFaculty ? (
                   <Link href="/projects/new">
                     <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold">
                       Publish this Idea
