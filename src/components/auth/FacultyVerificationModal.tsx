@@ -266,7 +266,7 @@ export function FacultyVerificationModal({
   const isUnderageForFaculty = parseInt(birthYear, 10) >= 2003;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-xl max-h-[92vh] overflow-y-auto shadow-2xl relative my-auto">
         {/* Top Government of India Tricolor Ribbon */}
         <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-emerald-500 shrink-0" />
