@@ -132,33 +132,33 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://kollabrix.in/#website',
-      url: 'https://kollabrix.in/',
+      '@id': `${siteUrl}/#website`,
+      url: `${siteUrl}/`,
       name: 'Kollabrix',
-      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
+      alternateName: ['KOLLABRIX', 'kollabrix.in', 'www.kollabrix.in', 'KOLLΛBRIX'],
       description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: 'https://kollabrix.in/explore?q={search_term_string}',
+          urlTemplate: `${siteUrl}/explore?q={search_term_string}`,
         },
         'query-input': 'required name=search_term_string',
       },
       publisher: {
-        '@id': 'https://kollabrix.in/#organization',
+        '@id': `${siteUrl}/#organization`,
       },
     },
     {
       '@type': 'WebApplication',
-      '@id': 'https://kollabrix.in/#app',
+      '@id': `${siteUrl}/#app`,
       name: 'Kollabrix',
       alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       applicationCategory: 'EducationalApplication, DeveloperApplication, CollaborationPlatform',
       operatingSystem: 'All Modern Web Browsers, iOS, Android, macOS, Windows',
       browserRequirements: 'Requires JavaScript. Requires HTML5.',
-      url: 'https://kollabrix.in',
+      url: siteUrl,
       description:
         'Kollabrix is the official student project collaboration network, real-time workspace huddle, and hackathon closer platform.',
       offers: {
@@ -176,7 +176,7 @@ const jsonLd = {
     },
     {
       '@type': 'ItemList',
-      '@id': 'https://kollabrix.in/#sitelinks',
+      '@id': `${siteUrl}/#sitelinks`,
       name: 'Kollabrix Sitelinks',
       itemListElement: [
         {
@@ -184,38 +184,38 @@ const jsonLd = {
           position: 1,
           name: 'Explore Projects',
           description: 'Discover active collegiate engineering projects seeking collaborators.',
-          url: 'https://kollabrix.in/explore',
+          url: `${siteUrl}/explore`,
         },
         {
           '@type': 'SiteNavigationElement',
           position: 2,
           name: 'Find Teammates',
           description: 'Connect with university designers, coders, and builders.',
-          url: 'https://kollabrix.in/teammates',
+          url: `${siteUrl}/teammates`,
         },
         {
           '@type': 'SiteNavigationElement',
           position: 3,
           name: 'Hackathon Arena',
           description: 'Join campus hackathons and build in private collaborative workspaces.',
-          url: 'https://kollabrix.in/hackathons',
+          url: `${siteUrl}/hackathons`,
         },
         {
           '@type': 'SiteNavigationElement',
           position: 4,
           name: 'Problem Bank',
           description: 'Solve real-world challenges curated by faculty and industry mentors.',
-          url: 'https://kollabrix.in/problems',
+          url: `${siteUrl}/problems`,
         },
       ],
     },
     {
       '@type': 'Organization',
-      '@id': 'https://kollabrix.in/#organization',
+      '@id': `${siteUrl}/#organization`,
       name: 'Kollabrix',
       legalName: 'Kollabrix Technologies',
-      alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'Kollabrix India'],
-      url: 'https://kollabrix.in/',
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'Kollabrix India', 'kollabrix.in'],
+      url: `${siteUrl}/`,
       foundingDate: '2024',
       founder: {
         '@type': 'Person',
@@ -239,22 +239,23 @@ const jsonLd = {
       ],
       logo: {
         '@type': 'ImageObject',
-        '@id': 'https://kollabrix.in/#logo',
-        url: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_v3squircle',
+        '@id': `${siteUrl}/#logo`,
+        url: `${siteUrl}/brand/kollabrix-logo.png?v=20261031_v3squircle`,
         caption: 'Kollabrix Official Dual Ascent Aerospace Emblem',
         inLanguage: 'en-US',
         width: 512,
         height: 512,
       },
-      image: 'https://kollabrix.in/brand/kollabrix-logo.png?v=20261031_v3squircle',
+      image: `${siteUrl}/brand/kollabrix-logo.png?v=20261031_v3squircle`,
       sameAs: [
+        siteUrl,
         'https://kollabrix.in',
         'https://github.com/goyalmayank142-pixel/kollabrix',
       ],
     },
     {
       '@type': 'SoftwareApplication',
-      '@id': 'https://kollabrix.in/#application',
+      '@id': `${siteUrl}/#application`,
       name: 'Kollabrix',
       alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       operatingSystem: 'All Modern Web Browsers',
@@ -275,12 +276,12 @@ const jsonLd = {
         'Faculty Challenge Problem Statements & Student Solutions',
       ],
       author: {
-        '@id': 'https://kollabrix.in/#organization',
+        '@id': `${siteUrl}/#organization`,
       },
     },
     {
       '@type': 'FAQPage',
-      '@id': 'https://kollabrix.in/#faq',
+      '@id': `${siteUrl}/#faq`,
       mainEntity: [
         {
           '@type': 'Question',
