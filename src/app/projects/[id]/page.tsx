@@ -19,6 +19,7 @@ import { ProjectCertificateModal } from '@/components/workspace/ProjectCertifica
 import { VerifiedCollegeBadge } from '@/components/profile/VerifiedCollegeBadge';
 import { LinkedInProjectShareModal } from '@/components/projects/LinkedInProjectShareModal';
 import { safeExternalUrl } from '@/lib/security/urlSanitizer';
+import { stripHackathonMeta } from '@/lib/workspaces/workspaceOrigin';
 import {
   Users,
   Calendar,
@@ -656,7 +657,7 @@ export default function ProjectDetailsPage() {
               Detailed Specifications
             </h2>
             <div className="prose prose-slate max-w-none text-slate-700 text-sm leading-relaxed whitespace-pre-line space-y-3 font-normal">
-              {project.description}
+              {stripHackathonMeta(project.description)}
             </div>
           </div>
 

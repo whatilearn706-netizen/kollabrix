@@ -163,8 +163,12 @@ export async function POST(request: NextRequest) {
     // Action: 'publish'
     const cleanTitle = (title || teamRow.team_name).trim();
     const cleanSummary = (summary || `Recruiting collegiate builders for hackathon sprint: ${cleanTitle}`).trim();
+    const strippedDesc = (description || '')
+      .replace(/<!--\s*HACKATHON_TEAM_META:[\s\S]*?-->/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .trim();
     const cleanDescription = `### Squad Mission & Hackathon Project\n${
-      description?.trim() || 'We are building an innovative prototype for the hackathon sprint.'
+      strippedDesc || 'We are building an innovative prototype for the hackathon sprint.'
     }\n\n### Hackathon Event\nThis project is tackling: **${hackathonTitle}**.\n\n### Open Roles We Need\n${
       desired_roles.map((r: string) => `- **${r}**`).join('\n')
     }\n\n${metaSnippet}`;

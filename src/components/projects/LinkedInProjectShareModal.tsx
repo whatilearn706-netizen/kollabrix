@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Project } from '@/types/database';
 import { Button } from '@/components/ui/Button';
+import { stripHackathonMeta } from '@/lib/workspaces/workspaceOrigin';
 import {
   Linkedin,
   Sparkles,
@@ -51,13 +52,15 @@ export function LinkedInProjectShareModal({
 
     let text = '';
 
+    const cleanDesc = stripHackathonMeta(project.description);
+
     if (selectedTone === 'collegiate') {
       text = `🚀 Excited to announce what we've been building on Kollabrix: ${project.title}!
 
 💡 The Big Idea:
 ${project.summary}
 
-${project.description ? `🔍 About the project:\n${project.description.slice(0, 200)}...\n` : ''}
+${cleanDesc ? `🔍 About the project:\n${cleanDesc.slice(0, 200)}...\n` : ''}
 🛠️ Built With:
 ${techStack}
 
