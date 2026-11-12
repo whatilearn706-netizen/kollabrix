@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { supabase } from '@/lib/supabase/client';
 
 interface SideCameraConnectModalProps {
   studentId: string;
@@ -58,10 +59,35 @@ export function SideCameraConnectModal({
       .catch((err) => console.error('QR generation error:', err));
   }, [studentId, contestId]);
 
-  // Poll heartbeat to check when side camera connects
+  // Dual-Signal detection: Instant Supabase WebSocket frame + HTTP heartbeat poll
   useEffect(() => {
     let isDisposed = false;
 
+    const handleLockSuccess = () => {
+      if (isDisposed) return;
+      setIsConnected(true);
+      setIsVerifying(true);
+      setTimeout(() => {
+        if (!isDisposed) {
+          onConnected();
+        }
+      }, 1200);
+    };
+
+    // 1. Instant WebSocket frame listener (< 100ms response upon mobile QR scan)
+    const channel = supabase.channel(`icpc-proctor-${studentId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel.on('broadcast', { event: 'sidecam_frame' }, (msg: any) => {
+      if (msg?.payload?.connected !== false) {
+        handleLockSuccess();
+      }
+    });
+
+    channel.subscribe();
+
+    // 2. Resilient HTTP Heartbeat Polling Fallback
     const checkConnection = async () => {
       if (isDisposed) return;
       try {
@@ -76,13 +102,7 @@ export function SideCameraConnectModal({
         });
         const data = await res.json();
         if (data.sideCameraConnected) {
-          setIsConnected(true);
-          setIsVerifying(true);
-          setTimeout(() => {
-            if (!isDisposed) {
-              onConnected();
-            }
-          }, 1500);
+          handleLockSuccess();
         }
         setPollCount((prev) => prev + 1);
       } catch (err) {
@@ -95,6 +115,7 @@ export function SideCameraConnectModal({
 
     return () => {
       isDisposed = true;
+      channel.unsubscribe();
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
       }
