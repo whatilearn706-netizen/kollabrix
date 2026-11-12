@@ -177,11 +177,11 @@ export function ProblemTeamModal({
 
       const projectPayload: any = {
         title: `${teamName.trim()}`,
-        summary: summaryText,
+        summary: concept.trim() || `Student squad tackling faculty challenge: ${problemTitle}`,
         description: descriptionText,
         category: problemCategory,
         difficulty: problemDifficulty,
-        status: postToExplore ? 'Recruiting' : 'In Progress',
+        status: 'In Progress',
         technologies: requiredSkills.length > 0 ? requiredSkills : ['Full Stack'],
         required_skills: requiredSkills.length > 0 ? requiredSkills : ['Software Engineering'],
         desired_roles: selectedRoles.length > 0 ? selectedRoles : ['Developer'],
@@ -219,7 +219,7 @@ export function ProblemTeamModal({
             selectedRoles,
             technologies: requiredSkills,
             commsLink: commsLink.trim(),
-            postToExplore,
+            postToExplore: false,
             userId: user.id,
           }),
         });
