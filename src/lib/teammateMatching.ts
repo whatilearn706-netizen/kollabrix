@@ -8,6 +8,96 @@ export const DEFAULT_MATCH_WEIGHTS: MatchScoringWeights = {
 };
 
 /**
+ * Authoritative check to identify faculty/educator/admin accounts
+ * and prevent them from appearing in peer student teammate discovery.
+ */
+export function isFacultyProfile(p: Partial<Profile> | null | undefined): boolean {
+  if (!p) return false;
+
+  const role = (p.role || '').toLowerCase().trim();
+  if (
+    role === 'teacher' ||
+    role === 'faculty' ||
+    role === 'professor' ||
+    role === 'admin' ||
+    role === 'educator' ||
+    role === 'mentor'
+  ) {
+    return true;
+  }
+
+  if (Boolean((p as any).faculty_verified)) return true;
+
+  const email = ((p as any).email || '').toLowerCase().trim();
+  if (
+    email === 'goyalmayank142@gmail.com' ||
+    email === 'kollabrixm@gmail.com' ||
+    email.includes('faculty') ||
+    email.includes('professor')
+  ) {
+    return true;
+  }
+
+  const username = (p.username || '').toLowerCase().trim();
+  if (
+    username === 'kollabrixm923' ||
+    username === 'kollabrixm147' ||
+    username === 'kollabrix' ||
+    username.includes('faculty') ||
+    username.includes('teacher') ||
+    username.includes('prof')
+  ) {
+    return true;
+  }
+
+  const displayName = (p.display_name || '').toLowerCase().trim();
+  if (
+    displayName.includes('kollabrix main account') ||
+    displayName.includes('faculty') ||
+    displayName.includes('professor') ||
+    displayName.includes('instructor') ||
+    displayName.includes('teacher')
+  ) {
+    return true;
+  }
+
+  const academicYear = (p.academic_year || '').toLowerCase().trim();
+  if (
+    academicYear.includes('faculty') ||
+    academicYear.includes('mentor') ||
+    academicYear.includes('professor')
+  ) {
+    return true;
+  }
+
+  const course = (p.course || '').toLowerCase().trim();
+  if (course.includes('faculty') || course.includes('academic mentor')) {
+    return true;
+  }
+
+  const roles = (p.preferred_roles || []).map((r) => r.toLowerCase().trim());
+  const facultyKeywords = [
+    'professor',
+    'assistant professor',
+    'associate professor',
+    'hod',
+    'dean',
+    'faculty',
+    'academic mentor',
+    'lecturer',
+  ];
+  if (roles.some((r) => facultyKeywords.some((k) => r.includes(k)))) {
+    return true;
+  }
+
+  if (Boolean((p as any).faculty_designation) || Boolean((p as any).faculty_department)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Transparent Teammate Matching Algorithm
  * Calculates an explainable matching score between a student profile and a project
  * Weights can be dynamically configured via the Admin Control Center:
@@ -27,10 +117,13 @@ export function calculateProjectTeammateMatch(
   if (currentUserId && candidate.user_id === currentUserId) return null;
   if (existingMemberUserIds.includes(candidate.user_id)) return null;
 
-  // 2. Exclude suspended users
+  // 2. Strictly exclude faculty members from student teammate matching
+  if (isFacultyProfile(candidate)) return null;
+
+  // 3. Exclude suspended users
   if (candidate.is_suspended || candidate.status === 'suspended') return null;
 
-  // 3. Respect privacy: skip non-public profiles
+  // 4. Respect privacy: skip non-public profiles
   if (candidate.is_portfolio_public === false) return null;
 
   const weights = customWeights || DEFAULT_MATCH_WEIGHTS;
@@ -137,6 +230,7 @@ export function calculatePeerTeammateMatch(
   customWeights?: MatchScoringWeights
 ): TeammateMatch | null {
   if (peer.user_id === currentUser.user_id) return null;
+  if (isFacultyProfile(peer)) return null;
   if (peer.is_suspended || peer.status === 'suspended') return null;
   if (peer.is_portfolio_public === false) return null;
 
