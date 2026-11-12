@@ -78,6 +78,8 @@ export function IcpcProctorGuard({
   const [isSideCameraConnected, setIsSideCameraConnected] = useState(false);
   const [isSideCameraLost, setIsSideCameraLost] = useState(false);
   const sideCameraDisconnectTimeRef = useRef<number | null>(null);
+  const lastSideCamFrameTimeRef = useRef<number>(0);
+  const hasTriggeredSideCamDisconnectViolationRef = useRef<boolean>(false);
   const [isTerminated, setIsTerminated] = useState(false);
   const [isDemolishedByAdmin, setIsDemolishedByAdmin] = useState(false);
   const [adminCautionMessage, setAdminCautionMessage] = useState<string | null>(null);
@@ -296,7 +298,8 @@ export function IcpcProctorGuard({
 
       const now = Date.now();
       const lastTrigger = recentViolationsRef.current[type] || 0;
-      if (now - lastTrigger < 3000) return;
+      const minCooldown = type === 'SIDE_CAM_DISCONNECTED' ? 45000 : 3000;
+      if (now - lastTrigger < minCooldown) return;
       recentViolationsRef.current[type] = now;
 
       playAlertSound('critical');
@@ -591,22 +594,34 @@ export function IcpcProctorGuard({
           playAlertSound('warning');
         }
 
-        // Side Camera Watchdog: Check if phone feed disconnected
-        if (isSideCameraConnected && data.sideCameraConnected === false) {
+        // Side Camera Watchdog: Resilient Dual-Signal Verification (HTTP heartbeat + WebSocket frames)
+        const hasRecentRealtimeFrames =
+          lastSideCamFrameTimeRef.current > 0 &&
+          Date.now() - lastSideCamFrameTimeRef.current < 20000;
+
+        const isCurrentlyConnected = Boolean(data.sideCameraConnected || hasRecentRealtimeFrames);
+
+        if (isSideCameraConnected && !isCurrentlyConnected) {
           if (!sideCameraDisconnectTimeRef.current) {
             sideCameraDisconnectTimeRef.current = Date.now();
-          } else if (Date.now() - sideCameraDisconnectTimeRef.current > 4000) {
+          } else if (Date.now() - sideCameraDisconnectTimeRef.current > 18000) {
+            // Require 18 continuous seconds of genuine outage across BOTH channels before freezing arena
             setIsSideCameraLost(true);
-            triggerViolation(
-              'SIDE_CAM_DISCONNECTED',
-              'Secondary Side Camera Disconnected',
-              'The secondary mobile side-view camera stream was disconnected or phone was locked. Reconnect to resume.',
-              'critical'
-            );
+            if (!hasTriggeredSideCamDisconnectViolationRef.current) {
+              hasTriggeredSideCamDisconnectViolationRef.current = true;
+              triggerViolation(
+                'SIDE_CAM_DISCONNECTED',
+                'Secondary Side Camera Disconnected',
+                'The secondary mobile side-view camera stream was disconnected or phone was locked. Reconnect to resume.',
+                'critical'
+              );
+            }
           }
-        } else if (data.sideCameraConnected) {
+        } else if (isCurrentlyConnected) {
           sideCameraDisconnectTimeRef.current = null;
+          hasTriggeredSideCamDisconnectViolationRef.current = false;
           setIsSideCameraLost(false);
+          setActiveWarning((prev) => (prev?.type === 'SIDE_CAM_DISCONNECTED' ? null : prev));
         }
       } catch (err) {
         // Tolerate temporary network glitch
@@ -770,6 +785,19 @@ export function IcpcProctorGuard({
       setIsTerminated(true);
       setIsDemolishedByAdmin(true);
       playAlertSound('critical');
+    });
+
+    // 6. Secondary Side Camera Live Feed Heartbeat & Video Frames from contestant's phone
+    channel.on('broadcast', { event: 'sidecam_frame' }, (msg: any) => {
+      const { connected } = msg?.payload || {};
+      if (connected !== false) {
+        lastSideCamFrameTimeRef.current = Date.now();
+        sideCameraDisconnectTimeRef.current = null;
+        hasTriggeredSideCamDisconnectViolationRef.current = false;
+        setIsSideCameraConnected(true);
+        setIsSideCameraLost(false);
+        setActiveWarning((prev) => (prev?.type === 'SIDE_CAM_DISCONNECTED' ? null : prev));
+      }
     });
 
     channel.subscribe((status) => {
@@ -1439,6 +1467,10 @@ export function IcpcProctorGuard({
             setIsSideCameraConnected(true);
             setIsSideCameraLost(false);
             setShowSideCameraModal(false);
+            sideCameraDisconnectTimeRef.current = null;
+            hasTriggeredSideCamDisconnectViolationRef.current = false;
+            lastSideCamFrameTimeRef.current = Date.now();
+            setActiveWarning((prev) => (prev?.type === 'SIDE_CAM_DISCONNECTED' ? null : prev));
           }}
           onSkip={() => {
             setShowSideCameraModal(false);
@@ -1831,10 +1863,24 @@ export function IcpcProctorGuard({
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+              {activeWarning.type === 'SIDE_CAM_DISCONNECTED' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto flex-1 border-cyan-500/50 bg-cyan-950/70 text-cyan-300 hover:text-white hover:bg-cyan-900/80 font-mono text-xs font-bold cursor-pointer"
+                  onClick={() => {
+                    setActiveWarning(null);
+                    setShowSideCameraModal(true);
+                  }}
+                >
+                  <Smartphone className="w-3.5 h-3.5 mr-1.5" />
+                  Reconnect Mobile Camera
+                </Button>
+              )}
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold cursor-pointer"
+                className="w-full sm:w-auto flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold cursor-pointer"
                 onClick={async () => {
                   focusLostStartTimeRef.current = null;
                   await requestArenaFullscreen();

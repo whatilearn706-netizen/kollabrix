@@ -79,6 +79,19 @@ function SideCameraContent() {
       } else {
         setWarningMessage(null);
         requestWakeLock();
+        // Immediately restore active status when student switches back to phone camera
+        if (studentId) {
+          fetch('/api/icpc/proctor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'sidecam_heartbeat',
+              studentId,
+              connected: true,
+            }),
+            keepalive: true,
+          }).catch(() => {});
+        }
       }
     };
 
@@ -147,6 +160,15 @@ function SideCameraContent() {
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         isSubscribed = true;
+        // Signal instant connectivity to desktop arena
+        channel.send({
+          type: 'broadcast',
+          event: 'sidecam_frame',
+          payload: {
+            connected: true,
+            timestamp: Date.now(),
+          },
+        }).catch(() => {});
       }
     });
 
@@ -158,6 +180,17 @@ function SideCameraContent() {
     const ctx = canvas.getContext('2d');
 
     let lastHttpSync = 0;
+
+    // Send immediate initial HTTP heartbeat upon connection
+    fetch('/api/icpc/proctor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'sidecam_heartbeat',
+        studentId,
+        connected: true,
+      }),
+    }).catch(() => {});
 
     const streamFrame = async () => {
       if (isDisposed) return;
@@ -184,9 +217,9 @@ function SideCameraContent() {
 
         setSnapshotCount((prev) => prev + 1);
 
-        // 2. High-efficiency lightweight HTTP Heartbeat every 8s (no heavy base64 image over HTTP; real-time video flows via WebRTC / Realtime broadcast channel above)
+        // 2. High-efficiency lightweight HTTP Heartbeat every 3s (robust keepalive preventing race conditions)
         const now = Date.now();
-        if (now - lastHttpSync > 8000) {
+        if (now - lastHttpSync > 3000) {
           lastHttpSync = now;
           fetch('/api/icpc/proctor', {
             method: 'POST',

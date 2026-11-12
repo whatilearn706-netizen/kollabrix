@@ -332,10 +332,11 @@ export async function POST(request: NextRequest) {
       activeMap[studentId] = existing;
       await saveActiveSessions(activeMap);
 
+      // Tolerate normal cellular packet jitter/reconnects: 25s window for heartbeats sent every 3s
       const isSideCamActive = Boolean(
         existing.sideCameraConnected &&
         existing.sideCameraLastHeartbeat &&
-        Date.now() - new Date(existing.sideCameraLastHeartbeat).getTime() < 8000
+        Date.now() - new Date(existing.sideCameraLastHeartbeat).getTime() < 25000
       );
 
       return NextResponse.json({
