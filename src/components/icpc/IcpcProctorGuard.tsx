@@ -1290,17 +1290,43 @@ export function IcpcProctorGuard({
     };
   }, [isActive, hasCameraPermission, showEntranceModal, triggerViolation]);
 
-  // Clean up streams on unmount
+  // Clean up streams and immediately purge session from faculty & admin screens on exit/unmount
   useEffect(() => {
+    const notifyExit = () => {
+      if (!studentId) return;
+      try {
+        const payload = JSON.stringify({ action: 'exit_session', studentId });
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          navigator.sendBeacon('/api/icpc/proctor', new Blob([payload], { type: 'application/json' }));
+        } else {
+          fetch('/api/icpc/proctor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {}
+    };
+
+    window.addEventListener('beforeunload', notifyExit);
+    window.addEventListener('pagehide', notifyExit);
+
     return () => {
+      window.removeEventListener('beforeunload', notifyExit);
+      window.removeEventListener('pagehide', notifyExit);
+
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current = null;
       }
+      notifyExit();
     };
-  }, []);
+  }, [studentId]);
 
   return (
     <>

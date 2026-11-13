@@ -415,16 +415,19 @@ export default function IcpcCollegiateArenaPage() {
       setPasscodeError('');
       return;
     }
-    try {
-      if (typeof document !== 'undefined' && !document.fullscreenElement) {
-        const el = document.documentElement;
-        if (el.requestFullscreen) {
-          el.requestFullscreen().catch(() => {});
-        } else if ((el as any).webkitRequestFullscreen) {
-          (el as any).webkitRequestFullscreen();
+    const isContestConcluded = contest.contestType !== 'practice' && Boolean(contest.endTime) && new Date() >= new Date(contest.endTime);
+    if (contest.contestType !== 'practice' && !isContestConcluded) {
+      try {
+        if (typeof document !== 'undefined' && !document.fullscreenElement) {
+          const el = document.documentElement;
+          if (el.requestFullscreen) {
+            el.requestFullscreen().catch(() => {});
+          } else if ((el as any).webkitRequestFullscreen) {
+            (el as any).webkitRequestFullscreen();
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
     setSelectedContest(contest);
     setActiveProblem(problem);
     setSolverTab('editor');
@@ -664,6 +667,31 @@ export default function IcpcCollegiateArenaPage() {
         };
 
         setSubmissions((prev) => [newSub, ...prev]);
+
+        // Submit verified correct solution to faculty desk (STRICT: only genuine Accepted solves)
+        try {
+          fetch('/api/icpc/proctor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'record_submission',
+              contestId: selectedContest.id,
+              contestTitle: selectedContest.title,
+              problemId: activeProblem.id,
+              problemTitle: activeProblem.title,
+              studentId: user?.id || 'anon',
+              studentName: profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Contestant',
+              studentEmail: user?.email,
+              college: (profile as any)?.college || 'Collegiate Network',
+              language: selectedLanguage.toUpperCase(),
+              code: userCode,
+              verdict: 'Accepted',
+              runtime: maxTime,
+              memory: maxMemory,
+              points: pointsToAdd,
+            }),
+          }).catch(() => {});
+        } catch {}
 
         // Auto-advance logic: If all questions in contest are answered, celebrate completion!
         // Otherwise, advance to the next question in the contest (e.g. A -> B).
@@ -1397,39 +1425,44 @@ export default function IcpcCollegiateArenaPage() {
         {/* LeetCode-style Problem Solver Modal with Recruiter-Grade Proctoring */}
         {mounted && Boolean(user) && activeProblem && selectedContest && typeof document !== 'undefined' && createPortal(
           <div id="icpc-exam-proctor-portal" className="fixed inset-0 z-[99999] bg-charcoal-950 overflow-hidden">
-            <IcpcProctorGuard
-              contestId={selectedContest.id}
-              contestTitle={selectedContest.title}
-              problemId={activeProblem.id}
-              problemTitle={activeProblem.title}
-              studentId={user?.id || 'anon'}
-              studentName={profile?.display_name || user?.user_metadata?.display_name || 'Contestant'}
-              studentEmail={user?.email}
-              college={(profile as any)?.college || 'Collegiate Builder'}
-              isActive={Boolean(activeProblem)}
-              onCloseArena={() => {
+            {(() => {
+              const isContestTimeEnded = selectedContest.contestType !== 'practice' && Boolean(selectedContest.endTime) && new Date() >= new Date(selectedContest.endTime);
+              const isProctorRequired = selectedContest.contestType !== 'practice' && !isContestTimeEnded;
+
+              const handleExitArena = () => {
                 if (typeof document !== 'undefined' && document.fullscreenElement) {
                   document.exitFullscreen().catch(() => {});
                 }
+                if (user?.id) {
+                  try {
+                    const payload = JSON.stringify({ action: 'exit_session', studentId: user.id });
+                    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+                      navigator.sendBeacon('/api/icpc/proctor', new Blob([payload], { type: 'application/json' }));
+                    } else {
+                      fetch('/api/icpc/proctor', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: payload,
+                        keepalive: true,
+                      }).catch(() => {});
+                    }
+                  } catch {}
+                }
                 setActiveProblem(null);
-              }}
-            >
-              <div className="fixed inset-0 z-0 bg-charcoal-950 flex flex-col text-white w-full h-[100dvh] max-h-[100dvh] overflow-hidden animate-in fade-in duration-150 select-none">
-              {/* Top Navigation Bar (56px) */}
-              <header className="h-14 shrink-0 px-4 bg-charcoal-900 border-b border-charcoal-800 flex items-center justify-between gap-3 select-none">
-                {/* Left: Exit Arena, Contest Title, and Problem Switcher */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof document !== 'undefined' && document.fullscreenElement) {
-                        document.exitFullscreen().catch(() => {});
-                      }
-                      setActiveProblem(null);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border border-charcoal-700 hover:border-rose-500/40 text-xs font-mono font-bold transition-all cursor-pointer shrink-0"
-                    title="Exit Arena & Restore Standard Window"
-                  >
+              };
+
+              const arenaContent = (
+                <div className="fixed inset-0 z-0 bg-charcoal-950 flex flex-col text-white w-full h-[100dvh] max-h-[100dvh] overflow-hidden animate-in fade-in duration-150 select-none">
+                  {/* Top Navigation Bar (56px) */}
+                  <header className="h-14 shrink-0 px-4 bg-charcoal-900 border-b border-charcoal-800 flex items-center justify-between gap-3 select-none">
+                    {/* Left: Exit Arena, Contest Title, and Problem Switcher */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={handleExitArena}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border border-charcoal-700 hover:border-rose-500/40 text-xs font-mono font-bold transition-all cursor-pointer shrink-0"
+                        title="Exit Arena & Restore Standard Window"
+                      >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Exit Arena</span>
                   </button>
@@ -2004,10 +2037,30 @@ export default function IcpcCollegiateArenaPage() {
             })()}
               </div>
             </div>
-          </IcpcProctorGuard>
-        </div>,
-        document.body
-      )}
+          );
+
+          return isProctorRequired ? (
+            <IcpcProctorGuard
+              contestId={selectedContest.id}
+              contestTitle={selectedContest.title}
+              problemId={activeProblem.id}
+              problemTitle={activeProblem.title}
+              studentId={user?.id || 'anon'}
+              studentName={profile?.display_name || user?.user_metadata?.display_name || 'Contestant'}
+              studentEmail={user?.email}
+              college={(profile as any)?.college || 'Collegiate Builder'}
+              isActive={true}
+              onCloseArena={handleExitArena}
+            >
+              {arenaContent}
+            </IcpcProctorGuard>
+          ) : (
+            arenaContent
+          );
+        })()}
+      </div>,
+      document.body
+    )}
 
         {/* Host ICPC Contest Modal */}
         <CreateIcpcContestModal
@@ -2119,6 +2172,14 @@ export default function IcpcCollegiateArenaPage() {
                 variant="primary"
                 onClick={() => {
                   setContestCompletionModal(null);
+                  if (user?.id) {
+                    try {
+                      const payload = JSON.stringify({ action: 'exit_session', studentId: user.id });
+                      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+                        navigator.sendBeacon('/api/icpc/proctor', new Blob([payload], { type: 'application/json' }));
+                      }
+                    } catch {}
+                  }
                   setActiveProblem(null);
                   setSelectedContest(null);
                   try {

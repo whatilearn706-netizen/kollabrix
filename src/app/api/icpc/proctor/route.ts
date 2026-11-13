@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ProctorIncident, ProctorLiveStats, ProctorViolationType, ActiveProctorSession } from '@/types/icpc';
+import { ProctorIncident, ProctorLiveStats, ProctorViolationType, ActiveProctorSession, ContestSubmission } from '@/types/icpc';
 import { getMasterControlSubkey, updateMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
 import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
@@ -126,6 +126,40 @@ async function saveActiveSessions(sessions: Record<string, ActiveProctorSession>
   }
 }
 
+let memoryVerifiedSubmissions: ContestSubmission[] = [];
+
+async function loadVerifiedSubmissions(): Promise<ContestSubmission[]> {
+  if (memoryVerifiedSubmissions.length > 0) return memoryVerifiedSubmissions;
+  try {
+    const client = getSupabaseAdmin();
+    if (!client) return memoryVerifiedSubmissions;
+    const { data } = await client.from('platform_settings').select('value').eq('key', 'icpc_verified_submissions').maybeSingle();
+    if (Array.isArray(data?.value)) {
+      memoryVerifiedSubmissions = data.value;
+      return memoryVerifiedSubmissions;
+    }
+  } catch (err) {
+    console.warn('Error reading icpc_verified_submissions:', err);
+  }
+  return memoryVerifiedSubmissions;
+}
+
+async function saveVerifiedSubmissions(subs: ContestSubmission[]): Promise<void> {
+  memoryVerifiedSubmissions = subs;
+  try {
+    const client = getSupabaseAdmin();
+    if (!client) return;
+    const trimmed = subs.slice(0, 300);
+    await client.from('platform_settings').upsert({
+      key: 'icpc_verified_submissions',
+      value: trimmed,
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('Error saving icpc_verified_submissions:', err);
+  }
+}
+
 async function loadMeetingUrl(): Promise<string> {
   try {
     return await getMasterControlSubkey<string>('icpc_proctor_meeting_url', '');
@@ -140,11 +174,12 @@ export async function GET(request: NextRequest) {
     const incidents = await loadProctorIncidents();
     const activeMap = await loadActiveSessions();
     const meetingUrl = await loadMeetingUrl();
+    const submissions = await loadVerifiedSubmissions();
 
-    // Active within the last 90 seconds (resilient to tab switches or mobile network hiccups)
+    // Active within the last 25 seconds and not explicitly exited
     const now = Date.now();
     const activeSessionsList = Object.values(activeMap).filter(
-      (s) => now - new Date(s.lastHeartbeat).getTime() < 90 * 1000
+      (s) => s.status !== 'exited' && now - new Date(s.lastHeartbeat).getTime() < 25 * 1000
     );
 
     const stats: ProctorLiveStats = {
@@ -173,6 +208,7 @@ export async function GET(request: NextRequest) {
       incidents,
       stats,
       activeSessions: activeSessionsList,
+      submissions,
       proctorMeetingUrl: meetingUrl,
       telegramConfig: telegramStatus,
       count: incidents.length,
@@ -286,6 +322,74 @@ export async function POST(request: NextRequest) {
       };
       await saveActiveSessions(activeMap);
       return NextResponse.json({ success: true, status: 'active' });
+    }
+
+    // 1a-2. Contestant leaves or closes arena - immediately removes their live screen from faculty & admin
+    if (action === 'exit_session' || action === 'leave_arena') {
+      const { studentId } = body;
+      if (studentId) {
+        const activeMap = await loadActiveSessions();
+        if (activeMap[studentId]) {
+          delete activeMap[studentId];
+          await saveActiveSessions(activeMap, true);
+        }
+      }
+      return NextResponse.json({ success: true, message: 'Session exited cleanly' });
+    }
+
+    // 1a-3. Record verified submission for faculty desk (STRICT: only if verdict is Accepted / correct answer)
+    if (action === 'record_submission') {
+      const {
+        contestId,
+        contestTitle,
+        problemId,
+        problemTitle,
+        studentId,
+        studentName,
+        studentEmail,
+        college,
+        language,
+        code,
+        verdict,
+        runtime,
+        memory,
+        points,
+      } = body;
+
+      // Strict validation: Only genuine Accepted solutions go to the faculty
+      if (verdict === 'Accepted' && studentId && contestId) {
+        const allSubs = await loadVerifiedSubmissions();
+        const newSub: ContestSubmission = {
+          id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          contestId,
+          contestTitle: contestTitle || 'ICPC Contest',
+          problemId: problemId || '',
+          problemTitle: problemTitle || 'Problem',
+          studentId,
+          studentName: studentName || 'Contestant',
+          studentEmail,
+          college: college || 'Collegiate Network',
+          language: language || 'C++',
+          code: typeof code === 'string' ? code.slice(0, 10000) : '',
+          verdict: 'Accepted',
+          runtime: runtime || '0.00s',
+          memory: memory || '0 KB',
+          submittedAt: new Date().toISOString(),
+          pointsEarned: Number(points) || 100,
+        };
+
+        // Filter out duplicate submission for the same student + problem to keep latest verified solve
+        const filtered = allSubs.filter(
+          (s) => !(s.contestId === contestId && s.problemId === problemId && s.studentId === studentId)
+        );
+        await saveVerifiedSubmissions([newSub, ...filtered]);
+        return NextResponse.json({ success: true, submission: newSub });
+      }
+
+      return NextResponse.json({
+        success: false,
+        message: 'Only correct (Accepted) solutions are submitted to faculty.',
+      });
     }
 
     // 1b. Heartbeat from student client
