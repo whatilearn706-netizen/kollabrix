@@ -69,7 +69,7 @@ export const DEFAULT_CAMPUS_WAR_CONFIG: CampusWarConfig = {
   sponsor: {
     enabled: true,
     name: 'Thapar Institute of Engineering & Technology',
-    logoUrl: '/brand/kollabrix-logo.png?v=20261113_vmaster',
+    logoUrl: '/brand/kollabrix-logo.png?v=20261031_v3squircle',
     badgeText: 'FEATURED HOST CAMPUS',
     tagline: 'Leading the Collegiate Innovation Derby • Official Arena Ground',
     targetUrl: 'https://www.kollabrix.in',

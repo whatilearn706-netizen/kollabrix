@@ -12,23 +12,23 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#F59E0B',
     icons: [
       {
-        src: '/favicon-48x48.png?v=20261113_vmaster',
+        src: '/favicon-48x48.png',
         sizes: '48x48',
         type: 'image/png',
       },
       {
-        src: '/favicon-96x96.png?v=20261113_vmaster',
+        src: '/favicon-96x96.png',
         sizes: '96x96',
         type: 'image/png',
       },
       {
-        src: '/icon-192.png?v=20261113_vmaster',
+        src: '/icon-192.png',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable',
       },
       {
-        src: '/icon-512.png?v=20261113_vmaster',
+        src: '/icon-512.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',
