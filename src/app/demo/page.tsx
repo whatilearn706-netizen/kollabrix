@@ -39,7 +39,7 @@ export default function DemoPage() {
               playsInline
               loop
               className="w-full h-full object-cover rounded-2xl"
-              poster="/brand/kollabrix-logo.min.svg"
+              poster="/brand/kollabrix-logo.png?v=20261113_vmaster"
             >
               <source src="/videos/linkora-live-demo.mp4" type="video/mp4" />
               <source src="/videos/linkora-live-demo.webm" type="video/webm" />

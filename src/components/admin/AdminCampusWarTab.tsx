@@ -61,8 +61,8 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
   const [newIsShiny, setNewIsShiny] = useState(true);
 
   // Collegiate Arena Derby specific Admin fields
-  const [newChallengerLogo, setNewChallengerLogo] = useState('/brand/kollabrix-logo.png?v=20261031_v3squircle');
-  const [newTargetLogo, setNewTargetLogo] = useState('/brand/kollabrix-logo.png?v=20261031_v3squircle');
+  const [newChallengerLogo, setNewChallengerLogo] = useState('/brand/kollabrix-logo.png?v=20261113_vmaster');
+  const [newTargetLogo, setNewTargetLogo] = useState('/brand/kollabrix-logo.png?v=20261113_vmaster');
   const [newTotalTeams, setNewTotalTeams] = useState(10);
   const [newTeamQuestions, setNewTeamQuestions] = useState<DerbyTeamQuestion[]>(() =>
     getRandomArenaQuestions(10)

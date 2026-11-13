@@ -460,7 +460,7 @@ export function OrigamiBirdSculpture() {
     return (
       <div className="w-full h-full flex items-center justify-center p-6">
         <img
-          src="/brand/kollabrix-logo.svg"
+          src="/brand/kollabrix-logo.png?v=20261113_vmaster"
           alt="Kollabrix 3D Emblem"
           width={220}
           height={220}
