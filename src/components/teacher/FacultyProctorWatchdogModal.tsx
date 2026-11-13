@@ -26,6 +26,7 @@ import {
   ProctorIncident,
   ProctorLiveStats,
   ProctorViolationType,
+  ContestSubmission,
 } from '@/types/icpc';
 
 interface FacultyProctorWatchdogModalProps {
@@ -48,11 +49,12 @@ export function FacultyProctorWatchdogModal({
   const [selectedContestId, setSelectedContestId] = useState<string>('all');
   const [activeSessions, setActiveSessions] = useState<ActiveProctorSession[]>([]);
   const [incidents, setIncidents] = useState<ProctorIncident[]>([]);
+  const [submissions, setSubmissions] = useState<ContestSubmission[]>([]);
   const [stats, setStats] = useState<ProctorLiveStats | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
-  const [subView, setSubView] = useState<'live_monitors' | 'incidents_log'>('live_monitors');
+  const [subView, setSubView] = useState<'live_monitors' | 'incidents_log' | 'verified_submissions'>('live_monitors');
 
   // Theater Mode (High-res stream)
   const [theaterSession, setTheaterSession] = useState<ActiveProctorSession | null>(null);
@@ -102,8 +104,9 @@ export function FacultyProctorWatchdogModal({
 
       const rawSessions: ActiveProctorSession[] = data.activeSessions || [];
       const rawIncidents: ProctorIncident[] = data.incidents || [];
+      const rawSubmissions: ContestSubmission[] = data.submissions || [];
 
-      // Filter to sessions and incidents associated with this faculty's contests
+      // Filter to sessions, incidents, and verified submissions associated with this faculty's contests
       const mySessions = rawSessions.filter((s) => {
         if (!s) return false;
         const cId = (s.contestId || '').toLowerCase();
@@ -125,8 +128,19 @@ export function FacultyProctorWatchdogModal({
         return facultyContestIds.current.has(cId) || facultyContestTitles.current.has(cTitle);
       });
 
+      const mySubmissions = rawSubmissions.filter((sub) => {
+        if (!sub) return false;
+        const cId = (sub.contestId || '').toLowerCase();
+        const cTitle = (sub.contestTitle || '').trim().toLowerCase();
+
+        if (facultyContestIds.current.size === 0) return true;
+
+        return facultyContestIds.current.has(cId) || facultyContestTitles.current.has(cTitle);
+      });
+
       setActiveSessions(mySessions);
       setIncidents(myIncidents);
+      setSubmissions(mySubmissions);
       if (data.stats) {
         setStats({
           ...data.stats,
@@ -343,6 +357,27 @@ export function FacultyProctorWatchdogModal({
     return true;
   });
 
+  const filteredSubmissions = submissions.filter((sub) => {
+    if (selectedContestId !== 'all') {
+      const matchId = (sub.contestId || '').toLowerCase() === selectedContestId.toLowerCase();
+      const targetContest = facultyContests.find((c) => c.id === selectedContestId);
+      const matchTitle = targetContest && (sub.contestTitle || '').toLowerCase() === targetContest.title.toLowerCase();
+      if (!matchId && !matchTitle) return false;
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchName = (sub.studentName || '').toLowerCase().includes(q);
+      const matchEmail = (sub.studentEmail || '').toLowerCase().includes(q);
+      const matchCollege = (sub.college || '').toLowerCase().includes(q);
+      const matchProblem = (sub.problemTitle || '').toLowerCase().includes(q);
+      const matchContest = (sub.contestTitle || '').toLowerCase().includes(q);
+      if (!matchName && !matchEmail && !matchCollege && !matchProblem && !matchContest) return false;
+    }
+
+    return true;
+  });
+
   return (
     <>
       <Modal
@@ -371,7 +406,7 @@ export function FacultyProctorWatchdogModal({
                 </select>
               </div>
 
-              {/* View Switcher: Live Monitors vs Incidents */}
+              {/* View Switcher: Live Monitors vs Incidents vs Solved Students */}
               <div>
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">VIEW MODE</label>
                 <div className="flex items-center bg-charcoal-800 rounded-xl p-0.5 border border-charcoal-700">
@@ -385,7 +420,7 @@ export function FacultyProctorWatchdogModal({
                     }`}
                   >
                     <Video className="w-3.5 h-3.5" />
-                    <span>Live Monitors ({filteredSessions.length})</span>
+                    <span>Live Screens ({filteredSessions.length})</span>
                   </button>
                   <button
                     type="button"
@@ -398,6 +433,18 @@ export function FacultyProctorWatchdogModal({
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
                     <span>Incidents ({filteredIncidents.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubView('verified_submissions')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      subView === 'verified_submissions'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Solved Students ({filteredSubmissions.length})</span>
                   </button>
                 </div>
               </div>
@@ -443,12 +490,20 @@ export function FacultyProctorWatchdogModal({
           </div>
 
           {/* Quick Metrics Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="p-3 rounded-xl bg-charcoal-850 border border-charcoal-750">
-              <div className="text-[10px] font-mono text-slate-400 uppercase">Active Students</div>
+              <div className="text-[10px] font-mono text-slate-400 uppercase">Active In Arena</div>
               <div className="text-xl font-extrabold text-cyan-400 mt-0.5 flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-cyan-400" />
                 <span>{filteredSessions.length}</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-charcoal-850 border border-charcoal-750">
+              <div className="text-[10px] font-mono text-slate-400 uppercase">Verified Solves</div>
+              <div className="text-xl font-extrabold text-emerald-400 mt-0.5 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>{filteredSubmissions.length}</span>
               </div>
             </div>
 
@@ -662,6 +717,71 @@ export function FacultyProctorWatchdogModal({
                         </div>
                         <div className="text-[10px] text-amber-400 font-bold mt-0.5 font-mono">
                           Warning #{inc.warningCount}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SUB-VIEW 3: VERIFIED SOLVED STUDENTS REPORT */}
+          {subView === 'verified_submissions' && (
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 text-emerald-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    <strong>Faculty Verified Roster:</strong> Only students who entered the arena and submitted an <strong>Accepted (Correct Answer)</strong> solution appear in this report.
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono font-bold text-emerald-400 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 shrink-0">
+                  {filteredSubmissions.length} Verified Solves
+                </span>
+              </div>
+
+              {filteredSubmissions.length === 0 ? (
+                <div className="text-center py-16 px-4 rounded-2xl bg-charcoal-900/60 border border-charcoal-750 space-y-3">
+                  <CheckCircle2 className="w-10 h-10 text-slate-600 mx-auto" />
+                  <h4 className="text-sm font-bold text-slate-300">No Verified Solves Recorded Yet</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Students who enter this contest and submit genuine correct code passing all evaluation testcases will automatically have their names and submissions logged here for faculty records.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[58vh] overflow-y-auto pr-1">
+                  {filteredSubmissions.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-750 hover:border-emerald-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm shrink-0">
+                          {sub.studentName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white flex items-center gap-2">
+                            <span>{sub.studentName}</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                              Accepted (AC)
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-400 font-mono mt-0.5">
+                            {sub.college || 'Collegiate Student'} • Problem: <span className="text-cyan-300 font-semibold">{sub.problemTitle || sub.problemId}</span> ({sub.contestTitle || 'Contest'})
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs font-mono text-slate-300">
+                        <div className="px-2 py-1 rounded-lg bg-charcoal-800 border border-charcoal-700 text-[11px]">
+                          Lang: <span className="text-indigo-300 font-bold">{sub.language}</span>
+                        </div>
+                        <div className="px-2 py-1 rounded-lg bg-charcoal-800 border border-charcoal-700 text-[11px]">
+                          Runtime: <span className="text-emerald-300 font-bold">{sub.runtime}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {sub.submittedAt ? new Date(sub.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
                         </div>
                       </div>
                     </div>

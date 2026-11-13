@@ -67,8 +67,12 @@ export interface IcpcContest {
 export interface ContestSubmission {
   id: string;
   contestId: string;
+  contestTitle?: string;
   problemId: string;
+  problemTitle?: string;
+  studentId?: string;
   studentName: string;
+  studentEmail?: string;
   college: string;
   language: string;
   code: string;
@@ -144,7 +148,7 @@ export interface ActiveProctorSession {
   sideCameraConnected?: boolean;
   sideCameraLastHeartbeat?: string;
   lastHeartbeat: string;
-  status: 'active' | 'cautioned' | 'demolished';
+  status: 'active' | 'cautioned' | 'demolished' | 'exited';
   cautionMessage?: string;
   startedNotified?: boolean;
 }

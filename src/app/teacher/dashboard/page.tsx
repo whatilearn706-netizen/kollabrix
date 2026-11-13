@@ -107,6 +107,8 @@ function TeacherDashboardContent() {
   const [myNotes, setMyNotes] = useState<ProjectMentoringNote[]>([]);
   const [myHackathons, setMyHackathons] = useState<HackathonWithStats[]>([]);
   const [myIcpcContests, setMyIcpcContests] = useState<IcpcContest[]>([]);
+  const [icpcSubmissions, setIcpcSubmissions] = useState<any[]>([]);
+  const [icpcActiveSessions, setIcpcActiveSessions] = useState<any[]>([]);
   const [isCreateHackathonOpen, setIsCreateHackathonOpen] = useState(false);
   const [isCreateIcpcOpen, setIsCreateIcpcOpen] = useState(false);
   const [isProctorWatchdogOpen, setIsProctorWatchdogOpen] = useState(false);
@@ -535,6 +537,18 @@ function TeacherDashboardContent() {
         console.warn('ICPC contests load notice:', err);
         setMyIcpcContests([]);
       }
+
+      // 8. Fetch live proctor active sessions & verified solves for faculty desk
+      try {
+        const pRes = await fetch(`/api/icpc/proctor?_t=${Date.now()}`, { cache: 'no-store' });
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          if (pData.success) {
+            if (Array.isArray(pData.submissions)) setIcpcSubmissions(pData.submissions);
+            if (Array.isArray(pData.activeSessions)) setIcpcActiveSessions(pData.activeSessions);
+          }
+        }
+      } catch {}
     } catch {
       // Graceful fallback
     } finally {
@@ -1713,21 +1727,38 @@ function TeacherDashboardContent() {
                       }`}>
                         {contest.status === 'live' ? '🟢 Live' : contest.status === 'upcoming' ? '🕒 Upcoming' : '🏁 Past'}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>{contest.participantCount} students</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteContest(contest.id, contest.title)}
-                          disabled={deletingContestId === contest.id}
-                          className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                          title="Remove contest from desk"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {(() => {
+                        const solvedCount = icpcSubmissions.filter(
+                          (s) => s.contestId === contest.id || (contest.title && s.contestTitle?.toLowerCase() === contest.title.toLowerCase())
+                        ).length;
+                        const activeCount = icpcActiveSessions.filter(
+                          (s) => s.contestId === contest.id || (contest.title && s.contestTitle?.toLowerCase() === contest.title.toLowerCase())
+                        ).length;
+
+                        return (
+                          <div className="flex items-center gap-2">
+                            {activeCount > 0 && (
+                              <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1 font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                                <span>{activeCount} live</span>
+                              </span>
+                            )}
+                            <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1 font-bold">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{solvedCount} solved</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteContest(contest.id, contest.title)}
+                              disabled={deletingContestId === contest.id}
+                              className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors ml-1"
+                              title="Remove contest from desk"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <h4 className="text-sm font-bold text-white line-clamp-1">{contest.title}</h4>
