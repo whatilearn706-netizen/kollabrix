@@ -60,16 +60,16 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-144x144.png', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico?v=20261113_vmaster', sizes: 'any' },
+      { url: '/favicon-48x48.png?v=20261113_vmaster', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-96x96.png?v=20261113_vmaster', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-144x144.png?v=20261113_vmaster', sizes: '144x144', type: 'image/png' },
+      { url: '/icon-192.png?v=20261113_vmaster', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=20261113_vmaster', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.ico?v=20261113_vmaster',
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=20261113_vmaster', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.json',
@@ -86,16 +86,16 @@ export const metadata: Metadata = {
     siteName: 'Kollabrix',
     images: [
       {
-        url: `${siteUrl}/icon-512.png`,
-        width: 512,
-        height: 512,
+        url: `${siteUrl}/brand/kollabrix-logo.png?v=20261113_vmaster`,
+        width: 1024,
+        height: 1024,
         alt: 'Kollabrix Official Emblem',
       },
       {
-        url: `${siteUrl}/brand/kollabrix-logo.min.svg`,
-        width: 380,
-        height: 380,
-        alt: 'Kollabrix Brand Logo',
+        url: `${siteUrl}/icon-512.png?v=20261113_vmaster`,
+        width: 512,
+        height: 512,
+        alt: 'Kollabrix App Icon',
       },
     ],
   },
@@ -104,7 +104,7 @@ export const metadata: Metadata = {
     title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     description:
       'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
-    images: [`${siteUrl}/icon-512.png`],
+    images: [`${siteUrl}/brand/kollabrix-logo.png?v=20261113_vmaster`],
   },
   robots: {
     index: true,
@@ -240,13 +240,13 @@ const jsonLd = {
       logo: {
         '@type': 'ImageObject',
         '@id': `${siteUrl}/#logo`,
-        url: `${siteUrl}/brand/kollabrix-logo.png?v=20261031_v3squircle`,
+        url: `${siteUrl}/brand/kollabrix-logo.png?v=20261113_vmaster`,
         caption: 'Kollabrix Official Dual Ascent Aerospace Emblem',
         inLanguage: 'en-US',
-        width: 512,
-        height: 512,
+        width: 1024,
+        height: 1024,
       },
-      image: `${siteUrl}/brand/kollabrix-logo.png?v=20261031_v3squircle`,
+      image: `${siteUrl}/brand/kollabrix-logo.png?v=20261113_vmaster`,
       sameAs: [
         siteUrl,
         'https://kollabrix.in',
@@ -322,12 +322,12 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
-        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.ico?v=20261113_vmaster" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=20261113_vmaster" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=20261113_vmaster" />
+        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png?v=20261113_vmaster" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261113_vmaster" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261113_vmaster" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="Kollabrix" />
         <meta name="apple-mobile-web-app-title" content="Kollabrix" />
