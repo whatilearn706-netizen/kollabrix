@@ -207,7 +207,6 @@ export async function POST(request: NextRequest) {
       banner_url: resolvedBannerUrl,
       rules: rules?.trim() || null,
       contact_info: resolvedContact || null,
-      allowed_college: resolvedAllowedCollege || null,
       access_type: accessType,
       join_code: joinCode,
       password_hash: passwordHash,
