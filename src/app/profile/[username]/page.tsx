@@ -100,13 +100,61 @@ export default function PublicProfilePage() {
     // Check database
     if (isSupabaseConfigured()) {
       try {
-        const { data: profileData, error: profileErr } = await supabase
+        let profileData: any = null;
+        const { data: directData, error: profileErr } = await supabase
           .from('profiles')
           .select('*')
-          .eq('username', username)
-          .single();
+          .ilike('username', username)
+          .maybeSingle();
 
-        if (profileErr || !profileData) {
+        profileData = directData;
+
+        // If not found by username, check if username param is a user_id UUID
+        if (!profileData && username.length > 20) {
+          const { data: idData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', username)
+            .maybeSingle();
+          if (idData) profileData = idData;
+        }
+
+        // If not found in profiles, check universal registry for verified student
+        if (!profileData) {
+          try {
+            const { data: regFallback } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'linkedin_college_verifications')
+              .maybeSingle();
+
+            if (Array.isArray(regFallback?.value)) {
+              const matchedReg = regFallback.value.find(
+                (item: any) =>
+                  item.username?.toLowerCase() === username ||
+                  item.userId === username
+              );
+              if (matchedReg) {
+                profileData = {
+                  user_id: matchedReg.userId || 'reg-' + username,
+                  username: matchedReg.username || username,
+                  display_name: matchedReg.displayName || 'Collegiate Builder',
+                  college: matchedReg.college || 'Collegiate Institution',
+                  course: matchedReg.course || 'Engineering / Technology',
+                  academic_year: matchedReg.academicYear || '1st Year (Freshman)',
+                  role: 'student',
+                  college_verified: true,
+                  is_portfolio_public: true,
+                  status: 'active',
+                  created_at: matchedReg.verifiedAt || new Date().toISOString(),
+                  updated_at: matchedReg.verifiedAt || new Date().toISOString(),
+                };
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (!profileData) {
           if (matchingDemoProfile) {
             setProfile(matchingDemoProfile);
             setIsLoading(false);
@@ -132,7 +180,9 @@ export default function PublicProfilePage() {
             isRegVerified = regData.value.some(
               (item: any) =>
                 item.userId === p.user_id ||
-                Boolean(p.username && item.username?.toLowerCase() === p.username.toLowerCase())
+                Boolean(p.username && item.username?.toLowerCase() === p.username.toLowerCase()) ||
+                Boolean(username && item.username?.toLowerCase() === username.toLowerCase()) ||
+                Boolean(item.displayName && p.display_name && item.displayName.toLowerCase() === p.display_name.toLowerCase())
             );
           }
 
@@ -147,7 +197,8 @@ export default function PublicProfilePage() {
               isRegVerified = auditData.value.some(
                 (item: any) =>
                   (item.userId === p.user_id ||
-                    Boolean(p.username && item.username?.toLowerCase() === p.username.toLowerCase())) &&
+                    Boolean(p.username && item.username?.toLowerCase() === p.username.toLowerCase()) ||
+                    Boolean(username && item.username?.toLowerCase() === username.toLowerCase())) &&
                   (item.status === 'approved' || String(item.id || '').includes('faceid'))
               );
             }
@@ -305,14 +356,12 @@ export default function PublicProfilePage() {
 
   // Multi-tier Collegiate Verification check (Database, Auth Metadata, Local Storage, or Faculty)
   const isOwnerVerifiedLocally = Boolean(
-    isOwner && (
-      user?.user_metadata?.college_verified === true ||
-      (typeof window !== 'undefined' && (
-        localStorage.getItem('linkora_college_verified') === 'true' ||
-        localStorage.getItem(`linkora_college_verified_${user?.id}`) === 'true' ||
-        localStorage.getItem(`linkora_college_verified_${profile.user_id}`) === 'true'
-      ))
-    )
+    user?.user_metadata?.college_verified === true ||
+    (typeof window !== 'undefined' && (
+      localStorage.getItem('linkora_college_verified') === 'true' ||
+      (user?.id && localStorage.getItem(`linkora_college_verified_${user.id}`) === 'true') ||
+      (profile?.user_id && localStorage.getItem(`linkora_college_verified_${profile.user_id}`) === 'true')
+    ))
   );
 
   const isCollegiateVerified = Boolean(

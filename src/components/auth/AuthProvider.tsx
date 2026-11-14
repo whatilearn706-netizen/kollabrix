@@ -291,13 +291,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           (localStorage.getItem('linkora_college_verified') === 'true' ||
            localStorage.getItem(`linkora_college_verified_${userId}`) === 'true');
 
+        // Check platform_settings for universal collegiate verification approval
+        let isRegistryVerified = false;
+        try {
+          const { data: regData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'linkedin_college_verifications')
+            .maybeSingle();
+
+          if (Array.isArray(regData?.value)) {
+            isRegistryVerified = regData.value.some(
+              (item: any) =>
+                item.userId === userId ||
+                (data.username && item.username?.toLowerCase() === data.username.toLowerCase()) ||
+                (currentUser?.email && item.email?.toLowerCase() === currentUser.email.toLowerCase())
+            );
+          }
+
+          if (!isRegistryVerified) {
+            const { data: sidData } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'student_id_verifications')
+              .maybeSingle();
+
+            if (Array.isArray(sidData?.value)) {
+              isRegistryVerified = sidData.value.some(
+                (item: any) =>
+                  (item.userId === userId ||
+                   (data.username && item.username?.toLowerCase() === data.username.toLowerCase())) &&
+                  (item.status === 'approved' || String(item.id || '').includes('faceid'))
+              );
+            }
+          }
+        } catch (e) {}
+
+        const finalIsVerified = Boolean(
+          data.college_verified ||
+          currentUser?.user_metadata?.college_verified ||
+          isVerifiedInStorage ||
+          isRegistryVerified
+        );
+
+        if (finalIsVerified && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('linkora_college_verified', 'true');
+            localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+          } catch (e) {}
+        }
+
         const enrichedProfile: Profile = {
           ...data,
-          college_verified: Boolean(
-            data.college_verified ||
-            currentUser?.user_metadata?.college_verified ||
-            isVerifiedInStorage
-          ),
+          college_verified: finalIsVerified,
           college_verified_at:
             data.college_verified_at ||
             currentUser?.user_metadata?.college_verified_at ||
