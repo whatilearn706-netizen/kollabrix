@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     const isOwner =
-      targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+      targetUserId === '29359508-c755-424b-81a2-89e714577437' ||
       user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
     const isFacultyEligible = parsedYear < 2003;
