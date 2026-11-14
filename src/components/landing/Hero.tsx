@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { CyberGridCanvas } from './CyberGridCanvas';
+import { QuantumLoomCanvas } from './QuantumLoomCanvas';
 
 export function LandingHero() {
   const { user } = useAuth();
@@ -23,7 +23,10 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#090B10]"
     >
-      {/* 3D Cinematic 4K Quantum Loom of Consciousness Video Background */}
+      {/* Exact Realm 01 Quantum Loom of Consciousness WebGL Canvas */}
+      <QuantumLoomCanvas className="z-0" />
+
+      {/* 4K Hardware-Accelerated Video Fallback */}
       <video
         autoPlay
         loop
@@ -31,15 +34,12 @@ export function LandingHero() {
         playsInline
         preload="auto"
         poster="/brand/hero-quantum-loom-poster.webp"
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none z-0"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10"
       >
         <source src="/videos/hero-quantum-loom.webm" type="video/webm" />
         <source src="/videos/hero-quantum-loom-4k.mp4" type="video/mp4" />
         <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
       </video>
-
-      {/* Real-time Procedural Rising Fire Embers, Breaking Sparks & Twinkling Stars */}
-      <CyberGridCanvas className="z-10" />
 
       {/* Balanced Radial Vignette: keeps headlines ultra-readable while letting the golden 3D city glow shine through */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(9,11,16,0.65)_100%)] pointer-events-none z-10" />
