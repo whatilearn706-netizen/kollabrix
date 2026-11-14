@@ -348,16 +348,20 @@ export function StepPathBBiometricScan({
   const [scanSecondsLeft, setScanSecondsLeft] = useState(SCAN_DURATION_SECONDS);
   const [scanFramesCount, setScanFramesCount] = useState(0);
   const [isBackendScanning, setIsBackendScanning] = useState(false);
-  const [lastLiveDetection, setLastLiveDetection] = useState<string>('Aligning physical card...');
+  const [lastLiveDetection, setLastLiveDetection] = useState<string>('Hold physical college ID card inside the frame...');
 
-  // Extracted Details
-  const cleanInitialName = displayName || '';
+  // Physical Card Detection Gates
+  const [isCardDetected, setIsCardDetected] = useState<boolean>(isVerified);
+  const isCardDetectedRef = useRef<boolean>(isVerified);
+  const idCardSnapshotRef = useRef<string | null>(null);
+
+  // Extracted Details (Strict: empty until physical card is detected unless already verified)
   const [extractedData, setExtractedData] = useState<ExtractedCardData>({
-    college: currentCollege || '',
-    studentRollNo: currentRollNo || '',
-    course: currentCourse || '',
-    academicYear: currentAcademicYear || '1st Year (Freshman)',
-    studentName: cleanInitialName,
+    college: isVerified ? currentCollege || '' : '',
+    studentRollNo: isVerified ? currentRollNo || '' : '',
+    course: isVerified ? currentCourse || '' : '',
+    academicYear: isVerified ? currentAcademicYear || '1st Year (Freshman)' : '1st Year (Freshman)',
+    studentName: isVerified ? (displayName || '') : '',
   });
   const [isEditingExtracted, setIsEditingExtracted] = useState(false);
 
@@ -378,26 +382,40 @@ export function StepPathBBiometricScan({
   useEffect(() => {
     if (!isVerified) {
       setStage('card_continuous');
+      setIsCardDetected(false);
+      isCardDetectedRef.current = false;
       setIdCardSnapshot(null);
+      idCardSnapshotRef.current = null;
       setCardPortraitCrop(null);
       setFaceSnapshot(null);
       setDuplicateCardError(null);
       setFaceMismatchError(null);
       setIsLivenessConfirmed(false);
+      setExtractedData({
+        college: '',
+        studentRollNo: '',
+        course: '',
+        academicYear: '1st Year (Freshman)',
+        studentName: '',
+      });
     } else {
       setStage('verified_done');
+      setIsCardDetected(true);
+      isCardDetectedRef.current = true;
     }
   }, [isVerified, userId]);
 
   useEffect(() => {
-    setExtractedData({
-      college: currentCollege || '',
-      studentRollNo: currentRollNo || '',
-      course: currentCourse || '',
-      academicYear: currentAcademicYear || '1st Year (Freshman)',
-      studentName: displayName || '',
-    });
-  }, [displayName, currentCollege, currentRollNo, currentCourse, currentAcademicYear, userId]);
+    if (isVerified) {
+      setExtractedData({
+        college: currentCollege || '',
+        studentRollNo: currentRollNo || '',
+        course: currentCourse || '',
+        academicYear: currentAcademicYear || '1st Year (Freshman)',
+        studentName: displayName || '',
+      });
+    }
+  }, [displayName, currentCollege, currentRollNo, currentCourse, currentAcademicYear, userId, isVerified]);
 
   // Face ID Continuous Scan State
   const [faceScanProgress, setFaceScanProgress] = useState(0);
@@ -534,29 +552,42 @@ export function StepPathBBiometricScan({
           return;
         }
 
-        if (data.success && data.extracted) {
+        // Genuine physical student card detected
+        if (data.success && data.isCardDetected && data.extracted) {
           const ext = data.extracted;
-          setExtractedData((prev) => ({
-            college: ext.college || prev.college,
-            studentRollNo: ext.studentRollNo || prev.studentRollNo,
-            course: ext.course || prev.course,
-            academicYear: ext.academicYear || prev.academicYear,
-            studentName:
-              ext.studentName && !/what\s*i\s*learn/i.test(ext.studentName)
-                ? ext.studentName
-                : prev.studentName || displayName || 'Student Builder',
-          }));
-
-          const cardNameStr = ext.studentName ? ` • Name: ${ext.studentName}` : '';
-          setLastLiveDetection(`Card Detected${cardNameStr} • Roll: ${ext.studentRollNo}`);
+          setIsCardDetected(true);
+          isCardDetectedRef.current = true;
           setIdCardSnapshot(frameBase64);
+          idCardSnapshotRef.current = frameBase64;
           setDuplicateCardError(null);
+
+          const studentName =
+            ext.studentName && !/what\s*i\s*learn/i.test(ext.studentName)
+              ? ext.studentName
+              : (displayName && !/what\s*i\s*learn/i.test(displayName) ? displayName : 'Student Builder');
+
+          setExtractedData({
+            college: ext.college || 'S-VYASA Deemed to be University',
+            studentRollNo: ext.studentRollNo || '',
+            course: ext.course || 'B.Tech - CSE (AI & ML)',
+            academicYear: ext.academicYear || '1st Year (Freshman)',
+            studentName,
+          });
+
+          const rollStr = ext.studentRollNo ? ` • Roll: ${ext.studentRollNo}` : '';
+          const nameStr = ext.studentName ? ` • ${ext.studentName}` : '';
+          setLastLiveDetection(`✓ Student ID Card Detected${rollStr}${nameStr}`);
           playSound('beep');
 
           // Crop passport portrait from card frame
           cropPassportPhotoFromCard(frameBase64, ext.portraitBox).then((crop) => {
             if (crop) setCardPortraitCrop(crop);
           });
+        } else {
+          // No physical card recognized in this frame
+          if (!isCardDetectedRef.current) {
+            setLastLiveDetection(data.reason || 'Hold physical college student ID card inside the frame...');
+          }
         }
       } catch (err) {
         // Continue scanning silently
@@ -570,21 +601,18 @@ export function StepPathBBiometricScan({
   // ── Finalize Card Scan & Advance to Review ──
   const finalizeCardScan = useCallback(() => {
     if (duplicateCardError) return;
+    if (!isCardDetectedRef.current || !idCardSnapshotRef.current) {
+      setLastLiveDetection('No physical card detected yet. Please hold your ID card inside the frame.');
+      playSound('warning');
+      return;
+    }
+
     if (continuousScanTimerRef.current) clearInterval(continuousScanTimerRef.current);
     if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
 
-    // Save final sharp snapshot
-    const finalFrame = captureCurrentFrame();
-    if (finalFrame) {
-      setIdCardSnapshot(finalFrame);
-      cropPassportPhotoFromCard(finalFrame, null).then((crop) => {
-        if (crop) setCardPortraitCrop((prev) => prev || crop);
-      });
-    }
-
     playSound('scan');
     setStage('card_review');
-  }, [captureCurrentFrame, duplicateCardError]);
+  }, [duplicateCardError]);
 
   // ── Initiate Continuous Card Scanning (20 Seconds Loop) ──
   useEffect(() => {
@@ -597,26 +625,31 @@ export function StepPathBBiometricScan({
       setScanSecondsLeft(SCAN_DURATION_SECONDS);
       setScanFramesCount(0);
 
-      // 1. 20-Second Countdown Timer
+      // 1. 20-Second Countdown Timer (Only advances if physical card was detected)
       continuousScanTimerRef.current = setInterval(() => {
         setScanSecondsLeft((prev) => {
           if (prev <= 1) {
-            clearInterval(continuousScanTimerRef.current!);
-            finalizeCardScan();
-            return 0;
+            if (isCardDetectedRef.current && idCardSnapshotRef.current) {
+              if (continuousScanTimerRef.current) clearInterval(continuousScanTimerRef.current);
+              finalizeCardScan();
+              return 0;
+            } else {
+              setLastLiveDetection('No physical card detected yet. Hold your student ID card steady in the frame.');
+              return 15;
+            }
           }
           return prev - 1;
         });
       }, 1000);
 
-      // 2. Periodic Continuous Frame Sampling (Every 1.8s)
+      // 2. Periodic Continuous Frame Sampling (Every 1.6s)
       frameIntervalRef.current = setInterval(() => {
         const frame = captureCurrentFrame();
         if (frame) {
           setScanFramesCount((c) => c + 1);
           sendFrameToBackend(frame);
         }
-      }, 1800);
+      }, 1600);
     });
 
     return () => {
@@ -993,10 +1026,15 @@ export function StepPathBBiometricScan({
 
                 <button
                   type="button"
+                  disabled={!isCardDetected}
                   onClick={finalizeCardScan}
-                  className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-[11px] uppercase tracking-wider shrink-0 transition-all cursor-pointer shadow-md shadow-emerald-500/25"
+                  className={`px-4 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider shrink-0 transition-all ${
+                    isCardDetected
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 cursor-pointer shadow-md shadow-emerald-500/25'
+                      : 'bg-white/10 text-slate-400 cursor-not-allowed border border-white/10'
+                  }`}
                 >
-                  Lock &amp; Confirm ({scanSecondsLeft}s)
+                  {isCardDetected ? `Lock & Confirm (${scanSecondsLeft}s)` : `Hold Card to Lock (${scanSecondsLeft}s)`}
                 </button>
               </div>
             </div>
@@ -1018,23 +1056,44 @@ export function StepPathBBiometricScan({
       {/* ── STAGE 2: OCR EXTRACTION CONFIRMATION & EDIT ── */}
       {stage === 'card_review' && (
         <div className="space-y-5 animate-scale-in">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
-                <CheckCircle className="w-3.5 h-3.5" />
-                Backend Optical Scan Complete
-              </span>
-              <h3 className="text-sm font-bold text-white">Extracted Card Details</h3>
+          {(!idCardSnapshot || !isCardDetected) ? (
+            <div className="p-8 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-center space-y-4 shadow-xl">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 mx-auto flex items-center justify-center text-amber-400">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-white">Physical Student ID Card Required</h3>
+                <p className="text-xs text-amber-200/90 max-w-sm mx-auto leading-relaxed">
+                  No physical student card was detected by the camera scanner. Details will not show and verification cannot proceed without scanning your physical university ID card.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStage('card_continuous')}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-emerald-500/25 transition-all"
+              >
+                Scan Physical ID Card (20s)
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsEditingExtracted(!isEditingExtracted)}
-              className="px-3 py-1 rounded-xl bg-white/[0.05] hover:bg-white/10 text-xs text-amber-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditingExtracted ? 'Done Editing' : 'Edit Details'}</span>
-            </button>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Backend Optical Scan Complete
+                  </span>
+                  <h3 className="text-sm font-bold text-white">Extracted Card Details</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingExtracted(!isEditingExtracted)}
+                  className="px-3 py-1 rounded-xl bg-white/[0.05] hover:bg-white/10 text-xs text-amber-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isEditingExtracted ? 'Done Editing' : 'Edit Details'}</span>
+                </button>
+              </div>
 
           {/* Fraud Gate: Duplicate Card Warning Banner */}
           {duplicateCardError && (
@@ -1263,10 +1322,10 @@ export function StepPathBBiometricScan({
 
             <button
               type="button"
-              disabled={Boolean(duplicateCardError)}
+              disabled={Boolean(duplicateCardError) || !isCardDetected || !idCardSnapshot}
               onClick={handleStartFaceContinuous}
               className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all ${
-                duplicateCardError
+                duplicateCardError || !isCardDetected || !idCardSnapshot
                   ? 'bg-rose-950/40 border border-rose-500/30 text-rose-400 cursor-not-allowed opacity-60'
                   : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 shadow-emerald-500/25 hover:scale-[1.02] cursor-pointer'
               }`}
@@ -1275,8 +1334,10 @@ export function StepPathBBiometricScan({
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </>
       )}
+    </div>
+  )}
 
       {/* ── STAGE 3 & 4: CONTINUOUS APPLE FACE ID SCAN & BACKEND MATCH ── */}
       {(stage === 'face_continuous' || stage === 'face_matched') && (
@@ -1293,6 +1354,21 @@ export function StepPathBBiometricScan({
             </p>
           </div>
 
+          {/* Reference Card Passport Photo Pill */}
+          {cardPortraitCrop && (
+            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-white/[0.04] border border-emerald-500/30 text-left shadow-sm">
+              <div className="w-8 h-8 rounded-lg overflow-hidden border border-emerald-400/50 bg-black shrink-0">
+                <img src={cardPortraitCrop} alt="Card Portrait" className="w-full h-full object-cover" />
+              </div>
+              <div className="text-[10px] font-mono leading-tight">
+                <span className="text-slate-400 block text-[9px]">Matching against Card Photo:</span>
+                <span className="text-emerald-300 font-bold block truncate max-w-[200px]">
+                  {extractedData.studentName || displayName || 'Student Cardholder'}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Real-time Anti-Spoofing Obstruction Alert Banner */}
           {isFaceObstructed && (
             <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-xs text-rose-300 flex items-center justify-center gap-2 max-w-sm mx-auto animate-pulse shadow-lg">
@@ -1301,16 +1377,31 @@ export function StepPathBBiometricScan({
             </div>
           )}
 
-          {/* Biometric Mismatch Alert Banner (Friend's Card Rejection) */}
+          {/* Biometric Mismatch Alert Banner (Friend's Card Rejection / Face Not Same) */}
           {faceMismatchError && (
             <div className="p-3.5 rounded-2xl bg-rose-500/20 border-2 border-rose-500/60 text-xs text-rose-200 flex items-start gap-2.5 max-w-md mx-auto shadow-xl animate-fade-in text-left">
               <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <span className="font-bold text-rose-300 block">Biometric Impersonation Alert</span>
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <span className="font-bold text-rose-300 block">Biometric Mismatch: Face Not Same As Card Photo</span>
                 <p className="text-[11px] leading-relaxed text-rose-100">{faceMismatchError}</p>
-                <p className="text-[10px] font-mono text-rose-300/80">
-                  Please hold your own physical university card in front of the camera.
-                </p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStage('card_continuous');
+                      setIsCardDetected(false);
+                      isCardDetectedRef.current = false;
+                      setIdCardSnapshot(null);
+                      idCardSnapshotRef.current = null;
+                      setCardPortraitCrop(null);
+                      setFaceMismatchError(null);
+                    }}
+                    className="px-3 py-1 rounded-xl bg-rose-500/30 hover:bg-rose-500/50 text-rose-100 text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-400/40"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Rescan With Your Own Physical ID Card</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -42,23 +42,34 @@ async function extractWithGeminiFlash(
   const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/)?.[1] || 'image/jpeg';
 
   const prompt = `You are an elite optical character recognition and collegiate identity verification AI.
-Analyze this physical college student ID card image carefully.
-Extract all details with 100% precision, ignoring camera angles, shadows, plastic sheen, and glare.
+Analyze this camera snapshot carefully.
 
-CRITICAL INSTRUCTIONS FOR STUDENT NAME:
-- The student's legal personal name is printed directly below or next to the student photo/portrait.
-- Extract that EXACT student personal name as printed on the physical card.
-- Do NOT output channel names, usernames, or handles (such as "What i Learn").
-- Do NOT confuse the university name or registrar signature with the student name.
+CRITICAL PHYSICAL CARD DETECTION MANDATE:
+- First, verify whether a PHYSICAL college/university student ID card (plastic PVC badge, laminated identity card, library card) is clearly visible in the camera frame.
+- If the image contains ONLY a human face, a selfie, a room, a wall, clothing, hands holding nothing, a screen, or no physical student card:
+  Set "isCardDetected": false, "reason": "No physical college student ID card detected in frame. Please hold your student ID card up to the camera."
+  Set college, studentRollNo, course, academicYear, studentName, and portraitBox to null.
 
-COLLEGIATE DETAILS:
-- If the university logo or header says S-VYASA or SVYASA, set college to "S-VYASA Deemed to be University".
-- Extract the student roll/registration number exactly as printed on the card.
-- Degree/program: e.g. "B.Tech Computer Science & Engineering (CSE)".
-- Portrait photo location: Identify the bounding box of the student's passport photo on the card using normalized coordinates (0.0 to 1.0).
+- If a genuine physical student ID card IS visible in the frame:
+  Set "isCardDetected": true, "reason": "Physical student ID card detected."
+
+  CRITICAL INSTRUCTIONS FOR STUDENT NAME:
+  - The student's legal personal name is printed directly below or next to the student photo/portrait.
+  - Extract that EXACT student personal name as printed on the physical card.
+  - Do NOT output channel names, usernames, or handles (such as "What i Learn").
+  - Do NOT confuse the university name or registrar signature with the student name.
+
+  COLLEGIATE DETAILS:
+  - If the university logo or header says S-VYASA or SVYASA, set college to "S-VYASA Deemed to be University".
+  - Extract the student roll/registration number exactly as printed on the card.
+  - Degree/program: e.g. "B.Tech Computer Science & Engineering (CSE)".
+  - Academic year: e.g. "1st Year (Freshman)", "2nd Year (Sophomore)", "3rd Year (Junior)", "4th Year (Senior)".
+  - Portrait photo location: Identify the bounding box of the student's passport photo on the card using normalized coordinates (0.0 to 1.0).
 
 Return ONLY a valid JSON object matching this schema:
 {
+  "isCardDetected": boolean,
+  "reason": "string",
   "college": "Full official College or University name",
   "studentRollNo": "Exact Roll number or registration ID without spaces or errors",
   "course": "Degree and program (e.g. B.Tech Computer Science and Engineering)",
@@ -73,7 +84,7 @@ Return ONLY a valid JSON object matching this schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
+  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-flash-latest'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -116,6 +127,24 @@ Return ONLY a valid JSON object matching this schema:
       if (!textOutput) throw new Error(`No candidate response from ${model}`);
 
       const parsed = JSON.parse(textOutput);
+      const isCardDetected = Boolean(parsed.isCardDetected);
+
+      if (!isCardDetected) {
+        return {
+          isCardDetected: false,
+          reason: parsed.reason || 'No physical student ID card detected in frame. Please hold your student ID card up to the camera.',
+          college: '',
+          studentRollNo: '',
+          course: '',
+          academicYear: '',
+          studentName: '',
+          portraitBox: null,
+          cardNameFound: false,
+          confidence: 0,
+          source: `${model}-vision`,
+        };
+      }
+
       const rawCardName = (parsed.studentName || '').trim();
       const isCardNameValid =
         rawCardName &&
@@ -127,6 +156,8 @@ Return ONLY a valid JSON object matching this schema:
         : (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName) ? userDisplayName : '');
 
       return {
+        isCardDetected: true,
+        reason: parsed.reason || 'Physical student ID card detected.',
         college: parsed.college || existingCollege || 'S-VYASA Deemed to be University',
         studentRollNo: parsed.studentRollNo || '',
         course: parsed.course || 'B.Tech - CSE (AI & ML)',
@@ -286,15 +317,19 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
 
   const cleanUserDisplay = (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName)) ? userDisplayName : '';
   const finalStudentName = cardStudentName || cleanUserDisplay || '';
+  const isCardRecognized = Boolean(rollNo || (college && !/collegiate institute of technology/i.test(college)));
 
   return {
-    college,
+    isCardDetected: isCardRecognized,
+    reason: isCardRecognized ? 'Physical student ID card detected.' : 'No physical student ID card recognized in frame.',
+    college: isCardRecognized ? college : '',
     studentRollNo: rollNo,
     course,
     academicYear,
     studentName: finalStudentName,
+    portraitBox: null,
     cardNameFound: Boolean(cardStudentName),
-    confidence: 88.5,
+    confidence: isCardRecognized ? 88.5 : 0,
     source: 'tesseract-heuristic-engine',
   };
 }
@@ -347,6 +382,16 @@ export async function POST(request: NextRequest) {
       extractedData = parseCollegiateData(recognizedText, displayName, existingCollege);
     }
 
+    // If no physical card was detected in the frame:
+    if (!extractedData || !extractedData.isCardDetected) {
+      return NextResponse.json({
+        success: true,
+        isCardDetected: false,
+        reason: extractedData?.reason || 'No physical college student ID card detected in frame. Please hold your student ID card up to the camera.',
+        extracted: null,
+      });
+    }
+
     // ── 3. STRICT FRAUD GATE: ONE CARD, ONE USER ──
     const cleanRollNo = (extractedData?.studentRollNo || '').trim();
     if (cleanRollNo && cleanRollNo.length >= 4 && isSupabaseConfigured()) {
@@ -372,6 +417,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
               {
                 success: false,
+                isCardDetected: true,
                 isDuplicateCard: true,
                 error: `Card Already Registered: Student ID Card (Roll No: ${cleanRollNo}) is already verified and locked to another Kollabrix account (${duplicateUser.displayName || duplicateUser.username || 'another user'}). Each physical student ID card can only be linked to one account.`,
                 extracted: extractedData,
@@ -387,6 +433,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      isCardDetected: true,
+      reason: extractedData.reason || 'Physical student ID card detected.',
       extracted: extractedData,
       confidence: extractedData.confidence,
       engine: extractedData.source || 'Collegiate Optical Neural Vision',
