@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     const safeUpdatedBy =
       (auth.user?.id && auth.user.id !== '9343b52f-f7e8-4ed8-a8a1-476829811b53')
         ? auth.user.id
-        : 'c86ce05f-24de-4a1a-a45f-944d4180b508';
+        : '29359508-c755-424b-81a2-89e714577437';
 
     // ACTION A: CREATE NEW PASSCODE
     if (action === 'create') {

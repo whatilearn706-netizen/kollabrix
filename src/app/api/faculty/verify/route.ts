@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
           key: 'faculty_access_passcodes',
           value: facultyVal,
           updated_at: new Date().toISOString(),
-          updated_by: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+          updated_by: '29359508-c755-424b-81a2-89e714577437',
         });
     } catch (err) {
       console.warn('Could not update faculty settings after verification:', err);

@@ -150,7 +150,7 @@ export async function PATCH(request: NextRequest) {
         key: 'problem_applications_registry',
         value: updatedApps,
         updated_at: new Date().toISOString(),
-        updated_by: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        updated_by: '29359508-c755-424b-81a2-89e714577437',
       });
     }
 

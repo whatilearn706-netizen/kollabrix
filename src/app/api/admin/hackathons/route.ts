@@ -481,7 +481,7 @@ export async function POST(request: NextRequest) {
         join_code: joinCode,
         min_team_size: 1,
         max_team_size: 4,
-        creator_id: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        creator_id: auth.user?.id || '29359508-c755-424b-81a2-89e714577437',
       };
 
       let insertedRecord: any = null;
@@ -544,7 +544,7 @@ export async function POST(request: NextRequest) {
       // Record Admin Audit Log
       await recordAdminAuditLog({
         actorEmail: auth.user?.email || 'admin@kollabrix.in',
-        actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        actorId: auth.user?.id || '29359508-c755-424b-81a2-89e714577437',
         action: 'CREATE_SPONSORED_HACKATHON',
         targetType: 'hackathon',
         targetId: enrichedRecord.id,
@@ -701,7 +701,7 @@ export async function POST(request: NextRequest) {
 
       await recordAdminAuditLog({
         actorEmail: auth.user?.email || 'admin@kollabrix.in',
-        actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        actorId: auth.user?.id || '29359508-c755-424b-81a2-89e714577437',
         action: isNowSponsored ? 'PROMOTE_TO_SPONSORED' : 'DEMOTE_FROM_SPONSORED',
         targetType: 'hackathon',
         targetId: hackathonId,
@@ -826,7 +826,7 @@ export async function POST(request: NextRequest) {
 
       await recordAdminAuditLog({
         actorEmail: auth.user?.email || 'admin@kollabrix.in',
-        actorId: auth.user?.id || 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        actorId: auth.user?.id || '29359508-c755-424b-81a2-89e714577437',
         action: 'UPDATE_SPONSOR_THEME',
         targetType: 'hackathon',
         targetId: hackathonId,

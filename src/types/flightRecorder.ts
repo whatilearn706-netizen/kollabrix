@@ -68,7 +68,7 @@ export const DEFAULT_FLIGHT_RECORDER_CONFIG: FlightRecorderConfig = {
 
 export const SAMPLE_MAYANK_PASSPORT: DeveloperPassport = {
   id: 'pass-mayank-001',
-  userId: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+  userId: '29359508-c755-424b-81a2-89e714577437',
   username: 'mayank142',
   displayName: 'Mayank Goyal',
   avatarUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-88MqerezOHnmEU8oAzSN-PW7POOOZtco7jB_e5Lm15Cpcpsq8jW4gkQC&s=10',

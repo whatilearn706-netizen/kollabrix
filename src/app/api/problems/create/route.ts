@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       authorProfile = prof;
 
       const isOwner =
-        authorId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
+        authorId === '29359508-c755-424b-81a2-89e714577437' ||
         authorProfile?.username === 'mayank_admin';
 
       const isAuthorizedFaculty =
@@ -351,7 +351,7 @@ export async function POST(request: NextRequest) {
         value: updatedList,
         description: 'Community & Faculty authored problem statements repository',
         updated_at: new Date().toISOString(),
-        updated_by: 'c86ce05f-24de-4a1a-a45f-944d4180b508',
+        updated_by: '29359508-c755-424b-81a2-89e714577437',
       });
     } catch (saveErr) {
       console.warn('Could not save to community_problem_statements:', saveErr);

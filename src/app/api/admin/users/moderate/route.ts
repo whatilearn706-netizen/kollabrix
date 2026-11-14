@@ -61,9 +61,8 @@ export async function POST(request: NextRequest) {
 
     if (
       isDestructiveAction &&
-      (targetUserId === 'c86ce05f-24de-4a1a-a45f-944d4180b508' ||
-        targetUserId === '29359508-c755-424b-81a2-89e714577437' ||
-        targetProfile?.username === 'goyalmayank142')
+      (targetUserId === '29359508-c755-424b-81a2-89e714577437' ||
+        (targetUserId === auth.user?.id && targetProfile?.username === 'goyalmayank142'))
     ) {
       return NextResponse.json(
         { error: 'Action denied: Platform founder account (goyalmayank142) cannot be suspended or deleted.' },
