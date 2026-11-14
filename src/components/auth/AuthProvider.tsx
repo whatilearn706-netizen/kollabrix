@@ -286,10 +286,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return null;
         }
 
-        setProfile(data as Profile);
+        const isVerifiedInStorage =
+          typeof window !== 'undefined' &&
+          (localStorage.getItem('linkora_college_verified') === 'true' ||
+           localStorage.getItem(`linkora_college_verified_${userId}`) === 'true');
+
+        const enrichedProfile: Profile = {
+          ...data,
+          college_verified: Boolean(
+            data.college_verified ||
+            currentUser?.user_metadata?.college_verified ||
+            isVerifiedInStorage
+          ),
+          college_verified_at:
+            data.college_verified_at ||
+            currentUser?.user_metadata?.college_verified_at ||
+            null,
+        };
+
+        setProfile(enrichedProfile);
         try {
-          localStorage.setItem('linkora_auth_profile', JSON.stringify(data));
-          if (isProfileComplete(data as Profile, currentUser)) {
+          localStorage.setItem('linkora_auth_profile', JSON.stringify(enrichedProfile));
+          if (isProfileComplete(enrichedProfile, currentUser)) {
             localStorage.setItem(`kollabrix_onboarding_done_${userId}`, 'true');
             localStorage.setItem(`kollabrix_profile_created_${userId}`, 'true');
           } else {
@@ -297,7 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem(`kollabrix_profile_created_${userId}`);
           }
         } catch (e) {}
-        return data as Profile;
+        return enrichedProfile;
       }
 
       // If profile record does not exist yet, check if this user was deleted by administration

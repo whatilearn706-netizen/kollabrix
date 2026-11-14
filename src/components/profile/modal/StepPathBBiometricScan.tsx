@@ -407,6 +407,15 @@ export function StepPathBBiometricScan({
         setStage('verified_done');
 
         try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('linkora_college_verified', 'true');
+            if (userId) {
+              localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+            }
+          }
+        } catch (e) {}
+
+        try {
           await fetch('/api/verify/path-b-face-id', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1036,6 +1045,15 @@ export function StepPathBBiometricScan({
                   setTimeout(async () => {
                     stopCamera();
                     setStage('verified_done');
+
+                    try {
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('linkora_college_verified', 'true');
+                        if (userId) {
+                          localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+                        }
+                      }
+                    } catch (e) {}
 
                     try {
                       await fetch('/api/verify/path-b-face-id', {

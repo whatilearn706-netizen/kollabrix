@@ -402,8 +402,7 @@ export async function POST(request: NextRequest) {
     );
     const existing = existingIndex >= 0 ? currentRequests[existingIndex] : null;
 
-    // When a student uploads or updates their ID card, immediately revoke any prior verified badge
-    // so they are strictly 'Not Verified' across the site until admin explicitly reviews and approves
+    // Only revoke if user was NOT biometrically verified via Apple Face ID
     try {
       const { data: vData } = await supabaseAdmin
         .from('platform_settings')
@@ -412,20 +411,28 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (Array.isArray(vData?.value)) {
-        const cleanRegistry = vData.value.filter(
+        const isBiometricallyVerified = vData.value.some(
           (item: any) =>
-            item.userId !== effectiveUserId &&
-            item.username?.toLowerCase() !== username.toLowerCase()
+            (item.userId === effectiveUserId || item.username?.toLowerCase() === username.toLowerCase()) &&
+            item.verificationMethod === 'path_b_face_id'
         );
-        await supabaseAdmin.from('platform_settings').upsert({
-          key: 'linkedin_college_verifications',
-          value: cleanRegistry,
-          description: 'Universal registry of verified college credentials.',
-          updated_at: new Date().toISOString(),
-        });
+
+        if (!isBiometricallyVerified) {
+          const cleanRegistry = vData.value.filter(
+            (item: any) =>
+              item.userId !== effectiveUserId &&
+              item.username?.toLowerCase() !== username.toLowerCase()
+          );
+          await supabaseAdmin.from('platform_settings').upsert({
+            key: 'linkedin_college_verifications',
+            value: cleanRegistry,
+            description: 'Universal registry of verified college credentials.',
+            updated_at: new Date().toISOString(),
+          });
+        }
       }
     } catch (cleanErr) {
-      console.warn('Notice removing user from verified registry on new submission:', cleanErr);
+      console.warn('Notice checking verified registry on new submission:', cleanErr);
     }
 
     const newRequest: StudentIdVerification = {
