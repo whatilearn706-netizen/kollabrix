@@ -53,8 +53,14 @@ export function LandingHero() {
       {/* Content */}
       <motion.div
         style={{ opacity: contentOpacity, y: contentY }}
-        className="relative z-20 max-w-4xl mx-auto px-6 text-center"
+        className="relative z-20 max-w-4xl mx-auto px-6 py-6 sm:py-8 text-center"
       >
+        {/* Subtle dark gradient backing for heightened contrast and focal depth */}
+        <div
+          className="absolute inset-0 -inset-x-4 sm:-inset-x-8 rounded-[2.5rem] bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.82)_0%,rgba(9,11,16,0.65)_60%,transparent_100%)] pointer-events-none -z-10"
+          aria-hidden="true"
+        />
+
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -63,21 +69,21 @@ export function LandingHero() {
           className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-md mb-8"
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
-          <span className="text-sm text-slate-400 font-medium tracking-wide">
+          <span className="text-sm text-slate-300 font-medium tracking-wide">
             The Collegiate Innovation Network
           </span>
         </motion.div>
 
-        {/* Headline */}
+        {/* Headline — Clearer Promise */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25, duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
-          className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] mb-7"
+          className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] mb-7 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]"
         >
-          <span className="text-white">Where Creators</span>
+          <span className="text-white">Find Your Dream Team.</span>
           <br />
-          <span className="landing-gradient-text">Build Together.</span>
+          <span className="landing-gradient-text">Build Winning Projects.</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -99,10 +105,10 @@ export function LandingHero() {
           className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8"
         >
           <Link
-            href={user ? "/my-projects" : "/signup"}
+            href={user ? "/teammates" : "/signup"}
             className="group inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-sm sm:text-base landing-btn-glow shadow-lg shadow-orange-500/20 hover:scale-105 transition-all duration-200"
           >
-            Start Building
+            Find Teammates
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
           </Link>
           <Link
