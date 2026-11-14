@@ -22,23 +22,34 @@ async function compareFacesWithGemini(
   const cleanLive = liveFaceBase64.includes('base64,') ? liveFaceBase64.split('base64,')[1] : liveFaceBase64;
   const cleanId = idCardBase64.includes('base64,') ? idCardBase64.split('base64,')[1] : idCardBase64;
 
-  const prompt = `You are a high-security biometric identification and anti-spoofing engine (Apple Face ID standard).
-Image 1 is the live front-camera frame captured from the user's camera right now.
-Image 2 is a physical student ID card containing the student's portrait.
+  const prompt = `You are an elite biometric facial verification engine adhering to forensic 1:1 facial comparison standards (Apple Face ID / ISO/IEC 19794-5).
+Image 1 is the LIVE front camera frame captured from the user sitting at the computer right now.
+Image 2 is the student portrait photo from their physical university ID card.
 
-STEP 1: HUMAN FACE DETECTION & LIVENESS CHECK (ANTI-SPOOFING MANDATORY)
-- Examine Image 1 carefully.
-- Is there a real, clear human face visible looking at the camera?
-- If Image 1 is obstructed, blurred, black, covered by a finger, shows only a hand/finger/wall/ceiling, or has NO face:
-  You MUST set "hasFace": false, "isMatched": false, "matchScore": 0, "reason": "No human face detected. Please remove any finger or obstruction and look directly into the camera."
+CRITICAL SECURITY DIRECTIVE - ANTI-FRIEND & ANTI-IMPERSONATION MANDATORY:
+You are guarding a collegiate verification gate.
+Students frequently attempt to verify their account using a FRIEND'S, ROOMMATE'S, CLASSMATE'S, or RELATIVE'S student ID card while showing their own live face to the camera.
 
-STEP 2: BIOMETRIC COMPARISON (IF FACE DETECTED)
-- Compare the facial geometry in Image 1 with the student portrait in Image 2.
-- Check eye spacing, nose bridge, jawline, and mouth structure.
-- If it is the SAME student:
+STEP 1: LIVENESS & HUMAN PRESENCE
+- Inspect Image 1. Is there a clear, real human face looking at the camera?
+- If Image 1 is obstructed, black, blurred, covered by a finger, shows only a wall/ceiling, or has no human face:
+  Set "hasFace": false, "isMatched": false, "matchScore": 0, "reason": "No clear human face detected in camera viewport."
+
+STEP 2: CARD PORTRAIT ANATOMICAL CROSS-EXAMINATION
+- Locate the student portrait photo in Image 2.
+- Compare the exact anatomical bone structure between Image 1 (live face) and Image 2 (card portrait):
+  1. Eye spacing, eye socket shape, and eyebrow contour.
+  2. Nose bridge curvature, nasal tip width, and nostril structure.
+  3. Jawline angle, chin shape (cleft vs round vs square vs pointed), and cheekbone height.
+  4. Mouth width and lip contours.
+
+ANTI-FRIEND DETECTION RULE:
+- If Image 1 is a DIFFERENT INDIVIDUAL than the person in Image 2:
+  DO NOT BE LENIENT. DO NOT ASSUME. Even if both individuals are of the same gender, same ethnicity, similar age, or have similar haircuts, IF THEIR CRANIAL FACIAL FEATURES (jawline, nose, eyes, chin) DO NOT BELONG TO THE SAME EXACT HUMAN BEING:
+  You MUST set "hasFace": true, "isMatched": false, "matchScore": 22.0, "reason": "Biometric Mismatch: Live face does not match the student portrait printed on this ID card."
+
+- ONLY if Image 1 and the portrait in Image 2 are conclusively and undeniably the SAME EXACT STUDENT:
   Set "hasFace": true, "isMatched": true, "matchScore": 98.6, "reason": "Biometric face signature matches physical ID card portrait."
-- If it is a DIFFERENT person:
-  Set "hasFace": true, "isMatched": false, "matchScore": 25.0, "reason": "Live face does not match the student ID card portrait."
 
 Return ONLY valid JSON matching this schema:
 {
@@ -136,6 +147,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, hasFace: false, isMatched: false, error: 'Student ID reference image is required.' },
         { status: 400 }
+      );
+    }
+
+    // Strict Anti-Spoofing: Refuse matching an image against itself
+    if (
+      liveFaceImage === refImage ||
+      (liveFaceImage.length > 300 &&
+        refImage.length > 300 &&
+        liveFaceImage.slice(50, 250) === refImage.slice(50, 250))
+    ) {
+      return NextResponse.json(
+        {
+          success: true,
+          hasFace: true,
+          isMatched: false,
+          matchScore: 0,
+          reason: 'Biometric Security Violation: Live camera stream cannot be used as ID card reference.',
+        },
+        { status: 200 }
       );
     }
 

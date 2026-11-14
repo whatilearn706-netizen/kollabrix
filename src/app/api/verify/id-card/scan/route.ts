@@ -55,6 +55,7 @@ COLLEGIATE DETAILS:
 - If the university logo or header says S-VYASA or SVYASA, set college to "S-VYASA Deemed to be University".
 - Extract the student roll/registration number exactly as printed on the card.
 - Degree/program: e.g. "B.Tech Computer Science & Engineering (CSE)".
+- Portrait photo location: Identify the bounding box of the student's passport photo on the card using normalized coordinates (0.0 to 1.0).
 
 Return ONLY a valid JSON object matching this schema:
 {
@@ -63,6 +64,12 @@ Return ONLY a valid JSON object matching this schema:
   "course": "Degree and program (e.g. B.Tech Computer Science and Engineering)",
   "academicYear": "Study year (e.g. 1st Year (Freshman), 2nd Year (Sophomore), 3rd Year (Junior), 4th Year (Senior))",
   "studentName": "Full student name printed on the card",
+  "portraitBox": {
+    "ymin": 0.25,
+    "xmin": 0.05,
+    "ymax": 0.65,
+    "xmax": 0.38
+  },
   "confidence": 99.4
 }`;
 
@@ -125,6 +132,7 @@ Return ONLY a valid JSON object matching this schema:
         course: parsed.course || 'B.Tech - CSE (AI & ML)',
         academicYear: parsed.academicYear || '1st Year (Freshman)',
         studentName: extractedCardName,
+        portraitBox: parsed.portraitBox || null,
         cardNameFound: isCardNameValid,
         confidence: Number(parsed.confidence) || 99.4,
         source: `${model}-vision`,

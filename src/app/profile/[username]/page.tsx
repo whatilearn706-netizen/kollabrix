@@ -359,7 +359,8 @@ export default function PublicProfilePage() {
     user?.user_metadata?.college_verified === true ||
     (typeof window !== 'undefined' && (
       (user?.id && localStorage.getItem(`linkora_college_verified_${user.id}`) === 'true') ||
-      (profile?.user_id && localStorage.getItem(`linkora_college_verified_${profile.user_id}`) === 'true')
+      (profile?.user_id && localStorage.getItem(`linkora_college_verified_${profile.user_id}`) === 'true') ||
+      localStorage.getItem('linkora_college_verified') === 'true'
     ))
   );
 
@@ -369,7 +370,8 @@ export default function PublicProfilePage() {
     isOwnerVerifiedLocally ||
     profile.role === 'teacher' ||
     (profile as any)?.role === 'faculty' ||
-    Boolean((profile as any)?.faculty_verified)
+    Boolean((profile as any)?.faculty_verified) ||
+    user?.user_metadata?.college_verified === true
   );
 
   return (

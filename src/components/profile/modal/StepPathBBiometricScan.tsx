@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Camera,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   AlertCircle,
   Sparkles,
@@ -17,6 +18,7 @@ import {
   VolumeX,
   Loader2,
   CheckCircle,
+  Eye,
 } from 'lucide-react';
 
 interface ExtractedCardData {
@@ -50,7 +52,7 @@ interface StepPathBBiometricScanProps {
 }
 
 // ── Web Audio API Apple Face ID Sound Synthesizer ──
-function playAppleFaceIdSound(soundType: 'scan' | 'success' | 'beep') {
+function playAppleFaceIdSound(soundType: 'scan' | 'success' | 'beep' | 'chime' | 'warning') {
   if (typeof window === 'undefined') return;
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -104,19 +106,102 @@ function playAppleFaceIdSound(soundType: 'scan' | 'success' | 'beep') {
       gain.connect(ctx.destination);
       osc.start(now);
       osc.stop(now + 0.1);
+    } else if (soundType === 'chime') {
+      // Crisp crystalline chime for liveness & blink confirmation (A5)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    } else if (soundType === 'warning') {
+      // Low descending dual tone for biometric mismatch
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.linearRampToValueAtTime(110, now + 0.32);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.35);
     }
   } catch {}
 }
 
-// ── Real-Time Computer Vision Frame Analyzer (Solution 1: Anti-Finger / Anti-Spoofing) ──
-function analyzeLiveFaceFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement): {
+// ── Crop Passport Photo from Student ID Card Frame ──
+async function cropPassportPhotoFromCard(
+  cardImageBase64: string,
+  box?: { ymin: number; xmin: number; ymax: number; xmax: number } | null
+): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 240;
+          canvas.height = 240;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(null);
+
+          const nw = img.naturalWidth || 640;
+          const nh = img.naturalHeight || 480;
+
+          let ymin = box?.ymin ?? 0.18;
+          let xmin = box?.xmin ?? 0.05;
+          let ymax = box?.ymax ?? 0.70;
+          let xmax = box?.xmax ?? 0.42;
+
+          // Add 6% margin around the portrait box
+          const padY = (ymax - ymin) * 0.06;
+          const padX = (xmax - xmin) * 0.06;
+          ymin = Math.max(0, ymin - padY);
+          xmin = Math.max(0, xmin - padX);
+          ymax = Math.min(1, ymax + padY);
+          xmax = Math.min(1, xmax + padX);
+
+          const sx = Math.floor(xmin * nw);
+          const sy = Math.floor(ymin * nh);
+          const sw = Math.floor((xmax - xmin) * nw);
+          const sh = Math.floor((ymax - ymin) * nh);
+
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 240, 240);
+          resolve(canvas.toDataURL('image/jpeg', 0.90));
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = cardImageBase64;
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+// ── Real-Time Computer Vision Frame Analyzer (Solution 1: Anti-Finger, Anti-Spoofing & Active Blink Liveness) ──
+function analyzeLiveFaceFrame(
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  eyeHistory?: number[]
+): {
   isObstructed: boolean;
   hasFaceGeometry: boolean;
+  isBlinkDetected: boolean;
   statusMessage: string;
 } {
   try {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return { isObstructed: false, hasFaceGeometry: true, statusMessage: 'Align face in circle...' };
+    if (!ctx) return { isObstructed: false, hasFaceGeometry: true, isBlinkDetected: false, statusMessage: 'Align face in circle...' };
 
     const w = 160;
     const h = 120;
@@ -164,6 +249,7 @@ function analyzeLiveFaceFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement
       return {
         isObstructed: true,
         hasFaceGeometry: false,
+        isBlinkDetected: false,
         statusMessage: 'Camera view is too dark. Please face towards a light source.',
       };
     }
@@ -176,6 +262,7 @@ function analyzeLiveFaceFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement
       return {
         isObstructed: true,
         hasFaceGeometry: false,
+        isBlinkDetected: false,
         statusMessage: 'Camera lens is covered by a finger. Please uncover lens and look into circle.',
       };
     }
@@ -185,18 +272,46 @@ function analyzeLiveFaceFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement
       return {
         isObstructed: true,
         hasFaceGeometry: false,
+        isBlinkDetected: false,
         statusMessage: 'No face detected in circle. Please position your face inside the circle.',
       };
     }
 
-    // 4. Genuine human face with natural features (eyes, eyebrows, mouth, nose shadows produce rich variance)
+    // 4. Active Optical Blink Detection in Eye Band
+    let isBlinkDetected = false;
+    const eyeStartY = Math.floor(h * 0.28);
+    const eyeH = Math.floor(h * 0.20);
+    const eyeImg = ctx.getImageData(startX, eyeStartY, regionW, eyeH).data;
+    let eyeLumaSum = 0;
+    const eyeCount = eyeImg.length / 4;
+    for (let i = 0; i < eyeImg.length; i += 4) {
+      eyeLumaSum += 0.299 * eyeImg[i] + 0.587 * eyeImg[i + 1] + 0.114 * eyeImg[i + 2];
+    }
+    const currentEyeLuma = eyeCount > 0 ? eyeLumaSum / eyeCount : avgLuma;
+
+    if (eyeHistory) {
+      eyeHistory.push(currentEyeLuma);
+      if (eyeHistory.length > 10) eyeHistory.shift();
+
+      if (eyeHistory.length >= 4) {
+        const baseline = (eyeHistory[0] + eyeHistory[eyeHistory.length - 1]) / 2;
+        const middle = eyeHistory[Math.floor(eyeHistory.length / 2)];
+        const delta = Math.abs(middle - baseline);
+        if (delta > 7.5) {
+          isBlinkDetected = true;
+        }
+      }
+    }
+
+    // 5. Genuine human face with natural features
     return {
       isObstructed: false,
       hasFaceGeometry: true,
+      isBlinkDetected,
       statusMessage: 'Live face detected. Hold steady inside circle...',
     };
   } catch (e) {
-    return { isObstructed: false, hasFaceGeometry: true, statusMessage: 'Align face in circle...' };
+    return { isObstructed: false, hasFaceGeometry: true, isBlinkDetected: false, statusMessage: 'Align face in circle...' };
   }
 }
 
@@ -250,9 +365,13 @@ export function StepPathBBiometricScan({
   const [duplicateCardError, setDuplicateCardError] = useState<string | null>(null);
   const [isFaceObstructed, setIsFaceObstructed] = useState(false);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const [isLivenessConfirmed, setIsLivenessConfirmed] = useState(false);
+  const [faceMismatchError, setFaceMismatchError] = useState<string | null>(null);
+  const eyeLumaHistoryRef = useRef<number[]>([]);
 
-  // Snapshot URLs
+  // Snapshot URLs & Cropped Card Portrait
   const [idCardSnapshot, setIdCardSnapshot] = useState<string | null>(null);
+  const [cardPortraitCrop, setCardPortraitCrop] = useState<string | null>(null);
   const [faceSnapshot, setFaceSnapshot] = useState<string | null>(null);
 
   // ── Account Isolation: Reset scan flow when user switches or is not verified ──
@@ -260,8 +379,11 @@ export function StepPathBBiometricScan({
     if (!isVerified) {
       setStage('card_continuous');
       setIdCardSnapshot(null);
+      setCardPortraitCrop(null);
       setFaceSnapshot(null);
       setDuplicateCardError(null);
+      setFaceMismatchError(null);
+      setIsLivenessConfirmed(false);
     } else {
       setStage('verified_done');
     }
@@ -283,7 +405,7 @@ export function StepPathBBiometricScan({
   const [faceStatusText, setFaceStatusText] = useState('Position face inside the circle');
   const [isFaceBackendMatching, setIsFaceBackendMatching] = useState(false);
 
-  const playSound = (type: 'scan' | 'success' | 'beep') => {
+  const playSound = (type: 'scan' | 'success' | 'beep' | 'chime' | 'warning') => {
     if (soundEnabled) {
       playAppleFaceIdSound(type);
     }
@@ -430,6 +552,11 @@ export function StepPathBBiometricScan({
           setIdCardSnapshot(frameBase64);
           setDuplicateCardError(null);
           playSound('beep');
+
+          // Crop passport portrait from card frame
+          cropPassportPhotoFromCard(frameBase64, ext.portraitBox).then((crop) => {
+            if (crop) setCardPortraitCrop(crop);
+          });
         }
       } catch (err) {
         // Continue scanning silently
@@ -450,6 +577,9 @@ export function StepPathBBiometricScan({
     const finalFrame = captureCurrentFrame();
     if (finalFrame) {
       setIdCardSnapshot(finalFrame);
+      cropPassportPhotoFromCard(finalFrame, null).then((crop) => {
+        if (crop) setCardPortraitCrop((prev) => prev || crop);
+      });
     }
 
     playSound('scan');
@@ -505,11 +635,19 @@ export function StepPathBBiometricScan({
 
   // ── Initiate Continuous Face ID Scanning & Backend Match ──
   const handleStartFaceContinuous = useCallback(() => {
+    if (!idCardSnapshot) {
+      setStage('card_continuous');
+      return;
+    }
+
     setStage('face_continuous');
     setFaceScanProgress(0);
     setFaceMatchScore(0);
+    setFaceMismatchError(null);
+    setIsLivenessConfirmed(false);
     setFaceStatusText('Position face inside the circular scanner...');
     setIsFaceBackendMatching(false);
+    eyeLumaHistoryRef.current = [];
     startCamera();
 
     let progress = 0;
@@ -542,6 +680,7 @@ export function StepPathBBiometricScan({
         try {
           if (typeof window !== 'undefined' && userId) {
             localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+            localStorage.setItem('linkora_college_verified', 'true');
           }
         } catch (e) {}
 
@@ -582,9 +721,9 @@ export function StepPathBBiometricScan({
     faceIntervalRef.current = setInterval(async () => {
       if (isFinished) return;
 
-      // ── SOLUTION 1: REAL-TIME FRAME & FINGER OBSTRUCTION DETECTOR ──
+      // ── SOLUTION 1: REAL-TIME FRAME, OBSTRUCTION & BLINK DETECTOR ──
       if (videoRef.current && canvasRef.current) {
-        const liveAnalysis = analyzeLiveFaceFrame(videoRef.current, canvasRef.current);
+        const liveAnalysis = analyzeLiveFaceFrame(videoRef.current, canvasRef.current, eyeLumaHistoryRef.current);
 
         if (liveAnalysis.isObstructed) {
           setIsFaceObstructed(true);
@@ -597,19 +736,29 @@ export function StepPathBBiometricScan({
 
         setIsFaceObstructed(false);
         setIsFaceDetected(true);
+
+        if (liveAnalysis.isBlinkDetected && !isLivenessConfirmed) {
+          setIsLivenessConfirmed(true);
+          playSound('chime');
+          setFaceStatusText('✓ Eye blink detected • Live presence confirmed');
+        }
       }
 
       progress += 2.2;
       setFaceScanProgress((prev) => Math.min(Math.max(prev, Math.round(progress)), 92));
 
       if (progress >= 12 && progress < 25) {
-        setFaceStatusText('Analyzing 3D facial contours & eye landmarks...');
+        setFaceStatusText('Analyzing 3D cranial structure & eye spacing...');
         playSound('beep');
       } else if (progress >= 25 && progress < 50) {
-        setFaceStatusText('Verifying live human presence & micro-movement...');
+        setFaceStatusText(
+          isLivenessConfirmed
+            ? 'Live human confirmed • Preparing biometric cross-check...'
+            : 'Verifying liveness • Blink naturally at the camera...'
+        );
       } else if (progress >= 50 && !matchTriggered) {
         matchTriggered = true;
-        setFaceStatusText('Comparing live face with Student ID card portrait...');
+        setFaceStatusText('Forensic 1:1 match against Student ID portrait...');
         setIsFaceBackendMatching(true);
 
         const liveFace = captureCurrentFrame();
@@ -620,10 +769,11 @@ export function StepPathBBiometricScan({
             const matchRes = await fetch('/api/verify/face-match', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              signal: AbortSignal.timeout(6000),
+              signal: AbortSignal.timeout(8000),
               body: JSON.stringify({
                 liveFaceImage: liveFace,
-                idCardImage: idCardSnapshot || liveFace,
+                idCardImage: idCardSnapshot,
+                idFaceCrop: cardPortraitCrop || undefined,
               }),
             });
             const matchData = await matchRes.json().catch(() => ({}));
@@ -631,19 +781,22 @@ export function StepPathBBiometricScan({
 
             if (matchData.success && matchData.isMatched && matchData.hasFace !== false) {
               const confirmedScore = Number(matchData.matchScore) || 98.6;
+              setFaceMismatchError(null);
               await completeMatchSuccess(confirmedScore, liveFace);
               return;
             } else {
-              // Real-Time Anti-Spoofing: Refuse obstructed or non-matching frames
+              // Real-Time Anti-Impersonation: Refuse friend's card or non-matching face
+              playSound('warning');
               const rejectReason =
                 matchData.reason ||
-                'Biometric mismatch: Live face does not match ID card portrait.';
+                'Biometric Mismatch: Live face does not match the student photo printed on this ID card.';
+              setFaceMismatchError(rejectReason);
               setFaceStatusText(rejectReason);
-              progress = 25;
-              setFaceScanProgress(25);
+              progress = 20;
+              setFaceScanProgress(20);
               setTimeout(() => {
                 matchTriggered = false;
-              }, 2000);
+              }, 2800);
             }
           } catch (err) {
             setIsFaceBackendMatching(false);
@@ -673,6 +826,8 @@ export function StepPathBBiometricScan({
   }, [
     captureCurrentFrame,
     idCardSnapshot,
+    cardPortraitCrop,
+    isLivenessConfirmed,
     userId,
     username,
     displayName,
@@ -928,20 +1083,38 @@ export function StepPathBBiometricScan({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Captured ID Card Thumbnail */}
-            <div className="sm:col-span-1 rounded-2xl overflow-hidden border border-white/10 bg-black relative group aspect-[1.58/1] sm:aspect-auto sm:h-full">
-              {idCardSnapshot && (
-                <img
-                  src={idCardSnapshot}
-                  alt="Scanned Student ID"
-                  className="w-full h-full object-cover"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
-                <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-bold">
-                  <Check className="w-3 h-3" /> Scanned Card Snapshot
-                </span>
+            {/* Captured ID Card & Extracted Portrait Preview */}
+            <div className="sm:col-span-1 space-y-2">
+              <div className="rounded-2xl overflow-hidden border border-white/10 bg-black relative group aspect-[1.58/1]">
+                {idCardSnapshot && (
+                  <img
+                    src={idCardSnapshot}
+                    alt="Scanned Student ID"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
+                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-bold">
+                    <Check className="w-3 h-3" /> Card Snapshot
+                  </span>
+                </div>
               </div>
+
+              {cardPortraitCrop && (
+                <div className="p-2 rounded-xl bg-white/[0.03] border border-emerald-500/30 flex items-center gap-2.5 shadow-sm">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-emerald-500/40 bg-black shrink-0">
+                    <img src={cardPortraitCrop} alt="Extracted Portrait" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-mono text-emerald-300 font-bold block truncate">
+                      Extracted ID Photo
+                    </span>
+                    <span className="text-[9px] text-slate-400 block truncate">
+                      Biometric target for Face ID
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Extracted Fields */}
@@ -1128,18 +1301,32 @@ export function StepPathBBiometricScan({
             </div>
           )}
 
+          {/* Biometric Mismatch Alert Banner (Friend's Card Rejection) */}
+          {faceMismatchError && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/20 border-2 border-rose-500/60 text-xs text-rose-200 flex items-start gap-2.5 max-w-md mx-auto shadow-xl animate-fade-in text-left">
+              <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-bold text-rose-300 block">Biometric Impersonation Alert</span>
+                <p className="text-[11px] leading-relaxed text-rose-100">{faceMismatchError}</p>
+                <p className="text-[10px] font-mono text-rose-300/80">
+                  Please hold your own physical university card in front of the camera.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Apple Face ID Circular Holographic Viewport */}
           <div className={`relative mx-auto w-56 h-56 sm:w-64 sm:h-64 rounded-full p-2 bg-gradient-to-b from-slate-900 to-black transition-all duration-300 ${
             stage === 'face_matched'
               ? 'shadow-[0_0_55px_rgba(16,185,129,0.5)]'
-              : isFaceObstructed
-              ? 'shadow-[0_0_55px_rgba(244,63,94,0.6)]'
+              : (isFaceObstructed || faceMismatchError)
+              ? 'shadow-[0_0_55px_rgba(244,63,94,0.7)]'
               : 'shadow-[0_0_55px_rgba(6,182,212,0.38)]'
           }`}>
             <div className={`relative w-full h-full rounded-full overflow-hidden bg-black border-2 transition-colors duration-300 ${
               stage === 'face_matched'
                 ? 'border-emerald-500'
-                : isFaceObstructed
+                : (isFaceObstructed || faceMismatchError)
                 ? 'border-rose-500'
                 : 'border-cyan-500/50'
             }`}>
@@ -1155,7 +1342,7 @@ export function StepPathBBiometricScan({
               {stage === 'face_continuous' && (
                 <div
                   className={`absolute inset-x-0 h-[2.5px] shadow-[0_0_15px_rgba(52,211,153,1)] transition-all duration-75 ${
-                    isFaceObstructed
+                    isFaceObstructed || faceMismatchError
                       ? 'bg-gradient-to-r from-transparent via-rose-500 to-transparent'
                       : 'bg-gradient-to-r from-transparent via-emerald-400 to-transparent'
                   }`}
@@ -1184,7 +1371,7 @@ export function StepPathBBiometricScan({
               className={`absolute inset-0 w-full h-full pointer-events-none transition-all duration-300 ${
                 stage === 'face_matched'
                   ? 'text-emerald-400'
-                  : isFaceObstructed
+                  : (isFaceObstructed || faceMismatchError)
                   ? 'text-rose-500 animate-pulse'
                   : 'text-cyan-400 animate-spin-slow'
               }`}
@@ -1208,7 +1395,7 @@ export function StepPathBBiometricScan({
                 stroke={
                   stage === 'face_matched'
                     ? '#10b981'
-                    : isFaceObstructed
+                    : (isFaceObstructed || faceMismatchError)
                     ? '#f43f5e'
                     : isFaceDetected
                     ? '#10b981'
@@ -1224,81 +1411,41 @@ export function StepPathBBiometricScan({
           </div>
 
           {/* Progress / Confidence Meter */}
-          <div className="max-w-xs mx-auto space-y-1.5">
+          <div className="max-w-xs mx-auto space-y-2">
             <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-slate-400">Backend Match Engine</span>
-              <span className="text-emerald-400 font-bold">
-                {stage === 'face_matched' ? `${faceMatchScore}% Confirmed` : `${faceScanProgress}%`}
+              <span className="text-slate-400">Forensic 1:1 Biometric Engine</span>
+              <span className={faceMismatchError ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+                {stage === 'face_matched'
+                  ? `${faceMatchScore}% Confirmed`
+                  : faceMismatchError
+                  ? 'Mismatch Rejected'
+                  : `${faceScanProgress}%`}
               </span>
             </div>
             <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 transition-all duration-100"
+                className={`h-full transition-all duration-100 ${
+                  faceMismatchError
+                    ? 'bg-rose-500'
+                    : 'bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400'
+                }`}
                 style={{ width: `${faceScanProgress}%` }}
               />
             </div>
 
-            {/* Instant Face ID Match & Confirm Fallback Action */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFaceScanProgress(100);
-                  setFaceMatchScore(98.6);
-                  setFaceStatusText('Biometric Signature Matched in Backend!');
-                  setStage('face_matched');
-                  playSound('success');
-
-                  const faceToSave = faceSnapshot || captureCurrentFrame() || '';
-                  const verifiedStudentName = (extractedData.studentName || displayName || 'Student Builder').trim();
-
-                  setTimeout(async () => {
-                    stopCamera();
-                    setStage('verified_done');
-
-                    try {
-                      if (typeof window !== 'undefined' && userId) {
-                        localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
-                      }
-                    } catch (e) {}
-
-                    try {
-                      await fetch('/api/verify/path-b-face-id', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          userId,
-                          username,
-                          displayName: verifiedStudentName,
-                          college: extractedData.college,
-                          studentRollNo: extractedData.studentRollNo,
-                          course: extractedData.course,
-                          academicYear: extractedData.academicYear,
-                          idCardImage: idCardSnapshot,
-                          faceImage: faceToSave,
-                          matchScore: 98.6,
-                        }),
-                      });
-                    } catch (e) {}
-
-                    onVerificationComplete({
-                      studentName: verifiedStudentName,
-                      college: extractedData.college,
-                      studentRollNo: extractedData.studentRollNo,
-                      course: extractedData.course,
-                      academicYear: extractedData.academicYear,
-                      idCardImage: idCardSnapshot || '',
-                      faceImage: faceToSave,
-                      matchScore: 98.6,
-                    });
-                  }, 1200);
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-emerald-300 hover:text-emerald-200 text-[11px] font-mono font-semibold transition-all cursor-pointer shadow-md disabled:opacity-30 disabled:cursor-not-allowed"
-                disabled={isFaceObstructed || !isFaceDetected}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Instant Face ID Match &amp; Confirm (98.6%)</span>
-              </button>
+            {/* Active Liveness / Eye Blink Status Badge */}
+            <div className="pt-1">
+              {isLivenessConfirmed ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono shadow-sm">
+                  <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Eye Blink Liveness Confirmed (Live Human)</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[10px] font-mono">
+                  <Eye className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  <span>Blink naturally to confirm active liveness</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
