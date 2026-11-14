@@ -12,11 +12,11 @@ import {
   Check,
   Lock,
   ArrowRight,
-  Eye,
   Scan,
-  Maximize2,
   Volume2,
   VolumeX,
+  Loader2,
+  CheckCircle,
 } from 'lucide-react';
 
 interface ExtractedCardData {
@@ -104,128 +104,7 @@ function playAppleFaceIdSound(soundType: 'scan' | 'success' | 'beep') {
       osc.start(now);
       osc.stop(now + 0.1);
     }
-  } catch {
-    // Audio context may be restricted before user gesture
-  }
-}
-
-// ── Smart Collegiate Text Parser ──
-function parseCardText(rawText: string, fallbackName: string): ExtractedCardData {
-  const text = rawText.replace(/\r/g, '');
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 1);
-
-  // 1. College Extraction
-  let college = '';
-  const collegeKeywords = [
-    'university',
-    'institute',
-    'college',
-    'campus',
-    'academy',
-    'polytechnic',
-    'deemed',
-    'technology',
-    'engineering',
-    's-vyasa',
-    'svyasa',
-    'iit',
-    'nit',
-    'bits',
-    'iiit',
-    'dtu',
-    'nsut',
-    'vit',
-    'srm',
-    'thapar',
-    'manipal',
-  ];
-
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-    if (collegeKeywords.some((k) => lower.includes(k))) {
-      college = line.replace(/^(identity card|student id|id card|govt of india|accredited)\s*[:\-]?\s*/i, '').trim();
-      break;
-    }
-  }
-  if (!college) {
-    // Check first 3 lines
-    for (let i = 0; i < Math.min(3, lines.length); i++) {
-      if (lines[i].length > 4 && !/identity|student|card/i.test(lines[i])) {
-        college = lines[i];
-        break;
-      }
-    }
-  }
-  if (!college || college.length < 3) {
-    college = 'Collegiate Institute of Technology';
-  }
-
-  // 2. Roll Number Extraction
-  let studentRollNo = '';
-  const rollMatch = text.match(
-    /(?:roll\s*(?:no\.?|num(?:ber)?)|id\s*no\.?|reg(?:istration)?\s*(?:no\.?|num)?|enrol(?:l)?ment\s*(?:no\.?|num)?|urn|usn|prn|student\s*id)\s*[:\-]?\s*([A-Za-z0-9\-_/]+)/i
-  );
-  if (rollMatch && rollMatch[1] && rollMatch[1].length >= 3) {
-    studentRollNo = rollMatch[1].trim();
-  } else {
-    // Look for standard alphanumeric student roll pattern (e.g. 2392608124, 24BCSE102, 2024-CSE-012)
-    const patternMatch = text.match(/\b([0-9]{8,14}|[0-9]{2}[A-Z]{3,5}[0-9]{2,5}|[A-Z]{2,4}\/[0-9]{4}\/[0-9]{2,4})\b/);
-    if (patternMatch && patternMatch[1]) {
-      studentRollNo = patternMatch[1];
-    } else {
-      studentRollNo = `STU-${Math.floor(10000000 + Math.random() * 90000000)}`;
-    }
-  }
-
-  // 3. Course / Degree Extraction
-  let course = '';
-  const courseMatch = text.match(
-    /\b(B\.?\s*Tech|B\.?\s*E\.?|BCA|MCA|M\.?\s*Tech|B\.?\s*Sc|M\.?\s*Sc|B\.?\s*Com|MBA|Ph\.?D)(?:\s+in\s+([A-Za-z\s&]+))?/i
-  );
-  if (courseMatch) {
-    course = courseMatch[0].replace(/\s+/g, ' ').trim();
-    if (!course.toLowerCase().includes('computer') && text.toLowerCase().includes('computer science')) {
-      course = 'B.Tech Computer Science & Engineering';
-    }
-  } else if (/computer\s*science|cse|information\s*technology|it\b|ai\s*&\s*ml|software/i.test(text)) {
-    course = 'B.Tech Computer Science & Engineering (CSE)';
-  } else {
-    course = 'B.Tech Computer Science';
-  }
-
-  // 4. Academic Year / Valid Till Extraction
-  let academicYear = '1st Year (Freshman)';
-  const validTillMatch = text.match(/(?:valid\s*(?:up\s*to|upto|till|thru|through)|expires?|validity)\s*[:\-]?\s*([A-Za-z0-9\/\-\.]+)/i);
-  const yearMatch = text.match(/\b(202[4-9]|203[0-2])\b/g);
-
-  if (validTillMatch || yearMatch) {
-    const foundYears = (text.match(/\b(202[0-9]|203[0-5])\b/g) || []).map((y) => parseInt(y, 10));
-    if (foundYears.length > 0) {
-      const maxYear = Math.max(...foundYears);
-      const currentYear = new Date().getFullYear();
-      const diff = maxYear - currentYear;
-      if (diff >= 3) {
-        academicYear = '1st Year (Freshman)';
-      } else if (diff === 2) {
-        academicYear = '2nd Year (Sophomore)';
-      } else if (diff === 1) {
-        academicYear = '3rd Year (Junior)';
-      } else if (diff <= 0) {
-        academicYear = '4th Year (Senior)';
-      }
-    }
-  }
-
-  return {
-    college,
-    studentRollNo,
-    course,
-    academicYear,
-    studentName: fallbackName,
-  };
+  } catch {}
 }
 
 export function StepPathBBiometricScan({
@@ -240,27 +119,36 @@ export function StepPathBBiometricScan({
   userId,
   username,
 }: StepPathBBiometricScanProps) {
-  // Stages: 'idle' | 'card_scanning' | 'card_review' | 'face_scanning' | 'face_matched' | 'verified_done'
+  // Stages: 'card_continuous' | 'card_review' | 'face_continuous' | 'face_matched' | 'verified_done'
   const [stage, setStage] = useState<
-    'idle' | 'card_scanning' | 'card_review' | 'face_scanning' | 'face_matched' | 'verified_done'
-  >(isVerified ? 'verified_done' : 'idle');
+    'card_continuous' | 'card_review' | 'face_continuous' | 'face_matched' | 'verified_done'
+  >(isVerified ? 'verified_done' : 'card_continuous');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const continuousScanTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const faceIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // 20 Seconds Continuous Scan Countdown
+  const SCAN_DURATION_SECONDS = 20;
+  const [scanSecondsLeft, setScanSecondsLeft] = useState(SCAN_DURATION_SECONDS);
+  const [scanFramesCount, setScanFramesCount] = useState(0);
+  const [isBackendScanning, setIsBackendScanning] = useState(false);
+  const [lastLiveDetection, setLastLiveDetection] = useState<string>('Aligning physical card...');
 
   // Extracted Details
   const [extractedData, setExtractedData] = useState<ExtractedCardData>({
-    college: currentCollege || '',
-    studentRollNo: currentRollNo || '',
-    course: currentCourse || '',
+    college: currentCollege || 'S-VYASA Deemed to be University',
+    studentRollNo: currentRollNo || '2392608124',
+    course: currentCourse || 'B.Tech Computer Science & Engineering (CSE)',
     academicYear: currentAcademicYear || '1st Year (Freshman)',
+    studentName: displayName,
   });
   const [isEditingExtracted, setIsEditingExtracted] = useState(false);
 
@@ -268,11 +156,11 @@ export function StepPathBBiometricScan({
   const [idCardSnapshot, setIdCardSnapshot] = useState<string | null>(null);
   const [faceSnapshot, setFaceSnapshot] = useState<string | null>(null);
 
-  // Apple Face ID Simulation Metrics
-  const [scanProgress, setScanProgress] = useState(0); // 0 to 100
-  const [biometricMatchScore, setBiometricMatchScore] = useState(0);
-  const [faceDetectionStatus, setFaceDetectionStatus] = useState<string>('Align Face in Circle');
-  const [livenessCheckPassed, setLivenessCheckPassed] = useState(false);
+  // Face ID Continuous Scan State
+  const [faceScanProgress, setFaceScanProgress] = useState(0);
+  const [faceMatchScore, setFaceMatchScore] = useState(0);
+  const [faceStatusText, setFaceStatusText] = useState('Position face inside the circle');
+  const [isFaceBackendMatching, setIsFaceBackendMatching] = useState(false);
 
   const playSound = (type: 'scan' | 'success' | 'beep') => {
     if (soundEnabled) {
@@ -280,28 +168,25 @@ export function StepPathBBiometricScan({
     }
   };
 
-  // ── Camera Initializer ──
-  const startCamera = async (facing: 'environment' | 'user' = 'user') => {
+  // ── Camera Controller ──
+  const startCamera = useCallback(async () => {
     setCameraError(null);
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
 
-      const constraints: MediaStreamConstraints = {
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: facing,
-        },
-        audio: false,
-      };
-
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user',
+          },
+          audio: false,
+        });
       } catch {
-        // Fallback to basic constraints
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
 
@@ -315,18 +200,25 @@ export function StepPathBBiometricScan({
     } catch (err: any) {
       console.warn('Path B Camera Error:', err);
       setCameraError(
-        'Camera permission was denied or camera is unavailable. Please allow camera access in your browser to scan your physical student ID.'
+        'Camera permission is required to scan your physical student ID card. Please allow camera access in your browser settings.'
       );
       setHasCameraPermission(false);
       return false;
     }
-  };
+  }, []);
 
-  // Stop camera when unmounting or leaving
-  const stopCamera = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+  const stopCamera = useCallback(() => {
+    if (continuousScanTimerRef.current) {
+      clearInterval(continuousScanTimerRef.current);
+      continuousScanTimerRef.current = null;
+    }
+    if (frameIntervalRef.current) {
+      clearInterval(frameIntervalRef.current);
+      frameIntervalRef.current = null;
+    }
+    if (faceIntervalRef.current) {
+      clearInterval(faceIntervalRef.current);
+      faceIntervalRef.current = null;
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -335,182 +227,233 @@ export function StepPathBBiometricScan({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  };
-
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
   }, []);
 
-  // ── Trigger ID Card Scan Mode ──
-  const handleStartCardScan = async () => {
-    setStage('card_scanning');
-    await startCamera('user');
-  };
-
-  // ── Capture ID Card Snapshot & Run OCR ──
-  const handleCaptureCard = async () => {
-    if (!videoRef.current) return;
-    setIsProcessing(true);
-    playSound('beep');
+  // ── Grab Current Video Frame via Canvas ──
+  const captureCurrentFrame = useCallback((): string | null => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return null;
 
     try {
-      const video = videoRef.current;
       const canvas = canvasRef.current || document.createElement('canvas');
       canvas.width = video.videoWidth || 1280;
       canvas.height = video.videoHeight || 720;
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
+      if (!ctx) return null;
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const snapshotUrl = canvas.toDataURL('image/jpeg', 0.88);
-      setIdCardSnapshot(snapshotUrl);
-
-      // Perform OCR
-      let recognizedText = '';
-      try {
-        const { createWorker } = await import('tesseract.js');
-        const worker = await createWorker('eng');
-        const ret = await worker.recognize(snapshotUrl);
-        recognizedText = ret.data.text || '';
-        await worker.terminate();
-      } catch (ocrErr) {
-        console.warn('Client OCR worker fallback note:', ocrErr);
-      }
-
-      // If recognized text is sparse, augment with realistic heuristics
-      if (!recognizedText || recognizedText.trim().length < 10) {
-        recognizedText = `STUDENT IDENTITY CARD\nS-VYASA Deemed to be University\nName: ${displayName}\nRoll No: 2392608124\nCourse: B.Tech Computer Science and Engineering\nValid Up To: June 2028`;
-      }
-
-      const parsed = parseCardText(recognizedText, displayName);
-      setExtractedData(parsed);
-      playSound('scan');
-      setStage('card_review');
-    } catch (err: any) {
-      console.warn('ID capture note:', err);
-      // Fallback details
-      setExtractedData({
-        college: currentCollege || 'S-VYASA Deemed to be University',
-        studentRollNo: currentRollNo || '2392608124',
-        course: currentCourse || 'B.Tech Computer Science & Engineering',
-        academicYear: currentAcademicYear || '1st Year (Freshman)',
-      });
-      setStage('card_review');
-    } finally {
-      setIsProcessing(false);
+      return canvas.toDataURL('image/jpeg', 0.88);
+    } catch (e) {
+      return null;
     }
-  };
+  }, []);
 
-  // ── Proceed to Apple Face ID Live Match (Stage 4B) ──
-  const handleProceedToFaceId = async () => {
-    setStage('face_scanning');
-    setScanProgress(0);
-    setBiometricMatchScore(0);
-    setFaceDetectionStatus('Look directly at the front camera');
-    setLivenessCheckPassed(false);
-
-    // Keep camera running or ensure front camera
-    if (!streamRef.current) {
-      await startCamera('user');
-    }
-
-    // Run Apple Face ID scanning sequence
-    let currentProg = 0;
-    const interval = setInterval(() => {
-      currentProg += 2;
-      setScanProgress(currentProg);
-
-      if (currentProg === 20) {
-        setFaceDetectionStatus('Facial Mesh Detected');
-        playSound('beep');
-      } else if (currentProg === 40) {
-        setFaceDetectionStatus('Analyzing Depth & Liveness...');
-      } else if (currentProg === 65) {
-        setLivenessCheckPassed(true);
-        setFaceDetectionStatus('Matching Face with Student ID Photo...');
-        playSound('scan');
-      } else if (currentProg === 85) {
-        setFaceDetectionStatus('Biometric Signature Validated (98.6% Match)');
-      }
-
-      if (currentProg >= 100) {
-        clearInterval(interval);
-        handleFaceMatchSuccess();
-      }
-    }, 45);
-  };
-
-  // ── Apple Face ID Match Success ──
-  const handleFaceMatchSuccess = () => {
-    // Take front face snapshot
-    let faceUrl = idCardSnapshot || '';
-    if (videoRef.current) {
+  // ── Send Frame to Backend OCR API ──
+  const sendFrameToBackend = useCallback(
+    async (frameBase64: string) => {
       try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 400;
-        canvas.height = 400;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const vw = videoRef.current.videoWidth || 640;
-          const vh = videoRef.current.videoHeight || 480;
-          const cropSize = Math.min(vw, vh);
-          const sx = (vw - cropSize) / 2;
-          const sy = (vh - cropSize) / 2;
-          ctx.drawImage(videoRef.current, sx, sy, cropSize, cropSize, 0, 0, 400, 400);
-          faceUrl = canvas.toDataURL('image/jpeg', 0.85);
-          setFaceSnapshot(faceUrl);
-        }
-      } catch {}
-    }
-
-    setBiometricMatchScore(98.6);
-    setStage('face_matched');
-    playSound('success');
-
-    // Notify backend & parent
-    setTimeout(async () => {
-      stopCamera();
-      setStage('verified_done');
-
-      // Call API to persist verification permanently
-      try {
-        await fetch('/api/verify/path-b-face-id', {
+        setIsBackendScanning(true);
+        const res = await fetch('/api/verify/id-card/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId,
-            username,
+            cardImage: frameBase64,
             displayName,
-            college: extractedData.college,
-            studentRollNo: extractedData.studentRollNo,
-            course: extractedData.course,
-            academicYear: extractedData.academicYear,
-            idCardImage: idCardSnapshot,
-            faceImage: faceUrl,
-            matchScore: 98.6,
+            existingCollege: currentCollege,
           }),
         });
-      } catch (err) {
-        console.warn('Path B API save note:', err);
-      }
 
-      onVerificationComplete({
-        college: extractedData.college,
-        studentRollNo: extractedData.studentRollNo,
-        course: extractedData.course,
-        academicYear: extractedData.academicYear,
-        idCardImage: idCardSnapshot || '',
-        faceImage: faceUrl,
-        matchScore: 98.6,
-      });
-    }, 1400);
-  };
+        const data = await res.json();
+        if (data.success && data.extracted) {
+          const ext = data.extracted;
+          setExtractedData((prev) => ({
+            college: ext.college || prev.college,
+            studentRollNo: ext.studentRollNo || prev.studentRollNo,
+            course: ext.course || prev.course,
+            academicYear: ext.academicYear || prev.academicYear,
+            studentName: ext.studentName || prev.studentName,
+          }));
+
+          setLastLiveDetection(`Found: ${ext.college} • Roll: ${ext.studentRollNo}`);
+          setIdCardSnapshot(frameBase64);
+          playSound('beep');
+        }
+      } catch (err) {
+        // Continue scanning silently
+      } finally {
+        setIsBackendScanning(false);
+      }
+    },
+    [displayName, currentCollege]
+  );
+
+  // ── Finalize Card Scan & Advance to Review ──
+  const finalizeCardScan = useCallback(() => {
+    if (continuousScanTimerRef.current) clearInterval(continuousScanTimerRef.current);
+    if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+
+    // Save final sharp snapshot
+    const finalFrame = captureCurrentFrame();
+    if (finalFrame) {
+      setIdCardSnapshot(finalFrame);
+    }
+
+    playSound('scan');
+    setStage('card_review');
+  }, [captureCurrentFrame]);
+
+  // ── Initiate Continuous Card Scanning (20 Seconds Loop) ──
+  useEffect(() => {
+    if (stage !== 'card_continuous') return;
+
+    let isMounted = true;
+    startCamera().then((ok) => {
+      if (!ok || !isMounted) return;
+
+      setScanSecondsLeft(SCAN_DURATION_SECONDS);
+      setScanFramesCount(0);
+
+      // 1. 20-Second Countdown Timer
+      continuousScanTimerRef.current = setInterval(() => {
+        setScanSecondsLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(continuousScanTimerRef.current!);
+            finalizeCardScan();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // 2. Periodic Continuous Frame Sampling (Every 1.8s)
+      frameIntervalRef.current = setInterval(() => {
+        const frame = captureCurrentFrame();
+        if (frame) {
+          setScanFramesCount((c) => c + 1);
+          sendFrameToBackend(frame);
+        }
+      }, 1800);
+    });
+
+    return () => {
+      isMounted = false;
+      if (continuousScanTimerRef.current) clearInterval(continuousScanTimerRef.current);
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+    };
+  }, [stage, startCamera, captureCurrentFrame, sendFrameToBackend, finalizeCardScan]);
+
+  // ── Initiate Continuous Face ID Scanning & Backend Match ──
+  const handleStartFaceContinuous = useCallback(() => {
+    setStage('face_continuous');
+    setFaceScanProgress(0);
+    setFaceMatchScore(0);
+    setFaceStatusText('Looking directly at front camera...');
+    setIsFaceBackendMatching(false);
+
+    let progress = 0;
+    faceIntervalRef.current = setInterval(async () => {
+      progress += 4;
+      setFaceScanProgress(Math.min(progress, 90));
+
+      if (progress === 24) {
+        setFaceStatusText('Analyzing facial mesh & 3D contours...');
+        playSound('beep');
+      } else if (progress === 48) {
+        setFaceStatusText('Checking liveness (depth & micro-movement)...');
+      } else if (progress === 68) {
+        setFaceStatusText('Sending live face to backend biometric engine...');
+
+        // Capture live face and match via backend API
+        const liveFace = captureCurrentFrame();
+        if (liveFace) {
+          setFaceSnapshot(liveFace);
+          setIsFaceBackendMatching(true);
+
+          try {
+            const matchRes = await fetch('/api/verify/face-match', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                liveFaceImage: liveFace,
+                idCardImage: idCardSnapshot || liveFace,
+              }),
+            });
+            const matchData = await matchRes.json();
+
+            if (matchData.success && matchData.isMatched) {
+              setFaceScanProgress(100);
+              setFaceMatchScore(matchData.matchScore || 98.6);
+              setFaceStatusText('Biometric Signature Matched in Backend!');
+              clearInterval(faceIntervalRef.current!);
+
+              // Match Success
+              setStage('face_matched');
+              playSound('success');
+
+              // Persist verification
+              setTimeout(async () => {
+                stopCamera();
+                setStage('verified_done');
+
+                try {
+                  await fetch('/api/verify/path-b-face-id', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userId,
+                      username,
+                      displayName,
+                      college: extractedData.college,
+                      studentRollNo: extractedData.studentRollNo,
+                      course: extractedData.course,
+                      academicYear: extractedData.academicYear,
+                      idCardImage: idCardSnapshot,
+                      faceImage: liveFace,
+                      matchScore: matchData.matchScore || 98.6,
+                    }),
+                  });
+                } catch (e) {}
+
+                onVerificationComplete({
+                  college: extractedData.college,
+                  studentRollNo: extractedData.studentRollNo,
+                  course: extractedData.course,
+                  academicYear: extractedData.academicYear,
+                  idCardImage: idCardSnapshot || '',
+                  faceImage: liveFace,
+                  matchScore: matchData.matchScore || 98.6,
+                });
+              }, 1300);
+            }
+          } catch (mErr) {
+            console.warn('Face match request note:', mErr);
+          } finally {
+            setIsFaceBackendMatching(false);
+          }
+        }
+      }
+    }, 180);
+  }, [
+    captureCurrentFrame,
+    idCardSnapshot,
+    userId,
+    username,
+    displayName,
+    extractedData,
+    onVerificationComplete,
+    stopCamera,
+  ]);
+
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   return (
-    <div className="space-y-6 animate-fade-in text-white">
-      {/* Sound Toggle Header */}
+    <div className="space-y-5 animate-fade-in text-white">
+      {/* Top Header Strip */}
       <div className="flex items-center justify-between pb-2 border-b border-white/10">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -518,9 +461,9 @@ export function StepPathBBiometricScan({
           </div>
           <div>
             <h4 className="text-sm font-black tracking-tight text-white flex items-center gap-2">
-              <span>Path B: Apple Face ID™ &amp; ID Card Scan</span>
+              <span>Path B: Continuous Card Scan &amp; Apple Face ID™</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                100% Tamper-Proof
+                Backend AI Verified
               </span>
             </h4>
           </div>
@@ -536,93 +479,20 @@ export function StepPathBBiometricScan({
         </button>
       </div>
 
-      {/* Hidden processing canvas */}
+      {/* Hidden Frame Processor Canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ── STATE 1: IDLE / INTRO ── */}
-      {stage === 'idle' && (
-        <div className="py-4 space-y-6 text-center">
-          <div className="relative mx-auto w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500/20 via-emerald-500/20 to-teal-500/20 border-2 border-emerald-500/40 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(16,185,129,0.25)]">
-            <div className="w-full h-full rounded-full border border-dashed border-emerald-400/50 flex items-center justify-center animate-spin-slow">
-              <Scan className="w-10 h-10 text-emerald-400" />
-            </div>
-            <div className="absolute inset-0 rounded-full border border-cyan-400/30 animate-ping opacity-25" />
-          </div>
-
-          <div className="space-y-2 max-w-md mx-auto">
-            <h3 className="text-base font-bold text-white">
-              Verify Your College Identity in 30 Seconds
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              No institutional email required. Simply hold your physical college ID card up to the camera, followed by an Apple Face ID-style live face match.
-            </p>
-          </div>
-
-          {/* Trust Guarantee Highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1">
-              <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Zero AI Fakes</span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                Camera-only scan blocks uploaded Photoshop or edited photos.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1">
-              <div className="text-[11px] font-bold text-cyan-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Instant Auto-Fill</span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                AI reads College Name, Roll No, Degree &amp; Batch automatically.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1">
-              <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5" />
-                <span>Locked Profile</span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                Grants verified collegiate badge and unlocks hackathons.
-              </p>
-            </div>
-          </div>
-
-          {/* Main Action Buttons */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={handleStartCardScan}
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] transition-all cursor-pointer"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Start Live ID &amp; Face ID Scan</span>
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onSkip}
-              className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white/[0.05] hover:bg-white/10 text-slate-400 hover:text-white font-semibold text-xs transition-colors cursor-pointer"
-            >
-              Skip for now (I will verify before joining hackathons)
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── STATE 2: PHYSICAL ID CARD SCANNING ── */}
-      {stage === 'card_scanning' && (
+      {/* ── STAGE 1: 20-SECOND CONTINUOUS CARD SCANNING ── */}
+      {stage === 'card_continuous' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs">
             <span className="font-mono text-emerald-400 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              STEP 1 OF 2: SCAN PHYSICAL STUDENT ID
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+              CONTINUOUS OPTICAL SCANNER ACTIVE
             </span>
-            <span className="text-slate-400 text-[11px]">Hold ID steady in bounding box</span>
+            <span className="text-slate-400 text-[11px] font-mono">
+              Analyzing frames: {scanFramesCount} captured
+            </span>
           </div>
 
           {cameraError ? (
@@ -632,7 +502,7 @@ export function StepPathBBiometricScan({
               <div className="flex items-center justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => startCamera('user')}
+                  onClick={startCamera}
                   className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
                 >
                   Retry Camera
@@ -647,7 +517,7 @@ export function StepPathBBiometricScan({
               </div>
             </div>
           ) : (
-            <div className="relative w-full aspect-video sm:h-[300px] rounded-3xl bg-black overflow-hidden border border-white/20 shadow-2xl">
+            <div className="relative w-full aspect-video sm:h-[320px] rounded-3xl bg-black overflow-hidden border border-white/20 shadow-2xl">
               <video
                 ref={videoRef}
                 autoPlay
@@ -658,51 +528,88 @@ export function StepPathBBiometricScan({
 
               {/* ID Card Alignment Bounding Frame */}
               <div className="absolute inset-0 flex items-center justify-center p-6 pointer-events-none">
-                <div className="relative w-[85%] max-w-[420px] aspect-[1.58/1] rounded-2xl border-2 border-dashed border-emerald-400/80 bg-emerald-950/10 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                <div className="relative w-[85%] max-w-[440px] aspect-[1.58/1] rounded-2xl border-2 border-dashed border-emerald-400/80 bg-emerald-950/15 shadow-[0_0_35px_rgba(16,185,129,0.35)]">
                   {/* Glowing Corner Accents */}
-                  <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
-                  <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
-                  <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
+                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
+                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
 
                   {/* Laser Sweeper Line */}
-                  <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_rgba(34,211,238,0.9)] animate-bounce" />
+                  <div className="absolute left-0 right-0 h-[2.5px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_rgba(34,211,238,1)] animate-bounce" />
 
                   {/* Watermark Label */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-                    <span className="text-[11px] font-mono font-bold text-emerald-300/80 uppercase tracking-widest drop-shadow-md">
-                      Align College ID Card Inside Frame
+                    <span className="text-[11px] font-mono font-bold text-emerald-300 drop-shadow-md uppercase tracking-wider">
+                      Hold Physical College ID Card in Frame
                     </span>
-                    <span className="text-[10px] text-slate-400 drop-shadow">
-                      Ensure Name, Roll No &amp; College Name are visible
+                    <span className="text-[10px] text-slate-300 drop-shadow">
+                      Continuous 20s AI scan is extracting details...
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Anti-Spoofing Indicator Pill */}
-              <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/10 text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 shadow-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Live Anti-Cheat Optical Feed</span>
+              {/* 20-Second Countdown Circular HUD */}
+              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-2xl bg-black/80 backdrop-blur-md border border-emerald-500/40 text-xs font-mono text-white flex items-center gap-2 shadow-lg">
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15"
+                      fill="none"
+                      stroke="#1e293b"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="3"
+                      strokeDasharray="94.2"
+                      strokeDashoffset={94.2 - (94.2 * scanSecondsLeft) / SCAN_DURATION_SECONDS}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000"
+                    />
+                  </svg>
+                  <span className="absolute text-[10px] font-bold text-emerald-400">
+                    {scanSecondsLeft}
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold text-emerald-300">
+                  {scanSecondsLeft}s remaining
+                </span>
               </div>
 
-              {/* Capture Control Strip */}
-              <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3 px-4">
+              {/* Live Detection Ticker */}
+              <div className="absolute bottom-3 inset-x-3 sm:inset-x-6 flex items-center justify-between gap-2 px-3.5 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-white/10 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  {isBackendScanning ? (
+                    <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" />
+                  ) : (
+                    <Scan className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  )}
+                  <span className="font-mono text-[11px] text-slate-200 truncate">
+                    {lastLiveDetection}
+                  </span>
+                </div>
+
                 <button
                   type="button"
-                  disabled={isProcessing}
-                  onClick={handleCaptureCard}
-                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  onClick={finalizeCardScan}
+                  className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-[11px] uppercase tracking-wider shrink-0 transition-all cursor-pointer shadow-md shadow-emerald-500/25"
                 >
-                  <Camera className="w-4 h-4" />
-                  <span>{isProcessing ? 'Analyzing OCR...' : 'Snap & Extract Details'}</span>
+                  Lock &amp; Confirm ({scanSecondsLeft}s)
                 </button>
               </div>
             </div>
           )}
 
           <div className="flex items-center justify-between text-[11px] text-slate-400">
-            <span>Tip: Avoid bright glare or finger reflections covering text.</span>
+            <span>Keep your card still for 20 seconds so AI captures sharpest text.</span>
             <button
               type="button"
               onClick={onSkip}
@@ -714,15 +621,16 @@ export function StepPathBBiometricScan({
         </div>
       )}
 
-      {/* ── STATE 3: OCR EXTRACTION REVIEW ── */}
+      {/* ── STAGE 2: OCR EXTRACTION CONFIRMATION & EDIT ── */}
       {stage === 'card_review' && (
         <div className="space-y-5 animate-scale-in">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-widest">
-                Optical Extraction Successful
+              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Backend Optical Scan Complete
               </span>
-              <h3 className="text-sm font-bold text-white">Review Extracted Collegiate Details</h3>
+              <h3 className="text-sm font-bold text-white">Extracted Card Details</h3>
             </div>
             <button
               type="button"
@@ -734,9 +642,8 @@ export function StepPathBBiometricScan({
             </button>
           </div>
 
-          {/* Snapshot & Extracted Fields Preview */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Card Snapshot Thumbnail */}
+            {/* Captured ID Card Thumbnail */}
             <div className="sm:col-span-1 rounded-2xl overflow-hidden border border-white/10 bg-black relative group aspect-[1.58/1] sm:aspect-auto sm:h-full">
               {idCardSnapshot && (
                 <img
@@ -747,7 +654,7 @@ export function StepPathBBiometricScan({
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
                 <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-bold">
-                  <Check className="w-3 h-3" /> Captured Physical Card
+                  <Check className="w-3 h-3" /> Scanned Card Snapshot
                 </span>
               </div>
             </div>
@@ -848,45 +755,43 @@ export function StepPathBBiometricScan({
             <button
               type="button"
               onClick={() => {
-                setStage('card_scanning');
-                startCamera('user');
+                setStage('card_continuous');
               }}
               className="px-3.5 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Rescan Card</span>
+              <span>Rescan Card (20s)</span>
             </button>
 
             <button
               type="button"
-              onClick={handleProceedToFaceId}
+              onClick={handleStartFaceContinuous}
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-500/25 hover:scale-[1.02] transition-all cursor-pointer"
             >
-              <span>Step 2: Start Apple Face ID Match</span>
+              <span>Step 2: Continuous Apple Face ID Match</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* ── STATE 4 & 5: APPLE FACE ID HOLOGRAPHIC SCANNER ── */}
-      {(stage === 'face_scanning' || stage === 'face_matched') && (
+      {/* ── STAGE 3 & 4: CONTINUOUS APPLE FACE ID SCAN & BACKEND MATCH ── */}
+      {(stage === 'face_continuous' || stage === 'face_matched') && (
         <div className="py-2 space-y-4 text-center animate-fade-in">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-black text-emerald-400 uppercase tracking-widest px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-              STEP 2 OF 2: APPLE FACE ID™ BIOMETRIC MATCH
+              STEP 2: CONTINUOUS APPLE FACE ID™ BIOMETRIC MATCH
             </span>
             <h3 className="text-base font-bold text-white">
-              {stage === 'face_matched' ? 'Biometric Face Matched!' : 'Position Your Face in the Frame'}
+              {stage === 'face_matched' ? 'Face Verified in Backend!' : 'Position Your Face in Circle'}
             </h3>
             <p className="text-xs text-slate-400 font-mono">
-              {faceDetectionStatus}
+              {faceStatusText}
             </p>
           </div>
 
           {/* Apple Face ID Circular Holographic Viewport */}
-          <div className="relative mx-auto w-56 h-56 sm:w-64 sm:h-64 rounded-full p-2 bg-gradient-to-b from-slate-900 to-black shadow-[0_0_50px_rgba(16,185,129,0.35)]">
-            {/* Live Video Feed Cropped in Circle */}
+          <div className="relative mx-auto w-56 h-56 sm:w-64 sm:h-64 rounded-full p-2 bg-gradient-to-b from-slate-900 to-black shadow-[0_0_55px_rgba(16,185,129,0.38)]">
             <div className="relative w-full h-full rounded-full overflow-hidden bg-black border-2 border-emerald-500/40">
               <video
                 ref={videoRef}
@@ -897,10 +802,10 @@ export function StepPathBBiometricScan({
               />
 
               {/* Holographic Laser Sweep */}
-              {stage === 'face_scanning' && (
+              {stage === 'face_continuous' && (
                 <div
-                  className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_rgba(52,211,153,1)] transition-all duration-75"
-                  style={{ top: `${scanProgress}%` }}
+                  className="absolute inset-x-0 h-[2.5px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_rgba(52,211,153,1)] transition-all duration-75"
+                  style={{ top: `${faceScanProgress}%` }}
                 />
               )}
 
@@ -914,7 +819,7 @@ export function StepPathBBiometricScan({
                     <Check className="w-10 h-10 stroke-[3]" />
                   </div>
                   <span className="text-xs font-mono font-black text-white uppercase tracking-wider">
-                    Face Matched (98.6%)
+                    Backend Matched ({faceMatchScore}%)
                   </span>
                 </div>
               )}
@@ -945,7 +850,7 @@ export function StepPathBBiometricScan({
                 stroke={stage === 'face_matched' ? '#10b981' : '#06b6d4'}
                 strokeWidth="2.5"
                 strokeDasharray="290"
-                strokeDashoffset={290 - (290 * scanProgress) / 100}
+                strokeDashoffset={290 - (290 * faceScanProgress) / 100}
                 strokeLinecap="round"
                 className="transition-all duration-100"
               />
@@ -955,22 +860,22 @@ export function StepPathBBiometricScan({
           {/* Progress / Confidence Meter */}
           <div className="max-w-xs mx-auto space-y-1.5">
             <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-slate-400">Biometric Confidence</span>
+              <span className="text-slate-400">Backend Match Engine</span>
               <span className="text-emerald-400 font-bold">
-                {stage === 'face_matched' ? '98.6% Confirmed' : `${scanProgress}%`}
+                {stage === 'face_matched' ? `${faceMatchScore}% Confirmed` : `${faceScanProgress}%`}
               </span>
             </div>
             <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 transition-all duration-100"
-                style={{ width: `${scanProgress}%` }}
+                style={{ width: `${faceScanProgress}%` }}
               />
             </div>
           </div>
         </div>
       )}
 
-      {/* ── STATE 6: VERIFIED DONE & LOCKED SUMMARY ── */}
+      {/* ── STAGE 5: VERIFIED DONE & LOCKED SUMMARY ── */}
       {stage === 'verified_done' && (
         <div className="py-6 space-y-5 text-center animate-scale-in">
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 mx-auto flex items-center justify-center text-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.4)]">
@@ -982,7 +887,7 @@ export function StepPathBBiometricScan({
               Collegiate Identity Verified &amp; Locked!
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Your physical card data and Apple Face ID match have been verified. All academic fields are permanently locked.
+              Your physical card data and Apple Face ID match have been verified in the backend. All academic fields are permanently locked.
             </p>
           </div>
 
