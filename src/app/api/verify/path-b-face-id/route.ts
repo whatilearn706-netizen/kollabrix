@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
     if (isSupabaseConfigured()) {
       try {
         const updatePayload: Record<string, any> = {
+          ...(displayName ? { display_name: displayName.trim() } : {}),
           college: cleanCollege,
           course: cleanCourse,
           academic_year: cleanYear,
