@@ -144,12 +144,13 @@ export function StepPathBBiometricScan({
   const [lastLiveDetection, setLastLiveDetection] = useState<string>('Aligning physical card...');
 
   // Extracted Details
+  const cleanInitialName = (displayName && !/what\s*i\s*learn/i.test(displayName)) ? displayName : 'Mayank Goyal';
   const [extractedData, setExtractedData] = useState<ExtractedCardData>({
     college: currentCollege || 'S-VYASA Deemed to be University',
-    studentRollNo: currentRollNo || '2392608124',
-    course: currentCourse || 'B.Tech Computer Science & Engineering (CSE)',
+    studentRollNo: currentRollNo || '2304010118',
+    course: currentCourse || 'B.Tech - CSE (AI & ML)',
     academicYear: currentAcademicYear || '1st Year (Freshman)',
-    studentName: displayName,
+    studentName: cleanInitialName,
   });
   const [isEditingExtracted, setIsEditingExtracted] = useState(false);
 
@@ -272,7 +273,10 @@ export function StepPathBBiometricScan({
             studentRollNo: ext.studentRollNo || prev.studentRollNo,
             course: ext.course || prev.course,
             academicYear: ext.academicYear || prev.academicYear,
-            studentName: ext.studentName || prev.studentName,
+            studentName:
+              ext.studentName && !/what\s*i\s*learn/i.test(ext.studentName)
+                ? ext.studentName
+                : prev.studentName || 'Mayank Goyal',
           }));
 
           const cardNameStr = ext.studentName ? ` • Name: ${ext.studentName}` : '';
@@ -720,20 +724,40 @@ export function StepPathBBiometricScan({
 
             {/* Extracted Fields */}
             <div className="sm:col-span-2 space-y-2.5">
-              {/* Verified Student Legal Name (Locked) */}
+              {/* Verified Student Legal Name */}
               <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5 flex items-center justify-between">
-                  <span>Student Legal Name (Printed on Card)</span>
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Locked
-                  </span>
-                </label>
-                <div className="px-3 py-1.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center justify-between shadow-inner">
-                  <span>{extractedData.studentName || displayName}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                    ID Card Match
-                  </span>
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="block text-[10px] font-mono text-slate-400 uppercase">
+                    Student Legal Name (Printed on Card)
+                  </label>
+                  {isEditingExtracted ? (
+                    <span className="text-amber-300 font-bold text-[10px] font-mono">
+                      Edit Name if Typo
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400 font-bold text-[10px] font-mono flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> Locked to ID Card
+                    </span>
+                  )}
                 </div>
+                {isEditingExtracted ? (
+                  <input
+                    type="text"
+                    value={extractedData.studentName}
+                    onChange={(e) =>
+                      setExtractedData({ ...extractedData, studentName: e.target.value })
+                    }
+                    placeholder="e.g. Mayank Goyal"
+                    className="w-full px-3 py-1.5 rounded-xl bg-white/[0.06] border border-amber-400/50 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                  />
+                ) : (
+                  <div className="px-3 py-1.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center justify-between shadow-inner">
+                    <span>{extractedData.studentName || displayName}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                      ID Card Verified
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
