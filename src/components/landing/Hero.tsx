@@ -85,7 +85,7 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
-          className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-lg md:text-xl text-zinc-100 max-w-2xl mx-auto mb-10 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
         >
           Assemble dream teams, ship hackathon projects, and showcase your
           engineering portfolio — all on one platform built for ambitious students.
