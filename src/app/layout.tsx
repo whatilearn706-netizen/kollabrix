@@ -318,8 +318,8 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
         />
-        <link rel="preconnect" href="https://bmiwmlfraaridbekuily.supabase.co" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://bmiwmlfraaridbekuily.supabase.co" />
+        <link rel="preconnect" href="https://api.kollabrix.in" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api.kollabrix.in" />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
