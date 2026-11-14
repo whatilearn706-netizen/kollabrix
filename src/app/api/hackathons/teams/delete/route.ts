@@ -24,11 +24,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { hackathonId, teamId, userId } = body;
 
-    if (!hackathonId || !teamId) {
-      return NextResponse.json({ error: 'Hackathon ID and Team ID are required.' }, { status: 400 });
+    if (!hackathonId || !teamId || !userId) {
+      return NextResponse.json({ error: 'Hackathon ID, Team ID, and User ID are required.' }, { status: 400 });
     }
 
     const admin = getAdminClient();
+
+    // 0. Authorization Enforcement: Verify caller is the team leader or event organizer
+    const { data: teamData } = await admin
+      .from('hackathon_teams')
+      .select('leader_id, hackathon_id')
+      .eq('id', teamId)
+      .maybeSingle();
+
+    if (!teamData) {
+      return NextResponse.json({ error: 'Team not found.' }, { status: 404 });
+    }
+
+    const { data: hackathonData } = await admin
+      .from('hackathons')
+      .select('organizer_id')
+      .eq('id', hackathonId)
+      .maybeSingle();
+
+    const isLeader = teamData.leader_id === userId;
+    const isOrganizer = hackathonData?.organizer_id === userId;
+
+    if (!isLeader && !isOrganizer) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Only the team leader or event organizer can delete this team.' },
+        { status: 403 }
+      );
+    }
 
     // 1. Delete all team submissions
     try {

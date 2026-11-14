@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { inspectCodeSafety } from '@/lib/security/codeSandboxGuard';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -559,6 +560,20 @@ export async function POST(req: NextRequest) {
 
     if (!code || typeof code !== 'string' || !code.trim()) {
       return NextResponse.json({ success: false, error: 'Code is required' }, { status: 400 });
+    }
+
+    // 2. Pre-Execution Code Sandbox Guard
+    const safety = inspectCodeSafety(code, language);
+    if (!safety.isSafe) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: safety.reason,
+          stderr: safety.reason,
+          exitCode: 1,
+        },
+        { status: 400 }
+      );
     }
 
     const startTime = Date.now();

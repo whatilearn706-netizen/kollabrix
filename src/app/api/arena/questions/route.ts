@@ -56,11 +56,25 @@ export async function GET(request: NextRequest) {
       seenQuestionIds,
     });
 
+    const sanitized = filtered.map((q) => ({
+      ...q,
+      testCases: (q.testCases || []).map((tc) => {
+        if (tc.isHidden) {
+          return {
+            ...tc,
+            input: '[Hidden Test Case]',
+            expectedOutput: '[Hidden Test Case]',
+          };
+        }
+        return tc;
+      }),
+    }));
+
     return NextResponse.json(
       {
         success: true,
-        questions: filtered,
-        total: filtered.length,
+        questions: sanitized,
+        total: sanitized.length,
       },
       {
         headers: {

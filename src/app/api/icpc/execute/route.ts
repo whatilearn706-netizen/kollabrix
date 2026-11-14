@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { inspectCodeSafety } from '@/lib/security/codeSandboxGuard';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -84,6 +85,23 @@ export async function POST(request: NextRequest) {
           status: 'Compilation Error',
           compileOutput: 'Empty source code submitted.',
           compile_output: 'Empty source code submitted.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Pre-Execution Code Sandbox Guard
+    const safety = inspectCodeSafety(rawCode, language);
+    if (!safety.isSafe) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: safety.reason,
+          verdict: 'Runtime Error',
+          status: 'Security Violation',
+          compileOutput: safety.reason,
+          compile_output: safety.reason,
+          stderr: safety.reason,
         },
         { status: 400 }
       );
