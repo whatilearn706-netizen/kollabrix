@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       academicYear,
       idCardImage,
       faceImage,
-      matchScore = 98.6,
+      matchScore = 95.0,
     } = payload;
 
     if (!userId && !username) {
