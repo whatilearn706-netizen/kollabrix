@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
@@ -10,6 +10,8 @@ import { QuantumLoomCanvas } from './QuantumLoomCanvas';
 export function LandingHero() {
   const { user } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
+  const [webGLActive, setWebGLActive] = useState(false);
+
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
@@ -21,34 +23,29 @@ export function LandingHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#090B10]"
+      className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
-      {/* Exact Realm 01 Quantum Loom of Consciousness WebGL Canvas */}
-      <QuantumLoomCanvas className="z-0" />
+      {/* Exact Realm 01 Quantum Loom of Consciousness WebGL Canvas (Optimized 60-120 FPS) */}
+      <QuantumLoomCanvas className="z-0" onWebGLActive={setWebGLActive} />
 
-      {/* 4K Hardware-Accelerated Video Fallback */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        poster="/brand/hero-quantum-loom-poster.webp"
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10"
-      >
-        <source src="/videos/hero-quantum-loom.webm" type="video/webm" />
-        <source src="/videos/hero-quantum-loom-4k.mp4" type="video/mp4" />
-        <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
-      </video>
+      {/* Hardware-Accelerated Video Fallback: ONLY active when WebGL is unsupported to save 100% GPU video decoder overhead */}
+      {!webGLActive && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster="/brand/hero-quantum-loom-poster.webp"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10"
+        >
+          <source src="/videos/hero-quantum-loom.webm" type="video/webm" />
+          <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
+        </video>
+      )}
 
-      {/* Balanced Radial Vignette: keeps headlines ultra-readable while letting the golden 3D city glow shine through */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(9,11,16,0.65)_100%)] pointer-events-none z-10" />
-
-      {/* Subtle ambient warm glow orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="landing-orb landing-orb-1 opacity-60" />
-        <div className="landing-orb landing-orb-2 opacity-60" />
-      </div>
+      {/* Balanced Radial Vignette for pristine text readability */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
 
       {/* Content */}
       <motion.div

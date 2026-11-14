@@ -43,6 +43,8 @@ html {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 body {
@@ -53,6 +55,7 @@ body {
   font-family: var(--site-font-body);
   overflow-x: hidden;
   min-height: 100vh;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* GPU Hardware acceleration for active modals & sheets */
