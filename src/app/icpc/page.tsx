@@ -362,6 +362,26 @@ export default function IcpcCollegiateArenaPage() {
       setShowAuthModal(true);
       return;
     }
+
+    // Global Verification Gate: Students must be verified for OA & Faculty Labs
+    const isVerifiedUser = Boolean(
+      profile?.college_verified ||
+      (profile as any)?.student_verified ||
+      user?.user_metadata?.college_verified ||
+      profile?.role === 'teacher' ||
+      profile?.role === 'admin' ||
+      Boolean((profile as any)?.faculty_verified)
+    );
+    if (!isVerifiedUser && contest.contestType !== 'practice') {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('kollabrix:open-profile-modal', {
+            detail: { step: 4 },
+          })
+        );
+      }
+      return;
+    }
     const isUpcoming =
       contest.status === 'upcoming' ||
       (contest.contestType !== 'practice' &&
@@ -397,6 +417,26 @@ export default function IcpcCollegiateArenaPage() {
   const handleOpenProblem = (contest: IcpcContest, problem: IcpcProblem) => {
     if (!user) {
       setShowAuthModal(true);
+      return;
+    }
+
+    // Global Verification Gate: Students must be verified for OA & Faculty Labs
+    const isVerifiedUser = Boolean(
+      profile?.college_verified ||
+      (profile as any)?.student_verified ||
+      user?.user_metadata?.college_verified ||
+      profile?.role === 'teacher' ||
+      profile?.role === 'admin' ||
+      Boolean((profile as any)?.faculty_verified)
+    );
+    if (!isVerifiedUser && contest.contestType !== 'practice') {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('kollabrix:open-profile-modal', {
+            detail: { step: 4 },
+          })
+        );
+      }
       return;
     }
     const isUpcoming = contest.status === 'upcoming' || (contest.contestType !== 'practice' && contest.startTime && new Date() < new Date(contest.startTime));

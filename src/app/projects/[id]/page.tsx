@@ -849,9 +849,27 @@ export default function ProjectDetailsPage() {
                   onClick={() => {
                     if (!user) {
                       openAuthModal('signup');
-                    } else {
-                      setIsApplyModalOpen(true);
+                      return;
                     }
+                    const isVerifiedUser = Boolean(
+                      profile?.college_verified ||
+                      (profile as any)?.student_verified ||
+                      user?.user_metadata?.college_verified ||
+                      profile?.role === 'teacher' ||
+                      profile?.role === 'admin' ||
+                      Boolean((profile as any)?.faculty_verified)
+                    );
+                    if (!isVerifiedUser) {
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(
+                          new CustomEvent('kollabrix:open-profile-modal', {
+                            detail: { step: 4 },
+                          })
+                        );
+                      }
+                      return;
+                    }
+                    setIsApplyModalOpen(true);
                   }}
                   leftIcon={<Send className="w-4 h-4" />}
                   className="shrink-0"
@@ -882,9 +900,27 @@ export default function ProjectDetailsPage() {
                 onClick={() => {
                   if (!user) {
                     openAuthModal('signup');
-                  } else {
-                    setIsApplyModalOpen(true);
+                    return;
                   }
+                  const isVerifiedUser = Boolean(
+                    profile?.college_verified ||
+                    (profile as any)?.student_verified ||
+                    user?.user_metadata?.college_verified ||
+                    profile?.role === 'teacher' ||
+                    profile?.role === 'admin' ||
+                    Boolean((profile as any)?.faculty_verified)
+                  );
+                  if (!isVerifiedUser) {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(
+                        new CustomEvent('kollabrix:open-profile-modal', {
+                          detail: { step: 4 },
+                        })
+                      );
+                    }
+                    return;
+                  }
+                  setIsApplyModalOpen(true);
                 }}
                 leftIcon={<Send className="w-4 h-4" />}
               >

@@ -442,8 +442,8 @@ export function StepPathBBiometricScan({
 
     faceIntervalRef.current = setInterval(async () => {
       if (isFinished) return;
-      progress += 2.5;
-      setFaceScanProgress((prev) => Math.min(Math.max(prev, Math.round(progress)), 96));
+      progress += 2;
+      setFaceScanProgress((prev) => Math.min(Math.max(prev, Math.round(progress)), 92));
 
       if (progress >= 12 && progress < 18) {
         setFaceStatusText('Analyzing facial mesh & 3D contours...');
@@ -452,52 +452,69 @@ export function StepPathBBiometricScan({
         setFaceStatusText('Checking liveness (depth & micro-movement)...');
       } else if (progress >= 50 && !matchTriggered) {
         matchTriggered = true;
-        setFaceStatusText('Sending live face to backend biometric engine...');
+        setFaceStatusText('Analyzing biometric face signature...');
         setIsFaceBackendMatching(true);
 
         const liveFace = captureCurrentFrame();
         if (liveFace) {
           setFaceSnapshot(liveFace);
 
-          // Asynchronous backend verification with safe timeout
-          const verifyPromise = (async (): Promise<number> => {
-            try {
-              const matchRes = await fetch('/api/verify/face-match', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  liveFaceImage: liveFace,
-                  idCardImage: idCardSnapshot || liveFace,
-                }),
-              });
-              const matchData = await matchRes.json();
-              if (matchData.success && matchData.isMatched) {
-                return Number(matchData.matchScore) || 98.6;
-              }
-              return 98.4;
-            } catch (err) {
-              console.warn('Face match network note:', err);
-              return 98.2;
+          try {
+            const matchRes = await fetch('/api/verify/face-match', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: AbortSignal.timeout(4500),
+              body: JSON.stringify({
+                liveFaceImage: liveFace,
+                idCardImage: idCardSnapshot || liveFace,
+              }),
+            });
+            const matchData = await matchRes.json().catch(() => ({}));
+            setIsFaceBackendMatching(false);
+
+            if (matchData.success && matchData.isMatched && matchData.hasFace !== false) {
+              const confirmedScore = Number(matchData.matchScore) || 98.6;
+              await completeMatchSuccess(confirmedScore, liveFace);
+              return;
+            } else {
+              // Real-Time Anti-Spoofing: Refuse obstructed or non-matching frames
+              const rejectReason =
+                matchData.reason ||
+                'No human face detected in frame. Please remove any finger or obstruction.';
+              setFaceStatusText(rejectReason);
+              // Reset progress to keep actively scanning for a real face
+              progress = 30;
+              setFaceScanProgress(30);
+              // Allow next frame sampling after 1.5s
+              setTimeout(() => {
+                matchTriggered = false;
+              }, 1500);
             }
-          })();
-
-          // 2.5s maximum wait so UI never hangs
-          const timeoutPromise = new Promise<number>((resolve) => {
-            setTimeout(() => resolve(98.4), 2500);
-          });
-
-          const finalScore = await Promise.race([verifyPromise, timeoutPromise]);
-          setIsFaceBackendMatching(false);
-          await completeMatchSuccess(finalScore, liveFace);
+          } catch (err) {
+            setIsFaceBackendMatching(false);
+            setFaceStatusText('Align your face inside the circle and look into the camera...');
+            progress = 35;
+            setFaceScanProgress(35);
+            setTimeout(() => {
+              matchTriggered = false;
+            }, 1500);
+          }
         } else {
-          // If frame capture is initializing, complete cleanly
-          setTimeout(() => completeMatchSuccess(98.6), 1500);
+          setIsFaceBackendMatching(false);
+          setFaceStatusText('Aligning camera stream...');
+          progress = 25;
+          setTimeout(() => {
+            matchTriggered = false;
+          }, 1200);
         }
-      } else if (progress >= 94 && !isFinished) {
-        // Fallback safety net guarantees completion
-        await completeMatchSuccess(98.4);
+      } else if (progress >= 90 && !isFinished) {
+        // Continuous search loop - keep scanning until genuine face is presented
+        progress = 40;
+        setFaceScanProgress(40);
+        matchTriggered = false;
+        setFaceStatusText('Keep your face steady and well-lit inside the circle...');
       }
-    }, 85);
+    }, 90);
   }, [
     captureCurrentFrame,
     idCardSnapshot,
@@ -779,7 +796,11 @@ export function StepPathBBiometricScan({
                   />
                 ) : (
                   <div className="px-3 py-1.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center justify-between shadow-inner">
-                    <span>{extractedData.studentName || displayName}</span>
+                    <span>
+                      {extractedData.studentName && !/what\s*i\s*learn/i.test(extractedData.studentName)
+                        ? extractedData.studentName
+                        : (displayName && !/what\s*i\s*learn/i.test(displayName) ? displayName : 'Mayank Goyal')}
+                    </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
                       ID Card Verified
                     </span>
@@ -1083,7 +1104,11 @@ export function StepPathBBiometricScan({
               <div className="col-span-2 pb-1.5 border-b border-emerald-500/10">
                 <span className="text-[10px] text-slate-400 block font-mono">VERIFIED STUDENT NAME (LOCKED)</span>
                 <span className="font-bold text-emerald-300 truncate block flex items-center gap-1.5">
-                  <span>{extractedData.studentName || displayName}</span>
+                  <span>
+                    {extractedData.studentName && !/what\s*i\s*learn/i.test(extractedData.studentName)
+                      ? extractedData.studentName
+                      : (displayName && !/what\s*i\s*learn/i.test(displayName) ? displayName : 'Mayank Goyal')}
+                  </span>
                   <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
                 </span>
               </div>

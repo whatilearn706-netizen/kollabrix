@@ -6,11 +6,20 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { ProtectedPageGuard } from '@/components/auth/ProtectedPageGuard';
 import { ProjectForm } from '@/components/projects/ProjectForm';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export default function NewProjectPage() {
   const router = useRouter();
   const { user, profile, isLoading } = useAuth();
+
+  const isVerifiedStudent = Boolean(
+    profile?.college_verified ||
+    (profile as any)?.student_verified ||
+    user?.user_metadata?.college_verified ||
+    profile?.role === 'teacher' ||
+    profile?.role === 'admin' ||
+    Boolean((profile as any)?.faculty_verified)
+  );
 
   useEffect(() => {
     if (!isLoading && isFacultyUser(user, profile)) {
@@ -41,7 +50,39 @@ export default function NewProjectPage() {
           </p>
         </div>
 
-        <ProjectForm />
+        {!isVerifiedStudent ? (
+          <div className="p-8 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 text-center space-y-4 shadow-xl">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 mx-auto">
+              <ShieldAlert className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                Collegiate Verification Required
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                Unverified students can overview projects across Kollabrix. To propose projects and recruit peers, verify your student identity with your physical college ID card &amp; Face ID (30s).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(
+                    new CustomEvent('kollabrix:open-profile-modal', {
+                      detail: { step: 4 },
+                    })
+                  );
+                }
+              }}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all inline-flex items-center gap-2 cursor-pointer"
+            >
+              <span>Verify Student Identity Now</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <ProjectForm />
+        )}
       </div>
     </ProtectedPageGuard>
   );
