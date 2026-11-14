@@ -45,6 +45,8 @@ import {
   Briefcase,
   Play,
   Flame,
+  Headphones,
+  Mail,
 } from 'lucide-react';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModal';
@@ -116,6 +118,8 @@ export default function HackathonDetailPage() {
               ...hack,
               submission_deadline: hack.submission_deadline || meta.submission_deadline || hack.submissionDeadline || null,
               results_date: hack.results_date || meta.results_date || hack.resultsDate || null,
+              contact_info: hack.contact_info || meta.contact_info || (hack as any).contactInfo || null,
+              allowed_college: hack.allowed_college || meta.allowed_college || (hack as any).allowedCollege || null,
             };
           }
         } catch {}
@@ -248,6 +252,8 @@ export default function HackathonDetailPage() {
               company_logo: meta.logo_url || currentHack.logo_url || currentHack.company_logo,
               eligibility: meta.eligibility || currentHack.eligibility,
               banner_url: meta.banner_url || currentHack.banner_url,
+              contact_info: currentHack.contact_info || meta.contact_info || (currentHack as any).contactInfo || null,
+              allowed_college: currentHack.allowed_college || meta.allowed_college || (currentHack as any).allowedCollege || null,
               is_sponsored: meta.is_sponsored ?? currentHack.is_sponsored,
               is_enterprise: meta.is_enterprise ?? currentHack.is_enterprise,
               company_name: meta.company_name || currentHack.company_name,
@@ -379,24 +385,89 @@ export default function HackathonDetailPage() {
 
   // Profile-based Eligibility Evaluation
   const eligibilityEvaluation = useMemo(() => {
-    const rawCrit = (hackathon?.eligibility || '').toLowerCase().trim();
-    if (!rawCrit || rawCrit === 'all college students' || rawCrit === 'open to all' || rawCrit === 'all students') {
+    // If the student is ALREADY registered / enrolled in this hackathon, they are 100% eligible & confirmed!
+    if (isEnrolled) {
       return { isEligible: true, reason: null };
     }
+
+    const rawCrit = (hackathon?.eligibility || '').toLowerCase().trim();
+    const allowedCollege = (hackathon?.allowed_college || '').trim().toLowerCase();
 
     if (!user) {
       return { isEligible: true, reason: 'Sign in to confirm registration eligibility.' };
     }
 
+    // Hydrate verification & collegiate credentials from all available synchronous caches
+    const localProfile = typeof window !== 'undefined' ? (() => {
+      try {
+        return JSON.parse(localStorage.getItem('linkora_auth_profile') || '{}');
+      } catch {
+        return {};
+      }
+    })() : {};
+
+    const localVerified = typeof window !== 'undefined' && (
+      localStorage.getItem('linkora_college_verified') === 'true' ||
+      (user?.id && localStorage.getItem(`linkora_college_verified_${user.id}`) === 'true')
+    );
+
+    const isVerified = Boolean(
+      profile?.college_verified ||
+      profile?.faculty_verified ||
+      (profile as any)?.student_verified ||
+      (profile as any)?.id_verified ||
+      user?.user_metadata?.college_verified ||
+      user?.user_metadata?.faculty_verified ||
+      localProfile?.college_verified ||
+      localVerified
+    );
+
+    const activeCollege = (
+      profile?.college ||
+      localProfile?.college ||
+      (user?.user_metadata as any)?.college ||
+      ''
+    ).trim();
+
+    const activeYear = (
+      profile?.academic_year ||
+      localProfile?.academic_year ||
+      (user?.user_metadata as any)?.academic_year ||
+      ''
+    ).trim().toLowerCase();
+
+    // 0. Check Specific College Restriction (Only allowed college can join!)
+    if (allowedCollege && allowedCollege !== 'all' && allowedCollege !== 'all colleges' && allowedCollege !== 'open to all') {
+      const studentColLower = activeCollege.toLowerCase();
+      const isSvyasaAllowed = allowedCollege.includes('svyasa') || allowedCollege.includes('s-vyasa');
+      const isSvyasaStudent = studentColLower.includes('svyasa') || studentColLower.includes('s-vyasa');
+
+      const matches = isSvyasaAllowed
+        ? isSvyasaStudent
+        : (studentColLower.includes(allowedCollege) || allowedCollege.includes(studentColLower));
+
+      if (!matches) {
+        return {
+          isEligible: false,
+          reason: `Restricted to students of ${hackathon?.allowed_college}. (Your verified college: ${activeCollege || 'Unverified'}).`,
+        };
+      }
+    }
+
+    // Also check if raw criteria specifies S-VYASA exclusive
+    if (rawCrit.includes('s-vyasa') || rawCrit.includes('svyasa')) {
+      const studentColLower = activeCollege.toLowerCase();
+      if (!studentColLower.includes('s-vyasa') && !studentColLower.includes('svyasa')) {
+        return {
+          isEligible: false,
+          reason: `Restricted to S-VYASA University students only. (Your verified college: ${activeCollege || 'Unverified'}).`,
+        };
+      }
+    }
+
     // 1. Check Verified Student requirement
     const requiresVerification = rawCrit.includes('verified') || rawCrit.includes('collegiate verification');
     if (requiresVerification) {
-      const isVerified = Boolean(
-        profile?.college_verified ||
-        profile?.faculty_verified ||
-        (profile as any)?.student_verified ||
-        (profile as any)?.id_verified
-      );
       if (!isVerified) {
         return {
           isEligible: false,
@@ -406,47 +477,46 @@ export default function HackathonDetailPage() {
     }
 
     // 2. Check Year restrictions
-    const userYear = (profile?.academic_year || '').toLowerCase();
     const isFirstYearReq = (rawCrit.includes('1st year') || rawCrit.includes('first year')) && !rawCrit.includes('1st to 4th') && !rawCrit.includes('1st to 3rd') && !rawCrit.includes('all');
     if (isFirstYearReq) {
-      const isFirst = userYear.includes('1') || userYear.includes('first') || userYear.includes('freshman');
-      if (!isFirst && profile?.academic_year) {
+      const isFirst = activeYear.includes('1') || activeYear.includes('first') || activeYear.includes('freshman');
+      if (!isFirst && activeYear) {
         return {
           isEligible: false,
-          reason: `Restricted to 1st year students only (Your profile: ${profile.academic_year}).`,
+          reason: `Restricted to 1st year students only (Your profile: ${profile?.academic_year || localProfile?.academic_year || 'Not specified'}).`,
         };
       }
     }
 
     const isSecondYearReq = (rawCrit.includes('2nd year') || rawCrit.includes('second year')) && !rawCrit.includes('to');
     if (isSecondYearReq) {
-      const isSecond = userYear.includes('2') || userYear.includes('second') || userYear.includes('sophomore');
-      if (!isSecond && profile?.academic_year) {
+      const isSecond = activeYear.includes('2') || activeYear.includes('second') || activeYear.includes('sophomore');
+      if (!isSecond && activeYear) {
         return {
           isEligible: false,
-          reason: `Restricted to 2nd year students only (Your profile: ${profile.academic_year}).`,
+          reason: `Restricted to 2nd year students only (Your profile: ${profile?.academic_year || localProfile?.academic_year || 'Not specified'}).`,
         };
       }
     }
 
     const isThirdYearReq = (rawCrit.includes('3rd year') || rawCrit.includes('third year')) && !rawCrit.includes('to');
     if (isThirdYearReq) {
-      const isThird = userYear.includes('3') || userYear.includes('third') || userYear.includes('junior');
-      if (!isThird && profile?.academic_year) {
+      const isThird = activeYear.includes('3') || activeYear.includes('third') || activeYear.includes('junior');
+      if (!isThird && activeYear) {
         return {
           isEligible: false,
-          reason: `Restricted to 3rd year students only (Your profile: ${profile.academic_year}).`,
+          reason: `Restricted to 3rd year students only (Your profile: ${profile?.academic_year || localProfile?.academic_year || 'Not specified'}).`,
         };
       }
     }
 
     const isFourthYearReq = (rawCrit.includes('4th year') || rawCrit.includes('fourth year')) && !rawCrit.includes('to');
     if (isFourthYearReq) {
-      const isFourth = userYear.includes('4') || userYear.includes('fourth') || userYear.includes('senior');
-      if (!isFourth && profile?.academic_year) {
+      const isFourth = activeYear.includes('4') || activeYear.includes('fourth') || activeYear.includes('senior');
+      if (!isFourth && activeYear) {
         return {
           isEligible: false,
-          reason: `Restricted to 4th year students only (Your profile: ${profile.academic_year}).`,
+          reason: `Restricted to 4th year students only (Your profile: ${profile?.academic_year || localProfile?.academic_year || 'Not specified'}).`,
         };
       }
     }
@@ -460,7 +530,7 @@ export default function HackathonDetailPage() {
     }
 
     return { isEligible: true, reason: null };
-  }, [hackathon?.eligibility, profile, user]);
+  }, [hackathon?.eligibility, hackathon?.allowed_college, profile, user, isEnrolled]);
 
   // Deadline countdown calculations
   const countdown = useMemo(() => {
@@ -1409,6 +1479,49 @@ export default function HackathonDetailPage() {
                     </p>
                   </div>
 
+                  {/* Allowed College Restriction Banner */}
+                  {hackathon.allowed_college && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                      <h4 className="font-bold text-amber-300 flex items-center gap-2 text-xs">
+                        <GraduationCap className="w-4 h-4 text-amber-400" />
+                        <span>Allowed Collegiate Institution</span>
+                      </h4>
+                      <p className="text-white font-bold text-xs">
+                        {hackathon.allowed_college}
+                      </p>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        Institutional Access Locked: Only enrolled and verified students from {hackathon.allowed_college} are eligible to participate and submit deliverables.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Help Desk & Faculty Support Banner */}
+                  {hackathon.contact_info && (
+                    <div className="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-white flex items-center gap-2 text-xs">
+                          <Headphones className="w-4 h-4 text-cyan-400" />
+                          <span>Faculty Help Desk &amp; Organizer Contact</span>
+                        </h4>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                          Support Active
+                        </span>
+                      </div>
+                      <p className="text-slate-300 text-xs">
+                        If you face any issue during registration, card verification, or team building, reach out directly to the faculty coordinator:
+                      </p>
+                      <div className="pt-1">
+                        <a
+                          href={hackathon.contact_info.includes('@') ? `mailto:${hackathon.contact_info}` : `tel:${hackathon.contact_info}`}
+                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-mono text-xs transition-colors"
+                        >
+                          <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{hackathon.contact_info}</span>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
                     <h4 className="font-bold text-white flex items-center gap-2">
                       <Code2 className="w-4 h-4 text-brand-400" />
@@ -1454,7 +1567,12 @@ export default function HackathonDetailPage() {
               <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
                 
                 {/* Eligibility Status Header */}
-                {eligibilityEvaluation.isEligible ? (
+                {isEnrolled ? (
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Registered &amp; Confirmed Participant</span>
+                  </div>
+                ) : eligibilityEvaluation.isEligible ? (
                   <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
                     <Sparkles className="w-4 h-4 text-emerald-400 fill-emerald-400/20" />
                     <span>You&apos;re eligible</span>
@@ -1671,6 +1789,31 @@ export default function HackathonDetailPage() {
                 <span>{copiedLink ? 'Copied!' : 'Refer now'}</span>
               </button>
             </div>
+
+            {/* Faculty Help Desk & Support Contact Card */}
+            {hackathon.contact_info && (
+              <div className="p-4 rounded-2xl bg-charcoal-900/95 border border-cyan-500/30 space-y-2 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Headphones className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white">Help Desk &amp; Support</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-cyan-400 font-bold uppercase bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    Coordinator
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Have questions or need assistance during the event? Contact the faculty desk:
+                </p>
+                <a
+                  href={hackathon.contact_info.includes('@') ? `mailto:${hackathon.contact_info}` : `tel:${hackathon.contact_info}`}
+                  className="flex items-center gap-2 text-xs font-mono text-cyan-300 hover:text-cyan-200 bg-charcoal-950 px-3 py-2.5 rounded-xl border border-charcoal-800 break-all transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="truncate">{hackathon.contact_info}</span>
+                </a>
+              </div>
+            )}
           </div>
         </div>
 

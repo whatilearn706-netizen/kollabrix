@@ -323,6 +323,7 @@ export interface Hackathon {
   max_team_size?: number;
   rules?: string | null;
   contact_info?: string | null;
+  allowed_college?: string | null;
   results_date?: string | null;
   results_published?: boolean;
   participants_count?: number;

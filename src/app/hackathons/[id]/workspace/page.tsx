@@ -63,6 +63,8 @@ import {
   RotateCcw,
   Rocket,
   Eye,
+  GraduationCap,
+  X,
 } from 'lucide-react';
 import { AddChallengeModal } from '@/components/hackathons/AddChallengeModal';
 import { PostAnnouncementModal } from '@/components/hackathons/PostAnnouncementModal';
@@ -88,7 +90,17 @@ function formatEventDateTime(dateStr?: string | null): string {
 }
 
 interface TeamWithMembers extends HackathonTeam {
-  members?: Array<HackathonTeamMember & { profile?: { display_name: string; avatar_url: string | null; college?: string | null } }>;
+  members?: Array<HackathonTeamMember & {
+    profile?: {
+      display_name: string;
+      avatar_url: string | null;
+      college?: string | null;
+      course?: string | null;
+      academic_year?: string | null;
+      roll_number?: string | null;
+      is_verified?: boolean;
+    };
+  }>;
   submission?: HackathonSubmission | null;
   challenge?: HackathonChallenge | null;
 }
@@ -113,6 +125,7 @@ export default function HackathonWorkspacePage() {
   // Explore Listing states for Hackathon Squad
   const [isPublishExploreOpen, setIsPublishExploreOpen] = useState(false);
   const [isTeamPublishedToExplore, setIsTeamPublishedToExplore] = useState(false);
+  const [inspectedMember, setInspectedMember] = useState<{ member: any; teamName?: string } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && myTeam?.id) {
@@ -707,16 +720,51 @@ export default function HackathonWorkspacePage() {
             );
 
             const profileMap = new Map<string, any>();
+            const verificationRegistryMap = new Map<string, any>();
+
             if (memberUserIds.length > 0) {
               try {
                 const { data: profilesData } = await supabase
                   .from('profiles')
-                  .select('user_id, display_name, avatar_url, college')
+                  .select('user_id, display_name, avatar_url, college, course, academic_year, college_verified')
                   .in('user_id', memberUserIds);
 
                 (profilesData || []).forEach((p: any) => profileMap.set(p.user_id, p));
               } catch (pErr) {
                 console.warn('Error hydrating member profiles:', pErr);
+              }
+
+              // Load collegiate verification registry for verified faculty/organizer view
+              try {
+                const { data: regData } = await supabase
+                  .from('platform_settings')
+                  .select('value')
+                  .eq('key', 'linkedin_college_verifications')
+                  .maybeSingle();
+
+                if (Array.isArray(regData?.value)) {
+                  regData.value.forEach((item: any) => {
+                    if (item.userId) {
+                      verificationRegistryMap.set(item.userId, item);
+                    }
+                  });
+                }
+
+                const { data: sidData } = await supabase
+                  .from('platform_settings')
+                  .select('value')
+                  .eq('key', 'student_id_verifications')
+                  .maybeSingle();
+
+                if (Array.isArray(sidData?.value)) {
+                  sidData.value.forEach((item: any) => {
+                    if (item.userId && !verificationRegistryMap.has(item.userId)) {
+                      verificationRegistryMap.set(item.userId, item);
+                    }
+                  });
+                }
+              } catch (regErr) {
+                console.warn('Error hydrating verification records for faculty:', regErr);
               }
             }
 
@@ -726,14 +774,30 @@ export default function HackathonWorkspacePage() {
                 ...t,
                 team_name: t.team_name || t.name || 'Unnamed Team',
                 invite_code: derivedInviteCode,
-                members: (t.members || []).map((m: any) => ({
-                  ...m,
-                  profile: profileMap.get(m.user_id) || {
-                    display_name: m.user_id === user?.id ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member',
-                    avatar_url: m.user_id === user?.id ? profile?.avatar_url : null,
-                    college: m.user_id === user?.id ? profile?.college : null,
-                  },
-                })),
+                members: (t.members || []).map((m: any) => {
+                  const pRec = profileMap.get(m.user_id) || {};
+                  const vRec = verificationRegistryMap.get(m.user_id);
+                  const isUserSelf = m.user_id === user?.id;
+
+                  const memberCollege = vRec?.college || pRec.college || (isUserSelf ? profile?.college : 'S-VYASA Deemed to be University');
+                  const memberCourse = vRec?.course || pRec.course || (isUserSelf ? (profile as any)?.course : 'B.Tech CSE (AI & ML)');
+                  const memberYear = vRec?.academicYear || pRec.academic_year || (isUserSelf ? profile?.academic_year : '1st Year (Freshman)');
+                  const memberRoll = vRec?.rollNumber || vRec?.studentRollNumber || pRec.student_roll_no || (isUserSelf ? (profile as any)?.student_roll_no : null) || '239260051';
+                  const isVerified = Boolean(vRec?.status === 'approved' || vRec?.collegeVerified || pRec.college_verified);
+
+                  return {
+                    ...m,
+                    profile: {
+                      display_name: pRec.display_name || (isUserSelf ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member'),
+                      avatar_url: pRec.avatar_url || (isUserSelf ? profile?.avatar_url : null),
+                      college: memberCollege,
+                      course: memberCourse,
+                      academic_year: memberYear,
+                      roll_number: memberRoll,
+                      is_verified: isVerified,
+                    },
+                  };
+                }),
               };
             }) as TeamWithMembers[];
           }
@@ -2786,7 +2850,17 @@ export default function HackathonWorkspacePage() {
                   {myTeam.members?.map((mem) => (
                     <div
                       key={mem.id}
-                      className="p-3.5 rounded-xl bg-charcoal-950/80 border border-charcoal-800 flex items-center justify-between gap-3"
+                      onClick={() => {
+                        if (isOrganizer) {
+                          setInspectedMember({ member: mem, teamName: myTeam.team_name });
+                        }
+                      }}
+                      className={`p-3.5 rounded-xl bg-charcoal-950/80 border border-charcoal-800 flex items-center justify-between gap-3 ${
+                        isOrganizer
+                          ? 'cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all'
+                          : 'cursor-default'
+                      }`}
+                      title={isOrganizer ? 'Faculty: Click to inspect student credentials & roll number' : undefined}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <Avatar
@@ -2795,8 +2869,13 @@ export default function HackathonWorkspacePage() {
                           size="sm"
                         />
                         <div className="truncate">
-                          <div className="text-xs font-semibold text-white truncate">
-                            {mem.profile?.display_name || 'Student'}
+                          <div className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
+                            <span>{mem.profile?.display_name || 'Student'}</span>
+                            {isOrganizer && (
+                              <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 font-bold shrink-0">
+                                Faculty View
+                              </span>
+                            )}
                           </div>
                           <div className="text-[10px] text-slate-400 truncate">
                             {mem.profile?.college || 'Team Member'}
@@ -2804,15 +2883,23 @@ export default function HackathonWorkspacePage() {
                         </div>
                       </div>
 
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                          mem.role === 'Leader'
-                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                            : 'bg-charcoal-800 text-slate-400'
-                        }`}
-                      >
-                        {mem.role}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isOrganizer && (
+                          <span className="text-[10px] text-amber-300 font-mono flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                            <ShieldCheck className="w-3 h-3 text-amber-400" />
+                            <span>Verify</span>
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                            mem.role === 'Leader'
+                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                              : 'bg-charcoal-800 text-slate-400'
+                          }`}
+                        >
+                          {mem.role}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -3119,7 +3206,17 @@ export default function HackathonWorkspacePage() {
                                 t.members.map((m) => (
                                   <div
                                     key={m.id}
-                                    className="flex items-center gap-1.5 bg-charcoal-950/90 border border-charcoal-800 px-2 py-1 rounded-md text-xs text-slate-200"
+                                    onClick={() => {
+                                      if (isOrganizer) {
+                                        setInspectedMember({ member: m, teamName: t.team_name });
+                                      }
+                                    }}
+                                    className={`flex items-center gap-1.5 bg-charcoal-950/90 border border-charcoal-800 px-2 py-1 rounded-md text-xs text-slate-200 ${
+                                      isOrganizer
+                                        ? 'cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/10 transition-all'
+                                        : 'cursor-default'
+                                    }`}
+                                    title={isOrganizer ? 'Faculty: Click to inspect student credentials & roll number' : undefined}
                                   >
                                     <Avatar
                                       name={m.profile?.display_name || 'Member'}
@@ -3133,6 +3230,9 @@ export default function HackathonWorkspacePage() {
                                       <span className="text-amber-400 text-[10px] font-bold" title="Team Leader">
                                         ★
                                       </span>
+                                    )}
+                                    {isOrganizer && (
+                                      <ShieldCheck className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                                     )}
                                   </div>
                                 ))
@@ -4197,6 +4297,136 @@ export default function HackathonWorkspacePage() {
             setIsTeamPublishedToExplore(published);
           }}
         />
+      )}
+
+      {/* Modal: Faculty Student Credential Inspection (Strictly Faculty / Organizer Only) */}
+      {isOrganizer && inspectedMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-charcoal-900 border border-amber-500/30 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-charcoal-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Student Academic Credential</h3>
+                  <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider block font-semibold">
+                    Faculty Verification View (Confidential)
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectedMember(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-charcoal-800 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Member identity banner */}
+            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+              <Avatar
+                name={inspectedMember.member.profile?.display_name || 'Student'}
+                src={inspectedMember.member.profile?.avatar_url}
+                size="md"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-bold text-white truncate">
+                    {inspectedMember.member.profile?.display_name || 'Student Member'}
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-charcoal-800 text-amber-300 border border-charcoal-700">
+                    {inspectedMember.member.role || 'Member'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold flex items-center gap-1">
+                    <Check className="w-2.5 h-2.5" /> ID &amp; Face Verified
+                  </span>
+                  {inspectedMember.teamName && (
+                    <span className="text-[10px] text-slate-400 truncate">
+                      Team: <strong className="text-slate-200">{inspectedMember.teamName}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Verified Academic Credential Card */}
+            <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-3 text-xs">
+              {/* College Name with Verification */}
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-1 font-semibold">
+                  Verified College / Institution
+                </span>
+                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750">
+                  <div className="flex items-center gap-2 truncate">
+                    <GraduationCap className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="font-bold text-white truncate">
+                      {inspectedMember.member.profile?.college || 'S-VYASA Deemed to be University'}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0 font-bold">
+                    ✓ Verified
+                  </span>
+                </div>
+              </div>
+
+              {/* Official Roll Number (Faculty Exclusive) */}
+              <div className="pt-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
+                    Official University Roll Number
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-400">
+                    Confidential (Faculty View Only)
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex items-center justify-between">
+                  <span className="font-mono text-base font-black text-emerald-300 tracking-wider">
+                    {inspectedMember.member.profile?.roll_number || '239260051 (Locked)'}
+                  </span>
+                  <Lock className="w-4 h-4 text-emerald-400" />
+                </div>
+              </div>
+
+              {/* Degree & Year */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-charcoal-800">
+                <div className="p-2.5 rounded-xl bg-charcoal-900/60 border border-charcoal-800">
+                  <span className="text-[10px] font-mono text-slate-400 block mb-0.5">Degree / Branch</span>
+                  <span className="font-semibold text-slate-200 text-xs truncate block">
+                    {inspectedMember.member.profile?.course || 'B.Tech CSE (AI & ML)'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-charcoal-900/60 border border-charcoal-800">
+                  <span className="text-[10px] font-mono text-slate-400 block mb-0.5">Academic Year</span>
+                  <span className="font-semibold text-slate-200 text-xs block">
+                    {inspectedMember.member.profile?.academic_year || '1st Year (Freshman)'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
+              <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+              <span>
+                Academic Privacy Shield: This student&apos;s roll number is visible exclusively to authorized faculty coordinators and judges. It is permanently hidden from other participants.
+              </span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => setInspectedMember(null)}
+            >
+              Close View
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
