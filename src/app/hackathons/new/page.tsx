@@ -29,6 +29,8 @@ import {
   ArrowLeft,
   MapPin,
   GraduationCap,
+  Building2,
+  Headphones,
   KeyRound,
   FileText,
   Award,
@@ -251,6 +253,7 @@ export default function NewHackathonPage() {
     '1. All code and designs must be created during the official hackathon timeline.\n2. Projects must address one of the released problem statements.\n3. Public or student GitHub repository with full commit history is required.\n4. Teams must consist of 2 to 4 enrolled college students.\n5. Plagiarism will lead to immediate disqualification.'
   );
   const [contactInfo, setContactInfo] = useState('');
+  const [allowedCollege, setAllowedCollege] = useState('S-VYASA Deemed to be University');
   const [prizePool, setPrizePool] = useState('₹50,000 + Faculty Mentorship & Incubation Support');
   const [websiteUrl, setWebsiteUrl] = useState('');
 
@@ -342,6 +345,7 @@ export default function NewHackathonPage() {
           themes,
           rules: rules.trim(),
           contactInfo: contactInfo.trim() || null,
+          allowedCollege: allowedCollege.trim() || null,
           prizePool: prizePool.trim() || null,
           websiteUrl: websiteUrl.trim() || null,
           bannerUrl: bannerUrl.trim() || null,
@@ -371,6 +375,8 @@ export default function NewHackathonPage() {
             banner_url: bannerUrl.trim() || null,
             logo_url: logoUrl.trim() || null,
             eligibility: eligibility.trim(),
+            contact_info: contactInfo.trim() || null,
+            allowed_college: allowedCollege.trim() || null,
           })} -->`;
 
           const clientPayload = {
@@ -1005,6 +1011,44 @@ export default function NewHackathonPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Allowed College / University Restriction */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Allowed College / University Name (Institutional Restriction)</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {allowedCollege.trim() ? 'Restricted to Specific Campus' : 'Open to All Colleges'}
+                  </span>
+                </div>
+                <Input
+                  placeholder="e.g. S-VYASA Deemed to be University (Leave blank for Open to All Colleges)"
+                  value={allowedCollege}
+                  onChange={(e) => setAllowedCollege(e.target.value)}
+                />
+                <div className="flex items-center gap-1.5 flex-wrap pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAllowedCollege('S-VYASA Deemed to be University')}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <Building2 className="w-3 h-3" />
+                    + S-VYASA Deemed to be University
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAllowedCollege('')}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-charcoal-950 hover:bg-charcoal-800 text-slate-400 border border-charcoal-750 transition-all cursor-pointer"
+                  >
+                    Open to All Colleges
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Only students with verified collegiate credentials matching this exact institution will be permitted to register.
+                </p>
               </div>
 
               <div>

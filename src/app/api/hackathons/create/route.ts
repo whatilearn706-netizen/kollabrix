@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
       websiteUrl,
       rules,
       contactInfo,
+      contact_info,
+      allowedCollege,
+      allowed_college,
       accessType = 'private',
       password = '',
       minTeamSize = 1,
@@ -156,6 +159,9 @@ export async function POST(request: NextRequest) {
     // Align timeline conclusion: end_date reflects the true final milestone (results date or submission deadline)
     const parsedEndDate = resolvedResultsDate || parsedSubDeadline || rawParsedEndDate || parsedStartDate;
 
+    const resolvedContact = (contactInfo || contact_info || '').trim();
+    const resolvedAllowedCollege = (allowedCollege || allowed_college || '').trim();
+
     // Embed resilient metadata comment (safe fields only; passwords remain strictly in protected columns)
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
       access_type: accessType,
@@ -167,11 +173,13 @@ export async function POST(request: NextRequest) {
       banner_url: resolvedBannerUrl,
       logo_url: resolvedLogoUrl,
       eligibility: eligibility.trim(),
+      contact_info: resolvedContact || null,
+      allowed_college: resolvedAllowedCollege || null,
     })} -->`;
 
     const generatedHackathonId = crypto.randomUUID();
 
-    const validDbPayload = {
+    const validDbPayload: Record<string, any> = {
       id: generatedHackathonId,
       creator_id: creatorId,
       title: title.trim(),
@@ -190,7 +198,8 @@ export async function POST(request: NextRequest) {
       website_url: `https://kollabrix.in/h/${joinCode}`,
       banner_url: resolvedBannerUrl,
       rules: rules?.trim() || null,
-      contact_info: contactInfo?.trim() || null,
+      contact_info: resolvedContact || null,
+      allowed_college: resolvedAllowedCollege || null,
       access_type: accessType,
       join_code: joinCode,
       password_hash: passwordHash,
