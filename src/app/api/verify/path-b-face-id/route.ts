@@ -95,6 +95,30 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       const existingRegistry: any[] = Array.isArray(pData?.value) ? pData.value : [];
+
+      // ── STRICT FRAUD PREVENTION: ONE CARD, ONE USER ──
+      if (cleanRollNo && cleanRollNo.length >= 4) {
+        const duplicateEntry = existingRegistry.find(
+          (item: any) =>
+            item.status === 'approved' &&
+            (item.rollNumber || item.studentRollNumber) &&
+            (item.rollNumber || item.studentRollNumber).toString().trim().toLowerCase() === cleanRollNo.toLowerCase() &&
+            item.userId &&
+            item.userId !== userId
+        );
+
+        if (duplicateEntry) {
+          return NextResponse.json(
+            {
+              success: false,
+              isDuplicateCard: true,
+              error: `Fraud Prevention: Student ID Card (Roll No: ${cleanRollNo}) is already verified and locked to another Kollabrix account (${duplicateEntry.displayName || duplicateEntry.username || 'another user'}). Each physical student ID card can only be used by one account.`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+
       const cleanRegistry = existingRegistry.filter(
         (item: any) =>
           (userId ? item.userId !== userId : true) &&

@@ -23,7 +23,7 @@ export function useVerificationGate() {
     profile?.college_verified ||
     (profile as any)?.student_verified ||
     user?.user_metadata?.college_verified === true ||
-    (typeof window !== 'undefined' && localStorage.getItem('linkora_college_verified') === 'true')
+    (typeof window !== 'undefined' && user?.id && localStorage.getItem(`linkora_college_verified_${user.id}`) === 'true')
   );
 
   const canParticipate = isFaculty || isVerifiedStudent;

@@ -78,9 +78,11 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [college, setCollege] = useState('');
   const [studentIdUrl, setStudentIdUrl] = useState<string | null>(null);
   const [studentRollNo, setStudentRollNo] = useState('');
-  const [isCollegeVerified, setIsCollegeVerified] = useState<boolean>(
-    Boolean(profile?.college_verified)
-  );
+  const [isCollegeVerified, setIsCollegeVerified] = useState<boolean>(() => {
+    if (!profile) return false;
+    if (user?.id && profile?.user_id && user.id !== profile.user_id) return false;
+    return Boolean(profile.college_verified);
+  });
 
   const [academicYear, setAcademicYear] = useState('');
   const [course, setCourse] = useState(profile?.course || '');
@@ -209,8 +211,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
     if (profile?.college) setCollege(profile.college);
     if (profile?.academic_year) setAcademicYear(profile.academic_year);
     if (profile?.course) setCourse(profile.course);
-    if (typeof profile?.college_verified === 'boolean') {
+    if (profile?.user_id && user?.id && profile.user_id === user.id && typeof profile?.college_verified === 'boolean') {
       setIsCollegeVerified(profile.college_verified);
+    } else {
+      setIsCollegeVerified(false);
     }
     if (profile?.skills && profile.skills.length > 0) setSkills(profile.skills);
     if (profile?.interests && profile.interests.length > 0) setInterests(profile.interests);
@@ -593,13 +597,17 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       }
 
       // Persist verified student status to local storage immediately
-      if (isCollegeVerified) {
+      if (isCollegeVerified && user?.id) {
         try {
           if (typeof window !== 'undefined') {
-            localStorage.setItem('linkora_college_verified', 'true');
-            if (user?.id) {
-              localStorage.setItem(`linkora_college_verified_${user.id}`, 'true');
-            }
+            localStorage.setItem(`linkora_college_verified_${user.id}`, 'true');
+          }
+        } catch (e) {}
+      } else if (!isCollegeVerified && user?.id) {
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(`linkora_college_verified_${user.id}`);
+            localStorage.removeItem('linkora_college_verified');
           }
         } catch (e) {}
       } else if (studentIdUrl) {

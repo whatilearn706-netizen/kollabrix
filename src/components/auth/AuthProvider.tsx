@@ -184,8 +184,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (p) {
         localStorage.setItem('linkora_auth_profile', JSON.stringify(p));
+        if (p.college_verified) {
+          localStorage.setItem('linkora_college_verified', 'true');
+          if (u?.id) {
+            localStorage.setItem(`linkora_college_verified_${u.id}`, 'true');
+          }
+        } else if (u?.id) {
+          localStorage.removeItem('linkora_college_verified');
+          localStorage.removeItem(`linkora_college_verified_${u.id}`);
+        }
       } else if (!u) {
         localStorage.removeItem('linkora_auth_profile');
+        localStorage.removeItem('linkora_college_verified');
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach((k) => {
+          if (k.startsWith('linkora_college_verified_') || k.startsWith('kollabrix_onboarding_') || k.startsWith('kollabrix_profile_')) {
+            localStorage.removeItem(k);
+          }
+        });
       }
     } catch (e) {}
   };
@@ -200,6 +216,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('linkora_auth_user_email');
         localStorage.removeItem('linkora_auth_session');
         localStorage.removeItem('linkora_auth_profile');
+        localStorage.removeItem('linkora_college_verified');
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach((k) => {
+          if (k.startsWith('linkora_college_verified_') || k.startsWith('kollabrix_onboarding_') || k.startsWith('kollabrix_profile_')) {
+            localStorage.removeItem(k);
+          }
+        });
         const expCookie = '; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         document.cookie = 'linkora_user_session=' + expCookie;
         document.cookie = 'linkora_user_email=' + expCookie;
@@ -234,11 +257,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('linkora_auth_user_email');
         localStorage.removeItem('linkora_auth_session');
         localStorage.removeItem('linkora_auth_profile');
-
-        // Clear all user onboarding & profile completion flags so everything resets completely
+        localStorage.removeItem('linkora_college_verified');
         const allKeys = Object.keys(localStorage);
         allKeys.forEach((k) => {
-          if (k.startsWith('kollabrix_onboarding_') || k.startsWith('kollabrix_profile_')) {
+          if (k.startsWith('linkora_college_verified_') || k.startsWith('kollabrix_onboarding_') || k.startsWith('kollabrix_profile_')) {
             localStorage.removeItem(k);
           }
         });
@@ -288,10 +310,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const isVerifiedInStorage =
           typeof window !== 'undefined' &&
-          (localStorage.getItem('linkora_college_verified') === 'true' ||
-           localStorage.getItem(`linkora_college_verified_${userId}`) === 'true');
+          localStorage.getItem(`linkora_college_verified_${userId}`) === 'true';
 
-        // Check platform_settings for universal collegiate verification approval
+        // Check platform_settings for universal collegiate verification approval specifically for this user
         let isRegistryVerified = false;
         try {
           const { data: regData } = await supabase
@@ -303,9 +324,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (Array.isArray(regData?.value)) {
             isRegistryVerified = regData.value.some(
               (item: any) =>
-                item.userId === userId ||
-                (data.username && item.username?.toLowerCase() === data.username.toLowerCase()) ||
-                (currentUser?.email && item.email?.toLowerCase() === currentUser.email.toLowerCase())
+                item.status === 'approved' &&
+                (item.userId === userId ||
+                  (currentUser?.email && item.email && item.email.toLowerCase() === currentUser.email.toLowerCase()))
             );
           }
 
@@ -319,8 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (Array.isArray(sidData?.value)) {
               isRegistryVerified = sidData.value.some(
                 (item: any) =>
-                  (item.userId === userId ||
-                   (data.username && item.username?.toLowerCase() === data.username.toLowerCase())) &&
+                  item.userId === userId &&
                   (item.status === 'approved' || String(item.id || '').includes('faceid'))
               );
             }
@@ -334,10 +354,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isRegistryVerified
         );
 
-        if (finalIsVerified && typeof window !== 'undefined') {
+        if (typeof window !== 'undefined') {
           try {
-            localStorage.setItem('linkora_college_verified', 'true');
-            localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+            if (finalIsVerified) {
+              localStorage.setItem('linkora_college_verified', 'true');
+              localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+            } else {
+              localStorage.removeItem('linkora_college_verified');
+              localStorage.removeItem(`linkora_college_verified_${userId}`);
+            }
           } catch (e) {}
         }
 
@@ -799,6 +824,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('linkora_auth_user_email');
           localStorage.removeItem('linkora_auth_session');
           localStorage.removeItem('linkora_auth_profile');
+        localStorage.removeItem('linkora_college_verified');
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach((k) => {
+          if (k.startsWith('linkora_college_verified_') || k.startsWith('kollabrix_onboarding_') || k.startsWith('kollabrix_profile_')) {
+            localStorage.removeItem(k);
+          }
+        });
           sessionStorage.removeItem('linkora_maintenance_unlocked');
 
           // Purge all Supabase and Linkora keys in localStorage
