@@ -11,6 +11,7 @@ function ArenaPageContent() {
   const searchParams = useSearchParams();
   const roomParam = searchParams.get('room') || undefined;
   const { user, profile } = useAuth();
+  const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [isLive, setIsLive] = useState(true);
@@ -56,8 +57,8 @@ function ArenaPageContent() {
     );
   }
 
-  // If Arena is OFFLINE / UNDER MAINTENANCE:
-  if (!isLive) {
+  // If Arena is OFFLINE / UNDER MAINTENANCE (Admins bypass so they can build & test live):
+  if (!isLive && !isAdmin) {
     return (
       <div className="fixed inset-0 bg-[#04060d] text-slate-100 flex items-center justify-center p-4 z-50 overflow-hidden select-none">
         {/* Subtle grid background */}

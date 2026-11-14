@@ -2648,6 +2648,58 @@ export function FullArenaExperience({
     );
   }
 
+  // ================= STEP 0: FREE FIRE / BGMI INSPIRED FULLSCREEN BATTLE ARENA LOBBY =================
+  if (step === 0) {
+    return (
+      <BattleArenaLobby
+        currentUser={currentUser}
+        initialRoomCode={initialRoomCode}
+        onClose={onClose}
+        onCreateRoom={(topic) => {
+          if (!user) {
+            openAuthModal('login');
+            return;
+          }
+          setArena(topic);
+          setIsHost(true);
+          setStep(1);
+        }}
+        onJoinRoom={(code) => {
+          if (!user) {
+            openAuthModal('login');
+            return;
+          }
+          handleJoinWithCodeOrLink(code);
+        }}
+        onStartMatch={(mode, topic) => {
+          setArena(topic);
+          if (mode === 'bot') {
+            // Instant single-player match against AI practice bot
+            const q = selectBestQuestion(availableQuestions, {
+              arena: topic,
+              difficulty: 'medium',
+              selectedTags: topic === 'web_dev' ? ['html', 'css'] : ['python'],
+              seenQuestionIds: [],
+            });
+            setActiveQuestion(q);
+            activeQuestionRef.current = q;
+            setIsBotOpponentAdded(true);
+            setCountdownNum(3);
+            setStep(4);
+            return;
+          }
+          // For ranked or casual multiplayer match
+          if (!user) {
+            openAuthModal('login');
+            return;
+          }
+          setIsHost(true);
+          setStep(1);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[9990] bg-[#05070e] text-slate-100 flex flex-col overflow-hidden select-none">
       {/* Real-time Animated Cyber Arena Background Canvas */}
@@ -2748,56 +2800,6 @@ export function FullArenaExperience({
       {/* Main Arena Viewport */}
       <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-center items-center p-4 sm:p-6">
         
-        {/* ================= STEP 0: FREE FIRE / BGMI INSPIRED BATTLE ARENA LOBBY ================= */}
-        {step === 0 && (
-          <BattleArenaLobby
-            currentUser={currentUser}
-            initialRoomCode={initialRoomCode}
-            onClose={onClose}
-            onCreateRoom={(topic) => {
-              if (!user) {
-                openAuthModal('login');
-                return;
-              }
-              setArena(topic);
-              setIsHost(true);
-              setStep(1);
-            }}
-            onJoinRoom={(code) => {
-              if (!user) {
-                openAuthModal('login');
-                return;
-              }
-              handleJoinWithCodeOrLink(code);
-            }}
-            onStartMatch={(mode, topic) => {
-              setArena(topic);
-              if (mode === 'bot') {
-                // Instant single-player match against AI practice bot
-                const q = selectBestQuestion(availableQuestions, {
-                  arena: topic,
-                  difficulty: 'medium',
-                  selectedTags: topic === 'web_dev' ? ['html', 'css'] : ['python'],
-                  seenQuestionIds: [],
-                });
-                setActiveQuestion(q);
-                activeQuestionRef.current = q;
-                setIsBotOpponentAdded(true);
-                setCountdownNum(3);
-                setStep(4);
-                return;
-              }
-              // For ranked or casual multiplayer match
-              if (!user) {
-                openAuthModal('login');
-                return;
-              }
-              setIsHost(true);
-              setStep(1);
-            }}
-          />
-        )}
-
         {/* ================= STEP 1: AAA ESPORTS TOURNAMENT COMMAND CONSOLE ================= */}
         {step === 1 && (
           <div className="w-full max-w-6xl p-4 sm:p-6 md:p-8 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-fadeIn space-y-6">
