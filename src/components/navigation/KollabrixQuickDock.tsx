@@ -329,6 +329,13 @@ export function KollabrixQuickDock() {
     updateScrollState();
   }, []);
 
+  // Clear hover tooltip on window scroll so it doesn't linger
+  useEffect(() => {
+    const handleWindowScroll = () => setHoveredTooltip(null);
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleWindowScroll);
+  }, []);
+
   const handleScrollNudge = (direction: 'up' | 'down') => {
     if (!scrollContainerRef.current) return;
     const delta = direction === 'up' ? -52 : 52;
@@ -520,31 +527,32 @@ export function KollabrixQuickDock() {
             </button>
           </div>
         </div>
-
-        {/* Floating Tooltip to the LEFT of the hovered logo (Unclipped, crystal clear) */}
-        {hoveredTooltip && (
-          <div
-            style={{ top: hoveredTooltip.y }}
-            className="fixed right-[68px] -translate-y-1/2 pointer-events-none z-[100] animate-in fade-in slide-in-from-right-2 duration-150"
-          >
-            <div className="relative flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-stone-900/95 dark:bg-[#0B0D14]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-white backdrop-blur-2xl whitespace-nowrap">
-              <span className={`w-2 h-2 rounded-full ${TONE_DOTS[hoveredTooltip.tone] || 'bg-amber-400'} shadow-[0_0_8px_currentColor] shrink-0`} />
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-bold text-white tracking-wide">
-                  {hoveredTooltip.label}
-                </span>
-                {hoveredTooltip.sub && (
-                  <span className="text-[10px] text-stone-300 font-medium">
-                    {hoveredTooltip.sub}
-                  </span>
-                )}
-              </div>
-              {/* Caret pointing right at the hovered logo button */}
-              <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-stone-900 dark:bg-[#0B0D14] border-r border-t border-white/20" />
-            </div>
-          </div>
-        )}
       </aside>
+
+      {/* Floating Tooltip to the LEFT of the hovered logo
+          Positioned outside <aside> so CSS transform does NOT offset its viewport Y coordinates! */}
+      {hoveredTooltip && (
+        <div
+          style={{ top: `${hoveredTooltip.y}px` }}
+          className="fixed right-[72px] -translate-y-1/2 pointer-events-none z-[9999] animate-in fade-in slide-in-from-right-2 duration-150"
+        >
+          <div className="relative flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-stone-900/95 dark:bg-[#0B0D14]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-white backdrop-blur-2xl whitespace-nowrap">
+            <span className={`w-2 h-2 rounded-full ${TONE_DOTS[hoveredTooltip.tone] || 'bg-amber-400'} shadow-[0_0_8px_currentColor] shrink-0`} />
+            <div className="flex flex-col text-left">
+              <span className="text-xs font-bold text-white tracking-wide leading-tight">
+                {hoveredTooltip.label}
+              </span>
+              {hoveredTooltip.sub && (
+                <span className="text-[10px] text-stone-300 font-medium leading-tight">
+                  {hoveredTooltip.sub}
+                </span>
+              )}
+            </div>
+            {/* Caret pointing right directly into the hovered logo button */}
+            <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-stone-900 dark:bg-[#0B0D14] border-r border-t border-white/20" />
+          </div>
+        </div>
+      )}
 
       {/* =========================================================================
           macOS APPLICATIONS LAUNCHPAD MODAL (Exact match to user's Image 4)
