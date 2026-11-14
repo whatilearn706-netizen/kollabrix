@@ -157,6 +157,15 @@ const TONE_STYLES = {
   },
 };
 
+const TONE_DOTS: Record<string, string> = {
+  amber: 'bg-amber-400 text-amber-400',
+  violet: 'bg-purple-400 text-purple-400',
+  emerald: 'bg-emerald-400 text-emerald-400',
+  cyan: 'bg-cyan-400 text-cyan-400',
+  brand: 'bg-orange-500 text-orange-500',
+  rose: 'bg-rose-400 text-rose-400',
+};
+
 // macOS Launchpad Applications List
 interface AppItem {
   id: string;
@@ -275,6 +284,12 @@ export function KollabrixQuickDock() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [hoveredItem, setHoveredItem] = useState<DockItem | null>(null);
+  const [hoveredTooltip, setHoveredTooltip] = useState<{
+    label: string;
+    sub: string;
+    tone: string;
+    y: number;
+  } | null>(null);
   const [canScrollUp, setCanScrollUp] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(true);
 
@@ -393,7 +408,10 @@ export function KollabrixQuickDock() {
             {/* Scrollable Container */}
             <div
               ref={scrollContainerRef}
-              onScroll={updateScrollState}
+              onScroll={() => {
+                updateScrollState();
+                setHoveredTooltip(null);
+              }}
               className="h-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-2.5 py-1 px-1 scroll-smooth"
               style={{
                 scrollbarWidth: 'none',
@@ -409,8 +427,20 @@ export function KollabrixQuickDock() {
                   <div
                     key={item.id}
                     className="relative shrink-0"
-                    onMouseEnter={() => setHoveredItem(item)}
-                    onMouseLeave={() => setHoveredItem(null)}
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setHoveredItem(item);
+                      setHoveredTooltip({
+                        label: item.label,
+                        sub: item.sub,
+                        tone: item.tone,
+                        y: rect.top + rect.height / 2,
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredItem(null);
+                      setHoveredTooltip(null);
+                    }}
                   >
                     <Link
                       href={item.href}
@@ -427,19 +457,6 @@ export function KollabrixQuickDock() {
                         <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" />
                       )}
                     </Link>
-
-                    {/* Left-Popping Tooltip Bubble */}
-                    {hoveredItem?.id === item.id && (
-                      <div className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2 pointer-events-none z-50 animate-in fade-in slide-in-from-right-2 duration-150">
-                        <div className="flex flex-col px-3 py-1.5 rounded-xl bg-stone-900/95 dark:bg-black/95 border border-stone-700/80 shadow-2xl text-white backdrop-blur-xl whitespace-nowrap min-w-[130px]">
-                          <span className="text-[11px] font-bold tracking-tight text-white flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                            {item.label}
-                          </span>
-                          <span className="text-[9px] font-medium text-stone-400">{item.sub}</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -471,7 +488,8 @@ export function KollabrixQuickDock() {
           {/* Bottom ⌘ (Command) Applications Trigger Button */}
           <div
             className="relative"
-            onMouseEnter={() =>
+            onMouseEnter={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
               setHoveredItem({
                 id: 'cmd',
                 label: 'Applications (⌘K)',
@@ -479,9 +497,18 @@ export function KollabrixQuickDock() {
                 href: '#',
                 icon: Command,
                 tone: 'violet',
-              })
-            }
-            onMouseLeave={() => setHoveredItem(null)}
+              });
+              setHoveredTooltip({
+                label: 'Applications (⌘K)',
+                sub: 'macOS Launchpad Grid',
+                tone: 'violet',
+                y: rect.top + rect.height / 2,
+              });
+            }}
+            onMouseLeave={() => {
+              setHoveredItem(null);
+              setHoveredTooltip(null);
+            }}
           >
             <button
               type="button"
@@ -491,20 +518,32 @@ export function KollabrixQuickDock() {
             >
               <Command className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
             </button>
-
-            {hoveredItem?.id === 'cmd' && (
-              <div className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2 pointer-events-none z-50 animate-in fade-in slide-in-from-right-2 duration-150">
-                <div className="flex flex-col px-3 py-1.5 rounded-xl bg-stone-900/95 dark:bg-black/95 border border-stone-700/80 shadow-2xl text-white backdrop-blur-xl whitespace-nowrap">
-                  <span className="text-[11px] font-bold tracking-tight text-white flex items-center gap-1.5">
-                    <Command className="w-3 h-3 text-violet-400" />
-                    Applications (⌘K)
-                  </span>
-                  <span className="text-[9px] font-medium text-stone-400">macOS Launchpad Grid</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Floating Tooltip to the LEFT of the hovered logo (Unclipped, crystal clear) */}
+        {hoveredTooltip && (
+          <div
+            style={{ top: hoveredTooltip.y }}
+            className="fixed right-[68px] -translate-y-1/2 pointer-events-none z-[100] animate-in fade-in slide-in-from-right-2 duration-150"
+          >
+            <div className="relative flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-stone-900/95 dark:bg-[#0B0D14]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-white backdrop-blur-2xl whitespace-nowrap">
+              <span className={`w-2 h-2 rounded-full ${TONE_DOTS[hoveredTooltip.tone] || 'bg-amber-400'} shadow-[0_0_8px_currentColor] shrink-0`} />
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold text-white tracking-wide">
+                  {hoveredTooltip.label}
+                </span>
+                {hoveredTooltip.sub && (
+                  <span className="text-[10px] text-stone-300 font-medium">
+                    {hoveredTooltip.sub}
+                  </span>
+                )}
+              </div>
+              {/* Caret pointing right at the hovered logo button */}
+              <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-stone-900 dark:bg-[#0B0D14] border-r border-t border-white/20" />
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* =========================================================================

@@ -579,7 +579,7 @@ function TeacherDashboardContent() {
       code.includes('FACULTY 2026') ||
       code.includes('FACULTY-2026')
     ) {
-      setVerifyError('⛔ Access Denied: "FACULTY2026" has been permanently blocked and revoked. It was only an example format. Please enter an active campus passcode (e.g. FAC-849201) or authenticate via DigiLocker.');
+      setVerifyError('⛔ Access Denied: "FACULTY2026" has been permanently blocked and revoked. It was only an example format. Please enter an active campus passcode (e.g. FAC-849201).');
       return;
     }
 
@@ -883,29 +883,6 @@ function TeacherDashboardContent() {
               </p>
             )}
           </form>
-
-          {/* Alternative: DigiLocker Verification */}
-          <div className="pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="md"
-              className="w-full text-xs font-bold border-brand-500/30 text-brand-300 hover:bg-brand-500/10"
-              onClick={() => setIsDocVerifyOpen(true)}
-              leftIcon={<ShieldCheck className="w-4 h-4" />}
-            >
-              Verify via DigiLocker / Institutional Document
-            </Button>
-          </div>
-
-          <FacultyVerificationModal
-            isOpen={isDocVerifyOpen}
-            onClose={() => setIsDocVerifyOpen(false)}
-            onSuccess={async () => {
-              await refreshProfile();
-              await loadDashboardData();
-            }}
-          />
 
           <div className="text-center pt-2">
             <Link href="/" className="text-xs text-slate-400 hover:text-white transition-colors">
