@@ -47,6 +47,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
+import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModal';
 
 /**
  * Formats date and time in a crisp, localized, 12-hour format with AM/PM
@@ -1446,6 +1447,18 @@ export default function HackathonDetailPage() {
                     <p className="text-[11px] text-rose-200/80 leading-relaxed pl-5">
                       {eligibilityEvaluation.reason}
                     </p>
+                    {eligibilityEvaluation.reason?.includes('verified') && (
+                      <div className="pt-2 pl-5">
+                        <button
+                          type="button"
+                          onClick={() => openProfileEditModal(4)}
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-105 transition-all cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Verify with Apple Face ID (30s)</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 

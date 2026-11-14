@@ -30,12 +30,14 @@ import {
   Trophy,
   Users2,
   ShieldCheck,
+  ShieldAlert,
   ArrowRight,
   CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getPageCache, setPageCache } from '@/lib/cache/pageDataCache';
 import { isFacultyUser } from '@/lib/auth/faculty';
+import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModal';
 
 // Helper: Checks if a profile is genuine and active (not suspended)
 function isCompleteProfile(p: Profile | null | undefined): boolean {
@@ -189,9 +191,14 @@ export default function TeammatesPage() {
             })
             .map((p) => {
               const isVerified =
+                Boolean(p.college_verified) ||
                 verifiedUserIds.has(p.user_id) ||
                 Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
               return { ...p, college_verified: isVerified };
+            })
+            .filter((p) => {
+              // Strictly display only verified collegiate students in Teammates directory
+              return p.college_verified === true;
             });
 
           // Genuine registered student users from the database are displayed
@@ -510,6 +517,29 @@ export default function TeammatesPage() {
           )}
         </div>
       </div>
+
+      {/* Unverified Student Alert Banner */}
+      {user && profile && !profile.college_verified && profile.role !== 'teacher' && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold text-amber-300 block">Your Profile is Unverified in Teammates</span>
+              <span className="text-slate-300 text-[11px]">
+                Unverified student profiles are hidden from collegiate teammate search. Verify your physical college ID card &amp; Face ID to appear in search and receive hackathon invitations.
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => openProfileEditModal(4)}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shrink-0 cursor-pointer shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5"
+          >
+            <span>Verify Student ID (30s)</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Target Matching Context Selector */}
       <div

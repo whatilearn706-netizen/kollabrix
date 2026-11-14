@@ -21,10 +21,10 @@ import {
 } from 'lucide-react';
 
 import { Step1Identity } from './Step1Identity';
-import { Step2College } from './Step2College';
-import { Step3Academics } from './Step3Academics';
 import { Step4Skills } from './Step4Skills';
 import { Step5Links } from './Step5Links';
+import { StepPathBBiometricScan } from './StepPathBBiometricScan';
+import { StepReviewLockedProfile } from './StepReviewLockedProfile';
 import { FacultyStep2Type } from './FacultyStep2Type';
 import { FacultyStep3Expertise } from './FacultyStep3Expertise';
 import { FacultyStep4Verification } from './FacultyStep4Verification';
@@ -44,10 +44,10 @@ interface ProfileEditModalProps {
 
 const STUDENT_STEP_TITLES = [
   { id: 1, tag: 'Identity', title: 'Profile Photo & Identity', subtitle: 'Choose how other collegiate builders will identify you' },
-  { id: 2, tag: 'Campus', title: 'College Affiliation & Student ID', subtitle: 'Specify your campus and attach your student verification badge' },
-  { id: 3, tag: 'Academics', title: 'Academic Year & Degree', subtitle: 'Select your study year and enter your degree or field of study' },
-  { id: 4, tag: 'Skills', title: 'Technical Stack & Interests', subtitle: 'Select or write your primary skills and preferred project roles' },
-  { id: 5, tag: 'Online', title: 'Developer Links & Presence', subtitle: 'Connect GitHub, LinkedIn, and personal portfolio showcases' },
+  { id: 2, tag: 'Skills', title: 'Technical Stack & Interests', subtitle: 'Select or write your primary skills and preferred project roles' },
+  { id: 3, tag: 'Online', title: 'Developer Links & Presence', subtitle: 'Connect GitHub, LinkedIn, and personal portfolio showcases' },
+  { id: 4, tag: 'Verification', title: 'Apple Face ID & Student Card Scan', subtitle: 'Biometric verification matching your live face with your physical college ID card' },
+  { id: 5, tag: 'Review & Lock', title: 'Profile Summary & Verified Lock', subtitle: 'Review your locked collegiate credentials and launch your profile' },
 ];
 
 const FACULTY_STEP_TITLES = [
@@ -78,6 +78,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   const [college, setCollege] = useState('');
   const [studentIdUrl, setStudentIdUrl] = useState<string | null>(null);
   const [studentRollNo, setStudentRollNo] = useState('');
+  const [isCollegeVerified, setIsCollegeVerified] = useState<boolean>(
+    Boolean(profile?.college_verified)
+  );
 
   const [academicYear, setAcademicYear] = useState('');
   const [course, setCourse] = useState(profile?.course || '');
@@ -206,6 +209,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
     if (profile?.college) setCollege(profile.college);
     if (profile?.academic_year) setAcademicYear(profile.academic_year);
     if (profile?.course) setCourse(profile.course);
+    if (typeof profile?.college_verified === 'boolean') {
+      setIsCollegeVerified(profile.college_verified);
+    }
     if (profile?.skills && profile.skills.length > 0) setSkills(profile.skills);
     if (profile?.interests && profile.interests.length > 0) setInterests(profile.interests);
     if (profile?.preferred_roles && profile.preferred_roles.length > 0) setPreferredRoles(profile.preferred_roles);
@@ -418,6 +424,8 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             college: college.trim() || profile?.college || 'Collegiate Institution',
             academic_year: academicYear || profile?.academic_year || '1st Year (Freshman)',
             course: course.trim() || profile?.course || 'Engineering / Technology',
+            college_verified: isCollegeVerified,
+            college_verified_at: isCollegeVerified ? (profile?.college_verified_at || new Date().toISOString()) : null,
             skills:
               skills.length > 0
                 ? skills
@@ -825,32 +833,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 />
               )}
 
-              {/* Student Flow (Steps 2..5) */}
+              {/* Student Flow (New 5 Steps: Identity -> Skills -> Links -> Path B -> Review & Lock) */}
               {userRoleType === 'student' && (
                 <>
                   {currentStep === 2 && (
-                    <Step2College
-                      college={college}
-                      setCollege={setCollege}
-                      studentIdUrl={studentIdUrl}
-                      setStudentIdUrl={setStudentIdUrl}
-                      studentRollNo={studentRollNo}
-                      setStudentRollNo={setStudentRollNo}
-                      displayName={displayName}
-                      username={username}
-                    />
-                  )}
-
-                  {currentStep === 3 && (
-                    <Step3Academics
-                      academicYear={academicYear}
-                      setAcademicYear={setAcademicYear}
-                      course={course}
-                      setCourse={setCourse}
-                    />
-                  )}
-
-                  {currentStep === 4 && (
                     <Step4Skills
                       skills={skills}
                       setSkills={setSkills}
@@ -861,7 +847,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     />
                   )}
 
-                  {currentStep === 5 && (
+                  {currentStep === 3 && (
                     <Step5Links
                       githubUrl={githubUrl}
                       setGithubUrl={setGithubUrl}
@@ -871,6 +857,56 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                       setPortfolioUrl={setPortfolioUrl}
                       isPortfolioPublic={isPortfolioPublic}
                       setIsPortfolioPublic={setIsPortfolioPublic}
+                    />
+                  )}
+
+                  {currentStep === 4 && (
+                    <StepPathBBiometricScan
+                      userId={user?.id}
+                      username={username}
+                      displayName={displayName}
+                      currentCollege={college}
+                      currentRollNo={studentRollNo}
+                      currentCourse={course}
+                      currentAcademicYear={academicYear}
+                      isVerified={isCollegeVerified}
+                      onVerificationComplete={(data) => {
+                        setCollege(data.college);
+                        setStudentRollNo(data.studentRollNo);
+                        setCourse(data.course);
+                        setAcademicYear(data.academicYear);
+                        setStudentIdUrl(data.idCardImage);
+                        if (data.faceImage && !avatarUrl) {
+                          setAvatarUrl(data.faceImage);
+                        }
+                        setIsCollegeVerified(true);
+                        setCurrentStep(5);
+                      }}
+                      onSkip={() => {
+                        setCurrentStep(5);
+                      }}
+                    />
+                  )}
+
+                  {currentStep === 5 && (
+                    <StepReviewLockedProfile
+                      displayName={displayName}
+                      username={username}
+                      avatarUrl={avatarUrl}
+                      bio={bio}
+                      skills={skills}
+                      interests={interests}
+                      preferredRoles={preferredRoles}
+                      githubUrl={githubUrl}
+                      linkedinUrl={linkedinUrl}
+                      portfolioUrl={portfolioUrl}
+                      isPortfolioPublic={isPortfolioPublic}
+                      isVerified={isCollegeVerified}
+                      college={college}
+                      studentRollNo={studentRollNo}
+                      course={course}
+                      academicYear={academicYear}
+                      onGoToVerification={() => setCurrentStep(4)}
                     />
                   )}
                 </>

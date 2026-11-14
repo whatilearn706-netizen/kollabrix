@@ -243,6 +243,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Safely sync verified student status to platform_settings registry so all pages recognize it immediately
+    if (sanitizedPayload.user_id && sanitizedPayload.college_verified === true) {
+      try {
+        const { data: pData } = await supabaseAdmin
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'linkedin_college_verifications')
+          .maybeSingle();
+
+        const currentList: any[] = Array.isArray(pData?.value) ? pData.value : [];
+        const cleanList = currentList.filter((item: any) => item.userId !== sanitizedPayload.user_id);
+        cleanList.unshift({
+          userId: sanitizedPayload.user_id,
+          username: sanitizedPayload.username || '',
+          displayName: sanitizedPayload.display_name || '',
+          college: sanitizedPayload.college || 'Collegiate Institution',
+          course: sanitizedPayload.course || '',
+          academicYear: sanitizedPayload.academic_year || '',
+          verifiedAt: sanitizedPayload.college_verified_at || new Date().toISOString(),
+          status: 'approved',
+          collegeVerified: true,
+        });
+
+        await supabaseAdmin
+          .from('platform_settings')
+          .upsert(
+            { key: 'linkedin_college_verifications', value: cleanList, updated_at: new Date().toISOString() },
+            { onConflict: 'key' }
+          );
+      } catch (regErr) {
+        console.warn('Student verification registry sync note:', regErr);
+      }
+    }
+
     if (error) {
       console.error('Server profile save error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });

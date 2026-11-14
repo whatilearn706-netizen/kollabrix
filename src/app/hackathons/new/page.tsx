@@ -223,7 +223,7 @@ export default function NewHackathonPage() {
   const [bannerUrl, setBannerUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [eligibility, setEligibility] = useState(
-    'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'
+    'Verified College Students Only • Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'
   );
   const [mode, setMode] = useState<HackathonMode>('In-Person');
   const [location, setLocation] = useState('Campus Turing Computer Lab, Tech Block');
@@ -985,6 +985,7 @@ export default function NewHackathonPage() {
                 <div className="flex items-center gap-1.5 flex-wrap pt-2">
                   <span className="text-[10px] text-slate-400 font-mono">Quick Presets:</span>
                   {[
+                    'Verified College Students Only',
                     'All College Students',
                     'Engineering & CS Students Only',
                     'Undergrad & Postgrad',
