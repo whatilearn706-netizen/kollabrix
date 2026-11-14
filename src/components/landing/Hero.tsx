@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { WarpSpeedCanvas } from './WarpSpeedCanvas';
+import { CyberGridCanvas } from './CyberGridCanvas';
 
 export function LandingHero() {
   const { user } = useAuth();
@@ -23,8 +23,8 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#090B10]"
     >
-      {/* Continuous 60fps Light-Speed Hyperspace Starfield (Derived from reference Image 3 with spaceship removed) */}
-      <WarpSpeedCanvas />
+      {/* Concept 2 Midnight Cyber-Grid with Procedural Fire Embers & Twinkling Stars */}
+      <CyberGridCanvas />
 
       {/* Soft radial vignette to keep headline & buttons ultra-readable */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(9,11,16,0.7)_100%)] pointer-events-none" />
