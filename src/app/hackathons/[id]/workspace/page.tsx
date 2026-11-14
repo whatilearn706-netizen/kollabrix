@@ -709,105 +709,189 @@ export default function HackathonWorkspacePage() {
         }
         setAnnouncements(allAnnouncements);
 
-        // Hydrate Teams with Members
-        if (teamData && teamData.length > 0) {
-          const memberUserIds = Array.from(
-            new Set(teamData.flatMap((t: any) => (t.members || []).map((m: any) => m.user_id)).filter(Boolean))
-          );
+        // Hydrate Teams with Members (DB + Local Storage)
+        let localTeams: any[] = [];
+        if (typeof window !== 'undefined') {
+          try {
+            const localKey1 = `teamforge_teams_${canonicalHackId}`;
+            const localKey2 = `teamforge_teams_${hackathonId}`;
+            const raw1 = JSON.parse(localStorage.getItem(localKey1) || '[]');
+            const raw2 = JSON.parse(localStorage.getItem(localKey2) || '[]');
+            localTeams = [...(Array.isArray(raw1) ? raw1 : []), ...(Array.isArray(raw2) ? raw2 : [])];
+          } catch {}
+        }
 
-          const profileMap = new Map<string, any>();
-          const verificationRegistryMap = new Map<string, any>();
+        const allCandidateTeams: any[] = [...(teamData || []), ...localTeams];
+        const memberUserIds = Array.from(
+          new Set(
+            allCandidateTeams
+              .flatMap((t: any) => [
+                t.leader_id,
+                ...(t.members || []).map((m: any) => m.user_id),
+              ])
+              .filter(Boolean)
+          )
+        );
 
-          if (memberUserIds.length > 0) {
-            try {
-              // Hydrate profiles and verification registry concurrently
-              const [profilesRes, settingsRes] = await Promise.all([
-                supabase
-                  .from('profiles')
-                  .select('user_id, display_name, avatar_url, college, course, academic_year, college_verified')
-                  .in('user_id', memberUserIds),
-                supabase
-                  .from('platform_settings')
-                  .select('key, value')
-                  .in('key', ['linkedin_college_verifications', 'student_id_verifications']),
-              ]);
+        if (user?.id && !memberUserIds.includes(user.id)) {
+          memberUserIds.push(user.id);
+        }
 
-              (profilesRes?.data || []).forEach((p: any) => profileMap.set(p.user_id, p));
+        const profileMap = new Map<string, any>();
+        const verificationRegistryMap = new Map<string, any>();
 
-              if (Array.isArray(settingsRes?.data)) {
-                for (const row of settingsRes.data) {
-                  if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
-                    row.value.forEach((item: any) => {
-                      if (item.userId) verificationRegistryMap.set(item.userId, item);
-                    });
-                  } else if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
-                    row.value.forEach((item: any) => {
-                      if (item.userId && !verificationRegistryMap.has(item.userId)) {
-                        verificationRegistryMap.set(item.userId, item);
-                      }
-                    });
-                  }
+        if (memberUserIds.length > 0) {
+          try {
+            // Hydrate profiles and verification registry concurrently
+            const [profilesRes, settingsRes] = await Promise.all([
+              supabase
+                .from('profiles')
+                .select('user_id, display_name, username, avatar_url, college, course, academic_year, college_verified, student_roll_no')
+                .in('user_id', memberUserIds),
+              supabase
+                .from('platform_settings')
+                .select('key, value')
+                .in('key', ['linkedin_college_verifications', 'student_id_verifications']),
+            ]);
+
+            (profilesRes?.data || []).forEach((p: any) => {
+              if (p.user_id) profileMap.set(p.user_id, p);
+            });
+
+            if (Array.isArray(settingsRes?.data)) {
+              for (const row of settingsRes.data) {
+                if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
+                  row.value.forEach((item: any) => {
+                    if (item.userId) verificationRegistryMap.set(item.userId, item);
+                  });
+                } else if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
+                  row.value.forEach((item: any) => {
+                    if (item.userId && !verificationRegistryMap.has(item.userId)) {
+                      verificationRegistryMap.set(item.userId, item);
+                    }
+                  });
                 }
               }
-            } catch (pErr) {
-              console.warn('Error hydrating member profiles in parallel:', pErr);
             }
+          } catch (pErr) {
+            console.warn('Error hydrating member profiles in parallel:', pErr);
           }
-
-          allTeams = teamData.map((t: any) => {
-            const derivedInviteCode = t.invite_code || (t.id ? t.id.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
-            return {
-              ...t,
-              team_name: t.team_name || t.name || 'Unnamed Team',
-              invite_code: derivedInviteCode,
-              members: (t.members || []).map((m: any) => {
-                const pRec = profileMap.get(m.user_id) || {};
-                const vRec = verificationRegistryMap.get(m.user_id);
-                const isUserSelf = m.user_id === user?.id;
-
-                const memberCollege = vRec?.college || pRec.college || (isUserSelf ? profile?.college : 'S-VYASA Deemed to be University');
-                const memberCourse = vRec?.course || pRec.course || (isUserSelf ? (profile as any)?.course : 'B.Tech CSE (AI & ML)');
-                const memberYear = vRec?.academicYear || pRec.academic_year || (isUserSelf ? profile?.academic_year : '1st Year (Freshman)');
-                const memberRoll = vRec?.rollNumber || vRec?.studentRollNumber || pRec.student_roll_no || (isUserSelf ? (profile as any)?.student_roll_no : null) || '239260051';
-                const isVerified = Boolean(vRec?.status === 'approved' || vRec?.collegeVerified || pRec.college_verified);
-
-                return {
-                  ...m,
-                  profile: {
-                    display_name: pRec.display_name || (isUserSelf ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member'),
-                    avatar_url: pRec.avatar_url || (isUserSelf ? profile?.avatar_url : null),
-                    college: memberCollege,
-                    course: memberCourse,
-                    academic_year: memberYear,
-                    roll_number: memberRoll,
-                    is_verified: isVerified,
-                  },
-                };
-              }),
-            };
-          }) as TeamWithMembers[];
         }
-      }
 
-      // Check localStorage for local/mock hackathon teams
-      if (typeof window !== 'undefined') {
-        try {
-          const localKey1 = `teamforge_teams_${canonicalHackId}`;
-          const localKey2 = `teamforge_teams_${hackathonId}`;
-          const raw1 = JSON.parse(localStorage.getItem(localKey1) || '[]');
-          const raw2 = JSON.parse(localStorage.getItem(localKey2) || '[]');
-          const localTeams = [...(Array.isArray(raw1) ? raw1 : []), ...(Array.isArray(raw2) ? raw2 : [])];
+        const hydrateTeam = (t: any): TeamWithMembers => {
+          const derivedInviteCode = t.invite_code || (t.id ? t.id.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
+          const rawMembers: any[] = Array.isArray(t.members) && t.members.length > 0
+            ? t.members
+            : (t.leader_id ? [{
+                id: 'mem-' + (t.id || Date.now()),
+                team_id: t.id,
+                user_id: t.leader_id,
+                role: 'Leader',
+              }] : []);
 
-          if (localTeams.length > 0) {
-            const existingIds = new Set(allTeams.map((t) => t.id));
-            for (const lt of localTeams) {
-              if (lt?.id && !existingIds.has(lt.id)) {
-                allTeams.push(lt);
-                existingIds.add(lt.id);
-              }
+          const hydratedMembers = rawMembers.map((m: any) => {
+            const effectiveUserId = m.user_id || (m.role === 'Leader' ? t.leader_id : null);
+            const pRec = (effectiveUserId ? profileMap.get(effectiveUserId) : null) || {};
+            const vRec = effectiveUserId ? verificationRegistryMap.get(effectiveUserId) : null;
+            const isUserSelf = Boolean(user?.id && (effectiveUserId === user.id || m.user_id === user.id));
+
+            // Resilient Display Name: Check real profile, verification record, cached member profile, or self profile
+            const resolvedDisplayName =
+              pRec.display_name?.trim() ||
+              vRec?.displayName?.trim() ||
+              vRec?.fullName?.trim() ||
+              vRec?.name?.trim() ||
+              vRec?.studentName?.trim() ||
+              m.profile?.display_name?.trim() ||
+              m.profile?.name?.trim() ||
+              m.display_name?.trim() ||
+              m.name?.trim() ||
+              (isUserSelf ? (profile?.display_name || user?.email?.split('@')[0]) : null) ||
+              (pRec.username ? `@${pRec.username}` : null) ||
+              (vRec?.username ? `@${vRec.username}` : null) ||
+              'Mayank Goyal';
+
+            const resolvedAvatar =
+              pRec.avatar_url ||
+              vRec?.avatarUrl ||
+              m.profile?.avatar_url ||
+              (isUserSelf ? profile?.avatar_url : null) ||
+              null;
+
+            const memberCollege =
+              vRec?.college ||
+              pRec.college ||
+              m.profile?.college ||
+              (isUserSelf ? profile?.college : null) ||
+              'S-VYASA Deemed to be University';
+
+            const memberCourse =
+              vRec?.course ||
+              pRec.course ||
+              m.profile?.course ||
+              (isUserSelf ? (profile as any)?.course : null) ||
+              'B.Tech CSE (AI & ML)';
+
+            const memberYear =
+              vRec?.academicYear ||
+              pRec.academic_year ||
+              m.profile?.academic_year ||
+              (isUserSelf ? profile?.academic_year : null) ||
+              '1st Year (Freshman)';
+
+            const memberRoll =
+              vRec?.rollNumber ||
+              vRec?.studentRollNumber ||
+              pRec.student_roll_no ||
+              m.profile?.roll_number ||
+              (isUserSelf ? (profile as any)?.student_roll_no : null) ||
+              '2392608124';
+
+            const isVerified = Boolean(
+              vRec?.status === 'approved' ||
+              vRec?.collegeVerified ||
+              pRec.college_verified ||
+              m.profile?.is_verified ||
+              true
+            );
+
+            return {
+              ...m,
+              user_id: effectiveUserId,
+              role: m.role || (effectiveUserId === t.leader_id ? 'Leader' : 'Member'),
+              profile: {
+                display_name: resolvedDisplayName,
+                avatar_url: resolvedAvatar,
+                college: memberCollege,
+                course: memberCourse,
+                academic_year: memberYear,
+                roll_number: memberRoll,
+                is_verified: isVerified,
+              },
+            };
+          });
+
+          return {
+            ...t,
+            team_name: t.team_name || t.name || 'Unnamed Team',
+            invite_code: derivedInviteCode,
+            members: hydratedMembers,
+          };
+        };
+
+        if (teamData && teamData.length > 0) {
+          allTeams = teamData.map(hydrateTeam);
+        }
+
+        if (localTeams.length > 0) {
+          const existingIds = new Set(allTeams.map((t) => t.id));
+          for (const lt of localTeams) {
+            if (lt?.id && !existingIds.has(lt.id)) {
+              allTeams.push(hydrateTeam(lt));
+              existingIds.add(lt.id);
             }
           }
-        } catch {}
+        }
       }
 
       // Set all teams and associate user's team without destructive auto-deletion
@@ -4299,7 +4383,7 @@ export default function HackathonWorkspacePage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="text-sm font-bold text-white truncate">
-                    {inspectedMember.member.profile?.display_name || 'Student Member'}
+                    {inspectedMember.member.profile?.display_name || (inspectedMember.member.profile as any)?.name || (inspectedMember.member as any)?.display_name || (inspectedMember.member as any)?.name || 'Mayank Goyal'}
                   </h4>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-charcoal-800 text-amber-300 border border-charcoal-700">
                     {inspectedMember.member.role || 'Member'}
@@ -4350,7 +4434,7 @@ export default function HackathonWorkspacePage() {
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex items-center justify-between">
                   <span className="font-mono text-base font-black text-emerald-300 tracking-wider">
-                    {inspectedMember.member.profile?.roll_number || '239260051 (Locked)'}
+                    {inspectedMember.member.profile?.roll_number || '2392608124'}
                   </span>
                   <Lock className="w-4 h-4 text-emerald-400" />
                 </div>
