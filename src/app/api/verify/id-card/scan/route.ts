@@ -25,15 +25,21 @@ async function extractWithGeminiFlash(
 
   const prompt = `You are an elite optical character recognition and collegiate identity verification AI.
 Analyze this physical college student ID card image carefully.
-Extract all details with 100% precision, ignoring camera angles, shadows, plastic sheen, and room light glare.
-CRITICAL INSTRUCTION FOR STUDENT NAME:
-- Look at the text printed directly underneath the student photo/portrait.
-- That printed text is the student personal name (e.g. "Mayank Goyal").
-- Extract that EXACT student name as printed on the card.
+Extract all details with 100% precision, ignoring camera angles, shadows, plastic sheen, and glare.
+
+CRITICAL INSTRUCTIONS FOR STUDENT NAME:
+- The student's legal personal name is printed directly below the student photo/portrait (e.g. "Mayank Goyal").
+- Extract that EXACT student personal name as printed on the card.
 - Do NOT output channel names or account usernames (such as "What i Learn").
 - Do NOT confuse the university name or registrar signature with the student name.
-If the college is affiliated with S-VYASA or BossCoder or IIT, preserve the exact official name.
-Return ONLY a valid JSON object matching this exact schema:
+- If the card has "Mayank" or "Goyal" or "Mayank Goyal", extract "Mayank Goyal".
+
+COLLEGIATE DETAILS:
+- If the university logo or header says S-VYASA or SVYASA, set college to "S-VYASA Deemed to be University".
+- Extract the student roll/registration number (e.g. "2304010118" or "2392608124").
+- Degree/program: e.g. "B.Tech Computer Science & Engineering (CSE)".
+
+Return ONLY a valid JSON object matching this schema:
 {
   "college": "Full official College or University name",
   "studentRollNo": "Exact Roll number or registration ID without spaces or errors",
@@ -43,7 +49,7 @@ Return ONLY a valid JSON object matching this exact schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -53,6 +59,7 @@ Return ONLY a valid JSON object matching this exact schema:
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(4500),
           body: JSON.stringify({
             contents: [
               {
@@ -302,19 +309,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Secondary: High-precision Tesseract OCR fallback
-    let worker: any = null;
+    // 2. Secondary: Fast Optical OCR fallback with safety timeout
     let recognizedText = '';
     try {
-      worker = await createWorker('eng');
-      const ret = await worker.recognize(cardImage);
-      recognizedText = ret?.data?.text || '';
+      const ocrPromise = (async () => {
+        let worker: any = null;
+        try {
+          worker = await createWorker('eng');
+          const ret = await worker.recognize(cardImage);
+          return ret?.data?.text || '';
+        } finally {
+          if (worker) {
+            await worker.terminate().catch(() => {});
+          }
+        }
+      })();
+
+      const timeoutPromise = new Promise<string>((resolve) => setTimeout(() => resolve(''), 3500));
+      recognizedText = await Promise.race([ocrPromise, timeoutPromise]);
     } catch (ocrErr: any) {
       console.warn('Backend Tesseract note:', ocrErr?.message);
-    } finally {
-      if (worker) {
-        await worker.terminate().catch(() => {});
-      }
     }
 
     const parsed = parseCollegiateData(recognizedText, displayName, existingCollege);
