@@ -182,7 +182,7 @@ export function StepReviewLockedProfile({
               <div>
                 <span className="text-[10px] font-mono text-slate-400 block">ROLL NUMBER</span>
                 <span className="font-mono text-emerald-300 font-bold">
-                  {studentRollNo || (isVerified ? '2392608124' : 'Unverified')}
+                  {studentRollNo || (isVerified ? 'Verified by Card' : 'Unverified')}
                 </span>
               </div>
               <div>

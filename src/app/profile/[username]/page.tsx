@@ -358,7 +358,6 @@ export default function PublicProfilePage() {
   const isOwnerVerifiedLocally = Boolean(
     user?.user_metadata?.college_verified === true ||
     (typeof window !== 'undefined' && (
-      localStorage.getItem('linkora_college_verified') === 'true' ||
       (user?.id && localStorage.getItem(`linkora_college_verified_${user.id}`) === 'true') ||
       (profile?.user_id && localStorage.getItem(`linkora_college_verified_${profile.user_id}`) === 'true')
     ))

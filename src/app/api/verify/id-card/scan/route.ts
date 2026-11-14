@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createWorker } from 'tesseract.js';
+import { createClient } from '@supabase/supabase-js';
+import {
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_ANON_KEY,
+  isSupabaseConfigured,
+} from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 function getGeminiApiKey(): string {
   return (
@@ -29,15 +46,14 @@ Analyze this physical college student ID card image carefully.
 Extract all details with 100% precision, ignoring camera angles, shadows, plastic sheen, and glare.
 
 CRITICAL INSTRUCTIONS FOR STUDENT NAME:
-- The student's legal personal name is printed directly below or next to the student photo/portrait (e.g. "Mayank Goyal").
-- Extract that EXACT student personal name as printed on the card.
-- Do NOT output channel names or account usernames (such as "What i Learn").
+- The student's legal personal name is printed directly below or next to the student photo/portrait.
+- Extract that EXACT student personal name as printed on the physical card.
+- Do NOT output channel names, usernames, or handles (such as "What i Learn").
 - Do NOT confuse the university name or registrar signature with the student name.
-- If the card has "Mayank" or "Goyal" or "Mayank Goyal", extract "Mayank Goyal".
 
 COLLEGIATE DETAILS:
 - If the university logo or header says S-VYASA or SVYASA, set college to "S-VYASA Deemed to be University".
-- Extract the student roll/registration number (e.g. "2304010118" or "2392608124").
+- Extract the student roll/registration number exactly as printed on the card.
 - Degree/program: e.g. "B.Tech Computer Science & Engineering (CSE)".
 
 Return ONLY a valid JSON object matching this schema:
@@ -50,7 +66,7 @@ Return ONLY a valid JSON object matching this schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest'];
+  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -101,11 +117,11 @@ Return ONLY a valid JSON object matching this schema:
 
       const extractedCardName = isCardNameValid
         ? rawCardName
-        : (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName) ? userDisplayName : 'Mayank Goyal');
+        : (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName) ? userDisplayName : '');
 
       return {
         college: parsed.college || existingCollege || 'S-VYASA Deemed to be University',
-        studentRollNo: parsed.studentRollNo || '2304010118',
+        studentRollNo: parsed.studentRollNo || '',
         course: parsed.course || 'B.Tech - CSE (AI & ML)',
         academicYear: parsed.academicYear || '1st Year (Freshman)',
         studentName: extractedCardName,
@@ -196,9 +212,6 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
       rollNo = pattern[1].trim();
     }
   }
-  if (!rollNo) {
-    rollNo = '2392608124';
-  }
 
   // 3. Course / Degree Extraction
   let course = '';
@@ -241,35 +254,30 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
   // 5. Student Name Extraction from Raw OCR
   let cardStudentName = '';
 
-  // Direct collegiate heuristics for S-VYASA cards
-  if (/mayank/i.test(fullText)) {
-    cardStudentName = 'Mayank Goyal';
-  } else {
-    const nameLabelMatch = fullText.match(
-      /(?:name\s*(?:of\s*(?:student|holder|candidate))?|student\s*name)\s*[:\-]?\s*([A-Za-z\s.]{3,35})/i
-    );
-    if (nameLabelMatch && nameLabelMatch[1]) {
-      const cand = nameLabelMatch[1].trim();
-      if (!/college|university|institute|technology|signature|valid|blood|dob|father|address|holder/i.test(cand)) {
-        cardStudentName = cand;
-      }
+  const nameLabelMatch = fullText.match(
+    /(?:name\s*(?:of\s*(?:student|holder|candidate))?|student\s*name)\s*[:\-]?\s*([A-Za-z\s.]{3,35})/i
+  );
+  if (nameLabelMatch && nameLabelMatch[1]) {
+    const cand = nameLabelMatch[1].trim();
+    if (!/college|university|institute|technology|signature|valid|blood|dob|father|address|holder/i.test(cand)) {
+      cardStudentName = cand;
     }
+  }
 
-    if (!cardStudentName) {
-      for (const line of lines) {
-        if (
-          /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line) &&
-          !/college|university|institute|department|student|identity|engineering|technology|card|valid/i.test(line)
-        ) {
-          cardStudentName = line.trim();
-          break;
-        }
+  if (!cardStudentName) {
+    for (const line of lines) {
+      if (
+        /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line) &&
+        !/college|university|institute|department|student|identity|engineering|technology|card|valid/i.test(line)
+      ) {
+        cardStudentName = line.trim();
+        break;
       }
     }
   }
 
   const cleanUserDisplay = (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName)) ? userDisplayName : '';
-  const finalStudentName = cardStudentName || cleanUserDisplay || 'Mayank Goyal';
+  const finalStudentName = cardStudentName || cleanUserDisplay || '';
 
   return {
     college,
@@ -286,7 +294,7 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { cardImage, displayName, existingCollege } = body;
+    const { cardImage, displayName, existingCollege, userId } = body;
 
     if (!cardImage) {
       return NextResponse.json({ success: false, error: 'Card image data is required.' }, { status: 400 });
@@ -294,51 +302,86 @@ export async function POST(request: NextRequest) {
 
     const geminiKey = getGeminiApiKey();
 
-    // 1. Primary: Use Gemini 1.5 Flash Vision if key is available (99.9% accuracy)
+    let extractedData: any = null;
+
+    // 1. Primary: Use Gemini Flash Vision if key is available (99.9% accuracy)
     if (geminiKey) {
       try {
-        const geminiResult = await extractWithGeminiFlash(cardImage, geminiKey, displayName, existingCollege);
-        return NextResponse.json({
-          success: true,
-          extracted: geminiResult,
-          confidence: geminiResult.confidence,
-          engine: geminiResult.source || 'Gemini Multimodal Vision',
-          cardSnapshot: cardImage,
-        });
+        extractedData = await extractWithGeminiFlash(cardImage, geminiKey, displayName, existingCollege);
       } catch (geminiErr: any) {
-        console.warn('Gemini 1.5 Flash Vision fallback note:', geminiErr?.message);
+        console.warn('Gemini Flash Vision fallback note:', geminiErr?.message);
       }
     }
 
     // 2. Secondary: Fast Optical OCR fallback with safety timeout
-    let recognizedText = '';
-    try {
-      const ocrPromise = (async () => {
-        let worker: any = null;
-        try {
-          worker = await createWorker('eng');
-          const ret = await worker.recognize(cardImage);
-          return ret?.data?.text || '';
-        } finally {
-          if (worker) {
-            await worker.terminate().catch(() => {});
+    if (!extractedData) {
+      let recognizedText = '';
+      try {
+        const ocrPromise = (async () => {
+          let worker: any = null;
+          try {
+            worker = await createWorker('eng');
+            const ret = await worker.recognize(cardImage);
+            return ret?.data?.text || '';
+          } finally {
+            if (worker) {
+              await worker.terminate().catch(() => {});
+            }
           }
-        }
-      })();
+        })();
 
-      const timeoutPromise = new Promise<string>((resolve) => setTimeout(() => resolve(''), 3500));
-      recognizedText = await Promise.race([ocrPromise, timeoutPromise]);
-    } catch (ocrErr: any) {
-      console.warn('Backend Tesseract note:', ocrErr?.message);
+        const timeoutPromise = new Promise<string>((resolve) => setTimeout(() => resolve(''), 3500));
+        recognizedText = await Promise.race([ocrPromise, timeoutPromise]);
+      } catch (ocrErr: any) {
+        console.warn('Backend Tesseract note:', ocrErr?.message);
+      }
+
+      extractedData = parseCollegiateData(recognizedText, displayName, existingCollege);
     }
 
-    const parsed = parseCollegiateData(recognizedText, displayName, existingCollege);
+    // ── 3. STRICT FRAUD GATE: ONE CARD, ONE USER ──
+    const cleanRollNo = (extractedData?.studentRollNo || '').trim();
+    if (cleanRollNo && cleanRollNo.length >= 4 && isSupabaseConfigured()) {
+      try {
+        const supabaseAdmin = getAdminClient();
+        const { data: regData } = await supabaseAdmin
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'linkedin_college_verifications')
+          .maybeSingle();
+
+        if (Array.isArray(regData?.value)) {
+          const duplicateUser = regData.value.find(
+            (item: any) =>
+              (item.status === 'approved' || item.collegeVerified === true) &&
+              (item.rollNumber || item.studentRollNumber) &&
+              (item.rollNumber || item.studentRollNumber).toString().trim().toLowerCase() === cleanRollNo.toLowerCase() &&
+              item.userId &&
+              item.userId !== userId
+          );
+
+          if (duplicateUser) {
+            return NextResponse.json(
+              {
+                success: false,
+                isDuplicateCard: true,
+                error: `Card Already Registered: Student ID Card (Roll No: ${cleanRollNo}) is already verified and locked to another Kollabrix account (${duplicateUser.displayName || duplicateUser.username || 'another user'}). Each physical student ID card can only be linked to one account.`,
+                extracted: extractedData,
+              },
+              { status: 409 }
+            );
+          }
+        }
+      } catch (dupErr) {
+        console.warn('Duplicate card verification check note:', dupErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      extracted: parsed,
-      confidence: parsed.confidence,
-      engine: 'Optical Neural Heuristics',
+      extracted: extractedData,
+      confidence: extractedData.confidence,
+      engine: extractedData.source || 'Collegiate Optical Neural Vision',
       cardSnapshot: cardImage,
     });
   } catch (err: any) {
