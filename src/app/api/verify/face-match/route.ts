@@ -34,7 +34,7 @@ Return ONLY valid JSON with this exact structure:
   "reason": "Facial symmetry, nasal bridge, and ocular geometry confirmed match."
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -44,6 +44,7 @@ Return ONLY valid JSON with this exact structure:
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(4500),
           body: JSON.stringify({
             contents: [
               {
