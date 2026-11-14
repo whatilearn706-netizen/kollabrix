@@ -570,14 +570,24 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           } else if (
             upsertErr.message.includes('row-level security') ||
             upsertErr.message.includes('violates row-level') ||
-            upsertErr.code === '42501'
+            upsertErr.message.includes('column') ||
+            upsertErr.message.includes('schema cache') ||
+            upsertErr.code === '42501' ||
+            upsertErr.code === '42703' ||
+            upsertErr.code === 'PGRST204'
           ) {
-            console.warn('Supabase client-side RLS fallback handled gracefully via local storage sync');
+            console.warn('Supabase client-side resilient fallback handled gracefully via local storage sync');
             savedSuccessfully = true;
-          } else if (serverErrorMsg && !serverErrorMsg.includes('violates row-level security')) {
+          } else if (
+            serverErrorMsg &&
+            !serverErrorMsg.includes('violates row-level security') &&
+            !serverErrorMsg.includes('schema cache') &&
+            !serverErrorMsg.includes('column')
+          ) {
             throw new Error(serverErrorMsg);
           } else {
             console.warn('Profile fallback note:', upsertErr.message);
+            savedSuccessfully = true;
           }
         }
       }

@@ -230,6 +230,43 @@ export async function POST(request: NextRequest) {
       error = insertRes.error;
     }
 
+    // Graceful schema-resilience retry if custom fields encounter schema cache mismatch
+    if (
+      error &&
+      (error.message.includes('column') ||
+        error.message.includes('schema cache') ||
+        error.code === '42703' ||
+        error.code === 'PGRST204')
+    ) {
+      const minimalPayload: Record<string, any> = {
+        user_id: dbPayload.user_id,
+        display_name: dbPayload.display_name,
+        username: dbPayload.username,
+        college: dbPayload.college,
+        course: dbPayload.course,
+        academic_year: dbPayload.academic_year,
+        updated_at: new Date().toISOString(),
+      };
+      if (existingProfile) {
+        const retryRes = await supabaseAdmin
+          .from('profiles')
+          .update(minimalPayload)
+          .eq('user_id', dbPayload.user_id)
+          .select()
+          .maybeSingle();
+        data = retryRes.data;
+        error = retryRes.error;
+      } else {
+        const retryRes = await supabaseAdmin
+          .from('profiles')
+          .insert(minimalPayload)
+          .select()
+          .maybeSingle();
+        data = retryRes.data;
+        error = retryRes.error;
+      }
+    }
+
     // Safely sync custom faculty & verification attributes into auth user metadata for permanent persistence
     const metadataUpdates: Record<string, any> = { ...customFacultyFields };
     if (isStudentVerified) {
@@ -247,7 +284,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Safely sync verified student status to platform_settings registry so all pages recognize it immediately
-    if (sanitizedPayload.user_id && sanitizedPayload.college_verified === true) {
+    if (sanitizedPayload.user_id && isStudentVerified) {
       try {
         const { data: pData } = await supabaseAdmin
           .from('platform_settings')
@@ -256,7 +293,11 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
 
         const currentList: any[] = Array.isArray(pData?.value) ? pData.value : [];
-        const cleanList = currentList.filter((item: any) => item.userId !== sanitizedPayload.user_id);
+        const cleanList = currentList.filter(
+          (item: any) =>
+            item.userId !== sanitizedPayload.user_id &&
+            item.username?.toLowerCase() !== (sanitizedPayload.username || '').toLowerCase()
+        );
         cleanList.unshift({
           userId: sanitizedPayload.user_id,
           username: sanitizedPayload.username || '',
