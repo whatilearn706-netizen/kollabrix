@@ -582,8 +582,18 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
         }
       }
 
-      // If student ID was uploaded in Step 2, notify verification endpoint for Admin Control Center
-      if (studentIdUrl) {
+      // Persist verified student status to local storage immediately
+      if (isCollegeVerified) {
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('linkora_college_verified', 'true');
+            if (user?.id) {
+              localStorage.setItem(`linkora_college_verified_${user.id}`, 'true');
+            }
+          }
+        } catch (e) {}
+      } else if (studentIdUrl) {
+        // Only trigger manual review if student is NOT yet biometrically verified
         fetch('/api/verify/college-id', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -609,7 +619,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           sessionStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
           localStorage.setItem(`kollabrix_onboarding_done_${user.id}`, 'true');
           localStorage.setItem(`kollabrix_profile_created_${user.id}`, 'true');
-          localStorage.setItem('linkora_auth_profile', JSON.stringify({ ...profile, ...payload }));
+          localStorage.setItem('linkora_auth_profile', JSON.stringify({ ...profile, ...payload, college_verified: isCollegeVerified }));
           document.cookie = 'linkora_user_session=true; path=/; max-age=31536000; SameSite=Lax';
           document.cookie = 'linkora_user_id=' + user.id + '; path=/; max-age=31536000; SameSite=Lax';
           document.cookie = 'linkora_user_email=' + encodeURIComponent(user.email || '') + '; path=/; max-age=31536000; SameSite=Lax';

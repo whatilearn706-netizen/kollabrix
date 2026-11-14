@@ -541,7 +541,7 @@ export default function TeammatesPage() {
       </div>
 
       {/* Unverified Student Alert Banner */}
-      {user && profile && !profile.college_verified && profile.role !== 'teacher' && (
+      {user && profile && !profile.college_verified && !user?.user_metadata?.college_verified && profile.role !== 'teacher' && (
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
           <div className="flex items-center gap-2.5">
             <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />

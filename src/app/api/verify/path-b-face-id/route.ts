@@ -48,41 +48,37 @@ export async function POST(request: NextRequest) {
     const cleanCourse = (course || 'B.Tech Computer Science').trim();
     const cleanYear = (academicYear || '1st Year (Freshman)').trim();
 
-    // 1. Update profiles table
+    // 1. Update profiles table with only valid columns
     if (isSupabaseConfigured()) {
       try {
-        const updatePayload: Record<string, any> = {
-          ...(displayName ? { display_name: displayName.trim() } : {}),
+        const safeProfilePayload: Record<string, any> = {
           college: cleanCollege,
           course: cleanCourse,
           academic_year: cleanYear,
-          college_verified: true,
-          college_verified_at: now,
-          verification_doc_type: idCardImage ? 'student_id_path_b' : 'student_id',
           updated_at: now,
         };
+        if (displayName) safeProfilePayload.display_name = displayName.trim();
+        if (username) safeProfilePayload.username = username.trim();
+        if (userId) safeProfilePayload.user_id = userId;
 
-        let filter = supabaseAdmin.from('profiles').update(updatePayload);
-        if (userId) {
-          filter = filter.eq('user_id', userId);
-        } else if (username) {
-          filter = filter.eq('username', username);
+        const { error: upsertErr } = await supabaseAdmin
+          .from('profiles')
+          .upsert(safeProfilePayload, { onConflict: userId ? 'user_id' : 'username' });
+        if (upsertErr) {
+          console.warn('Profile Path B upsert note:', upsertErr.message);
         }
 
-        const { error: updateErr } = await filter;
-        if (updateErr) {
-          console.warn('Profile Path B update error note:', updateErr.message);
-          // If custom columns not in schema, fallback to safe columns
-          if (updateErr.message.includes('column') || updateErr.code === '42703') {
-            const fallbackPayload: Record<string, any> = {
-              college: cleanCollege,
-              course: cleanCourse,
-              academic_year: cleanYear,
-              updated_at: now,
-            };
-            if (userId) {
-              await supabaseAdmin.from('profiles').update(fallbackPayload).eq('user_id', userId);
-            }
+        if (userId) {
+          try {
+            await supabaseAdmin.auth.admin.updateUserById(userId, {
+              user_metadata: {
+                college_verified: true,
+                college_verified_at: now,
+                ...(displayName ? { display_name: displayName.trim() } : {}),
+              },
+            });
+          } catch (metaErr) {
+            console.warn('Auth user metadata sync note:', metaErr);
           }
         }
       } catch (dbErr) {

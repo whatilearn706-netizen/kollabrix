@@ -119,7 +119,7 @@ export default function PublicProfilePage() {
 
         const p = profileData as Profile;
 
-        // Check if student is verified via universal registry
+        // Check if student is verified via universal registry or biometric audits
         try {
           const { data: regData } = await supabase
             .from('platform_settings')
@@ -134,6 +134,23 @@ export default function PublicProfilePage() {
                 item.userId === p.user_id ||
                 Boolean(p.username && item.username?.toLowerCase() === p.username.toLowerCase())
             );
+          }
+
+          if (!isRegVerified) {
+            const { data: auditData } = await supabase
+              .from('platform_settings')
+              .select('value')
+              .eq('key', 'student_id_verifications')
+              .maybeSingle();
+
+            if (Array.isArray(auditData?.value)) {
+              isRegVerified = auditData.value.some(
+                (item: any) =>
+                  (item.userId === p.user_id ||
+                    Boolean(p.username && item.username?.toLowerCase() === p.username.toLowerCase())) &&
+                  (item.status === 'approved' || String(item.id || '').includes('faceid'))
+              );
+            }
           }
 
           p.college_verified = Boolean(p.college_verified) || isRegVerified;
@@ -286,7 +303,26 @@ export default function PublicProfilePage() {
     );
   }
 
-  const isCollegiateVerified = Boolean(profile.college_verified) || profile.role === 'teacher';
+  // Multi-tier Collegiate Verification check (Database, Auth Metadata, Local Storage, or Faculty)
+  const isOwnerVerifiedLocally = Boolean(
+    isOwner && (
+      user?.user_metadata?.college_verified === true ||
+      (typeof window !== 'undefined' && (
+        localStorage.getItem('linkora_college_verified') === 'true' ||
+        localStorage.getItem(`linkora_college_verified_${user?.id}`) === 'true' ||
+        localStorage.getItem(`linkora_college_verified_${profile.user_id}`) === 'true'
+      ))
+    )
+  );
+
+  const isCollegiateVerified = Boolean(
+    profile.college_verified ||
+    (profile as any)?.student_verified ||
+    isOwnerVerifiedLocally ||
+    profile.role === 'teacher' ||
+    (profile as any)?.role === 'faculty' ||
+    Boolean((profile as any)?.faculty_verified)
+  );
 
   return (
     <div className="relative min-h-[85vh]">
