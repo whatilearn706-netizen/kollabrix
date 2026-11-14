@@ -394,30 +394,6 @@ export default function NewProblemStatementPage() {
               Verify Faculty Code
             </Button>
           </form>
-
-          <div className="relative flex py-4 items-center">
-            <div className="flex-grow border-t border-charcoal-750"></div>
-            <span className="flex-shrink mx-3 text-xs text-slate-500 uppercase">Or verify by DigiLocker</span>
-            <div className="flex-grow border-t border-charcoal-750"></div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
-            onClick={() => setIsDocVerifyOpen(true)}
-            leftIcon={<ShieldCheck className="w-4 h-4 text-indigo-400" />}
-          >
-            🇮🇳 Verify with DigiLocker (Aadhaar / Class 12th Marksheet)
-          </Button>
-
-          <FacultyVerificationModal
-            isOpen={isDocVerifyOpen}
-            onClose={() => setIsDocVerifyOpen(false)}
-            onSuccess={async () => {
-              await refreshProfile();
-            }}
-          />
         </div>
       ) : (
         /* Authoring Form for verified faculty */

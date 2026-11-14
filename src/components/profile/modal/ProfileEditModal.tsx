@@ -54,7 +54,7 @@ const FACULTY_STEP_TITLES = [
   { id: 1, tag: 'Identity', title: 'Faculty Identity & Photo', subtitle: 'Choose how students and colleagues will identify you across campus' },
   { id: 2, tag: 'Faculty Type', title: 'Faculty Designation & Department', subtitle: 'Specify your academic title, department, and collegiate institution' },
   { id: 3, tag: 'Expertise', title: 'Teaching & Research Focus', subtitle: 'Select your subject domains, mentorship areas, and research specializations' },
-  { id: 4, tag: 'Faculty Portal', title: 'Faculty Verification & DigiLocker', subtitle: 'Authenticate via National DigiLocker or campus passcode, and connect academic profiles' },
+  { id: 4, tag: 'Faculty Portal', title: 'Faculty Verification', subtitle: 'Authenticate via institutional campus passcode and connect academic profiles' },
 ];
 
 export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: ProfileEditModalProps) {
@@ -384,7 +384,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
         if (!hasFacultyAccess) {
           setErrorMessage(
-            'Faculty Verification Required: You cannot complete a faculty profile without verified faculty access (Campus Passcode or DigiLocker). Please verify in Step 4, or switch to Student mode to continue.'
+            'Faculty Verification Required: You cannot complete a faculty profile without verified faculty access (Campus Passcode). Please enter your passcode in Step 4, or switch to Student mode to continue.'
           );
           setCurrentStep(4);
           setIsSubmitting(false);

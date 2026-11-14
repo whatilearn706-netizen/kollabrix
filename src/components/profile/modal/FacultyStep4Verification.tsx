@@ -13,11 +13,9 @@ import {
   ArrowRight,
   Info,
   Sparkles,
-  Award,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { FacultyVerificationModal } from '@/components/auth/FacultyVerificationModal';
 
 interface FacultyStep4VerificationProps {
   facultyPasscode: string;
@@ -48,7 +46,6 @@ export function FacultyStep4Verification({
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [isDigiLockerOpen, setIsDigiLockerOpen] = useState(false);
 
   const handleVerifyPasscode = async () => {
     const code = facultyPasscode.trim();
@@ -155,55 +152,6 @@ export function FacultyStep4Verification({
           </button>
         </div>
 
-        {/* 2. DigiLocker National Gateway Alternative */}
-        <div className="pt-2">
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-purple-500/20"></div>
-            <span className="flex-shrink mx-3 text-[10px] font-mono text-purple-300 uppercase tracking-wider">
-              Or Verify with National DigiLocker
-            </span>
-            <div className="flex-grow border-t border-purple-500/20"></div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-indigo-950/25 border border-indigo-500/30 space-y-2 mt-1">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Don't have a code? Verify via DigiLocker</span>
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                MeriPehchan Live
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Directly authenticate through the official Government of India DigiLocker gateway with your e-Aadhaar or Class 12th document. No passcode required.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setIsDigiLockerOpen(true)}
-              disabled={isVerified}
-              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                isVerified
-                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 cursor-default'
-                  : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-950/40'
-              }`}
-            >
-              {isVerified ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>DigiLocker Identity Verified &amp; Connected</span>
-                </>
-              ) : (
-                <>
-                  <Award className="w-4 h-4 text-amber-300" />
-                  <span>🇮🇳 Verify with DigiLocker (Aadhaar / Class 12th Marksheet)</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
         {verifyMessage && (
           <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -278,24 +226,6 @@ export function FacultyStep4Verification({
           />
         </div>
       </div>
-
-      {/* DigiLocker Official Modal */}
-      <FacultyVerificationModal
-        isOpen={isDigiLockerOpen}
-        onClose={() => setIsDigiLockerOpen(false)}
-        onSuccess={async () => {
-          setIsVerified(true);
-          if (user?.id) {
-            localStorage.setItem(`linkora_faculty_verified_${user.id}`, 'true');
-          }
-          await refreshProfile?.();
-          setVerifyMessage('🇮🇳 DigiLocker Identity verified successfully! Faculty privileges unlocked.');
-          setVerifyError(null);
-          setIsDigiLockerOpen(false);
-        }}
-        title="Faculty Institutional Verification via DigiLocker"
-        description="Authenticate directly through the National DigiLocker / MeriPehchan portal. Upload your e-Aadhaar or Class 12th Marksheet for instant educator authorization."
-      />
     </div>
   );
 }
