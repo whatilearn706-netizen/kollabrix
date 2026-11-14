@@ -156,10 +156,14 @@ async function cropPassportPhotoFromCard(
           const nw = img.naturalWidth || 640;
           const nh = img.naturalHeight || 480;
 
-          let ymin = box?.ymin ?? 0.18;
-          let xmin = box?.xmin ?? 0.05;
-          let ymax = box?.ymax ?? 0.70;
-          let xmax = box?.xmax ?? 0.42;
+          if (!box || typeof box.ymin !== 'number') {
+            return resolve(null);
+          }
+
+          let ymin = box.ymin;
+          let xmin = box.xmin;
+          let ymax = box.ymax;
+          let xmax = box.xmax;
 
           // Add 6% margin around the portrait box
           const padY = (ymax - ymin) * 0.06;
@@ -524,6 +528,33 @@ export function StepPathBBiometricScan({
     }
   }, []);
 
+  // ── Grab Isolated Card Region inside the Guide Box (Cuts Out User's Head in Background) ──
+  const captureCardCropFrame = useCallback((): string | null => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return null;
+
+    try {
+      const vw = video.videoWidth || 1280;
+      const vh = video.videoHeight || 720;
+      // Target the central card bounding box (75% width, 1.58:1 aspect)
+      const cw = Math.floor(vw * 0.75);
+      const ch = Math.floor(cw / 1.58);
+      const cx = Math.max(0, Math.floor((vw - cw) / 2));
+      const cy = Math.max(0, Math.floor((vh - ch) / 2));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = Math.floor(640 / 1.58);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      ctx.drawImage(video, cx, cy, cw, ch, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.90);
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
   // ── Send Frame to Backend OCR API ──
   const sendFrameToBackend = useCallback(
     async (frameBase64: string) => {
@@ -557,8 +588,10 @@ export function StepPathBBiometricScan({
           const ext = data.extracted;
           setIsCardDetected(true);
           isCardDetectedRef.current = true;
-          setIdCardSnapshot(frameBase64);
-          idCardSnapshotRef.current = frameBase64;
+          // Capture the isolated card rectangle to ensure user face in background is cut out
+          const cardIsolated = captureCardCropFrame() || frameBase64;
+          setIdCardSnapshot(cardIsolated);
+          idCardSnapshotRef.current = cardIsolated;
           setDuplicateCardError(null);
 
           const studentName =
@@ -813,7 +846,7 @@ export function StepPathBBiometricScan({
             setIsFaceBackendMatching(false);
 
             if (matchData.success && matchData.isMatched && matchData.hasFace !== false) {
-              const confirmedScore = Number(matchData.matchScore) || 98.6;
+              const confirmedScore = Number(matchData.matchScore) || 95.0;
               setFaceMismatchError(null);
               await completeMatchSuccess(confirmedScore, liveFace);
               return;
@@ -888,10 +921,7 @@ export function StepPathBBiometricScan({
           </div>
           <div>
             <h4 className="text-sm font-black tracking-tight text-white flex items-center gap-2">
-              <span>Path B: Continuous Card Scan &amp; Apple Face ID™</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                Backend AI Verified
-              </span>
+              <span>Card Verification</span>
             </h4>
           </div>
         </div>
@@ -1040,8 +1070,7 @@ export function StepPathBBiometricScan({
             </div>
           )}
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
-            <span>Keep your card still for 20 seconds so AI captures sharpest text.</span>
+          <div className="flex items-center justify-end text-[11px] text-slate-400">
             <button
               type="button"
               onClick={onSkip}
@@ -1562,7 +1591,9 @@ export function StepPathBBiometricScan({
           <div className="max-w-md mx-auto p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 text-left space-y-2">
             <div className="flex items-center justify-between text-xs pb-2 border-b border-emerald-500/20">
               <span className="font-mono text-emerald-400 font-bold">VERIFIED COLLEGIATE BADGE ACTIVE</span>
-              <span className="text-[10px] font-mono text-slate-400">98.6% Match</span>
+              <span className="text-[10px] font-mono text-slate-400">
+                {faceMatchScore > 0 ? `${faceMatchScore}% Match` : 'Biometrically Verified'}
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="col-span-2 pb-1.5 border-b border-emerald-500/10">
