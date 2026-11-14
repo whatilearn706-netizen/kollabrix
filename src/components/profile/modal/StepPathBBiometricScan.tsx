@@ -588,10 +588,10 @@ export function StepPathBBiometricScan({
           const ext = data.extracted;
           setIsCardDetected(true);
           isCardDetectedRef.current = true;
-          // Capture the isolated card rectangle to ensure user face in background is cut out
-          const cardIsolated = captureCardCropFrame() || frameBase64;
-          setIdCardSnapshot(cardIsolated);
-          idCardSnapshotRef.current = cardIsolated;
+          // Keep the full frame snapshot so no part of the card (horizontal or vertical) is cropped out
+          const cardSnapshot = frameBase64;
+          setIdCardSnapshot(cardSnapshot);
+          idCardSnapshotRef.current = cardSnapshot;
           setDuplicateCardError(null);
 
           const studentName =
