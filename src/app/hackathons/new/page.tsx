@@ -379,6 +379,10 @@ export default function NewHackathonPage() {
             allowed_college: allowedCollege.trim() || null,
           })} -->`;
 
+          const finalWebsiteUrl = websiteUrl.trim()
+            ? (/^https?:\/\//i.test(websiteUrl.trim()) ? websiteUrl.trim() : `https://${websiteUrl.trim()}`)
+            : `https://kollabrix.in/h/${resData.joinCode}`;
+
           const clientPayload = {
             id: resData.hackathon?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : undefined),
             creator_id: user.id,
@@ -395,7 +399,7 @@ export default function NewHackathonPage() {
             eligibility: eligibility.trim(),
             themes,
             prize_pool: prizePool.trim() || null,
-            website_url: `https://kollabrix.in/h/${resData.joinCode}`,
+            website_url: finalWebsiteUrl,
             banner_url: bannerUrl.trim() || null,
             logo_url: logoUrl.trim() || null,
             company_logo: logoUrl.trim() || null,
@@ -420,8 +424,13 @@ export default function NewHackathonPage() {
       }
 
       if (resData.hackathon) {
+        const resolvedWeb = websiteUrl.trim()
+          ? (/^https?:\/\//i.test(websiteUrl.trim()) ? websiteUrl.trim() : `https://${websiteUrl.trim()}`)
+          : (resData.hackathon.website_url || `https://kollabrix.in/h/${resData.joinCode}`);
+
         resData.hackathon = {
           ...resData.hackathon,
+          website_url: resolvedWeb,
           submission_deadline: toUtcIso(submissionDeadline),
           results_date: toUtcIso(resultsDate),
         };
@@ -1062,7 +1071,7 @@ export default function NewHackathonPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1.5">
                     Prizes &amp; Mentorship Support
@@ -1083,6 +1092,38 @@ export default function NewHackathonPage() {
                     onChange={(e) => setContactInfo(e.target.value)}
                   />
                 </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-1.5">
+                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Official Website / Portal Link</span>
+                  </label>
+                  <Input
+                    placeholder="e.g. https://svyasa.edu.in"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                <span className="text-[10px] text-slate-400 font-mono">Quick Website Pill:</span>
+                <button
+                  type="button"
+                  onClick={() => setWebsiteUrl('https://svyasa.edu.in')}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-mono bg-charcoal-950 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-charcoal-750 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <Globe className="w-3 h-3 text-cyan-400" />
+                  + https://svyasa.edu.in
+                </button>
+                {websiteUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setWebsiteUrl('')}
+                    className="px-2 py-0.5 rounded-lg text-[10px] font-mono bg-charcoal-950 hover:bg-charcoal-800 text-slate-400 border border-charcoal-750 transition-all cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
 

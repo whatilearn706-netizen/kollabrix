@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       themes = [],
       prizePool,
       websiteUrl,
+      website_url,
       rules,
       contactInfo,
       contact_info,
@@ -161,6 +162,11 @@ export async function POST(request: NextRequest) {
 
     const resolvedContact = (contactInfo || contact_info || '').trim();
     const resolvedAllowedCollege = (allowedCollege || allowed_college || '').trim();
+    const rawWebsite = (websiteUrl || website_url || '').trim();
+    let resolvedWebsiteUrl: string = `https://kollabrix.in/h/${joinCode}`;
+    if (rawWebsite) {
+      resolvedWebsiteUrl = /^https?:\/\//i.test(rawWebsite) ? rawWebsite : `https://${rawWebsite}`;
+    }
 
     // Embed resilient metadata comment (safe fields only; passwords remain strictly in protected columns)
     const metaComment = `\n\n<!-- HACKATHON_META:${JSON.stringify({
@@ -175,6 +181,8 @@ export async function POST(request: NextRequest) {
       eligibility: eligibility.trim(),
       contact_info: resolvedContact || null,
       allowed_college: resolvedAllowedCollege || null,
+      website_url: resolvedWebsiteUrl,
+      external_website_url: rawWebsite || null,
     })} -->`;
 
     const generatedHackathonId = crypto.randomUUID();
@@ -195,7 +203,7 @@ export async function POST(request: NextRequest) {
       eligibility: eligibility.trim(),
       themes,
       prize_pool: prizePool?.trim() || null,
-      website_url: `https://kollabrix.in/h/${joinCode}`,
+      website_url: resolvedWebsiteUrl,
       banner_url: resolvedBannerUrl,
       rules: rules?.trim() || null,
       contact_info: resolvedContact || null,
@@ -241,7 +249,7 @@ export async function POST(request: NextRequest) {
           eligibility: eligibility.trim(),
           themes,
           prize_pool: prizePool?.trim() || null,
-          website_url: `https://kollabrix.in/h/${joinCode}`,
+          website_url: resolvedWebsiteUrl,
           banner_url: resolvedBannerUrl,
           access_type: accessType,
           join_code: joinCode,

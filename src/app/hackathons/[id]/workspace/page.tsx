@@ -500,6 +500,7 @@ export default function HackathonWorkspacePage() {
             ...currentHack,
             access_type: meta.access_type || currentHack.access_type || 'private',
             join_code: meta.join_code || currentHack.join_code,
+            website_url: meta.external_website_url || meta.website_url || currentHack.website_url || (currentHack as any).websiteUrl || null,
             submission_deadline: currentHack.submission_deadline || meta.submission_deadline || (currentHack as any).submissionDeadline || null,
             results_date: currentHack.results_date || meta.results_date || (currentHack as any).resultsDate || null,
             description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
