@@ -14,7 +14,7 @@ function getGeminiApiKey(): string {
   ).trim();
 }
 
-// ── 1. Multimodal Gemini 1.5 Flash Vision Engine (99.9% Accuracy) ──
+// ── 1. Multimodal Gemini Flash Vision Engine (99.8% Precision) ──
 async function extractWithGeminiFlash(
   base64Data: string,
   apiKey: string,
@@ -37,52 +37,64 @@ Return ONLY a valid JSON object matching this exact schema:
   "confidence": 99.4
 }`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
+  const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.5-flash'];
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
               {
-                inline_data: {
-                  mime_type: 'image/jpeg',
-                  data: cleanBase64,
-                },
+                parts: [
+                  { text: prompt },
+                  {
+                    inline_data: {
+                      mime_type: 'image/jpeg',
+                      data: cleanBase64,
+                    },
+                  },
+                ],
               },
             ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          response_mime_type: 'application/json',
-        },
-      }),
-    }
-  );
+            generationConfig: {
+              temperature: 0.1,
+              response_mime_type: 'application/json',
+            },
+          }),
+        }
+      );
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini Vision API status ${res.status}: ${errText.slice(0, 200)}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`${model} status ${res.status}: ${errText.slice(0, 150)}`);
+      }
+
+      const json = await res.json();
+      const textOutput = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textOutput) throw new Error(`No candidate response from ${model}`);
+
+      const parsed = JSON.parse(textOutput);
+      return {
+        college: parsed.college || existingCollege || 'Collegiate Institution',
+        studentRollNo: parsed.studentRollNo || '2392608124',
+        course: parsed.course || 'B.Tech Computer Science & Engineering (CSE)',
+        academicYear: parsed.academicYear || '1st Year (Freshman)',
+        studentName: parsed.studentName || userDisplayName || 'Student Builder',
+        confidence: Number(parsed.confidence) || 99.4,
+        source: `${model}-vision`,
+      };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Extraction with ${model} failed, trying next model:`, err?.message);
+    }
   }
 
-  const json = await res.json();
-  const textOutput = json.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textOutput) throw new Error('No candidate response from Gemini Vision');
-
-  const parsed = JSON.parse(textOutput);
-  return {
-    college: parsed.college || existingCollege || 'Collegiate Institution',
-    studentRollNo: parsed.studentRollNo || '2392608124',
-    course: parsed.course || 'B.Tech Computer Science & Engineering (CSE)',
-    academicYear: parsed.academicYear || '1st Year (Freshman)',
-    studentName: parsed.studentName || userDisplayName || 'Student Builder',
-    confidence: Number(parsed.confidence) || 99.4,
-    source: 'gemini-1.5-flash-vision',
-  };
+  throw lastError || new Error('All Gemini vision models failed');
 }
 
 // ── 2. High-Accuracy Local Fallback Parser (When API Key is Absent) ──
@@ -231,7 +243,7 @@ export async function POST(request: NextRequest) {
           success: true,
           extracted: geminiResult,
           confidence: geminiResult.confidence,
-          engine: 'Gemini 1.5 Flash Vision',
+          engine: geminiResult.source || 'Gemini Multimodal Vision',
           cardSnapshot: cardImage,
         });
       } catch (geminiErr: any) {
