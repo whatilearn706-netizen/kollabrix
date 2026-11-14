@@ -23,11 +23,25 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#090B10]"
     >
-      {/* Concept 2 Midnight Cyber-Grid with Procedural Fire Embers & Twinkling Stars */}
-      <CyberGridCanvas />
+      {/* 3D Cinematic Concept 2 Cyber-Grid Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster="/brand/hero-cyber-grid.webp"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none z-0"
+      >
+        <source src="/videos/hero-cyber-grid-3d.webm" type="video/webm" />
+        <source src="/videos/hero-cyber-grid-3d.mp4" type="video/mp4" />
+      </video>
 
-      {/* Soft radial vignette to keep headline & buttons ultra-readable */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(9,11,16,0.7)_100%)] pointer-events-none" />
+      {/* Real-time Procedural Rising Fire Embers, Breaking Sparks & Twinkling Stars */}
+      <CyberGridCanvas className="z-10" />
+
+      {/* Balanced Radial Vignette: keeps headlines ultra-readable while letting the golden 3D city glow shine through */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(9,11,16,0.65)_100%)] pointer-events-none z-10" />
 
       {/* Subtle ambient warm glow orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">

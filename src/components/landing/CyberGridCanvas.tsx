@@ -64,14 +64,6 @@ export function CyberGridCanvas({ className = '' }: { className?: string }) {
     let height = 0;
     let dpr = 1;
 
-    // Load Concept 2 background image
-    const bgImage = new Image();
-    bgImage.src = '/brand/hero-cyber-grid.webp';
-    let isBgLoaded = false;
-    bgImage.onload = () => {
-      isBgLoaded = true;
-    };
-
     const updateDimensions = () => {
       if (!canvas || !canvas.parentElement) return;
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -171,35 +163,6 @@ export function CyberGridCanvas({ className = '' }: { className?: string }) {
     const render = () => {
       time += 0.016;
       ctx.clearRect(0, 0, width, height);
-
-      // A. Draw Concept 2 Base Backdrop
-      if (isBgLoaded) {
-        // Draw image covering viewport with slight ambient vertical breathing
-        const scale = Math.max(width / bgImage.width, height / bgImage.height) * 1.02;
-        const imgW = bgImage.width * scale;
-        const imgH = bgImage.height * scale;
-        const imgX = (width - imgW) / 2;
-        const imgY = (height - imgH) / 2;
-        ctx.drawImage(bgImage, imgX, imgY, imgW, imgH);
-      } else {
-        ctx.fillStyle = '#090B10';
-        ctx.fillRect(0, 0, width, height);
-      }
-
-      // B. Ambient Vignette Gradient (keeps center text ultra-readable)
-      const grad = ctx.createRadialGradient(
-        width / 2,
-        height * 0.48,
-        width * 0.15,
-        width / 2,
-        height * 0.5,
-        Math.max(width, height) * 0.72
-      );
-      grad.addColorStop(0, 'rgba(9, 11, 16, 0.45)');
-      grad.addColorStop(0.55, 'rgba(9, 11, 16, 0.65)');
-      grad.addColorStop(1, 'rgba(9, 11, 16, 0.95)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
 
       // C. Render Twinkling Stars in Cosmic Sky
       for (let i = 0; i < stars.length; i++) {
