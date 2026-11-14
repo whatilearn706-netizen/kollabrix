@@ -25,14 +25,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No file provided.' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // ── File Security Shield ──
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { success: false, error: 'File size exceeds maximum permitted limit (10MB).' },
+        { status: 400 }
+      );
+    }
+
     const fileName = file.name || 'upload.bin';
+    const lowerName = fileName.toLowerCase();
+    const FORBIDDEN_EXTENSIONS = [
+      '.exe', '.bat', '.sh', '.cmd', '.dll', '.scr', '.vbs', '.msi', '.ps1', '.jar', '.com', '.pif'
+    ];
+    if (FORBIDDEN_EXTENSIONS.some((ext) => lowerName.endsWith(ext))) {
+      return NextResponse.json(
+        { success: false, error: 'Executable and script uploads are strictly prohibited.' },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize folder path against directory traversal
+    const safeFolder = folder.replace(/[^a-zA-Z0-9_\-\/]/g, '').replace(/\.\./g, '').slice(0, 40) || 'uploads';
+
+    const buffer = Buffer.from(await file.arrayBuffer());
     const contentType = file.type || 'application/octet-stream';
 
     // 1. Primary: Cloudflare R2 (Unlimited Egress, $0 bandwidth costs)
     if (isR2Configured()) {
       try {
-        const publicUrl = await uploadBufferToR2(buffer, fileName, contentType, folder);
+        const publicUrl = await uploadBufferToR2(buffer, fileName, contentType, safeFolder);
         return NextResponse.json({
           success: true,
           url: publicUrl,
@@ -46,7 +69,7 @@ export async function POST(request: NextRequest) {
     // 2. Secondary: Supabase Storage fallback
     const supabaseAdmin = getSupabaseAdmin();
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filePath = `${folder}/${Date.now()}_${cleanFileName}`;
+    const filePath = `${safeFolder}/${Date.now()}_${cleanFileName}`;
 
     try {
       const { data, error: sbErr } = await supabaseAdmin.storage

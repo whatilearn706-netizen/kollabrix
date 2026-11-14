@@ -1587,7 +1587,7 @@ export default function HackathonWorkspacePage() {
 
   // Handle Save / Submit Project
   const handleSaveSubmission = async (status: 'draft' | 'submitted') => {
-    if (!myTeam || !user || !hackathon) return;
+    if (!myTeam || !user || !hackathon || isSavingSubmission) return;
     const canonicalHackId = hackathon.id;
     setSubmissionError(null);
     setSubmissionFeedback(null);
@@ -3808,6 +3808,7 @@ export default function HackathonWorkspacePage() {
                     variant="primary"
                     onClick={() => handleSaveSubmission('submitted')}
                     isLoading={isSavingSubmission}
+                    disabled={isSavingSubmission}
                     leftIcon={<Award className="w-4 h-4" />}
                   >
                     Submit Project Deliverables

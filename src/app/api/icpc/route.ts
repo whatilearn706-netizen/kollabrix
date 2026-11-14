@@ -181,11 +181,26 @@ export async function GET(request: NextRequest) {
           ? (p.allowedLanguages as ('cpp' | 'python' | 'java')[])
           : ['cpp', 'python', 'java'];
 
+        // Mask hidden test cases for students so DevTools inspect cannot leak test inputs/outputs
+        const sanitizedTestCases = shouldBypassLock
+          ? p.testCases
+          : (p.testCases || []).map((tc) => {
+              if (tc.isHidden) {
+                return {
+                  ...tc,
+                  input: '[Hidden Test Case - Evaluated Server-side]',
+                  output: '[Hidden Test Case - Evaluated Server-side]',
+                };
+              }
+              return tc;
+            });
+
         if (isContestLive) {
           // Mask solution code & explanation while live contest is actively underway
           const { solutionCode, solutionExplanation, ...rest } = p;
           return {
             ...rest,
+            testCases: sanitizedTestCases,
             allowedLanguages: allowedLangs,
             starterCode: cleanStarter,
             isSolutionLocked: true,
@@ -193,6 +208,7 @@ export async function GET(request: NextRequest) {
         }
         return {
           ...p,
+          testCases: sanitizedTestCases,
           allowedLanguages: allowedLangs,
           starterCode: cleanStarter,
           isSolutionLocked: false,

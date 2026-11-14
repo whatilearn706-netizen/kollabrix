@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkUserOrCampusRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 import {
   DEFAULT_SUPABASE_URL,
   DEFAULT_SUPABASE_ANON_KEY,
@@ -26,6 +27,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required.' }, { status: 401 });
+    }
+
+    // Anti-Brute-Force Rate Limiting: Max 10 invite code guesses per minute per user/IP
+    const ip = getClientIp(request);
+    const rateCheck = checkUserOrCampusRateLimit(userId, ip, 10, 60000, 1000, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many team join attempts. Please wait a moment before trying again.' },
+        { status: 429 }
+      );
     }
 
     const admin = getAdminClient();
@@ -61,6 +72,23 @@ export async function POST(request: NextRequest) {
     }
 
     const canonicalHackId = hackathonId || targetTeam.hackathon_id;
+
+    // Anti-Multi-Team Abuse: 1 Student = 1 Team per Hackathon
+    try {
+      const { data: existingPart } = await admin
+        .from('hackathon_participants')
+        .select('team_id')
+        .eq('hackathon_id', canonicalHackId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existingPart?.team_id && existingPart.team_id !== targetTeam.id) {
+        return NextResponse.json(
+          { error: 'You are already registered with another team in this hackathon. You must leave your current team before joining a new one.' },
+          { status: 400 }
+        );
+      }
+    } catch {}
 
     // 2. Fetch current team members
     const { data: currentMembers } = await admin
