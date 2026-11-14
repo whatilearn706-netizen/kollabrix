@@ -215,7 +215,7 @@ export default function HackathonDetailPage() {
       // Fallback: Query /api/hackathons endpoint
       if (!currentHack) {
         try {
-          const res = await fetch(`/api/hackathons?_t=${Date.now()}`, { cache: 'no-store' });
+          const res = await fetch('/api/hackathons');
           const data = await res.json();
           if (res.ok && data.success && Array.isArray(data.hackathons)) {
             const found = data.hackathons.find(

@@ -572,38 +572,62 @@ export default function HackathonWorkspacePage() {
       const canonicalHackId = currentHack.id;
       const isCanonicalUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalHackId);
       let allChallenges: HackathonChallenge[] = [];
+      let allTeams: TeamWithMembers[] = [];
 
-      // 2. Fetch Participants
+      // 2-8. High-Performance Parallel Multi-Table Fetch
+      // Dispatches all 7 independent workspace queries simultaneously, reducing database roundtrips from 7 down to 1
+      let partData: any[] | null = null;
+      let chalData: any[] | null = null;
+      let annData: any[] | null = null;
+      let teamData: any[] | null = null;
+      let critData: any[] | null = null;
+      let allSubsData: any[] | null = null;
+      let evalData: any[] | null = null;
+
       if (isCanonicalUUID) {
         try {
-          const { data: partData } = await supabase
-            .from('hackathon_participants')
-            .select('*')
-            .eq('hackathon_id', canonicalHackId);
+          const [
+            partRes,
+            chalRes,
+            annRes,
+            teamRes,
+            critRes,
+            subsRes,
+            evalsRes,
+          ] = await Promise.all([
+            supabase.from('hackathon_participants').select('*').eq('hackathon_id', canonicalHackId),
+            supabase.from('hackathon_challenges').select('*').eq('hackathon_id', canonicalHackId).order('created_at', { ascending: true }),
+            supabase.from('hackathon_announcements').select('*').eq('hackathon_id', canonicalHackId).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }),
+            supabase.from('hackathon_teams').select(`*, members:hackathon_team_members(*)`).eq('hackathon_id', canonicalHackId),
+            supabase.from('hackathon_judging_criteria').select('*').eq('hackathon_id', canonicalHackId).order('weight', { ascending: false }),
+            supabase.from('hackathon_submissions').select(`*, team:hackathon_teams(team_name)`).eq('hackathon_id', canonicalHackId),
+            supabase.from('hackathon_evaluations').select('*').eq('hackathon_id', canonicalHackId),
+          ]);
 
-          if (partData) {
-            setParticipants(partData as HackathonParticipant[]);
-          }
-        } catch {}
+          partData = partRes.data || null;
+          chalData = chalRes.data || null;
+          annData = annRes.data || null;
+          teamData = teamRes.data || null;
+          critData = critRes.data || null;
+          allSubsData = subsRes.data || null;
+          evalData = evalsRes.data || null;
+        } catch (fetchErr) {
+          console.warn('Error fetching workspace tables in parallel:', fetchErr);
+        }
 
-        // 3. Fetch Challenges (Resilient to legacy vs modern schema & localStorage fallback)
-        try {
-          const { data: chalData } = await supabase
-            .from('hackathon_challenges')
-            .select('*')
-            .eq('hackathon_id', canonicalHackId)
-            .order('created_at', { ascending: true });
+        // Hydrate Participants
+        if (partData) {
+          setParticipants(partData as HackathonParticipant[]);
+        }
 
-          if (chalData && chalData.length > 0) {
-            allChallenges = chalData.map((c: any) => ({
-              ...c,
-              problem_description: c.problem_description || c.description || '',
-              difficulty: c.difficulty || 'Intermediate',
-              category: c.category || 'Web Development',
-            }));
-          }
-        } catch (err) {
-          console.warn('Error fetching hackathon challenges from Supabase:', err);
+        // Hydrate Challenges
+        if (chalData && chalData.length > 0) {
+          allChallenges = chalData.map((c: any) => ({
+            ...c,
+            problem_description: c.problem_description || c.description || '',
+            difficulty: c.difficulty || 'Intermediate',
+            category: c.category || 'Web Development',
+          }));
         }
 
         // Merge localStorage challenges (to recover full rich fields like context & deliverables)
@@ -649,24 +673,12 @@ export default function HackathonWorkspacePage() {
         }
         setChallenges(allChallenges);
 
-        // 4. Fetch Announcements (Resilient to table missing & localStorage fallback)
+        // Hydrate Announcements
         let allAnnouncements: HackathonAnnouncement[] = [];
-        try {
-          const { data: annData } = await supabase
-            .from('hackathon_announcements')
-            .select('*')
-            .eq('hackathon_id', canonicalHackId)
-            .order('is_pinned', { ascending: false })
-            .order('created_at', { ascending: false });
-
-          if (annData && annData.length > 0) {
-            allAnnouncements = annData as HackathonAnnouncement[];
-          }
-        } catch (err) {
-          console.warn('Error fetching hackathon announcements from Supabase:', err);
+        if (annData && annData.length > 0) {
+          allAnnouncements = annData as HackathonAnnouncement[];
         }
 
-        // Merge localStorage announcements
         if (typeof window !== 'undefined') {
           try {
             const k1 = `teamforge_announcements_${canonicalHackId}`;
@@ -695,114 +707,84 @@ export default function HackathonWorkspacePage() {
           } catch {}
         }
         setAnnouncements(allAnnouncements);
-      }
 
-      // 5. Fetch Teams with Members safely
-      let allTeams: TeamWithMembers[] = [];
-      if (isCanonicalUUID) {
-        try {
-          const { data: teamData, error: teamFetchErr } = await supabase
-            .from('hackathon_teams')
-            .select(`
-              *,
-              members:hackathon_team_members(*)
-            `)
-            .eq('hackathon_id', canonicalHackId);
+        // Hydrate Teams with Members
+        if (teamData && teamData.length > 0) {
+          const memberUserIds = Array.from(
+            new Set(teamData.flatMap((t: any) => (t.members || []).map((m: any) => m.user_id)).filter(Boolean))
+          );
 
-          if (teamFetchErr) {
-            console.warn('Teams fetch error:', teamFetchErr.message);
-          }
+          const profileMap = new Map<string, any>();
+          const verificationRegistryMap = new Map<string, any>();
 
-          if (teamData && teamData.length > 0) {
-            // Hydrate member profiles safely in one batch
-            const memberUserIds = Array.from(
-              new Set(teamData.flatMap((t: any) => (t.members || []).map((m: any) => m.user_id)).filter(Boolean))
-            );
-
-            const profileMap = new Map<string, any>();
-            const verificationRegistryMap = new Map<string, any>();
-
-            if (memberUserIds.length > 0) {
-              try {
-                const { data: profilesData } = await supabase
+          if (memberUserIds.length > 0) {
+            try {
+              // Hydrate profiles and verification registry concurrently
+              const [profilesRes, settingsRes] = await Promise.all([
+                supabase
                   .from('profiles')
                   .select('user_id, display_name, avatar_url, college, course, academic_year, college_verified')
-                  .in('user_id', memberUserIds);
-
-                (profilesData || []).forEach((p: any) => profileMap.set(p.user_id, p));
-              } catch (pErr) {
-                console.warn('Error hydrating member profiles:', pErr);
-              }
-
-              // Load collegiate verification registry for verified faculty/organizer view
-              try {
-                const { data: regData } = await supabase
+                  .in('user_id', memberUserIds),
+                supabase
                   .from('platform_settings')
-                  .select('value')
-                  .eq('key', 'linkedin_college_verifications')
-                  .maybeSingle();
+                  .select('key, value')
+                  .in('key', ['linkedin_college_verifications', 'student_id_verifications']),
+              ]);
 
-                if (Array.isArray(regData?.value)) {
-                  regData.value.forEach((item: any) => {
-                    if (item.userId) {
-                      verificationRegistryMap.set(item.userId, item);
-                    }
-                  });
+              (profilesRes?.data || []).forEach((p: any) => profileMap.set(p.user_id, p));
+
+              if (Array.isArray(settingsRes?.data)) {
+                for (const row of settingsRes.data) {
+                  if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
+                    row.value.forEach((item: any) => {
+                      if (item.userId) verificationRegistryMap.set(item.userId, item);
+                    });
+                  } else if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
+                    row.value.forEach((item: any) => {
+                      if (item.userId && !verificationRegistryMap.has(item.userId)) {
+                        verificationRegistryMap.set(item.userId, item);
+                      }
+                    });
+                  }
                 }
-
-                const { data: sidData } = await supabase
-                  .from('platform_settings')
-                  .select('value')
-                  .eq('key', 'student_id_verifications')
-                  .maybeSingle();
-
-                if (Array.isArray(sidData?.value)) {
-                  sidData.value.forEach((item: any) => {
-                    if (item.userId && !verificationRegistryMap.has(item.userId)) {
-                      verificationRegistryMap.set(item.userId, item);
-                    }
-                  });
-                }
-              } catch (regErr) {
-                console.warn('Error hydrating verification records for faculty:', regErr);
               }
+            } catch (pErr) {
+              console.warn('Error hydrating member profiles in parallel:', pErr);
             }
-
-            allTeams = teamData.map((t: any) => {
-              const derivedInviteCode = t.invite_code || (t.id ? t.id.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
-              return {
-                ...t,
-                team_name: t.team_name || t.name || 'Unnamed Team',
-                invite_code: derivedInviteCode,
-                members: (t.members || []).map((m: any) => {
-                  const pRec = profileMap.get(m.user_id) || {};
-                  const vRec = verificationRegistryMap.get(m.user_id);
-                  const isUserSelf = m.user_id === user?.id;
-
-                  const memberCollege = vRec?.college || pRec.college || (isUserSelf ? profile?.college : 'S-VYASA Deemed to be University');
-                  const memberCourse = vRec?.course || pRec.course || (isUserSelf ? (profile as any)?.course : 'B.Tech CSE (AI & ML)');
-                  const memberYear = vRec?.academicYear || pRec.academic_year || (isUserSelf ? profile?.academic_year : '1st Year (Freshman)');
-                  const memberRoll = vRec?.rollNumber || vRec?.studentRollNumber || pRec.student_roll_no || (isUserSelf ? (profile as any)?.student_roll_no : null) || '239260051';
-                  const isVerified = Boolean(vRec?.status === 'approved' || vRec?.collegeVerified || pRec.college_verified);
-
-                  return {
-                    ...m,
-                    profile: {
-                      display_name: pRec.display_name || (isUserSelf ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member'),
-                      avatar_url: pRec.avatar_url || (isUserSelf ? profile?.avatar_url : null),
-                      college: memberCollege,
-                      course: memberCourse,
-                      academic_year: memberYear,
-                      roll_number: memberRoll,
-                      is_verified: isVerified,
-                    },
-                  };
-                }),
-              };
-            }) as TeamWithMembers[];
           }
-        } catch (err) {
-          console.warn('Error loading hackathon teams:', err);
+
+          allTeams = teamData.map((t: any) => {
+            const derivedInviteCode = t.invite_code || (t.id ? t.id.replace(/-/g, '').substring(0, 6).toUpperCase() : '');
+            return {
+              ...t,
+              team_name: t.team_name || t.name || 'Unnamed Team',
+              invite_code: derivedInviteCode,
+              members: (t.members || []).map((m: any) => {
+                const pRec = profileMap.get(m.user_id) || {};
+                const vRec = verificationRegistryMap.get(m.user_id);
+                const isUserSelf = m.user_id === user?.id;
+
+                const memberCollege = vRec?.college || pRec.college || (isUserSelf ? profile?.college : 'S-VYASA Deemed to be University');
+                const memberCourse = vRec?.course || pRec.course || (isUserSelf ? (profile as any)?.course : 'B.Tech CSE (AI & ML)');
+                const memberYear = vRec?.academicYear || pRec.academic_year || (isUserSelf ? profile?.academic_year : '1st Year (Freshman)');
+                const memberRoll = vRec?.rollNumber || vRec?.studentRollNumber || pRec.student_roll_no || (isUserSelf ? (profile as any)?.student_roll_no : null) || '239260051';
+                const isVerified = Boolean(vRec?.status === 'approved' || vRec?.collegeVerified || pRec.college_verified);
+
+                return {
+                  ...m,
+                  profile: {
+                    display_name: pRec.display_name || (isUserSelf ? (profile?.display_name || user?.email?.split('@')[0] || 'You') : 'Student Member'),
+                    avatar_url: pRec.avatar_url || (isUserSelf ? profile?.avatar_url : null),
+                    college: memberCollege,
+                    course: memberCourse,
+                    academic_year: memberYear,
+                    roll_number: memberRoll,
+                    is_verified: isVerified,
+                  },
+                };
+              }),
+            };
+          }) as TeamWithMembers[];
         }
       }
 
@@ -835,10 +817,9 @@ export default function HackathonWorkspacePage() {
         );
         setMyTeam(userTeam || null);
 
-        // If user has team, fetch team submission
+        // If user has team, resolve team submission directly from already-fetched submissions or query
         if (userTeam) {
           try {
-            // Restore team challenge selection from local cache if available
             if (typeof window !== 'undefined') {
               try {
                 const cachedChallenge = localStorage.getItem(`teamforge_team_challenge_${userTeam.id}`);
@@ -849,11 +830,19 @@ export default function HackathonWorkspacePage() {
               } catch {}
             }
 
-            const { data: subData } = await supabase
-              .from('hackathon_submissions')
-              .select('*')
-              .eq('team_id', userTeam.id)
-              .maybeSingle();
+            // Fast path: find from already fetched allSubsData
+            let subData: any = Array.isArray(allSubsData)
+              ? allSubsData.find((s: any) => s.team_id === userTeam.id)
+              : null;
+
+            if (!subData && isCanonicalUUID) {
+              const { data: directSub } = await supabase
+                .from('hackathon_submissions')
+                .select('*')
+                .eq('team_id', userTeam.id)
+                .maybeSingle();
+              subData = directSub;
+            }
 
             // LocalStorage backup
             let localSub: any = null;
@@ -923,79 +912,53 @@ export default function HackathonWorkspacePage() {
         }
       }
 
-      // 6. Fetch Judging Criteria
+      // Judging Criteria & Submissions Processing
       if (isCanonicalUUID) {
-        try {
-          const { data: critData } = await supabase
-            .from('hackathon_judging_criteria')
-            .select('*')
-            .eq('hackathon_id', canonicalHackId)
-            .order('weight', { ascending: false });
+        if (critData) {
+          setCriteria(critData as HackathonJudgingCriteria[]);
+        }
 
-          if (critData) {
-            setCriteria(critData as HackathonJudgingCriteria[]);
-          }
-        } catch {}
-
-        // 7. If organizer or judge, or if results published, load submissions and evaluations
         let loadedRawSubs: any[] = [];
-        try {
-          const { data: allSubs } = await supabase
-            .from('hackathon_submissions')
-            .select(`
-              *,
-              team:hackathon_teams(team_name)
-            `)
-            .eq('hackathon_id', canonicalHackId);
+        if (allSubsData) {
+          loadedRawSubs = allSubsData;
+          const formatted = allSubsData.map((s: any) => {
+            let parsedMeta: any = {};
+            if (s.description && s.description.includes('<!-- SUBMISSION_META:')) {
+              try {
+                const metaJson = s.description.split('<!-- SUBMISSION_META:')[1].split('-->')[0];
+                parsedMeta = JSON.parse(metaJson);
+              } catch {}
+            }
 
-          if (allSubs) {
-            loadedRawSubs = allSubs;
-            const formatted = allSubs.map((s: any) => {
-              let parsedMeta: any = {};
-              if (s.description && s.description.includes('<!-- SUBMISSION_META:')) {
-                try {
-                  const metaJson = s.description.split('<!-- SUBMISSION_META:')[1].split('-->')[0];
-                  parsedMeta = JSON.parse(metaJson);
-                } catch {}
-              }
+            const teamMatch = allTeams.find((t) => t.id === s.team_id);
+            const challengeId = parsedMeta.challenge_id || s.challenge_id || teamMatch?.challenge_id;
+            const chal = allChallenges.find((c) => c.id === challengeId);
+            const challengeTitle =
+              chal?.title || parsedMeta.challenge_title || 'Official Challenge';
 
-              const teamMatch = allTeams.find((t) => t.id === s.team_id);
-              const challengeId = parsedMeta.challenge_id || s.challenge_id || teamMatch?.challenge_id;
-              const chal = allChallenges.find((c) => c.id === challengeId);
-              const challengeTitle =
-                chal?.title || parsedMeta.challenge_title || 'Official Challenge';
+            return {
+              ...s,
+              team_name: s.team?.team_name || teamMatch?.team_name || 'Team',
+              challenge_id: challengeId,
+              challenge_title: challengeTitle,
+              pitch: parsedMeta.pitch || s.pitch || '',
+              problem_statement: parsedMeta.problem_statement || s.problem_statement || '',
+              solution_description: parsedMeta.solution_description || s.solution_description || s.description || '',
+              tech_stack: parsedMeta.tech_stack || s.tech_stack || [],
+              repository_url: s.repo_url || s.repository_url || '',
+              video_url: parsedMeta.video_url || s.video_url || '',
+              documentation_url: parsedMeta.documentation_url || s.documentation_url || '',
+              status: parsedMeta.status || (s.submitted_at ? 'submitted' : 'draft'),
+            };
+          });
+          setAllSubmissions(formatted);
+        }
 
-              return {
-                ...s,
-                team_name: s.team?.team_name || teamMatch?.team_name || 'Team',
-                challenge_id: challengeId,
-                challenge_title: challengeTitle,
-                pitch: parsedMeta.pitch || s.pitch || '',
-                problem_statement: parsedMeta.problem_statement || s.problem_statement || '',
-                solution_description: parsedMeta.solution_description || s.solution_description || s.description || '',
-                tech_stack: parsedMeta.tech_stack || s.tech_stack || [],
-                repository_url: s.repo_url || s.repository_url || '',
-                video_url: parsedMeta.video_url || s.video_url || '',
-                documentation_url: parsedMeta.documentation_url || s.documentation_url || '',
-                status: parsedMeta.status || (s.submitted_at ? 'submitted' : 'draft'),
-              };
-            });
-            setAllSubmissions(formatted);
-          }
-        } catch {}
-
-        // Fetch evaluations
+        // Evaluations Processing
         let allEvals: HackathonEvaluation[] = [];
-        try {
-          const { data: evalData } = await supabase
-            .from('hackathon_evaluations')
-            .select('*')
-            .eq('hackathon_id', canonicalHackId);
-
-          if (evalData) {
-            allEvals = evalData as HackathonEvaluation[];
-          }
-        } catch {}
+        if (evalData) {
+          allEvals = evalData as HackathonEvaluation[];
+        }
 
         // Extract embedded evaluations from submissions metadata
         try {

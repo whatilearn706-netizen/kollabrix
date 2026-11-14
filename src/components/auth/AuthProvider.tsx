@@ -312,47 +312,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           typeof window !== 'undefined' &&
           localStorage.getItem(`linkora_college_verified_${userId}`) === 'true';
 
-        // Check platform_settings for universal collegiate verification approval specifically for this user
-        let isRegistryVerified = false;
-        try {
-          const { data: regData } = await supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'linkedin_college_verifications')
-            .maybeSingle();
-
-          if (Array.isArray(regData?.value)) {
-            isRegistryVerified = regData.value.some(
-              (item: any) =>
-                item.status === 'approved' &&
-                (item.userId === userId ||
-                  (currentUser?.email && item.email && item.email.toLowerCase() === currentUser.email.toLowerCase()))
-            );
-          }
-
-          if (!isRegistryVerified) {
-            const { data: sidData } = await supabase
-              .from('platform_settings')
-              .select('value')
-              .eq('key', 'student_id_verifications')
-              .maybeSingle();
-
-            if (Array.isArray(sidData?.value)) {
-              isRegistryVerified = sidData.value.some(
-                (item: any) =>
-                  item.userId === userId &&
-                  (item.status === 'approved' || String(item.id || '').includes('faceid'))
-              );
-            }
-          }
-        } catch (e) {}
-
-        const finalIsVerified = Boolean(
+        // Fast-path: If already verified in profile, metadata, or verified storage, bypass heavy platform_settings table scans completely
+        const alreadyVerified = Boolean(
           data.college_verified ||
           currentUser?.user_metadata?.college_verified ||
-          isVerifiedInStorage ||
-          isRegistryVerified
+          isVerifiedInStorage
         );
+
+        let isRegistryVerified = false;
+        if (!alreadyVerified) {
+          try {
+            const { data: settingsRows } = await supabase
+              .from('platform_settings')
+              .select('key, value')
+              .in('key', ['linkedin_college_verifications', 'student_id_verifications']);
+
+            if (Array.isArray(settingsRows)) {
+              for (const row of settingsRows) {
+                if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
+                  const match = row.value.some(
+                    (item: any) =>
+                      item.status === 'approved' &&
+                      (item.userId === userId ||
+                        (currentUser?.email && item.email && item.email.toLowerCase() === currentUser.email.toLowerCase()))
+                  );
+                  if (match) {
+                    isRegistryVerified = true;
+                    break;
+                  }
+                }
+                if (row.key === 'student_id_verifications' && Array.isArray(row.value)) {
+                  const match = row.value.some(
+                    (item: any) =>
+                      item.userId === userId &&
+                      (item.status === 'approved' || String(item.id || '').includes('faceid'))
+                  );
+                  if (match) {
+                    isRegistryVerified = true;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+        }
+
+        const finalIsVerified = Boolean(alreadyVerified || isRegistryVerified);
 
         if (typeof window !== 'undefined') {
           try {
