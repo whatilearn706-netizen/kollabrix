@@ -23,18 +23,19 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#090B10]"
     >
-      {/* 3D Cinematic Concept 2 Cyber-Grid Video Background */}
+      {/* 3D Cinematic 4K Quantum Loom of Consciousness Video Background */}
       <video
         autoPlay
         loop
         muted
         playsInline
         preload="auto"
-        poster="/brand/hero-cyber-grid.webp"
+        poster="/brand/hero-quantum-loom-poster.webp"
         className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none z-0"
       >
-        <source src="/videos/hero-cyber-grid-3d.webm" type="video/webm" />
-        <source src="/videos/hero-cyber-grid-3d.mp4" type="video/mp4" />
+        <source src="/videos/hero-quantum-loom.webm" type="video/webm" />
+        <source src="/videos/hero-quantum-loom-4k.mp4" type="video/mp4" />
+        <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
       </video>
 
       {/* Real-time Procedural Rising Fire Embers, Breaking Sparks & Twinkling Stars */}
