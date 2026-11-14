@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -64,17 +64,24 @@ export function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+  const arenaCacheRef = useRef<{ isLive: boolean; time: number } | null>(null);
 
-  const checkArenaStatus = () => {
-    fetch(`/api/arena/status?_t=${Date.now()}`, { cache: 'no-store' })
+  const checkArenaStatus = useCallback((force = false) => {
+    const now = Date.now();
+    if (!force && arenaCacheRef.current && now - arenaCacheRef.current.time < 60000) {
+      setIsArenaLive(arenaCacheRef.current.isLive);
+      return;
+    }
+    fetch('/api/arena/status')
       .then((res) => res.json())
       .then((data) => {
         if (data && typeof data.isLive === 'boolean') {
+          arenaCacheRef.current = { isLive: data.isLive, time: Date.now() };
           setIsArenaLive(data.isLive);
         }
       })
       .catch(() => {});
-  };
+  }, []);
 
   useEffect(() => {
     checkArenaStatus();
@@ -83,7 +90,7 @@ export function Navbar() {
       if (e?.detail && typeof e.detail.isLive === 'boolean') {
         setIsArenaLive(e.detail.isLive);
       } else {
-        checkArenaStatus();
+        checkArenaStatus(true);
       }
     };
 
@@ -95,14 +102,14 @@ export function Navbar() {
 
     window.addEventListener('kollabrix:arena_status_changed', handleStatusEvent);
     window.addEventListener('storage', handleStorage);
-    window.addEventListener('focus', checkArenaStatus);
+    window.addEventListener('focus', () => checkArenaStatus());
 
     return () => {
       window.removeEventListener('kollabrix:arena_status_changed', handleStatusEvent);
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('focus', checkArenaStatus);
+      window.removeEventListener('focus', () => checkArenaStatus());
     };
-  }, []);
+  }, [checkArenaStatus]);
 
   const handleLaunchArena = () => {
     setIsArenaModalOpen(true);
