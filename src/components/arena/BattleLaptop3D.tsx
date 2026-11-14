@@ -22,7 +22,7 @@ export function BattleLaptop3D({
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const prevMouseRef = useRef({ x: 0, y: 0 });
-  const targetRotationRef = useRef({ x: 0.22, y: -0.45 });
+  const targetRotationRef = useRef({ x: 0.16, y: -0.42 });
   const [isInteracting, setIsInteracting] = useState(false);
 
   useEffect(() => {
@@ -34,11 +34,12 @@ export function BattleLaptop3D({
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x020408, 0.12);
+    scene.fog = new THREE.FogExp2(0x020408, 0.09);
 
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
-    // Adjusted camera position to showcase the floating laptop above the holographic disc
-    camera.position.set(0, 1.8, 4.4);
+    // Medium-wide perspective camera: showcases both the disc firmly on the ground and the floating laptop
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+    camera.position.set(0, 1.45, 6.2);
+    camera.lookAt(0, -0.15, 0);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -53,9 +54,10 @@ export function BattleLaptop3D({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    // Group for complete laptop assembly
+    // Group for complete laptop assembly - medium size floating above the ground disc
     const laptopGroup = new THREE.Group();
-    laptopGroup.position.set(0, 0.85, 0); // Floats above disc
+    laptopGroup.scale.set(0.68, 0.68, 0.68);
+    laptopGroup.position.set(0, 0.25, 0); // Floats comfortably above disc
     scene.add(laptopGroup);
 
     // --- Dynamic High-Contrast Canvas Texture for Laptop Screen ---
@@ -237,19 +239,20 @@ export function BattleLaptop3D({
     laptopGroup.add(lidGroup);
 
     // --- Build The Glowing Holographic Cyber Disc Platform (Exact Match to Image 2) ---
+    // The disc sits firmly on the reflective ground at Y = -0.92
     const discGroup = new THREE.Group();
-    discGroup.position.set(0, -0.45, 0); // Positioned directly on the dark floor
+    discGroup.position.set(0, -0.92, 0);
     scene.add(discGroup);
 
     // Outer dark platform base
-    const discBaseGeo = new THREE.CylinderGeometry(2.2, 2.3, 0.12, 64);
+    const discBaseGeo = new THREE.CylinderGeometry(1.9, 2.0, 0.08, 64);
     const discBaseMat = new THREE.MeshStandardMaterial({
       color: 0x050914,
       roughness: 0.15,
       metalness: 0.9,
     });
     const discBase = new THREE.Mesh(discBaseGeo, discBaseMat);
-    discBase.position.y = -0.06;
+    discBase.position.y = -0.04;
     discGroup.add(discBase);
 
     // Concentric Glowing Neon Rings (Like Image 2)
@@ -266,45 +269,32 @@ export function BattleLaptop3D({
       return ring;
     };
 
-    const ringOuter = createNeonRing(2.2, 0.035, 0x00d4ff, 1.5);
+    const ringOuter = createNeonRing(1.9, 0.035, 0x00d4ff, 1.6);
     discGroup.add(ringOuter);
 
-    const ringMid1 = createNeonRing(1.85, 0.025, 0x0088ff, 1.2);
+    const ringMid1 = createNeonRing(1.55, 0.025, 0x0088ff, 1.3);
     ringMid1.position.y = 0.01;
     discGroup.add(ringMid1);
 
-    const ringMid2 = createNeonRing(1.45, 0.03, 0x00d4ff, 1.6);
+    const ringMid2 = createNeonRing(1.2, 0.03, 0x00d4ff, 1.7);
     ringMid2.position.y = 0.02;
     discGroup.add(ringMid2);
 
-    const ringInner = createNeonRing(0.95, 0.025, 0x38bdf8, 1.8);
+    const ringInner = createNeonRing(0.78, 0.025, 0x38bdf8, 1.9);
     ringInner.position.y = 0.03;
     discGroup.add(ringInner);
 
     // Glowing Concentric Segment Ticks (Circuit markers around the disc)
-    const tickMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.85 });
+    const tickMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.9 });
     const numTicks = 32;
     for (let i = 0; i < numTicks; i++) {
       const angle = (i / numTicks) * Math.PI * 2;
       const tickGeo = new THREE.BoxGeometry(0.12, 0.02, 0.03);
       const tickMesh = new THREE.Mesh(tickGeo, tickMat);
-      tickMesh.position.set(Math.cos(angle) * 1.65, 0.025, Math.sin(angle) * 1.65);
+      tickMesh.position.set(Math.cos(angle) * 1.38, 0.025, Math.sin(angle) * 1.38);
       tickMesh.rotation.y = -angle;
       discGroup.add(tickMesh);
     }
-
-    // Upward Volumetric Blue Hologram Glow Column
-    const beamGeo = new THREE.CylinderGeometry(1.6, 1.6, 1.8, 32, 1, true);
-    const beamMat = new THREE.MeshBasicMaterial({
-      color: 0x00d4ff,
-      transparent: true,
-      opacity: 0.08,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    });
-    const beam = new THREE.Mesh(beamGeo, beamMat);
-    beam.position.y = 0.9;
-    discGroup.add(beam);
 
     // Ambient floating cyan particles / digital dust
     const particleCount = 60;
@@ -312,7 +302,7 @@ export function BattleLaptop3D({
     const particlePositions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i += 3) {
       particlePositions[i] = (Math.random() - 0.5) * 4.5;
-      particlePositions[i + 1] = Math.random() * 2.5;
+      particlePositions[i + 1] = Math.random() * 2.5 - 0.5;
       particlePositions[i + 2] = (Math.random() - 0.5) * 4.5;
     }
     particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
@@ -325,7 +315,7 @@ export function BattleLaptop3D({
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
 
-    // Dark Glossy Reflective Floor (Infinite Space Floor)
+    // Dark Glossy Reflective Floor (Infinite Space Floor firmly under the disc)
     const floorGeo = new THREE.PlaneGeometry(30, 30);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x020408,
@@ -334,7 +324,7 @@ export function BattleLaptop3D({
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.52;
+    floor.position.y = -0.96;
     scene.add(floor);
 
     // --- Cinematic Lights (Matches Image 2 Drama) ---
@@ -435,9 +425,10 @@ export function BattleLaptop3D({
       laptopGroup.rotation.x += (targetRotationRef.current.x - laptopGroup.rotation.x) * 0.1;
 
       // Zero-Gravity Floating & Levitation Bobbing (Image 2 style)
+      // Floating smoothly around Y = 0.25 above the ground disc at Y = -0.92
       if (!isDraggingRef.current) {
-        targetRotationRef.current.y += 0.0035; // gentle continuous 360 spin
-        laptopGroup.position.y = 0.85 + Math.sin(elapsed * 1.8) * 0.07; // smooth levitation
+        targetRotationRef.current.y += 0.003; // gentle continuous 360 spin
+        laptopGroup.position.y = 0.25 + Math.sin(elapsed * 1.8) * 0.04; // smooth medium levitation
       }
 
       // Rotate disc concentric rings in opposite directions
@@ -486,7 +477,7 @@ export function BattleLaptop3D({
   }, [gamerTag, uid, college, rankTitle]);
 
   const handleResetOrientation = () => {
-    targetRotationRef.current = { x: 0.22, y: -0.45 };
+    targetRotationRef.current = { x: 0.16, y: -0.42 };
   };
 
   return (
