@@ -25,6 +25,7 @@ import {
   PlusCircle,
   Lock,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   ExternalLink,
   Sparkles,
@@ -135,7 +136,7 @@ export default function PublicProfilePage() {
             );
           }
 
-          p.college_verified = isRegVerified;
+          p.college_verified = Boolean(p.college_verified) || isRegVerified;
         } catch (e) {
           // ignore
         }
@@ -285,10 +286,68 @@ export default function PublicProfilePage() {
     );
   }
 
+  const isCollegiateVerified = Boolean(profile.college_verified) || profile.role === 'teacher';
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
-      {/* Top Navigation Row */}
-      <div className="flex items-center justify-between gap-4">
+    <div className="relative min-h-[85vh]">
+      {/* If unverified, display frosted-glass blur lock on top */}
+      {!isCollegiateVerified && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md pointer-events-auto animate-fade-in">
+          <div className="relative w-full max-w-lg p-6 sm:p-8 rounded-3xl bg-[#090D16]/95 border border-amber-500/30 text-white shadow-[0_25px_80px_rgba(0,0,0,0.9)] text-center space-y-4 overflow-hidden">
+            {/* Top Amber Accent Glow */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
+
+            <div className="w-16 h-16 rounded-full bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto shadow-[0_0_25px_rgba(245,158,11,0.25)]">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest px-3 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25">
+                Collegiate Identity Unverified
+              </span>
+              <h3 className="text-xl font-black text-white tracking-tight">
+                {isOwner
+                  ? 'Verify Your Student ID to Unlock Your Profile'
+                  : 'Profile Temporarily Blurred'}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+                {isOwner
+                  ? 'Your public portfolio and verified contributions remain blurred to other collegiate peers until you complete your student ID and Apple Face ID verification.'
+                  : `@${profile.username} has not yet verified their collegiate affiliation with a physical student ID card & Face ID. Unverified profiles remain protected until verified.`}
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {isOwner ? (
+                <button
+                  type="button"
+                  onClick={() => openProfileEditModal(4)}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 hover:scale-[1.02] transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Verify Student ID with Apple Face ID (30s)</span>
+                </button>
+              ) : (
+                <Link
+                  href="/teammates"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-colors inline-block"
+                >
+                  Explore Verified Collegiate Peers
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Profile & Portfolio Content (Blurred when unverified) */}
+      <div
+        className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8 transition-all duration-300 ${
+          !isCollegiateVerified ? 'filter blur-md pointer-events-none select-none opacity-40' : ''
+        }`}
+      >
+        {/* Top Navigation Row */}
+        <div className="flex items-center justify-between gap-4">
         <Link
           href="/explore"
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
@@ -629,6 +688,7 @@ export default function PublicProfilePage() {
           />
         </div>
       )}
+      </div>
     </div>
   );
 }
