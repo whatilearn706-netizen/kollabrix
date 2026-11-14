@@ -18,7 +18,7 @@ async function compareFacesWithGemini(
   liveFaceBase64: string,
   idCardBase64: string,
   apiKey: string
-): Promise<{ isMatched: boolean; matchScore: number; reason: string }> {
+): Promise<{ isMatched: boolean; matchScore: number; reason: string; source: string }> {
   const cleanLive = liveFaceBase64.includes('base64,') ? liveFaceBase64.split('base64,')[1] : liveFaceBase64;
   const cleanId = idCardBase64.includes('base64,') ? idCardBase64.split('base64,')[1] : idCardBase64;
 
@@ -34,59 +34,73 @@ Return ONLY valid JSON with this exact structure:
   "reason": "Facial symmetry, nasal bridge, and ocular geometry confirmed match."
 }`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
+  const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.5-flash'];
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
               {
-                inline_data: {
-                  mime_type: 'image/jpeg',
-                  data: cleanLive,
-                },
-              },
-              {
-                inline_data: {
-                  mime_type: 'image/jpeg',
-                  data: cleanId,
-                },
+                parts: [
+                  { text: prompt },
+                  {
+                    inline_data: {
+                      mime_type: 'image/jpeg',
+                      data: cleanLive,
+                    },
+                  },
+                  {
+                    inline_data: {
+                      mime_type: 'image/jpeg',
+                      data: cleanId,
+                    },
+                  },
+                ],
               },
             ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          response_mime_type: 'application/json',
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-        ],
-      }),
-    }
-  );
+            generationConfig: {
+              temperature: 0.1,
+              response_mime_type: 'application/json',
+            },
+            safetySettings: [
+              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            ],
+          }),
+        }
+      );
 
-  if (!res.ok) {
-    throw new Error(`Gemini Face Compare error ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`${model} status ${res.status}: ${errText.slice(0, 150)}`);
+      }
+
+      const json = await res.json();
+      const textOutput = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textOutput) throw new Error(`No output from ${model} face comparison`);
+
+      const parsed = JSON.parse(textOutput);
+      return {
+        isMatched: Boolean(parsed.isMatched),
+        matchScore: Number(parsed.matchScore) || 98.6,
+        reason: parsed.reason || 'Biometric features verified.',
+        source: `${model}-vision`,
+      };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Face match with ${model} failed, trying next:`, err?.message);
+    }
   }
 
-  const json = await res.json();
-  const textOutput = json.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textOutput) throw new Error('No output from Gemini face comparison');
-
-  const parsed = JSON.parse(textOutput);
-  return {
-    isMatched: Boolean(parsed.isMatched),
-    matchScore: Number(parsed.matchScore) || 98.6,
-    reason: parsed.reason || 'Biometric features verified.',
-  };
+  throw lastError || new Error('All Gemini face comparison models failed');
 }
 
 export async function POST(request: NextRequest) {
@@ -119,7 +133,7 @@ export async function POST(request: NextRequest) {
           success: true,
           isMatched: geminiMatch.isMatched,
           matchScore: geminiMatch.matchScore,
-          engine: 'Gemini 1.5 Flash Multimodal Vision',
+          engine: geminiMatch.source || 'Gemini Multimodal Vision',
           reason: geminiMatch.reason,
           verifiedAt: new Date().toISOString(),
         });

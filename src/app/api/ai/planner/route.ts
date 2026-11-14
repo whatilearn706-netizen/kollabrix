@@ -265,7 +265,7 @@ Return ONLY a valid JSON object matching this schema:
 }`;
 
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -281,7 +281,7 @@ Return ONLY a valid JSON object matching this schema:
           const text = aiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) {
             plan = JSON.parse(text) as AIPlanDraft;
-            engineUsed = 'Gemini 1.5 Flash';
+            engineUsed = 'Gemini 3.1 Flash';
           }
         }
       } catch (e) {
