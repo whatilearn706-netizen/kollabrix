@@ -254,6 +254,7 @@ export default function HackathonDetailPage() {
               banner_url: meta.banner_url || currentHack.banner_url,
               contact_info: currentHack.contact_info || meta.contact_info || (currentHack as any).contactInfo || null,
               allowed_college: currentHack.allowed_college || meta.allowed_college || (currentHack as any).allowedCollege || null,
+              website_url: meta.external_website_url || meta.website_url || currentHack.website_url || (currentHack as any).websiteUrl || null,
               is_sponsored: meta.is_sponsored ?? currentHack.is_sponsored,
               is_enterprise: meta.is_enterprise ?? currentHack.is_enterprise,
               company_name: meta.company_name || currentHack.company_name,
@@ -1060,13 +1061,21 @@ export default function HackathonDetailPage() {
                 <div className="flex items-center gap-2 text-slate-400">
                   {hackathon.website_url && (
                     <a
-                      href={hackathon.website_url}
+                      href={
+                        /^https?:\/\//i.test(hackathon.website_url.trim())
+                          ? hackathon.website_url.trim()
+                          : `https://${hackathon.website_url.trim()}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-xl bg-charcoal-950 hover:bg-charcoal-800 border border-charcoal-800 text-slate-300 hover:text-white transition-all"
-                      title="Event Website"
+                      className="p-2 rounded-xl bg-charcoal-950 hover:bg-cyan-500/20 border border-charcoal-800 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 transition-all cursor-pointer group"
+                      title={
+                        hackathon.website_url.includes('/h/')
+                          ? 'Event Portal'
+                          : `Visit Official Website (${hackathon.website_url})`
+                      }
                     >
-                      <Globe className="w-4 h-4" />
+                      <Globe className="w-4 h-4 group-hover:scale-110 transition-transform" />
                     </a>
                   )}
                   <div
@@ -1740,7 +1749,11 @@ export default function HackathonDetailPage() {
 
                 {hackathon.website_url && !hackathon.website_url.includes('/h/') && (
                   <a
-                    href={hackathon.website_url}
+                    href={
+                      /^https?:\/\//i.test(hackathon.website_url.trim())
+                        ? hackathon.website_url.trim()
+                        : `https://${hackathon.website_url.trim()}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block pt-1"
