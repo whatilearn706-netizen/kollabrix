@@ -68,6 +68,42 @@ export default function AdminControlCenterPage() {
   const [isSetupHelpOpen, setIsSetupHelpOpen] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
+  // Fast Battle Arena Master Status Switch (Live vs Maintenance)
+  const [isArenaLive, setIsArenaLive] = useState(true);
+  const [isTogglingArena, setIsTogglingArena] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/arena/status', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.isLive === 'boolean') {
+          setIsArenaLive(data.isLive);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleArenaLive = async () => {
+    setIsTogglingArena(true);
+    try {
+      const target = !isArenaLive;
+      const res = await fetch('/api/arena/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ isLive: target }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsArenaLive(data.isLive);
+      }
+    } catch {} finally {
+      setIsTogglingArena(false);
+    }
+  };
+
   // Track visited tabs so tab transitions are 0ms instant without remounting lag
   useEffect(() => {
     setVisitedTabs((prev) => {
@@ -329,6 +365,26 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {/* Quick 1-Click Battle Arena Master Toggle */}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isTogglingArena}
+            onClick={handleToggleArenaLive}
+            title="Toggle Battle Arena Live vs Maintenance Mode"
+            className={
+              isArenaLive
+                ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold"
+                : "border-rose-500/50 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-bold"
+            }
+          >
+            {isTogglingArena
+              ? "Updating..."
+              : isArenaLive
+              ? "🟢 Arena: LIVE"
+              : "🔴 Arena: OFFLINE"}
+          </Button>
+
           <Button
             size="sm"
             variant="outline"
