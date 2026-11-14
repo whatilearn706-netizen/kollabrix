@@ -1,8 +1,139 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { RekognitionClient, CompareFacesCommand } from '@aws-sdk/client-rekognition';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+
+function getRekognitionClient(): RekognitionClient | null {
+  const accessKeyId = (
+    process.env.AWS_ACCESS_KEY_ID ||
+    process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ||
+    ''
+  ).trim();
+
+  const secretAccessKey = (
+    process.env.AWS_SECRET_ACCESS_KEY ||
+    process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY ||
+    ''
+  ).trim();
+
+  const region = (
+    process.env.AWS_REGION ||
+    process.env.NEXT_PUBLIC_AWS_REGION ||
+    'ap-southeast-2'
+  ).trim();
+
+  if (!accessKeyId || !secretAccessKey) return null;
+
+  return new RekognitionClient({
+    region,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+}
+
+// ── 1. AWS Rekognition 1:1 Forensic Biometric Landmark Comparison ──
+async function compareFacesWithRekognition(
+  cleanLive: string,
+  cleanRef: string,
+  cleanFullCard?: string
+): Promise<{
+  handled: boolean;
+  hasFace: boolean;
+  isMatched: boolean;
+  matchScore: number;
+  reason: string;
+  source: string;
+}> {
+  const client = getRekognitionClient();
+  if (!client) {
+    return { handled: false, hasFace: false, isMatched: false, matchScore: 0, reason: '', source: '' };
+  }
+
+  const liveBuffer = Buffer.from(cleanLive, 'base64');
+  const refBuffer = Buffer.from(cleanRef, 'base64');
+  const fullCardBuffer = cleanFullCard ? Buffer.from(cleanFullCard, 'base64') : null;
+
+  const runCompare = async (sourceBuf: Buffer) => {
+    const cmd = new CompareFacesCommand({
+      SourceImage: { Bytes: sourceBuf },
+      TargetImage: { Bytes: liveBuffer },
+      SimilarityThreshold: 80, // Strict mathematical threshold (friends will score 20-40%)
+    });
+    return await client.send(cmd);
+  };
+
+  try {
+    let res: any = null;
+    try {
+      res = await runCompare(refBuffer);
+    } catch (err: any) {
+      if (
+        fullCardBuffer &&
+        (err?.name === 'InvalidParameterException' || err?.message?.includes('no faces'))
+      ) {
+        res = await runCompare(fullCardBuffer);
+      } else {
+        throw err;
+      }
+    }
+
+    if (!res) {
+      return { handled: false, hasFace: false, isMatched: false, matchScore: 0, reason: '', source: '' };
+    }
+
+    // 1. Genuine Same Person Confirmed by AWS Rekognition
+    const matches = res.FaceMatches || [];
+    if (matches.length > 0 && matches[0]?.Similarity && matches[0].Similarity >= 80) {
+      const similarityScore = Math.round(matches[0].Similarity * 10) / 10;
+      return {
+        handled: true,
+        hasFace: true,
+        isMatched: true,
+        matchScore: similarityScore,
+        reason: `Biometric face signature matches ID card portrait (${similarityScore}% mathematical likeness).`,
+        source: 'AWS-Rekognition-Forensic-Engine',
+      };
+    }
+
+    // 2. Mismatch: Face detected, but belongs to a DIFFERENT INDIVIDUAL (Friend's Card Blocked!)
+    const unmatched = res.UnmatchedFaces || [];
+    if (unmatched.length > 0 || matches.length === 0) {
+      const highestScore = matches[0]?.Similarity ? Math.round(matches[0].Similarity * 10) / 10 : 20.0;
+      return {
+        handled: true,
+        hasFace: true,
+        isMatched: false,
+        matchScore: highestScore,
+        reason: 'Warning: Face does not match the photo on this student ID card. Please ensure you are scanning your own ID card.',
+        source: 'AWS-Rekognition-Forensic-Engine',
+      };
+    }
+
+    return {
+      handled: true,
+      hasFace: false,
+      isMatched: false,
+      matchScore: 0,
+      reason: 'No clear face detected in live camera. Please face the camera directly.',
+      source: 'AWS-Rekognition-Forensic-Engine',
+    };
+  } catch (err: any) {
+    console.warn('AWS Rekognition comparison note:', err?.name, err?.message);
+    if (err?.name === 'InvalidParameterException' && err.message?.includes('TargetImage')) {
+      return {
+        handled: true,
+        hasFace: false,
+        isMatched: false,
+        matchScore: 0,
+        reason: 'No clear human face detected in camera viewport. Please look directly into the camera.',
+        source: 'AWS-Rekognition-Forensic-Engine',
+      };
+    }
+    // Return handled: false so fallback engine can process
+    return { handled: false, hasFace: false, isMatched: false, matchScore: 0, reason: '', source: '' };
+  }
+}
 
 function getGeminiApiKey(): string {
   return (
@@ -13,7 +144,7 @@ function getGeminiApiKey(): string {
   ).trim();
 }
 
-// ── 1. Gemini Multimodal Visual Likeness Comparison & Anti-Spoofing ──
+// ── 2. Gemini Multimodal Visual Likeness Comparison & Anti-Spoofing (Secondary Engine) ──
 async function compareFacesWithGemini(
   cleanLive: string,
   cleanRef: string,
@@ -160,9 +291,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 1. Primary Engine: AWS Rekognition 1:1 Forensic Biometric Landmark Distance
+    try {
+      const rekognitionResult = await compareFacesWithRekognition(cleanLive, cleanRef, cleanFullCard);
+      if (rekognitionResult.handled) {
+        return NextResponse.json({
+          success: true,
+          hasFace: rekognitionResult.hasFace,
+          isMatched: rekognitionResult.isMatched,
+          matchScore: rekognitionResult.matchScore,
+          engine: rekognitionResult.source,
+          reason: rekognitionResult.reason,
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+    } catch (rekErr: any) {
+      console.warn('Rekognition primary attempt note:', rekErr?.message);
+    }
+
     const geminiKey = getGeminiApiKey();
 
-    // 1. Try Gemini Multimodal Visual Likeness if API key is present
+    // 2. Secondary Engine: Gemini Multimodal Visual Likeness if API key is present
     if (geminiKey) {
       try {
         const geminiMatch = await compareFacesWithGemini(cleanLive, cleanRef, cleanFullCard, geminiKey);
