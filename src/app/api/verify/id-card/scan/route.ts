@@ -26,6 +26,10 @@ async function extractWithGeminiFlash(
   const prompt = `You are an elite optical character recognition and collegiate identity verification AI.
 Analyze this physical college student ID card image carefully.
 Extract all details with 100% precision, ignoring camera angles, shadows, plastic sheen, and room light glare.
+CRITICAL INSTRUCTION FOR STUDENT NAME:
+- Locate the student's personal full name printed on the card. Look for labels like "Name:", "Student Name:", "Name of Student:", or the main capitalized individual human name printed on the ID badge.
+- Do NOT confuse the university name, dean signature, or card headers with the student's personal name.
+- If the card has a person's name (e.g. "Aditya Sharma", "Rahul Verma"), extract it accurately.
 If the college is affiliated with S-VYASA or BossCoder or IIT, preserve the exact official name.
 Return ONLY a valid JSON object matching this exact schema:
 {
@@ -79,12 +83,21 @@ Return ONLY a valid JSON object matching this exact schema:
       if (!textOutput) throw new Error(`No candidate response from ${model}`);
 
       const parsed = JSON.parse(textOutput);
+      const extractedCardName =
+        parsed.studentName &&
+        parsed.studentName !== 'N/A' &&
+        parsed.studentName !== 'null' &&
+        parsed.studentName.trim().length >= 2
+          ? parsed.studentName.trim()
+          : (userDisplayName || 'Student Builder');
+
       return {
         college: parsed.college || existingCollege || 'Collegiate Institution',
         studentRollNo: parsed.studentRollNo || '2392608124',
         course: parsed.course || 'B.Tech Computer Science & Engineering (CSE)',
         academicYear: parsed.academicYear || '1st Year (Freshman)',
-        studentName: parsed.studentName || userDisplayName || 'Student Builder',
+        studentName: extractedCardName,
+        cardNameFound: Boolean(parsed.studentName && parsed.studentName !== 'N/A' && parsed.studentName !== 'null' && parsed.studentName.trim().length >= 2),
         confidence: Number(parsed.confidence) || 99.4,
         source: `${model}-vision`,
       };
@@ -213,12 +226,39 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
     }
   }
 
+  // 5. Student Name Extraction from Raw OCR
+  let cardStudentName = '';
+  const nameLabelMatch = fullText.match(
+    /(?:name\s*(?:of\s*(?:student|holder|candidate))?|student\s*name)\s*[:\-]?\s*([A-Za-z\s.]{3,35})/i
+  );
+  if (nameLabelMatch && nameLabelMatch[1]) {
+    const cand = nameLabelMatch[1].trim();
+    if (!/college|university|institute|technology|signature|valid|blood|dob|father|address|holder/i.test(cand)) {
+      cardStudentName = cand;
+    }
+  }
+
+  if (!cardStudentName) {
+    for (const line of lines) {
+      if (
+        /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line) &&
+        !/college|university|institute|department|student|identity|engineering|technology|card|valid/i.test(line)
+      ) {
+        cardStudentName = line.trim();
+        break;
+      }
+    }
+  }
+
+  const finalStudentName = cardStudentName || userDisplayName || 'Student Builder';
+
   return {
     college,
     studentRollNo: rollNo,
     course,
     academicYear,
-    studentName: userDisplayName || 'Student Builder',
+    studentName: finalStudentName,
+    cardNameFound: Boolean(cardStudentName),
     confidence: 88.5,
     source: 'tesseract-heuristic-engine',
   };

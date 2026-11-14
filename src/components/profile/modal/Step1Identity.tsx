@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Camera, User, AtSign, FileText, Loader2, Trash2 } from 'lucide-react';
+import { Camera, User, AtSign, FileText, Loader2, Trash2, Lock } from 'lucide-react';
 import { uploadFileToStorage } from '@/lib/supabase/storage';
 
 interface Step1IdentityProps {
@@ -13,6 +13,7 @@ interface Step1IdentityProps {
   setAvatarUrl: (val: string | null) => void;
   bio: string;
   setBio: (val: string) => void;
+  isVerified?: boolean;
 }
 
 export function Step1Identity({
@@ -24,6 +25,7 @@ export function Step1Identity({
   setAvatarUrl,
   bio,
   setBio,
+  isVerified = false,
 }: Step1IdentityProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -126,20 +128,41 @@ export function Step1Identity({
       {/* Name & Username Inputs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-slate-300 mb-1.5">
-            Display Name <span className="text-amber-400">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-slate-300">
+              Display Name <span className="text-amber-400">*</span>
+            </label>
+            {isVerified && (
+              <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Locked to ID Card
+              </span>
+            )}
+          </div>
           <div className="relative">
             <input
               type="text"
               required
+              disabled={isVerified}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Mayank Goyal"
-              className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+              className={`w-full h-11 px-3.5 pl-9 rounded-xl border text-xs placeholder:text-slate-500 focus:outline-none transition-all ${
+                isVerified
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300 cursor-not-allowed'
+                  : 'bg-white/[0.04] border border-white/10 text-white focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+              }`}
             />
-            <User className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
+            {isVerified ? (
+              <Lock className="w-4 h-4 text-emerald-400 absolute left-3 top-3.5" />
+            ) : (
+              <User className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
+            )}
           </div>
+          {isVerified && (
+            <p className="text-[10px] text-emerald-400/90 mt-1 font-mono">
+              Identity verified &amp; locked from physical collegiate ID card.
+            </p>
+          )}
         </div>
 
         <div>

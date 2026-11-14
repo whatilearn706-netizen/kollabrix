@@ -830,6 +830,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                   setAvatarUrl={setAvatarUrl}
                   bio={bio}
                   setBio={setBio}
+                  isVerified={isCollegeVerified}
                 />
               )}
 
@@ -871,6 +872,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                       currentAcademicYear={academicYear}
                       isVerified={isCollegeVerified}
                       onVerificationComplete={(data) => {
+                        if (data.studentName && data.studentName.trim()) {
+                          setDisplayName(data.studentName.trim());
+                        }
                         setCollege(data.college);
                         setStudentRollNo(data.studentRollNo);
                         setCourse(data.course);

@@ -119,7 +119,14 @@ export function StepReviewLockedProfile({
               )}
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-white truncate">{displayName}</h4>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h4 className="text-sm font-bold text-white truncate">{displayName}</h4>
+                {isVerified && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> Name Locked to ID Card
+                  </span>
+                )}
+              </div>
               <p className="text-xs font-mono text-slate-400 truncate">@{username}</p>
             </div>
           </div>
@@ -155,6 +162,15 @@ export function StepReviewLockedProfile({
           </div>
 
           <div className="space-y-1.5 text-xs">
+            {isVerified && (
+              <div>
+                <span className="text-[10px] font-mono text-slate-400 block">VERIFIED STUDENT NAME</span>
+                <span className="font-semibold text-emerald-300 truncate block flex items-center gap-1.5">
+                  <span>{displayName}</span>
+                  <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
+                </span>
+              </div>
+            )}
             <div>
               <span className="text-[10px] font-mono text-slate-400 block">COLLEGE</span>
               <span className="font-semibold text-white truncate block">
