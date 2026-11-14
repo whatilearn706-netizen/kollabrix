@@ -100,19 +100,17 @@ function FeatureCard({
   onHover: (idx: number | null) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-60px' });
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const isCurrentHovered = hoveredIndex === index;
   const isOtherHovered = hoveredIndex !== null && !isCurrentHovered;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    cardRef.current.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+    cardRef.current.style.setProperty('--my', `${e.clientY - rect.top}px`);
   };
 
   return (
@@ -133,6 +131,7 @@ function FeatureCard({
     >
       <Link href={feature.href} className="block h-full group focus-visible:outline-none">
         <motion.div
+          ref={cardRef}
           animate={{
             scale: isCurrentHovered ? 1.04 : 1,
             y: isCurrentHovered ? -6 : 0,
@@ -147,18 +146,18 @@ function FeatureCard({
               ? `0 25px 60px -12px rgba(0, 0, 0, 0.85), 0 0 35px ${feature.glowColor}`
               : '0 4px 20px -4px rgba(0, 0, 0, 0.4)',
           }}
-          className={`h-full rounded-2xl p-6 md:p-8 border transition-colors duration-200 backdrop-blur-md relative overflow-hidden flex flex-col justify-between ${
+          className={`h-full rounded-2xl p-6 md:p-8 border transition-colors duration-200 backdrop-blur-md relative overflow-hidden flex flex-col justify-between transform-gpu will-change-transform ${
             isCurrentHovered
               ? 'border-white/35 bg-[#12151F]'
               : 'border-white/[0.07] bg-white/[0.02]'
           }`}
         >
-          {/* Mouse Following Spotlight Glow */}
+          {/* Hardware-Accelerated Mouse Following Spotlight Glow (0 React re-renders) */}
           {isCurrentHovered && (
             <div
               className="absolute pointer-events-none -inset-px transition-opacity duration-300 opacity-100"
               style={{
-                background: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, ${feature.glowColor}, transparent 65%)`,
+                background: `radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), ${feature.glowColor}, transparent 65%)`,
               }}
             />
           )}

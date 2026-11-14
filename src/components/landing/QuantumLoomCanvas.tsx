@@ -4,17 +4,29 @@ import React, { useEffect, useRef } from 'react';
 
 interface QuantumLoomCanvasProps {
   className?: string;
+  onWebGLActive?: (active: boolean) => void;
 }
 
-export function QuantumLoomCanvas({ className = '' }: QuantumLoomCanvasProps) {
+export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoomCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl', { powerPreference: 'high-performance', alpha: true });
-    if (!gl) return;
+    // Check WebGL availability with performance-first flags
+    const gl = canvas.getContext('webgl', {
+      powerPreference: 'high-performance',
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+    });
+    if (!gl) {
+      onWebGLActive?.(false);
+      return;
+    }
+    onWebGLActive?.(true);
 
     const vsSource = `
       attribute vec2 position;
@@ -107,12 +119,14 @@ export function QuantumLoomCanvas({ className = '' }: QuantumLoomCanvasProps) {
 
     let animationFrameId: number;
     let isVisible = true;
+    let isIntersecting = true;
 
     function resize() {
       if (!canvas || !gl) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const width = canvas.clientWidth * dpr;
-      const height = canvas.clientHeight * dpr;
+      // Cap at 1.0 DPR for butter-smooth 60/120 FPS frame rate on all screens (4K/Retina included)
+      const dpr = 1.0;
+      const width = Math.floor(canvas.clientWidth * dpr);
+      const height = Math.floor(canvas.clientHeight * dpr);
 
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
@@ -125,13 +139,23 @@ export function QuantumLoomCanvas({ className = '' }: QuantumLoomCanvasProps) {
       isVisible = !document.hidden;
     };
     document.addEventListener('visibilitychange', handleVisibility);
+
+    // Pause WebGL rendering entirely when user scrolls down away from hero
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isIntersecting = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(canvas);
+
     window.addEventListener('resize', resize);
     resize();
 
     const startTime = performance.now();
 
     function render() {
-      if (isVisible && gl && program) {
+      if (isVisible && isIntersecting && gl && program) {
         const time = (performance.now() - startTime) * 0.001;
         gl.useProgram(program);
         gl.uniform2f(resLoc, canvas!.width, canvas!.height);
@@ -145,6 +169,7 @@ export function QuantumLoomCanvas({ className = '' }: QuantumLoomCanvasProps) {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('resize', resize);
       if (gl) {
@@ -154,7 +179,7 @@ export function QuantumLoomCanvas({ className = '' }: QuantumLoomCanvasProps) {
         gl.deleteBuffer(posBuffer);
       }
     };
-  }, []);
+  }, [onWebGLActive]);
 
   return (
     <canvas
