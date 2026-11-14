@@ -22,13 +22,14 @@ async function extractWithGeminiFlash(
   existingCollege?: string
 ) {
   const cleanBase64 = base64Data.includes('base64,') ? base64Data.split('base64,')[1] : base64Data;
+  const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/)?.[1] || 'image/jpeg';
 
   const prompt = `You are an elite optical character recognition and collegiate identity verification AI.
 Analyze this physical college student ID card image carefully.
 Extract all details with 100% precision, ignoring camera angles, shadows, plastic sheen, and glare.
 
 CRITICAL INSTRUCTIONS FOR STUDENT NAME:
-- The student's legal personal name is printed directly below the student photo/portrait (e.g. "Mayank Goyal").
+- The student's legal personal name is printed directly below or next to the student photo/portrait (e.g. "Mayank Goyal").
 - Extract that EXACT student personal name as printed on the card.
 - Do NOT output channel names or account usernames (such as "What i Learn").
 - Do NOT confuse the university name or registrar signature with the student name.
@@ -49,7 +50,7 @@ Return ONLY a valid JSON object matching this schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -59,7 +60,7 @@ Return ONLY a valid JSON object matching this schema:
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(4500),
+          signal: AbortSignal.timeout(9000),
           body: JSON.stringify({
             contents: [
               {
@@ -67,7 +68,7 @@ Return ONLY a valid JSON object matching this schema:
                   { text: prompt },
                   {
                     inline_data: {
-                      mime_type: 'image/jpeg',
+                      mime_type: mimeType,
                       data: cleanBase64,
                     },
                   },

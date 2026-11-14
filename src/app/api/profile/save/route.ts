@@ -165,13 +165,47 @@ export async function POST(request: NextRequest) {
       delete sanitizedPayload.faculty_verified;
     }
 
+    // Capture verification status and metadata
+    const isStudentVerified = Boolean(sanitizedPayload.college_verified);
+    const verifiedTimestamp = sanitizedPayload.college_verified_at || new Date().toISOString();
+
+    // Whitelist only valid columns present in the Supabase 'profiles' table
+    const VALID_PROFILES_COLUMNS = new Set([
+      'user_id',
+      'username',
+      'display_name',
+      'avatar_url',
+      'bio',
+      'college',
+      'course',
+      'academic_year',
+      'skills',
+      'interests',
+      'preferred_roles',
+      'github_url',
+      'portfolio_url',
+      'is_portfolio_public',
+      'is_suspended',
+      'suspension_reason',
+      'status',
+      'role',
+      'updated_at',
+    ]);
+
+    const dbPayload: Record<string, any> = {};
+    for (const [key, val] of Object.entries(sanitizedPayload)) {
+      if (VALID_PROFILES_COLUMNS.has(key)) {
+        dbPayload[key] = val;
+      }
+    }
+
     const supabaseAdmin = getAdminClient();
 
     // Check if the profile already exists
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('user_id')
-      .eq('user_id', sanitizedPayload.user_id)
+      .eq('user_id', dbPayload.user_id)
       .maybeSingle();
 
     let data: any = null;
@@ -180,8 +214,8 @@ export async function POST(request: NextRequest) {
     if (existingProfile) {
       const updateRes = await supabaseAdmin
         .from('profiles')
-        .update(sanitizedPayload)
-        .eq('user_id', sanitizedPayload.user_id)
+        .update(dbPayload)
+        .eq('user_id', dbPayload.user_id)
         .select()
         .maybeSingle();
       data = updateRes.data;
@@ -189,57 +223,26 @@ export async function POST(request: NextRequest) {
     } else {
       const insertRes = await supabaseAdmin
         .from('profiles')
-        .insert(sanitizedPayload)
+        .insert(dbPayload)
         .select()
         .maybeSingle();
       data = insertRes.data;
       error = insertRes.error;
     }
 
-    // Schema resilience: if custom columns are not yet in the DB schema, strip them and retry
-    if (
-      error &&
-      (error.message.includes('column') ||
-        error.message.includes('schema cache') ||
-        error.code === '42703' ||
-        error.code === 'PGRST204')
-    ) {
-      const safePayload = { ...sanitizedPayload };
-      delete safePayload.linkedin_url;
-      delete safePayload.verification_doc_type;
-      delete safePayload.college_verified;
-      delete safePayload.faculty_department;
-      delete safePayload.faculty_designation;
-      delete safePayload.faculty_verified;
-
-      if (existingProfile) {
-        const retryRes = await supabaseAdmin
-          .from('profiles')
-          .update(safePayload)
-          .eq('user_id', safePayload.user_id)
-          .select()
-          .maybeSingle();
-        error = retryRes.error;
-        data = retryRes.data;
-      } else {
-        const retryRes = await supabaseAdmin
-          .from('profiles')
-          .insert(safePayload)
-          .select()
-          .maybeSingle();
-        error = retryRes.error;
-        data = retryRes.data;
-      }
+    // Safely sync custom faculty & verification attributes into auth user metadata for permanent persistence
+    const metadataUpdates: Record<string, any> = { ...customFacultyFields };
+    if (isStudentVerified) {
+      metadataUpdates.college_verified = true;
+      metadataUpdates.college_verified_at = verifiedTimestamp;
     }
-
-    // Safely sync custom faculty attributes into auth user metadata for permanent persistence
-    if (sanitizedPayload.user_id && Object.keys(customFacultyFields).length > 0) {
+    if (sanitizedPayload.user_id && Object.keys(metadataUpdates).length > 0) {
       try {
         await supabaseAdmin.auth.admin.updateUserById(sanitizedPayload.user_id, {
-          user_metadata: customFacultyFields,
+          user_metadata: metadataUpdates,
         });
       } catch (metaErr) {
-        console.warn('User metadata faculty sync note:', metaErr);
+        console.warn('User metadata sync note:', metaErr);
       }
     }
 

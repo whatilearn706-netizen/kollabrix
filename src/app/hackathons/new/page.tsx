@@ -223,7 +223,7 @@ export default function NewHackathonPage() {
   const [bannerUrl, setBannerUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [eligibility, setEligibility] = useState(
-    'Verified College Students Only • Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'
+    'Enrolled College Students (Platform Verified via Physical ID & Face ID). Undergraduate & Postgraduate Students.'
   );
   const [mode, setMode] = useState<HackathonMode>('In-Person');
   const [location, setLocation] = useState('Campus Turing Computer Lab, Tech Block');
@@ -983,9 +983,10 @@ export default function NewHackathonPage() {
                   required
                 />
                 <div className="flex items-center gap-1.5 flex-wrap pt-2">
-                  <span className="text-[10px] text-slate-400 font-mono">Quick Presets:</span>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1 mr-2">
+                    ✓ Global Verification Active (Students automatically verified via Path B)
+                  </span>
                   {[
-                    'Verified College Students Only',
                     'All College Students',
                     'Engineering & CS Students Only',
                     'Undergrad & Postgrad',

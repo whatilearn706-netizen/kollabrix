@@ -494,6 +494,34 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
       // 2. Client-side fallback if server route was unreachable
       if (!savedSuccessfully && isSupabaseConfigured()) {
+        const VALID_PROFILES_COLUMNS = new Set([
+          'user_id',
+          'username',
+          'display_name',
+          'avatar_url',
+          'bio',
+          'college',
+          'course',
+          'academic_year',
+          'skills',
+          'interests',
+          'preferred_roles',
+          'github_url',
+          'portfolio_url',
+          'is_portfolio_public',
+          'is_suspended',
+          'suspension_reason',
+          'status',
+          'role',
+          'updated_at',
+        ]);
+        const dbPayload: Record<string, any> = {};
+        for (const [k, v] of Object.entries(payload)) {
+          if (VALID_PROFILES_COLUMNS.has(k)) {
+            dbPayload[k] = v;
+          }
+        }
+
         const { data: existingProf } = await supabase
           .from('profiles')
           .select('user_id')
@@ -502,10 +530,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
 
         let upsertErr: any = null;
         if (existingProf) {
-          const updateRes = await supabase.from('profiles').update(payload as any).eq('user_id', payload.user_id);
+          const updateRes = await supabase.from('profiles').update(dbPayload as any).eq('user_id', payload.user_id);
           upsertErr = updateRes.error;
         } else {
-          const insertRes = await supabase.from('profiles').insert(payload as any);
+          const insertRes = await supabase.from('profiles').insert(dbPayload as any);
           upsertErr = insertRes.error;
         }
 
@@ -517,19 +545,21 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
             upsertErr.code === '42703' ||
             upsertErr.code === 'PGRST204')
         ) {
-          const safePayload: Record<string, any> = { ...payload };
-          delete safePayload.linkedin_url;
-          delete safePayload.verification_doc_type;
-          delete safePayload.college_verified;
-          delete safePayload.faculty_department;
-          delete safePayload.faculty_designation;
-          delete safePayload.faculty_verified;
+          const minimalPayload: Record<string, any> = {
+            user_id: payload.user_id,
+            display_name: payload.display_name,
+            username: payload.username,
+            college: payload.college,
+            course: payload.course,
+            academic_year: payload.academic_year,
+            updated_at: new Date().toISOString(),
+          };
 
           if (existingProf) {
-            const retryRes = await supabase.from('profiles').update(safePayload).eq('user_id', payload.user_id);
+            const retryRes = await supabase.from('profiles').update(minimalPayload).eq('user_id', payload.user_id);
             upsertErr = retryRes.error;
           } else {
-            const retryRes = await supabase.from('profiles').insert(safePayload);
+            const retryRes = await supabase.from('profiles').insert(minimalPayload);
             upsertErr = retryRes.error;
           }
         }

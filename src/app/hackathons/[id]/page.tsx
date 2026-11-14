@@ -529,6 +529,27 @@ export default function HackathonDetailPage() {
 
     if (!hackathon) return;
 
+    // Global Verification Gate: Students must be verified to register for hackathons
+    const isVerifiedUser = Boolean(
+      profile?.college_verified ||
+      (profile as any)?.student_verified ||
+      user?.user_metadata?.college_verified ||
+      profile?.role === 'teacher' ||
+      profile?.role === 'admin' ||
+      Boolean((profile as any)?.faculty_verified)
+    );
+
+    if (!isVerifiedUser) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('kollabrix:open-profile-modal', {
+            detail: { step: 4 },
+          })
+        );
+      }
+      return;
+    }
+
     if (!eligibilityEvaluation.isEligible) {
       alert(`Cannot register: ${eligibilityEvaluation.reason || 'You do not meet the eligibility criteria for this hackathon.'}`);
       return;

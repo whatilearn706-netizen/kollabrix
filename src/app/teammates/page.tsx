@@ -459,6 +459,28 @@ export default function TeammatesPage() {
 
   const handleOpenInvite = (candMatch: TeammateMatch) => {
     if (user && candMatch.profile.user_id === user.id) return;
+
+    // Global Verification Gate: Students must be verified to send teammate invitations
+    const isVerifiedUser = Boolean(
+      profile?.college_verified ||
+      (profile as any)?.student_verified ||
+      user?.user_metadata?.college_verified ||
+      profile?.role === 'teacher' ||
+      profile?.role === 'admin' ||
+      Boolean((profile as any)?.faculty_verified)
+    );
+
+    if (!isVerifiedUser) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('kollabrix:open-profile-modal', {
+            detail: { step: 4 },
+          })
+        );
+      }
+      return;
+    }
+
     setInviteModalCandidate(candMatch.profile);
     setInviteModalScore(candMatch.match_score);
   };
