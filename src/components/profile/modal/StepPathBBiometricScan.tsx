@@ -331,10 +331,10 @@ export function StepPathBBiometricScan({
   userId,
   username,
 }: StepPathBBiometricScanProps) {
-  // Stages: 'card_continuous' | 'card_review' | 'face_continuous' | 'face_matched' | 'verified_done'
+  // Stages: 'consent' | 'card_continuous' | 'card_review' | 'face_continuous' | 'face_matched' | 'verified_done'
   const [stage, setStage] = useState<
-    'card_continuous' | 'card_review' | 'face_continuous' | 'face_matched' | 'verified_done'
-  >(isVerified ? 'verified_done' : 'card_continuous');
+    'consent' | 'card_continuous' | 'card_review' | 'face_continuous' | 'face_matched' | 'verified_done'
+  >(isVerified ? 'verified_done' : 'consent');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -385,7 +385,7 @@ export function StepPathBBiometricScan({
   // ── Account Isolation: Reset scan flow when user switches or is not verified ──
   useEffect(() => {
     if (!isVerified) {
-      setStage('card_continuous');
+      setStage('consent');
       setIsCardDetected(false);
       isCardDetectedRef.current = false;
       setIdCardSnapshot(null);
@@ -921,7 +921,7 @@ export function StepPathBBiometricScan({
           </div>
           <div>
             <h4 className="text-sm font-black tracking-tight text-white flex items-center gap-2">
-              <span>Card Verification</span>
+              <span>{stage === 'consent' ? 'Identity Verification Checkpoint' : 'Card Verification'}</span>
             </h4>
           </div>
         </div>
@@ -938,6 +938,120 @@ export function StepPathBBiometricScan({
 
       {/* Hidden Frame Processor Canvas */}
       <canvas ref={canvasRef} className="hidden" />
+
+      {/* ── STAGE 0: PRE-SCAN INFORMED CONSENT & PRIVACY CHECKPOINT ── */}
+      {stage === 'consent' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Header Banner */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900/60 to-cyan-500/10 border border-emerald-500/20 space-y-2.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Integrity & Privacy Checkpoint</span>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Quick Student Verification
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                To keep our campus hackathons and prize pools fair, we verify every participant’s student status before granting official competition entry.
+              </p>
+            </div>
+          </div>
+
+          {/* 3 Core Guarantees */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </div>
+              <h5 className="text-xs font-bold text-white">Verified Students Only</h5>
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Prizes and official ranks go strictly to enrolled university students—zero outside ringers.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+              <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+              <h5 className="text-xs font-bold text-white">Anti-Proxy Fair Play</h5>
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Guarantees nobody takes the contest under your name, protecting your hard-earned score.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+              <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+              <h5 className="text-xs font-bold text-white">Encrypted & Private</h5>
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Your ID card and selfie are encrypted and never shown publicly on your profile.
+              </p>
+            </div>
+          </div>
+
+          {/* 30-Second Roadmap */}
+          <div className="p-3.5 rounded-xl bg-slate-900/70 border border-white/10 space-y-2">
+            <span className="text-[10.5px] font-bold text-slate-300 uppercase tracking-wider font-mono">
+              What Will Happen Next (Takes ~30 seconds)
+            </span>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-start gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
+                  1
+                </div>
+                <div className="text-slate-300 text-[11.5px]">
+                  <span className="font-semibold text-white">Hold College ID in Frame (10s):</span> Optical scanner reads your name and college details.
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
+                  2
+                </div>
+                <div className="text-slate-300 text-[11.5px]">
+                  <span className="font-semibold text-white">Quick 3-Second Face Match (5s):</span> Confirms you match your student ID portrait.
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
+                  3
+                </div>
+                <div className="text-slate-300 text-[11.5px]">
+                  <span className="font-semibold text-white">Verified Badge Unlocked (Instant):</span> You are approved for official prizes and leaderboards.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Notice & CTA */}
+          <div className="space-y-2.5 pt-1">
+            <p className="text-[11px] text-slate-400 text-center">
+              Camera access is only active during this verification and proctored contests.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setStage('card_continuous')}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Allow Camera & Start Verification</span>
+                <ArrowRight className="w-4 h-4 ml-0.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={onSkip}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-white font-medium text-xs transition-colors cursor-pointer"
+              >
+                Skip for Now (Practice Mode)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── STAGE 1: 20-SECOND CONTINUOUS CARD SCANNING ── */}
       {stage === 'card_continuous' && (
