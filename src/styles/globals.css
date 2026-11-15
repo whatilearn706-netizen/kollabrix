@@ -677,3 +677,27 @@ body.icpc-exam-mode .floating-quick-dock {
   box-shadow: 0 20px 40px -15px rgba(28, 25, 23, 0.08),
               0 0 20px -5px rgba(234, 88, 12, 0.1);
 }
+
+/* ========================================================
+   Studio.Baseline "Let Me Glow" Continuous Lightning Border Beam
+   ======================================================== */
+@keyframes continuous-border-lightning {
+  0% {
+    transform: rotate(0deg) translateZ(0);
+  }
+  100% {
+    transform: rotate(360deg) translateZ(0);
+  }
+}
+
+.animate-border-lightning {
+  animation: continuous-border-lightning 4.5s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-border-lightning {
+    animation-duration: 12s;
+  }
+}
+
