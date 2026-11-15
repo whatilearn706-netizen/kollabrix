@@ -8,6 +8,9 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { QuantumLoomCanvas } from './QuantumLoomCanvas';
 import { GlowingSearchSparkBar } from './GlowingSearchSparkBar';
 
+const LINE_1 = 'Where Creators';
+const LINE_2 = 'Build Together.';
+
 export function LandingHero() {
   const { user } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
@@ -66,23 +69,66 @@ export function LandingHero() {
           </span>
         </motion.div>
 
-        {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
-          className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] mb-7"
-        >
-          <span className="text-white">Where Creators</span>
-          <br />
-          <span className="landing-gradient-text">Build Together.</span>
-        </motion.h1>
+        {/* Headline with Cinematic Photon Laser Sweep */}
+        <div className="relative inline-block mb-7 overflow-hidden py-1">
+          <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] select-none">
+            <span className="block">
+              {LINE_1.split('').map((char, index) => (
+                <motion.span
+                  key={`l1-${index}`}
+                  initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  transition={{
+                    delay: 0.05 + index * 0.018,
+                    duration: 0.32,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="inline-block text-white"
+                  style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
+                >
+                  {char}
+                </motion.span>
+              ))}
+            </span>
+
+            <span className="block mt-1">
+              {LINE_2.split('').map((char, index) => (
+                <motion.span
+                  key={`l2-${index}`}
+                  initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  transition={{
+                    delay: 0.22 + index * 0.018,
+                    duration: 0.35,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="inline-block landing-gradient-text"
+                  style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
+                >
+                  {char}
+                </motion.span>
+              ))}
+            </span>
+          </h1>
+
+          {/* Sweeping Specular Photon Laser Light Streak */}
+          <motion.div
+            initial={{ left: '-15%', opacity: 0 }}
+            animate={{ left: '115%', opacity: [0, 1, 1, 0] }}
+            transition={{
+              delay: 0.04,
+              duration: 0.72,
+              ease: [0.25, 0.1, 0.25, 1],
+            }}
+            className="absolute top-0 bottom-0 w-12 pointer-events-none z-10 -skew-x-12 bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[2px] shadow-[0_0_35px_rgba(236,72,153,0.9)]"
+          />
+        </div>
 
         {/* Subtitle */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
+          initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ delay: 0.52, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="text-lg md:text-xl text-zinc-100 max-w-2xl mx-auto mb-10 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
         >
           Assemble dream teams, ship hackathon projects, and showcase your
@@ -91,9 +137,9 @@ export function LandingHero() {
 
         {/* CTAs */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
+          initial={{ opacity: 0, y: 16, scale: 0.94 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.68, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8"
         >
           <Link
@@ -113,9 +159,9 @@ export function LandingHero() {
 
         {/* Feature bullets */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.75, duration: 0.7 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.78, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400"
         >
           <span className="flex items-center gap-1.5">
@@ -131,9 +177,9 @@ export function LandingHero() {
 
         {/* Continuous Lightning Glowing Search & AI Spark Bar (Studio.Baseline Inspired) */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.85, duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
+          transition={{ delay: 0.88, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="mt-10 sm:mt-12 w-full max-w-2xl mx-auto px-4 z-20 relative"
         >
           <GlowingSearchSparkBar />
