@@ -136,21 +136,68 @@ export async function sendTransactionalEmail(payload: TransactionalEmailPayload)
   simulated?: boolean;
   error?: string;
 }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  let fromEmail = process.env.RESEND_FROM_EMAIL || 'Kollabrix <team@kollabrix.in>';
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const resendApiKey = process.env.RESEND_API_KEY;
+  let fromEmail = process.env.BREVO_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'team@kollabrix.in';
 
   const html = generateKollabrixEmailHtml(payload);
 
-  if (apiKey) {
+  // 1. If Brevo API Key is configured, dispatch via Brevo v3 SMTP API (9,000 free emails/month)
+  if (brevoApiKey) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoApiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: {
+            name: 'Mayank Goyal // Kollabrix',
+            email: fromEmail,
+          },
+          to: [
+            {
+              email: payload.to,
+              name: payload.recipientName || 'Student Maker',
+            },
+          ],
+          subject: payload.subject,
+          htmlContent: html,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`[BREVO EMAIL DISPATCHED] To: ${payload.to} | Message ID: ${data.messageId}`);
+        return { success: true, messageId: data.messageId, simulated: false };
+      } else {
+        const errText = await res.text();
+        console.warn(`[BREVO ERROR HTTP ${res.status}]`, errText);
+        if (!resendApiKey) {
+          return { success: false, error: `Brevo error (${res.status}): ${errText}` };
+        }
+      }
+    } catch (err: any) {
+      console.error('[BREVO DISPATCH ERROR]', err);
+      if (!resendApiKey) {
+        return { success: false, error: err.message };
+      }
+    }
+  }
+
+  // 2. If Resend API Key is configured, dispatch via Resend API
+  if (resendApiKey) {
     try {
       let res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          from: fromEmail,
+          from: fromEmail.includes('<') ? fromEmail : `Kollabrix <${fromEmail}>`,
           to: [payload.to],
           subject: payload.subject,
           html,
@@ -167,7 +214,7 @@ export async function sendTransactionalEmail(payload: TransactionalEmailPayload)
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${apiKey}`,
+              Authorization: `Bearer ${resendApiKey}`,
             },
             body: JSON.stringify({
               from: fromEmail,

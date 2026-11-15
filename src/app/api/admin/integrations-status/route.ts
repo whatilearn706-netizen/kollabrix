@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const testEmail = searchParams.get('testEmail');
 
   const resendKey = process.env.RESEND_API_KEY;
+  const brevoKey = process.env.BREVO_API_KEY;
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
@@ -22,7 +23,46 @@ export async function GET(req: NextRequest) {
     environment: process.env.NODE_ENV || 'production',
   };
 
-  // 1. Resend API Key Diagnostic
+  // 1. Brevo API Diagnostic (Primary transactional email engine)
+  if (!brevoKey) {
+    results.brevo = {
+      status: 'missing_key',
+      configured: false,
+      message: 'BREVO_API_KEY is not yet added in environment. Add to get 9,000 free emails/month.',
+    };
+  } else {
+    try {
+      const pingBrevo = await fetch('https://api.brevo.com/v3/account', {
+        headers: { 'api-key': brevoKey },
+      });
+      if (pingBrevo.ok) {
+        const accountData = await pingBrevo.json();
+        results.brevo = {
+          status: 'connected',
+          configured: true,
+          maskedKey: `${brevoKey.slice(0, 6)}...${brevoKey.slice(-4)}`,
+          email: accountData.email,
+          plan: accountData.plan?.[0]?.type || 'Free',
+          message: `Brevo email engine online (${accountData.email || 'connected'}). 9,000 free emails/month.`,
+        };
+      } else {
+        results.brevo = {
+          status: 'invalid_key',
+          configured: true,
+          httpStatus: pingBrevo.status,
+          message: `Brevo rejected key (HTTP ${pingBrevo.status}).`,
+        };
+      }
+    } catch (err: any) {
+      results.brevo = {
+        status: 'network_error',
+        configured: true,
+        message: `Failed to contact Brevo servers: ${err.message}`,
+      };
+    }
+  }
+
+  // 2. Resend API Key Diagnostic
   if (!resendKey) {
     results.resend = {
       status: 'missing_key',
