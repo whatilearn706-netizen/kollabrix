@@ -14,7 +14,7 @@ const LINE_2 = 'Build Together.';
 export function LandingHero() {
   const { user } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
-  const [webGLActive, setWebGLActive] = useState(false);
+  const [webGLFailed, setWebGLFailed] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -30,20 +30,19 @@ export function LandingHero() {
       className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
       {/* Exact Realm 01 Quantum Loom of Consciousness WebGL Canvas (Optimized 60-120 FPS) */}
-      <QuantumLoomCanvas className="z-0" onWebGLActive={setWebGLActive} />
+      <QuantumLoomCanvas className="z-0" onWebGLActive={(active) => setWebGLFailed(!active)} />
 
-      {/* Hardware-Accelerated Video Fallback: ONLY active when WebGL is unsupported to save 100% GPU video decoder overhead */}
-      {!webGLActive && (
+      {/* Hardware-Accelerated Video Fallback: ONLY rendered if WebGL fails */}
+      {webGLFailed && (
         <video
           autoPlay
           loop
           muted
           playsInline
-          preload="auto"
+          preload="none"
           poster="/brand/hero-quantum-loom-poster.webp"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10"
         >
-          <source src="/videos/hero-quantum-loom.webm" type="video/webm" />
           <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
         </video>
       )}
@@ -60,7 +59,7 @@ export function LandingHero() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
+          transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
           className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-md mb-8"
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
@@ -69,46 +68,25 @@ export function LandingHero() {
           </span>
         </motion.div>
 
-        {/* Headline with Cinematic Photon Laser Sweep */}
+        {/* Headline with Hardware-Accelerated Cinematic Entrance */}
         <div className="relative inline-block mb-7 overflow-hidden py-1">
           <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] select-none">
-            <span className="block">
-              {LINE_1.split('').map((char, index) => (
-                <motion.span
-                  key={`l1-${index}`}
-                  initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  transition={{
-                    delay: 0.05 + index * 0.018,
-                    duration: 0.32,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  className="inline-block text-white"
-                  style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </span>
-
-            <span className="block mt-1">
-              {LINE_2.split('').map((char, index) => (
-                <motion.span
-                  key={`l2-${index}`}
-                  initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  transition={{
-                    delay: 0.22 + index * 0.018,
-                    duration: 0.35,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  className="inline-block landing-gradient-text"
-                  style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </span>
+            <motion.span
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className="block text-white"
+            >
+              {LINE_1}
+            </motion.span>
+            <motion.span
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="block mt-1 landing-gradient-text"
+            >
+              {LINE_2}
+            </motion.span>
           </h1>
 
           {/* Sweeping Specular Photon Laser Light Streak */}

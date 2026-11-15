@@ -293,52 +293,56 @@ export function GlowingSearchSparkBar() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasLoadedApi = useRef(false);
 
-  // Load live public hackathons from /api/hackathons on mount
-  useEffect(() => {
-    let isMounted = true;
-    async function loadPublicHackathons() {
-      try {
-        const res = await fetch('/api/hackathons');
-        if (!res.ok) return;
-        const data = await res.json();
-        const list: any[] = Array.isArray(data) ? data : data.hackathons || [];
-        if (!isMounted || !Array.isArray(list) || list.length === 0) return;
+  // Lazy load live public hackathons when user interacts or after idle delay
+  const loadPublicHackathons = async () => {
+    if (hasLoadedApi.current) return;
+    hasLoadedApi.current = true;
+    try {
+      const res = await fetch('/api/hackathons');
+      if (!res.ok) return;
+      const data = await res.json();
+      const list: any[] = Array.isArray(data) ? data : data.hackathons || [];
+      if (!Array.isArray(list) || list.length === 0) return;
 
-        const liveHackathons: SearchItem[] = list.slice(0, 15).map((h: any) => ({
-          id: `h-dyn-${h.id}`,
-          title: h.title || 'Collegiate Hackathon',
-          category: 'hackathon',
-          categoryLabel: h.college ? `${h.college} • Hackathon` : 'College Hackathon',
-          snippet: `${h.location || 'Online'} • ${h.prizes || 'Faculty Mentorship & Awards'} • ${h.theme || 'Open Innovation'}`,
-          href: `/hackathons/${h.id}`,
-          tags: [
-            'hackathon',
-            h.title?.toLowerCase() || '',
-            h.college?.toLowerCase() || '',
-            h.theme?.toLowerCase() || '',
-            h.location?.toLowerCase() || '',
-          ],
-          tone: 'amber',
-        }));
+      const liveHackathons: SearchItem[] = list.slice(0, 15).map((h: any) => ({
+        id: `h-dyn-${h.id}`,
+        title: h.title || 'Collegiate Hackathon',
+        category: 'hackathon',
+        categoryLabel: h.college ? `${h.college} • Hackathon` : 'College Hackathon',
+        snippet: `${h.location || 'Online'} • ${h.prizes || 'Faculty Mentorship & Awards'} • ${h.theme || 'Open Innovation'}`,
+        href: `/hackathons/${h.id}`,
+        tags: [
+          'hackathon',
+          h.title?.toLowerCase() || '',
+          h.college?.toLowerCase() || '',
+          h.theme?.toLowerCase() || '',
+          h.location?.toLowerCase() || '',
+        ],
+        tone: 'amber',
+      }));
 
-        setDynamicCatalog((prev) => {
-          const combined = [...liveHackathons, ...prev];
-          const seen = new Set();
-          return combined.filter((item) => {
-            if (seen.has(item.id)) return false;
-            seen.add(item.id);
-            return true;
-          });
+      setDynamicCatalog((prev) => {
+        const combined = [...liveHackathons, ...prev];
+        const seen = new Set();
+        return combined.filter((item) => {
+          if (seen.has(item.id)) return false;
+          seen.add(item.id);
+          return true;
         });
-      } catch (err) {
-        // Fallback to static catalog seamlessly
-      }
+      });
+    } catch (err) {
+      // Fallback to static catalog seamlessly
     }
-    loadPublicHackathons();
-    return () => {
-      isMounted = false;
-    };
+  };
+
+  useEffect(() => {
+    // Defer network request until browser is completely idle
+    const timer = setTimeout(() => {
+      loadPublicHackathons();
+    }, 2500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Filter search results in real time with priority sorting
@@ -444,29 +448,10 @@ export function GlowingSearchSparkBar() {
 
   return (
     <div ref={containerRef} className="relative group max-w-2xl w-full mx-auto select-none">
-      {/* 1. Outer Ambient Glow Layer - Continuous Specular Bloom */}
-      <div className="absolute -inset-1 rounded-full overflow-hidden opacity-60 group-hover:opacity-100 transition-opacity duration-700 blur-xl pointer-events-none">
-        <div
-          className="absolute -inset-[150%] aspect-square animate-border-lightning"
-          style={{
-            background:
-              'conic-gradient(from 0deg, transparent 0deg, transparent 260deg, #8B5CF6 290deg, #EC4899 320deg, #FFFFFF 345deg, transparent 360deg)',
-          }}
-        />
-      </div>
+      {/* 1. Hardware-Accelerated Ambient Glow Ring */}
+      <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-600/25 via-fuchsia-600/25 to-cyan-500/25 blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      {/* 2. Secondary soft ambient glow for high-contrast neon halo */}
-      <div className="absolute -inset-0.5 rounded-full overflow-hidden opacity-80 blur-md pointer-events-none">
-        <div
-          className="absolute -inset-[150%] aspect-square animate-border-lightning"
-          style={{
-            background:
-              'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, #6366F1 295deg, #EC4899 325deg, #06B6D4 345deg, #FFFFFF 355deg, transparent 360deg)',
-          }}
-        />
-      </div>
-
-      {/* 3. Razor-Sharp Outer Pill Container with Rotating Specular Light Beam */}
+      {/* 2. Razor-Sharp Outer Pill Container with Rotating Specular Light Beam */}
       <div className="relative rounded-full p-[1.5px] overflow-hidden bg-slate-800/60 shadow-[0_10px_35px_rgba(0,0,0,0.8)] transition-all duration-300 group-hover:shadow-[0_15px_45px_rgba(139,92,246,0.3)]">
         {/* Continuous Lightning Beam */}
         <div
@@ -477,7 +462,7 @@ export function GlowingSearchSparkBar() {
           }}
         />
 
-        {/* 4. Deep Pitch-Black Obsidian Pill Body (Inner Core) */}
+        {/* 3. Deep Pitch-Black Obsidian Pill Body (Inner Core) */}
         <form
           onSubmit={handleSearchSubmit}
           className="relative flex items-center justify-between h-13 sm:h-14 px-3 sm:px-4 rounded-full bg-[#07080D]/95 backdrop-blur-2xl z-10 transition-colors"
@@ -490,9 +475,11 @@ export function GlowingSearchSparkBar() {
               type="text"
               value={query}
               onFocus={() => {
+                loadPublicHackathons();
                 if (query.trim().length > 0) setIsOpen(true);
               }}
               onChange={(e) => {
+                loadPublicHackathons();
                 const val = e.target.value;
                 setQuery(val);
                 setIsOpen(val.trim().length > 0);

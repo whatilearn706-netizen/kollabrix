@@ -16,11 +16,12 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
 
     // Check WebGL availability with performance-first flags
     const gl = canvas.getContext('webgl', {
-      powerPreference: 'high-performance',
+      powerPreference: 'low-power',
       alpha: false,
       antialias: false,
       depth: false,
       stencil: false,
+      preserveDrawingBuffer: false,
     });
     if (!gl) {
       onWebGLActive?.(false);
@@ -35,9 +36,9 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
       }
     `;
 
-    // Exact Realm 01 Quantum Loom of Consciousness GLSL shader
+    // High-performance optimized Quantum Loom GLSL shader
     const fsSource = `
-      precision highp float;
+      precision mediump float;
       uniform vec2 u_res;
       uniform float u_time;
 
@@ -48,22 +49,20 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
 
       void main() {
         vec2 uv = (gl_FragCoord.xy - 0.5 * u_res.xy) / min(u_res.x, u_res.y);
-        vec3 col = vec3(0.002, 0.002, 0.005); // Absolute black vacuum
+        vec3 col = vec3(0.002, 0.002, 0.005);
 
         float t = u_time * 0.2;
-
         float loom = 0.0;
-        vec2 p = uv * 3.5;
+        vec2 p = uv * 3.2;
         
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= 5; i++) {
           float fi = float(i);
           p = rot(p, 0.4 + sin(t * 0.1 + fi) * 0.2);
           p += vec2(sin(p.y * 2.0 + t), cos(p.x * 2.0 - t)) * 0.3;
           float line = abs(sin(p.x * 3.0 + p.y * 3.0 + t * fi));
-          loom += 0.015 / (line + 0.03);
+          loom += 0.018 / (line + 0.035);
         }
 
-        // Burning amber core energy with microscopic micro-lightning
         vec3 amberFlame = vec3(1.0, 0.45, 0.08) * loom * 0.7;
         vec3 whiteHotCore = vec3(1.0, 0.9, 0.7) * pow(loom * 0.15, 3.0);
         vec3 darkPlenum = vec3(0.08, 0.02, 0.15) * length(uv);
@@ -123,10 +122,10 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
 
     function resize() {
       if (!canvas || !gl) return;
-      // Cap at 1.0 DPR for butter-smooth 60/120 FPS frame rate on all screens (4K/Retina included)
-      const dpr = 1.0;
-      const width = Math.floor(canvas.clientWidth * dpr);
-      const height = Math.floor(canvas.clientHeight * dpr);
+      // High performance 0.6 DPR keeps background silky smooth without wasting GPU cycles
+      const dpr = Math.min(window.devicePixelRatio || 1, 0.6);
+      const width = Math.max(320, Math.floor(canvas.clientWidth * dpr));
+      const height = Math.max(240, Math.floor(canvas.clientHeight * dpr));
 
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
@@ -153,19 +152,24 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
     resize();
 
     const startTime = performance.now();
+    let lastFrameTime = 0;
+    const FRAME_INTERVAL = 1000 / 45; // 45 FPS target: fluid visual cadence with minimal GPU drain
 
-    function render() {
+    function render(now: number) {
       if (isVisible && isIntersecting && gl && program) {
-        const time = (performance.now() - startTime) * 0.001;
-        gl.useProgram(program);
-        gl.uniform2f(resLoc, canvas!.width, canvas!.height);
-        gl.uniform1f(timeLoc, time);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        if (now - lastFrameTime >= FRAME_INTERVAL) {
+          lastFrameTime = now;
+          const time = (now - startTime) * 0.001;
+          gl.useProgram(program);
+          gl.uniform2f(resLoc, canvas!.width, canvas!.height);
+          gl.uniform1f(timeLoc, time);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
       }
       animationFrameId = requestAnimationFrame(render);
     }
 
-    render();
+    render(performance.now());
 
     return () => {
       cancelAnimationFrame(animationFrameId);
