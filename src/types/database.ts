@@ -78,6 +78,8 @@ export interface Profile {
   portfolio_url?: string | null;
   linkedin_url?: string | null;
   college_verified?: boolean;
+  student_roll_no?: string | null;
+  roll_number?: string | null;
   college_verified_at?: string | null;
   current_streak?: number;
   longest_streak?: number;
@@ -324,6 +326,8 @@ export interface Hackathon {
   rules?: string | null;
   contact_info?: string | null;
   allowed_college?: string | null;
+  allowed_roll_start?: string | null;
+  allowed_roll_end?: string | null;
   results_date?: string | null;
   results_published?: boolean;
   participants_count?: number;

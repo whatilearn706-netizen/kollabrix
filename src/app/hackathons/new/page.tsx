@@ -37,6 +37,7 @@ import {
   Layers,
   HelpCircle,
   Eye,
+  Hash,
 } from 'lucide-react';
 
 function format12Hour(timeStr: string): string {
@@ -254,6 +255,8 @@ export default function NewHackathonPage() {
   );
   const [contactInfo, setContactInfo] = useState('');
   const [allowedCollege, setAllowedCollege] = useState('S-VYASA Deemed to be University');
+  const [rollNoStart, setRollNoStart] = useState('');
+  const [rollNoEnd, setRollNoEnd] = useState('');
   const [prizePool, setPrizePool] = useState('₹50,000 + Faculty Mentorship & Incubation Support');
   const [websiteUrl, setWebsiteUrl] = useState('');
 
@@ -346,6 +349,8 @@ export default function NewHackathonPage() {
           rules: rules.trim(),
           contactInfo: contactInfo.trim() || null,
           allowedCollege: allowedCollege.trim() || null,
+          allowedRollStart: allowedCollege.trim() ? (rollNoStart.trim() || null) : null,
+          allowedRollEnd: allowedCollege.trim() ? (rollNoEnd.trim() || null) : null,
           prizePool: prizePool.trim() || null,
           websiteUrl: websiteUrl.trim() || null,
           bannerUrl: bannerUrl.trim() || null,
@@ -377,6 +382,8 @@ export default function NewHackathonPage() {
             eligibility: eligibility.trim(),
             contact_info: contactInfo.trim() || null,
             allowed_college: allowedCollege.trim() || null,
+            allowed_roll_start: allowedCollege.trim() ? (rollNoStart.trim() || null) : null,
+            allowed_roll_end: allowedCollege.trim() ? (rollNoEnd.trim() || null) : null,
           })} -->`;
 
           const finalWebsiteUrl = websiteUrl.trim()
@@ -1058,6 +1065,52 @@ export default function NewHackathonPage() {
                 <p className="text-[11px] text-slate-400 mt-1">
                   Only students with verified collegiate credentials matching this exact institution will be permitted to register.
                 </p>
+
+                {/* Dynamic Roll Number Range Restriction (Appears only when specific college selected) */}
+                {allowedCollege.trim() && (
+                  <div className="mt-3.5 p-3.5 rounded-2xl bg-charcoal-950 border border-cyan-500/30 space-y-2.5 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                        <Hash className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Restrict by Student Roll Number Range (Optional Batch / Section Gate)</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {rollNoStart.trim() || rollNoEnd.trim() ? (
+                          <span className="text-cyan-400 font-bold">✓ Active Batch Gate</span>
+                        ) : (
+                          'All Roll Numbers Allowed'
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] text-slate-300 font-mono block mb-1">
+                          Roll No. Start
+                        </label>
+                        <Input
+                          placeholder="e.g. 23BCSE001 or 001"
+                          value={rollNoStart}
+                          onChange={(e) => setRollNoStart(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-300 font-mono block mb-1">
+                          Roll No. End
+                        </label>
+                        <Input
+                          placeholder="e.g. 23BCSE120 or 120"
+                          value={rollNoEnd}
+                          onChange={(e) => setRollNoEnd(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      💡 <strong>Faculty Privacy Protection:</strong> Only verified students whose roll number falls in this range can register. Students do not see this range publicly on the event card.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
