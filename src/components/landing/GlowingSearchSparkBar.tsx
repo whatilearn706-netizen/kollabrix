@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Search,
   Sparkles,
-  TrendingUp,
   ArrowRight,
   X,
   ShieldCheck,
@@ -252,80 +251,6 @@ const STATIC_PLATFORM_CATALOG: SearchItem[] = [
   },
 ];
 
-// Google-style Trending Searches when search input is empty & focused
-const TRENDING_SEARCHES: SearchItem[] = [
-  {
-    id: 'trend-sih',
-    title: 'Smart India Hackathon (SIH 2026)',
-    category: 'hackathon',
-    categoryLabel: 'Hackathon',
-    snippet: '₹1,00,000 prize pool • Ministry of Education problem statements',
-    href: '/hackathons',
-    tags: ['sih', 'smart', 'india', 'hackathon'],
-    tone: 'amber',
-  },
-  {
-    id: 'trend-google',
-    title: 'Google Solution Challenge 2026',
-    category: 'hackathon',
-    categoryLabel: 'Global Hackathon',
-    snippet: '$3,000 USD prizes + Google Engineering 1:1 mentorship',
-    href: '/hackathons',
-    tags: ['google', 'solution', 'challenge'],
-    tone: 'cyan',
-  },
-  {
-    id: 'trend-icpc',
-    title: 'Placement OA & ICPC Speedrun Arena',
-    category: 'icpc',
-    categoryLabel: 'ICPC Arena',
-    snippet: 'Timed coding challenges with dual-stream AI anti-cheat watchdog',
-    href: '/icpc',
-    tags: ['icpc', 'oa', 'competitive', 'practice'],
-    tone: 'cyan',
-  },
-  {
-    id: 'trend-svyasa',
-    title: 'S-VYASA Collegiate Hackathon 2026',
-    category: 'hackathon',
-    categoryLabel: 'Hackathon',
-    snippet: 'Campus Turing Lab • ₹50,000 Prize Pool • 2-4 Builders Squad',
-    href: '/hackathons',
-    tags: ['svyasa', 's-vyasa', 'turing'],
-    tone: 'amber',
-  },
-  {
-    id: 'trend-faculty',
-    title: 'Faculty Problems & Engineering Briefs',
-    category: 'problem',
-    categoryLabel: 'Faculty Brief',
-    snippet: 'Solve verified professor challenges with faculty grading & reviews',
-    href: '/problems',
-    tags: ['faculty', 'problems', 'professor'],
-    tone: 'violet',
-  },
-  {
-    id: 'trend-war',
-    title: 'Campus War ⚔️ Inter-College Clash',
-    category: 'war',
-    categoryLabel: 'Campus War',
-    snippet: 'Rival universities compete for bounty pools and campus rankings',
-    href: '/war',
-    tags: ['war', 'campus', 'clash'],
-    tone: 'brand',
-  },
-  {
-    id: 'trend-spark',
-    title: 'AI Spark Architecture Studio',
-    category: 'tool',
-    categoryLabel: 'AI Engine',
-    snippet: 'Generate full-stack hackathon project architecture and code in 0.04s',
-    href: '/spark',
-    tags: ['spark', 'ai', 'blueprint'],
-    tone: 'cyan',
-  },
-];
-
 const TONE_CLASSES = {
   amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   cyan: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
@@ -439,10 +364,8 @@ export function GlowingSearchSparkBar() {
       .slice(0, 7);
   }, [query, dynamicCatalog]);
 
-  // Current active list (either matching results or trending suggestions)
-  const activeList = useMemo(() => {
-    return query.trim() ? filteredResults : TRENDING_SEARCHES;
-  }, [query, filteredResults]);
+  // Active list is strictly the filtered results for what the student types
+  const activeList = filteredResults;
 
   // Click outside listener to dismiss dropdown
   useEffect(() => {
@@ -455,7 +378,7 @@ export function GlowingSearchSparkBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard navigation inside search dropdown (Google Search experience)
+  // Keyboard navigation inside search dropdown
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsOpen(false);
@@ -464,7 +387,7 @@ export function GlowingSearchSparkBar() {
     }
 
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && query.trim().length > 0) {
         setIsOpen(true);
       }
       return;
@@ -516,9 +439,6 @@ export function GlowingSearchSparkBar() {
       setIsOpen(false);
     } else if (query.trim()) {
       executeGlobalSearch(query.trim());
-    } else {
-      router.push('/explore');
-      setIsOpen(false);
     }
   };
 
@@ -569,10 +489,13 @@ export function GlowingSearchSparkBar() {
               ref={inputRef}
               type="text"
               value={query}
-              onFocus={() => setIsOpen(true)}
+              onFocus={() => {
+                if (query.trim().length > 0) setIsOpen(true);
+              }}
               onChange={(e) => {
-                setQuery(e.target.value);
-                setIsOpen(true);
+                const val = e.target.value;
+                setQuery(val);
+                setIsOpen(val.trim().length > 0);
                 setSelectedIndex(0);
               }}
               onKeyDown={handleKeyDown}
@@ -585,6 +508,7 @@ export function GlowingSearchSparkBar() {
                 type="button"
                 onClick={() => {
                   setQuery('');
+                  setIsOpen(false);
                   setSelectedIndex(0);
                 }}
                 className="p-1 rounded-full text-slate-400 hover:text-white transition-colors"
@@ -619,36 +543,25 @@ export function GlowingSearchSparkBar() {
         </form>
       </div>
 
-      {/* 5. GOOGLE-STYLE SEARCH AUTOCOMPLETE & LIVE PREDICTIONS DROPDOWN */}
-      {isOpen && (
+      {/* 5. GOOGLE-STYLE SEARCH AUTOCOMPLETE & LIVE PREDICTIONS DROPDOWN (ONLY SHOWN WHEN STUDENT TYPES) */}
+      {isOpen && query.trim().length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2.5 p-2 rounded-2xl bg-[#080A10]/98 backdrop-blur-3xl border border-white/15 shadow-[0_24px_60px_rgba(0,0,0,0.95)] z-50 text-left animate-in fade-in zoom-in-95 duration-150">
           {/* Header Row */}
           <div className="flex items-center justify-between px-3 py-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2 mb-1">
             <div className="flex items-center gap-1.5">
-              {query.trim() ? (
-                <>
-                  <Search className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Kollabrix Search Suggestions</span>
-                </>
-              ) : (
-                <>
-                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Trending Searches on Kollabrix</span>
-                </>
-              )}
+              <Search className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Kollabrix Search Results</span>
             </div>
             <span className="text-[9px] text-slate-500 lowercase">
-              {query.trim() ? `${filteredResults.length} matches` : 'popular on campus'}
+              {filteredResults.length} {filteredResults.length === 1 ? 'match' : 'matches'}
             </span>
           </div>
 
           {/* Autocomplete Predictions List */}
-          {activeList.length > 0 && (
+          {filteredResults.length > 0 && (
             <div className="space-y-0.5 max-h-72 overflow-y-auto custom-scrollbar pr-0.5">
-              {activeList.map((item, idx) => {
+              {filteredResults.map((item, idx) => {
                 const isSelected = idx === selectedIndex;
-                const isTrending = !query.trim();
-                const Icon = isTrending ? TrendingUp : Search;
 
                 return (
                   <div
@@ -672,7 +585,7 @@ export function GlowingSearchSparkBar() {
                             : 'bg-white/5 text-slate-400 group-hover:text-cyan-300'
                         }`}
                       >
-                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-xs sm:text-sm truncate">
@@ -703,7 +616,7 @@ export function GlowingSearchSparkBar() {
           )}
 
           {/* STATE B: No direct matches found */}
-          {query.trim() && filteredResults.length === 0 && (
+          {filteredResults.length === 0 && (
             <div className="px-4 py-4 text-center">
               <Search className="w-6 h-6 text-slate-500 mx-auto mb-2 opacity-75" />
               <p className="text-xs font-semibold text-slate-300">
@@ -718,25 +631,14 @@ export function GlowingSearchSparkBar() {
           {/* Dedicated Google Search Action Row */}
           <div
             onClick={() => {
-              if (query.trim()) {
-                executeGlobalSearch(query.trim());
-              } else {
-                router.push('/explore');
-              }
-              setIsOpen(false);
+              executeGlobalSearch(query.trim());
             }}
             className="flex items-center justify-between px-3 py-2 mt-1 rounded-xl bg-white/[0.04] hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/30 transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <Search className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
               <span className="text-xs text-slate-300 truncate">
-                {query.trim() ? (
-                  <>
-                    Search all Kollabrix for <span className="font-bold text-white">&quot;{query}&quot;</span>
-                  </>
-                ) : (
-                  <span>Explore all verified college hackathons, projects & challenges</span>
-                )}
+                Search all Kollabrix for <span className="font-bold text-white">&quot;{query}&quot;</span>
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 shrink-0">
