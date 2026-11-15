@@ -508,10 +508,10 @@ export function Navbar() {
                   backgroundColor: isNavbarDark ? undefined : theme.brandColor,
                 }}
                 className={clsx(
-                  "text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
+                  "text-xs font-extrabold px-4 py-2 shadow-xs transition-all active:scale-[0.98] hover:opacity-95 rounded-full cursor-pointer",
                   isNavbarDark
-                    ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
-                    : "shadow-xs"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/40"
+                    : "text-white shadow-xs"
                 )}
               >
                 Join Free
@@ -734,7 +734,7 @@ export function Navbar() {
                   setMobileMenuOpen(false);
                   openAuthModal('signup');
                 }}
-                className="w-full py-3 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md text-center"
+                className="w-full py-3 px-3 rounded-xl text-xs font-extrabold text-slate-950 bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/40 text-center"
               >
                 Join Free
               </button>
