@@ -116,17 +116,50 @@ export function FacultyProctorWatchdogModal({
       const rawIncidents: ProctorIncident[] = data.incidents || [];
       const rawSubmissions: ContestSubmission[] = data.submissions || [];
 
-      // Filter to sessions, incidents, and verified submissions associated with this faculty's contests
-      const mySessions = rawSessions.filter((s) => {
-        if (!s) return false;
-        const cId = (s.contestId || '').toLowerCase();
-        const cTitle = (s.contestTitle || '').trim().toLowerCase();
-
-        // If faculty has no contests loaded yet, show sessions as fallback
-        if (facultyContestIds.current.size === 0) return true;
-
-        return facultyContestIds.current.has(cId) || facultyContestTitles.current.has(cTitle);
+      // Cross-reference incidents count per student so any logged infraction turns card RED immediately
+      const studentIncidentCounts: Record<string, number> = {};
+      rawIncidents.forEach((inc) => {
+        if (!inc) return;
+        const sId = (inc.studentId || '').toLowerCase().trim();
+        const sName = (inc.studentName || '').toLowerCase().trim();
+        if (sId) studentIncidentCounts[sId] = (studentIncidentCounts[sId] || 0) + 1;
+        if (sName && sName !== sId) studentIncidentCounts[sName] = (studentIncidentCounts[sName] || 0) + 1;
       });
+
+      // Filter to sessions, incidents, and verified submissions associated with this faculty's contests
+      const mySessions = rawSessions
+        .filter((s) => {
+          if (!s) return false;
+          const cId = (s.contestId || '').toLowerCase();
+          const cTitle = (s.contestTitle || '').trim().toLowerCase();
+
+          // If faculty has no contests loaded yet, show sessions as fallback
+          if (facultyContestIds.current.size === 0) return true;
+
+          return facultyContestIds.current.has(cId) || facultyContestTitles.current.has(cTitle);
+        })
+        .map((s) => {
+          const sId = (s.studentId || '').toLowerCase().trim();
+          const sName = (s.studentName || '').toLowerCase().trim();
+          const incCount = studentIncidentCounts[sId] || studentIncidentCounts[sName] || 0;
+          const totalWarn = Math.max(s.warningCount || 0, incCount);
+          const isCautioned = totalWarn > 0 || s.status === 'cautioned';
+
+          const resolvedStatus: 'active' | 'cautioned' | 'demolished' | 'exited' =
+            s.status === 'demolished'
+              ? 'demolished'
+              : s.status === 'exited'
+              ? 'exited'
+              : isCautioned
+              ? 'cautioned'
+              : 'active';
+
+          return {
+            ...s,
+            warningCount: totalWarn,
+            status: resolvedStatus,
+          };
+        });
 
       const myIncidents = rawIncidents.filter((inc) => {
         if (!inc) return false;

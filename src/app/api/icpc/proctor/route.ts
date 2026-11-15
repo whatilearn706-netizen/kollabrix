@@ -178,9 +178,30 @@ export async function GET(request: NextRequest) {
 
     // Active within the last 25 seconds and not explicitly exited
     const now = Date.now();
-    const activeSessionsList = Object.values(activeMap).filter(
-      (s) => s.status !== 'exited' && now - new Date(s.lastHeartbeat).getTime() < 25 * 1000
-    );
+    // Build active session list with cross-referenced incident status
+    const studentIncidentCounts: Record<string, number> = {};
+    for (const inc of incidents) {
+      const sid = (inc.studentId || inc.studentName || '').toLowerCase().trim();
+      if (sid && !inc.resolved) {
+        studentIncidentCounts[sid] = (studentIncidentCounts[sid] || 0) + 1;
+      }
+    }
+
+    const activeSessionsList = Object.values(activeMap)
+      .filter((s) => s.status !== 'exited' && now - new Date(s.lastHeartbeat).getTime() < 25 * 1000)
+      .map((s) => {
+        const sid = (s.studentId || '').toLowerCase().trim();
+        const sname = (s.studentName || '').toLowerCase().trim();
+        const incCount = studentIncidentCounts[sid] || studentIncidentCounts[sname] || 0;
+        const totalWarn = Math.max(s.warningCount || 0, incCount);
+        const isAlert = totalWarn > 0 || s.status === 'cautioned' || s.status === 'demolished';
+
+        return {
+          ...s,
+          warningCount: totalWarn,
+          status: s.status === 'demolished' ? 'demolished' : isAlert ? 'cautioned' : s.status || 'active',
+        };
+      });
 
     const stats: ProctorLiveStats = {
       activeSessions: activeSessionsList.length,
@@ -445,7 +466,6 @@ export async function POST(request: NextRequest) {
       // Clear caution once read so it triggers modal once
       if (existing.cautionMessage) {
         existing.cautionMessage = undefined;
-        existing.status = 'active';
       }
 
       existing.studentName = studentName || existing.studentName;
@@ -453,7 +473,11 @@ export async function POST(request: NextRequest) {
       existing.contestId = contestId || existing.contestId;
       existing.contestTitle = contestTitle || existing.contestTitle;
       existing.problemTitle = problemTitle || existing.problemTitle;
-      existing.warningCount = Number(warningCount) || existing.warningCount;
+      const clientWarnings = Number(warningCount) || 0;
+      existing.warningCount = Math.max(existing.warningCount || 0, clientWarnings);
+      if (existing.warningCount > 0 && existing.status !== 'demolished') {
+        existing.status = 'cautioned';
+      }
       existing.lastHeartbeat = new Date().toISOString();
       if (typeof screenSnapshot === 'string' && screenSnapshot.startsWith('data:image/')) {
         existing.screenSnapshot = screenSnapshot;
@@ -682,15 +706,36 @@ export async function POST(request: NextRequest) {
       }).catch(() => {});
     }
 
-    // Update active map with the violation info
+    // Update active map with the violation info and force immediate disk flush
     const activeMap = await loadActiveSessions();
-    if (activeMap[studentId]) {
-      activeMap[studentId].warningCount = Number(warningCount) || activeMap[studentId].warningCount;
-      if (screenSnapshot) {
+    const currentWarnings = Number(warningCount) || 1;
+    if (!activeMap[studentId]) {
+      activeMap[studentId] = {
+        id: studentId,
+        studentId,
+        studentName: studentName || studentId,
+        studentEmail,
+        college,
+        contestId: contestId || 'icpc-arena',
+        contestTitle: contestTitle || 'ICPC Contest',
+        problemTitle,
+        warningCount: currentWarnings,
+        status: 'cautioned',
+        startedNotified: true,
+        lastHeartbeat: new Date().toISOString(),
+        screenSnapshot: typeof screenSnapshot === 'string' && screenSnapshot.startsWith('data:image/') ? screenSnapshot : undefined,
+      };
+    } else {
+      activeMap[studentId].warningCount = Math.max(activeMap[studentId].warningCount || 0, currentWarnings);
+      if (activeMap[studentId].status !== 'demolished') {
+        activeMap[studentId].status = 'cautioned';
+      }
+      activeMap[studentId].lastHeartbeat = new Date().toISOString();
+      if (typeof screenSnapshot === 'string' && screenSnapshot.startsWith('data:image/')) {
         activeMap[studentId].screenSnapshot = screenSnapshot;
       }
-      await saveActiveSessions(activeMap);
     }
+    await saveActiveSessions(activeMap, true);
 
     const totalWarningsForStudent = updated.filter(
       (i) => (i.studentId === studentId || i.studentName === studentName) && !i.resolved
