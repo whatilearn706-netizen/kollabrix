@@ -122,7 +122,7 @@ export function LandingHero() {
         >
           <Link
             href={user ? "/my-projects" : "/signup"}
-            className="group inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-sm sm:text-base landing-btn-glow shadow-lg shadow-orange-500/20 hover:scale-105 transition-all duration-200"
+            className="group inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm sm:text-base shadow-[0_0_25px_rgba(245,158,11,0.4)] border border-amber-300/40 hover:scale-105 transition-all duration-200 cursor-pointer"
           >
             Start Building
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />

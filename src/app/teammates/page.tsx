@@ -530,8 +530,7 @@ export default function TeammatesPage() {
                 variant="primary"
                 size="sm"
                 leftIcon={<FolderPlus className="w-4 h-4" />}
-                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="text-white font-bold shadow-xs transition-all"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 border border-amber-400/40 rounded-xl transition-all"
               >
                 Start New Project
               </Button>
@@ -574,7 +573,7 @@ export default function TeammatesPage() {
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-violet-500 shrink-0" />
+            <Briefcase className="w-4 h-4 text-amber-400 shrink-0" />
             <h3
               style={{ color: theme.headingColor }}
               className="text-sm font-bold"
@@ -599,7 +598,7 @@ export default function TeammatesPage() {
               onClick={() => setSelectedProjectId(p.id)}
               className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 selectedProjectId === p.id
-                  ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs border-transparent'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-extrabold shadow-[0_0_15px_rgba(245,158,11,0.3)] border-amber-400/50'
                   : 'bg-slate-100 dark:bg-charcoal-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-charcoal-700 hover:bg-slate-200 dark:hover:bg-charcoal-700'
               }`}
             >
@@ -611,7 +610,7 @@ export default function TeammatesPage() {
             onClick={() => setSelectedProjectId('peer')}
             className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
               selectedProjectId === 'peer'
-                ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs border-transparent'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-extrabold shadow-[0_0_15px_rgba(245,158,11,0.3)] border-amber-400/50'
                 : 'bg-slate-100 dark:bg-charcoal-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-charcoal-700 hover:bg-slate-200 dark:hover:bg-charcoal-700'
             }`}
           >

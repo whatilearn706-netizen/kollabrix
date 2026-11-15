@@ -615,10 +615,11 @@ body.icpc-exam-mode .floating-quick-dock {
    Landing Page — Gradient Text Utility
    ======================================================== */
 .landing-gradient-text {
-  background: linear-gradient(135deg, #EA580C 0%, #D97706 40%, #F59E0B 100%);
+  background: linear-gradient(135deg, #F59E0B 0%, #FB923C 35%, #FBBF24 70%, #FDE68A 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  filter: drop-shadow(0 2px 20px rgba(245, 158, 11, 0.3));
 }
 
 /* ========================================================

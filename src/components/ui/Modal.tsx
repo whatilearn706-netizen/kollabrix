@@ -70,7 +70,7 @@ export function Modal({
           maxWidths[maxWidth]
         )}
       >
-        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-400" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]" />
 
         <button
           onClick={onClose}

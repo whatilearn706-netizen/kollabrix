@@ -11,13 +11,13 @@ const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: s
     bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    button: 'bg-gradient-to-r from-orange-600 to-amber-500 text-white hover:opacity-95 shadow-xs border border-white/10',
+    button: 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold hover:from-amber-400 hover:to-orange-400 shadow-[0_0_12px_rgba(245,158,11,0.35)] border border-amber-300/40',
   },
   indigo: {
     bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    button: 'bg-gradient-to-r from-orange-600 to-amber-500 text-white hover:opacity-95 shadow-xs border border-white/10',
+    button: 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold hover:from-amber-400 hover:to-orange-400 shadow-[0_0_12px_rgba(245,158,11,0.35)] border border-amber-300/40',
   },
   emerald: {
     bg: 'bg-[#090B10]',
@@ -29,7 +29,7 @@ const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: s
     bg: 'bg-[#090B10]',
     text: 'text-slate-300',
     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    button: 'bg-gradient-to-r from-orange-600 to-amber-500 text-white hover:opacity-95 shadow-xs border border-white/10',
+    button: 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold hover:from-amber-400 hover:to-orange-400 shadow-[0_0_12px_rgba(245,158,11,0.35)] border border-amber-300/40',
   },
   rose: {
     bg: 'bg-[#090B10]',
