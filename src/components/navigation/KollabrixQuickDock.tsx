@@ -31,7 +31,6 @@ interface DockItem {
   icon: React.ElementType;
   tone: 'amber' | 'violet' | 'emerald' | 'cyan' | 'brand' | 'rose';
   openInNewTab?: boolean;
-  badge?: string;
 }
 
 const DOCK_ITEMS: DockItem[] = [
@@ -58,7 +57,6 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/icpc',
     icon: Terminal,
     tone: 'cyan',
-    badge: 'OA & ICPC',
   },
   {
     id: 'problems',
@@ -453,12 +451,6 @@ export function KollabrixQuickDock() {
                     >
                       <Icon className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
 
-                      {item.badge && (
-                        <span className="absolute -top-1 -right-2 px-1 py-0.5 rounded-full bg-cyan-400 text-black font-black text-[6.5px] font-mono tracking-tighter uppercase shadow-[0_0_10px_rgba(6,182,212,0.95)] border border-white/70 animate-pulse pointer-events-none z-20">
-                          {item.badge}
-                        </span>
-                      )}
-
                       {isActive && (
                         <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" />
                       )}
@@ -538,16 +530,9 @@ export function KollabrixQuickDock() {
           <div className="relative flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-stone-900/95 dark:bg-[#0B0D14]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-white backdrop-blur-2xl whitespace-nowrap">
             <span className={`w-2 h-2 rounded-full ${TONE_DOTS[hoveredTooltip.tone] || 'bg-amber-400'} shadow-[0_0_8px_currentColor] shrink-0`} />
             <div className="flex flex-col text-left">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-white tracking-wide leading-tight">
-                  {hoveredTooltip.label}
-                </span>
-                {hoveredTooltip.label?.includes('Competitive Practice') && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-cyan-400 text-black text-[8px] font-mono font-black uppercase tracking-wider shadow-[0_0_10px_rgba(6,182,212,0.9)] border border-cyan-200">
-                    OA &amp; ICPC
-                  </span>
-                )}
-              </div>
+              <span className="text-xs font-bold text-white tracking-wide leading-tight">
+                {hoveredTooltip.label}
+              </span>
               {hoveredTooltip.sub && (
                 <span className="text-[10px] text-stone-300 font-medium leading-tight">
                   {hoveredTooltip.sub}
