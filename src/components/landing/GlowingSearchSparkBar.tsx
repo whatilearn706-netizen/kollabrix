@@ -2,21 +2,19 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   Search,
   Sparkles,
+  TrendingUp,
+  ArrowRight,
+  X,
+  ShieldCheck,
   Trophy,
   Terminal,
   Lightbulb,
   Swords,
   Clock,
-  Gift,
-  Users,
   Compass,
-  ArrowRight,
-  X,
-  ExternalLink,
 } from 'lucide-react';
 
 interface SearchItem {
@@ -31,7 +29,37 @@ interface SearchItem {
 }
 
 const STATIC_PLATFORM_CATALOG: SearchItem[] = [
-  // 🏆 Hackathons & Competitions
+  // 🏆 Curated Hackathons & Live Competitions
+  {
+    id: 'h-sih',
+    title: 'Smart India Hackathon (SIH 2026)',
+    category: 'hackathon',
+    categoryLabel: 'Hackathon',
+    snippet: '₹1,00,000 per problem statement • Ministry of Education & AICTE nationwide challenge',
+    href: '/hackathons',
+    tags: ['smart', 'india', 'sih', '2026', 'hackathon', 'aicte', 'ministry', 'national'],
+    tone: 'amber',
+  },
+  {
+    id: 'h-google',
+    title: 'Google Solution Challenge 2026',
+    category: 'hackathon',
+    categoryLabel: 'Global Hackathon',
+    snippet: '$3,000 USD prizes + Google Engineering 1:1 tech mentorship & Cloud credits',
+    href: '/hackathons',
+    tags: ['google', 'solution', 'challenge', 'gdsc', 'ai', 'cloud', 'global'],
+    tone: 'cyan',
+  },
+  {
+    id: 'h-ethindia',
+    title: 'ETHIndia 2026',
+    category: 'hackathon',
+    categoryLabel: 'Web3 Hackathon',
+    snippet: '$100,000+ USD in bounties • Devfolio & Ethereum Foundation collegiate builder track',
+    href: '/hackathons',
+    tags: ['ethindia', 'ethereum', 'devfolio', 'web3', 'bounties', 'crypto', 'bangalore'],
+    tone: 'violet',
+  },
   {
     id: 'h-svyasa',
     title: 'S-VYASA Collegiate Hackathon 2026',
@@ -43,13 +71,23 @@ const STATIC_PLATFORM_CATALOG: SearchItem[] = [
     tone: 'amber',
   },
   {
+    id: 'h-hackmit',
+    title: 'HackMIT 2026 Collegiate Hackathon',
+    category: 'hackathon',
+    categoryLabel: 'Collegiate Hackathon',
+    snippet: '$30,000+ USD in hardware kits, computing credits & rapid prototyping tracks',
+    href: '/hackathons',
+    tags: ['hackmit', 'mit', 'collegiate', 'hardware', 'ai', 'prototyping'],
+    tone: 'cyan',
+  },
+  {
     id: 'h-all',
     title: 'All Active College Hackathons',
     category: 'hackathon',
     categoryLabel: 'Directory',
     snippet: 'Explore live, upcoming & open collegiate hackathons across 100+ universities',
     href: '/hackathons',
-    tags: ['hackathons', 'competitions', 'events', 'prizes', 'cash', 'teams'],
+    tags: ['hackathons', 'competitions', 'events', 'prizes', 'cash', 'teams', 'all'],
     tone: 'amber',
   },
   {
@@ -81,11 +119,21 @@ const STATIC_PLATFORM_CATALOG: SearchItem[] = [
     categoryLabel: 'Placement OA',
     snippet: 'Timed OA challenges modelled after Google, Amazon, and Microsoft hiring tests',
     href: '/icpc',
-    tags: ['oa', 'placement', 'interview', 'speedrun', 'timed', 'google', 'amazon'],
+    tags: ['oa', 'placement', 'interview', 'speedrun', 'timed', 'google', 'amazon', 'faang'],
+    tone: 'cyan',
+  },
+  {
+    id: 'icpc-dsa',
+    title: 'Data Structures & Algorithms Problem Bank',
+    category: 'icpc',
+    categoryLabel: 'Practice Bank',
+    snippet: 'Arrays, Strings, Dynamic Programming, Graphs & Trees with live browser code execution',
+    href: '/icpc',
+    tags: ['dsa', 'algorithms', 'data structures', 'arrays', 'graphs', 'dynamic programming', 'trees'],
     tone: 'cyan',
   },
 
-  // 💡 Faculty Problems
+  // 💡 Faculty Problems & Academics
   {
     id: 'faculty-problems',
     title: 'Faculty Problems & Engineering Briefs',
@@ -127,7 +175,7 @@ const STATIC_PLATFORM_CATALOG: SearchItem[] = [
     categoryLabel: 'AI Engine',
     snippet: 'Generate production-ready hackathon architecture and code blueprints in 0.04s',
     href: '/spark',
-    tags: ['spark', 'ai', 'ai spark', 'generator', 'blueprint', 'idea', 'prompt'],
+    tags: ['spark', 'ai', 'ai spark', 'generator', 'blueprint', 'idea', 'prompt', 'architecture'],
     tone: 'cyan',
   },
   {
@@ -204,6 +252,80 @@ const STATIC_PLATFORM_CATALOG: SearchItem[] = [
   },
 ];
 
+// Google-style Trending Searches when search input is empty & focused
+const TRENDING_SEARCHES: SearchItem[] = [
+  {
+    id: 'trend-sih',
+    title: 'Smart India Hackathon (SIH 2026)',
+    category: 'hackathon',
+    categoryLabel: 'Hackathon',
+    snippet: '₹1,00,000 prize pool • Ministry of Education problem statements',
+    href: '/hackathons',
+    tags: ['sih', 'smart', 'india', 'hackathon'],
+    tone: 'amber',
+  },
+  {
+    id: 'trend-google',
+    title: 'Google Solution Challenge 2026',
+    category: 'hackathon',
+    categoryLabel: 'Global Hackathon',
+    snippet: '$3,000 USD prizes + Google Engineering 1:1 mentorship',
+    href: '/hackathons',
+    tags: ['google', 'solution', 'challenge'],
+    tone: 'cyan',
+  },
+  {
+    id: 'trend-icpc',
+    title: 'Placement OA & ICPC Speedrun Arena',
+    category: 'icpc',
+    categoryLabel: 'ICPC Arena',
+    snippet: 'Timed coding challenges with dual-stream AI anti-cheat watchdog',
+    href: '/icpc',
+    tags: ['icpc', 'oa', 'competitive', 'practice'],
+    tone: 'cyan',
+  },
+  {
+    id: 'trend-svyasa',
+    title: 'S-VYASA Collegiate Hackathon 2026',
+    category: 'hackathon',
+    categoryLabel: 'Hackathon',
+    snippet: 'Campus Turing Lab • ₹50,000 Prize Pool • 2-4 Builders Squad',
+    href: '/hackathons',
+    tags: ['svyasa', 's-vyasa', 'turing'],
+    tone: 'amber',
+  },
+  {
+    id: 'trend-faculty',
+    title: 'Faculty Problems & Engineering Briefs',
+    category: 'problem',
+    categoryLabel: 'Faculty Brief',
+    snippet: 'Solve verified professor challenges with faculty grading & reviews',
+    href: '/problems',
+    tags: ['faculty', 'problems', 'professor'],
+    tone: 'violet',
+  },
+  {
+    id: 'trend-war',
+    title: 'Campus War ⚔️ Inter-College Clash',
+    category: 'war',
+    categoryLabel: 'Campus War',
+    snippet: 'Rival universities compete for bounty pools and campus rankings',
+    href: '/war',
+    tags: ['war', 'campus', 'clash'],
+    tone: 'brand',
+  },
+  {
+    id: 'trend-spark',
+    title: 'AI Spark Architecture Studio',
+    category: 'tool',
+    categoryLabel: 'AI Engine',
+    snippet: 'Generate full-stack hackathon project architecture and code in 0.04s',
+    href: '/spark',
+    tags: ['spark', 'ai', 'blueprint'],
+    tone: 'cyan',
+  },
+];
+
 const TONE_CLASSES = {
   amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   cyan: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
@@ -213,14 +335,30 @@ const TONE_CLASSES = {
   emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
 };
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  hackathon: Trophy,
-  icpc: Terminal,
-  problem: Lightbulb,
-  war: Swords,
-  tool: Sparkles,
-  community: Users,
-};
+// Autocomplete match highlighter helper (Google-style)
+function renderHighlightedText(text: string, q: string) {
+  const trimmed = q.trim();
+  if (!trimmed) return <span className="text-white font-medium">{text}</span>;
+
+  const lower = text.toLowerCase();
+  const queryLower = trimmed.toLowerCase();
+  const idx = lower.indexOf(queryLower);
+  if (idx === -1) return <span className="text-white font-medium">{text}</span>;
+
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + trimmed.length);
+  const after = text.slice(idx + trimmed.length);
+
+  return (
+    <span className="text-slate-200">
+      {before}
+      <span className="font-bold text-white bg-cyan-500/25 text-cyan-200 px-1 py-0.5 rounded">
+        {match}
+      </span>
+      {after}
+    </span>
+  );
+}
 
 export function GlowingSearchSparkBar() {
   const [query, setQuery] = useState('');
@@ -261,7 +399,6 @@ export function GlowingSearchSparkBar() {
 
         setDynamicCatalog((prev) => {
           const combined = [...liveHackathons, ...prev];
-          // Deduplicate by ID
           const seen = new Set();
           return combined.filter((item) => {
             if (seen.has(item.id)) return false;
@@ -279,7 +416,7 @@ export function GlowingSearchSparkBar() {
     };
   }, []);
 
-  // Filter search results in real time
+  // Filter search results in real time with priority sorting
   const filteredResults = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -292,8 +429,20 @@ export function GlowingSearchSparkBar() {
         const tagMatch = item.tags ? item.tags.some((t) => t.includes(q)) : false;
         return titleMatch || snippetMatch || categoryMatch || tagMatch;
       })
-      .slice(0, 8);
+      .sort((a, b) => {
+        const aTitle = a.title.toLowerCase().includes(q);
+        const bTitle = b.title.toLowerCase().includes(q);
+        if (aTitle && !bTitle) return -1;
+        if (!aTitle && bTitle) return 1;
+        return 0;
+      })
+      .slice(0, 7);
   }, [query, dynamicCatalog]);
+
+  // Current active list (either matching results or trending suggestions)
+  const activeList = useMemo(() => {
+    return query.trim() ? filteredResults : TRENDING_SEARCHES;
+  }, [query, filteredResults]);
 
   // Click outside listener to dismiss dropdown
   useEffect(() => {
@@ -306,7 +455,7 @@ export function GlowingSearchSparkBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard navigation inside search dropdown
+  // Keyboard navigation inside search dropdown (Google Search experience)
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsOpen(false);
@@ -323,41 +472,50 @@ export function GlowingSearchSparkBar() {
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (filteredResults.length > 0 ? (prev + 1) % filteredResults.length : 0));
+      setSelectedIndex((prev) => (activeList.length > 0 ? (prev + 1) % activeList.length : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((prev) =>
-        filteredResults.length > 0 ? (prev - 1 + filteredResults.length) % filteredResults.length : 0
+        activeList.length > 0 ? (prev - 1 + activeList.length) % activeList.length : 0
       );
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filteredResults.length > 0 && filteredResults[selectedIndex]) {
-        router.push(filteredResults[selectedIndex].href);
+      if (activeList.length > 0 && activeList[selectedIndex]) {
+        router.push(activeList[selectedIndex].href);
         setIsOpen(false);
       } else if (query.trim()) {
-        const q = query.trim().toLowerCase();
-        if (q.includes('hackathon')) {
-          router.push(`/hackathons?q=${encodeURIComponent(query.trim())}`);
-        } else if (q.includes('icpc') || q.includes('oa') || q.includes('code')) {
-          router.push(`/icpc?q=${encodeURIComponent(query.trim())}`);
-        } else if (q.includes('problem')) {
-          router.push(`/problems?q=${encodeURIComponent(query.trim())}`);
-        } else {
-          router.push(`/explore?q=${encodeURIComponent(query.trim())}`);
-        }
-        setIsOpen(false);
+        executeGlobalSearch(query.trim());
       }
     }
   };
 
+  const executeGlobalSearch = (searchQuery: string) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return;
+
+    if (q.includes('hackathon')) {
+      router.push(`/hackathons?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else if (q.includes('icpc') || q.includes('oa') || q.includes('practice')) {
+      router.push(`/icpc?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else if (q.includes('problem') || q.includes('faculty')) {
+      router.push(`/problems?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else if (q.includes('war') || q.includes('clash')) {
+      router.push(`/war`);
+    } else if (q.includes('spark') || q.includes('ai')) {
+      router.push(`/spark`);
+    } else {
+      router.push(`/explore?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+    setIsOpen(false);
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (filteredResults.length > 0 && selectedIndex < filteredResults.length) {
-      router.push(filteredResults[selectedIndex].href);
+    if (activeList.length > 0 && selectedIndex < activeList.length) {
+      router.push(activeList[selectedIndex].href);
       setIsOpen(false);
     } else if (query.trim()) {
-      router.push(`/explore?q=${encodeURIComponent(query.trim())}`);
-      setIsOpen(false);
+      executeGlobalSearch(query.trim());
     } else {
       router.push('/explore');
       setIsOpen(false);
@@ -388,7 +546,7 @@ export function GlowingSearchSparkBar() {
         />
       </div>
 
-      {/* 3. Razor-Sharp Outer Pill Container with Rotating Specular Light Beam (studio.baseline inspired) */}
+      {/* 3. Razor-Sharp Outer Pill Container with Rotating Specular Light Beam */}
       <div className="relative rounded-full p-[1.5px] overflow-hidden bg-slate-800/60 shadow-[0_10px_35px_rgba(0,0,0,0.8)] transition-all duration-300 group-hover:shadow-[0_15px_45px_rgba(139,92,246,0.3)]">
         {/* Continuous Lightning Beam */}
         <div
@@ -418,9 +576,9 @@ export function GlowingSearchSparkBar() {
                 setSelectedIndex(0);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search hackathons, teammates, campus bounties, problems..."
+              placeholder="Search hackathons, practice, problems, campus bounties..."
               className="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-400/80 focus:outline-none focus:placeholder-slate-500 font-sans tracking-wide truncate"
-              aria-label="Omnisearch across Kollabrix"
+              aria-label="Search across Kollabrix"
             />
             {query && (
               <button
@@ -430,7 +588,7 @@ export function GlowingSearchSparkBar() {
                   setSelectedIndex(0);
                 }}
                 className="p-1 rounded-full text-slate-400 hover:text-white transition-colors"
-                title="Clear query"
+                title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -461,146 +619,144 @@ export function GlowingSearchSparkBar() {
         </form>
       </div>
 
-      {/* 5. LIVE OMNISEARCH DROPDOWN RESULTS */}
+      {/* 5. GOOGLE-STYLE SEARCH AUTOCOMPLETE & LIVE PREDICTIONS DROPDOWN */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-3 p-3 rounded-3xl bg-[#090B12]/95 backdrop-blur-3xl border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.95)] z-50 text-left animate-in fade-in zoom-in-95 duration-150">
-          {/* STATE A: User is typing and results match */}
-          {query.trim() && filteredResults.length > 0 && (
-            <div className="space-y-1">
-              <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between border-b border-charcoal-800 pb-2 mb-1">
-                <span>Matching Platform Content ({filteredResults.length})</span>
-                <span>Use ↑↓ to navigate • Enter to view</span>
-              </div>
-              <div className="max-h-72 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                {filteredResults.map((item, idx) => {
-                  const Icon = CATEGORY_ICONS[item.category] || Compass;
-                  const isSelected = idx === selectedIndex;
-                  const badgeStyle = TONE_CLASSES[item.tone];
+        <div className="absolute top-full left-0 right-0 mt-2.5 p-2 rounded-2xl bg-[#080A10]/98 backdrop-blur-3xl border border-white/15 shadow-[0_24px_60px_rgba(0,0,0,0.95)] z-50 text-left animate-in fade-in zoom-in-95 duration-150">
+          {/* Header Row */}
+          <div className="flex items-center justify-between px-3 py-1.5 text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2 mb-1">
+            <div className="flex items-center gap-1.5">
+              {query.trim() ? (
+                <>
+                  <Search className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Kollabrix Search Suggestions</span>
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Trending Searches on Kollabrix</span>
+                </>
+              )}
+            </div>
+            <span className="text-[9px] text-slate-500 lowercase">
+              {query.trim() ? `${filteredResults.length} matches` : 'popular on campus'}
+            </span>
+          </div>
 
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`flex items-start gap-3 p-2.5 rounded-2xl transition-all ${
-                        isSelected
-                          ? 'bg-white/10 border border-white/20 shadow-md translate-x-0.5'
-                          : 'bg-transparent hover:bg-white/5 border border-transparent'
-                      }`}
-                    >
+          {/* Autocomplete Predictions List */}
+          {activeList.length > 0 && (
+            <div className="space-y-0.5 max-h-72 overflow-y-auto custom-scrollbar pr-0.5">
+              {activeList.map((item, idx) => {
+                const isSelected = idx === selectedIndex;
+                const isTrending = !query.trim();
+                const Icon = isTrending ? TrendingUp : Search;
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      router.push(item.href);
+                      setIsOpen(false);
+                    }}
+                    onMouseEnter={() => setSelectedIndex(idx)}
+                    className={`group flex items-center justify-between gap-3 px-3 py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-white/10 border border-white/15 shadow-sm'
+                        : 'bg-transparent hover:bg-white/5 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div
-                        className={`p-2 rounded-xl shrink-0 ${
-                          item.tone === 'amber'
-                            ? 'bg-amber-500/20 text-amber-300'
-                            : item.tone === 'cyan'
+                        className={`p-1.5 rounded-lg shrink-0 transition-colors ${
+                          isSelected
                             ? 'bg-cyan-500/20 text-cyan-300'
-                            : item.tone === 'violet'
-                            ? 'bg-violet-500/20 text-violet-300'
-                            : item.tone === 'brand'
-                            ? 'bg-orange-500/20 text-orange-300'
-                            : 'bg-emerald-500/20 text-emerald-300'
+                            : 'bg-white/5 text-slate-400 group-hover:text-cyan-300'
                         }`}
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-heading font-bold text-xs sm:text-sm text-white truncate">
-                            {item.title}
-                          </span>
-                          <span
-                            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider shrink-0 ${badgeStyle}`}
-                          >
-                            {item.categoryLabel}
-                          </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs sm:text-sm truncate">
+                          {renderHighlightedText(item.title, query)}
                         </div>
-                        <p className="text-[11px] text-slate-400 truncate mt-0.5">{item.snippet}</p>
+                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                          {item.snippet}
+                        </p>
                       </div>
+                    </div>
 
-                      <ArrowRight className="w-4 h-4 text-slate-500 shrink-0 self-center opacity-60" />
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* View all in explore footer */}
-              <div className="pt-2 border-t border-charcoal-800 mt-2 px-2 flex items-center justify-between text-xs">
-                <span className="text-slate-400 text-[11px]">
-                  Looking for more? Press <kbd className="px-1 py-0.5 rounded bg-black/60 border border-white/15 text-[10px] font-mono text-white">Enter</kbd>
-                </span>
-                <Link
-                  href={`/explore?q=${encodeURIComponent(query.trim())}`}
-                  onClick={() => setIsOpen(false)}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold text-xs flex items-center gap-1"
-                >
-                  <span>Explore all results</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* STATE B: User typed something that yielded no exact match */}
-          {query.trim() && filteredResults.length === 0 && (
-            <div className="p-6 text-center space-y-3">
-              <Search className="w-8 h-8 text-slate-500 mx-auto" />
-              <div>
-                <p className="text-sm font-bold text-white">No direct matches for &quot;{query}&quot;</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                  Search across all collegiate repositories, hackathon squads, and campus projects in the Explore hub.
-                </p>
-              </div>
-              <Link
-                href={`/explore?q=${encodeURIComponent(query.trim())}`}
-                onClick={() => setIsOpen(false)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-colors"
-              >
-                <span>Search in Explore Hub</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          )}
-
-          {/* STATE C: Input is focused but empty — Instant Quick Jump Chips */}
-          {!query.trim() && (
-            <div className="p-2 space-y-3">
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase tracking-wider px-1">
-                <span>Quick Jump Across Kollabrix</span>
-                <span className="text-cyan-400 font-bold">1-Click Launch</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  { label: 'College Hackathons', icon: Trophy, href: '/hackathons', tone: 'amber' },
-                  { label: 'Competitive Practice', icon: Terminal, href: '/icpc', tone: 'cyan' },
-                  { label: 'Campus War Clash', icon: Swords, href: '/war', tone: 'brand' },
-                  { label: 'Faculty Problems', icon: Lightbulb, href: '/problems', tone: 'violet' },
-                  { label: 'AI Spark Studio', icon: Sparkles, href: '/spark', tone: 'cyan' },
-                  { label: 'Deadlines Radar', icon: Clock, href: '/deadlines', tone: 'rose' },
-                  { label: 'Student Perks Vault', icon: Gift, href: '/perks', tone: 'emerald' },
-                  { label: 'Campus Teammates', icon: Users, href: '/teammates', tone: 'emerald' },
-                  { label: 'Explore Projects', icon: Compass, href: '/explore', tone: 'amber' },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-2 p-2 rounded-xl bg-charcoal-900 hover:bg-white/10 border border-charcoal-750 hover:border-white/20 transition-all text-left group/item"
-                    >
-                      <Icon className="w-3.5 h-3.5 text-slate-400 group-hover/item:text-cyan-300 transition-colors shrink-0" />
-                      <span className="text-xs font-semibold text-slate-200 group-hover/item:text-white truncate">
-                        {item.label}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${TONE_CLASSES[item.tone]}`}
+                      >
+                        {item.categoryLabel}
                       </span>
-                    </Link>
-                  );
-                })}
-              </div>
+                      <ArrowRight
+                        className={`w-3.5 h-3.5 text-slate-400 transition-all ${
+                          isSelected ? 'opacity-100 translate-x-0.5 text-cyan-300' : 'opacity-0 group-hover:opacity-60'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
+
+          {/* STATE B: No direct matches found */}
+          {query.trim() && filteredResults.length === 0 && (
+            <div className="px-4 py-4 text-center">
+              <Search className="w-6 h-6 text-slate-500 mx-auto mb-2 opacity-75" />
+              <p className="text-xs font-semibold text-slate-300">
+                No direct match for &quot;{query}&quot;
+              </p>
+              <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
+                Press Enter to search all collegiate repositories, projects, and hackathon teams in the Explore hub.
+              </p>
+            </div>
+          )}
+
+          {/* Dedicated Google Search Action Row */}
+          <div
+            onClick={() => {
+              if (query.trim()) {
+                executeGlobalSearch(query.trim());
+              } else {
+                router.push('/explore');
+              }
+              setIsOpen(false);
+            }}
+            className="flex items-center justify-between px-3 py-2 mt-1 rounded-xl bg-white/[0.04] hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/30 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Search className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="text-xs text-slate-300 truncate">
+                {query.trim() ? (
+                  <>
+                    Search all Kollabrix for <span className="font-bold text-white">&quot;{query}&quot;</span>
+                  </>
+                ) : (
+                  <span>Explore all verified college hackathons, projects & challenges</span>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 shrink-0">
+              <span className="hidden sm:inline">Press</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-white/20 text-white font-bold text-[10px]">
+                ↵ Enter
+              </kbd>
+            </div>
+          </div>
+
+          {/* Google-Style Footer with Privacy Safety Guarantee */}
+          <div className="pt-2 border-t border-white/5 mt-1 px-3 flex items-center justify-between text-[10px] text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="truncate">Public Campus Index • Private Student Data Excluded</span>
+            </div>
+            <span className="text-slate-500 hidden sm:inline">
+              <kbd className="font-mono text-slate-400">↑↓</kbd> navigate • <kbd className="font-mono text-slate-400">esc</kbd> close
+            </span>
+          </div>
         </div>
       )}
     </div>
