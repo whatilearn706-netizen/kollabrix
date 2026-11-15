@@ -306,22 +306,15 @@ export function IcpcProctorGuard({
       if (now - lastTrigger < minCooldown) return;
       recentViolationsRef.current[type] = now;
 
-      playAlertSound('critical');
+      // Silent stealth detection: student is NOT interrupted by alarm sounds or popups.
+      // Violations are logged stealthily to the faculty watchdog desk in real time.
+      // Student only receives an alert when the faculty explicitly issues a Caution.
       warningCountRef.current += 1;
       const nextCount = warningCountRef.current;
       setWarningCount(nextCount);
 
       // Grab screen snapshot evidence from live monitor share
       const screenSnapshot = captureScreenSnapshot();
-
-      const incidentData = {
-        type,
-        message,
-        details,
-        timestamp: new Date().toLocaleTimeString(),
-        screenSnapshot,
-      };
-      setActiveWarning(incidentData);
 
       // Flag session on violations, but keep screen stream alive so proctor monitors activity
       if (nextCount >= MAX_WARNINGS) {
@@ -978,7 +971,6 @@ export function IcpcProctorGuard({
 
       if (!isCompliant) {
         setIsFocusLost(true);
-        playAlertSound('critical');
 
         try {
           window.focus();
@@ -1003,7 +995,6 @@ export function IcpcProctorGuard({
 
     const handleWindowBlur = () => {
       setIsFocusLost(true);
-      playAlertSound('critical');
       triggerViolation(
         'TAB_SWITCH',
         '4-Finger Desktop Swipe / External Navigation Detected',
@@ -1024,7 +1015,6 @@ export function IcpcProctorGuard({
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setIsFocusLost(true);
-        playAlertSound('critical');
         triggerViolation(
           'TAB_SWITCH',
           '4-Finger Desktop Swipe Detected (Screen Moved Off)',
@@ -1037,7 +1027,6 @@ export function IcpcProctorGuard({
 
     const handleWheelSwipe = (e: WheelEvent) => {
       if (Math.abs(e.deltaX) > 150 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2) {
-        playAlertSound('warning');
         triggerViolation(
           'TAB_SWITCH',
           '4-Finger Trackpad Swipe Gesture Attempt',
@@ -1047,11 +1036,37 @@ export function IcpcProctorGuard({
       }
     };
 
+    // Anti-paste & Anti-copy stealth interceptor
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const pastedText = e.clipboardData?.getData('text') || '';
+      triggerViolation(
+        'SUSPICIOUS_PASTE',
+        'Unauthorized Paste Attempt Intercepted',
+        pastedText.length > 0
+          ? `Attempted to paste ${pastedText.length} characters into the contest arena. External clipboard pasting is disabled.`
+          : 'Clipboard paste attempt intercepted in arena.',
+        'high'
+      );
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      triggerViolation(
+        'TAB_SWITCH',
+        'Arena Copy Attempt Intercepted',
+        'Contestant copied arena text. Potential attempt to feed problem to external AI assistant or search engine.',
+        'medium'
+      );
+    };
+
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pagehide', handleWindowBlur);
     window.addEventListener('wheel', handleWheelSwipe, { passive: true });
+    window.addEventListener('paste', handlePaste, true);
+    window.addEventListener('copy', handleCopy, true);
 
     return () => {
       clearInterval(poller);
@@ -1060,8 +1075,10 @@ export function IcpcProctorGuard({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handleWindowBlur);
       window.removeEventListener('wheel', handleWheelSwipe);
+      window.removeEventListener('paste', handlePaste, true);
+      window.removeEventListener('copy', handleCopy, true);
     };
-  }, [isActive, showEntranceModal, triggerViolation, playAlertSound]);
+  }, [isActive, showEntranceModal, triggerViolation]);
 
   // Full-Screen Change Event Listener (with 1.5-Second Rule)
   useEffect(() => {
