@@ -16,6 +16,11 @@ import {
   AlertOctagon,
   CheckCircle2,
   Lock,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
+  ShieldCheck,
+  Flag,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -55,6 +60,11 @@ export function FacultyProctorWatchdogModal({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [subView, setSubView] = useState<'live_monitors' | 'incidents_log' | 'verified_submissions'>('live_monitors');
+
+  // Smartest Addition: Alerts on Top & 400-500 Student Fast Pagination
+  const [monitorFilter, setMonitorFilter] = useState<'all' | 'flagged' | 'clean'>('all');
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 24;
 
   // Theater Mode (High-res stream)
   const [theaterSession, setTheaterSession] = useState<ActiveProctorSession | null>(null);
@@ -378,6 +388,33 @@ export function FacultyProctorWatchdogModal({
     return true;
   });
 
+  // "Smartest Addition": Sort sessions with ALERTS ON TOP (Flagged cheaters bubble to the top!)
+  const sortedSessions = [...filteredSessions].sort((a, b) => {
+    const aAlert = a.warningCount > 0 || a.status === 'cautioned' || a.status === 'demolished' ? 1 : 0;
+    const bAlert = b.warningCount > 0 || b.status === 'cautioned' || b.status === 'demolished' ? 1 : 0;
+    if (aAlert !== bAlert) return bAlert - aAlert; // Cheaters/Alerts bubble to the top
+    if (b.warningCount !== a.warningCount) return b.warningCount - a.warningCount; // Higher warnings first
+    return new Date(b.lastHeartbeat || 0).getTime() - new Date(a.lastHeartbeat || 0).getTime();
+  });
+
+  const flaggedCount = sortedSessions.filter((s) => s.warningCount > 0 || s.status === 'cautioned' || s.status === 'demolished').length;
+  const cleanCount = sortedSessions.length - flaggedCount;
+
+  // Filter by user selection (all vs flagged vs clean)
+  const displaySessions = sortedSessions.filter((s) => {
+    const isFlagged = s.warningCount > 0 || s.status === 'cautioned' || s.status === 'demolished';
+    if (monitorFilter === 'flagged') return isFlagged;
+    if (monitorFilter === 'clean') return !isFlagged;
+    return true;
+  });
+
+  const totalPages = Math.ceil(displaySessions.length / pageSize) || 1;
+  const paginatedSessions = displaySessions.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, selectedContestId, monitorFilter]);
+
   return (
     <>
       <Modal
@@ -536,140 +573,244 @@ export function FacultyProctorWatchdogModal({
 
           {/* SUB-VIEW 1: LIVE MONITORS GRID */}
           {subView === 'live_monitors' && (
-            <div>
-              {filteredSessions.length === 0 ? (
+            <div className="space-y-3.5">
+              {/* Smart Sub-Header: Filter Pills + Zero-Lag GPU Mode Tip */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-750">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setMonitorFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      monitorFilter === 'all'
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                        : 'bg-charcoal-800 text-slate-400 border border-charcoal-700 hover:text-white'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>All Contestants ({sortedSessions.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMonitorFilter('flagged')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      monitorFilter === 'flagged'
+                        ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.25)]'
+                        : 'bg-charcoal-800 text-slate-400 border border-charcoal-700 hover:text-rose-400'
+                    }`}
+                  >
+                    <span className="relative flex h-2 w-2">
+                      {flaggedCount > 0 && (
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                      )}
+                      <span
+                        className={`relative inline-flex rounded-full h-2 w-2 ${
+                          flaggedCount > 0 ? 'bg-rose-500' : 'bg-slate-500'
+                        }`}
+                      />
+                    </span>
+                    <span>🚨 Cheating Alerts ({flaggedCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMonitorFilter('clean')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      monitorFilter === 'clean'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                        : 'bg-charcoal-800 text-slate-400 border border-charcoal-700 hover:text-emerald-400'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Verified Clean ({cleanCount})</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[11px] font-mono text-cyan-300/80 bg-cyan-950/30 border border-cyan-800/40 px-2.5 py-1 rounded-lg">
+                  <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span>0% GPU Mode • Tap any box to stream live</span>
+                </div>
+              </div>
+
+              {displaySessions.length === 0 ? (
                 <div className="text-center py-16 px-4 rounded-2xl bg-charcoal-900/60 border border-charcoal-750 space-y-3">
-                  <Monitor className="w-10 h-10 text-slate-600 mx-auto" />
-                  <h4 className="text-sm font-bold text-slate-300">No Contestants Active Right Now</h4>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Students will appear here in real time as soon as they tap &quot;Enter Arena&quot; and share their camera &amp; screen.
-                  </p>
+                  {monitorFilter === 'flagged' ? (
+                    <>
+                      <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                      <h4 className="text-sm font-bold text-slate-200">Zero Integrity Alerts</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        All currently active contestants have 0 warnings and clean integrity standing.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Monitor className="w-10 h-10 text-slate-600 mx-auto" />
+                      <h4 className="text-sm font-bold text-slate-300">No Contestants Match This Filter</h4>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto">
+                        Students appear here in real-time once they enter the ICPC arena and share their screen.
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[58vh] overflow-y-auto pr-1">
-                  {filteredSessions.map((session) => (
-                    <div
-                      key={session.studentId}
-                      className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-750 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3"
-                    >
-                      {/* Card Header: Student Info & Status */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-bold text-white flex items-center gap-2">
-                            <span>{session.studentName}</span>
-                            <span
-                              className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border ${
-                                session.status === 'demolished'
-                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                  : session.status === 'cautioned'
-                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                              }`}
-                            >
-                              {session.status}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                            {session.college || session.studentEmail || 'Student'} • {session.contestTitle}
-                          </div>
-                        </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[56vh] overflow-y-auto pr-1">
+                    {paginatedSessions.map((session) => {
+                      const isAlert =
+                        session.warningCount > 0 ||
+                        session.status === 'cautioned' ||
+                        session.status === 'demolished';
 
-                        {/* Warning Count Pill */}
+                      return (
                         <div
-                          className={`text-xs font-mono font-bold px-2 py-1 rounded-lg border ${
-                            session.warningCount > 0
-                              ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                              : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                          key={session.studentId}
+                          onClick={() => setTheaterSession(session)}
+                          className={`group relative p-3.5 rounded-2xl transition-all flex flex-col justify-between space-y-2.5 cursor-pointer ${
+                            isAlert
+                              ? 'border-2 border-rose-500/80 bg-rose-950/20 hover:bg-rose-950/35 shadow-[0_0_20px_rgba(244,63,94,0.18)]'
+                              : 'border border-charcoal-750 bg-charcoal-850 hover:border-cyan-500/50 hover:bg-charcoal-800/80'
                           }`}
                         >
-                          ⚠️ {session.warningCount} / 10
-                        </div>
-                      </div>
-
-                      {/* Dual Preview Feed: Left (Screen Share), Right (Camera / Side Cam) */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* Screen Share Preview */}
-                        <div className="relative aspect-video rounded-xl bg-black overflow-hidden border border-charcoal-700 flex items-center justify-center">
-                          {session.screenSnapshot ? (
-                            <img
-                              src={session.screenSnapshot}
-                              alt="Contestant Screen"
-                              className="w-full h-full object-cover"
-                            />
+                          {/* Alert Top Banner */}
+                          {isAlert ? (
+                            <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-mono font-bold">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" />
+                                <span>⚠️ ALERT ON TOP</span>
+                              </span>
+                              <span>{session.warningCount} / 10 WARN</span>
+                            </div>
                           ) : (
-                            <div className="text-[10px] text-slate-500 font-mono text-center p-2">
-                              Screen Stream Active
+                            <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-semibold">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                                <span>STANDBY • CLEAN</span>
+                              </span>
+                              <span>0 WARN</span>
                             </div>
                           )}
-                          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono text-white flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-rose-500 animate-ping" />
-                            <span>SCREEN</span>
-                          </div>
-                        </div>
 
-                        {/* Side Cam / Front Cam Preview */}
-                        <div className="relative aspect-video rounded-xl bg-black overflow-hidden border border-charcoal-700 flex items-center justify-center">
-                          {session.sideCameraSnapshot ? (
-                            <img
-                              src={session.sideCameraSnapshot}
-                              alt="Side Camera Desk"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="text-[10px] text-slate-500 font-mono text-center p-2">
-                              {session.sideCameraConnected ? 'Side Cam Online' : 'Front Cam Active'}
+                          {/* Student Info */}
+                          <div className="space-y-0.5">
+                            <div className="text-sm font-bold text-white flex items-center justify-between gap-1.5">
+                              <span className="truncate group-hover:text-cyan-300 transition-colors">
+                                {session.studentName}
+                              </span>
+                              <span
+                                className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border shrink-0 ${
+                                  session.status === 'demolished'
+                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                    : session.status === 'cautioned'
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                }`}
+                              >
+                                {session.status}
+                              </span>
                             </div>
-                          )}
-                          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono text-white flex items-center gap-1">
-                            <span
-                              className={`w-1 h-1 rounded-full ${
-                                session.sideCameraConnected ? 'bg-emerald-400' : 'bg-cyan-400'
-                              }`}
-                            />
-                            <span>{session.sideCameraConnected ? 'SIDE CAM' : 'CAMERA'}</span>
+                            <div className="text-[11px] text-slate-400 font-mono truncate">
+                              {session.college || session.studentEmail || 'Contestant'} • {session.contestTitle}
+                            </div>
+                          </div>
+
+                          {/* Zero-Lag Device Telemetry Badges */}
+                          <div className="grid grid-cols-2 gap-1.5 py-1.5 border-y border-charcoal-750/70 text-[10px] font-mono">
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/40 text-slate-300">
+                              <Monitor className="w-3 h-3 text-cyan-400 shrink-0" />
+                              <span className="truncate">Screen Live</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/40 text-slate-300">
+                              <Smartphone className="w-3 h-3 text-indigo-400 shrink-0" />
+                              <span className="truncate">
+                                {session.sideCameraConnected ? 'Sidecam Live' : 'Camera Online'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/40 text-slate-300">
+                              <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                              <span className="truncate">ID Verified</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/40 text-slate-300">
+                              <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                              <span className="truncate">Anti-Paste ON</span>
+                            </div>
+                          </div>
+
+                          {/* Quick Actions Bar */}
+                          <div className="space-y-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => setTheaterSession(session)}
+                              leftIcon={<Eye className="w-3.5 h-3.5 text-cyan-300" />}
+                              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-sm py-1.5"
+                            >
+                              Inspect Live Dual Stream
+                            </Button>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCautionTarget(session);
+                                  setCautionText('Proctor Warning: Academic integrity caution issued by faculty proctor.');
+                                }}
+                                className="flex-1 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/25 hover:bg-amber-500/20 text-[10px] font-bold transition-colors"
+                                title="Send caution warning"
+                              >
+                                ⚠️ Caution
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDemolishTarget(session);
+                                  setDemolishReason('Contest forcefully demolished and contestant disqualified for cheating by faculty instructor.');
+                                }}
+                                className="flex-1 py-1 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/25 hover:bg-rose-500/20 text-[10px] font-bold transition-colors"
+                                title="Demolish contest attempt"
+                              >
+                                🛑 Demolish
+                              </button>
+                            </div>
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination Footer */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 border-t border-charcoal-750 text-xs font-mono">
+                      <div className="text-slate-400">
+                        Showing <span className="text-white font-bold">{(page - 1) * pageSize + 1}</span>-
+                        <span className="text-white font-bold">
+                          {Math.min(page * pageSize, displaySessions.length)}
+                        </span>{' '}
+                        of <span className="text-white font-bold">{displaySessions.length}</span> students
                       </div>
-
-                      {/* Action Buttons: Theater Stream, Caution, Demolish */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-charcoal-750">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setTheaterSession(session)}
-                          leftIcon={<Eye className="w-3.5 h-3.5 text-cyan-300" />}
-                          className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
-                        >
-                          Live Theater Stream
-                        </Button>
-
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setCautionTarget(session);
-                            setCautionText('Proctor Warning: Academic integrity caution issued by faculty proctor.');
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 text-xs font-bold transition-colors"
-                          title="Send caution warning"
+                          disabled={page === 1}
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          className="px-2.5 py-1 rounded-lg bg-charcoal-800 border border-charcoal-700 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                         >
-                          ⚠️ Caution
+                          <ChevronLeft className="w-3.5 h-3.5" /> Prev
                         </button>
-
+                        <span className="text-slate-400 px-1">
+                          Page <span className="text-cyan-400 font-bold">{page}</span> / {totalPages}
+                        </span>
                         <button
                           type="button"
-                          onClick={() => {
-                            setDemolishTarget(session);
-                            setDemolishReason('Contest forcefully demolished and contestant disqualified for cheating by faculty instructor.');
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 text-xs font-bold transition-colors"
-                          title="Demolish contest attempt"
+                          disabled={page === totalPages}
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          className="px-2.5 py-1 rounded-lg bg-charcoal-800 border border-charcoal-700 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                         >
-                          🛑 Demolish
+                          Next <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           )}
