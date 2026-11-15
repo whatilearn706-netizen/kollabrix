@@ -120,6 +120,8 @@ export default function HackathonDetailPage() {
               results_date: hack.results_date || meta.results_date || hack.resultsDate || null,
               contact_info: hack.contact_info || meta.contact_info || (hack as any).contactInfo || null,
               allowed_college: hack.allowed_college || meta.allowed_college || (hack as any).allowedCollege || null,
+              allowed_roll_start: (hack as any).allowed_roll_start || meta.allowed_roll_start || null,
+              allowed_roll_end: (hack as any).allowed_roll_end || meta.allowed_roll_end || null,
             };
           }
         } catch {}
@@ -254,6 +256,8 @@ export default function HackathonDetailPage() {
               banner_url: meta.banner_url || currentHack.banner_url,
               contact_info: currentHack.contact_info || meta.contact_info || (currentHack as any).contactInfo || null,
               allowed_college: currentHack.allowed_college || meta.allowed_college || (currentHack as any).allowedCollege || null,
+              allowed_roll_start: (currentHack as any).allowed_roll_start || meta.allowed_roll_start || null,
+              allowed_roll_end: (currentHack as any).allowed_roll_end || meta.allowed_roll_end || null,
               website_url: meta.external_website_url || meta.website_url || currentHack.website_url || (currentHack as any).websiteUrl || null,
               is_sponsored: meta.is_sponsored ?? currentHack.is_sponsored,
               is_enterprise: meta.is_enterprise ?? currentHack.is_enterprise,
@@ -268,6 +272,11 @@ export default function HackathonDetailPage() {
             };
           }
         } catch {}
+      }
+
+      if (!currentHack) {
+        setIsLoading(false);
+        return;
       }
 
       if (!currentHack.submission_deadline && (currentHack as any).submissionDeadline) {
@@ -452,6 +461,47 @@ export default function HackathonDetailPage() {
           isEligible: false,
           reason: `Restricted to students of ${hackathon?.allowed_college}. (Your verified college: ${activeCollege || 'Unverified'}).`,
         };
+      }
+
+      // Silent Roll Number Range Gate (Faculty Cohort / Batch Restriction)
+      const rollStart = ((hackathon as any)?.allowed_roll_start || '').toString().trim().toUpperCase();
+      const rollEnd = ((hackathon as any)?.allowed_roll_end || '').toString().trim().toUpperCase();
+
+      if (rollStart || rollEnd) {
+        const studentRoll = (
+          profile?.student_roll_no ||
+          (profile as any)?.roll_number ||
+          (profile as any)?.studentRollNo ||
+          localProfile?.student_roll_no ||
+          (user?.user_metadata as any)?.student_roll_no ||
+          (user?.user_metadata as any)?.rollNumber ||
+          (typeof window !== 'undefined' ? localStorage.getItem('linkora_verified_roll_no') || '' : '')
+        ).toString().trim().toUpperCase();
+
+        if (studentRoll) {
+          const isRollInRange = (r: string, s: string, e: string): boolean => {
+            const rNum = parseInt(r.replace(/\D/g, ''), 10);
+            const sNum = s ? parseInt(s.replace(/\D/g, ''), 10) : NaN;
+            const eNum = e ? parseInt(e.replace(/\D/g, ''), 10) : NaN;
+
+            if (!isNaN(rNum) && (!s || !isNaN(sNum)) && (!e || !isNaN(eNum))) {
+              if (!isNaN(sNum) && rNum < sNum) return false;
+              if (!isNaN(eNum) && rNum > eNum) return false;
+              return true;
+            }
+
+            if (s && r < s) return false;
+            if (e && r > e) return false;
+            return true;
+          };
+
+          if (!isRollInRange(studentRoll, rollStart, rollEnd)) {
+            return {
+              isEligible: false,
+              reason: 'Registration is restricted to the specific student cohort designated by the faculty coordinator.',
+            };
+          }
+        }
       }
     }
 
@@ -1472,33 +1522,33 @@ export default function HackathonDetailPage() {
                     <ShieldCheck className="w-5 h-5 text-emerald-400" />
                     <span>Rules & Eligibility Requirements</span>
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-300 font-medium mt-1">
                     Compliance criteria required for official collegiate credential verification.
                   </p>
                 </div>
 
-                <div className="space-y-4 text-xs text-slate-300">
+                <div className="space-y-4 text-xs text-slate-200">
                   <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
                     <h4 className="font-bold text-white flex items-center gap-2">
                       <Award className="w-4 h-4 text-amber-400" />
                       <span>Eligibility</span>
                     </h4>
-                    <p className="text-slate-400 leading-relaxed">
+                    <p className="text-slate-200 text-xs leading-relaxed font-medium">
                       {hackathon.eligibility || 'Open to all enrolled university and college students with valid institutional credentials.'}
                     </p>
                   </div>
 
                   {/* Allowed College Restriction Banner */}
                   {hackathon.allowed_college && (
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                    <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 space-y-2">
                       <h4 className="font-bold text-amber-300 flex items-center gap-2 text-xs">
                         <GraduationCap className="w-4 h-4 text-amber-400" />
                         <span>Allowed Collegiate Institution</span>
                       </h4>
-                      <p className="text-white font-bold text-xs">
+                      <p className="text-amber-200 font-extrabold text-sm">
                         {hackathon.allowed_college}
                       </p>
-                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                      <p className="text-slate-200 text-xs leading-relaxed">
                         Institutional Access Locked: Only enrolled and verified students from {hackathon.allowed_college} are eligible to participate and submit deliverables.
                       </p>
                     </div>
@@ -1506,7 +1556,7 @@ export default function HackathonDetailPage() {
 
                   {/* Help Desk & Faculty Support Banner */}
                   {hackathon.contact_info && (
-                    <div className="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 space-y-2">
+                    <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <h4 className="font-bold text-white flex items-center gap-2 text-xs">
                           <Headphones className="w-4 h-4 text-cyan-400" />
@@ -1516,13 +1566,13 @@ export default function HackathonDetailPage() {
                           Support Active
                         </span>
                       </div>
-                      <p className="text-slate-300 text-xs">
+                      <p className="text-slate-200 text-xs leading-relaxed">
                         If you face any issue during registration, card verification, or team building, reach out directly to the faculty coordinator:
                       </p>
                       <div className="pt-1">
                         <a
                           href={hackathon.contact_info.includes('@') ? `mailto:${hackathon.contact_info}` : `tel:${hackathon.contact_info}`}
-                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-mono text-xs transition-colors"
+                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 border border-cyan-400/50 font-mono text-xs font-bold transition-colors"
                         >
                           <Mail className="w-3.5 h-3.5 text-cyan-400" />
                           <span>{hackathon.contact_info}</span>
@@ -1536,7 +1586,7 @@ export default function HackathonDetailPage() {
                       <Code2 className="w-4 h-4 text-brand-400" />
                       <span>Code Originality & Plagiarism Policy</span>
                     </h4>
-                    <p className="text-slate-400 leading-relaxed">
+                    <p className="text-slate-200 text-xs leading-relaxed">
                       All core project code must be developed during the hackathon period. Pre-existing libraries and public APIs are permitted provided they are documented in your README and architecture breakdown.
                     </p>
                   </div>
@@ -1546,7 +1596,7 @@ export default function HackathonDetailPage() {
                       <Users className="w-4 h-4 text-violet-400" />
                       <span>Team Composition</span>
                     </h4>
-                    <p className="text-slate-400 leading-relaxed">
+                    <p className="text-slate-200 text-xs leading-relaxed">
                       Teams must consist of {hackathon.min_team_size || 1} to {hackathon.max_team_size || 4} verified students. Cross-disciplinary teams (engineers + product designers) are strongly encouraged.
                     </p>
                   </div>
@@ -1695,10 +1745,10 @@ export default function HackathonDetailPage() {
                       <Clock className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-300 block font-bold">
                         Registration Closes
                       </span>
-                      <span className="text-xs font-bold text-white font-mono block truncate">
+                      <span className="text-xs font-extrabold text-white font-mono block truncate">
                         {formatEventDateTime(hackathon.registration_deadline)}
                       </span>
                     </div>
@@ -1713,7 +1763,7 @@ export default function HackathonDetailPage() {
                 </div>
 
                 {/* Unstop Social Proof Registration Counter (Real Registered Count) */}
-                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium pt-1">
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-300 font-medium pt-1">
                   <Users className="w-4 h-4 text-cyan-400" />
                   <span>
                     Registered:{' '}
@@ -1724,24 +1774,24 @@ export default function HackathonDetailPage() {
                 </div>
 
                 {/* Prize Pool & Timeline Mini Summary */}
-                <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+                <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Total Prize Pool</span>
-                    <strong className="text-amber-400 font-bold">{hackathon.prize_pool || '₹50,000 + Incubation'}</strong>
+                    <span className="text-slate-300 font-medium">Total Prize Pool</span>
+                    <strong className="text-amber-300 font-extrabold text-xs">{hackathon.prize_pool || '₹50,000 + Incubation'}</strong>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Team Size</span>
-                    <strong className="text-white font-bold">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
+                    <span className="text-slate-300 font-medium">Team Size</span>
+                    <strong className="text-white font-extrabold text-xs">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
                   </div>
                   <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2">
-                    <span className="text-slate-400">Submission Cut-off</span>
-                    <strong className="text-amber-300 font-bold font-mono">
+                    <span className="text-slate-300 font-medium">Submission Cut-off</span>
+                    <strong className="text-amber-200 font-bold font-mono text-xs">
                       {formatEventDateTime(hackathon.submission_deadline || (hackathon as any).submissionDeadline || hackathon.end_date)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2">
-                    <span className="text-slate-400">Result Announcement</span>
-                    <strong className="text-emerald-300 font-bold font-mono">
+                    <span className="text-slate-300 font-medium">Result Announcement</span>
+                    <strong className="text-emerald-200 font-bold font-mono text-xs">
                       {formatEventDateTime(hackathon.results_date || (hackathon as any).resultsDate || hackathon.end_date)}
                     </strong>
                   </div>
@@ -1761,7 +1811,7 @@ export default function HackathonDetailPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full justify-center text-xs"
+                      className="w-full justify-center text-xs font-semibold text-slate-200 hover:text-white"
                       rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
                     >
                       Official Guidelines &amp; Portal
@@ -1770,7 +1820,7 @@ export default function HackathonDetailPage() {
                 )}
 
                 {/* Verified Trust Guarantees */}
-                <div className="pt-3 border-t border-charcoal-800 space-y-2 text-[11px] text-slate-400">
+                <div className="pt-3 border-t border-charcoal-800 space-y-2.5 text-xs text-slate-200 font-medium">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>Verified Collegiate Credentials &amp; Proof of Work</span>
@@ -1791,7 +1841,7 @@ export default function HackathonDetailPage() {
             <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-charcoal-900 border border-blue-500/30 flex items-center justify-between gap-3 shadow-lg">
               <div>
                 <div className="text-xs font-black text-white">Share with Friends</div>
-                <div className="text-[10px] text-slate-400">Invite classmates &amp; teammates</div>
+                <div className="text-[11px] text-slate-300 font-medium">Invite classmates &amp; teammates</div>
               </div>
               <button
                 type="button"
@@ -1815,7 +1865,7 @@ export default function HackathonDetailPage() {
                     Coordinator
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-200 leading-relaxed">
                   Have questions or need assistance during the event? Contact the faculty desk:
                 </p>
                 <a

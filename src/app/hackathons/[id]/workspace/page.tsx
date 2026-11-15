@@ -1715,6 +1715,15 @@ export default function HackathonWorkspacePage() {
     }
 
     if (status === 'submitted') {
+      const minRequiredMembers = Math.max(1, Number(hackathon.min_team_size || (hackathon as any).minTeamSize || 1));
+      const currentMembersCount = myTeam.members?.length || 0;
+      if (currentMembersCount < minRequiredMembers) {
+        setSubmissionError(
+          `Incomplete Squad: Faculty guidelines require at least ${minRequiredMembers} team member(s) to submit project deliverables. Your squad currently has ${currentMembersCount} member(s). Please recruit or invite teammates before submitting.`
+        );
+        return;
+      }
+
       if (challenges.length > 0 && !selectedChallengeId && !myTeam.challenge_id) {
         setSubmissionError('Please choose which Problem Statement your project addresses.');
         return;
@@ -3698,6 +3707,26 @@ export default function HackathonWorkspacePage() {
                 </div>
               )}
 
+              {/* Squad Incomplete Warning for Submissions */}
+              {myTeam.members && myTeam.members.length < Math.max(1, Number(hackathon.min_team_size || (hackathon as any).minTeamSize || 1)) && (
+                <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 text-amber-300">
+                    <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                    <span>
+                      <strong>Squad Incomplete ({myTeam.members.length} / {hackathon.min_team_size || 2} Members):</strong> Faculty rules require at least <strong>{hackathon.min_team_size || 2} members</strong> in your team to submit project deliverables.
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab('team')}
+                    className="shrink-0 text-amber-300 border-amber-500/40 hover:bg-amber-500/20 text-xs font-bold"
+                  >
+                    Manage Squad / Invite Teammates →
+                  </Button>
+                </div>
+              )}
+
               {/* Problem Statement Selection Selector */}
               <div className="p-4 rounded-xl border border-charcoal-750 bg-charcoal-950/80 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
@@ -3956,10 +3985,26 @@ export default function HackathonWorkspacePage() {
                     variant="primary"
                     onClick={() => handleSaveSubmission('submitted')}
                     isLoading={isSavingSubmission}
-                    disabled={isSavingSubmission}
+                    disabled={
+                      isSavingSubmission ||
+                      (myTeam.members &&
+                        myTeam.members.length <
+                          Math.max(1, Number(hackathon.min_team_size || (hackathon as any).minTeamSize || 1)))
+                    }
                     leftIcon={<Award className="w-4 h-4" />}
+                    title={
+                      myTeam.members &&
+                      myTeam.members.length <
+                        Math.max(1, Number(hackathon.min_team_size || (hackathon as any).minTeamSize || 1))
+                        ? `Faculty guidelines require at least ${hackathon.min_team_size || 2} members in your squad to submit.`
+                        : undefined
+                    }
                   >
-                    Submit Project Deliverables
+                    {myTeam.members &&
+                    myTeam.members.length <
+                      Math.max(1, Number(hackathon.min_team_size || (hackathon as any).minTeamSize || 1))
+                      ? `Needs Min. ${hackathon.min_team_size || 2} Members to Submit`
+                      : 'Submit Project Deliverables'}
                   </Button>
                 </div>
               )}

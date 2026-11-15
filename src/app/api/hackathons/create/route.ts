@@ -72,6 +72,10 @@ export async function POST(request: NextRequest) {
       contact_info,
       allowedCollege,
       allowed_college,
+      allowedRollStart,
+      allowed_roll_start,
+      allowedRollEnd,
+      allowed_roll_end,
       accessType = 'private',
       password = '',
       minTeamSize = 1,
@@ -162,6 +166,8 @@ export async function POST(request: NextRequest) {
 
     const resolvedContact = (contactInfo || contact_info || '').trim();
     const resolvedAllowedCollege = (allowedCollege || allowed_college || '').trim();
+    const resolvedRollStart = (allowedRollStart || allowed_roll_start || '').trim();
+    const resolvedRollEnd = (allowedRollEnd || allowed_roll_end || '').trim();
     const rawWebsite = (websiteUrl || website_url || '').trim();
     let resolvedWebsiteUrl: string = `https://kollabrix.in/h/${joinCode}`;
     if (rawWebsite) {
@@ -181,6 +187,8 @@ export async function POST(request: NextRequest) {
       eligibility: eligibility.trim(),
       contact_info: resolvedContact || null,
       allowed_college: resolvedAllowedCollege || null,
+      allowed_roll_start: resolvedAllowedCollege ? (resolvedRollStart || null) : null,
+      allowed_roll_end: resolvedAllowedCollege ? (resolvedRollEnd || null) : null,
       website_url: resolvedWebsiteUrl,
       external_website_url: rawWebsite || null,
     })} -->`;
