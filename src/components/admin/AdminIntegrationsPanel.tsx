@@ -59,7 +59,7 @@ export function AdminIntegrationsPanel() {
             <span>Production API Keys & Delivery Status</span>
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time verification of Resend transactional email delivery, PostHog product telemetry, and collegiate background workers.
+            Real-time verification of Brevo (9,000 free emails/month), Resend transactional email delivery, and collegiate telemetry.
           </p>
         </div>
 
@@ -75,7 +75,91 @@ export function AdminIntegrationsPanel() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 1. RESEND TRANSACTIONAL EMAIL */}
+        {/* 1. BREVO TRANSACTIONAL EMAIL ENGINE */}
+        <div className="p-5 rounded-2xl bg-charcoal-950/70 border border-charcoal-800/80 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <Mail className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Brevo Email Engine</h4>
+                <p className="text-[11px] text-slate-400 font-mono">BREVO_API_KEY (9,000 Free/Mo)</p>
+              </div>
+            </div>
+
+            {data?.brevo?.status === 'connected' ? (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ONLINE
+              </span>
+            ) : data?.brevo?.configured ? (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-yellow-400" />
+                VERIFYING
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-slate-800 border border-slate-700 text-slate-400 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
+                NOT CONFIGURED
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed">
+            {data?.brevo?.message || (isLoading ? 'Checking Brevo status...' : 'Add BREVO_API_KEY in .env.local to activate.')}
+          </p>
+
+          {data?.brevo?.maskedKey && (
+            <div className="p-2.5 rounded-xl bg-charcoal-900 border border-charcoal-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+              <span>Active Key:</span>
+              <span className="text-emerald-400 font-bold">{data.brevo.maskedKey}</span>
+            </div>
+          )}
+
+          {/* Test Email Form */}
+          <form onSubmit={handleSendTestEmail} className="pt-2 border-t border-charcoal-800/80 space-y-2">
+            <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
+              Send Live Test Delivery
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                required
+                value={testEmailInput}
+                onChange={(e) => setTestEmailInput(e.target.value)}
+                placeholder="your.email@gmail.com"
+                className="flex-1 bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+              />
+              <button
+                type="submit"
+                disabled={isSendingTest || !testEmailInput.trim()}
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-charcoal-950 font-bold text-xs font-mono transition flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isSendingTest ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <span>Send</span>
+              </button>
+            </div>
+
+            {testResult && (
+              <div
+                className={`p-2.5 rounded-xl border text-[11px] font-mono mt-2 ${
+                  testResult.success
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                }`}
+              >
+                {testResult.success ? (
+                  <span>✓ Test email delivered! Check inbox/spam.</span>
+                ) : (
+                  <span>✗ Failed: {testResult.error || 'Check Brevo/Resend API key.'}</span>
+                )}
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* 2. RESEND TRANSACTIONAL EMAIL */}
         <div className="p-5 rounded-2xl bg-charcoal-950/70 border border-charcoal-800/80 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -84,7 +168,7 @@ export function AdminIntegrationsPanel() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">Resend Email Engine</h4>
-                <p className="text-[11px] text-slate-400 font-mono">RESEND_API_KEY</p>
+                <p className="text-[11px] text-slate-400 font-mono">RESEND_API_KEY (Backup)</p>
               </div>
             </div>
 
@@ -99,9 +183,9 @@ export function AdminIntegrationsPanel() {
                 VERIFYING
               </span>
             ) : (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-red-500/20 border border-red-500/40 text-red-300 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                PENDING VERCEL
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-slate-800 border border-slate-700 text-slate-400 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
+                STANDBY
               </span>
             )}
           </div>
@@ -117,7 +201,6 @@ export function AdminIntegrationsPanel() {
             </div>
           )}
 
-          {/* Test Email Form */}
           <form onSubmit={handleSendTestEmail} className="pt-2 border-t border-charcoal-800/80 space-y-2">
             <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
               Send Live Test Delivery

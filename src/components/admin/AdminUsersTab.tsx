@@ -27,6 +27,10 @@ import {
   ZoomOut,
   RefreshCw,
   Eye,
+  Mail,
+  Send,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -72,6 +76,18 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(
     null
   );
+
+  // Email Contact & Broadcast State
+  const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [broadcastSubject, setBroadcastSubject] = useState('');
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastActionText, setBroadcastActionText] = useState('Open Kollabrix');
+  const [broadcastActionUrl, setBroadcastActionUrl] = useState('https://kollabrix.in');
+  const [isTestOnly, setIsTestOnly] = useState(false);
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [broadcastStatus, setBroadcastStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Active Sub-tab View: 'users' (All Directory) vs 'id_verifications' (Student ID Queue)
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'id_verifications'>(defaultSubTab);
@@ -424,6 +440,59 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
     fetchUsers();
   }, [fetchUsers]);
 
+  const handleSendBroadcast = async () => {
+    if (!broadcastSubject.trim() || !broadcastMessage.trim()) return;
+    setIsSendingBroadcast(true);
+    setBroadcastStatus(null);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch('/api/admin/broadcast-email', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          subject: broadcastSubject.trim(),
+          title: broadcastTitle.trim() || broadcastSubject.trim(),
+          message: broadcastMessage.trim(),
+          actionText: broadcastActionText.trim() || 'Open Kollabrix',
+          actionUrl: broadcastActionUrl.trim() || 'https://kollabrix.in',
+          testOnly: isTestOnly,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.testOnly) {
+          setBroadcastStatus({
+            type: 'success',
+            message: `Preview test email dispatched to ${data.recipient}! Check your inbox.`,
+          });
+        } else {
+          setBroadcastStatus({
+            type: 'success',
+            message: `Broadcast delivered! Successfully sent to ${data.sentCount} out of ${data.totalRecipients} registered students.`,
+          });
+          setBroadcastSubject('');
+          setBroadcastTitle('');
+          setBroadcastMessage('');
+        }
+      } else {
+        setBroadcastStatus({
+          type: 'error',
+          message: data.error || 'Failed to dispatch broadcast.',
+        });
+      }
+    } catch (err: any) {
+      setBroadcastStatus({
+        type: 'error',
+        message: err.message || 'Network error dispatching broadcast.',
+      });
+    } finally {
+      setIsSendingBroadcast(false);
+    }
+  };
+
   // Handle Moderation Action
   const executeModeration = async (
     action: 'suspend' | 'restore' | 'remove_from_project' | 'remove_from_all_teams' | 'delete_user',
@@ -724,6 +793,19 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                     ]}
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBroadcastModalOpen(true);
+                    setBroadcastStatus(null);
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-charcoal-950 font-mono text-xs font-black shadow-md shadow-amber-500/20 flex items-center gap-1.5 transition active:scale-95 shrink-0"
+                  title="Broadcast email message to all registered students"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Broadcast Email</span>
+                </button>
               </div>
             </div>
           </div>
@@ -775,7 +857,45 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-slate-500 font-mono">@{u.username}</div>
+                            <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <span className="text-slate-500">@{u.username}</span>
+                              {u.email ? (
+                                <>
+                                  <span className="text-slate-600">•</span>
+                                  <span className="text-cyan-400 font-medium select-all">{u.email}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(u.email || '');
+                                      setCopiedEmailId(u.user_id);
+                                      setTimeout(() => setCopiedEmailId(null), 2000);
+                                    }}
+                                    title="Copy Email Address"
+                                    className="p-1 hover:text-white text-slate-400 hover:bg-charcoal-700 rounded transition inline-flex items-center"
+                                  >
+                                    {copiedEmailId === u.user_id ? (
+                                      <Check className="w-3 h-3 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                  <a
+                                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(u.email)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Write personal email from your Gmail"
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition shrink-0"
+                                  >
+                                    <Mail className="w-2.5 h-2.5" />
+                                    <span>Gmail ↗</span>
+                                  </a>
+                                </>
+                              ) : (
+                                <span className="text-slate-600 text-[10px] italic">no email linked</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -1237,6 +1357,44 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                 {selectedUser.suspension_reason && (
                   <div className="text-amber-400 font-mono text-[11px] pt-1">
                     Suspension Notice: {selectedUser.suspension_reason}
+                  </div>
+                )}
+                {selectedUser.email && (
+                  <div className="pt-2 flex items-center gap-2 flex-wrap">
+                    <span className="text-cyan-300 font-mono text-xs select-all font-semibold flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/30 px-2.5 py-1 rounded-lg">
+                      <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>{selectedUser.email}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedUser.email || '');
+                        setCopiedEmailId(selectedUser.user_id);
+                        setTimeout(() => setCopiedEmailId(null), 2000);
+                      }}
+                      className="px-2 py-1 rounded bg-charcoal-750 hover:bg-charcoal-700 text-slate-300 text-[11px] font-mono border border-charcoal-650 flex items-center gap-1"
+                    >
+                      {copiedEmailId === selectedUser.user_id ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(selectedUser.email)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 text-charcoal-950 font-mono font-bold text-[11px] flex items-center gap-1 hover:brightness-110 shadow-sm"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Personal Gmail Compose</span>
+                    </a>
                   </div>
                 )}
               </div>
@@ -1885,6 +2043,152 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Campus-Wide Email Broadcast Modal */}
+      <Modal
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+        title="📢 Campus-Wide Email Broadcast"
+        maxWidth="lg"
+      >
+        <div className="space-y-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-1.5 font-mono">
+            <div className="flex items-center justify-between text-slate-300">
+              <span className="text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                <span>Audience Target:</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold">
+                {totalCount} Registered Students
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+              Dispatches via Brevo (9,000 free emails/month) or Resend to all registered collegiate student builders on Kollabrix.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                Email Subject Line *
+              </label>
+              <Input
+                placeholder="e.g. ⚡ Collegiate Hackathon Season 01 is Live!"
+                value={broadcastSubject}
+                onChange={(e) => setBroadcastSubject(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                Headline / Title (Inside Email Body)
+              </label>
+              <Input
+                placeholder="e.g. Your Campus Dream Team is Waiting"
+                value={broadcastTitle}
+                onChange={(e) => setBroadcastTitle(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                Message Body *
+              </label>
+              <textarea
+                rows={5}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-slate-200 text-xs font-sans placeholder-slate-500 focus:outline-none focus:border-amber-400/80 transition"
+                placeholder="Write your announcement or update message here..."
+                value={broadcastMessage}
+                onChange={(e) => setBroadcastMessage(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Call-to-Action Button Text
+                </label>
+                <Input
+                  placeholder="Open Kollabrix"
+                  value={broadcastActionText}
+                  onChange={(e) => setBroadcastActionText(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Button Destination Link
+                </label>
+                <Input
+                  placeholder="https://kollabrix.in"
+                  value={broadcastActionUrl}
+                  onChange={(e) => setBroadcastActionUrl(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Test Only Checkbox */}
+            <div className="p-3 rounded-xl bg-charcoal-850 border border-charcoal-750 flex items-center gap-2.5">
+              <input
+                type="checkbox"
+                id="testOnlyBroadcast"
+                checked={isTestOnly}
+                onChange={(e) => setIsTestOnly(e.target.checked)}
+                className="rounded border-charcoal-600 text-amber-500 focus:ring-amber-500"
+              />
+              <label htmlFor="testOnlyBroadcast" className="text-slate-300 text-xs font-mono cursor-pointer select-none">
+                Send test preview to my email only first (<span className="text-amber-400 font-bold">goyalmayank142@gmail.com</span>)
+              </label>
+            </div>
+
+            {broadcastStatus && (
+              <div
+                className={`p-3 rounded-xl border text-xs font-mono flex items-start gap-2 ${
+                  broadcastStatus.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                }`}
+              >
+                {broadcastStatus.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                )}
+                <span>{broadcastStatus.message}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-charcoal-800">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsBroadcastModalOpen(false)}
+              disabled={isSendingBroadcast}
+            >
+              Cancel
+            </Button>
+
+            <button
+              type="button"
+              onClick={handleSendBroadcast}
+              disabled={isSendingBroadcast || !broadcastSubject.trim() || !broadcastMessage.trim()}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-charcoal-950 font-mono text-xs font-black shadow-md shadow-amber-500/20 flex items-center gap-2 transition disabled:opacity-50 active:scale-95"
+            >
+              {isSendingBroadcast ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Dispatching Emails...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isTestOnly ? 'Send Test Preview Email' : `Dispatch to All (${totalCount} Users)`}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

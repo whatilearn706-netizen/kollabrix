@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession } from '@/lib/admin/adminAuth';
-import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
+import { isSupabaseConfigured, DEFAULT_SUPABASE_URL } from '@/lib/supabase/isConfigured';
+import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { AdminUserListItem } from '@/types/database';
 
 export const runtime = 'nodejs';
@@ -219,6 +220,35 @@ export async function GET(request: NextRequest) {
 
     const userList: AdminUserListItem[] = [];
 
+    // Fetch user email addresses securely from auth directory via service role
+    const emailMap: Record<string, string> = {};
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
+
+    if (url && serviceRoleKey) {
+      try {
+        const authRes = await fetch(`${url}/auth/v1/admin/users?per_page=1000`, {
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+          },
+          cache: 'no-store',
+        });
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (Array.isArray(authData.users)) {
+            for (const u of authData.users) {
+              if (u.id && u.email) {
+                emailMap[u.id] = u.email;
+              }
+            }
+          }
+        }
+      } catch (authFetchErr) {
+        console.warn('Could not fetch auth users for email map:', authFetchErr);
+      }
+    }
+
     // 2. Fetch project memberships and hackathon teams for the current page users
     for (const p of profiles || []) {
       let ownedProjects: Array<{ id: string; title: string; status: string }> = [];
@@ -291,6 +321,7 @@ export async function GET(request: NextRequest) {
 
       userList.push({
         user_id: p.user_id,
+        email: emailMap[p.user_id] || p.email || undefined,
         username: p.username,
         display_name: p.display_name,
         avatar_url: p.avatar_url,
