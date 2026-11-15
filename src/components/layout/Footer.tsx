@@ -9,7 +9,7 @@ import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 
 export function Footer() {
   const pathname = usePathname();
-  if (pathname?.startsWith('/resources')) {
+  if (pathname?.startsWith('/resources') || pathname?.startsWith('/arena')) {
     return null;
   }
 

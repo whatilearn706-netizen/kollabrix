@@ -361,9 +361,10 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAppsModalOpen]);
 
-  // Hide in admin, control-center, or during active proctored exam
+  // Hide in admin, control-center, battle arena, or during active proctored exam
   if (
     pathname?.startsWith('/control-center-7x9') ||
+    pathname?.startsWith('/arena') ||
     pathname?.startsWith('/admin') ||
     isExamMode
   ) {

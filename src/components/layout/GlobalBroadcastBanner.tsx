@@ -116,6 +116,7 @@ export function GlobalBroadcastBanner() {
 
   if (
     pathname?.startsWith('/resources') ||
+    pathname?.startsWith('/arena') ||
     pathname?.startsWith('/icpc') ||
     isExamMode ||
     !banner.enabled ||

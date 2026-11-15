@@ -43,6 +43,16 @@ function ArenaPageContent() {
   }, []);
 
   const handleClose = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('kollabrix_arena_session');
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.startsWith('arena_code_') || key.startsWith('kollabrix_arena_')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+    } catch (e) {}
     router.push('/');
   };
 

@@ -45,7 +45,6 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
 import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
-import { FullArenaExperience } from '@/components/arena/FullArenaExperience';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -59,7 +58,6 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
-  const [isArenaModalOpen, setIsArenaModalOpen] = useState(false);
   const [isArenaLive, setIsArenaLive] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -112,7 +110,7 @@ export function Navbar() {
   }, [checkArenaStatus]);
 
   const handleLaunchArena = () => {
-    setIsArenaModalOpen(true);
+    router.push('/arena');
   };
 
   useEffect(() => {
@@ -151,8 +149,8 @@ export function Navbar() {
     setUserDropdownOpen(false);
   }, [pathname]);
 
-  // Dedicated Resource Hub and Active Exam Mode run in their own focused workspace without global navbar
-  if (pathname.startsWith('/resources') || isExamMode) {
+  // Dedicated Resource Hub, Battle Arena, and Active Exam Mode run in their own focused workspace without global navbar
+  if (pathname.startsWith('/resources') || pathname.startsWith('/arena') || isExamMode) {
     return null;
   }
 
@@ -745,18 +743,6 @@ export function Navbar() {
         </div>
       )}
     </header>
-
-    {/* Full Screen Immersive Battle Arena Experience */}
-    {isArenaModalOpen && (
-      <FullArenaExperience
-        onClose={() => setIsArenaModalOpen(false)}
-        currentUser={{
-          displayName,
-          username,
-          avatarUrl: profile?.avatar_url || user?.user_metadata?.avatar_url || undefined,
-        }}
-      />
-    )}
   </>
 );
 }
