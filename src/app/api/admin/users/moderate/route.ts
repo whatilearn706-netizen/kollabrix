@@ -546,6 +546,46 @@ export async function POST(request: NextRequest) {
     }
 
     // -------------------------------------------------------------
+    // ACTION: UPDATE PROFILE DETAILS (Admin edit college, display name, course, year)
+    // -------------------------------------------------------------
+    if (action === 'update_profile_details') {
+      const { college, displayName, course, academicYear, studentRollNo } = body;
+      const now = new Date().toISOString();
+      const updates: Record<string, any> = {
+        updated_at: now,
+      };
+      if (typeof college === 'string') updates.college = college.trim();
+      if (typeof displayName === 'string' && displayName.trim()) updates.display_name = displayName.trim();
+      if (typeof course === 'string') updates.course = course.trim();
+      if (typeof academicYear === 'string') updates.academic_year = academicYear.trim();
+      if (typeof studentRollNo === 'string') updates.student_roll_no = studentRollNo.trim();
+
+      const { error: updateErr } = await client
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', targetUserId);
+
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      }
+
+      await recordAdminAuditLog({
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        action: 'USER_PROFILE_UPDATED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: { updates },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Profile details successfully updated.',
+        updates,
+      });
+    }
+
+    // -------------------------------------------------------------
     // ACTION: GRANT COLLEGE VERIFICATION
     // -------------------------------------------------------------
     if (action === 'grant_college_verification') {
@@ -559,6 +599,9 @@ export async function POST(request: NextRequest) {
           college_verified: true,
           college_verified_at: now,
           ...(collegeToVerify ? { college: collegeToVerify } : {}),
+          ...(body.displayName ? { display_name: body.displayName.trim() } : {}),
+          ...(body.course ? { course: body.course.trim() } : {}),
+          ...(body.academicYear ? { academic_year: body.academicYear.trim() } : {}),
           updated_at: now,
         })
         .eq('user_id', targetUserId);
