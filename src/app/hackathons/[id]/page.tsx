@@ -1089,17 +1089,24 @@ export default function HackathonDetailPage() {
               : 'border border-charcoal-750 bg-[#060813]'
           }`}>
             {heroBanner ? (
-              <div className="relative w-full h-56 sm:h-72 md:h-88 lg:h-[360px] xl:h-[400px] 2xl:h-[440px] overflow-hidden">
+              <div className="relative w-full aspect-[16/9] max-h-[520px] overflow-hidden bg-black flex items-center justify-center">
+                {/* Ambient glow backdrop */}
+                <img
+                  src={heroBanner}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-105 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <img
                   src={heroBanner}
                   alt={hackathon.title}
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-contain object-center relative z-10"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/60 via-transparent to-black/20 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/60 via-transparent to-black/20 pointer-events-none z-10" />
 
                 {/* Sponsored Floating Badge if sponsored */}
                 {sponsoredMeta.isSponsored && (
-                  <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 flex items-center gap-2">
+                  <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-950/85 text-amber-300 border border-amber-400/40 shadow-xl backdrop-blur-md">
                       <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
                       <span>⚡ Sponsored by {sponsoredMeta.companyName || 'Official Partner'}</span>

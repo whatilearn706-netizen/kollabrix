@@ -298,7 +298,7 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
       sponsorLogoUrl = 'https://kollabrix.in/brand/kollabrix-logo-transparent.png';
     }
     if (!bannerUrl) {
-      bannerUrl = 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg';
+      bannerUrl = 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg';
     }
   } else if (lowerCompany.includes('google') && !sponsorLogoUrl) {
     sponsorLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg';
