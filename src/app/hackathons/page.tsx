@@ -53,7 +53,7 @@ export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<Hackathon[]>(() => cachedHackathons || []);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('corporate');
   const [hasUserSelectedTab, setHasUserSelectedTab] = useState(false);
   const [timelineFilter, setTimelineFilter] = useState<'live' | 'past'>('live');
 
@@ -599,21 +599,6 @@ export default function HackathonsPage() {
             type="button"
             onClick={() => {
               setHasUserSelectedTab(true);
-              setActiveTab('all');
-            }}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap ${
-              activeTab === 'all'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            Competition ({competitionHackathons.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setHasUserSelectedTab(true);
               setActiveTab('corporate');
             }}
             className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
@@ -627,6 +612,21 @@ export default function HackathonsPage() {
             {corporateHackathons.length > 0 && (
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('all');
+            }}
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap ${
+              activeTab === 'all'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            Competition ({competitionHackathons.length})
           </button>
 
           <button
