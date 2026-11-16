@@ -60,6 +60,21 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
   // Selected User for Detail / Moderation
   const [selectedUser, setSelectedUser] = useState<AdminUserListItem | null>(null);
 
+  // User Profile Editing State (College name & student identity overrides)
+  const [editCollege, setEditCollege] = useState('');
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editCourse, setEditCourse] = useState('');
+  const [editYear, setEditYear] = useState('');
+
+  useEffect(() => {
+    if (selectedUser) {
+      setEditCollege(selectedUser.college || '');
+      setEditDisplayName(selectedUser.display_name || '');
+      setEditCourse(selectedUser.course || '');
+      setEditYear(selectedUser.academic_year || '');
+    }
+  }, [selectedUser]);
+
   // Action Modals State
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
@@ -594,8 +609,9 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
   };
 
   const handleGrantCollegeVerification = async (targetUser: AdminUserListItem) => {
-    if (!targetUser.college) {
-      setActionMessage({ type: 'error', text: 'User does not have a college name set on profile.' });
+    const finalCollege = editCollege.trim() || targetUser.college;
+    if (!finalCollege) {
+      setActionMessage({ type: 'error', text: 'Please enter a college name to grant verification.' });
       return;
     }
     setIsSubmitting(true);
@@ -617,7 +633,10 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
         body: JSON.stringify({
           action: 'grant_college_verification',
           targetUserId: targetUser.user_id,
-          collegeName: targetUser.college,
+          collegeName: finalCollege,
+          displayName: editDisplayName.trim() || targetUser.display_name,
+          course: editCourse.trim() || targetUser.course,
+          academicYear: editYear.trim() || targetUser.academic_year,
         }),
       });
 
@@ -629,12 +648,20 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
           } catch (e) {}
           window.dispatchEvent(new Event('linkora_college_updated'));
         }
+        const updated = {
+          ...targetUser,
+          college: finalCollege,
+          college_verified: true,
+          display_name: editDisplayName.trim() || targetUser.display_name,
+          course: editCourse.trim() || targetUser.course,
+          academic_year: editYear.trim() || targetUser.academic_year,
+        };
         if (selectedUser?.user_id === targetUser.user_id) {
-          setSelectedUser({ ...selectedUser, college_verified: true });
+          setSelectedUser(updated);
         }
         setActionMessage({
           type: 'success',
-          text: data.message || `College verification granted for ${targetUser.display_name}.`,
+          text: `Verification granted under "${finalCollege}"!`,
         });
         await fetchUsers();
         await fetchIdVerifications();
@@ -645,6 +672,64 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
       setActionMessage({
         type: 'error',
         text: err instanceof Error ? err.message : 'Error granting verification.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateProfileDetails = async (targetUser: AdminUserListItem) => {
+    if (!targetUser) return;
+    setIsSubmitting(true);
+    setActionMessage(null);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${data.session.access_token}`;
+        }
+      }
+
+      const res = await fetch('/api/admin/users/moderate', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'update_profile_details',
+          targetUserId: targetUser.user_id,
+          college: editCollege.trim(),
+          displayName: editDisplayName.trim() || targetUser.display_name,
+          course: editCourse.trim(),
+          academicYear: editYear.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const updated = {
+          ...targetUser,
+          college: editCollege.trim(),
+          display_name: editDisplayName.trim() || targetUser.display_name,
+          course: editCourse.trim(),
+          academic_year: editYear.trim(),
+        };
+        if (selectedUser?.user_id === targetUser.user_id) {
+          setSelectedUser(updated);
+        }
+        setActionMessage({
+          type: 'success',
+          text: `Profile updated for ${updated.display_name} successfully.`,
+        });
+        await fetchUsers();
+      } else {
+        throw new Error(data.error || 'Failed to update profile details.');
+      }
+    } catch (err: unknown) {
+      setActionMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Error updating profile details.',
       });
     } finally {
       setIsSubmitting(false);
@@ -1439,52 +1524,121 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
               )}
             </div>
 
-            {/* College Verification Control Card */}
-            <div className="p-4 rounded-xl bg-charcoal-850 border border-charcoal-750 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="font-semibold text-white flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-brand-400" />
-                  <span>College Affiliation & Verification</span>
+            {/* Student Identity & College Affiliation Override Card */}
+            <div className="p-5 rounded-2xl bg-charcoal-850 border border-charcoal-750 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-charcoal-750">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-brand-500/20 text-brand-300">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Student Identity &amp; College Affiliation
+                    </h5>
+                    <p className="text-[11px] text-slate-400">
+                      Override college name, course, and verification status directly.
+                    </p>
+                  </div>
                 </div>
-                <div className="text-slate-400 flex items-center gap-2 flex-wrap">
-                  <span>{selectedUser.college || 'No college specified'}</span>
-                  {selectedUser.college && (
-                    <VerifiedCollegeBadge
-                      college={selectedUser.college}
-                      isVerified={selectedUser.college_verified}
-                      userId={selectedUser.user_id}
-                      username={selectedUser.username}
-                      showUnverified={true}
-                      size="xs"
-                    />
+
+                <div className="flex items-center gap-2">
+                  {selectedUser.college_verified ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Verified Collegiate</span>
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      Unverified Account
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="shrink-0 flex items-center gap-2">
-                {selectedUser.college_verified ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isSubmitting}
-                    onClick={() => handleRemoveCollegeVerification(selectedUser)}
-                    className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs"
-                    leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
-                  >
-                    Remove Verification
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isSubmitting || !selectedUser.college}
-                    onClick={() => handleGrantCollegeVerification(selectedUser)}
-                    className="border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10 text-xs"
-                    leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />}
-                  >
-                    Grant Verification
-                  </Button>
-                )}
+              {/* Editable Fields Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono font-bold text-slate-300">College / University Name</label>
+                  <input
+                    type="text"
+                    value={editCollege}
+                    onChange={(e) => setEditCollege(e.target.value)}
+                    placeholder="e.g. Delhi Technological University (DTU)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-400 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono font-bold text-slate-300">Display Name</label>
+                  <input
+                    type="text"
+                    value={editDisplayName}
+                    onChange={(e) => setEditDisplayName(e.target.value)}
+                    placeholder="e.g. Aarav Sharma"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-400 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono font-bold text-slate-300">Course / Department</label>
+                  <input
+                    type="text"
+                    value={editCourse}
+                    onChange={(e) => setEditCourse(e.target.value)}
+                    placeholder="e.g. B.Tech Computer Science"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-400 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono font-bold text-slate-300">Academic Year</label>
+                  <input
+                    type="text"
+                    value={editYear}
+                    onChange={(e) => setEditYear(e.target.value)}
+                    placeholder="e.g. 3rd Year (Junior)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-400 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-charcoal-750 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  disabled={isSubmitting}
+                  onClick={() => handleUpdateProfileDetails(selectedUser)}
+                  className="text-xs font-bold"
+                >
+                  Save Profile Changes
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {selectedUser.college_verified ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isSubmitting}
+                      onClick={() => handleRemoveCollegeVerification(selectedUser)}
+                      className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-bold"
+                      leftIcon={<Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                    >
+                      Revoke Verification
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isSubmitting || !editCollege.trim()}
+                      onClick={() => handleGrantCollegeVerification(selectedUser)}
+                      className="border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 text-xs font-bold"
+                      leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                    >
+                      Save &amp; Grant Verification
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
