@@ -821,10 +821,38 @@ export default function HackathonDetailPage() {
     );
   }
 
+  const isSponsored = sponsoredMeta.isSponsored;
+  const pageBackground = isSponsored
+    ? sponsoredMeta.customConfig?.backgroundColor || '#08080C'
+    : '#020617';
+  const primaryGlow = sponsoredMeta.customConfig?.primaryColor || '#F59E0B';
+  const secondaryGlow = sponsoredMeta.customConfig?.secondaryColor || '#06B6D4';
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white pb-20">
+    <div
+      className="min-h-screen text-white pb-20 relative transition-colors duration-500 overflow-x-hidden"
+      style={{ backgroundColor: pageBackground }}
+    >
+      {/* Page-Wide Volumetric Ambient Atmospheric Lighting for Sponsored Hackathons */}
+      {isSponsored && (
+        <>
+          <div
+            className="fixed top-0 left-1/4 w-[800px] h-[550px] rounded-full blur-[180px] pointer-events-none opacity-20 -z-0 transition-all duration-700"
+            style={{ background: primaryGlow }}
+          />
+          <div
+            className="fixed top-1/4 right-1/4 w-[700px] h-[500px] rounded-full blur-[180px] pointer-events-none opacity-15 -z-0 transition-all duration-700"
+            style={{ background: secondaryGlow }}
+          />
+          <div
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[1100px] h-[450px] rounded-full blur-[220px] pointer-events-none opacity-10 -z-0"
+            style={{ background: primaryGlow }}
+          />
+        </>
+      )}
+
       {/* Top Floating Navigation */}
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 pt-5 pb-3 flex items-center justify-between">
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 pt-5 pb-3 flex items-center justify-between relative z-10">
         <Link
           href="/hackathons"
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-charcoal-900/90 border border-charcoal-700 text-xs font-semibold text-slate-300 hover:text-white hover:border-charcoal-600 transition-all shadow-md"
