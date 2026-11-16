@@ -151,6 +151,14 @@ export interface SponsoredMeta {
   candidatePassRank?: string;
   liveShortlistedCount?: number;
   liveActiveSquadsCount?: number;
+  sponsorWebsiteUrl?: string;
+  aboutSponsorHeadline?: string;
+  aboutSponsorDescription?: string;
+  eventBenefits?: string[];
+  giftCalloutText?: string;
+  guidelinesUrl?: string;
+  submissionCutoff?: string;
+  resultAnnouncement?: string;
 }
 
 export function getSponsorTheme(preset?: string): SponsorThemeStyle {
@@ -209,6 +217,14 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   let candidatePassRank = hackathon?.candidate_pass_rank || 'TIER-1 ARCHITECT';
   let liveShortlistedCount = typeof hackathon?.live_shortlisted_count === 'number' ? hackathon.live_shortlisted_count : 18;
   let liveActiveSquadsCount = typeof hackathon?.live_active_squads_count === 'number' ? hackathon.live_active_squads_count : 340;
+  let sponsorWebsiteUrl: string | undefined = hackathon?.sponsor_website_url || undefined;
+  let aboutSponsorHeadline: string | undefined = hackathon?.about_sponsor_headline || undefined;
+  let aboutSponsorDescription: string | undefined = hackathon?.about_sponsor_description || undefined;
+  let eventBenefits: string[] | undefined = Array.isArray(hackathon?.event_benefits) ? hackathon.event_benefits : undefined;
+  let giftCalloutText: string | undefined = hackathon?.gift_callout_text || undefined;
+  let guidelinesUrl: string | undefined = hackathon?.guidelines_url || undefined;
+  let submissionCutoff: string | undefined = hackathon?.submission_cutoff || undefined;
+  let resultAnnouncement: string | undefined = hackathon?.result_announcement || undefined;
 
   // Extract from HTML meta comment if present
   if (
@@ -250,6 +266,14 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (parsed.candidate_pass_rank) candidatePassRank = parsed.candidate_pass_rank;
         if (typeof parsed.live_shortlisted_count === 'number') liveShortlistedCount = parsed.live_shortlisted_count;
         if (typeof parsed.live_active_squads_count === 'number') liveActiveSquadsCount = parsed.live_active_squads_count;
+        if (parsed.sponsor_website_url) sponsorWebsiteUrl = parsed.sponsor_website_url;
+        if (parsed.about_sponsor_headline) aboutSponsorHeadline = parsed.about_sponsor_headline;
+        if (parsed.about_sponsor_description) aboutSponsorDescription = parsed.about_sponsor_description;
+        if (Array.isArray(parsed.event_benefits)) eventBenefits = parsed.event_benefits;
+        if (parsed.gift_callout_text) giftCalloutText = parsed.gift_callout_text;
+        if (parsed.guidelines_url) guidelinesUrl = parsed.guidelines_url;
+        if (parsed.submission_cutoff) submissionCutoff = parsed.submission_cutoff;
+        if (parsed.result_announcement) resultAnnouncement = parsed.result_announcement;
       }
     } catch {}
   }
@@ -286,5 +310,13 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     candidatePassRank,
     liveShortlistedCount,
     liveActiveSquadsCount,
+    sponsorWebsiteUrl,
+    aboutSponsorHeadline,
+    aboutSponsorDescription,
+    eventBenefits,
+    giftCalloutText,
+    guidelinesUrl,
+    submissionCutoff,
+    resultAnnouncement,
   };
 }
