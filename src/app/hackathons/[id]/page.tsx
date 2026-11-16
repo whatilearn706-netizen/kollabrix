@@ -420,6 +420,13 @@ export default function HackathonDetailPage() {
   const heroBanner = hackathon?.banner_url || sponsoredMeta.bannerUrl;
   const eventLogo = hackathon?.logo_url || hackathon?.company_logo || sponsoredMeta.sponsorLogoUrl;
 
+  // Dynamic Social Proof Counter (Solves cold start; displays 23 + registered increment, eliminates 4.8k)
+  const displayRegisteredCount = useMemo(() => {
+    const baseCount = (sponsoredMeta.isSponsored || hackathon?.id === '9892b319-0efa-4743-9411-afd6652ce3b5') ? 23 : 0;
+    if (registeredCount <= 0) return baseCount || 0;
+    return baseCount > 0 ? (baseCount + registeredCount - 1) : registeredCount;
+  }, [registeredCount, sponsoredMeta.isSponsored, hackathon?.id]);
+
   // Profile-based Eligibility Evaluation
   const eligibilityEvaluation = useMemo(() => {
     // If the student is ALREADY registered / enrolled in this hackathon, they are 100% eligible & confirmed!
@@ -1798,7 +1805,7 @@ export default function HackathonDetailPage() {
               {/* Floating Registered Counter on Top-Right (Red Marked Item - Real Database Count) */}
               <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-charcoal-950 text-cyan-300 text-[11px] font-mono font-bold border border-charcoal-750 shadow-xl flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{registeredCount} Registered</span>
+                <span>{displayRegisteredCount} Registered</span>
               </div>
 
               <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
@@ -1879,7 +1886,7 @@ export default function HackathonDetailPage() {
                     </span>
                     <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>{sponsoredMeta.isSponsored ? `${registeredCount > 0 ? registeredCount : '4.8k'} Registered` : `${registeredCount} Registered`}</span>
+                      <span>{displayRegisteredCount} Registered</span>
                     </span>
                   </div>
                 )}
@@ -1987,7 +1994,7 @@ export default function HackathonDetailPage() {
                   <span>
                     Registered:{' '}
                     <strong className="text-white font-mono font-bold">
-                      {registeredCount}
+                      {displayRegisteredCount}
                     </strong>
                   </span>
                 </div>
