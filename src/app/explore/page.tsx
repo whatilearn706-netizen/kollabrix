@@ -469,6 +469,16 @@ export default function ExploreProjectsPage() {
     };
   }, [projects]);
 
+  const maxLifecycleRows = useMemo(() => {
+    return Math.max(
+      recruitingProjects.length,
+      inProgressProjects.length,
+      completedProjects.length
+    );
+  }, [recruitingProjects.length, inProgressProjects.length, completedProjects.length]);
+
+  const isStatusFiltered = Boolean(filters.status && filters.status !== 'All');
+
   const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRecord = Math.min(currentPage * pageSize, totalCount);
 
@@ -615,122 +625,109 @@ export default function ExploreProjectsPage() {
                 ) : null}
               </div>
             </div>
+          ) : isStatusFiltered ? (
+            /* Standard Grid when a single status is explicitly filtered */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              {projects.map((project, idx) => (
+                <div
+                  key={project.id}
+                  className="blur-to-focus-card h-full"
+                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                >
+                  <ProjectCard project={project} />
+                </div>
+              ))}
+            </div>
           ) : (
-            /* Sequential Vertical Stacks: Recruiting -> In Progress -> Completed */
-            <div className="space-y-8">
-              {/* Stack 1: Actively Recruiting (Omitted if 0 projects) */}
-              {recruitingProjects.length > 0 && (
-                <section className="rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-5 sm:p-7 shadow-xs space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-charcoal-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                        <Flame className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Actively Recruiting Squads
-                          </h2>
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
-                            {recruitingProjects.length}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Student initiatives seeking co-builders, developers, and designers with open squad positions.
-                        </p>
-                      </div>
-                    </div>
+            /* Normal Unified Grid with 3-Column Stages: Col 1 Recruiting | Col 2 In Progress | Col 3 Completed */
+            <div className="space-y-6">
+              {/* Column Stage Headers (Desktop 3-Column) */}
+              <div className="hidden lg:grid grid-cols-3 gap-6 px-1">
+                <div className="flex items-center justify-between pb-3 border-b-2 border-amber-500/30">
+                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-amber-500 tracking-wider">
+                    <Flame className="w-4 h-4" />
+                    <span>Recruiting</span>
                   </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/25">
+                    {recruitingProjects.length}
+                  </span>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                    {recruitingProjects.map((project, idx) => (
-                      <div
-                        key={project.id}
-                        className="blur-to-focus-card h-full"
-                        style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                      >
-                        <ProjectCard project={project} />
-                      </div>
-                    ))}
+                <div className="flex items-center justify-between pb-3 border-b-2 border-violet-500/30">
+                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-violet-400 tracking-wider">
+                    <Zap className="w-4 h-4" />
+                    <span>In Progress</span>
                   </div>
-                </section>
-              )}
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-500/10 text-violet-400 border border-violet-500/25">
+                    {inProgressProjects.length}
+                  </span>
+                </div>
 
-              {/* Stack 2: In-Progress Builds (Omitted if 0 projects) */}
-              {inProgressProjects.length > 0 && (
-                <section className="rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-5 sm:p-7 shadow-xs space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-charcoal-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
-                        <Zap className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                            In-Progress Builds
-                          </h2>
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-700">
-                            {inProgressProjects.length}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Active campus projects in active development, milestone sprints, and engineering execution.
-                        </p>
-                      </div>
-                    </div>
+                <div className="flex items-center justify-between pb-3 border-b-2 border-emerald-500/30">
+                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-emerald-400 tracking-wider">
+                    <Trophy className="w-4 h-4" />
+                    <span>Completed</span>
                   </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                    {completedProjects.length}
+                  </span>
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                    {inProgressProjects.map((project, idx) => (
-                      <div
-                        key={project.id}
-                        className="blur-to-focus-card h-full"
-                        style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                      >
-                        <ProjectCard project={project} />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+              {/* Row-by-Row 3-Column Matrix */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                {Array.from({ length: maxLifecycleRows }).map((_, rowIndex) => {
+                  const recruiting = recruitingProjects[rowIndex];
+                  const inProgress = inProgressProjects[rowIndex];
+                  const completed = completedProjects[rowIndex];
 
-              {/* Stack 3: Completed & Shipped (Omitted if 0 projects) */}
-              {completedProjects.length > 0 && (
-                <section className="rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-5 sm:p-7 shadow-xs space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-charcoal-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <Trophy className="w-5 h-5" />
+                  return (
+                    <React.Fragment key={rowIndex}>
+                      {/* Column 1: Recruiting */}
+                      <div className="h-full">
+                        {recruiting ? (
+                          <div
+                            className="blur-to-focus-card h-full"
+                            style={{ animationDelay: `${Math.min(rowIndex * 40, 350)}ms` }}
+                          >
+                            <ProjectCard project={recruiting} />
+                          </div>
+                        ) : (
+                          <div className="hidden lg:block h-full" aria-hidden="true" />
+                        )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Completed & Shipped Showcase
-                          </h2>
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">
-                            {completedProjects.length}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Shipped applications, hackathon-winning submissions, and production-ready collegiate software.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                    {completedProjects.map((project, idx) => (
-                      <div
-                        key={project.id}
-                        className="blur-to-focus-card h-full"
-                        style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                      >
-                        <ProjectCard project={project} />
+                      {/* Column 2: In Progress */}
+                      <div className="h-full">
+                        {inProgress ? (
+                          <div
+                            className="blur-to-focus-card h-full"
+                            style={{ animationDelay: `${Math.min(rowIndex * 40, 350)}ms` }}
+                          >
+                            <ProjectCard project={inProgress} />
+                          </div>
+                        ) : (
+                          <div className="hidden lg:block h-full" aria-hidden="true" />
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+
+                      {/* Column 3: Completed */}
+                      <div className="h-full">
+                        {completed ? (
+                          <div
+                            className="blur-to-focus-card h-full"
+                            style={{ animationDelay: `${Math.min(rowIndex * 40, 350)}ms` }}
+                          >
+                            <ProjectCard project={completed} />
+                          </div>
+                        ) : (
+                          <div className="hidden lg:block h-full" aria-hidden="true" />
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
