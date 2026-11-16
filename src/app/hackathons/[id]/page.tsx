@@ -274,8 +274,8 @@ export default function HackathonDetailPage() {
               max_team_size: meta.max_team_size || currentHack.max_team_size || 4,
               access_type: meta.access_type || currentHack.access_type || 'public',
               join_code: meta.join_code || currentHack.join_code,
-              logo_url: meta.logo_url || currentHack.logo_url || currentHack.company_logo,
-              company_logo: meta.logo_url || currentHack.logo_url || currentHack.company_logo,
+              logo_url: meta.logo_url || currentHack.logo_url || currentHack.company_logo || meta.sponsor_logo_url,
+              company_logo: meta.logo_url || currentHack.logo_url || currentHack.company_logo || meta.sponsor_logo_url,
               eligibility: meta.eligibility || currentHack.eligibility,
               banner_url: meta.banner_url || currentHack.banner_url,
               contact_info: currentHack.contact_info || meta.contact_info || (currentHack as any).contactInfo || null,
@@ -882,8 +882,8 @@ export default function HackathonDetailPage() {
       {/* ========================================================================= */}
       {/* UNSTOP-STYLE STANDALONE BILLBOARD BANNER CARD (Zero Text Overlap)         */}
       {/* ========================================================================= */}
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
-        {sponsoredMeta.isSponsored ? (
+      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-4">
+        {!hackathon.banner_url && sponsoredMeta.isSponsored ? (
           <div className="w-full rounded-3xl overflow-hidden border border-cyan-500/30 bg-[#040711] shadow-[0_0_50px_-12px_rgba(6,182,212,0.25)] relative p-6 sm:p-8 lg:p-10 transition-all">
             {/* 3D Wave Volumetric Lighting SVG */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1080,7 +1080,11 @@ export default function HackathonDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="w-full rounded-3xl overflow-hidden border border-charcoal-750 bg-[#060813] shadow-2xl relative">
+          <div className={`w-full rounded-3xl overflow-hidden shadow-2xl relative transition-all ${
+            sponsoredMeta.isSponsored
+              ? 'border-2 border-amber-500/40 shadow-[0_0_50px_-12px_rgba(245,158,11,0.25)] bg-[#040711]'
+              : 'border border-charcoal-750 bg-[#060813]'
+          }`}>
             {hackathon.banner_url ? (
               <div className="relative w-full h-56 sm:h-72 md:h-88 lg:h-[360px] xl:h-[400px] 2xl:h-[440px] overflow-hidden">
                 <img
@@ -1088,7 +1092,17 @@ export default function HackathonDetailPage() {
                   alt={hackathon.title}
                   className="w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/40 via-transparent to-black/10 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/60 via-transparent to-black/20 pointer-events-none" />
+
+                {/* Sponsored Floating Badge if sponsored */}
+                {sponsoredMeta.isSponsored && (
+                  <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 flex items-center gap-2">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-950/85 text-amber-300 border border-amber-400/40 shadow-xl backdrop-blur-md">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                      <span>⚡ Sponsored by {sponsoredMeta.companyName || 'Official Partner'}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
@@ -1107,6 +1121,57 @@ export default function HackathonDetailPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* If sponsored and has an image banner, display a sleek Sponsor Info & Benefits strip right below the banner */}
+        {hackathon.banner_url && sponsoredMeta.isSponsored && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-charcoal-900/90 border border-amber-500/30 shadow-lg flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                {sponsoredMeta.sponsorLogoUrl ? (
+                  <div className="w-10 h-10 rounded-xl bg-white/10 p-1.5 flex items-center justify-center shrink-0 border border-white/15">
+                    <img src={sponsoredMeta.sponsorLogoUrl} alt="" className="w-full h-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold shrink-0">
+                    ⚡
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 block">About Sponsor</span>
+                  <p className="text-xs text-white font-bold truncate">{sponsoredMeta.companyName || 'Title Sponsor'}</p>
+                  <p className="text-[11px] text-slate-400 line-clamp-1">{sponsoredMeta.aboutSponsorHeadline || "Empowering collegiate student innovators."}</p>
+                </div>
+              </div>
+              {sponsoredMeta.sponsorWebsiteUrl && (
+                <a
+                  href={sponsoredMeta.sponsorWebsiteUrl.startsWith('http') ? sponsoredMeta.sponsorWebsiteUrl : `https://${sponsoredMeta.sponsorWebsiteUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-white shrink-0 flex items-center gap-1.5"
+                >
+                  <span>Learn More</span>
+                  <ExternalLink className="w-3 h-3 text-amber-400" />
+                </a>
+              )}
+            </div>
+
+            <div className="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-charcoal-900/90 border border-amber-500/30 shadow-lg flex items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full text-xs text-slate-300">
+                {(sponsoredMeta.eventBenefits || [
+                  '₹1,000 Equity-Free Winner Grant',
+                  'Verified Certificate of Merit',
+                  'Portfolio Showcase on Kollabrix',
+                  'Direct Faculty Review'
+                ]).slice(0, 4).map((b, i) => (
+                  <div key={i} className="flex items-center gap-1.5 truncate">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="truncate text-[11px] text-slate-200">{b}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1209,11 +1274,11 @@ export default function HackathonDetailPage() {
 
                 {/* Event / College Logo Badge (Brown Marked Item) */}
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-charcoal-950 border border-charcoal-750 p-1.5 shrink-0 overflow-hidden shadow-lg flex items-center justify-center">
-                  {hackathon.logo_url || hackathon.company_logo ? (
+                  {hackathon.logo_url || hackathon.company_logo || sponsoredMeta.sponsorLogoUrl ? (
                     <img
-                      src={hackathon.logo_url || hackathon.company_logo || ''}
+                      src={hackathon.logo_url || hackathon.company_logo || sponsoredMeta.sponsorLogoUrl || ''}
                       alt={hackathon.organizer || hackathon.title}
-                      className="w-full h-full object-contain rounded-xl"
+                      className="w-full h-full object-contain rounded-xl p-0.5"
                     />
                   ) : hackathon.banner_url ? (
                     <img
@@ -1648,8 +1713,8 @@ export default function HackathonDetailPage() {
           {/* Right Sidebar: Unstop-Style Sticky Action Card */}
           <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
             
-            {/* Brushed Titanium VIP Candidate Access Pass for Sponsored Corporate Events */}
-            {sponsoredMeta.isSponsored && (
+            {/* Optional VIP Candidate Access Pass (Hidden by default unless explicitly enabled) */}
+            {sponsoredMeta.isSponsored && Boolean(sponsoredMeta.enableRecruiterQrPass) && (
               <div className="p-5 rounded-3xl bg-gradient-to-b from-slate-900 via-charcoal-900 to-black border border-white/20 shadow-2xl space-y-4 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
                 <div className="text-center space-y-1 relative z-10">
