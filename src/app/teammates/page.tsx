@@ -168,6 +168,22 @@ export default function TeammatesPage() {
               }
             }
           }
+
+          // Also check student_id_verifications
+          const { data: sData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'student_id_verifications')
+            .maybeSingle();
+
+          if (Array.isArray(sData?.value)) {
+            for (const s of sData.value) {
+              if (s.status === 'approved' || String(s.id || '').includes('faceid')) {
+                if (s.userId) verifiedUserIds.add(s.userId);
+                if (s.username) verifiedUserIds.add(s.username.toLowerCase().trim());
+              }
+            }
+          }
         } catch {}
 
         if (profs && Array.isArray(profs)) {
