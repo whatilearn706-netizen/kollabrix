@@ -70,6 +70,7 @@ export function HackathonCard({
   const hiringPackage = sponsoredMeta.hiringPackage;
   const tagline = sponsoredMeta.tagline;
   const logoUrl = sponsoredMeta.sponsorLogoUrl || hackathon.logo_url || hackathon.company_logo;
+  const cardBanner = hackathon.banner_url || sponsoredMeta.bannerUrl;
   const ctaText = sponsoredMeta.customCtaText || 'Apply & Compete';
 
   return (
@@ -99,10 +100,10 @@ export function HackathonCard({
         {/* Banner with Floating Badges */}
         <div className="h-36 sm:h-40 overflow-hidden relative border-b border-slate-200/50 dark:border-white/10 bg-slate-950">
           <Link href={`/hackathons/${hackathon.id}`} className="block w-full h-full cursor-pointer">
-            {hackathon.banner_url ? (
+            {cardBanner ? (
               <div className="relative w-full h-full overflow-hidden">
                 <img
-                  src={hackathon.banner_url}
+                  src={cardBanner}
                   alt={hackathon.title}
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
                 />

@@ -527,8 +527,9 @@ export async function POST(request: NextRequest) {
         start_date: new Date(start_date || Date.now()).toISOString(),
         end_date: end_date ? new Date(end_date).toISOString() : null,
         registration_deadline: new Date(registration_deadline || Date.now() + 14 * 86400000).toISOString(),
-        submission_deadline: results_date ? new Date(results_date).toISOString() : null,
-        eligibility: 'Open to all college students & engineering developers',
+        submission_deadline: (body.submission_deadline || results_date) ? new Date(body.submission_deadline || results_date).toISOString() : null,
+        eligibility: (body.eligibility || 'Open to all college students & engineering developers').trim(),
+        rules: (body.rules || '1. All code and designs must be created during the official hackathon timeline.\n2. Projects must address one of the released problem statements.\n3. Public GitHub repository with full commit history is required.\n4. Plagiarism leads to immediate disqualification.').trim(),
         themes: Array.isArray(themes) && themes.length > 0 ? themes : ['Enterprise Innovation', 'Cloud/AI Architecture'],
         prize_pool: prize_pool.trim() || '₹5,00,000 + Direct PPI Interviews',
         website_url: `https://kollabrix.in/h/${joinCode}`,
@@ -537,8 +538,8 @@ export async function POST(request: NextRequest) {
         status: 'Published',
         access_type: access_type || 'public',
         join_code: joinCode,
-        min_team_size: 1,
-        max_team_size: 4,
+        min_team_size: parseInt(String(body.min_team_size)) || 1,
+        max_team_size: parseInt(String(body.max_team_size)) || 4,
         creator_id: auth.user?.id || '29359508-c755-424b-81a2-89e714577437',
       };
 
@@ -884,11 +885,20 @@ export async function POST(request: NextRequest) {
               description: updatedDesc,
               updated_at: new Date().toISOString(),
             };
-            if (body.banner_url) updatePayload.banner_url = body.banner_url;
-            if (company_logo) {
-              updatePayload.logo_url = company_logo;
-              updatePayload.company_logo = company_logo;
-            }
+            if (body.banner_url !== undefined) updatePayload.banner_url = body.banner_url?.trim() || null;
+            if (body.title) updatePayload.title = body.title.trim();
+            if (body.prize_pool) updatePayload.prize_pool = body.prize_pool.trim();
+            if (body.mode) updatePayload.mode = body.mode;
+            if (body.location) updatePayload.location = body.location;
+            if (body.start_date) updatePayload.start_date = new Date(body.start_date).toISOString();
+            if (body.end_date) updatePayload.end_date = new Date(body.end_date).toISOString();
+            if (body.registration_deadline) updatePayload.registration_deadline = new Date(body.registration_deadline).toISOString();
+            if (body.submission_deadline) updatePayload.submission_deadline = new Date(body.submission_deadline).toISOString();
+            if (body.rules) updatePayload.rules = body.rules;
+            if (body.eligibility) updatePayload.eligibility = body.eligibility;
+            if (body.min_team_size) updatePayload.min_team_size = parseInt(String(body.min_team_size)) || 1;
+            if (body.max_team_size) updatePayload.max_team_size = parseInt(String(body.max_team_size)) || 4;
+            if (Array.isArray(body.themes) && body.themes.length > 0) updatePayload.themes = body.themes;
 
             await client
               .from('hackathons')

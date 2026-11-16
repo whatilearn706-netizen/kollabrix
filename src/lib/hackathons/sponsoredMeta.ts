@@ -136,6 +136,7 @@ export interface SponsoredMeta {
   hiringRoles?: string;
   hiringPackage?: string;
   sponsorLogoUrl?: string;
+  bannerUrl?: string;
   tagline?: string;
   promoVideoUrl?: string;
   customCtaText?: string;
@@ -202,6 +203,7 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   let hiringRoles = hackathon?.hiring_roles || '';
   let hiringPackage = hackathon?.hiring_package || '';
   let sponsorLogoUrl = hackathon?.company_logo || hackathon?.logo_url || '';
+  let bannerUrl: string | undefined = hackathon?.banner_url || undefined;
   let tagline = hackathon?.tagline || '';
   let promoVideoUrl = hackathon?.promo_video_url || '';
   let customCtaText = hackathon?.custom_cta_text || '';
@@ -280,15 +282,25 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (parsed.enable_recruiter_qr_pass !== undefined || parsed.enableRecruiterQrPass !== undefined) {
           (hackathon as any).enableRecruiterQrPass = Boolean(parsed.enable_recruiter_qr_pass ?? parsed.enableRecruiterQrPass);
         }
-        if (parsed.banner_url && !hackathon.banner_url) {
-          hackathon.banner_url = parsed.banner_url;
+        if (parsed.banner_url) {
+          bannerUrl = parsed.banner_url;
+          if (!hackathon.banner_url) {
+            hackathon.banner_url = parsed.banner_url;
+          }
         }
       }
     } catch {}
   }
 
   // Fallback defaults for popular sponsors
-  if (lowerCompany.includes('google') && !sponsorLogoUrl) {
+  if (lowerCompany.includes('kollabrix')) {
+    if (!sponsorLogoUrl) {
+      sponsorLogoUrl = 'https://kollabrix.in/brand/kollabrix-logo-transparent.png';
+    }
+    if (!bannerUrl) {
+      bannerUrl = 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg';
+    }
+  } else if (lowerCompany.includes('google') && !sponsorLogoUrl) {
     sponsorLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg';
   } else if (lowerCompany.includes('devfolio') && !sponsorLogoUrl) {
     sponsorLogoUrl = 'https://devfolio.co/blog/content/images/2021/04/devfolio-logo.png';
@@ -309,6 +321,7 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     hiringRoles,
     hiringPackage,
     sponsorLogoUrl,
+    bannerUrl: bannerUrl || hackathon?.banner_url,
     tagline,
     promoVideoUrl,
     customCtaText,
