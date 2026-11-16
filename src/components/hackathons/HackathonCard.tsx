@@ -69,7 +69,7 @@ export function HackathonCard({
   const hiringRoles = sponsoredMeta.hiringRoles;
   const hiringPackage = sponsoredMeta.hiringPackage;
   const tagline = sponsoredMeta.tagline;
-  const logoUrl = sponsoredMeta.sponsorLogoUrl;
+  const logoUrl = sponsoredMeta.sponsorLogoUrl || hackathon.logo_url || hackathon.company_logo;
   const ctaText = sponsoredMeta.customCtaText || 'Apply & Compete';
 
   return (
@@ -158,10 +158,10 @@ export function HackathonCard({
             </div>
           )}
 
-          {/* Logo Badge on Banner Bottom Left for Sponsored */}
-          {isSponsored && logoUrl && (
+          {/* Logo Badge on Banner Bottom Left */}
+          {logoUrl && (
             <div className="absolute bottom-2 left-3 z-10 flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-white p-1 border border-white/40 shadow-xl flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-white p-1 border border-white/40 shadow-xl flex items-center justify-center shrink-0">
                 <img
                   src={logoUrl}
                   alt={companyName}

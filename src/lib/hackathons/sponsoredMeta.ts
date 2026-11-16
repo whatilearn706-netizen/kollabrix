@@ -159,6 +159,7 @@ export interface SponsoredMeta {
   guidelinesUrl?: string;
   submissionCutoff?: string;
   resultAnnouncement?: string;
+  enableRecruiterQrPass?: boolean;
 }
 
 export function getSponsorTheme(preset?: string): SponsorThemeStyle {
@@ -255,7 +256,9 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (Array.isArray(parsed.recruitment_perks)) recruitmentPerks = parsed.recruitment_perks;
         if (parsed.hiring_roles) hiringRoles = parsed.hiring_roles;
         if (parsed.hiring_package) hiringPackage = parsed.hiring_package;
-        if (parsed.sponsor_logo_url) sponsorLogoUrl = parsed.sponsor_logo_url;
+        if (parsed.sponsor_logo_url || parsed.logo_url || parsed.company_logo) {
+          sponsorLogoUrl = parsed.sponsor_logo_url || parsed.logo_url || parsed.company_logo;
+        }
         if (parsed.tagline) tagline = parsed.tagline;
         if (parsed.promo_video_url) promoVideoUrl = parsed.promo_video_url;
         if (parsed.custom_cta_text) customCtaText = parsed.custom_cta_text;
@@ -274,6 +277,12 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (parsed.guidelines_url) guidelinesUrl = parsed.guidelines_url;
         if (parsed.submission_cutoff) submissionCutoff = parsed.submission_cutoff;
         if (parsed.result_announcement) resultAnnouncement = parsed.result_announcement;
+        if (parsed.enable_recruiter_qr_pass !== undefined || parsed.enableRecruiterQrPass !== undefined) {
+          (hackathon as any).enableRecruiterQrPass = Boolean(parsed.enable_recruiter_qr_pass ?? parsed.enableRecruiterQrPass);
+        }
+        if (parsed.banner_url && !hackathon.banner_url) {
+          hackathon.banner_url = parsed.banner_url;
+        }
       }
     } catch {}
   }
@@ -318,5 +327,6 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     guidelinesUrl,
     submissionCutoff,
     resultAnnouncement,
+    enableRecruiterQrPass: Boolean(hackathon?.enableRecruiterQrPass || hackathon?.enable_recruiter_qr_pass),
   };
 }

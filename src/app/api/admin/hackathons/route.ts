@@ -461,6 +461,9 @@ export async function POST(request: NextRequest) {
         is_enterprise: true,
         company_name: company_name.trim(),
         sponsor_logo_url: company_logo?.trim() || null,
+        logo_url: company_logo?.trim() || null,
+        banner_url: banner_url?.trim() || null,
+        enable_recruiter_qr_pass: false,
         partner_name_2: partner_name_2?.trim() || null,
         partner_logo_2: partner_logo_2?.trim() || null,
         sponsor_tier: sponsor_tier?.trim() || 'Official Title Sponsor',
@@ -870,16 +873,26 @@ export async function POST(request: NextRequest) {
               guidelines_url: guidelines_url !== undefined ? guidelines_url : metaObj.guidelines_url,
               submission_cutoff: submission_cutoff !== undefined ? submission_cutoff : metaObj.submission_cutoff,
               result_announcement: result_announcement !== undefined ? result_announcement : metaObj.result_announcement,
+              banner_url: body.banner_url || metaObj.banner_url || null,
+              logo_url: company_logo || metaObj.logo_url || null,
+              enable_recruiter_qr_pass: Boolean(body.enable_recruiter_qr_pass ?? metaObj.enable_recruiter_qr_pass ?? false),
             };
 
             const updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
 
+            const updatePayload: any = {
+              description: updatedDesc,
+              updated_at: new Date().toISOString(),
+            };
+            if (body.banner_url) updatePayload.banner_url = body.banner_url;
+            if (company_logo) {
+              updatePayload.logo_url = company_logo;
+              updatePayload.company_logo = company_logo;
+            }
+
             await client
               .from('hackathons')
-              .update({
-                description: updatedDesc,
-                updated_at: new Date().toISOString(),
-              })
+              .update(updatePayload)
               .eq('id', hackathonId);
           }
         } catch (dbErr) {

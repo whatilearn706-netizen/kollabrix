@@ -956,6 +956,36 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   </div>
                 </div>
 
+                <div className="pt-1 border-t border-charcoal-800">
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Event Banner Image URL (16:9 Recommended)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/... or https://kollabrix.in/banner.png"
+                      value={sponsoredForm.banner_url}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, banner_url: e.target.value })}
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+                    />
+                  </div>
+                  {sponsoredForm.banner_url && (
+                    <div className="mt-2 relative w-full h-28 rounded-xl overflow-hidden border border-charcoal-700 bg-black">
+                      <img
+                        src={sponsoredForm.banner_url}
+                        alt="Banner Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                      <span className="absolute bottom-1 right-2 px-2 py-0.5 rounded bg-black/75 text-[9px] font-mono text-slate-300 border border-white/10">
+                        16:9 Banner Preview
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-charcoal-800">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
