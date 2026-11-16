@@ -66,7 +66,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     primary_color: '#F59E0B',
     secondary_color: '#06B6D4',
     background_color: '#08080C',
-    hero_asset_type: '3d_cloud' as '3d_cloud' | '3d_spline' | 'cyber_grid' | 'video' | 'custom_canvas',
+    hero_asset_type: '3d_cloud' as '3d_cloud' | '3d_spline' | 'cyber_grid' | 'video' | 'custom_embed' | string,
     hero_asset_url: '',
     level_1_title: 'Level 1: Qualifier',
     level_1_perks: '$1,000 Cloud Credits + Sandbox Keys',
@@ -915,21 +915,53 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
               </div>
 
               {/* Background Canvas Style & Hero Asset Engine */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
                     Background Atmosphere
                   </label>
-                  <select
-                    value={sponsoredForm.background_color}
-                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, background_color: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="#08080C">Deep Space Obsidian (#08080C)</option>
-                    <option value="#0B1F4B">Cosmic Sapphire (#0B1F4B)</option>
-                    <option value="#0F1117">Dark Titanium Carbon (#0F1117)</option>
-                    <option value="#000000">OLED Pure Black (#000000)</option>
-                  </select>
+                  {/* Quick Atmosphere Presets */}
+                  <div className="grid grid-cols-3 gap-1.5 mb-2">
+                    {[
+                      { name: 'Obsidian', color: '#08080C' },
+                      { name: 'Sapphire', color: '#0B1F4B' },
+                      { name: 'Titanium', color: '#0F1117' },
+                      { name: 'OLED Black', color: '#000000' },
+                      { name: 'Cyber Emerald', color: '#031B15' },
+                      { name: 'Velvet Violet', color: '#130722' },
+                    ].map((item) => (
+                      <button
+                        type="button"
+                        key={item.color}
+                        onClick={() => setSponsoredForm({ ...sponsoredForm, background_color: item.color })}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono border flex items-center gap-1.5 transition-all ${
+                          sponsoredForm.background_color?.toLowerCase() === item.color.toLowerCase()
+                            ? 'border-amber-400 bg-amber-400/20 text-white font-bold'
+                            : 'border-charcoal-700 bg-charcoal-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/20" style={{ backgroundColor: item.color }} />
+                        <span className="truncate">{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Native Color Picker & Hex Input for ANY Custom Atmosphere */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={sponsoredForm.background_color?.startsWith('#') ? sponsoredForm.background_color : '#08080C'}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, background_color: e.target.value })}
+                      className="w-9 h-9 rounded-xl border border-charcoal-700 bg-charcoal-900 cursor-pointer p-0.5 shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={sponsoredForm.background_color}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, background_color: e.target.value })}
+                      placeholder="#08080C"
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -939,28 +971,44 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   <select
                     value={sponsoredForm.hero_asset_type}
                     onChange={(e) => setSponsoredForm({ ...sponsoredForm, hero_asset_type: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono text-[11px]"
                   >
-                    <option value="3d_cloud">3D Holographic Cloud &amp; Microservices Crucible</option>
+                    <option value="3d_cloud">3D Holographic Cloud &amp; Volumetric Crucible</option>
                     <option value="3d_spline">Custom 3D Spline / glTF Interactive Scene</option>
                     <option value="cyber_grid">Cybernetic Perspective Data Grid</option>
-                    <option value="video">High-Definition Video Background</option>
+                    <option value="video">High-Definition Looping Video Background</option>
+                    <option value="custom_embed">Universal 3D Canvas / WebGL / Custom Embed URL</option>
                   </select>
+                  <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                    Choose from photorealistic 3D native engines or stream your own custom WebGL, Spline, or video assets.
+                  </p>
                 </div>
               </div>
 
-              {sponsoredForm.hero_asset_type === '3d_spline' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                    Spline / 3D Canvas Scene URL
-                  </label>
+              {sponsoredForm.hero_asset_type !== '3d_cloud' && (
+                <div className="pt-2 border-t border-charcoal-750">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-300">
+                      3D Scene / Media / Custom Embed URL
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-400">100% Extensible</span>
+                  </div>
                   <input
                     type="url"
-                    placeholder="https://my.spline.design/scene-id..."
+                    placeholder={
+                      sponsoredForm.hero_asset_type === '3d_spline'
+                        ? 'https://my.spline.design/scene-id...'
+                        : sponsoredForm.hero_asset_type === 'video'
+                        ? 'https://cdn.example.com/ambient-loop.mp4'
+                        : 'https://my-custom-threejs-app.com or https://my.spline.design/...'
+                    }
                     value={sponsoredForm.hero_asset_url}
                     onChange={(e) => setSponsoredForm({ ...sponsoredForm, hero_asset_url: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono text-[11px]"
+                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono text-[11px] focus:outline-none focus:border-amber-400"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                    Supports Spline 3D embeds, Three.js canvases, MP4 video streams, or any responsive iframe URL. If left empty, a high-fidelity visual engine renders automatically.
+                  </p>
                 </div>
               )}
             </div>

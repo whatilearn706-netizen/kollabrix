@@ -11,7 +11,7 @@ export interface SponsorCustomThemeConfig {
   primaryColor?: string;
   secondaryColor?: string;
   backgroundColor?: string;
-  heroAssetType?: '3d_cloud' | '3d_spline' | 'cyber_grid' | 'video' | 'custom_canvas';
+  heroAssetType?: '3d_cloud' | '3d_spline' | 'cyber_grid' | 'video' | 'custom_embed' | string;
   heroAssetUrl?: string;
   partnerName2?: string;
   partnerLogo2?: string;
@@ -297,7 +297,13 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
           else if (gc === 'custom' || parsed.primary_color) themePreset = 'custom';
         }
 
-        if (parsed.custom_config || parsed.primary_color) {
+        if (
+          parsed.custom_config ||
+          parsed.primary_color ||
+          parsed.background_color ||
+          parsed.hero_asset_type ||
+          parsed.theme_preset === 'custom'
+        ) {
           customConfig = {
             primaryColor: parsed.primary_color || parsed.custom_config?.primaryColor || '#F59E0B',
             secondaryColor: parsed.secondary_color || parsed.custom_config?.secondaryColor || '#06B6D4',
