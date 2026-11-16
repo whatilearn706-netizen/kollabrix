@@ -89,7 +89,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     gift_callout_text: 'Endowed by Kollabrix Builders Fund: Instant UPI Winner Grant',
     guidelines_url: 'https://kollabrix.in',
     priority_rank: 10,
-    banner_url: 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg',
+    banner_url: 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg',
     enable_recruiter_qr_pass: false,
   });
 
@@ -128,7 +128,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       gift_callout_text: 'Endowed by Kollabrix Builders Fund: Instant UPI Winner Grant',
       guidelines_url: 'https://kollabrix.in',
       priority_rank: 10,
-      banner_url: 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg',
+      banner_url: 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg',
       enable_recruiter_qr_pass: false,
     });
     setIsSponsoredModalOpen(true);
@@ -1022,6 +1022,13 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                       Event Banner Image URL (16:9 Recommended)
                     </label>
                     <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setSponsoredForm({ ...sponsoredForm, banner_url: 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg' })}
+                        className="px-2 py-0.5 text-[10px] font-mono rounded bg-amber-500/25 text-amber-200 border border-amber-400/50 hover:bg-amber-500/35 font-bold"
+                      >
+                        ⚡ 16:9 Sprint Banner
+                      </button>
                       <button
                         type="button"
                         onClick={() => setSponsoredForm({ ...sponsoredForm, banner_url: 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg' })}

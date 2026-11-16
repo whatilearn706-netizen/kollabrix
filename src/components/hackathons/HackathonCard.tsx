@@ -101,11 +101,17 @@ export function HackathonCard({
         <div className="h-36 sm:h-40 overflow-hidden relative border-b border-slate-200/50 dark:border-white/10 bg-slate-950">
           <Link href={`/hackathons/${hackathon.id}`} className="block w-full h-full cursor-pointer">
             {cardBanner ? (
-              <div className="relative w-full h-full overflow-hidden">
+              <div className="relative w-full h-full overflow-hidden flex items-center justify-center bg-black">
+                <img
+                  src={cardBanner}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-md opacity-35 scale-110 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <img
                   src={cardBanner}
                   alt={hackathon.title}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                  className="w-full h-full object-contain object-center relative z-10 group-hover:scale-105 transition-transform duration-500 ease-out"
                 />
               </div>
             ) : (
