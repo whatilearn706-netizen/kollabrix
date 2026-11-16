@@ -61,6 +61,8 @@ export default function ProjectDetailsPage() {
   const projectRef = useRef<Project | null>(project);
   projectRef.current = project;
 
+  const [teamMembers, setTeamMembers] = useState<ProjectMember[]>([]);
+
   const [isLoading, setIsLoading] = useState(
     () => !DEMO_PROJECTS.some((p) => p.id === projectId)
   );
@@ -196,6 +198,21 @@ export default function ProjectDetailsPage() {
 
         if (notesData) {
           setMentoringNotes(notesData as unknown as ProjectMentoringNote[]);
+        }
+
+        // Fetch all confirmed team members with profiles for squad roster
+        try {
+          const { data: membersData } = await supabase
+            .from('project_members')
+            .select('*, profile:profiles(*)')
+            .eq('project_id', projectId)
+            .order('joined_at', { ascending: true });
+
+          if (membersData) {
+            setTeamMembers(membersData as unknown as ProjectMember[]);
+          }
+        } catch (mErr) {
+          console.warn('Error fetching project members:', mErr);
         }
       } catch (err: unknown) {
         if (isInitial) setError(err instanceof Error ? err.message : 'Error fetching project.');
@@ -398,7 +415,7 @@ export default function ProjectDetailsPage() {
   const creatorName = project.owner?.display_name || 'Student Creator';
   const creatorUsername = project.owner?.username;
   const isTeamFull = project.current_team_size >= project.desired_team_size;
-  const isRecruiting = project.status === 'Recruiting';
+  const isRecruiting = project.status === 'Recruiting' || (!isTeamFull && project.status !== 'Completed');
   const canApply =
     !isOwner &&
     !isMember &&
@@ -727,6 +744,76 @@ export default function ProjectDetailsPage() {
               )}
             </div>
 
+            {/* Squad Members Showcase inside Team Collaboration */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-violet-600" />
+                  Confirmed Squad ({Math.max(teamMembers.length, 1)} / {project.desired_team_size})
+                </span>
+                {!isTeamFull ? (
+                  <span className="text-[11px] font-bold text-violet-600 bg-violet-100/70 px-2.5 py-0.5 rounded-full font-mono">
+                    {project.desired_team_size - Math.max(teamMembers.length, 1)} open spot remaining
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full font-mono">
+                    Squad Full
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                {/* Project Lead */}
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                  <Avatar name={creatorName} src={project.owner?.avatar_url} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 truncate flex items-center gap-1">
+                      <span>{creatorName}</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800">Lead</span>
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate">{project.owner?.college || 'Creator'}</p>
+                  </div>
+                </div>
+
+                {/* Confirmed Teammates */}
+                {teamMembers
+                  .filter((m) => m.user_id !== project.owner_id)
+                  .map((m) => {
+                    const prof = m.profile;
+                    const name = prof?.display_name || 'Teammate';
+                    return (
+                      <div key={m.id} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                        <Avatar name={name} src={prof?.avatar_url} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900 truncate flex items-center gap-1">
+                            <span>{name}</span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-violet-100 text-violet-800 truncate">
+                              {m.role || 'Contributor'}
+                            </span>
+                          </p>
+                          <p className="text-[10px] text-slate-500 truncate">{prof?.college || 'Teammate'}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                {/* Remaining spot callout */}
+                {!isTeamFull && (
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-xl border-2 border-dashed border-violet-300 bg-violet-50/50">
+                    <div className="w-7 h-7 rounded-full border border-dashed border-violet-400 flex items-center justify-center text-violet-600 font-bold text-xs shrink-0">
+                      +
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-violet-950 truncate">
+                        {project.desired_roles?.[0] || 'Open Role'}
+                      </p>
+                      <p className="text-[10px] text-violet-600 font-medium">Spot open to claim</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {isOwner ? (
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -978,6 +1065,106 @@ export default function ProjectDetailsPage() {
               >
                 Post on LinkedIn with AI
               </Button>
+            </div>
+          </div>
+
+          {/* Current Squad Members Roster */}
+          <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 font-mono">
+                Squad Teammates
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-50 text-violet-700 border border-violet-200">
+                {Math.max(teamMembers.length, 1)} / {project.desired_team_size} Joined
+              </span>
+            </div>
+
+            <div className="space-y-3 divide-y divide-slate-100">
+              {/* Always include Project Lead */}
+              <div className="pt-2 first:pt-0 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Avatar name={creatorName} src={project.owner?.avatar_url} size="sm" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-slate-900 truncate flex items-center gap-1.5">
+                      <span>{creatorName}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
+                        Lead
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">{project.owner?.college || 'Collegiate Builder'}</p>
+                  </div>
+                </div>
+                {creatorUsername && (
+                  <Link href={`/profile/${creatorUsername}`} className="shrink-0 text-[11px] font-bold text-violet-600 hover:underline font-mono">
+                    Profile &rarr;
+                  </Link>
+                )}
+              </div>
+
+              {/* All other teammates in teamMembers */}
+              {teamMembers
+                .filter((m) => m.user_id !== project.owner_id)
+                .map((member) => {
+                  const memberProfile = member.profile;
+                  const mName = memberProfile?.display_name || 'Teammate';
+                  const mUsername = memberProfile?.username;
+                  const mAvatar = memberProfile?.avatar_url;
+                  const mCollege = memberProfile?.college;
+                  const mRole = member.role || 'Contributor';
+
+                  return (
+                    <div key={member.id} className="pt-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar name={mName} src={mAvatar} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-slate-900 truncate flex items-center gap-1.5">
+                            <span>{mName}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-800 truncate max-w-[110px]">
+                              {mRole}
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate">{mCollege || 'Collegiate Builder'}</p>
+                        </div>
+                      </div>
+                      {mUsername && (
+                        <Link href={`/profile/${mUsername}`} className="shrink-0 text-[11px] font-bold text-violet-600 hover:underline font-mono">
+                          Profile &rarr;
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+
+              {/* Remaining Open Spot Callouts */}
+              {!isTeamFull && (
+                <div className="pt-3">
+                  <div className="p-3 rounded-2xl border-2 border-dashed border-violet-200/90 bg-violet-50/40 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-full border border-dashed border-violet-400 flex items-center justify-center text-violet-500 shrink-0 text-xs font-black">
+                        +
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-violet-950 truncate">
+                          {project.desired_roles && project.desired_roles.length > 0
+                            ? `${project.desired_roles[0]} Needed`
+                            : 'Open Teammate Slot'}
+                        </p>
+                        <p className="text-[10px] text-violet-600 font-medium">Claim this spot</p>
+                      </div>
+                    </div>
+                    {canApply && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsApplyModalOpen(true)}
+                        className="text-[11px] font-bold py-1 px-2.5 h-auto text-violet-700 border-violet-300 hover:bg-violet-100/60"
+                      >
+                        Apply
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -23,6 +23,9 @@ import {
   GraduationCap,
   BookOpen,
   Trophy,
+  Flame,
+  Zap,
+  Users,
   Lock,
   ChevronsLeft,
   ChevronsRight,
@@ -435,6 +438,37 @@ export default function ExploreProjectsPage() {
       .map((c) => c.name);
   }, [exploreConfig]);
 
+  // Group projects into sequential lifecycle stacks: Recruiting -> In Progress -> Completed
+  const { recruitingProjects, inProgressProjects, completedProjects } = useMemo(() => {
+    const normalizeStatus = (status?: string): 'Recruiting' | 'In Progress' | 'Completed' => {
+      const s = (status || '').toLowerCase().trim();
+      if (s === 'completed' || s === 'finished' || s === 'archived') return 'Completed';
+      if (s === 'in progress' || s === 'in_progress' || s === 'building') return 'In Progress';
+      return 'Recruiting';
+    };
+
+    const recruiting: Project[] = [];
+    const inProgress: Project[] = [];
+    const completed: Project[] = [];
+
+    projects.forEach((p) => {
+      const st = normalizeStatus(p.status);
+      if (st === 'Recruiting') {
+        recruiting.push(p);
+      } else if (st === 'In Progress') {
+        inProgress.push(p);
+      } else {
+        completed.push(p);
+      }
+    });
+
+    return {
+      recruitingProjects: recruiting,
+      inProgressProjects: inProgress,
+      completedProjects: completed,
+    };
+  }, [projects]);
+
   const startRecord = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRecord = Math.min(currentPage * pageSize, totalCount);
 
@@ -582,17 +616,121 @@ export default function ExploreProjectsPage() {
               </div>
             </div>
           ) : (
-            /* Project Cards Grid with Blur-to-Focus Card Stacking */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-              {projects.map((project, idx) => (
-                <div
-                  key={project.id}
-                  className="blur-to-focus-card h-full"
-                  style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                >
-                  <ProjectCard project={project} />
-                </div>
-              ))}
+            /* Sequential Vertical Stacks: Recruiting -> In Progress -> Completed */
+            <div className="space-y-8">
+              {/* Stack 1: Actively Recruiting (Omitted if 0 projects) */}
+              {recruitingProjects.length > 0 && (
+                <section className="rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-5 sm:p-7 shadow-xs space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-charcoal-800 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <Flame className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Actively Recruiting Squads
+                          </h2>
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                            {recruitingProjects.length}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Student initiatives seeking co-builders, developers, and designers with open squad positions.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                    {recruitingProjects.map((project, idx) => (
+                      <div
+                        key={project.id}
+                        className="blur-to-focus-card h-full"
+                        style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                      >
+                        <ProjectCard project={project} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Stack 2: In-Progress Builds (Omitted if 0 projects) */}
+              {inProgressProjects.length > 0 && (
+                <section className="rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-5 sm:p-7 shadow-xs space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-charcoal-800 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                            In-Progress Builds
+                          </h2>
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-700">
+                            {inProgressProjects.length}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Active campus projects in active development, milestone sprints, and engineering execution.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                    {inProgressProjects.map((project, idx) => (
+                      <div
+                        key={project.id}
+                        className="blur-to-focus-card h-full"
+                        style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                      >
+                        <ProjectCard project={project} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Stack 3: Completed & Shipped (Omitted if 0 projects) */}
+              {completedProjects.length > 0 && (
+                <section className="rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-white/70 dark:bg-charcoal-900/60 p-5 sm:p-7 shadow-xs space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-charcoal-800 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <Trophy className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Completed & Shipped Showcase
+                          </h2>
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">
+                            {completedProjects.length}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Shipped applications, hackathon-winning submissions, and production-ready collegiate software.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                    {completedProjects.map((project, idx) => (
+                      <div
+                        key={project.id}
+                        className="blur-to-focus-card h-full"
+                        style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                      >
+                        <ProjectCard project={project} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
           )}
         </div>
