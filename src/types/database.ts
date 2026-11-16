@@ -349,6 +349,16 @@ export interface Hackathon {
   custom_cta_text?: string;
   promo_video_url?: string;
   theme_preset?: string;
+  about_sponsor_headline?: string;
+  about_sponsor_description?: string;
+  event_benefits?: string[];
+  gift_callout_text?: string;
+  guidelines_url?: string;
+  sponsor_website_url?: string;
+  submission_cutoff?: string;
+  result_announcement?: string;
+  enable_recruiter_qr_pass?: boolean;
+  enableRecruiterQrPass?: boolean;
 }
 
 export interface SavedHackathon {
