@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { playArcadeCoinSound } from '@/lib/arena/soundEffects';
 
 interface MiniArcadeLaptopProps {
@@ -10,8 +11,17 @@ interface MiniArcadeLaptopProps {
 }
 
 export function MiniArcadeLaptop({ onLaunchBattle, className = '', isLive = true }: MiniArcadeLaptopProps) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
+
+  // Eagerly prefetch the /arena bundle as soon as laptop is mounted in the viewport
+  useEffect(() => {
+    try {
+      router.prefetch('/arena');
+    } catch {}
+  }, [router]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -294,16 +304,26 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '', isLive = true
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsLaunching(true);
     playArcadeCoinSound();
     onLaunchBattle();
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    try {
+      router.prefetch('/arena');
+    } catch {}
   };
 
   return (
     <div
       onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative group cursor-pointer select-none shrink-0 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center ${className}`}
+      className={`relative group cursor-pointer select-none shrink-0 transition-all duration-200 hover:scale-110 active:scale-90 flex items-center ${
+        isLaunching ? 'scale-95 opacity-80' : ''
+      } ${className}`}
       title="⚔️ Battle Arena: 1v1 & 2v2 Live Code Duels (Click to Enter)"
       role="button"
       tabIndex={0}
