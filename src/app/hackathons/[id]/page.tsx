@@ -48,6 +48,7 @@ import {
   Terminal,
   Headphones,
   Mail,
+  ChevronRight,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
@@ -73,6 +74,13 @@ function formatEventDateTime(dateStr?: string | null): string {
   });
   return `${dateFormatted} • ${timeFormatted}`;
 }
+function formatShortDate(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return String(dateStr);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 
 export default function HackathonDetailPage() {
   const params = useParams();
@@ -875,99 +883,232 @@ export default function HackathonDetailPage() {
       {/* UNSTOP-STYLE STANDALONE BILLBOARD BANNER CARD (Zero Text Overlap)         */}
       {/* ========================================================================= */}
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
-        <div className={`w-full rounded-3xl overflow-hidden border bg-[#060813] shadow-2xl relative ${
-          sponsoredMeta.isSponsored ? `${sponsoredMeta.theme.cardBorder} ${sponsoredMeta.theme.cardGlow}` : 'border-charcoal-750'
-        }`}>
-          {hackathon.banner_url ? (
-            <div className="relative w-full h-56 sm:h-72 md:h-88 lg:h-[360px] xl:h-[400px] 2xl:h-[440px] overflow-hidden">
-              <img
-                src={hackathon.banner_url}
-                alt={hackathon.title}
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/40 via-transparent to-black/10 pointer-events-none" />
+        {sponsoredMeta.isSponsored ? (
+          <div className="w-full rounded-3xl overflow-hidden border border-cyan-500/30 bg-[#040711] shadow-[0_0_50px_-12px_rgba(6,182,212,0.25)] relative p-6 sm:p-8 lg:p-10 transition-all">
+            {/* 3D Wave Volumetric Lighting SVG */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <svg
+                className="absolute w-full h-full inset-0 opacity-80"
+                viewBox="0 0 1440 450"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
+                    <stop offset="45%" stopColor="#3b82f6" stopOpacity="0.25" />
+                    <stop offset="80%" stopColor="#06b6d4" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
+                  </linearGradient>
+                  <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="35" />
+                  </filter>
+                </defs>
+                <path
+                  d="M-50 400 C 350 420, 600 250, 950 350 C 1200 420, 1380 200, 1500 260 L 1500 500 L -50 500 Z"
+                  fill="url(#waveGrad)"
+                  filter="url(#waveBlur)"
+                />
+                <path
+                  d="M-50 360 C 400 380, 700 220, 1050 300 C 1280 360, 1400 240, 1500 280"
+                  stroke="rgba(6, 182, 212, 0.45)"
+                  strokeWidth="2.5"
+                  fill="none"
+                />
+                <path
+                  d="M-50 375 C 380 400, 720 235, 1030 315 C 1260 375, 1380 255, 1500 295"
+                  stroke="rgba(59, 130, 246, 0.3)"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+              </svg>
+              {/* Radial center ambient highlight */}
+              <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
             </div>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-500/15 via-violet-600/10 to-transparent" />
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
-              <div className="relative z-10 space-y-2">
-                <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                  Collegiate Hackathon Series &bull; 2026
-                </span>
-                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-wider uppercase font-mono drop-shadow-md">
-                  {hackathon.title}
-                </h2>
-                <p className="text-xs text-slate-400 font-mono">
-                  Organized by {hackathon.organizer}
-                </p>
-              </div>
-            </div>
-          )}
 
-          {/* Floating Brand Emblem & Partner Pill on Top of Banner for Sponsored Events */}
-          {sponsoredMeta.isSponsored && (
-            <div className="absolute top-4 inset-x-4 flex items-center justify-between z-20 pointer-events-none flex-wrap gap-2">
-              <div className="flex items-center gap-3 p-2 pr-4 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/20 shadow-2xl pointer-events-auto">
-                {sponsoredMeta.sponsorLogoUrl ? (
-                  <div className="w-10 h-10 rounded-xl bg-white p-1.5 flex items-center justify-center shadow-md shrink-0">
-                    <img
-                      src={sponsoredMeta.sponsorLogoUrl}
-                      alt={sponsoredMeta.companyName || 'Sponsor'}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
+            {/* Giant 3D Translucent Watermark Logo (Right Background) */}
+            {sponsoredMeta.sponsorLogoUrl && (
+              <div className="absolute -right-8 -bottom-12 w-80 h-80 sm:w-96 sm:h-96 md:w-[440px] md:h-[440px] opacity-[0.14] pointer-events-none select-none flex items-center justify-center">
+                <img
+                  src={sponsoredMeta.sponsorLogoUrl}
+                  alt=""
+                  className="w-full h-full object-contain filter drop-shadow-[0_0_40px_rgba(6,182,212,0.4)]"
+                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+
+            {/* Main Keynote Content: 3 Zone Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative z-10">
+              
+              {/* ZONE 1 (Left 5 Cols): Title, Sponsor Badge, Tagline, Quick Chips */}
+              <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 shadow-sm w-fit">
+                    <span className="text-cyan-400">☆</span>
+                    <span>Sponsored Event</span>
                   </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-md shrink-0">
-                    <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300">
-                      {sponsoredMeta.sponsorTier || 'Official Title Sponsor'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-black text-white drop-shadow-sm">
-                      {sponsoredMeta.companyName || hackathon.organizer}
-                    </span>
-                    {sponsoredMeta.partnerName2 && (
-                      <span className="text-xs text-slate-300 font-mono flex items-center gap-1.5 pl-2 border-l border-white/20">
-                        <span className="text-slate-500 font-bold">×</span>
-                        {sponsoredMeta.partnerLogo2 && (
+
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+                    {hackathon.title}
+                  </h1>
+
+                  <div className="flex items-center gap-3 pt-1 flex-wrap">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-400">Powered by</span>
+                    <div className="flex items-center gap-2">
+                      {sponsoredMeta.sponsorLogoUrl && (
+                        <div className="h-6 max-w-[120px] flex items-center shrink-0">
                           <img
-                            src={sponsoredMeta.partnerLogo2}
-                            alt={sponsoredMeta.partnerName2}
-                            className="h-4 w-auto object-contain max-w-[70px]"
+                            src={sponsoredMeta.sponsorLogoUrl}
+                            alt={sponsoredMeta.companyName || 'Sponsor'}
+                            className="h-full w-auto object-contain max-h-6"
                             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                           />
-                        )}
-                        <strong className="text-white font-bold">{sponsoredMeta.partnerName2}</strong>
+                        </div>
+                      )}
+                      <span className="text-sm sm:text-base font-extrabold text-white">
+                        {sponsoredMeta.companyName || hackathon.organizer}
                       </span>
-                    )}
+                    </div>
+                  </div>
+
+                  <p className="text-xs sm:text-sm font-semibold text-cyan-400 font-mono tracking-wide">
+                    {sponsoredMeta.tagline || 'Build. Innovate. Grow. —'}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 pt-2 text-[11px] sm:text-xs text-slate-300 font-medium">
+                  <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
+                    <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>
+                      {formatShortDate(hackathon.start_date)} - {formatShortDate(hackathon.end_date)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
+                    <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="truncate max-w-[180px]">{hackathon.location || 'Global Virtual / Discord Hub'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
+                    <Users className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pointer-events-auto">
-                <span className="px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-950/90 text-cyan-300 border border-cyan-500/40 backdrop-blur-md shadow-lg hidden sm:flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>
-                    Telemetry: <strong className="text-white">{sponsoredMeta.liveShortlistedCount || 18} Shortlisted</strong> &bull; <strong className="text-amber-300">{sponsoredMeta.liveActiveSquadsCount || 340} in Sandbox</strong>
+              {/* ZONE 2 (Center 4 Cols): About the Sponsor Card */}
+              <div className="lg:col-span-4 rounded-2xl p-5 sm:p-6 bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 block">
+                    About the Sponsor
                   </span>
-                </span>
-                <span className="px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-amber-500/30 text-amber-200 border border-amber-400/50 backdrop-blur-md shadow-lg">
-                  ⭐ Priority #{sponsoredMeta.priorityRank}
-                </span>
+
+                  <div className="flex items-center gap-3">
+                    {sponsoredMeta.sponsorLogoUrl ? (
+                      <div className="w-10 h-10 rounded-xl bg-white/10 p-1.5 flex items-center justify-center shrink-0 border border-white/15 shadow-inner">
+                        <img
+                          src={sponsoredMeta.sponsorLogoUrl}
+                          alt={sponsoredMeta.companyName || 'Sponsor'}
+                          className="w-full h-full object-contain"
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-bold shrink-0">
+                        ⚡
+                      </div>
+                    )}
+                    <span className="text-base sm:text-lg font-black text-white leading-tight">
+                      {sponsoredMeta.companyName || 'Official Sponsor'}
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                    {sponsoredMeta.aboutSponsorHeadline || "Accelerating what's next."}
+                  </h4>
+
+                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
+                    {sponsoredMeta.aboutSponsorDescription ||
+                      `${sponsoredMeta.companyName || 'Our sponsor'} empowers developers, students and innovators to build for what's next.`}
+                  </p>
+                </div>
+
+                <div>
+                  <a
+                    href={
+                      sponsoredMeta.sponsorWebsiteUrl
+                        ? (/^https?:\/\//i.test(sponsoredMeta.sponsorWebsiteUrl)
+                            ? sponsoredMeta.sponsorWebsiteUrl
+                            : `https://${sponsoredMeta.sponsorWebsiteUrl}`)
+                        : (hackathon.website_url || '#')
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-white transition-all w-fit shadow-sm"
+                  >
+                    <span>Learn More</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                  </a>
+                </div>
               </div>
+
+              {/* ZONE 3 (Right 3 Cols): Event Benefits Card */}
+              <div className="lg:col-span-3 rounded-2xl p-5 sm:p-6 bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-xl flex flex-col space-y-3.5 justify-start">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 block">
+                  Event Benefits
+                </span>
+
+                <ul className="space-y-2.5">
+                  {(
+                    (sponsoredMeta.eventBenefits && sponsoredMeta.eventBenefits.length > 0)
+                      ? sponsoredMeta.eventBenefits
+                      : [
+                          `Exclusive ${sponsoredMeta.companyName || 'Sponsor'} Credits (up to $500)`,
+                          'Top Performers Get Internships & Swags',
+                          `Mentorship from ${sponsoredMeta.companyName ? sponsoredMeta.companyName + ' Experts' : 'Industry Experts'}`,
+                          `Priority Access to ${sponsoredMeta.companyName || 'Developer'} Tools`,
+                        ]
+                  ).map((benefit, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-xs text-slate-200">
+                      <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                      <span className="leading-snug">{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="w-full rounded-3xl overflow-hidden border border-charcoal-750 bg-[#060813] shadow-2xl relative">
+            {hackathon.banner_url ? (
+              <div className="relative w-full h-56 sm:h-72 md:h-88 lg:h-[360px] xl:h-[400px] 2xl:h-[440px] overflow-hidden">
+                <img
+                  src={hackathon.banner_url}
+                  alt={hackathon.title}
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/40 via-transparent to-black/10 pointer-events-none" />
+              </div>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-500/15 via-violet-600/10 to-transparent" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
+                <div className="relative z-10 space-y-2">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                    Collegiate Hackathon Series &bull; 2026
+                  </span>
+                  <h2 className="text-2xl sm:text-4xl font-black text-white tracking-wider uppercase font-mono drop-shadow-md">
+                    {hackathon.title}
+                  </h2>
+                  <p className="text-xs text-slate-400 font-mono">
+                    Organized by {hackathon.organizer}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -979,288 +1120,8 @@ export default function HackathonDetailPage() {
           {/* LEFT 8 COLUMNS: Event Details, Badges & Tabs */}
           <div className="lg:col-span-8 space-y-6">
 
-            {/* Bespoke Corporate & Enterprise Sponsored Showcase (Full Brand Immersion) */}
-            {sponsoredMeta.isSponsored && (
-              <div className={`p-6 sm:p-7 rounded-3xl bg-gradient-to-br ${sponsoredMeta.theme.heroGradient} border-2 ${sponsoredMeta.theme.cardBorder} shadow-2xl space-y-5 relative overflow-hidden`}>
-                <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-                
-                {/* Header Row: Sponsor Title & Fast-Track Badge */}
-                <div className="flex items-center justify-between gap-3 flex-wrap relative z-10 border-b border-white/10 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-amber-400/20 border border-amber-400/40 text-amber-300">
-                      <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-mono font-black uppercase tracking-widest text-amber-300 block">
-                        Enterprise Hiring &amp; Innovation Challenge
-                      </span>
-                      <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                        Hosted by {sponsoredMeta.companyName || hackathon.organizer}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Verified Corporate Partner</span>
-                  </span>
-                </div>
-
-                {/* Sponsor Brand Tagline */}
-                {sponsoredMeta.tagline && (
-                  <div className="relative z-10 text-sm sm:text-base font-semibold text-white/95 leading-relaxed bg-black/30 p-4 rounded-2xl border border-white/10">
-                    &ldquo;{sponsoredMeta.tagline}&rdquo;
-                  </div>
-                )}
-
-                {/* Fast-Track Hiring & Compensation Hub */}
-                {(sponsoredMeta.hiringRoles || sponsoredMeta.hiringPackage) && (
-                  <div className="p-4 rounded-2xl bg-black/40 border border-amber-400/30 space-y-2 relative z-10">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5" />
-                        <span>Direct Fast-Track Recruitment Guarantee</span>
-                      </span>
-                      {sponsoredMeta.hiringPackage && (
-                        <span className="text-xs font-mono font-black px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-200 border border-amber-400/40">
-                          💼 {sponsoredMeta.hiringPackage}
-                        </span>
-                      )}
-                    </div>
-                    {sponsoredMeta.hiringRoles && (
-                      <p className="text-xs sm:text-sm text-slate-200 font-medium">
-                        Targeting Roles: <strong className="text-white font-bold">{sponsoredMeta.hiringRoles}</strong>
-                      </p>
-                    )}
-                    <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                      🌟 Top finalist squads bypass preliminary ATS screening and unlock direct technical interview rounds with senior engineering leaders.
-                    </p>
-                  </div>
-                )}
-
-                {/* 4-Pillar Executive Perks Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 relative z-10 pt-1">
-                  <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 shrink-0">
-                      <Trophy className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-0.5 min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">Cash Prize Escrow</span>
-                      <p className="text-xs font-black text-amber-300 truncate">{hackathon.prize_pool || 'Competitive Pool'}</p>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 shrink-0">
-                      <Briefcase className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-0.5 min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">Career Fast-Track</span>
-                      <p className="text-xs font-black text-cyan-300 truncate">Direct PPI &amp; Interviews</p>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 shrink-0">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-0.5 min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">Executive Mentorship</span>
-                      <p className="text-xs font-black text-purple-300 truncate">1:1 Architecture Reviews</p>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shrink-0">
-                      <Award className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-0.5 min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">Sponsor Credits &amp; Perx</span>
-                      <p className="text-xs font-black text-emerald-300 truncate">Cloud Grants &amp; Hardware</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dedicated Multi-Track Sponsored Bounties */}
-                <div className="pt-3 border-t border-white/10 relative z-10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Dedicated Track Bounties &amp; Escrow Pools</span>
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-400">Total Escrow: <strong className="text-emerald-400 font-bold">{hackathon.prize_pool || '$25,000 USD'}</strong></span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(sponsoredMeta.tracks && sponsoredMeta.tracks.length > 0 ? sponsoredMeta.tracks : [
-                      { title: 'Track 1: Cloud & AI Architecture', bounty: '$5,000 USD + Cloud Credits', description: 'Build high-scale distributed applications and generative AI solutions on partner infrastructure.' },
-                      { title: 'Track 2: High-Velocity Engineering', bounty: '$5,000 USD + Direct PPIs', description: 'Lowest latency API routing, automated failovers, and robust production-ready design.' }
-                    ]).map((track, i) => (
-                      <div key={i} className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2 hover:border-amber-400/40 transition-colors">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-black text-white">{track.title}</span>
-                          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
-                            {track.bounty}
-                          </span>
-                        </div>
-                        {track.description && (
-                          <p className="text-[11px] text-slate-300 leading-relaxed">{track.description}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Developer Sandbox & Tooling Dock */}
-                <div className="pt-3 border-t border-white/10 relative z-10 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
-                      <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Official Developer Sandbox &amp; Starter Tooling</span>
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
-                        ⚡ {sponsoredMeta.developerSandbox?.latencyMs || 130}ms SLA Active
-                      </span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        {sponsoredMeta.developerSandbox?.perks || '$1,000 Cloud Credits per Squad'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-cyan-500/30 space-y-3 shadow-inner">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="flex items-center gap-2 font-mono text-xs">
-                        <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-bold text-[10px]">API ENDPOINT</span>
-                        <code className="text-slate-200 select-all font-mono text-xs">
-                          {sponsoredMeta.developerSandbox?.endpoint || 'POST /v2/fintech/sprint/sandbox'}
-                        </code>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const ep = sponsoredMeta.developerSandbox?.endpoint || 'POST /v2/fintech/sprint/sandbox';
-                          navigator.clipboard.writeText(`curl -X POST https://api.kollabrix.in${ep.replace('POST ', '')} -H "Authorization: Bearer SPRINT_KEY"`);
-                          setCopiedEndpoint(true);
-                          setTimeout(() => setCopiedEndpoint(false), 2000);
-                        }}
-                        className="px-3 py-1 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-xs font-mono text-slate-200 border border-white/10 flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        {copiedEndpoint ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-emerald-300">cURL Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5 text-slate-400" />
-                            <span>Copy cURL Request</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10 flex-wrap">
-                      <span className="text-[11px] text-slate-400">
-                        Clone the official template repo with pre-configured SDKs, mock stubs, and test suites:
-                      </span>
-                      <a
-                        href={sponsoredMeta.developerSandbox?.starterRepoUrl || 'https://github.com/kollabrix/enterprise-sprint-starter'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white font-mono text-xs font-bold transition-colors"
-                      >
-                        <span>Starter Repository</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Executive Fast-Track Hiring Ladder */}
-                <div className="pt-3 border-t border-white/10 relative z-10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Executive Fast-Track Hiring Ladder</span>
-                    </span>
-                    <span className="text-[10px] font-mono font-bold text-emerald-400">
-                      Direct ATS Bypass Guarantee
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {(sponsoredMeta.hiringLadder && sponsoredMeta.hiringLadder.length > 0 ? sponsoredMeta.hiringLadder : [
-                      { level: 1, title: 'Level 1: Qualifier', perks: '$1,000 Cloud Credits + Sandbox Keys' },
-                      { level: 2, title: 'Level 2: Finalist Hangar', perks: '1:1 Architecture Review with VP of Engineering' },
-                      { level: 3, title: 'Level 3: Grand Laureate', perks: 'Direct Technical Interview Bypass + ₹10,00,000 Escrow' }
-                    ]).map((step, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3.5 rounded-2xl border space-y-1.5 ${
-                          step.level === 3
-                            ? 'bg-amber-500/10 border-amber-400/40 text-amber-200'
-                            : 'bg-black/30 border-white/10 text-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded-md bg-white/10">
-                            LEVEL {step.level}
-                          </span>
-                          {step.level === 3 && (
-                            <span className="text-[10px] font-mono font-bold text-amber-300">
-                              {sponsoredMeta.hiringPackage || '₹18-35 LPA FAST-TRACK'}
-                            </span>
-                          )}
-                        </div>
-                        <h5 className="text-xs font-black text-white">{step.title}</h5>
-                        <p className="text-[11px] text-slate-300 leading-snug">{step.perks}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Additional Specific Recruitment Perks */}
-                {sponsoredMeta.recruitmentPerks.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1 border-t border-white/10 relative z-10">
-                    {sponsoredMeta.recruitmentPerks.map((perk, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 rounded-xl bg-black/40 border border-white/15 text-xs font-mono text-amber-200 font-semibold flex items-center gap-1.5 shadow-xs"
-                      >
-                        <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
-                        <span>{perk}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Sponsor Promotional Teaser Video (Embedded Player if provided) */}
-                {sponsoredMeta.promoVideoUrl && (
-                  <div className="pt-2 relative z-10 space-y-2">
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
-                      <span>Official Sponsor Teaser &amp; Kickoff Briefing</span>
-                    </span>
-                    <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-black">
-                      <iframe
-                        src={
-                          sponsoredMeta.promoVideoUrl.includes('watch?v=')
-                            ? sponsoredMeta.promoVideoUrl.replace('watch?v=', 'embed/')
-                            : sponsoredMeta.promoVideoUrl
-                        }
-                        title={`${sponsoredMeta.companyName} Teaser`}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
             {/* Header Block with Title & College Emblem */}
+            
             <div className="p-6 rounded-3xl bg-charcoal-900/90 border border-charcoal-800 space-y-4 shadow-xl">
               {/* Header Status Row with Offline/Online and Unstop Action Icons */}
               <div className="flex items-center justify-between gap-4 flex-wrap pb-1">
@@ -1930,6 +1791,44 @@ export default function HackathonDetailPage() {
                   </div>
                 )}
 
+                {/* Header Registration Status & Count for Sponsored / Modern View */}
+                {sponsoredMeta.isSponsored && (
+                  <div className="flex items-center justify-between pb-1">
+                    <span className={`flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${
+                      countdown.isClosed
+                        ? 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                        : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${countdown.isClosed ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'}`} />
+                      <span>{countdown.isClosed ? 'Registration Closed' : 'Registration Open'}</span>
+                    </span>
+                    <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>{sponsoredMeta.isSponsored ? `${registeredCount > 0 ? registeredCount : '4.8k'} Registered` : `${registeredCount} Registered`}</span>
+                    </span>
+                  </div>
+                )}
+
+                {/* Gift Callout Card for Sponsored Events */}
+                {sponsoredMeta.isSponsored && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/70 via-slate-900/80 to-slate-950 border border-cyan-500/40 flex items-center justify-between gap-3 shadow-lg group hover:border-cyan-400/60 transition-all cursor-pointer">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0 text-base shadow-sm">
+                        🎁
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 block truncate">
+                          Sponsored by {sponsoredMeta.companyName || 'Corporate Partner'}
+                        </span>
+                        <p className="text-xs font-bold text-white truncate">
+                          {sponsoredMeta.giftCalloutText || `Get up to $500 in ${sponsoredMeta.companyName || 'Sponsor'} Credits!`}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-cyan-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                )}
+
                 {/* Primary Action Button */}
                 <div className="pt-1">
                   {isEnrolled ? (
@@ -1960,7 +1859,7 @@ export default function HackathonDetailPage() {
                         countdown.isClosed || !eligibilityEvaluation.isEligible
                           ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
                           : sponsoredMeta.isSponsored
-                          ? `bg-gradient-to-r ${sponsoredMeta.theme.buttonGradient} shadow-lg ring-1 ring-white/20 cursor-pointer active:scale-[0.98]`
+                          ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-cyan-500/25 ring-1 ring-cyan-300/40 cursor-pointer active:scale-[0.98]'
                           : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 cursor-pointer active:scale-[0.98]'
                       }`}
                     >
@@ -1973,7 +1872,9 @@ export default function HackathonDetailPage() {
                       ) : hackathon.access_type === 'private' ? (
                         <span>Enter Passcode &amp; Register</span>
                       ) : sponsoredMeta.isSponsored ? (
-                        <span>{sponsoredMeta.customCtaText || 'Apply & Register Squad'}</span>
+                        <span className="flex items-center gap-1.5 font-black">
+                          {sponsoredMeta.customCtaText || 'Register Now'} <ArrowRight className="w-4 h-4" />
+                        </span>
                       ) : (
                         <span>Register</span>
                       )}
@@ -1981,7 +1882,7 @@ export default function HackathonDetailPage() {
                   )}
                 </div>
 
-                {/* Registration Closes Indicator Card (Blue Marked Area in Image 3) */}
+                {/* Registration Closes Indicator Card */}
                 <div className="p-3.5 rounded-2xl bg-charcoal-950/90 border border-charcoal-800 hover:border-charcoal-700 transition-all flex items-center justify-between gap-3 shadow-inner">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${countdown.isClosed ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
@@ -2005,7 +1906,7 @@ export default function HackathonDetailPage() {
                   </span>
                 </div>
 
-                {/* Unstop Social Proof Registration Counter (Real Registered Count) */}
+                {/* Registered Counter */}
                 <div className="flex items-center justify-center gap-2 text-xs text-slate-300 font-medium pt-1">
                   <Users className="w-4 h-4 text-cyan-400" />
                   <span>
@@ -2020,7 +1921,9 @@ export default function HackathonDetailPage() {
                 <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-300 font-medium">Total Prize Pool</span>
-                    <strong className="text-amber-300 font-extrabold text-xs">{hackathon.prize_pool || '₹50,000 + Incubation'}</strong>
+                    <strong className="text-amber-300 font-extrabold text-xs">
+                      {hackathon.prize_pool || (sponsoredMeta.isSponsored ? `₹1,50,000 + ${sponsoredMeta.companyName || 'Sponsor'} Credits` : '₹50,000 + Incubation')}
+                    </strong>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-300 font-medium">Team Size</span>
@@ -2029,23 +1932,27 @@ export default function HackathonDetailPage() {
                   <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2">
                     <span className="text-slate-300 font-medium">Submission Cut-off</span>
                     <strong className="text-amber-200 font-bold font-mono text-xs">
-                      {formatEventDateTime(hackathon.submission_deadline || (hackathon as any).submissionDeadline || hackathon.end_date)}
+                      {sponsoredMeta.submissionCutoff || formatEventDateTime(hackathon.submission_deadline || (hackathon as any).submissionDeadline || hackathon.end_date)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2">
                     <span className="text-slate-300 font-medium">Result Announcement</span>
                     <strong className="text-emerald-200 font-bold font-mono text-xs">
-                      {formatEventDateTime(hackathon.results_date || (hackathon as any).resultsDate || hackathon.end_date)}
+                      {sponsoredMeta.resultAnnouncement || formatEventDateTime(hackathon.results_date || (hackathon as any).resultsDate || hackathon.end_date)}
                     </strong>
                   </div>
                 </div>
 
-                {hackathon.website_url && !hackathon.website_url.includes('/h/') && (
+                {(sponsoredMeta.guidelinesUrl || (hackathon.website_url && !hackathon.website_url.includes('/h/'))) && (
                   <a
                     href={
-                      /^https?:\/\//i.test(hackathon.website_url.trim())
-                        ? hackathon.website_url.trim()
-                        : `https://${hackathon.website_url.trim()}`
+                      sponsoredMeta.guidelinesUrl
+                        ? (/^https?:\/\//i.test(sponsoredMeta.guidelinesUrl.trim())
+                            ? sponsoredMeta.guidelinesUrl.trim()
+                            : `https://${sponsoredMeta.guidelinesUrl.trim()}`)
+                        : (/^https?:\/\//i.test(hackathon.website_url.trim())
+                            ? hackathon.website_url.trim()
+                            : `https://${hackathon.website_url.trim()}`)
                     }
                     target="_blank"
                     rel="noopener noreferrer"
@@ -2054,8 +1961,8 @@ export default function HackathonDetailPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full justify-center text-xs font-semibold text-slate-200 hover:text-white"
-                      rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                      className="w-full justify-center text-xs font-semibold text-slate-200 hover:text-white bg-slate-900/60 border-slate-700 hover:border-cyan-500/50"
+                      rightIcon={<ExternalLink className="w-3.5 h-3.5 text-cyan-400" />}
                     >
                       Official Guidelines &amp; Portal
                     </Button>

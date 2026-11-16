@@ -434,6 +434,14 @@ export async function POST(request: NextRequest) {
         candidate_pass_rank = 'TIER-1 ARCHITECT',
         live_shortlisted_count = 18,
         live_active_squads_count = 340,
+        sponsor_website_url = '',
+        about_sponsor_headline = '',
+        about_sponsor_description = '',
+        event_benefits = [],
+        gift_callout_text = '',
+        guidelines_url = '',
+        submission_cutoff = '',
+        result_announcement = '',
       } = body;
 
       if (!company_name || !title) {
@@ -486,6 +494,19 @@ export async function POST(request: NextRequest) {
         candidate_pass_rank: candidate_pass_rank?.trim() || 'TIER-1 ARCHITECT',
         live_shortlisted_count: parseInt(String(live_shortlisted_count)) || 18,
         live_active_squads_count: parseInt(String(live_active_squads_count)) || 340,
+        sponsor_website_url: sponsor_website_url?.trim() || null,
+        about_sponsor_headline: about_sponsor_headline?.trim() || null,
+        about_sponsor_description: about_sponsor_description?.trim() || null,
+        event_benefits: Array.isArray(event_benefits) && event_benefits.length > 0 ? event_benefits : [
+          `Exclusive ${company_name} Credits (up to $500)`,
+          'Top Performers Get Internships & Swags',
+          `Mentorship from ${company_name} Experts`,
+          `Priority Access to ${company_name} Tools`,
+        ],
+        gift_callout_text: gift_callout_text?.trim() || `Sponsored by ${company_name}: Get up to $500 in ${company_name} Credits!`,
+        guidelines_url: guidelines_url?.trim() || null,
+        submission_cutoff: submission_cutoff?.trim() || null,
+        result_announcement: result_announcement?.trim() || null,
         access_type,
         join_code: joinCode,
         min_team_size: 1,
@@ -778,6 +799,14 @@ export async function POST(request: NextRequest) {
         candidate_pass_rank,
         live_shortlisted_count,
         live_active_squads_count,
+        sponsor_website_url,
+        about_sponsor_headline,
+        about_sponsor_description,
+        event_benefits,
+        gift_callout_text,
+        guidelines_url,
+        submission_cutoff,
+        result_announcement,
       } = body;
 
       const perksArray = Array.isArray(recruitment_perks)
@@ -833,6 +862,14 @@ export async function POST(request: NextRequest) {
               candidate_pass_rank: candidate_pass_rank || metaObj.candidate_pass_rank || 'TIER-1 ARCHITECT',
               live_shortlisted_count: typeof live_shortlisted_count === 'number' ? live_shortlisted_count : (metaObj.live_shortlisted_count || 18),
               live_active_squads_count: typeof live_active_squads_count === 'number' ? live_active_squads_count : (metaObj.live_active_squads_count || 340),
+              sponsor_website_url: sponsor_website_url !== undefined ? sponsor_website_url : metaObj.sponsor_website_url,
+              about_sponsor_headline: about_sponsor_headline !== undefined ? about_sponsor_headline : metaObj.about_sponsor_headline,
+              about_sponsor_description: about_sponsor_description !== undefined ? about_sponsor_description : metaObj.about_sponsor_description,
+              event_benefits: event_benefits !== undefined ? event_benefits : metaObj.event_benefits,
+              gift_callout_text: gift_callout_text !== undefined ? gift_callout_text : metaObj.gift_callout_text,
+              guidelines_url: guidelines_url !== undefined ? guidelines_url : metaObj.guidelines_url,
+              submission_cutoff: submission_cutoff !== undefined ? submission_cutoff : metaObj.submission_cutoff,
+              result_announcement: result_announcement !== undefined ? result_announcement : metaObj.result_announcement,
             };
 
             const updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
