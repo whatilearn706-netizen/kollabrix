@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ShieldAlert,
+  Shield,
   Users,
   Calendar,
   Lock,
@@ -56,63 +57,79 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
   const [editingHackathonId, setEditingHackathonId] = useState<string | null>(null);
   const [isSubmittingSponsored, setIsSubmittingSponsored] = useState(false);
   const [sponsoredForm, setSponsoredForm] = useState({
-    company_name: 'Google Cloud',
-    company_logo: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Google_Cloud_logo.svg',
-    sponsor_website_url: 'https://cloud.google.com',
+    company_name: 'Kollabrix Innovation Ecosystem',
+    company_logo: 'https://kollabrix.in/icon.png',
+    sponsor_website_url: 'https://kollabrix.in',
     sponsor_tier: 'Official Title Sponsor',
-    brand_color: '#00E5FF',
-    title: 'Kollabrix Genesis Winter Sprint 2025',
-    tagline: 'Build. Innovate. Grow. —',
-    mode: 'Global Virtual / Discord Hub',
-    start_date: '',
-    end_date: '',
-    registration_deadline: '',
-    submission_cutoff: '21 Dec 2025 • 10:30 pm',
-    result_announcement: '21 Dec 2025 • 10:30 pm',
-    team_size_label: '1 - 4 Builders',
-    prize_pool: '₹1,50,000 + Google Cloud Credits',
-    hashtags: '#BuildWithGoogle, #CloudInnovation, #Hackathon2025, #OpenSource',
-    about_sponsor_headline: "Accelerating what's next.",
-    about_sponsor_description: "Google Cloud empowers developers, students and innovators to build for what's next.",
-    benefit_1: 'Exclusive Google Cloud Credits (up to $500)',
-    benefit_2: 'Top Performers Get Internships & Swags',
-    benefit_3: 'Mentorship from Google Experts',
-    benefit_4: 'Priority Access to Google Tools',
-    gift_callout_text: 'Sponsored by Google Cloud: Get up to $500 in Google Cloud Credits!',
-    guidelines_url: 'https://cloud.google.com/innovators',
+    brand_color: '#F59E0B',
+    title: 'Collegiate FastTrack Sprint: Winter 2026',
+    tagline: 'Build. Innovate. Grow. — 6-Hour High-Velocity Engineering Sprint',
+    description: '6-hour rapid engineering sprint: Prototyping viable digital infrastructure, campus productivity utilities, and intelligent tools with direct faculty review and cash grants.',
+    rules: '1. All code and designs must be created during the official 6-hour hackathon window.\n2. Projects must address one of the released problem statement tracks.\n3. Public GitHub repository with full commit history is required.\n4. Plagiarism leads to immediate disqualification.',
+    eligibility: 'Open to undergraduate and postgraduate students enrolled in accredited tertiary institutions. Inter-disciplinary teams encouraged.',
+    mode: 'Online',
+    location: 'Decentralized Campus Cloud / Virtual Submissions',
+    start_date: '2026-11-21T21:00',
+    end_date: '2026-11-22T03:00',
+    registration_deadline: '2026-11-21T20:30',
+    submission_deadline: '2026-11-22T03:00',
+    submission_cutoff: '22 Nov 2026 • 03:00 am',
+    result_announcement: '22 Nov 2026 • 06:00 pm',
+    min_team_size: 1,
+    max_team_size: 2,
+    team_size_label: '1 - 2 Builders',
+    prize_pool: '₹1,000 Equity-Free Winner Grant (Instant UPI Settlement)',
+    hashtags: '#CampusSystemsInfrastructure, #AppliedAI, #DeveloperTooling, #OpenConsumerWeb',
+    about_sponsor_headline: 'The Collegiate Innovation Network.',
+    about_sponsor_description: 'Kollabrix unites high-caliber student engineers, faculty researchers, and industry networks into an unstoppable collegiate build arena.',
+    benefit_1: '₹1,000 Direct Equity-Free Winner Grant',
+    benefit_2: 'Verified Certificate of Merit',
+    benefit_3: 'Faculty Jury Review & Critique',
+    benefit_4: 'Permanent Proof-of-Work Portfolio',
+    gift_callout_text: 'Endowed by Kollabrix Builders Fund: Instant UPI Winner Grant',
+    guidelines_url: 'https://kollabrix.in',
     priority_rank: 10,
-    banner_url: '',
+    banner_url: 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg',
+    enable_recruiter_qr_pass: false,
   });
 
   const handleOpenCreateSponsored = () => {
     setEditingHackathonId(null);
     setSponsoredForm({
-      company_name: 'Google Cloud',
-      company_logo: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Google_Cloud_logo.svg',
-      sponsor_website_url: 'https://cloud.google.com',
+      company_name: 'Kollabrix Innovation Ecosystem',
+      company_logo: 'https://kollabrix.in/icon.png',
+      sponsor_website_url: 'https://kollabrix.in',
       sponsor_tier: 'Official Title Sponsor',
-      brand_color: '#00E5FF',
-      title: 'Kollabrix Genesis Winter Sprint 2025',
-      tagline: 'Build. Innovate. Grow. —',
-      mode: 'Global Virtual / Discord Hub',
-      start_date: '',
-      end_date: '',
-      registration_deadline: '',
-      submission_cutoff: '21 Dec 2025 • 10:30 pm',
-      result_announcement: '21 Dec 2025 • 10:30 pm',
-      team_size_label: '1 - 4 Builders',
-      prize_pool: '₹1,50,000 + Google Cloud Credits',
-      hashtags: '#BuildWithGoogle, #CloudInnovation, #Hackathon2025, #OpenSource',
-      about_sponsor_headline: "Accelerating what's next.",
-      about_sponsor_description: "Google Cloud empowers developers, students and innovators to build for what's next.",
-      benefit_1: 'Exclusive Google Cloud Credits (up to $500)',
-      benefit_2: 'Top Performers Get Internships & Swags',
-      benefit_3: 'Mentorship from Google Experts',
-      benefit_4: 'Priority Access to Google Tools',
-      gift_callout_text: 'Sponsored by Google Cloud: Get up to $500 in Google Cloud Credits!',
-      guidelines_url: 'https://cloud.google.com/innovators',
+      brand_color: '#F59E0B',
+      title: 'Collegiate FastTrack Sprint: Winter 2026',
+      tagline: 'Build. Innovate. Grow. — 6-Hour High-Velocity Engineering Sprint',
+      description: '6-hour rapid engineering sprint: Prototyping viable digital infrastructure, campus productivity utilities, and intelligent tools with direct faculty review and cash grants.',
+      rules: '1. All code and designs must be created during the official 6-hour hackathon window.\n2. Projects must address one of the released problem statement tracks.\n3. Public GitHub repository with full commit history is required.\n4. Plagiarism leads to immediate disqualification.',
+      eligibility: 'Open to undergraduate and postgraduate students enrolled in accredited tertiary institutions. Inter-disciplinary teams encouraged.',
+      mode: 'Online',
+      location: 'Decentralized Campus Cloud / Virtual Submissions',
+      start_date: '2026-11-21T21:00',
+      end_date: '2026-11-22T03:00',
+      registration_deadline: '2026-11-21T20:30',
+      submission_deadline: '2026-11-22T03:00',
+      submission_cutoff: '22 Nov 2026 • 03:00 am',
+      result_announcement: '22 Nov 2026 • 06:00 pm',
+      min_team_size: 1,
+      max_team_size: 2,
+      team_size_label: '1 - 2 Builders',
+      prize_pool: '₹1,000 Equity-Free Winner Grant (Instant UPI Settlement)',
+      hashtags: '#CampusSystemsInfrastructure, #AppliedAI, #DeveloperTooling, #OpenConsumerWeb',
+      about_sponsor_headline: 'The Collegiate Innovation Network.',
+      about_sponsor_description: 'Kollabrix unites high-caliber student engineers, faculty researchers, and industry networks into an unstoppable collegiate build arena.',
+      benefit_1: '₹1,000 Direct Equity-Free Winner Grant',
+      benefit_2: 'Verified Certificate of Merit',
+      benefit_3: 'Faculty Jury Review & Critique',
+      benefit_4: 'Permanent Proof-of-Work Portfolio',
+      gift_callout_text: 'Endowed by Kollabrix Builders Fund: Instant UPI Winner Grant',
+      guidelines_url: 'https://kollabrix.in',
       priority_rank: 10,
-      banner_url: '',
+      banner_url: 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg',
+      enable_recruiter_qr_pass: false,
     });
     setIsSponsoredModalOpen(true);
   };
@@ -121,33 +138,46 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     const meta = extractSponsoredMeta(item);
     setEditingHackathonId(item.id);
     const benefits = meta.eventBenefits || [];
+    let cleanDesc = item.description || '';
+    if (cleanDesc.includes('<!-- HACKATHON_META:')) {
+      cleanDesc = cleanDesc.split('<!-- HACKATHON_META:')[0].trim();
+    }
+
     setSponsoredForm({
       company_name: meta.companyName || item.organizer || '',
-      company_logo: meta.sponsorLogoUrl || item.company_logo || '',
+      company_logo: meta.sponsorLogoUrl || item.company_logo || item.logo_url || '',
       sponsor_website_url: meta.sponsorWebsiteUrl || '',
       sponsor_tier: meta.sponsorTier || 'Official Title Sponsor',
-      brand_color: meta.brandColor || '#00E5FF',
+      brand_color: meta.brandColor || '#F59E0B',
       title: item.title || '',
       tagline: meta.tagline || 'Build. Innovate. Grow. —',
-      mode: item.mode || 'Global Virtual / Discord Hub',
+      description: cleanDesc || meta.tagline || item.title || '',
+      rules: item.rules || '1. All code and designs must be created during the official hackathon window.\n2. Projects must address one of the released problem statements.\n3. Public GitHub repository with full commit history is required.\n4. Plagiarism leads to immediate disqualification.',
+      eligibility: item.eligibility || 'Open to all college students & engineering developers.',
+      mode: item.mode || 'Online',
+      location: item.location || 'Decentralized Campus Cloud / Virtual Submissions',
       start_date: item.start_date ? item.start_date.slice(0, 16) : '',
       end_date: item.end_date ? item.end_date.slice(0, 16) : '',
       registration_deadline: item.registration_deadline ? item.registration_deadline.slice(0, 16) : '',
-      submission_cutoff: meta.submissionCutoff || '21 Dec 2025 • 10:30 pm',
-      result_announcement: meta.resultAnnouncement || '21 Dec 2025 • 10:30 pm',
+      submission_deadline: item.submission_deadline ? item.submission_deadline.slice(0, 16) : '',
+      submission_cutoff: meta.submissionCutoff || '22 Nov 2026 • 03:00 am',
+      result_announcement: meta.resultAnnouncement || '22 Nov 2026 • 06:00 pm',
+      min_team_size: item.min_team_size || 1,
+      max_team_size: item.max_team_size || 4,
       team_size_label: `${item.min_team_size || 1} - ${item.max_team_size || 4} Builders`,
-      prize_pool: item.prize_pool || '₹1,50,000 + Google Cloud Credits',
-      hashtags: Array.isArray(item.themes) ? item.themes.map((t: string) => `#${t.replace(/[^a-zA-Z0-9]/g, '')}`).join(' ') : '#BuildWithGoogle, #CloudInnovation',
-      about_sponsor_headline: meta.aboutSponsorHeadline || "Accelerating what's next.",
-      about_sponsor_description: meta.aboutSponsorDescription || `${meta.companyName || 'The sponsor'} empowers developers, students and innovators to build for what's next.`,
-      benefit_1: benefits[0] || `Exclusive ${meta.companyName || 'Sponsor'} Credits (up to $500)`,
-      benefit_2: benefits[1] || 'Top Performers Get Internships & Swags',
-      benefit_3: benefits[2] || `Mentorship from ${meta.companyName || 'Sponsor'} Experts`,
-      benefit_4: benefits[3] || `Priority Access to ${meta.companyName || 'Sponsor'} Tools`,
-      gift_callout_text: meta.giftCalloutText || `Sponsored by ${meta.companyName || 'Google Cloud'}: Get up to $500 in Credits!`,
+      prize_pool: item.prize_pool || '₹1,000 Equity-Free Winner Grant',
+      hashtags: Array.isArray(item.themes) ? item.themes.map((t: string) => `#${t.replace(/[^a-zA-Z0-9]/g, '')}`).join(', ') : '#CampusSystemsInfrastructure, #AppliedAI',
+      about_sponsor_headline: meta.aboutSponsorHeadline || "The Collegiate Innovation Network.",
+      about_sponsor_description: meta.aboutSponsorDescription || `${meta.companyName || 'Kollabrix'} empowers developers, students and innovators to build for what's next.`,
+      benefit_1: benefits[0] || '₹1,000 Direct Equity-Free Winner Grant',
+      benefit_2: benefits[1] || 'Verified Certificate of Merit',
+      benefit_3: benefits[2] || 'Faculty Jury Review & Critique',
+      benefit_4: benefits[3] || 'Permanent Proof-of-Work Portfolio',
+      gift_callout_text: meta.giftCalloutText || `Sponsored by ${meta.companyName || 'Kollabrix'}: Direct Winner Grant!`,
       guidelines_url: meta.guidelinesUrl || '',
       priority_rank: meta.priorityRank || 10,
       banner_url: item.banner_url || '',
+      enable_recruiter_qr_pass: Boolean(meta.enableRecruiterQrPass || false),
     });
     setIsSponsoredModalOpen(true);
   };
@@ -179,13 +209,19 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           brand_color: sponsoredForm.brand_color,
           title: sponsoredForm.title,
           tagline: sponsoredForm.tagline,
-          description: sponsoredForm.tagline,
+          description: sponsoredForm.description || sponsoredForm.tagline,
+          rules: sponsoredForm.rules,
+          eligibility: sponsoredForm.eligibility,
           mode: sponsoredForm.mode,
+          location: sponsoredForm.location,
           start_date: sponsoredForm.start_date || undefined,
           end_date: sponsoredForm.end_date || undefined,
           registration_deadline: sponsoredForm.registration_deadline || undefined,
+          submission_deadline: sponsoredForm.submission_deadline || undefined,
           submission_cutoff: sponsoredForm.submission_cutoff,
           result_announcement: sponsoredForm.result_announcement,
+          min_team_size: sponsoredForm.min_team_size,
+          max_team_size: sponsoredForm.max_team_size,
           prize_pool: sponsoredForm.prize_pool,
           themes: sponsoredForm.hashtags.split(',').map((s) => s.replace('#', '').trim()).filter(Boolean),
           about_sponsor_headline: sponsoredForm.about_sponsor_headline,
@@ -200,18 +236,19 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           guidelines_url: sponsoredForm.guidelines_url,
           priority_rank: sponsoredForm.priority_rank,
           banner_url: sponsoredForm.banner_url || undefined,
+          enable_recruiter_qr_pass: Boolean(sponsoredForm.enable_recruiter_qr_pass),
         }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to save sponsored hackathon theme.');
+        throw new Error(data.error || 'Failed to save sponsored hackathon.');
       }
 
       setStatusMessage({
         type: 'success',
         text: isEdit
-          ? `✨ Bespoke theme for "${sponsoredForm.company_name}" has been updated live!`
+          ? `✨ Sponsored Hackathon "${sponsoredForm.title}" updated live!`
           : `✨ Success! ${sponsoredForm.company_name} Sponsored Hackathon "${sponsoredForm.title}" is now LIVE with priority placement and custom theme!`,
       });
       setIsSponsoredModalOpen(false);
@@ -799,6 +836,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
         <Modal
           isOpen={isSponsoredModalOpen}
           onClose={() => setIsSponsoredModalOpen(false)}
+          maxWidth="5xl"
           title={
             editingHackathonId
               ? `🎨 Customize Brand Theme & Placement: ${sponsoredForm.company_name || 'Hackathon'}`
@@ -837,7 +875,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Google Cloud, AWS, Razorpay"
+                      placeholder="e.g. Kollabrix, Google Cloud, Razorpay"
                       value={sponsoredForm.company_name}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, company_name: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold"
@@ -845,13 +883,22 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                      Sponsor 3D / Brand Logo URL
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        Sponsor / Brand Logo URL
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setSponsoredForm({ ...sponsoredForm, company_logo: 'https://kollabrix.in/icon.png' })}
+                        className="text-[10px] text-amber-400 hover:text-amber-300 font-mono underline cursor-pointer"
+                      >
+                        ⚡ Use Kollabrix Logo
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2">
                       <input
                         type="url"
-                        placeholder="https://.../logo.svg or png"
+                        placeholder="https://kollabrix.in/icon.png"
                         value={sponsoredForm.company_logo}
                         onChange={(e) => setSponsoredForm({ ...sponsoredForm, company_logo: e.target.value })}
                         className="flex-1 px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono text-[11px]"
@@ -872,7 +919,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     </label>
                     <input
                       type="url"
-                      placeholder="https://cloud.google.com"
+                      placeholder="https://kollabrix.in"
                       value={sponsoredForm.sponsor_website_url}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, sponsor_website_url: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono text-[11px]"
@@ -886,9 +933,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1.5">
                         {[
+                          { name: 'Kollabrix Amber', color: '#F59E0B' },
                           { name: 'Electric Cyan', color: '#00E5FF' },
                           { name: 'Google Blue', color: '#3B82F6' },
-                          { name: 'AWS Gold', color: '#F59E0B' },
                           { name: 'Solana Purple', color: '#A855F7' },
                           { name: 'Crimson Red', color: '#EF4444' },
                           { name: 'Emerald', color: '#10B981' },
@@ -910,21 +957,21 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                         value={sponsoredForm.brand_color}
                         onChange={(e) => setSponsoredForm({ ...sponsoredForm, brand_color: e.target.value })}
                         className="w-20 px-2 py-1 rounded-lg bg-charcoal-900 border border-charcoal-750 text-[11px] font-mono text-center text-white"
-                        placeholder="#00E5FF"
+                        placeholder="#F59E0B"
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 2: EVENT HEADLINE & CORE LOGISTICS */}
+              {/* SECTION 2: EVENT HEADLINE, LOGISTICS & MEDIA (NORMAL HOST FOUNDATION) */}
               <div className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-3.5">
                 <div className="flex items-center justify-between border-b border-charcoal-750 pb-2">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                    <span>2. Event Headline &amp; Core Logistics</span>
+                    <span>2. Event Headline, Overview &amp; 16:9 Banner</span>
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">Step 2 of 4</span>
+                  <span className="text-[10px] font-mono text-amber-400">Step 2 of 5</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -935,7 +982,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Kollabrix Genesis Winter Sprint 2025"
+                      placeholder="e.g. Collegiate FastTrack Sprint: Winter 2026"
                       value={sponsoredForm.title}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, title: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-bold"
@@ -948,7 +995,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Build. Innovate. Grow. —"
+                      placeholder="e.g. Build. Innovate. Grow. — 6-Hour High-Velocity Sprint"
                       value={sponsoredForm.tagline}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, tagline: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400"
@@ -956,21 +1003,57 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   </div>
                 </div>
 
-                <div className="pt-1 border-t border-charcoal-800">
+                <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                    Event Banner Image URL (16:9 Recommended)
+                    Event Overview &amp; Problem Scope
                   </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://images.unsplash.com/... or https://kollabrix.in/banner.png"
-                      value={sponsoredForm.banner_url}
-                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, banner_url: e.target.value })}
-                      className="flex-1 px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono text-[11px]"
-                    />
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the collegiate objectives, challenges, and target builder tracks..."
+                    value={sponsoredForm.description}
+                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, description: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="pt-1 border-t border-charcoal-800 space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-1">
+                    <label className="text-[11px] font-bold text-slate-300">
+                      Event Banner Image URL (16:9 Recommended)
+                    </label>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setSponsoredForm({ ...sponsoredForm, banner_url: 'https://kollabrix.in/brand/kollabrix-holographic-banner.jpg' })}
+                        className="px-2 py-0.5 text-[10px] font-mono rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25"
+                      >
+                        ⚡ 3D Holographic
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSponsoredForm({ ...sponsoredForm, banner_url: 'https://kollabrix.in/brand/kollabrix-seamless-hackathon-banner.jpg' })}
+                        className="px-2 py-0.5 text-[10px] font-mono rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25"
+                      >
+                        ⚡ Seamless
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSponsoredForm({ ...sponsoredForm, banner_url: 'https://kollabrix.in/brand/hero-cyber-grid.jpg' })}
+                        className="px-2 py-0.5 text-[10px] font-mono rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25"
+                      >
+                        ⚡ Cyber Grid
+                      </button>
+                    </div>
                   </div>
+                  <input
+                    type="url"
+                    placeholder="https://kollabrix.in/brand/kollabrix-holographic-banner.jpg"
+                    value={sponsoredForm.banner_url}
+                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, banner_url: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+                  />
                   {sponsoredForm.banner_url && (
-                    <div className="mt-2 relative w-full h-28 rounded-xl overflow-hidden border border-charcoal-700 bg-black">
+                    <div className="mt-2 relative w-full h-32 rounded-xl overflow-hidden border border-charcoal-700 bg-black">
                       <img
                         src={sponsoredForm.banner_url}
                         alt="Banner Preview"
@@ -991,13 +1074,15 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Venue &amp; Mode
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Global Virtual / Discord Hub"
+                    <select
                       value={sponsoredForm.mode}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, mode: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white"
-                    />
+                      className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-amber-400 font-bold"
+                    >
+                      <option value="Online">Online / Virtual</option>
+                      <option value="In-Person">In-Person (Campus)</option>
+                      <option value="Hybrid">Hybrid</option>
+                    </select>
                   </div>
 
                   <div>
@@ -1006,7 +1091,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     </label>
                     <input
                       type="text"
-                      placeholder="₹1,50,000 + Google Cloud Credits"
+                      placeholder="₹1,000 Equity-Free Winner Grant"
                       value={sponsoredForm.prize_pool}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, prize_pool: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-emerald-400 font-mono font-bold"
@@ -1015,55 +1100,181 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                      Team Size
+                      Team Size (Min - Max)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={sponsoredForm.min_team_size}
+                        onChange={(e) => {
+                          const minVal = parseInt(e.target.value) || 1;
+                          setSponsoredForm({
+                            ...sponsoredForm,
+                            min_team_size: minVal,
+                            team_size_label: `${minVal} - ${sponsoredForm.max_team_size} Builders`,
+                          });
+                        }}
+                        className="w-16 px-2 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono text-center"
+                      />
+                      <span className="text-slate-400 text-xs">to</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={sponsoredForm.max_team_size}
+                        onChange={(e) => {
+                          const maxVal = parseInt(e.target.value) || 4;
+                          setSponsoredForm({
+                            ...sponsoredForm,
+                            max_team_size: maxVal,
+                            team_size_label: `${sponsoredForm.min_team_size} - ${maxVal} Builders`,
+                          });
+                        }}
+                        className="w-16 px-2 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono text-center"
+                      />
+                      <span className="text-slate-400 text-[11px]">Builders</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-1 border-t border-charcoal-800">
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Themes / Tracks (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Campus Systems, Applied AI, Developer Tooling, Open Consumer Web"
+                    value={sponsoredForm.hashtags}
+                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, hashtags: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-cyan-300 font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 3: OFFICIAL DATES & TIMELINE */}
+              <div className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-charcoal-750 pb-2">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                    <span>3. Official Timeline &amp; Deadlines</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-blue-400">Step 3 of 5</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Event Start Date &amp; Time
                     </label>
                     <input
-                      type="text"
-                      placeholder="1 - 4 Builders"
-                      value={sponsoredForm.team_size_label}
-                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, team_size_label: e.target.value })}
+                      type="datetime-local"
+                      value={sponsoredForm.start_date}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, start_date: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Event End Date &amp; Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={sponsoredForm.end_date}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, end_date: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-charcoal-800">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-charcoal-800">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Registration Deadline
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={sponsoredForm.registration_deadline}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, registration_deadline: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-[11px] text-white font-mono"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Submission Cut-off Label
                     </label>
                     <input
                       type="text"
-                      placeholder="21 Dec 2025 • 10:30 pm"
+                      placeholder="22 Nov 2026 • 03:00 am"
                       value={sponsoredForm.submission_cutoff}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, submission_cutoff: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono text-[11px]"
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-[11px] text-white font-mono"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                      Hashtags (comma-separated)
+                      Result Announcement Label
                     </label>
                     <input
                       type="text"
-                      placeholder="#BuildWithGoogle, #CloudInnovation, #Hackathon2025"
-                      value={sponsoredForm.hashtags}
-                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, hashtags: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-cyan-300 font-mono text-[11px]"
+                      placeholder="22 Nov 2026 • 06:00 pm"
+                      value={sponsoredForm.result_announcement}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, result_announcement: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-[11px] text-white font-mono"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 3: "ABOUT THE SPONSOR" & "EVENT BENEFITS" CARDS */}
+              {/* SECTION 4: RULES & ELIGIBILITY */}
+              <div className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-charcoal-750 pb-2">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>4. Rules &amp; Student Eligibility</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400">Step 4 of 5</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Student Eligibility Requirements
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Open to undergraduate and postgraduate students enrolled in accredited tertiary institutions."
+                    value={sponsoredForm.eligibility}
+                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, eligibility: e.target.value })}
+                    className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Official Competition Rules (Numbered List)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="1. All code and designs must be created during the official hackathon window..."
+                    value={sponsoredForm.rules}
+                    onChange={(e) => setSponsoredForm({ ...sponsoredForm, rules: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-slate-200 font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 5: "ABOUT THE SPONSOR" & "EVENT BENEFITS" CARDS */}
               <div className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-3.5">
                 <div className="flex items-center justify-between border-b border-charcoal-750 pb-2">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    <span>3. Hero Banner &quot;About Sponsor&quot; &amp; &quot;Event Benefits&quot; Cards</span>
+                    <span>5. Hero Banner &quot;About Sponsor&quot; &amp; &quot;Event Benefits&quot; Cards</span>
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">Step 3 of 4</span>
+                  <span className="text-[10px] font-mono text-purple-400">Step 5 of 5</span>
                 </div>
 
                 {/* About Sponsor Card Inputs */}
@@ -1073,14 +1284,14 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   </span>
                   <input
                     type="text"
-                    placeholder="Headline: e.g. Accelerating what&apos;s next."
+                    placeholder="Headline: e.g. The Collegiate Innovation Network."
                     value={sponsoredForm.about_sponsor_headline}
                     onChange={(e) => setSponsoredForm({ ...sponsoredForm, about_sponsor_headline: e.target.value })}
                     className="w-full px-3 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white font-bold"
                   />
                   <textarea
                     rows={2}
-                    placeholder="Description: e.g. Google Cloud empowers developers, students and innovators to build for what&apos;s next."
+                    placeholder="Description: e.g. Kollabrix unites high-caliber student engineers, faculty researchers..."
                     value={sponsoredForm.about_sponsor_description}
                     onChange={(e) => setSponsoredForm({ ...sponsoredForm, about_sponsor_description: e.target.value })}
                     className="w-full px-3 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-slate-200"
@@ -1095,54 +1306,43 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="text"
-                      placeholder="Benefit 1: Exclusive Cloud Credits (up to $500)"
+                      placeholder="Benefit 1: ₹1,000 Direct Equity-Free Winner Grant"
                       value={sponsoredForm.benefit_1}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, benefit_1: e.target.value })}
                       className="px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white"
                     />
                     <input
                       type="text"
-                      placeholder="Benefit 2: Top Performers Get Internships & Swags"
+                      placeholder="Benefit 2: Verified Certificate of Merit"
                       value={sponsoredForm.benefit_2}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, benefit_2: e.target.value })}
                       className="px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white"
                     />
                     <input
                       type="text"
-                      placeholder="Benefit 3: Mentorship from Experts"
+                      placeholder="Benefit 3: Faculty Jury Review & Critique"
                       value={sponsoredForm.benefit_3}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, benefit_3: e.target.value })}
                       className="px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white"
                     />
                     <input
                       type="text"
-                      placeholder="Benefit 4: Priority Access to Tools"
+                      placeholder="Benefit 4: Permanent Proof-of-Work Portfolio"
                       value={sponsoredForm.benefit_4}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, benefit_4: e.target.value })}
                       className="px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* SECTION 4: SIDEBAR CALLOUT & PORTAL LINK */}
-              <div className="p-4 rounded-2xl bg-charcoal-850 border border-charcoal-700/80 space-y-3">
-                <div className="flex items-center justify-between border-b border-charcoal-750 pb-2">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>4. Sidebar Callout Gift Banner &amp; Portal Link</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">Step 4 of 4</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-charcoal-800">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Sidebar Gift Callout Card Text
                     </label>
                     <input
                       type="text"
-                      placeholder="Sponsored by Google Cloud: Get up to $500 in Google Cloud Credits!"
+                      placeholder="Endowed by Kollabrix Builders Fund: Instant UPI Winner Grant"
                       value={sponsoredForm.gift_callout_text}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, gift_callout_text: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white"
@@ -1155,12 +1355,33 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                     </label>
                     <input
                       type="url"
-                      placeholder="https://cloud.google.com/innovators"
+                      placeholder="https://kollabrix.in"
                       value={sponsoredForm.guidelines_url}
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, guidelines_url: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-xs text-white font-mono text-[11px]"
                     />
                   </div>
+                </div>
+
+                {/* Candidate Pass QR Code Toggle (Disabled by default) */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-charcoal-950 border border-charcoal-750">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-bold text-white block">
+                      Candidate Recruiter QR Pass (Sidebar)
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Uncheck to hide the QR verification pass widget from this hackathon (Clean view)
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sponsoredForm.enable_recruiter_qr_pass}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, enable_recruiter_qr_pass: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-charcoal-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                  </label>
                 </div>
               </div>
 

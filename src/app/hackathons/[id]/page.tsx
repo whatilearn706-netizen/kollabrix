@@ -417,6 +417,9 @@ export default function HackathonDetailPage() {
     return extractSponsoredMeta(hackathon);
   }, [hackathon]);
 
+  const heroBanner = hackathon?.banner_url || sponsoredMeta.bannerUrl;
+  const eventLogo = hackathon?.logo_url || hackathon?.company_logo || sponsoredMeta.sponsorLogoUrl;
+
   // Profile-based Eligibility Evaluation
   const eligibilityEvaluation = useMemo(() => {
     // If the student is ALREADY registered / enrolled in this hackathon, they are 100% eligible & confirmed!
@@ -883,7 +886,7 @@ export default function HackathonDetailPage() {
       {/* UNSTOP-STYLE STANDALONE BILLBOARD BANNER CARD (Zero Text Overlap)         */}
       {/* ========================================================================= */}
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-4">
-        {!hackathon.banner_url && sponsoredMeta.isSponsored ? (
+        {!heroBanner && sponsoredMeta.isSponsored ? (
           <div className="w-full rounded-3xl overflow-hidden border border-cyan-500/30 bg-[#040711] shadow-[0_0_50px_-12px_rgba(6,182,212,0.25)] relative p-6 sm:p-8 lg:p-10 transition-all">
             {/* 3D Wave Volumetric Lighting SVG */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1085,10 +1088,10 @@ export default function HackathonDetailPage() {
               ? 'border-2 border-amber-500/40 shadow-[0_0_50px_-12px_rgba(245,158,11,0.25)] bg-[#040711]'
               : 'border border-charcoal-750 bg-[#060813]'
           }`}>
-            {hackathon.banner_url ? (
+            {heroBanner ? (
               <div className="relative w-full h-56 sm:h-72 md:h-88 lg:h-[360px] xl:h-[400px] 2xl:h-[440px] overflow-hidden">
                 <img
-                  src={hackathon.banner_url}
+                  src={heroBanner}
                   alt={hackathon.title}
                   className="w-full h-full object-cover object-center"
                 />
@@ -1125,7 +1128,7 @@ export default function HackathonDetailPage() {
         )}
 
         {/* If sponsored and has an image banner, display a sleek Sponsor Info & Benefits strip right below the banner */}
-        {hackathon.banner_url && sponsoredMeta.isSponsored && (
+        {heroBanner && sponsoredMeta.isSponsored && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div className="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-charcoal-900/90 border border-amber-500/30 shadow-lg flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
@@ -1274,15 +1277,15 @@ export default function HackathonDetailPage() {
 
                 {/* Event / College Logo Badge (Brown Marked Item) */}
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-charcoal-950 border border-charcoal-750 p-1.5 shrink-0 overflow-hidden shadow-lg flex items-center justify-center">
-                  {hackathon.logo_url || hackathon.company_logo || sponsoredMeta.sponsorLogoUrl ? (
+                  {eventLogo ? (
                     <img
-                      src={hackathon.logo_url || hackathon.company_logo || sponsoredMeta.sponsorLogoUrl || ''}
+                      src={eventLogo}
                       alt={hackathon.organizer || hackathon.title}
                       className="w-full h-full object-contain rounded-xl p-0.5"
                     />
-                  ) : hackathon.banner_url ? (
+                  ) : heroBanner ? (
                     <img
-                      src={hackathon.banner_url}
+                      src={heroBanner}
                       alt={hackathon.title}
                       className="w-full h-full object-contain rounded-xl"
                     />
