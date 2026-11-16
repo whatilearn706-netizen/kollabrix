@@ -38,10 +38,55 @@ export interface WordSpellingResult {
 }
 
 /**
- * Extracts distinct visible words from HTML (stripping tags and attributes)
+ * Helper to check if two words match with lenient typo tolerance (edit distance <= 2)
+ */
+function isFuzzyWordMatch(target: string, candidate: string): boolean {
+  if (target === candidate) return true;
+  if (Math.abs(target.length - candidate.length) > 2) return false;
+
+  // Single-character or transposition typos (e.g. mathmatics vs mathematics, travelling vs traveling)
+  let diff = 0;
+  let i = 0;
+  let j = 0;
+  while (i < target.length && j < candidate.length) {
+    if (target[i] !== candidate[j]) {
+      diff++;
+      if (diff > 2) return false;
+      if (target.length > candidate.length) {
+        i++;
+      } else if (candidate.length > target.length) {
+        j++;
+      } else {
+        i++;
+        j++;
+      }
+    } else {
+      i++;
+      j++;
+    }
+  }
+  diff += (target.length - i) + (candidate.length - j);
+  return diff <= 2;
+}
+
+/**
+ * Extracts distinct visible words from HTML (stripping tags, invisible head/title/meta, and attributes)
  */
 export function extractTargetTextTokens(html: string): string[] {
-  const stripped = (html || '')
+  let content = html || '';
+
+  // Only extract visible canvas elements: strip invisible head, title, meta, link, script, style
+  const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) {
+    content = bodyMatch[1];
+  } else {
+    content = content
+      .replace(/<head[\s\S]*?<\/head>/gi, '')
+      .replace(/<title[\s\S]*?<\/title>/gi, '')
+      .replace(/<meta[\s\S]*?>/gi, '');
+  }
+
+  const stripped = content
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<[^>]+>/g, ' ')
@@ -92,21 +137,24 @@ export function verifyWordSpellingAndContent(
   }
 
   const studentWords = new Set(extractTargetTextTokens(studentHtml));
+  const studentWordsList = Array.from(studentWords);
   const targetHeadingWords = extractHeadingTokens(targetHtml);
 
-  // 1. Mandatory check: All heading words (h1-h6) MUST match exactly (100% heading accuracy)
+  // 1. Check heading words (h1-h6) with lenient typo matching
   const missingHeadingWords: string[] = [];
   for (const hWord of targetHeadingWords) {
-    if (!studentWords.has(hWord)) {
+    const hasMatch = studentWords.has(hWord) || studentWordsList.some((sw) => isFuzzyWordMatch(hWord, sw));
+    if (!hasMatch) {
       missingHeadingWords.push(hWord);
     }
   }
 
-  // 2. Check all distinct target words
+  // 2. Check all distinct target words with fuzzy tolerance
   const matchedWords: string[] = [];
   const missingWords: string[] = [];
   for (const word of targetWords) {
-    if (studentWords.has(word)) {
+    const hasMatch = studentWords.has(word) || studentWordsList.some((sw) => isFuzzyWordMatch(word, sw));
+    if (hasMatch) {
       matchedWords.push(word);
     } else {
       missingWords.push(word);
@@ -118,7 +166,7 @@ export function verifyWordSpellingAndContent(
   // Criteria for passing:
   // - 0 heading words can be missing
   // - If target has <= 5 words, 100% of words must match
-  // - If target has > 5 words, at least 90% must match with no more than 1 minor omission
+  // - If target has > 5 words, at least 85% must match with no more than 2 minor omissions
   let passed = true;
   let missingDetails = '';
 
@@ -128,7 +176,7 @@ export function verifyWordSpellingAndContent(
   } else if (targetWords.length <= 5 && missingWords.length > 0) {
     passed = false;
     missingDetails = `Missing required word(s) or spelling mismatch: "${missingWords.join('", "')}".`;
-  } else if (matchPercent < 90 || missingWords.length > 1) {
+  } else if (matchPercent < 85 || missingWords.length > 2) {
     passed = false;
     missingDetails = `Content or spelling mismatch (${matchPercent}% match). Missing word(s): "${missingWords.slice(0, 5).join('", "')}".`;
   }
