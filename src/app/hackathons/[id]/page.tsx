@@ -132,6 +132,18 @@ export default function HackathonDetailPage() {
               allowed_college: hack.allowed_college || meta.allowed_college || (hack as any).allowedCollege || null,
               allowed_roll_start: (hack as any).allowed_roll_start || meta.allowed_roll_start || null,
               allowed_roll_end: (hack as any).allowed_roll_end || meta.allowed_roll_end || null,
+              about_sponsor_headline: meta.about_sponsor_headline || (hack as any).about_sponsor_headline,
+              about_sponsor_description: meta.about_sponsor_description || (hack as any).about_sponsor_description,
+              event_benefits: meta.event_benefits || (hack as any).event_benefits,
+              gift_callout_text: meta.gift_callout_text || (hack as any).gift_callout_text,
+              guidelines_url: meta.guidelines_url || (hack as any).guidelines_url,
+              sponsor_website_url: meta.sponsor_website_url || (hack as any).sponsor_website_url,
+              submission_cutoff: meta.submission_cutoff || (hack as any).submission_cutoff,
+              result_announcement: meta.result_announcement || (hack as any).result_announcement,
+              enable_recruiter_qr_pass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (hack as any).enable_recruiter_qr_pass ?? (hack as any).enableRecruiterQrPass),
+              enableRecruiterQrPass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (hack as any).enable_recruiter_qr_pass ?? (hack as any).enableRecruiterQrPass),
+              tagline: meta.tagline || (hack as any).tagline,
+              custom_cta_text: meta.custom_cta_text || (hack as any).custom_cta_text,
             };
           }
         } catch {}
@@ -292,6 +304,18 @@ export default function HackathonDetailPage() {
               hiring_roles: meta.hiring_roles || currentHack.hiring_roles,
               submission_deadline: currentHack.submission_deadline || meta.submission_deadline || (currentHack as any).submissionDeadline || null,
               results_date: currentHack.results_date || meta.results_date || (currentHack as any).resultsDate || null,
+              about_sponsor_headline: meta.about_sponsor_headline || (currentHack as any).about_sponsor_headline,
+              about_sponsor_description: meta.about_sponsor_description || (currentHack as any).about_sponsor_description,
+              event_benefits: meta.event_benefits || (currentHack as any).event_benefits,
+              gift_callout_text: meta.gift_callout_text || (currentHack as any).gift_callout_text,
+              guidelines_url: meta.guidelines_url || (currentHack as any).guidelines_url,
+              sponsor_website_url: meta.sponsor_website_url || (currentHack as any).sponsor_website_url,
+              submission_cutoff: meta.submission_cutoff || (currentHack as any).submission_cutoff,
+              result_announcement: meta.result_announcement || (currentHack as any).result_announcement,
+              enable_recruiter_qr_pass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (currentHack as any).enable_recruiter_qr_pass ?? (currentHack as any).enableRecruiterQrPass),
+              enableRecruiterQrPass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (currentHack as any).enable_recruiter_qr_pass ?? (currentHack as any).enableRecruiterQrPass),
+              tagline: meta.tagline || currentHack.tagline,
+              custom_cta_text: meta.custom_cta_text || (currentHack as any).custom_cta_text,
               description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
             };
           }
