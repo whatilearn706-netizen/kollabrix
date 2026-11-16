@@ -444,12 +444,13 @@ export default function HackathonDetailPage() {
   const heroBanner = hackathon?.banner_url || sponsoredMeta.bannerUrl;
   const eventLogo = hackathon?.logo_url || hackathon?.company_logo || sponsoredMeta.sponsorLogoUrl;
 
-  // Dynamic Social Proof Counter (Solves cold start; displays 23 + registered increment, eliminates 4.8k)
+  // Dynamic Social Proof Counter (Solves cold start exclusively for this specific FastTrack sprint; all other hackathons start cleanly at 0)
   const displayRegisteredCount = useMemo(() => {
-    const baseCount = (sponsoredMeta.isSponsored || hackathon?.id === '9892b319-0efa-4743-9411-afd6652ce3b5') ? 23 : 0;
-    if (registeredCount <= 0) return baseCount || 0;
+    const isTargetSprint = hackathon?.id === '9892b319-0efa-4743-9411-afd6652ce3b5';
+    const baseCount = isTargetSprint ? 23 : 0;
+    if (registeredCount <= 0) return baseCount;
     return baseCount > 0 ? (baseCount + registeredCount - 1) : registeredCount;
-  }, [registeredCount, sponsoredMeta.isSponsored, hackathon?.id]);
+  }, [registeredCount, hackathon?.id]);
 
   // Profile-based Eligibility Evaluation
   const eligibilityEvaluation = useMemo(() => {
