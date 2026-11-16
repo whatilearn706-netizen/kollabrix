@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   X,
@@ -262,6 +262,64 @@ export const COLLEGIATE_BOT_PROFILES = [
   { name: 'Divya Nair', college: 'NIT Trichy', tag: 'NITT CSE', avatarIdx: 6, avatarEmoji: '⚔️', baseWpm: 68 },
   { name: 'Vikramaditya', college: 'IIIT Hyderabad', tag: 'IIITH CS', avatarIdx: 7, avatarEmoji: '👑', baseWpm: 72 },
   { name: 'Ananya Roy', college: 'Jadavpur Univ', tag: 'JU CS', avatarIdx: 8, avatarEmoji: '🚀', baseWpm: 60 },
+];
+
+interface AutoCompleteItem {
+  label: string;
+  insertText: string;
+  cursorOffset?: number;
+  detail: string;
+  kind: 'tag' | 'snippet' | 'css';
+}
+
+const HTML_AUTOCOMPLETE_TAGS: AutoCompleteItem[] = [
+  { label: '<h1>', insertText: '<h1></h1>', cursorOffset: -5, detail: 'Heading 1', kind: 'tag' },
+  { label: '<h2>', insertText: '<h2></h2>', cursorOffset: -5, detail: 'Heading 2', kind: 'tag' },
+  { label: '<h3>', insertText: '<h3></h3>', cursorOffset: -5, detail: 'Heading 3', kind: 'tag' },
+  { label: '<h4>', insertText: '<h4></h4>', cursorOffset: -5, detail: 'Heading 4', kind: 'tag' },
+  { label: '<p>', insertText: '<p></p>', cursorOffset: -4, detail: 'Paragraph text', kind: 'tag' },
+  { label: '<hr>', insertText: '<hr>\n', cursorOffset: 0, detail: 'Horizontal separator line', kind: 'tag' },
+  { label: '<br>', insertText: '<br>\n', cursorOffset: 0, detail: 'Line break', kind: 'tag' },
+  { label: '<ul>', insertText: '<ul>\n  <li></li>\n</ul>', cursorOffset: -12, detail: 'Unordered bullet list', kind: 'snippet' },
+  { label: '<ol>', insertText: '<ol>\n  <li></li>\n</ol>', cursorOffset: -12, detail: 'Ordered numbered list', kind: 'snippet' },
+  { label: '<li>', insertText: '<li></li>', cursorOffset: -5, detail: 'List item', kind: 'tag' },
+  { label: '<div>', insertText: '<div></div>', cursorOffset: -6, detail: 'Container block', kind: 'tag' },
+  { label: '<span>', insertText: '<span></span>', cursorOffset: -7, detail: 'Inline text span', kind: 'tag' },
+  { label: '<button>', insertText: '<button></button>', cursorOffset: -9, detail: 'Clickable button', kind: 'tag' },
+  { label: '<input>', insertText: '<input type="text" placeholder="" />', cursorOffset: -4, detail: 'Input text field', kind: 'tag' },
+  { label: '<textarea>', insertText: '<textarea></textarea>', cursorOffset: -11, detail: 'Multiline text input', kind: 'tag' },
+  { label: '<img>', insertText: '<img src="" alt="" />', cursorOffset: -10, detail: 'Image element', kind: 'tag' },
+  { label: '<a>', insertText: '<a href=""></a>', cursorOffset: -6, detail: 'Hyperlink anchor', kind: 'tag' },
+  { label: '<section>', insertText: '<section></section>', cursorOffset: -10, detail: 'Thematic section', kind: 'tag' },
+  { label: '<header>', insertText: '<header></header>', cursorOffset: -9, detail: 'Page header', kind: 'tag' },
+  { label: '<footer>', insertText: '<footer></footer>', cursorOffset: -9, detail: 'Page footer', kind: 'tag' },
+  { label: '<nav>', insertText: '<nav></nav>', cursorOffset: -6, detail: 'Navigation links', kind: 'tag' },
+  { label: '<main>', insertText: '<main></main>', cursorOffset: -7, detail: 'Dominant content', kind: 'tag' },
+  { label: '<table>', insertText: '<table>\n  <tr>\n    <td></td>\n  </tr>\n</table>', cursorOffset: -22, detail: 'Table grid', kind: 'snippet' },
+  { label: '<strong>', insertText: '<strong></strong>', cursorOffset: -9, detail: 'Important bold text', kind: 'tag' },
+  { label: '<em>', insertText: '<em></em>', cursorOffset: -5, detail: 'Emphasized italic text', kind: 'tag' },
+  { label: '<!-- comment -->', insertText: '<!--  -->', cursorOffset: -4, detail: 'HTML Comment', kind: 'snippet' },
+];
+
+const CSS_AUTOCOMPLETE_PROPS: AutoCompleteItem[] = [
+  { label: 'display: flex', insertText: 'display: flex;\n', cursorOffset: 0, detail: 'Flexbox layout', kind: 'css' },
+  { label: 'display: grid', insertText: 'display: grid;\n', cursorOffset: 0, detail: 'CSS Grid layout', kind: 'css' },
+  { label: 'flex-direction: column', insertText: 'flex-direction: column;\n', cursorOffset: 0, detail: 'Vertical flex flow', kind: 'css' },
+  { label: 'justify-content: center', insertText: 'justify-content: center;\n', cursorOffset: 0, detail: 'Center along main axis', kind: 'css' },
+  { label: 'align-items: center', insertText: 'align-items: center;\n', cursorOffset: 0, detail: 'Center along cross axis', kind: 'css' },
+  { label: 'gap', insertText: 'gap: 16px;\n', cursorOffset: -2, detail: 'Grid / Flex gap', kind: 'css' },
+  { label: 'color', insertText: 'color: #;\n', cursorOffset: -2, detail: 'Text color', kind: 'css' },
+  { label: 'background', insertText: 'background: #;\n', cursorOffset: -2, detail: 'Background color', kind: 'css' },
+  { label: 'padding', insertText: 'padding: 16px;\n', cursorOffset: -2, detail: 'Inner padding', kind: 'css' },
+  { label: 'margin', insertText: 'margin: 0 auto;\n', cursorOffset: 0, detail: 'Outer margin', kind: 'css' },
+  { label: 'border', insertText: 'border: 1px solid #e2e8f0;\n', cursorOffset: 0, detail: 'Border line', kind: 'css' },
+  { label: 'border-radius', insertText: 'border-radius: 8px;\n', cursorOffset: -4, detail: 'Rounded corners', kind: 'css' },
+  { label: 'font-size', insertText: 'font-size: 16px;\n', cursorOffset: -4, detail: 'Text size', kind: 'css' },
+  { label: 'font-weight', insertText: 'font-weight: bold;\n', cursorOffset: 0, detail: 'Text boldness', kind: 'css' },
+  { label: 'text-align: center', insertText: 'text-align: center;\n', cursorOffset: 0, detail: 'Center text', kind: 'css' },
+  { label: 'width', insertText: 'width: 100%;\n', cursorOffset: -2, detail: 'Element width', kind: 'css' },
+  { label: 'max-width', insertText: 'max-width: 600px;\n', cursorOffset: -2, detail: 'Maximum element width', kind: 'css' },
+  { label: 'box-shadow', insertText: 'box-shadow: 0 4px 6px rgba(0,0,0,0.1);\n', cursorOffset: 0, detail: 'Drop shadow', kind: 'css' },
 ];
 
 export function FullArenaExperience({
@@ -820,6 +878,24 @@ export function FullArenaExperience({
   const [opponentSimCodeLinesCount, setOpponentSimCodeLinesCount] = useState<number>(3);
   const [winnerTeam, setWinnerTeam] = useState<'Team Alpha' | 'Team Omega' | null>(null);
 
+  // Opponent actual solution state for post-battle reveal
+  const [opponentSolution, setOpponentSolution] = useState<{
+    htmlCode?: string;
+    cssCode?: string;
+    jsCode?: string;
+    pythonCode?: string;
+    javaCode?: string;
+    cppCode?: string;
+  } | null>(null);
+  const [revealTab, setRevealTab] = useState<'html' | 'css' | 'js'>('html');
+
+  // Intelligent Code Auto-Complete & Tag Hints (IntelliSense)
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<AutoCompleteItem[]>([]);
+  const [selectedSuggestionIdx, setSelectedSuggestionIdx] = useState(0);
+  const [suggestionPrefixRange, setSuggestionPrefixRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+  const [suggestionCoords, setSuggestionCoords] = useState<{ top: number; left: number }>({ top: 40, left: 60 });
+
   // Stably assign a collegiate student contender profile for practice matches based on roomCode hash
   const botProfileIndex = useMemo(() => {
     let hash = 0;
@@ -888,7 +964,119 @@ export function FullArenaExperience({
     setCurrentCode('');
   };
 
+  const updateAutocomplete = useCallback((text: string, cursorPos: number) => {
+    if (activeTab === 'html') {
+      const beforeCursor = text.substring(0, cursorPos);
+      const match = /<([a-zA-Z0-9-]*)$/.exec(beforeCursor);
+      if (match) {
+        const prefix = match[1].toLowerCase();
+        const pool = HTML_AUTOCOMPLETE_TAGS;
+        const filtered = prefix
+          ? pool.filter((t) => t.label.replace(/[<>/]/g, '').toLowerCase().startsWith(prefix))
+          : pool;
+
+        if (filtered.length > 0) {
+          setSuggestions(filtered);
+          setSelectedSuggestionIdx(0);
+          setSuggestionPrefixRange({ start: cursorPos - match[0].length, end: cursorPos });
+
+          const lines = beforeCursor.split('\n');
+          const lineIndex = lines.length - 1;
+          const charIndex = lines[lineIndex].length;
+          const top = Math.min(260, (lineIndex + 1) * 24 + 10);
+          const left = Math.min(380, Math.max(40, charIndex * 8 + 40));
+          setSuggestionCoords({ top, left });
+          setSuggestionOpen(true);
+          return;
+        }
+      }
+    } else if (activeTab === 'css') {
+      const beforeCursor = text.substring(0, cursorPos);
+      const match = /(?:^|\n|;|\{)\s*([a-zA-Z-]{2,})$/.exec(beforeCursor);
+      if (match) {
+        const prefix = match[1].toLowerCase();
+        const filtered = CSS_AUTOCOMPLETE_PROPS.filter((p) => p.label.toLowerCase().startsWith(prefix));
+        if (filtered.length > 0) {
+          setSuggestions(filtered);
+          setSelectedSuggestionIdx(0);
+          setSuggestionPrefixRange({ start: cursorPos - prefix.length, end: cursorPos });
+          const lines = beforeCursor.split('\n');
+          const lineIndex = lines.length - 1;
+          const charIndex = lines[lineIndex].length;
+          const top = Math.min(260, (lineIndex + 1) * 24 + 10);
+          const left = Math.min(380, Math.max(40, charIndex * 8 + 40));
+          setSuggestionCoords({ top, left });
+          setSuggestionOpen(true);
+          return;
+        }
+      }
+    }
+    setSuggestionOpen(false);
+  }, [activeTab]);
+
+  const applySuggestion = useCallback((item: AutoCompleteItem) => {
+    const code = getCurrentCode();
+    const before = code.substring(0, suggestionPrefixRange.start);
+    const after = code.substring(suggestionPrefixRange.end);
+    const nextVal = before + item.insertText + after;
+    setCurrentCode(nextVal);
+    setSuggestionOpen(false);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        const newPos = suggestionPrefixRange.start + item.insertText.length + (item.cursorOffset || 0);
+        textareaRef.current.selectionStart = newPos;
+        textareaRef.current.selectionEnd = newPos;
+        textareaRef.current.focus();
+      }
+    });
+  }, [getCurrentCode, setCurrentCode, suggestionPrefixRange]);
+
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 0. Auto-complete key navigation & selection (Up / Down / Enter / Tab / Escape)
+    if (suggestionOpen && suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSuggestionIdx((prev) => (prev + 1) % suggestions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSuggestionIdx((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        applySuggestion(suggestions[selectedSuggestionIdx]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSuggestionOpen(false);
+        return;
+      }
+    }
+
+    // Auto-close HTML tags: if user types '>', check if preceded by <tag (e.g. <h1>)
+    if (activeTab === 'html' && e.key === '>') {
+      const textarea = e.currentTarget;
+      const { selectionStart, selectionEnd, value } = textarea;
+      const beforeCursor = value.substring(0, selectionStart);
+      const match = /<([a-zA-Z0-9]+)(?:\s+[^>]*)?$/.exec(beforeCursor);
+      const selfClosing = ['input', 'img', 'br', 'hr', 'meta', 'link'];
+      if (match && !selfClosing.includes(match[1].toLowerCase()) && !match[0].startsWith('</')) {
+        const tagName = match[1];
+        const nextVal = value.substring(0, selectionStart) + '>' + `</${tagName}>` + value.substring(selectionEnd);
+        e.preventDefault();
+        setCurrentCode(nextVal);
+        setSuggestionOpen(false);
+        requestAnimationFrame(() => {
+          textarea.selectionStart = selectionStart + 1;
+          textarea.selectionEnd = selectionStart + 1;
+        });
+        return;
+      }
+    }
+
     // Anti-Cheat: Intercept Cmd+V / Ctrl+V
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
       e.preventDefault();
@@ -1602,6 +1790,32 @@ export function FullArenaExperience({
             });
           }
         })
+        .on('broadcast', { event: 'spectator_code_sync' }, ({ payload }) => {
+          if (!isMounted || !payload) return;
+          if (payload.playerId !== myPlayerId) {
+            setOpponentSolution({
+              htmlCode: payload.htmlCode,
+              cssCode: payload.cssCode,
+              jsCode: payload.jsCode,
+              pythonCode: payload.pythonCode,
+              javaCode: payload.javaCode,
+              cppCode: payload.cppCode,
+            });
+          }
+        })
+        .on('broadcast', { event: 'match_solution_reveal' }, ({ payload }) => {
+          if (!isMounted || !payload) return;
+          if (payload.playerId !== myPlayerId) {
+            setOpponentSolution({
+              htmlCode: payload.htmlCode,
+              cssCode: payload.cssCode,
+              jsCode: payload.jsCode,
+              pythonCode: payload.pythonCode,
+              javaCode: payload.javaCode,
+              cppCode: payload.cppCode,
+            });
+          }
+        })
         .subscribe();
 
       channelRef.current = channel;
@@ -1788,6 +2002,30 @@ export function FullArenaExperience({
       }),
     }).catch(() => {});
   };
+
+  // Post-battle Solution Exchange: broadcast my solution so opponent sees what I wrote
+  useEffect(() => {
+    if (step === 6 && channelRef.current && roomCode) {
+      try {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'match_solution_reveal',
+          payload: {
+            playerId: myPlayerId,
+            playerName,
+            htmlCode,
+            cssCode,
+            jsCode,
+            pythonCode,
+            javaCode,
+            cppCode,
+          },
+        });
+      } catch (err) {
+        console.warn('Error broadcasting match_solution_reveal:', err);
+      }
+    }
+  }, [step, roomCode, myPlayerId, playerName, htmlCode, cssCode, jsCode, pythonCode, javaCode, cppCode]);
 
   // Launch Match: Pull random question matching arena & selected tags from database or fallback
   const handleStartBattle = async () => {
@@ -2943,6 +3181,19 @@ export function FullArenaExperience({
                         type="text"
                         value={joinCodeInput}
                         onChange={(e) => setJoinCodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!user) {
+                              setJoinError('Sign in required: Please log in or sign up before joining a multiplayer duel.');
+                              openAuthModal('login');
+                              return;
+                            }
+                            if (joinCodeInput.trim()) {
+                              handleJoinWithCodeOrLink();
+                            }
+                          }
+                        }}
                         placeholder="e.g. KBX-4634 or https://kollabrix.in/arena?room=..."
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-sm focus:border-rose-400 focus:outline-none tracking-wider placeholder:text-slate-600"
                       />
@@ -2963,6 +3214,19 @@ export function FullArenaExperience({
                         type="text"
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!user) {
+                              setJoinError('Sign in required: Please log in or sign up before joining a multiplayer duel.');
+                              openAuthModal('login');
+                              return;
+                            }
+                            if (joinCodeInput.trim()) {
+                              handleJoinWithCodeOrLink();
+                            }
+                          }
+                        }}
                         placeholder="Your display name"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:border-rose-400 focus:outline-none placeholder:text-slate-600"
                       />
@@ -3014,86 +3278,86 @@ export function FullArenaExperience({
 
         {/* ================= STEP 1: AAA ESPORTS TOURNAMENT COMMAND CONSOLE ================= */}
         {step === 1 && (
-          <div className="w-full max-w-6xl p-4 sm:p-6 md:p-8 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-fadeIn space-y-6">
+          <div className="w-full max-w-4xl p-4 sm:p-5 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-[0_0_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-fadeIn space-y-4">
             {/* Top Command Status Strip */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
-              <div className="flex items-center gap-3">
-                <span className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-                  <Swords className="w-6 h-6 animate-pulse" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                  <Swords className="w-5 h-5 animate-pulse" />
                 </span>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
                       KBX-ARENA-OS // PROTOCOL 01: PILOT INITIALIZATION
                     </span>
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-mono uppercase">
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight font-mono uppercase">
                     Tournament Command Center
                   </h2>
                 </div>
               </div>
 
               {/* 3-Step Circuit Node Navigation */}
-              <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono font-bold tracking-wider">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/60 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] font-mono font-bold tracking-wider">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/60 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                   <span>01 PILOT SPEC</span>
                 </div>
                 <span className="text-slate-600">&bull;</span>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-500">
                   <span>02 ARENA MATRIX</span>
                 </div>
                 <span className="text-slate-600">&bull;</span>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-500">
                   <span>03 SQUAD LINK</span>
                 </div>
               </div>
             </div>
 
             {/* Main Balanced Tactical Pod Matrix (Clean 2-Column Cyber Grid) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
               {/* Pod 1: Pilot Holographic Dossier (Col 1-5) */}
-              <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-4 shadow-xl">
-                <div className="space-y-3">
+              <div className="lg:col-span-5 p-4 rounded-xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-3 shadow-lg">
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
-                      <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <Crosshair className="w-3 h-3 text-cyan-400" />
                       <span>PILOT DOSSIER</span>
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
                       LIVE
                     </span>
                   </div>
 
                   {/* Holographic Avatar Pod */}
                   <div
-                    className={`relative w-full aspect-square rounded-2xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-2 ${COMBAT_AVATARS[selectedAvatarIdx].border} ${COMBAT_AVATARS[selectedAvatarIdx].glow} flex flex-col items-center justify-center overflow-hidden transition-all duration-300`}
+                    className={`relative w-full h-32 sm:h-36 rounded-xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-2 ${COMBAT_AVATARS[selectedAvatarIdx].border} ${COMBAT_AVATARS[selectedAvatarIdx].glow} flex flex-col items-center justify-center overflow-hidden transition-all duration-300`}
                   >
                     {/* Background Holographic Scanline Grid */}
                     <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.5)_51%)] bg-[size:100%_4px] pointer-events-none opacity-40" />
                     <div className="absolute inset-0 bg-radial-gradient from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
 
                     {/* Avatar Emoji */}
-                    <span className="text-5xl sm:text-6xl select-none filter drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] animate-bounce-short">
+                    <span className="text-4xl select-none filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-bounce-short">
                       {COMBAT_AVATARS[selectedAvatarIdx].emoji}
                     </span>
 
                     {/* Avatar Title */}
-                    <span className="mt-2 text-xs font-mono font-black text-white tracking-widest uppercase">
+                    <span className="mt-1 text-xs font-mono font-black text-white tracking-widest uppercase">
                       {COMBAT_AVATARS[selectedAvatarIdx].name}
                     </span>
-                    <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                    <span className="text-[9px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
                       {COMBAT_AVATARS[selectedAvatarIdx].badge}
                     </span>
                   </div>
 
                   {/* Persona Switcher Chips */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block font-bold">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-widest block font-bold">
                       Select Persona Class:
                     </label>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-5 gap-1">
                       {COMBAT_AVATARS.map((avatar, idx) => (
                         <button
                           key={avatar.id}
@@ -3102,9 +3366,9 @@ export function FullArenaExperience({
                             playTacticalSelectSound();
                             setSelectedAvatarIdx(idx);
                           }}
-                          className={`p-2 rounded-xl text-center text-sm sm:text-base border transition-all ${
+                          className={`p-1.5 rounded-lg text-center text-sm border transition-all ${
                             selectedAvatarIdx === idx
-                              ? `${avatar.border} bg-slate-800 scale-105 shadow-md`
+                              ? `${avatar.border} bg-slate-800 scale-105 shadow-sm`
                               : 'border-slate-800 bg-slate-950 hover:border-slate-700 opacity-60 hover:opacity-100'
                           }`}
                           title={`${avatar.name} - ${avatar.trait}`}
@@ -3116,12 +3380,12 @@ export function FullArenaExperience({
                   </div>
 
                   {/* Audio / Keystroke Visualizer Bars */}
-                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
                       <span>KEYSTROKE FREQUENCY</span>
                       <span className="text-emerald-400 font-bold">98.4% CADENCE</span>
                     </div>
-                    <div className="flex items-end justify-between h-5 gap-1 px-1">
+                    <div className="flex items-end justify-between h-3.5 gap-0.5 px-0.5">
                       {[40, 75, 55, 90, 60, 100, 45, 80, 65, 85, 50, 95].map((val, i) => (
                         <div
                           key={i}
@@ -3137,7 +3401,7 @@ export function FullArenaExperience({
                 </div>
 
                 {/* Pilot Telemetry Footnote */}
-                <div className="pt-2 border-t border-slate-800/60 font-mono text-[10px] text-slate-400 space-y-1">
+                <div className="pt-1.5 border-t border-slate-800/60 font-mono text-[9px] text-slate-400 space-y-0.5">
                   <div className="flex justify-between">
                     <span>RANKING:</span>
                     <span className="text-amber-400 font-bold">
@@ -3156,28 +3420,28 @@ export function FullArenaExperience({
               </div>
 
               {/* Pod 2: Engagement Specification & Mode Selection (Col 6-12) */}
-              <div className="lg:col-span-7 p-6 rounded-2xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-5 shadow-xl">
-                <div className="space-y-5">
+              <div className="lg:col-span-7 p-4 rounded-xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-3 shadow-lg">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-rose-400" />
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <Zap className="w-3 h-3 text-rose-400" />
                       <span>ENGAGEMENT SPECIFICATION</span>
                     </span>
-                    <span className="text-[10px] font-mono text-slate-400">
+                    <span className="text-[9px] font-mono text-slate-400">
                       STEP 1 OF 3
                     </span>
                   </div>
 
                   {/* Input Name / Call-Sign with Randomizer */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
                       <span>Tactical Pilot Call-Sign / Battle Tag:</span>
-                      <span className="text-[10px] text-cyan-400">VISIBLE IN ARENA HUD</span>
+                      <span className="text-[9px] text-cyan-400">VISIBLE IN ARENA HUD</span>
                     </label>
 
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan-400 font-mono text-xs select-none">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400 font-mono text-xs select-none">
                           &gt;
                         </span>
                         <input
@@ -3185,29 +3449,29 @@ export function FullArenaExperience({
                           value={playerName}
                           onChange={(e) => setPlayerName(e.target.value)}
                           placeholder="Enter your battle alias..."
-                          className="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-700/80 text-white font-mono text-sm focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 shadow-inner"
+                          className="w-full pl-7 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white font-mono text-xs focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 shadow-inner"
                         />
                       </div>
 
                       <button
                         type="button"
                         onClick={rollRandomCallSign}
-                        className="px-3.5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-mono font-bold text-slate-200 hover:text-white transition-all flex items-center gap-1.5 shrink-0 shadow-md active:scale-95"
+                        className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[11px] font-mono font-bold text-slate-200 hover:text-white transition-all flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95 cursor-pointer"
                         title="Roll a random tactical hacker call-sign"
                       >
-                        <Dices className="w-4 h-4 text-amber-400" />
-                        <span className="hidden sm:inline">Randomize</span>
+                        <Dices className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Randomize</span>
                       </button>
                     </div>
                   </div>
 
                   {/* 3D Combat Format Selection Cards: 1v1 vs 2v2 */}
-                  <div className="space-y-2.5">
-                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                       Select Code Duel Combat Format:
                     </label>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {/* 1v1 Solo Duel Card */}
                       <button
                         type="button"
@@ -3215,44 +3479,44 @@ export function FullArenaExperience({
                           playTacticalSelectSound();
                           setTeamSize('1v1');
                         }}
-                        className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                        className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                           teamSize === '1v1'
-                            ? 'bg-gradient-to-br from-cyan-950/70 via-slate-900 to-slate-950 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.35)] scale-[1.01]'
+                            ? 'bg-gradient-to-br from-cyan-950/70 via-slate-900 to-slate-950 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] scale-[1.01]'
                             : 'bg-slate-950/70 border-slate-800/90 hover:border-slate-700 hover:bg-slate-900/60 opacity-80 hover:opacity-100'
                         }`}
                       >
                         <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                              <Zap className="w-5 h-5" />
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                              <Zap className="w-4 h-4" />
                             </span>
                             {teamSize === '1v1' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 text-[10px] font-mono font-bold">
+                              <span className="px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold">
                                 SELECTED
                               </span>
                             ) : (
-                              <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                              <span className="w-2 h-2 rounded-full bg-slate-700" />
                             )}
                           </div>
-                          <h3 className="font-bold text-white text-base font-mono flex items-center justify-between gap-1.5">
+                          <h3 className="font-bold text-white text-sm font-mono flex items-center justify-between gap-1.5">
                             <span>1 v 1 Solo Showdown</span>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                               OFFICIAL STABLE
                             </span>
                           </h3>
-                          <p className="text-[11px] font-mono text-cyan-400/90 mt-0.5 font-bold">
+                          <p className="text-[10px] font-mono text-cyan-400/90 mt-0.5 font-bold">
                             ULTRA LOW LATENCY DUEL
                           </p>
-                          <ul className="text-xs text-slate-300 mt-2.5 space-y-1 font-sans">
-                            <li className="flex items-center gap-1.5">
+                          <ul className="text-[11px] text-slate-300 mt-2 space-y-0.5 font-sans">
+                            <li className="flex items-center gap-1">
                               <span className="text-cyan-400">&bull;</span>
                               <span>Pure 1-on-1 head-to-head clash</span>
                             </li>
-                            <li className="flex items-center gap-1.5">
+                            <li className="flex items-center gap-1">
                               <span className="text-cyan-400">&bull;</span>
                               <span>Fog of War live code encryption</span>
                             </li>
-                            <li className="flex items-center gap-1.5">
+                            <li className="flex items-center gap-1">
                               <span className="text-cyan-400">&bull;</span>
                               <span>0% interference &bull; Pure speedrun</span>
                             </li>
@@ -3267,44 +3531,44 @@ export function FullArenaExperience({
                           playTacticalSelectSound();
                           setTeamSize('2v2');
                         }}
-                        className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                        className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                           teamSize === '2v2'
-                            ? 'bg-gradient-to-br from-rose-950/70 via-slate-900 to-slate-950 border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.35)] scale-[1.01]'
+                            ? 'bg-gradient-to-br from-rose-950/70 via-slate-900 to-slate-950 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)] scale-[1.01]'
                             : 'bg-slate-950/70 border-slate-800/90 hover:border-slate-700 hover:bg-slate-900/60 opacity-80 hover:opacity-100'
                         }`}
                       >
                         <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                              <Users className="w-5 h-5" />
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                              <Users className="w-4 h-4" />
                             </span>
                             {teamSize === '2v2' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-mono font-bold">
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[9px] font-mono font-bold">
                                 SELECTED
                               </span>
                             ) : (
-                              <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                              <span className="w-2 h-2 rounded-full bg-slate-700" />
                             )}
                           </div>
-                          <h3 className="font-bold text-white text-base font-mono flex items-center justify-between gap-1.5">
+                          <h3 className="font-bold text-white text-sm font-mono flex items-center justify-between gap-1">
                             <span>2 v 2 Relay Squad</span>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              BETA (EXPERIMENTAL)
+                            <span className="px-1 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              BETA
                             </span>
                           </h3>
-                          <p className="text-[11px] font-mono text-rose-400/90 mt-0.5 font-bold">
+                          <p className="text-[10px] font-mono text-rose-400/90 mt-0.5 font-bold">
                             DUAL-PILOT CO-OP WARFARE
                           </p>
-                          <ul className="text-xs text-slate-300 mt-2.5 space-y-1 font-sans">
-                            <li className="flex items-center gap-1.5">
+                          <ul className="text-[11px] text-slate-300 mt-2 space-y-0.5 font-sans">
+                            <li className="flex items-center gap-1">
                               <span className="text-rose-400">&bull;</span>
                               <span>Driver + Navigator tag-team pairing</span>
                             </li>
-                            <li className="flex items-center gap-1.5">
+                            <li className="flex items-center gap-1">
                               <span className="text-rose-400">&bull;</span>
                               <span>Auto keyboard swap every 2.5 mins</span>
                             </li>
-                            <li className="flex items-center gap-1.5">
+                            <li className="flex items-center gap-1">
                               <span className="text-rose-400">&bull;</span>
                               <span>Synchronized team test suite</span>
                             </li>
@@ -3315,8 +3579,8 @@ export function FullArenaExperience({
                   </div>
 
                   {/* Match Pace Chips */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[11px] font-mono text-slate-400 uppercase font-bold mr-1">
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase font-bold mr-1">
                       PACING:
                     </span>
                     {[
@@ -3331,7 +3595,7 @@ export function FullArenaExperience({
                           playTacticalSelectSound();
                           setTimeLimit(p.sec);
                         }}
-                        className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer ${
                           timeLimit === p.sec
                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
                             : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
@@ -3346,23 +3610,23 @@ export function FullArenaExperience({
             </div>
 
             {/* Bottom Command Bar: High-Voltage CTA */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
-              <div className="flex items-center gap-3 font-mono text-xs text-slate-400">
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800/80">
+              <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400">
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300">
                   FORMAT: <strong className="text-white">{teamSize.toUpperCase()}</strong>
                 </span>
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300">
                   DURATION: <strong className="text-white">{timeLimit / 60} MINS</strong>
                 </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setStep(0)}
-                  className="w-full sm:w-auto px-5 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Entry Gateway</span>
                 </button>
 
@@ -3373,10 +3637,10 @@ export function FullArenaExperience({
                     setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
                     setStep(2);
                   }}
-                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-3 cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(6,182,212,0.4)] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>⚡ INITIALIZE ARENA COMBAT PROTOCOL</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -4504,6 +4768,10 @@ export function FullArenaExperience({
                       onChange={(e) => {
                         const val = e.target.value;
                         setCurrentCode(val);
+                        updateAutocomplete(val, e.target.selectionStart || 0);
+                      }}
+                      onClick={(e) => {
+                        updateAutocomplete(getCurrentCode(), e.currentTarget.selectionStart || 0);
                       }}
                       onKeyDown={handleEditorKeyDown}
                       onPaste={(e) => {
@@ -4535,6 +4803,51 @@ export function FullArenaExperience({
                       autoComplete="off"
                       autoCorrect="off"
                     />
+
+                    {/* Floating IntelliJ / VS Code Style IntelliSense Tag Completion Popup */}
+                    {suggestionOpen && suggestions.length > 0 && (
+                      <div
+                        className="absolute z-50 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-[0_10px_35px_rgba(0,0,0,0.85)] backdrop-blur-xl overflow-hidden font-mono text-xs w-72 animate-in fade-in zoom-in-95 duration-100"
+                        style={{
+                          top: `${Math.min(suggestionCoords.top, 240)}px`,
+                          left: `${Math.min(suggestionCoords.left, 200)}px`,
+                        }}
+                      >
+                        <div className="px-2.5 py-1.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                          <span className="flex items-center gap-1.5 text-cyan-400">
+                            <Sparkles className="w-3 h-3 text-cyan-400" />
+                            <span>{activeTab === 'html' ? 'HTML Tag Completion' : 'CSS Property Helper'}</span>
+                          </span>
+                          <span className="text-[9px] text-slate-500">Press ↵ or Tab</span>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
+                          {suggestions.map((item, idx) => (
+                            <button
+                              key={item.label}
+                              type="button"
+                              onClick={() => applySuggestion(item)}
+                              className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-left transition-all cursor-pointer ${
+                                selectedSuggestionIdx === idx
+                                  ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/50 shadow-sm'
+                                  : 'text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700 font-mono">
+                                  &lt;&gt;
+                                </span>
+                                <span className="font-bold text-white font-mono">{item.label}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 truncate max-w-[110px]">{item.detail}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="px-2.5 py-1 bg-slate-900/60 border-t border-slate-800/60 text-[9px] text-slate-500 flex justify-between">
+                          <span>↑↓ Navigate</span>
+                          <span>Esc Cancel</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -5219,19 +5532,75 @@ ${jsCode || ''}
             </div>
 
             {/* Side by Side Unlocked Code Reveal */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-mono font-bold text-slate-300">
-                <Eye className="w-4 h-4 text-emerald-400" />
-                <span>Side-by-Side Solution Inspection:</span>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono font-bold text-slate-300">
+                <div className="flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-emerald-400" />
+                  <span>Side-by-Side Solution Inspection:</span>
+                </div>
+                {/* Language / File Tabs for Web Dev */}
+                {isWebMatch && (
+                  <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setRevealTab('html')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all ${
+                        revealTab === 'html' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      index.html
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRevealTab('css')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all ${
+                        revealTab === 'css' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      style.css
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRevealTab('js')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-all ${
+                        revealTab === 'js' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      script.js
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-52 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-                  <p className="text-[10px] text-slate-500 font-bold mb-1">// Your Squad Code</p>
-                  <pre>{htmlCode || cssCode || pythonCode || javaCode || cppCode || 'Solution'}</pre>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-1.5 pb-1 border-b border-slate-800/60">
+                    <span>// Your Solution ({isWebMatch ? revealTab.toUpperCase() : activeTab.toUpperCase()})</span>
+                    <span className="text-cyan-400">{playerName || 'You'}</span>
+                  </div>
+                  <pre className="whitespace-pre-wrap font-mono leading-relaxed">
+                    {isWebMatch
+                      ? (revealTab === 'html' ? (htmlCode || '<!-- No HTML written -->') : revealTab === 'css' ? (cssCode || '/* No CSS written */') : (jsCode || '// No JS written'))
+                      : (activeTab === 'python' ? (pythonCode || '# No code') : activeTab === 'java' ? (javaCode || '// No code') : (cppCode || '// No code'))}
+                  </pre>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-rose-300 overflow-x-auto">
-                  <p className="text-[10px] text-slate-500 font-bold mb-1">// Opponent Code (Revealed)</p>
-                  <pre>{activeQuestion.starterHtml || activeQuestion.starterPython || 'Solution'}</pre>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-1.5 pb-1 border-b border-slate-800/60">
+                    <span>// Opponent Solution (Revealed)</span>
+                    <span className="text-rose-400 truncate max-w-[140px]">{opponentDisplayName}</span>
+                  </div>
+                  <pre className="whitespace-pre-wrap font-mono leading-relaxed">
+                    {isWebMatch
+                      ? (revealTab === 'html'
+                          ? (opponentSolution?.htmlCode || activeQuestion.targetComponentHtml || activeQuestion.starterHtml || '<!-- No code written -->')
+                          : revealTab === 'css'
+                          ? (opponentSolution?.cssCode || activeQuestion.targetComponentCss || activeQuestion.starterCss || '/* No CSS written */')
+                          : (opponentSolution?.jsCode || activeQuestion.targetComponentJs || activeQuestion.starterJs || '// No JS written'))
+                      : (activeTab === 'python'
+                          ? (opponentSolution?.pythonCode || activeQuestion.starterPython || '# No code')
+                          : activeTab === 'java'
+                          ? (opponentSolution?.javaCode || activeQuestion.starterJava || '// No code')
+                          : (opponentSolution?.cppCode || activeQuestion.starterCpp || '// No code'))}
+                  </pre>
                 </div>
               </div>
             </div>
