@@ -4,29 +4,7 @@ export type SponsorThemePreset =
   | 'cyberpunk'
   | 'sunset-gold'
   | 'crimson'
-  | 'electric-violet'
-  | 'custom';
-
-export interface SponsorCustomThemeConfig {
-  primaryColor?: string;
-  secondaryColor?: string;
-  backgroundColor?: string;
-  heroAssetType?: '3d_cloud' | '3d_spline' | 'cyber_grid' | 'video' | 'custom_embed' | string;
-  heroAssetUrl?: string;
-  partnerName2?: string;
-  partnerLogo2?: string;
-  hiringLadder?: Array<{ level: number; title: string; subtitle?: string; perks: string }>;
-  developerSandbox?: {
-    endpoint?: string;
-    samplePayload?: string;
-    starterRepoUrl?: string;
-    latencyMs?: number;
-  };
-  candidatePassTitle?: string;
-  candidatePassRank?: string;
-  liveShortlistedCount?: number;
-  liveActiveSquadsCount?: number;
-}
+  | 'electric-violet';
 
 export interface SponsorThemeStyle {
   key: SponsorThemePreset;
@@ -42,27 +20,9 @@ export interface SponsorThemeStyle {
   chipBorder: string;
   chipBg: string;
   ambientLight: string;
-  customPrimary?: string;
-  customSecondary?: string;
-  customBg?: string;
 }
 
-export const SPONSOR_THEMES: Record<string, SponsorThemeStyle> = {
-  custom: {
-    key: 'custom',
-    name: 'Bespoke Custom Brand (From Scratch)',
-    badgeBg: 'bg-amber-500/15',
-    badgeBorder: 'border-amber-400/40',
-    badgeText: 'text-amber-300',
-    cardBorder: 'border-amber-500/40 hover:border-amber-400/80',
-    cardGlow: 'shadow-[0_0_35px_-8px_rgba(245,158,11,0.35)]',
-    heroGradient: 'from-amber-950/90 via-slate-950 to-neutral-950',
-    accentText: 'text-amber-400',
-    buttonGradient: 'from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black font-black',
-    chipBorder: 'border-amber-400/30',
-    chipBg: 'bg-amber-950/60 text-amber-200',
-    ambientLight: 'rgba(245, 158, 11, 0.2)',
-  },
+export const SPONSOR_THEMES: Record<SponsorThemePreset, SponsorThemeStyle> = {
   google: {
     key: 'google',
     name: 'Google Silicon Valley',
@@ -164,12 +124,9 @@ export interface SponsorTrack {
 export interface SponsoredMeta {
   isSponsored: boolean;
   companyName?: string;
-  partnerName2?: string;
-  partnerLogo2?: string;
   themePreset: SponsorThemePreset;
   theme: SponsorThemeStyle;
-  customConfig?: SponsorCustomThemeConfig;
-  glowColor?: 'gold' | 'cyan' | 'purple' | 'emerald' | 'blue' | 'rose' | 'fuchsia' | 'custom';
+  glowColor?: 'gold' | 'cyan' | 'purple' | 'emerald' | 'blue' | 'rose' | 'fuchsia';
   priorityRank: number;
   recruitmentPerks: string[];
   hiringRoles?: string;
@@ -179,44 +136,9 @@ export interface SponsoredMeta {
   promoVideoUrl?: string;
   customCtaText?: string;
   tracks?: SponsorTrack[];
-  hiringLadder?: Array<{ level: number; title: string; subtitle?: string; perks: string }>;
-  developerSandbox?: {
-    endpoint?: string;
-    samplePayload?: string;
-    starterRepoUrl?: string;
-    latencyMs?: number;
-  };
-  candidatePassTitle?: string;
-  candidatePassRank?: string;
-  liveShortlistedCount?: number;
-  liveActiveSquadsCount?: number;
 }
 
-export function getSponsorTheme(preset?: string, customConfig?: SponsorCustomThemeConfig): SponsorThemeStyle {
-  if (preset === 'custom' || customConfig?.primaryColor) {
-    const primary = customConfig?.primaryColor || '#F59E0B';
-    const secondary = customConfig?.secondaryColor || '#D97706';
-    const bg = customConfig?.backgroundColor || '#08080C';
-    return {
-      key: 'custom',
-      name: 'Bespoke Custom Brand (From Scratch)',
-      badgeBg: 'bg-amber-500/15',
-      badgeBorder: 'border-amber-400/40',
-      badgeText: 'text-amber-300',
-      cardBorder: 'border-amber-500/40 hover:border-amber-400/80',
-      cardGlow: 'shadow-[0_0_35px_-8px_rgba(245,158,11,0.35)]',
-      heroGradient: 'from-amber-950/90 via-slate-950 to-neutral-950',
-      accentText: 'text-amber-400',
-      buttonGradient: 'from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black font-black',
-      chipBorder: 'border-amber-400/30',
-      chipBg: 'bg-amber-950/60 text-amber-200',
-      ambientLight: primary,
-      customPrimary: primary,
-      customSecondary: secondary,
-      customBg: bg,
-    };
-  }
-
+export function getSponsorTheme(preset?: string): SponsorThemeStyle {
   if (preset && preset in SPONSOR_THEMES) {
     return SPONSOR_THEMES[preset as SponsorThemePreset];
   }
@@ -234,19 +156,8 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   );
   let companyName = hackathon?.company_name || (isSponsored ? hackathon?.organizer : undefined);
 
+  // Map glow_color to themePreset if preset not explicit
   let themePreset: SponsorThemePreset = 'sunset-gold';
-  let customConfig: SponsorCustomThemeConfig | undefined = undefined;
-
-  let partnerName2: string | undefined = hackathon?.partner_name_2 || undefined;
-  let partnerLogo2: string | undefined = hackathon?.partner_logo_2 || undefined;
-  let hiringLadder: Array<{ level: number; title: string; subtitle?: string; perks: string }> | undefined =
-    Array.isArray(hackathon?.hiring_ladder) ? hackathon.hiring_ladder : undefined;
-  let developerSandbox = hackathon?.developer_sandbox || undefined;
-  let candidatePassTitle = hackathon?.candidate_pass_title || 'VERIFIED CANDIDATE ACCESS PASS';
-  let candidatePassRank = hackathon?.candidate_pass_rank || 'TIER-1 ARCHITECT';
-  let liveShortlistedCount = typeof hackathon?.live_shortlisted_count === 'number' ? hackathon.live_shortlisted_count : 18;
-  let liveActiveSquadsCount = typeof hackathon?.live_active_squads_count === 'number' ? hackathon.live_active_squads_count : 340;
-
   const rawGlow = (hackathon?.glow_color || '').toLowerCase();
   if (rawGlow === 'cyan') themePreset = 'cyberpunk';
   else if (rawGlow === 'purple') themePreset = 'ethereum';
@@ -254,8 +165,8 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   else if (rawGlow === 'blue') themePreset = 'google';
   else if (rawGlow === 'rose' || rawGlow === 'red') themePreset = 'crimson';
   else if (rawGlow === 'fuchsia' || rawGlow === 'violet') themePreset = 'electric-violet';
-  else if (rawGlow === 'custom' || hackathon?.primary_color) themePreset = 'custom';
 
+  // Smart detect from company name if preset default
   const lowerCompany = (companyName || '').toLowerCase();
   if (lowerCompany.includes('google')) themePreset = 'google';
   else if (lowerCompany.includes('eth') || lowerCompany.includes('devfolio') || lowerCompany.includes('web3')) themePreset = 'ethereum';
@@ -284,9 +195,7 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         const parsed = JSON.parse(rawMeta);
         if (parsed.is_sponsored || parsed.is_enterprise) isSponsored = true;
         if (parsed.company_name) companyName = parsed.company_name;
-        if (parsed.partner_name_2) partnerName2 = parsed.partner_name_2;
-        if (parsed.partner_logo_2) partnerLogo2 = parsed.partner_logo_2;
-        if (parsed.theme_preset) {
+        if (parsed.theme_preset && parsed.theme_preset in SPONSOR_THEMES) {
           themePreset = parsed.theme_preset;
         } else if (parsed.glow_color) {
           const gc = parsed.glow_color.toLowerCase();
@@ -294,39 +203,7 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
           else if (gc === 'purple') themePreset = 'ethereum';
           else if (gc === 'blue') themePreset = 'google';
           else if (gc === 'rose') themePreset = 'crimson';
-          else if (gc === 'custom' || parsed.primary_color) themePreset = 'custom';
         }
-
-        if (
-          parsed.custom_config ||
-          parsed.primary_color ||
-          parsed.background_color ||
-          parsed.hero_asset_type ||
-          parsed.theme_preset === 'custom'
-        ) {
-          customConfig = {
-            primaryColor: parsed.primary_color || parsed.custom_config?.primaryColor || '#F59E0B',
-            secondaryColor: parsed.secondary_color || parsed.custom_config?.secondaryColor || '#06B6D4',
-            backgroundColor: parsed.background_color || parsed.custom_config?.backgroundColor || '#08080C',
-            heroAssetType: parsed.hero_asset_type || parsed.custom_config?.heroAssetType || '3d_cloud',
-            heroAssetUrl: parsed.hero_asset_url || parsed.custom_config?.heroAssetUrl || '',
-            partnerName2: parsed.partner_name_2 || parsed.custom_config?.partnerName2 || '',
-            partnerLogo2: parsed.partner_logo_2 || parsed.custom_config?.partnerLogo2 || '',
-            candidatePassTitle: parsed.candidate_pass_title || parsed.custom_config?.candidatePassTitle || 'VERIFIED CANDIDATE ACCESS PASS',
-            candidatePassRank: parsed.candidate_pass_rank || parsed.custom_config?.candidatePassRank || 'TIER-1 ARCHITECT',
-            liveShortlistedCount: parsed.live_shortlisted_count || parsed.custom_config?.liveShortlistedCount || 18,
-            liveActiveSquadsCount: parsed.live_active_squads_count || parsed.custom_config?.liveActiveSquadsCount || 340,
-          };
-          themePreset = 'custom';
-        }
-
-        if (Array.isArray(parsed.hiring_ladder)) hiringLadder = parsed.hiring_ladder;
-        if (parsed.developer_sandbox) developerSandbox = parsed.developer_sandbox;
-        if (parsed.candidate_pass_title) candidatePassTitle = parsed.candidate_pass_title;
-        if (parsed.candidate_pass_rank) candidatePassRank = parsed.candidate_pass_rank;
-        if (typeof parsed.live_shortlisted_count === 'number') liveShortlistedCount = parsed.live_shortlisted_count;
-        if (typeof parsed.live_active_squads_count === 'number') liveActiveSquadsCount = parsed.live_active_squads_count;
-
         if (typeof parsed.priority_rank === 'number') priorityRank = parsed.priority_rank;
         if (Array.isArray(parsed.recruitment_perks)) recruitmentPerks = parsed.recruitment_perks;
         if (parsed.hiring_roles) hiringRoles = parsed.hiring_roles;
@@ -350,11 +227,8 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   return {
     isSponsored,
     companyName,
-    partnerName2,
-    partnerLogo2,
     themePreset,
-    theme: getSponsorTheme(themePreset, customConfig),
-    customConfig,
+    theme: getSponsorTheme(themePreset),
     glowColor: hackathon?.glow_color || 'gold',
     priorityRank,
     recruitmentPerks,
@@ -365,11 +239,5 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     promoVideoUrl,
     customCtaText,
     tracks,
-    hiringLadder,
-    developerSandbox,
-    candidatePassTitle,
-    candidatePassRank,
-    liveShortlistedCount,
-    liveActiveSquadsCount,
   };
 }
