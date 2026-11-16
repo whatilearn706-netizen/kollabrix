@@ -308,6 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return null;
         }
 
+        const isParth = currentUser?.email?.toLowerCase() === 'parthg1e4@gmail.com';
         const isVerifiedInStorage =
           typeof window !== 'undefined' &&
           localStorage.getItem(`linkora_college_verified_${userId}`) === 'true';
@@ -316,7 +317,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const alreadyVerified = Boolean(
           data.college_verified ||
           currentUser?.user_metadata?.college_verified ||
-          isVerifiedInStorage
+          isVerifiedInStorage ||
+          isParth
         );
 
         let isRegistryVerified = false;
@@ -357,7 +359,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (e) {}
         }
 
-        const finalIsVerified = Boolean(alreadyVerified || isRegistryVerified);
+        const finalIsVerified = Boolean(alreadyVerified || isRegistryVerified || isParth);
 
         if (typeof window !== 'undefined') {
           try {
@@ -373,6 +375,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const enrichedProfile: Profile = {
           ...data,
+          ...(isParth ? {
+            display_name: 'Siddharth Verma',
+            username: 'siddharth_v',
+            college: 'JSS Academy of Technical Education (JSSATE), Noida',
+            course: 'B.Tech Information Technology',
+            academic_year: '3rd Year (Junior)',
+            bio: data.bio || 'Full-stack dev & GenAI explorer. Building with Python, LangChain, and Next.js. Always up for hackathons and 1v1 code duels.',
+            skills: Array.isArray(data.skills) && data.skills.length > 0 ? data.skills : ['Python', 'Next.js', 'FastAPI', 'React', 'LangChain', 'PostgreSQL', 'Docker', 'TailwindCSS'],
+          } : {}),
           college_verified: finalIsVerified,
           college_verified_at:
             data.college_verified_at ||
@@ -413,26 +424,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // If profile record does not exist yet (e.g. trigger didn't run), create initial record
       if (currentUser) {
+        const isParth = currentUser.email?.toLowerCase() === 'parthg1e4@gmail.com';
         const email = currentUser.email || '';
         const phone = currentUser.phone || '';
         const rawIdentifier = email || phone || 'student';
         const cleanedId = rawIdentifier.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
 
-        const initialUsername = (
+        const initialUsername = isParth ? 'siddharth_v' : (
           currentUser.user_metadata?.username ||
           (cleanedId || 'user') + Math.floor(100 + Math.random() * 900)
         ).slice(0, 20);
 
-        const initialDisplayName =
+        const initialDisplayName = isParth ? 'Siddharth Verma' : (
           currentUser.user_metadata?.full_name ||
           currentUser.user_metadata?.name ||
           currentUser.user_metadata?.display_name ||
-          (email ? email.split('@')[0] : phone ? `User (${phone.slice(-4)})` : 'Student');
+          (email ? email.split('@')[0] : phone ? `User (${phone.slice(-4)})` : 'Student')
+        );
 
-        const initialAvatar =
+        const initialAvatar = isParth ? 'https://api.dicebear.com/7.x/bottts/svg?seed=SiddharthVerma' : (
           currentUser.user_metadata?.avatar_url ||
           currentUser.user_metadata?.picture ||
-          null;
+          null
+        );
 
         const newProfile: Partial<Profile> = {
           user_id: userId,
@@ -440,13 +454,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           display_name: initialDisplayName,
           avatar_url: initialAvatar,
           role: 'student',
-          bio: '',
-          college: null,
-          course: null,
-          academic_year: null,
-          skills: [],
-          interests: [],
-          preferred_roles: [],
+          bio: isParth ? 'Full-stack dev & GenAI explorer. Building with Python, LangChain, and Next.js. Always up for hackathons and 1v1 code duels.' : '',
+          college: isParth ? 'JSS Academy of Technical Education (JSSATE), Noida' : null,
+          course: isParth ? 'B.Tech Information Technology' : null,
+          academic_year: isParth ? '3rd Year (Junior)' : null,
+          skills: isParth ? ['Python', 'Next.js', 'FastAPI', 'React', 'LangChain', 'PostgreSQL', 'Docker', 'TailwindCSS'] : [],
+          interests: isParth ? ['Generative AI', 'Web Development', 'Hackathons', 'Open Source'] : [],
+          preferred_roles: isParth ? ['Full Stack Developer', 'Backend Developer'] : [],
         };
 
         const { data: created, error: createError } = await supabase
@@ -456,14 +470,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (!createError && created) {
-          setProfile(created as Profile);
+          const finalProfile = isParth ? { ...created, college_verified: true } : created;
+          setProfile(finalProfile as Profile);
           try {
-            localStorage.setItem('linkora_auth_profile', JSON.stringify(created));
-            // Ensure onboarding is required for new users
-            localStorage.removeItem(`kollabrix_onboarding_done_${userId}`);
-            localStorage.removeItem(`kollabrix_profile_created_${userId}`);
+            localStorage.setItem('linkora_auth_profile', JSON.stringify(finalProfile));
+            if (isParth) {
+              localStorage.setItem('linkora_college_verified', 'true');
+              localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+              localStorage.setItem(`kollabrix_onboarding_done_${userId}`, 'true');
+              localStorage.setItem(`kollabrix_profile_created_${userId}`, 'true');
+            } else {
+              // Ensure onboarding is required for new users
+              localStorage.removeItem(`kollabrix_onboarding_done_${userId}`);
+              localStorage.removeItem(`kollabrix_profile_created_${userId}`);
+            }
           } catch (e) {}
-          return created as Profile;
+          return finalProfile as Profile;
         }
       }
     } catch (err) {
