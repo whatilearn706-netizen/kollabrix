@@ -124,6 +124,10 @@ export interface SponsorTrack {
 export interface SponsoredMeta {
   isSponsored: boolean;
   companyName?: string;
+  partnerName2?: string;
+  partnerLogo2?: string;
+  sponsorTier?: string;
+  brandColor?: string;
   themePreset: SponsorThemePreset;
   theme: SponsorThemeStyle;
   glowColor?: 'gold' | 'cyan' | 'purple' | 'emerald' | 'blue' | 'rose' | 'fuchsia';
@@ -136,6 +140,17 @@ export interface SponsoredMeta {
   promoVideoUrl?: string;
   customCtaText?: string;
   tracks?: SponsorTrack[];
+  hiringLadder?: Array<{ level: number; title: string; perks: string }>;
+  developerSandbox?: {
+    endpoint?: string;
+    starterRepoUrl?: string;
+    perks?: string;
+    latencyMs?: number;
+  };
+  candidatePassTitle?: string;
+  candidatePassRank?: string;
+  liveShortlistedCount?: number;
+  liveActiveSquadsCount?: number;
 }
 
 export function getSponsorTheme(preset?: string): SponsorThemeStyle {
@@ -183,6 +198,18 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   let customCtaText = hackathon?.custom_cta_text || '';
   let tracks: SponsorTrack[] = Array.isArray(hackathon?.tracks) ? hackathon.tracks : [];
 
+  let partnerName2: string | undefined = hackathon?.partner_name_2 || undefined;
+  let partnerLogo2: string | undefined = hackathon?.partner_logo_2 || undefined;
+  let sponsorTier: string | undefined = hackathon?.sponsor_tier || 'Official Title Sponsor';
+  let brandColor: string | undefined = hackathon?.brand_color || undefined;
+  let hiringLadder: Array<{ level: number; title: string; perks: string }> | undefined =
+    Array.isArray(hackathon?.hiring_ladder) ? hackathon.hiring_ladder : undefined;
+  let developerSandbox = hackathon?.developer_sandbox || undefined;
+  let candidatePassTitle = hackathon?.candidate_pass_title || 'VERIFIED CANDIDATE ACCESS PASS';
+  let candidatePassRank = hackathon?.candidate_pass_rank || 'TIER-1 ARCHITECT';
+  let liveShortlistedCount = typeof hackathon?.live_shortlisted_count === 'number' ? hackathon.live_shortlisted_count : 18;
+  let liveActiveSquadsCount = typeof hackathon?.live_active_squads_count === 'number' ? hackathon.live_active_squads_count : 340;
+
   // Extract from HTML meta comment if present
   if (
     hackathon?.description &&
@@ -195,6 +222,10 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         const parsed = JSON.parse(rawMeta);
         if (parsed.is_sponsored || parsed.is_enterprise) isSponsored = true;
         if (parsed.company_name) companyName = parsed.company_name;
+        if (parsed.partner_name_2) partnerName2 = parsed.partner_name_2;
+        if (parsed.partner_logo_2) partnerLogo2 = parsed.partner_logo_2;
+        if (parsed.sponsor_tier) sponsorTier = parsed.sponsor_tier;
+        if (parsed.brand_color) brandColor = parsed.brand_color;
         if (parsed.theme_preset && parsed.theme_preset in SPONSOR_THEMES) {
           themePreset = parsed.theme_preset;
         } else if (parsed.glow_color) {
@@ -213,6 +244,12 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (parsed.promo_video_url) promoVideoUrl = parsed.promo_video_url;
         if (parsed.custom_cta_text) customCtaText = parsed.custom_cta_text;
         if (Array.isArray(parsed.tracks)) tracks = parsed.tracks;
+        if (Array.isArray(parsed.hiring_ladder)) hiringLadder = parsed.hiring_ladder;
+        if (parsed.developer_sandbox) developerSandbox = parsed.developer_sandbox;
+        if (parsed.candidate_pass_title) candidatePassTitle = parsed.candidate_pass_title;
+        if (parsed.candidate_pass_rank) candidatePassRank = parsed.candidate_pass_rank;
+        if (typeof parsed.live_shortlisted_count === 'number') liveShortlistedCount = parsed.live_shortlisted_count;
+        if (typeof parsed.live_active_squads_count === 'number') liveActiveSquadsCount = parsed.live_active_squads_count;
       }
     } catch {}
   }
@@ -227,6 +264,10 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   return {
     isSponsored,
     companyName,
+    partnerName2,
+    partnerLogo2,
+    sponsorTier,
+    brandColor,
     themePreset,
     theme: getSponsorTheme(themePreset),
     glowColor: hackathon?.glow_color || 'gold',
@@ -239,5 +280,11 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     promoVideoUrl,
     customCtaText,
     tracks,
+    hiringLadder,
+    developerSandbox,
+    candidatePassTitle,
+    candidatePassRank,
+    liveShortlistedCount,
+    liveActiveSquadsCount,
   };
 }

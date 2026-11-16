@@ -45,9 +45,11 @@ import {
   Briefcase,
   Play,
   Flame,
+  Terminal,
   Headphones,
   Mail,
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModal';
 
@@ -143,6 +145,20 @@ export default function HackathonDetailPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'themes' | 'schedule' | 'rules'>('overview');
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [copiedEndpoint, setCopiedEndpoint] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && hackathon?.id) {
+      QRCode.toDataURL(window.location.href, {
+        width: 256,
+        margin: 1,
+        color: { dark: '#0A0D16', light: '#ffffff' },
+      })
+        .then((url) => setQrCodeUrl(url))
+        .catch(() => {});
+    }
+  }, [hackathon?.id]);
 
   // Load Hackathon details with maximum resilience & 0ms perceived latency
   const loadHackathon = useCallback(async () => {
@@ -891,8 +907,8 @@ export default function HackathonDetailPage() {
 
           {/* Floating Brand Emblem & Partner Pill on Top of Banner for Sponsored Events */}
           {sponsoredMeta.isSponsored && (
-            <div className="absolute top-4 inset-x-4 flex items-center justify-between z-20 pointer-events-none">
-              <div className="flex items-center gap-3 p-1.5 pr-4 rounded-2xl bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-2xl pointer-events-auto">
+            <div className="absolute top-4 inset-x-4 flex items-center justify-between z-20 pointer-events-none flex-wrap gap-2">
+              <div className="flex items-center gap-3 p-2 pr-4 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/20 shadow-2xl pointer-events-auto">
                 {sponsoredMeta.sponsorLogoUrl ? (
                   <div className="w-10 h-10 rounded-xl bg-white p-1.5 flex items-center justify-center shadow-md shrink-0">
                     <img
@@ -913,18 +929,42 @@ export default function HackathonDetailPage() {
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300">
-                      Official Title Sponsor
+                      {sponsoredMeta.sponsorTier || 'Official Title Sponsor'}
                     </span>
                   </div>
-                  <span className="text-xs font-black text-white drop-shadow-sm">
-                    {sponsoredMeta.companyName || hackathon.organizer}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-black text-white drop-shadow-sm">
+                      {sponsoredMeta.companyName || hackathon.organizer}
+                    </span>
+                    {sponsoredMeta.partnerName2 && (
+                      <span className="text-xs text-slate-300 font-mono flex items-center gap-1.5 pl-2 border-l border-white/20">
+                        <span className="text-slate-500 font-bold">×</span>
+                        {sponsoredMeta.partnerLogo2 && (
+                          <img
+                            src={sponsoredMeta.partnerLogo2}
+                            alt={sponsoredMeta.partnerName2}
+                            className="h-4 w-auto object-contain max-w-[70px]"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        )}
+                        <strong className="text-white font-bold">{sponsoredMeta.partnerName2}</strong>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/30 text-amber-200 border border-amber-400/50 backdrop-blur-md shadow-lg pointer-events-auto">
-                ⭐ Priority Spotlight #{sponsoredMeta.priorityRank}
-              </span>
+              <div className="flex items-center gap-2 pointer-events-auto">
+                <span className="px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-950/90 text-cyan-300 border border-cyan-500/40 backdrop-blur-md shadow-lg hidden sm:flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>
+                    Telemetry: <strong className="text-white">{sponsoredMeta.liveShortlistedCount || 18} Shortlisted</strong> &bull; <strong className="text-amber-300">{sponsoredMeta.liveActiveSquadsCount || 340} in Sandbox</strong>
+                  </span>
+                </span>
+                <span className="px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-amber-500/30 text-amber-200 border border-amber-400/50 backdrop-blur-md shadow-lg">
+                  ⭐ Priority #{sponsoredMeta.priorityRank}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -1038,6 +1078,145 @@ export default function HackathonDetailPage() {
                       <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">Sponsor Credits &amp; Perx</span>
                       <p className="text-xs font-black text-emerald-300 truncate">Cloud Grants &amp; Hardware</p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Dedicated Multi-Track Sponsored Bounties */}
+                <div className="pt-3 border-t border-white/10 relative z-10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Dedicated Track Bounties &amp; Escrow Pools</span>
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">Total Escrow: <strong className="text-emerald-400 font-bold">{hackathon.prize_pool || '$25,000 USD'}</strong></span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(sponsoredMeta.tracks && sponsoredMeta.tracks.length > 0 ? sponsoredMeta.tracks : [
+                      { title: 'Track 1: Cloud & AI Architecture', bounty: '$5,000 USD + Cloud Credits', description: 'Build high-scale distributed applications and generative AI solutions on partner infrastructure.' },
+                      { title: 'Track 2: High-Velocity Engineering', bounty: '$5,000 USD + Direct PPIs', description: 'Lowest latency API routing, automated failovers, and robust production-ready design.' }
+                    ]).map((track, i) => (
+                      <div key={i} className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2 hover:border-amber-400/40 transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-black text-white">{track.title}</span>
+                          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                            {track.bounty}
+                          </span>
+                        </div>
+                        {track.description && (
+                          <p className="text-[11px] text-slate-300 leading-relaxed">{track.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Developer Sandbox & Tooling Dock */}
+                <div className="pt-3 border-t border-white/10 relative z-10 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+                      <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Official Developer Sandbox &amp; Starter Tooling</span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+                        ⚡ {sponsoredMeta.developerSandbox?.latencyMs || 130}ms SLA Active
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        {sponsoredMeta.developerSandbox?.perks || '$1,000 Cloud Credits per Squad'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-cyan-500/30 space-y-3 shadow-inner">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 font-mono text-xs">
+                        <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-bold text-[10px]">API ENDPOINT</span>
+                        <code className="text-slate-200 select-all font-mono text-xs">
+                          {sponsoredMeta.developerSandbox?.endpoint || 'POST /v2/fintech/sprint/sandbox'}
+                        </code>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ep = sponsoredMeta.developerSandbox?.endpoint || 'POST /v2/fintech/sprint/sandbox';
+                          navigator.clipboard.writeText(`curl -X POST https://api.kollabrix.in${ep.replace('POST ', '')} -H "Authorization: Bearer SPRINT_KEY"`);
+                          setCopiedEndpoint(true);
+                          setTimeout(() => setCopiedEndpoint(false), 2000);
+                        }}
+                        className="px-3 py-1 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-xs font-mono text-slate-200 border border-white/10 flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        {copiedEndpoint ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-emerald-300">cURL Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copy cURL Request</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10 flex-wrap">
+                      <span className="text-[11px] text-slate-400">
+                        Clone the official template repo with pre-configured SDKs, mock stubs, and test suites:
+                      </span>
+                      <a
+                        href={sponsoredMeta.developerSandbox?.starterRepoUrl || 'https://github.com/kollabrix/enterprise-sprint-starter'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white font-mono text-xs font-bold transition-colors"
+                      >
+                        <span>Starter Repository</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Executive Fast-Track Hiring Ladder */}
+                <div className="pt-3 border-t border-white/10 relative z-10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Executive Fast-Track Hiring Ladder</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400">
+                      Direct ATS Bypass Guarantee
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {(sponsoredMeta.hiringLadder && sponsoredMeta.hiringLadder.length > 0 ? sponsoredMeta.hiringLadder : [
+                      { level: 1, title: 'Level 1: Qualifier', perks: '$1,000 Cloud Credits + Sandbox Keys' },
+                      { level: 2, title: 'Level 2: Finalist Hangar', perks: '1:1 Architecture Review with VP of Engineering' },
+                      { level: 3, title: 'Level 3: Grand Laureate', perks: 'Direct Technical Interview Bypass + ₹10,00,000 Escrow' }
+                    ]).map((step, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3.5 rounded-2xl border space-y-1.5 ${
+                          step.level === 3
+                            ? 'bg-amber-500/10 border-amber-400/40 text-amber-200'
+                            : 'bg-black/30 border-white/10 text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded-md bg-white/10">
+                            LEVEL {step.level}
+                          </span>
+                          {step.level === 3 && (
+                            <span className="text-[10px] font-mono font-bold text-amber-300">
+                              {sponsoredMeta.hiringPackage || '₹18-35 LPA FAST-TRACK'}
+                            </span>
+                          )}
+                        </div>
+                        <h5 className="text-xs font-black text-white">{step.title}</h5>
+                        <p className="text-[11px] text-slate-300 leading-snug">{step.perks}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -1608,6 +1787,69 @@ export default function HackathonDetailPage() {
           {/* Right Sidebar: Unstop-Style Sticky Action Card */}
           <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
             
+            {/* Brushed Titanium VIP Candidate Access Pass for Sponsored Corporate Events */}
+            {sponsoredMeta.isSponsored && (
+              <div className="p-5 rounded-3xl bg-gradient-to-b from-slate-900 via-charcoal-900 to-black border border-white/20 shadow-2xl space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="text-center space-y-1 relative z-10">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase block">
+                    {sponsoredMeta.candidatePassTitle || 'VERIFIED CANDIDATE ACCESS PASS'}
+                  </span>
+                  <div className="inline-block px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-black tracking-wider">
+                    {sponsoredMeta.candidatePassRank || 'TIER-1 ARCHITECT'}
+                  </div>
+                </div>
+
+                {/* Scannable High-Contrast Recruiter Pass QR */}
+                <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-black/60 border border-white/10 relative z-10 space-y-2">
+                  <div className="w-40 h-40 rounded-xl bg-white p-2.5 shadow-xl flex items-center justify-center">
+                    {qrCodeUrl ? (
+                      <img src={qrCodeUrl} alt="Candidate Recruiter Verification QR" className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-mono text-slate-500">
+                        Generating QR...
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider text-center">
+                    Scan for Recruiter Verification
+                  </span>
+                </div>
+
+                {/* Candidate Metadata Breakdown */}
+                <div className="space-y-1.5 text-xs font-mono relative z-10 border-t border-white/10 pt-3">
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Candidate:</span>
+                    <strong className="text-white font-mono truncate max-w-[170px]">
+                      {user?.user_metadata?.username || profile?.username || (user?.email ? user.email.split('@')[0] : 'goyalmayank142')}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>PPI Track:</span>
+                    <strong className="text-amber-300 font-bold">Active Fast-Track</strong>
+                  </div>
+                </div>
+
+                {/* Enlist CTA */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const regBtn = document.getElementById('enrollment-primary-action-btn');
+                    if (regBtn) {
+                      regBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      regBtn.focus();
+                      regBtn.classList.add('ring-4', 'ring-amber-400');
+                      setTimeout(() => regBtn.classList.remove('ring-4', 'ring-amber-400'), 1500);
+                    }
+                  }}
+                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-mono font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer relative z-10"
+                >
+                  <Sparkles className="w-4 h-4 fill-black" />
+                  <span>{sponsoredMeta.customCtaText || 'ENLIST FOR PPI TRIALS'} &gt;</span>
+                </button>
+              </div>
+            )}
+
             {/* Main Action Box Container with Relative Positioning for Protruding Pill */}
             <div className="relative pt-3">
               
@@ -1711,6 +1953,7 @@ export default function HackathonDetailPage() {
                     )
                   ) : (
                     <button
+                      id="enrollment-primary-action-btn"
                       onClick={handleRegister}
                       disabled={isRegistering || countdown.isClosed || !eligibilityEvaluation.isEligible}
                       className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${

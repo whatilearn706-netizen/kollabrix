@@ -402,6 +402,10 @@ export async function POST(request: NextRequest) {
       const {
         company_name,
         company_logo,
+        partner_name_2 = '',
+        partner_logo_2 = '',
+        sponsor_tier = 'Official Title Sponsor',
+        brand_color = '#F59E0B',
         theme_preset = 'sunset-gold',
         title,
         tagline,
@@ -419,10 +423,17 @@ export async function POST(request: NextRequest) {
         hiring_roles = '',
         hiring_package = '',
         promo_video_url = '',
-        custom_cta_text = '',
+        custom_cta_text = 'ENLIST FOR PPI TRIALS',
         themes = ['Enterprise Challenge', 'AI/Cloud Architecture'],
         banner_url,
         access_type = 'public',
+        tracks = [],
+        hiring_ladder = [],
+        developer_sandbox = null,
+        candidate_pass_title = 'VERIFIED CANDIDATE ACCESS PASS',
+        candidate_pass_rank = 'TIER-1 ARCHITECT',
+        live_shortlisted_count = 18,
+        live_active_squads_count = 340,
       } = body;
 
       if (!company_name || !title) {
@@ -442,6 +453,10 @@ export async function POST(request: NextRequest) {
         is_enterprise: true,
         company_name: company_name.trim(),
         sponsor_logo_url: company_logo?.trim() || null,
+        partner_name_2: partner_name_2?.trim() || null,
+        partner_logo_2: partner_logo_2?.trim() || null,
+        sponsor_tier: sponsor_tier?.trim() || 'Official Title Sponsor',
+        brand_color: brand_color?.trim() || '#F59E0B',
         theme_preset,
         glow_color,
         priority_rank: parsedPriority,
@@ -449,9 +464,28 @@ export async function POST(request: NextRequest) {
         hiring_package: hiring_package.trim(),
         tagline: tagline?.trim() || '',
         promo_video_url: promo_video_url?.trim() || null,
-        custom_cta_text: custom_cta_text?.trim() || null,
+        custom_cta_text: custom_cta_text?.trim() || 'ENLIST FOR PPI TRIALS',
         recruitment_perks: perksArray,
         prize_pool: prize_pool.trim(),
+        tracks: Array.isArray(tracks) && tracks.length > 0 ? tracks : [
+          { title: 'Track 1: Cloud & AI Innovation', bounty: '$5,000 USD + Cloud Credits', description: 'Build high-scale distributed applications and generative AI solutions.' },
+          { title: 'Track 2: High-Velocity Engineering', bounty: '$5,000 USD + Direct PPIs', description: 'Best architecture, latency optimizations, and production readiness.' }
+        ],
+        hiring_ladder: Array.isArray(hiring_ladder) && hiring_ladder.length > 0 ? hiring_ladder : [
+          { level: 1, title: 'Level 1: Qualifier', perks: '$1,000 Cloud Credits + Sandbox Keys' },
+          { level: 2, title: 'Level 2: Finalist Hangar', perks: '1:1 Architecture Review with VP of Engineering' },
+          { level: 3, title: 'Level 3: Grand Laureate', perks: 'Direct Technical Interview Bypass + ₹10,00,000 Escrow' }
+        ],
+        developer_sandbox: developer_sandbox || {
+          endpoint: 'POST /v2/fintech/sprint/sandbox',
+          starterRepoUrl: 'https://github.com/kollabrix/enterprise-sprint-starter',
+          perks: '$1,000 Cloud Credits per Squad + Production Sandbox Keys',
+          latencyMs: 130
+        },
+        candidate_pass_title: candidate_pass_title?.trim() || 'VERIFIED CANDIDATE ACCESS PASS',
+        candidate_pass_rank: candidate_pass_rank?.trim() || 'TIER-1 ARCHITECT',
+        live_shortlisted_count: parseInt(String(live_shortlisted_count)) || 18,
+        live_active_squads_count: parseInt(String(live_active_squads_count)) || 340,
         access_type,
         join_code: joinCode,
         min_team_size: 1,
@@ -724,6 +758,10 @@ export async function POST(request: NextRequest) {
       const {
         company_name,
         company_logo,
+        partner_name_2 = '',
+        partner_logo_2 = '',
+        sponsor_tier = 'Official Title Sponsor',
+        brand_color = '#F59E0B',
         theme_preset = 'sunset-gold',
         glow_color = 'gold',
         tagline = '',
@@ -732,7 +770,14 @@ export async function POST(request: NextRequest) {
         recruitment_perks,
         priority_rank = 10,
         promo_video_url = '',
-        custom_cta_text = '',
+        custom_cta_text = 'ENLIST FOR PPI TRIALS',
+        tracks,
+        hiring_ladder,
+        developer_sandbox,
+        candidate_pass_title,
+        candidate_pass_rank,
+        live_shortlisted_count,
+        live_active_squads_count,
       } = body;
 
       const perksArray = Array.isArray(recruitment_perks)
@@ -768,6 +813,10 @@ export async function POST(request: NextRequest) {
               is_enterprise: true,
               company_name,
               sponsor_logo_url: company_logo || null,
+              partner_name_2: partner_name_2 || metaObj.partner_name_2 || null,
+              partner_logo_2: partner_logo_2 || metaObj.partner_logo_2 || null,
+              sponsor_tier: sponsor_tier || metaObj.sponsor_tier || 'Official Title Sponsor',
+              brand_color: brand_color || metaObj.brand_color || '#F59E0B',
               theme_preset,
               glow_color,
               tagline,
@@ -776,7 +825,14 @@ export async function POST(request: NextRequest) {
               recruitment_perks: perksArray,
               priority_rank: parsedPriority,
               promo_video_url: promo_video_url || null,
-              custom_cta_text: custom_cta_text || null,
+              custom_cta_text: custom_cta_text || 'ENLIST FOR PPI TRIALS',
+              tracks: tracks || metaObj.tracks || null,
+              hiring_ladder: hiring_ladder || metaObj.hiring_ladder || null,
+              developer_sandbox: developer_sandbox || metaObj.developer_sandbox || null,
+              candidate_pass_title: candidate_pass_title || metaObj.candidate_pass_title || 'VERIFIED CANDIDATE ACCESS PASS',
+              candidate_pass_rank: candidate_pass_rank || metaObj.candidate_pass_rank || 'TIER-1 ARCHITECT',
+              live_shortlisted_count: typeof live_shortlisted_count === 'number' ? live_shortlisted_count : (metaObj.live_shortlisted_count || 18),
+              live_active_squads_count: typeof live_active_squads_count === 'number' ? live_active_squads_count : (metaObj.live_active_squads_count || 340),
             };
 
             const updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
