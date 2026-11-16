@@ -13,19 +13,29 @@ function ArenaPageContent() {
   const { user, profile } = useAuth();
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-  const [isLive, setIsLive] = useState(true);
+  const [isLive, setIsLive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kollabrix_arena_is_live');
+        if (stored !== null) return stored === 'true';
+      } catch {}
+    }
+    return true;
+  });
   const [maintenanceMessage, setMaintenanceMessage] = useState(
     'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
 
   const checkArenaStatus = async () => {
-    setIsLoadingStatus(true);
     try {
-      const res = await fetch('/api/arena/status', { cache: 'no-store' });
+      const res = await fetch('/api/arena/status');
       if (res.ok) {
         const data = await res.json();
-        setIsLive(data.isLive !== false);
+        const live = data.isLive !== false;
+        setIsLive(live);
+        try {
+          localStorage.setItem('kollabrix_arena_is_live', String(live));
+        } catch {}
         if (data.maintenanceMessage) {
           setMaintenanceMessage(data.maintenanceMessage);
         }
@@ -33,8 +43,6 @@ function ArenaPageContent() {
     } catch (err) {
       // In case of network error, default to live
       setIsLive(true);
-    } finally {
-      setIsLoadingStatus(false);
     }
   };
 
@@ -55,17 +63,6 @@ function ArenaPageContent() {
     } catch (e) {}
     router.push('/');
   };
-
-  if (isLoadingStatus) {
-    return (
-      <div className="fixed inset-0 bg-[#04060d] flex flex-col items-center justify-center font-mono text-cyan-400 gap-3 z-50">
-        <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs uppercase tracking-widest animate-pulse">
-          AUTHENTICATING ARENA BATTLEFIELD STATUS...
-        </span>
-      </div>
-    );
-  }
 
   // If Arena is OFFLINE / UNDER MAINTENANCE (Admins bypass so they can build & test live):
   if (!isLive && !isAdmin) {
@@ -172,8 +169,8 @@ export default function ArenaPage() {
   return (
     <Suspense
       fallback={
-        <div className="fixed inset-0 bg-[#05070e] flex items-center justify-center font-mono text-cyan-400">
-          INITIALIZING BATTLE ARENA...
+        <div className="fixed inset-0 bg-[#04060d] flex flex-col items-center justify-center font-mono text-cyan-400 gap-3 z-50">
+          <div className="w-8 h-8 border-2 border-cyan-400/40 border-t-cyan-400 rounded-full animate-spin" />
         </div>
       }
     >

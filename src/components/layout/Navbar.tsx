@@ -130,7 +130,10 @@ export function Navbar() {
   useEffect(() => {
     setMounted(true);
     warmAppCache();
-  }, []);
+    try {
+      router.prefetch('/arena');
+    } catch {}
+  }, [router]);
 
   // Close dropdown on outside click
   useEffect(() => {
