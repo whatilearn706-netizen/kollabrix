@@ -43,7 +43,9 @@ export class KollabrixRealtimeClient {
 
   private getWsUrl(): string {
     const isBrowser = typeof window !== 'undefined';
-    const host = process.env.NEXT_PUBLIC_REALTIME_WS_HOST || 'api.kollabrix.in';
+    const host =
+      process.env.NEXT_PUBLIC_REALTIME_WS_HOST ||
+      (isBrowser && window.location.host ? window.location.host : 'kollabrix.in');
     const proto = isBrowser && window.location.protocol === 'http:' ? 'ws:' : 'wss:';
     const query = new URLSearchParams({
       room: this.room,
