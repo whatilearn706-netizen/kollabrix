@@ -312,7 +312,7 @@ export default function AdminControlCenterPage() {
 
 
   const unlockSql = `-- Kollabrix Admin Master Control Database Unlock
--- Run this in Supabase SQL Editor (https://supabase.com/dashboard/project/bmiwmlfraaridbekuily/sql):
+-- Run this in PostgreSQL database on Kollabrix 32GB Server:
 
 CREATE TABLE IF NOT EXISTS public.platform_settings (
     key TEXT PRIMARY KEY,
@@ -620,8 +620,8 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
             <p className="font-semibold text-white">How to run in 10 seconds:</p>
             <ol className="list-decimal pl-4 space-y-1 text-slate-400">
               <li>Copy the SQL script above.</li>
-              <li>Open <a href="https://supabase.com/dashboard/project/bmiwmlfraaridbekuily/sql" target="_blank" rel="noreferrer" className="text-brand-400 underline inline-flex items-center gap-0.5">Supabase SQL Editor <ExternalLink className="w-3 h-3" /></a>.</li>
-              <li>Paste the code and click <strong>Run</strong>. All admin changes will immediately sync directly into Supabase PostgreSQL!</li>
+              <li>Execute in your Kollabrix Server PostgreSQL terminal (<code>psql -U postgres -d postgres</code>).</li>
+              <li>Paste the code and run. All admin changes will immediately sync directly into Kollabrix PostgreSQL!</li>
             </ol>
           </div>
 

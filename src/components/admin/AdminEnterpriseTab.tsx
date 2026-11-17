@@ -126,35 +126,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE hackathon_teams;`;
 
               <div className="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800 flex items-center justify-between">
                 <div>
-                  <div className="text-[11px] text-slate-400 font-mono">Type: CNAME Record (Subdomain)</div>
+                  <div className="text-[11px] text-slate-400 font-mono">Type: A Record (Primary & Subdomain)</div>
                   <div className="font-mono text-sm font-semibold text-emerald-400 mt-0.5">
-                    Host: www &rarr; Value: cname.vercel-dns.com
+                    Host: @ &amp; www &rarr; Value: 37.187.159.43
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard('cname.vercel-dns.com', 'dns-cname')}
+                  onClick={() => copyToClipboard('37.187.159.43', 'dns-a')}
                   className="p-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 transition-colors"
-                  title="Copy CNAME"
+                  title="Copy IP"
                 >
-                  {copiedItem === 'dns-cname' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copiedItem === 'dns-a' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             <div className="pt-1 flex items-center justify-between">
               <span className="text-slate-400 text-[11px]">
-                SSL Certificate: <strong className="text-emerald-400 font-normal">Automated &amp; Free (Let&apos;s Encrypt)</strong>
+                SSL Certificate: <strong className="text-emerald-400 font-normal">Automated AIC Cloud &amp; Let&apos;s Encrypt</strong>
               </span>
-              <a
-                href="https://vercel.com/docs/projects/domains/add-a-domain"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300"
-              >
-                <span>Vercel Docs</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
             </div>
           </div>
         </div>

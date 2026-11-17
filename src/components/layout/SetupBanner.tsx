@@ -59,20 +59,20 @@ export function SetupBanner() {
               <span>Step 1: Create a Supabase Project</span>
             </div>
             <p className="text-slate-400 leading-relaxed">
-              Visit <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-brand-400 underline inline-flex items-center gap-0.5">supabase.com <ExternalLink className="w-3 h-3" /></a> and create a new free PostgreSQL project named <code>linkora</code>.
+              Self-hosted Supabase PostgreSQL running on Kollabrix 32GB server.
             </p>
           </div>
 
           <div className="p-3.5 rounded-lg bg-charcoal-850 border border-charcoal-750 space-y-2">
             <div className="flex items-center gap-2 font-medium text-slate-200">
               <Key className="w-4 h-4 text-brand-400" />
-              <span>Step 2: Copy API Keys into .env.local</span>
+              <span>Step 2: API Keys in .env.local</span>
             </div>
             <p className="text-slate-400 leading-relaxed">
-              In your Supabase project dashboard, navigate to <strong>Project Settings &rarr; API</strong>. Create a file named <code>.env.local</code> in the root of your project:
+              Environment configuration in <code>.env.local</code>:
             </p>
             <pre className="p-2.5 rounded bg-charcoal-950 font-mono text-[11px] text-slate-300 overflow-x-auto border border-charcoal-800">
-{`NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+{`NEXT_PUBLIC_SUPABASE_URL=https://kollabrix.in
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1Ni...`}
             </pre>
           </div>
