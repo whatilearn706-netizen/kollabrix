@@ -9,6 +9,7 @@ export interface ResilientFetchOptions extends RequestInit {
   initialDelayMs?: number;
   maxDelayMs?: number;
   retryOnStatusCodes?: number[];
+  fetchFn?: typeof fetch;
 }
 
 const DEFAULT_RETRYABLE_STATUSES = [408, 429, 502, 503, 504];
@@ -18,12 +19,16 @@ const DEFAULT_RETRYABLE_STATUSES = [408, 429, 502, 503, 504];
  */
 export async function resilientFetch(
   input: RequestInfo | URL,
-  init?: ResilientFetchOptions
+  init?: ResilientFetchOptions,
+  customFetch?: typeof fetch
 ): Promise<Response> {
   const maxRetries = init?.maxRetries ?? 3;
   const initialDelayMs = init?.initialDelayMs ?? 350;
   const maxDelayMs = init?.maxDelayMs ?? 3000;
   const retryableStatuses = init?.retryOnStatusCodes ?? DEFAULT_RETRYABLE_STATUSES;
+  
+  // Use passed custom fetch (e.g. native originalFetch) to prevent circular recursion
+  const nativeFetch = customFetch || init?.fetchFn || (typeof window !== 'undefined' && (window as any).__kollabrix_native_fetch ? (window as any).__kollabrix_native_fetch : fetch);
 
   let attempt = 0;
 
@@ -34,7 +39,7 @@ export async function resilientFetch(
         throw new DOMException('Request was aborted by caller', 'AbortError');
       }
 
-      const response = await fetch(input, init);
+      const response = await nativeFetch(input, init);
 
       // If status is transient server overload (502/503/504), attempt retry
       if (retryableStatuses.includes(response.status) && attempt < maxRetries) {
@@ -89,39 +94,52 @@ export async function resilientFetch(
 
 /**
  * Attaches client-side network resilience to global window.fetch.
- * Automatically catches transient socket disconnects and drops in the browser.
+ * Strictly targets /api/ endpoints so Next.js internal router navigation is never intercepted.
  */
 export function initializeClientNetworkResilience(): () => void {
   if (typeof window === 'undefined') return () => {};
 
-  const originalFetch = window.fetch.bind(window);
-
-  // Prevent multiple wrapping
   if ((window as any).__kollabrix_resilience_active) {
     return () => {};
   }
 
+  const originalFetch = window.fetch.bind(window);
+  (window as any).__kollabrix_native_fetch = originalFetch;
   (window as any).__kollabrix_resilience_active = true;
 
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const urlString = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+    const urlString =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+        ? input.toString()
+        : (input as Request)?.url || '';
 
-    // Only apply silent retries to internal APIs and same-origin requests
-    const isInternal = urlString.startsWith('/') || urlString.includes('kollabrix.in') || urlString.startsWith('api/');
+    // Strictly intercept /api/ requests (forms, verification, database operations)
+    // Never intercept Next.js RSC chunks, static files, or router navigation
+    const isApiRequest =
+      urlString.startsWith('/api/') ||
+      urlString.includes('/api/') ||
+      urlString.includes('/auth/v1/');
 
-    if (!isInternal) {
+    if (!isApiRequest) {
       return originalFetch(input, init);
     }
 
-    return resilientFetch(input, {
-      ...init,
-      maxRetries: 2, // 2 quick silent background retries
-      initialDelayMs: 300,
-    });
+    return resilientFetch(
+      input,
+      {
+        ...init,
+        maxRetries: 2, // 2 quick silent background retries on Wi-Fi drops
+        initialDelayMs: 300,
+      },
+      originalFetch // Explicitly pass native un-monkey-patched fetch
+    );
   };
 
   return () => {
     window.fetch = originalFetch;
+    delete (window as any).__kollabrix_native_fetch;
     delete (window as any).__kollabrix_resilience_active;
   };
 }
