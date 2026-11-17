@@ -124,8 +124,8 @@ function safeOrigin(request: NextRequest, suppliedOrigin?: unknown) {
 
   for (const value of [
     process.env.NEXT_PUBLIC_APP_URL,
-    'https://linkora-edu.vercel.app',
-    'https://linkora.in',
+    'https://kollabrix.in',
+    'https://www.kollabrix.in',
   ]) {
     if (!value) continue;
 
@@ -157,7 +157,7 @@ function safeOrigin(request: NextRequest, suppliedOrigin?: unknown) {
 
   return process.env.NEXT_PUBLIC_APP_URL
     ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
-    : 'https://linkora-edu.vercel.app';
+    : 'https://kollabrix.in';
 }
 
 async function readSettings() {
