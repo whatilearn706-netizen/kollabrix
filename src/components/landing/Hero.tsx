@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { QuantumLoomCanvas } from './QuantumLoomCanvas';
-import { GlowingSearchSparkBar } from './GlowingSearchSparkBar';
 
 const LINE_1 = 'Where Creators';
 const LINE_2 = 'Build Together.';
@@ -151,16 +150,6 @@ export function LandingHero() {
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> Faculty Mentorship
           </span>
-        </motion.div>
-
-        {/* Continuous Lightning Glowing Search & AI Spark Bar (Studio.Baseline Inspired) */}
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.88, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 sm:mt-12 w-full max-w-2xl mx-auto px-4 z-20 relative"
-        >
-          <GlowingSearchSparkBar />
         </motion.div>
       </motion.div>
 

@@ -16,6 +16,7 @@ import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { MandatoryOnboardingModal } from '@/components/profile/MandatoryOnboardingModal';
 import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
+import { NetworkResilienceProvider } from '@/components/providers/NetworkResilienceProvider';
 // Lazy‑load Vercel analytics and SpeedInsights to avoid blocking first paint
 import dynamic from 'next/dynamic';
 const Analytics = dynamic(() => import('@vercel/analytics/next').then(mod => mod.Analytics), { ssr: false });
@@ -318,8 +319,6 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
         />
-        <link rel="preconnect" href="https://api.kollabrix.in" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://api.kollabrix.in" />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -339,7 +338,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[#090B10] text-slate-100 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative overflow-x-hidden">
-        <AuthProvider>
+        <NetworkResilienceProvider>
+          <AuthProvider>
           <AnalyticsProvider>
             <SiteThemeProvider>
               <GlobalLightRays />
@@ -360,6 +360,7 @@ export default function RootLayout({
             </SiteThemeProvider>
           </AnalyticsProvider>
         </AuthProvider>
+      </NetworkResilienceProvider>
         <Analytics />
         <SpeedInsights />
       </body>
