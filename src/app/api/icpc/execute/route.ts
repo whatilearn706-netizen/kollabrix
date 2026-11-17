@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6500);
-      judge0Res = await fetch('https://api.kollabrix.in/submissions?base64_encoded=true&wait=true', {
+      judge0Res = await fetch('http://127.0.0.1:2358/submissions?base64_encoded=true&wait=true', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

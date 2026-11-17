@@ -388,7 +388,7 @@ async function executeWithJudge0(language: string, code: string, stdin: string, 
 
   const privateUrl =
     process.env.PRIVATE_JUDGE0_URL ||
-    'https://api.kollabrix.in/submissions?base64_encoded=true&wait=true';
+    'http://127.0.0.1:2358/submissions?base64_encoded=true&wait=true';
   const publicUrl =
     'https://ce.judge0.com/submissions?base64_encoded=true&wait=true';
 

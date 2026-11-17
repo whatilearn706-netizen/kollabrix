@@ -1,4 +1,4 @@
-export const DEFAULT_SUPABASE_URL = 'https://api.kollabrix.in';
+export const DEFAULT_SUPABASE_URL = 'https://kollabrix.in';
 export const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjE3OTk1MzU2MDB9.lfKjrWCz1QIVeItdz3Cs5UxitvcEenG8O9NPFVYlsjg';
 
