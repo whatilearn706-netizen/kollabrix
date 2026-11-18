@@ -42,6 +42,86 @@ import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModa
 // Curated roster of verified collegiate student builders (prevents empty screen states)
 const FALLBACK_STUDENT_PROFILES: Profile[] = [
   {
+    user_id: 'usr_seed_arjun_08',
+    username: 'arjun_ml_ai',
+    display_name: 'Arjun Malhotra',
+    avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80',
+    bio: 'Specializing in Edge AI, PyTorch & TensorRT. Building autonomous UAV vision & obstacle avoidance systems.',
+    college: 'Delhi Technological University (DTU)',
+    course: 'B.Tech Computer Engineering',
+    academic_year: '3rd Year',
+    skills: ['PyTorch', 'Python', 'Computer Vision', 'TensorFlow', 'ROS2', 'CUDA'],
+    interests: ['Artificial Intelligence', 'Robotics', 'Autonomous Systems'],
+    preferred_roles: ['Machine Learning Engineer', 'Computer Vision Researcher'],
+    role: 'student',
+    status: 'active',
+    is_portfolio_public: true,
+    is_suspended: false,
+    college_verified: true,
+    created_at: '2026-11-18 09:00:00',
+    updated_at: '2026-11-18 10:30:00',
+  },
+  {
+    user_id: 'usr_seed_ishaan_09',
+    username: 'ishaan_devops',
+    display_name: 'Ishaan Verma',
+    avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80',
+    bio: 'Distributed systems fanatic & Go developer. Loving Kubernetes, high-concurrency microservices, and gRPC.',
+    college: 'Vellore Institute of Technology (VIT), Vellore',
+    course: 'B.Tech Information Technology',
+    academic_year: '3rd Year',
+    skills: ['Go', 'Docker', 'Kubernetes', 'PostgreSQL', 'gRPC', 'Next.js'],
+    interests: ['Cloud Native', 'Distributed Systems', 'DevOps'],
+    preferred_roles: ['Backend Developer', 'DevOps Engineer'],
+    role: 'student',
+    status: 'active',
+    is_portfolio_public: true,
+    is_suspended: false,
+    college_verified: true,
+    created_at: '2026-11-18 09:10:00',
+    updated_at: '2026-11-18 10:30:00',
+  },
+  {
+    user_id: 'usr_seed_ananya_10',
+    username: 'ananya_ux_proto',
+    display_name: 'Ananya Sen',
+    avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80',
+    bio: 'Translating human empathy into frictionless design systems & interactive UI. Figma enthusiast and Tailwind craftsman.',
+    college: 'Indraprastha Institute of Information Technology Delhi (IIIT-Delhi)',
+    course: 'B.Tech Computer Science and Design (CSD)',
+    academic_year: '2nd Year',
+    skills: ['Figma', 'UI/UX Design', 'Tailwind CSS', 'React', 'Prototyping', 'Design Systems'],
+    interests: ['Product Design', 'Design Systems', 'Frontend Development'],
+    preferred_roles: ['UI / UX Designer', 'Frontend Developer'],
+    role: 'student',
+    status: 'active',
+    is_portfolio_public: true,
+    is_suspended: false,
+    college_verified: true,
+    created_at: '2026-11-18 09:15:00',
+    updated_at: '2026-11-18 10:30:00',
+  },
+  {
+    user_id: 'usr_seed_ritika_11',
+    username: 'ritika_web3',
+    display_name: 'Ritika Saxena',
+    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
+    bio: 'Smart contract developer & cryptography researcher. Building zero-knowledge proof verification & decentralized identity.',
+    college: 'Netaji Subhas University of Technology (NSUT), Delhi',
+    course: 'B.Tech Electronics & Communication Engineering',
+    academic_year: '4th Year',
+    skills: ['Solidity', 'TypeScript', 'Next.js', 'Rust', 'Foundry', 'Node.js'],
+    interests: ['Web3', 'Blockchain', 'Cybersecurity', 'Open Source'],
+    preferred_roles: ['Smart Contract Developer', 'Full Stack Developer'],
+    role: 'student',
+    status: 'active',
+    is_portfolio_public: true,
+    is_suspended: false,
+    college_verified: true,
+    created_at: '2026-11-18 09:20:00',
+    updated_at: '2026-11-18 10:30:00',
+  },
+  {
     user_id: '8710df6b-3d90-4956-835c-92c1cba3e803',
     username: 'addiroy484',
     display_name: 'Aditya Roy',
@@ -151,7 +231,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
-  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v4');
+  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v5');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
     cachedProfiles && cachedProfiles.length > 0
@@ -320,7 +400,7 @@ export default function TeammatesPage() {
           // Genuine registered student users from the database are displayed
           if (activeProfs.length > 0) {
             setAllProfiles(activeProfs);
-            setPageCache('kollabrix_teammates_real_v4', activeProfs);
+            setPageCache('kollabrix_teammates_real_v5', activeProfs);
           } else {
             setAllProfiles(FALLBACK_STUDENT_PROFILES);
           }
@@ -388,9 +468,11 @@ export default function TeammatesPage() {
       localStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
+      localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
       sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
+      sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
     } catch {}
   }, []);
 
