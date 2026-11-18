@@ -2,6 +2,49 @@ import { Project } from '@/types/database';
 
 export const DEMO_PROJECTS: Project[] = [
   {
+    id: 'proj_aerovision_uav_04',
+    owner_id: 'usr_seed_arjun_08',
+    title: 'AeroVision — Autonomous Campus UAV Vision & Emergency Response Hub',
+    summary:
+      'Real-time aerial drone tracking and perimeter safety using edge-quantized YOLOv8 on Jetson Orin Nano, streaming telemetry to a high-speed Go backend.',
+    description: `### Problem Statement
+Sprawling university campuses face frequent delays in incident response, perimeter patrol bottlenecks, and nighttime medical delivery logistics across distant sports grounds and residential blocks.
+
+### Proposed Solution
+AeroVision orchestrates autonomous quadcopters equipped with NVIDIA Jetson Orin Nano running edge-quantized YOLOv8-nano models. The drones stream live telemetry and thermal bounding boxes over WebSockets to a ground station dashboard for instant security and first-aid dispatch.
+
+### Architecture & Implementation
+- Edge Vision: Jetson Orin Nano, TensorRT, PyTorch, ROS2
+- Ground Station Backend: High-throughput Go server, WebSockets telemetry, PostgreSQL
+- Client Dashboard: Next.js 14, Tailwind CSS, Leaflet live flight path rendering
+
+### Open Roles & Collaboration
+We have built the drone communication bridge and telemetry pipeline. We are actively recruiting a Frontend / UI/UX Designer and an Embedded C++ Developer to prepare for national collegiate hackathons.`,
+    category: 'AI/ML',
+    difficulty: 'Advanced',
+    technologies: ['Python', 'PyTorch', 'Go', 'Docker', 'TensorRT', 'WebSockets', 'Next.js'],
+    required_skills: ['React', 'Figma', 'C++', 'Python', 'Computer Vision'],
+    desired_roles: ['UI / UX Designer', 'Embedded C++ Developer', 'Frontend Developer'],
+    current_team_size: 2,
+    desired_team_size: 4,
+    status: 'Recruiting',
+    repository_url: 'https://github.com/aerovision-collegiate/aerovision-hub',
+    demo_url: 'https://aerovision.kollabrix.in',
+    documentation_url: 'https://docs.aerovision.kollabrix.in',
+    application_deadline: '2026-12-15',
+    is_demo: false,
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+    owner: {
+      user_id: 'usr_seed_arjun_08',
+      display_name: 'Arjun Malhotra',
+      username: 'arjun_ml_ai',
+      avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80',
+      college: 'Delhi Technological University (DTU)',
+      course: 'B.Tech Computer Engineering',
+    },
+  },
+  {
     id: 'demo-1',
     owner_id: 'demo-user-1',
     title: 'EcoRoute: Smart Campus Micro-Mobility & Transit Optimizer',
