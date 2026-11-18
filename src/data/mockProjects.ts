@@ -2,6 +2,53 @@ import { Project } from '@/types/database';
 
 export const DEMO_PROJECTS: Project[] = [
   {
+    id: 'proj_devsync_ide',
+    owner_id: '29359508-c755-424b-81a2-89e714577437',
+    title: 'DevSync — Real-Time Collaborative Web IDE & AI Pair Programmer',
+    summary:
+      'Browser-based multiplayer code sandbox with shared cursors, live terminal execution, and context-aware AI code suggestions for college hackathons.',
+    description: `### Problem Statement
+During 24-48 hour hackathons, student teams struggle with environment setup mismatches, git merge conflicts, and delayed debugging across laptops with different OS versions.
+
+### Proposed Solution
+DevSync provides an instant zero-config cloud development environment. Teams can open a shared workspace URL, see each other's live cursors in real time, run code in isolated Linux containers, and debug together with an integrated AI copilot.
+
+### Tech Stack & Architecture
+- Frontend: Next.js 14, Monaco Editor, Tailwind CSS, WebSockets
+- Backend: Go microservices, Docker container daemon, Supabase PostgreSQL
+- Telemetry & Sync: Yjs CRDTs for sub-10ms conflict-free code syncing
+
+### Open Roles (Recruiting Now)
+We have the core CRDT sync engine and terminal runner working. We are actively looking for 2 collegiate teammates:
+1. Frontend / UI Designer to polish the Monaco IDE theme & status bar
+2. DevOps / Container Engineer to optimize sandbox spin-up times`,
+    category: 'Developer Tools',
+    difficulty: 'Advanced',
+    technologies: ['Next.js', 'TypeScript', 'Go', 'Docker', 'WebSockets', 'Monaco Editor', 'Tailwind CSS'],
+    required_skills: ['React', 'TypeScript', 'Go', 'Docker', 'UI/UX'],
+    desired_roles: ['Frontend Developer', 'DevOps Engineer', 'UI / UX Designer'],
+    current_team_size: 2,
+    desired_team_size: 4,
+    status: 'Recruiting',
+    repository_url: 'https://github.com/whatlearn70/devsync-collaborative-ide',
+    demo_url: 'https://kollabrix.in/workspace',
+    documentation_url: 'https://docs.kollabrix.in',
+    application_deadline: '2026-12-20',
+    is_demo: false,
+    is_featured: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    owner: {
+      user_id: '29359508-c755-424b-81a2-89e714577437',
+      display_name: 'Mayank Goyal',
+      username: 'goyalmayank142',
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      college: 'Bosscoder School of Technology',
+      course: 'B.Tech Computer Science & AI',
+      college_verified: true,
+    },
+  },
+  {
     id: 'proj_aerovision_uav_04',
     owner_id: 'usr_seed_arjun_08',
     title: 'AeroVision — Autonomous Campus UAV Vision & Emergency Response Hub',
