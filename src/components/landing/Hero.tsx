@@ -40,14 +40,14 @@ export function LandingHero() {
           playsInline
           preload="none"
           poster="/brand/hero-quantum-loom-poster.webp"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10 filter brightness-[1.25] contrast-[1.18] saturate-[1.4]"
         >
           <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
         </video>
       )}
 
-      {/* Balanced Radial Vignette for pristine text readability */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
+      {/* Radiant Atmosphere Vignette for pristine text readability & glowing depth */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_55%,rgba(0,0,2,0.50)_100%)] pointer-events-none z-10" />
 
       {/* Content */}
       <motion.div

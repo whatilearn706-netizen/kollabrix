@@ -36,7 +36,7 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
       }
     `;
 
-    // High-performance optimized Quantum Loom GLSL shader
+    // High-performance optimized Quantum Loom GLSL shader with luminous neon bloom
     const fsSource = `
       precision mediump float;
       uniform vec2 u_res;
@@ -60,15 +60,17 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
           p = rot(p, 0.4 + sin(t * 0.1 + fi) * 0.2);
           p += vec2(sin(p.y * 2.0 + t), cos(p.x * 2.0 - t)) * 0.3;
           float line = abs(sin(p.x * 3.0 + p.y * 3.0 + t * fi));
-          loom += 0.018 / (line + 0.035);
+          loom += 0.024 / (line + 0.028);
         }
 
-        vec3 amberFlame = vec3(1.0, 0.45, 0.08) * loom * 0.7;
-        vec3 whiteHotCore = vec3(1.0, 0.9, 0.7) * pow(loom * 0.15, 3.0);
-        vec3 darkPlenum = vec3(0.08, 0.02, 0.15) * length(uv);
+        // Glowing Luminous Amber Flame & White-Hot Incandescent Core
+        vec3 amberFlame = vec3(1.0, 0.52, 0.14) * loom * 1.35;
+        vec3 whiteHotCore = vec3(1.0, 0.96, 0.82) * pow(loom * 0.20, 2.4);
+        vec3 radiantBloom = vec3(0.98, 0.40, 0.06) * pow(loom * 0.12, 1.8);
+        vec3 darkPlenum = vec3(0.04, 0.01, 0.08) * length(uv);
 
-        col = amberFlame + whiteHotCore + darkPlenum;
-        col *= smoothstep(1.5, 0.2, length(uv));
+        col = amberFlame + whiteHotCore + radiantBloom + darkPlenum;
+        col *= smoothstep(1.7, 0.15, length(uv));
 
         gl_FragColor = vec4(col, 1.0);
       }
@@ -122,8 +124,8 @@ export function QuantumLoomCanvas({ className = '', onWebGLActive }: QuantumLoom
 
     function resize() {
       if (!canvas || !gl) return;
-      // High performance 0.6 DPR keeps background silky smooth without wasting GPU cycles
-      const dpr = Math.min(window.devicePixelRatio || 1, 0.6);
+      // High performance 1.0 DPR for laser-sharp HD filaments without wasting GPU cycles
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.0);
       const width = Math.max(320, Math.floor(canvas.clientWidth * dpr));
       const height = Math.max(240, Math.floor(canvas.clientHeight * dpr));
 

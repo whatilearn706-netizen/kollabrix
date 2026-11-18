@@ -56,9 +56,9 @@ export async function POST(request: NextRequest) {
     const rateCheck = checkUserOrCampusRateLimit(
       targetUserId,
       ip,
-      30, // 30 runs per minute per student
+      50, // 50 runs per minute per student
       60 * 1000,
-      5000, // Campus NAT ceiling
+      10000, // Campus NAT ceiling
       60 * 1000
     );
 

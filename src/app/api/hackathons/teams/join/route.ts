@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required.' }, { status: 401 });
     }
 
-    // Anti-Brute-Force Rate Limiting: Max 10 invite code guesses per minute per user/IP
+    // Anti-Brute-Force Rate Limiting: Max 20 invite code guesses per minute per user, 10000 for collegiate NAT
     const ip = getClientIp(request);
-    const rateCheck = checkUserOrCampusRateLimit(userId, ip, 10, 60000, 1000, 60000);
+    const rateCheck = checkUserOrCampusRateLimit(userId, ip, 20, 60000, 10000, 60000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: 'Too many team join attempts. Please wait a moment before trying again.' },
