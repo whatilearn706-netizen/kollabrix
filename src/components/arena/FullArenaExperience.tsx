@@ -329,15 +329,15 @@ export function FullArenaExperience({
   currentUser,
 }: FullArenaExperienceProps) {
   // Navigation Steps:
-  // 0: Arena Gateway (Create Private Room vs Join with Code/Link)
+  // 0: Arena Gateway (Hero + Tactical Command Console - Image 1 Screen)
   // 1: Name & Team Size (1v1 / 2v2) - Tournament Command Center (Direct Entry)
   // 2: Choose Arena & Topics (Web Dev / Algo / Bug Hunt)
   // 3: Room Code & Invite Link Lobby
   // 4: Countdown (3-2-1)
   // 5: Battling Split-Screen
   // 6: Match Finished & Fog of War Lifted
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
-  const stepRef = useRef<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  const stepRef = useRef<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
 
   const transitionStep = (next: 0 | 1 | 2 | 3 | 4 | 5 | 6) => {
     stepRef.current = next;
@@ -490,11 +490,8 @@ export function FullArenaExperience({
       }
       setAuthGateError(null);
       setJoinError(null);
-    } else if (step > 0 && arenaTab !== 'practice') {
-      // Security defense: unauthenticated users stay on Gateway
-      setStep(0);
     }
-  }, [user, profile, step, arenaTab]);
+  }, [user, profile]);
 
   const rollRandomCallSign = () => {
     playTacticalSelectSound();
@@ -2911,12 +2908,16 @@ export function FullArenaExperience({
                 <span className="text-slate-500 font-normal">/</span>
                 <span>BATTLE ARENA</span>
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">
-                {teamSize === '1v1' ? '1v1 DUEL' : '2v2 RELAY'}
-              </span>
+              {step > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">
+                  {teamSize === '1v1' ? '1v1 DUEL' : '2v2 RELAY'}
+                </span>
+              )}
             </div>
             <p className="text-[10px] font-mono text-slate-400 hidden sm:block">
-              Room {roomCode} &bull; Anti-Cheat Fog of War Protected
+              {step === 0
+                ? 'Collegiate Esports Combat Gateway \u2022 Anti-Cheat Fog of War Protected'
+                : `Room ${roomCode} \u2022 Anti-Cheat Fog of War Protected`}
             </p>
           </div>
         </div>
@@ -3016,11 +3017,6 @@ export function FullArenaExperience({
                   <button
                     type="button"
                     onClick={() => {
-                      if (!user) {
-                        setAuthGateError('Account required: Please log in before creating a tournament.');
-                        openAuthModal('login');
-                        return;
-                      }
                       playArcadeCoinSound();
                       setIsHost(true);
                       setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -3196,14 +3192,37 @@ export function FullArenaExperience({
                     </div>
                   </div>
 
-                  {/* Footnote Selectors */}
+                  {/* Footnote Selectors (Format & Duration) */}
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 font-mono text-[10px] text-slate-400">
-                    <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
-                      Format: <strong>{selectedCombatFormat.toUpperCase()}</strong>
-                    </span>
-                    <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
-                      Duration: <strong>{timeLimit / 60} Mins</strong>
-                    </span>
+                    <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 cursor-pointer transition-colors">
+                      <span className="text-slate-400">Format:</span>
+                      <select
+                        value={selectedCombatFormat}
+                        onChange={(e) => {
+                          const val = e.target.value as '1v1' | '2v2' | 'ffa';
+                          setSelectedCombatFormat(val);
+                          setTeamSize(val === '2v2' ? '2v2' : '1v1');
+                        }}
+                        className="bg-transparent text-cyan-300 font-bold focus:outline-none cursor-pointer text-[10px]"
+                      >
+                        <option value="1v1" className="bg-slate-900 text-white">1v1</option>
+                        <option value="2v2" className="bg-slate-900 text-white">2v2</option>
+                        <option value="ffa" className="bg-slate-900 text-white">FFA</option>
+                      </select>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 cursor-pointer transition-colors">
+                      <span className="text-slate-400">Duration:</span>
+                      <select
+                        value={timeLimit}
+                        onChange={(e) => setTimeLimit(Number(e.target.value))}
+                        className="bg-transparent text-amber-300 font-bold focus:outline-none cursor-pointer text-[10px]"
+                      >
+                        <option value={180} className="bg-slate-900 text-white">3 Mins</option>
+                        <option value={300} className="bg-slate-900 text-white">5 Mins</option>
+                        <option value={600} className="bg-slate-900 text-white">10 Mins</option>
+                      </select>
+                    </label>
                   </div>
                 </div>
 
@@ -3399,21 +3418,13 @@ export function FullArenaExperience({
                 <button
                   type="button"
                   onClick={() => {
-                    if (arenaTab === 'practice') {
-                      playArcadeCoinSound();
-                      setIsHost(true);
-                      setRoomCode(`SOLO-${Math.floor(1000 + Math.random() * 9000)}`);
-                      setStep(2);
-                      return;
-                    }
-                    if (!user) {
-                      setAuthGateError('Account required: Please log in or sign up before initializing duel protocol.');
-                      openAuthModal('login');
-                      return;
-                    }
                     playArcadeCoinSound();
                     setIsHost(true);
-                    setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                    if (arenaTab === 'practice') {
+                      setRoomCode(`SOLO-${Math.floor(1000 + Math.random() * 9000)}`);
+                    } else {
+                      setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                    }
                     setStep(2);
                   }}
                   className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.45)] active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
@@ -3464,11 +3475,6 @@ export function FullArenaExperience({
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            if (!user) {
-                              setJoinError('Sign in required: Please log in before joining.');
-                              openAuthModal('login');
-                              return;
-                            }
                             if (joinCodeInput.trim()) {
                               handleJoinWithCodeOrLink();
                               setShowJoinModal(false);
@@ -3501,11 +3507,6 @@ export function FullArenaExperience({
                       type="button"
                       disabled={isJoiningRoom || !joinCodeInput.trim()}
                       onClick={() => {
-                        if (!user) {
-                          setJoinError('Sign in required: Please log in before joining.');
-                          openAuthModal('login');
-                          return;
-                        }
                         handleJoinWithCodeOrLink();
                         setShowJoinModal(false);
                       }}
