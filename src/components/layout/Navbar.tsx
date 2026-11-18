@@ -129,11 +129,7 @@ export function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    warmAppCache();
-    try {
-      router.prefetch('/arena');
-    } catch {}
-  }, [router]);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -258,7 +254,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                prefetch={true}
+                prefetch={false}
                 onClick={handleClick}
                 onMouseEnter={handleWarmup}
                 onTouchStart={handleWarmup}
@@ -563,7 +559,7 @@ export function Navbar() {
             </p>
             <Link
               href="/explore"
-              prefetch={true}
+              prefetch={false}
               onTouchStart={() => prefetchExploreData()}
               onMouseEnter={() => prefetchExploreData()}
               onClick={() => setMobileMenuOpen(false)}
@@ -575,7 +571,7 @@ export function Navbar() {
 
             <Link
               href="/teammates"
-              prefetch={true}
+              prefetch={false}
               onTouchStart={() => prefetchTeammatesData()}
               onMouseEnter={() => prefetchTeammatesData()}
               onClick={() => setMobileMenuOpen(false)}
@@ -598,7 +594,7 @@ export function Navbar() {
 
             <Link
               href="/hackathons"
-              prefetch={true}
+              prefetch={false}
               onTouchStart={() => prefetchHackathonsData()}
               onMouseEnter={() => prefetchHackathonsData()}
               onClick={() => setMobileMenuOpen(false)}
@@ -610,7 +606,7 @@ export function Navbar() {
 
             <Link
               href="/problems"
-              prefetch={true}
+              prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
@@ -620,7 +616,7 @@ export function Navbar() {
 
             <Link
               href="/leaderboard"
-              prefetch={true}
+              prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
@@ -630,7 +626,7 @@ export function Navbar() {
 
             <Link
               href="/deadlines"
-              prefetch={true}
+              prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
@@ -640,7 +636,7 @@ export function Navbar() {
 
             <Link
               href="/spark"
-              prefetch={true}
+              prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
@@ -660,7 +656,7 @@ export function Navbar() {
             {isFaculty && (
               <Link
                 href="/teacher/dashboard"
-                prefetch={true}
+                prefetch={false}
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-500/10 transition-colors"
               >

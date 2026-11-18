@@ -454,17 +454,6 @@ export async function prefetchTeammatesData(): Promise<void> {
  * Warms core pages into cache during idle cycles so navigation is instant 0ms on click.
  */
 export function warmAppCache(): void {
-  if (typeof window === 'undefined') return;
-
-  const runWarmup = () => {
-    if (!hasPageCache('linkora_hackathons_list')) prefetchHackathonsData();
-    if (!hasPageCache('linkora_explore_projects_p1')) prefetchExploreData();
-    if (!hasPageCache('linkora_teammates_profiles')) prefetchTeammatesData();
-  };
-
-  if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(runWarmup, { timeout: 1500 });
-  } else {
-    setTimeout(runWarmup, 800);
-  }
+  // Disabled automatic prefetching on initial mount to eliminate network congestion
+  return;
 }

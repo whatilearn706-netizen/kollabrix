@@ -619,6 +619,7 @@ export default function WorkspaceOverviewPage() {
         onClose={() => setIsCertificateModalOpen(false)}
         project={project}
         profile={profile}
+        teamMembers={members}
         roleTitle={currentUserMember?.role || (isOwner ? 'Project Lead' : 'Core Squad Member')}
       />
     </div>

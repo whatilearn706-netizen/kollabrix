@@ -1268,6 +1268,7 @@ export default function ProjectDetailsPage() {
         onClose={() => setIsCertificateModalOpen(false)}
         project={project}
         profile={profile}
+        teamMembers={teamMembers}
         roleTitle={memberRole || (isOwner ? 'Project Lead & Architect' : 'Core Squad Member')}
       />
     </div>
