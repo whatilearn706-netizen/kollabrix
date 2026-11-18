@@ -42,6 +42,27 @@ import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModa
 // Curated roster of verified collegiate student builders (prevents empty screen states)
 const FALLBACK_STUDENT_PROFILES: Profile[] = [
   {
+    user_id: '29359508-c755-424b-81a2-89e714577437',
+    username: 'goyalmayank142',
+    display_name: 'Mayank Goyal',
+    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+    bio: 'Founder @ Kollabrix. Full-stack & systems developer building real-time collaboration engines and esports duels for collegiate hackathons.',
+    college: 'Bosscoder School of Technology',
+    course: 'B.Tech Computer Science & AI',
+    academic_year: '3rd Year',
+    skills: ['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Go', 'Tailwind CSS', 'Docker', 'C++'],
+    interests: ['Hackathons', 'Open Source', 'Web3', 'Competitive Programming', 'Generative AI'],
+    preferred_roles: ['Full-Stack Developer', 'Lead Architect', 'Frontend Developer'],
+    github_url: 'https://github.com/whatlearn70',
+    role: 'student',
+    status: 'active',
+    is_portfolio_public: true,
+    is_suspended: false,
+    college_verified: true,
+    created_at: '2026-11-18 08:00:00',
+    updated_at: '2026-11-18 10:45:00',
+  },
+  {
     user_id: 'usr_seed_arjun_08',
     username: 'arjun_ml_ai',
     display_name: 'Arjun Malhotra',
@@ -231,7 +252,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
-  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v5');
+  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v6');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
     cachedProfiles && cachedProfiles.length > 0
@@ -400,7 +421,7 @@ export default function TeammatesPage() {
           // Genuine registered student users from the database are displayed
           if (activeProfs.length > 0) {
             setAllProfiles(activeProfs);
-            setPageCache('kollabrix_teammates_real_v5', activeProfs);
+            setPageCache('kollabrix_teammates_real_v6', activeProfs);
           } else {
             setAllProfiles(FALLBACK_STUDENT_PROFILES);
           }
@@ -469,10 +490,12 @@ export default function TeammatesPage() {
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
+      localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
       sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
+      sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
     } catch {}
   }, []);
 

@@ -47,37 +47,36 @@ export default function ExploreProjectsPage() {
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
-    const raw = getPageCache<Project[]>('linkora_explore_projects_v5');
-    if (!Array.isArray(raw) || raw.length === 0) return [];
-    return raw.filter((p) => {
-      if (!p) return false;
-      const cat = (p.category || '').toLowerCase();
-      const sum = (p.summary || '').toLowerCase();
-      const desc = (p.description || '').toLowerCase();
-      return !(
-        p.problem_statement_id ||
-        (p as any).problem_statement ||
-        cat === 'hackathon sprint' ||
-        cat === 'faculty industry problem' ||
-        cat.includes('hackathon') ||
-        sum.includes('hackathon team sprint') ||
-        sum.includes('faculty challenge') ||
-        sum.includes('tackling faculty') ||
-        desc.includes('squad mission & approach') ||
-        desc.includes('### looking for team members')
-      );
-    });
+    const raw = getPageCache<Project[]>('linkora_explore_projects_v6');
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.filter((p) => {
+        if (!p) return false;
+        const cat = (p.category || '').toLowerCase();
+        const sum = (p.summary || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return !(
+          p.problem_statement_id ||
+          (p as any).problem_statement ||
+          cat === 'hackathon sprint' ||
+          cat === 'faculty industry problem' ||
+          cat.includes('hackathon') ||
+          sum.includes('hackathon team sprint') ||
+          sum.includes('faculty challenge') ||
+          sum.includes('tackling faculty') ||
+          desc.includes('squad mission & approach') ||
+          desc.includes('### looking for team members')
+        );
+      });
+    }
+    return DEMO_PROJECTS.slice(0, 12);
   });
 
   const [totalCount, setTotalCount] = useState<number>(() => {
-    const cachedCount = getPageCache<number>('linkora_explore_count_v5');
-    return typeof cachedCount === 'number' ? cachedCount : 0;
+    const cachedCount = getPageCache<number>('linkora_explore_count_v6');
+    return typeof cachedCount === 'number' && cachedCount > 0 ? cachedCount : DEMO_PROJECTS.length;
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    const raw = getPageCache<Project[]>('linkora_explore_projects_v5');
-    return !Array.isArray(raw) || raw.length === 0;
-  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [fetchError, setFetchError] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
@@ -117,10 +116,14 @@ export default function ExploreProjectsPage() {
       localStorage.removeItem('linkora_cache_linkora_explore_count_p1');
       localStorage.removeItem('linkora_cache_linkora_explore_projects_v4');
       localStorage.removeItem('linkora_cache_linkora_explore_count_v4');
+      localStorage.removeItem('linkora_cache_linkora_explore_projects_v5');
+      localStorage.removeItem('linkora_cache_linkora_explore_count_v5');
       sessionStorage.removeItem('linkora_cache_linkora_explore_projects_p1');
       sessionStorage.removeItem('linkora_cache_linkora_explore_count_p1');
       sessionStorage.removeItem('linkora_cache_linkora_explore_projects_v4');
       sessionStorage.removeItem('linkora_cache_linkora_explore_count_v4');
+      sessionStorage.removeItem('linkora_cache_linkora_explore_projects_v5');
+      sessionStorage.removeItem('linkora_cache_linkora_explore_count_v5');
     } catch {}
   }, []);
 
@@ -202,8 +205,8 @@ export default function ExploreProjectsPage() {
       setTotalCount(total);
       setProjects(paginated);
       if (isDefaultView) {
-        setPageCache('linkora_explore_projects_v5', paginated);
-        setPageCache('linkora_explore_count_v5', total);
+        setPageCache('linkora_explore_projects_v6', paginated);
+        setPageCache('linkora_explore_count_v6', total);
       }
       setIsLoading(false);
       return;
@@ -370,15 +373,16 @@ export default function ExploreProjectsPage() {
           setProjects(cleanDemo.slice(0, pageSize));
           setTotalCount(cleanDemo.length);
           if (isDefaultView) {
-            setPageCache('linkora_explore_projects_p1', cleanDemo.slice(0, pageSize));
-            setPageCache('linkora_explore_count_p1', cleanDemo.length);
+            setPageCache('linkora_explore_projects_v6', cleanDemo.slice(0, pageSize));
+            setPageCache('linkora_explore_count_v6', cleanDemo.length);
           }
         } else {
           const verifiedProjects = cleanData.map((proj) => {
             const isOwnerVerified =
               (proj.owner?.user_id && verifiedUserSet.has(proj.owner.user_id)) ||
               (proj.owner?.username && verifiedUserSet.has(proj.owner.username.toLowerCase().trim())) ||
-              (proj.owner_id && verifiedUserSet.has(proj.owner_id));
+              (proj.owner_id && verifiedUserSet.has(proj.owner_id)) ||
+              Boolean(proj.owner?.college && proj.owner.college.trim().length > 0);
             if (proj.owner) {
               return { ...proj, owner: { ...proj.owner, college_verified: Boolean(isOwnerVerified) } };
             }
@@ -387,8 +391,8 @@ export default function ExploreProjectsPage() {
           setProjects(verifiedProjects);
           setTotalCount(cleanData.length);
           if (isDefaultView) {
-            setPageCache('linkora_explore_projects_v5', verifiedProjects);
-            setPageCache('linkora_explore_count_v5', cleanData.length);
+            setPageCache('linkora_explore_projects_v6', verifiedProjects);
+            setPageCache('linkora_explore_count_v6', cleanData.length);
           }
         }
       }
@@ -399,8 +403,8 @@ export default function ExploreProjectsPage() {
       setProjects(fallback);
       setTotalCount(DEMO_PROJECTS.length);
       if (isDefaultView) {
-        setPageCache('linkora_explore_projects_v5', fallback);
-        setPageCache('linkora_explore_count_v5', DEMO_PROJECTS.length);
+        setPageCache('linkora_explore_projects_v6', fallback);
+        setPageCache('linkora_explore_count_v6', DEMO_PROJECTS.length);
       }
     } finally {
       hasLoadedRef.current = true;

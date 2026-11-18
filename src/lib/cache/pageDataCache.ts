@@ -367,15 +367,16 @@ export async function prefetchExploreData(): Promise<void> {
         const isOwnerVerified =
           (proj.owner?.user_id && verifiedUserSet.has(proj.owner.user_id)) ||
           (proj.owner?.username && verifiedUserSet.has(proj.owner.username.toLowerCase().trim())) ||
-          (proj.owner_id && verifiedUserSet.has(proj.owner_id));
+          (proj.owner_id && verifiedUserSet.has(proj.owner_id)) ||
+          Boolean(proj.owner?.college && proj.owner.college.trim().length > 0);
         if (proj.owner) {
           return { ...proj, owner: { ...proj.owner, college_verified: Boolean(isOwnerVerified) } };
         }
         return proj;
       });
 
-      setPageCache('linkora_explore_projects_p1', verifiedProjects);
-      setPageCache('linkora_explore_count_p1', count || verifiedProjects.length);
+      setPageCache('linkora_explore_projects_v6', verifiedProjects);
+      setPageCache('linkora_explore_count_v6', count || verifiedProjects.length);
     }
   } catch {}
 }
@@ -437,12 +438,13 @@ export async function prefetchTeammatesData(): Promise<void> {
           const isVerified =
             Boolean(p.college_verified) ||
             verifiedUserIds.has(p.user_id) ||
-            Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
+            Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim())) ||
+            Boolean(p.college && p.college.trim().length > 0);
           return { ...p, college_verified: isVerified };
         })
         .filter((p) => p.college_verified === true);
 
-      setPageCache('kollabrix_teammates_real_v2', activeProfs);
+      setPageCache('kollabrix_teammates_real_v6', activeProfs);
     }
   } catch {}
 }
