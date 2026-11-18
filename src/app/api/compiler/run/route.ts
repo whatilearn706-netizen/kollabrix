@@ -532,14 +532,15 @@ export async function POST(req: NextRequest) {
     // 1. Collegiate Anti-Spam / Anti-DDoS Rate Limiting (Campus NAT friendly)
     const clientIp = getClientIp(req);
     const body: CompileRequest = await req.json();
-    const userId = (body as any)?.userId || req.headers.get('x-user-id') || null;
+    const authHeader = req.headers.get('authorization') || '';
+    const userId = (body as any)?.userId || req.headers.get('x-user-id') || (authHeader.startsWith('Bearer ') ? authHeader.slice(7, 30) : null);
 
     const rateCheck = checkUserOrCampusRateLimit(
       userId,
       clientIp,
-      30, // 30 compilations per 60 seconds per user
+      40, // 40 compilations per 60 seconds per user
       60 * 1000,
-      3000, // Campus NAT ceiling: up to 3000 req/min for entire campus Wi-Fi
+      10000, // Campus NAT ceiling: up to 10,000 req/min for entire campus Wi-Fi
       60 * 1000
     );
 

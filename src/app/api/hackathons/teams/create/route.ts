@@ -26,13 +26,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { hackathonId, teamName, description, challengeId, leaderUserId } = body;
 
-    // Rate-limit per user (allows 1000+ students on campus Wi-Fi without blocking)
+    // Rate-limit per user (allows 1500+ students on campus Wi-Fi without blocking)
     const rateLimit = checkUserOrCampusRateLimit(
       leaderUserId,
       ip,
-      10, // Max 10 team creations per 5 minutes per user
+      20, // Max 20 team creations per 5 minutes per user
       5 * 60 * 1000,
-      3000, // Campus NAT ceiling
+      10000, // Campus NAT ceiling
       60 * 1000
     );
 

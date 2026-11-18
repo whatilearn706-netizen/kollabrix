@@ -203,13 +203,13 @@ export async function POST(request: NextRequest) {
       publish_to_explore = false,
     } = body;
 
-    // User-ID rate limiting allows 1000+ students on campus Wi-Fi without false 429 blocks
+    // User-ID rate limiting allows 1500+ students on campus Wi-Fi without false 429 blocks
     const rateLimit = checkUserOrCampusRateLimit(
       author_id,
       ip,
-      15, // 15 submissions per minute per student
+      25, // 25 submissions per minute per student
       60 * 1000,
-      3000, // Campus NAT ceiling
+      10000, // Campus NAT ceiling
       60 * 1000
     );
     if (!rateLimit.allowed) {
