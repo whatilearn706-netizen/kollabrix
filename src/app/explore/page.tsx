@@ -280,17 +280,21 @@ export default function ExploreProjectsPage() {
       const to = from + pageSize - 1;
       query = query.range(from, to);
 
-      const { data, count, error } = await query;
+      const settingsPromise = supabase
+        .from('platform_settings')
+        .select('key, value')
+        .in('key', ['deleted_projects', 'linkedin_college_verifications', 'site_master_control_config']);
+
+      const [{ data, count, error }, sRes] = await Promise.all([
+        query,
+        settingsPromise,
+      ]);
+      const sRows = (sRes as any)?.data;
 
       // Check deleted projects tombstone and verified users registry
       let deletedSet = new Set<string>();
       const verifiedUserSet = new Set<string>();
       try {
-        const { data: sRows } = await supabase
-          .from('platform_settings')
-          .select('key, value')
-          .in('key', ['deleted_projects', 'linkedin_college_verifications', 'site_master_control_config']);
-
         if (Array.isArray(sRows)) {
           for (const row of sRows) {
             if (row.key === 'deleted_projects' && row.value) {

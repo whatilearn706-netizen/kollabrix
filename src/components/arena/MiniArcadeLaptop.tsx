@@ -16,13 +16,6 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '', isLive = true
   const [isHovered, setIsHovered] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
 
-  // Eagerly prefetch the /arena bundle as soon as laptop is mounted in the viewport
-  useEffect(() => {
-    try {
-      router.prefetch('/arena');
-    } catch {}
-  }, [router]);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

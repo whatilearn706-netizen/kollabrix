@@ -45,7 +45,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '29359508-c755-424b-81a2-89e714577437',
     username: 'goyalmayank142',
     display_name: 'Mayank Goyal',
-    avatar_url: 'https://api.dicebear.com/7.x/notionists/svg?seed=MayankGoyal&backgroundColor=0b1329',
+    avatar_url: '/avatars/mayank-goyal.svg',
     bio: 'Founder @ Kollabrix. Full-stack & systems developer building real-time collaboration engines and esports duels for collegiate hackathons.',
     college: 'Bosscoder School of Technology',
     course: 'B.Tech Computer Science & AI',
@@ -66,7 +66,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_arjun_08',
     username: 'arjun_ml_ai',
     display_name: 'Arjun Malhotra',
-    avatar_url: 'https://api.dicebear.com/7.x/notionists/svg?seed=ArjunML&backgroundColor=0e1726',
+    avatar_url: '/avatars/arjun-ml.svg',
     bio: 'Specializing in Edge AI, PyTorch & TensorRT. Building autonomous UAV vision & obstacle avoidance systems.',
     college: 'Delhi Technological University (DTU)',
     course: 'B.Tech Computer Engineering',
@@ -86,7 +86,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_ishaan_09',
     username: 'ishaan_devops',
     display_name: 'Ishaan Verma',
-    avatar_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=IshaanCloud&backgroundColor=1e293b',
+    avatar_url: '/avatars/ishaan-cloud.svg',
     bio: 'Distributed systems fanatic & Go developer. Loving Kubernetes, high-concurrency microservices, and gRPC.',
     college: 'Vellore Institute of Technology (VIT), Vellore',
     course: 'B.Tech Information Technology',
@@ -106,7 +106,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_ananya_10',
     username: 'ananya_ux_proto',
     display_name: 'Ananya Sen',
-    avatar_url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=AnanyaDesign&backgroundColor=1f1d2b',
+    avatar_url: '/avatars/ananya-design.svg',
     bio: 'Translating human empathy into frictionless design systems & interactive UI. Figma enthusiast and Tailwind craftsman.',
     college: 'Indraprastha Institute of Information Technology Delhi (IIIT-Delhi)',
     course: 'B.Tech Computer Science and Design (CSD)',
@@ -126,7 +126,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_ritika_11',
     username: 'ritika_web3',
     display_name: 'Ritika Saxena',
-    avatar_url: 'https://api.dicebear.com/7.x/micah/svg?seed=RitikaWeb3&backgroundColor=181824',
+    avatar_url: '/avatars/ritika-web3.svg',
     bio: 'Smart contract developer & cryptography researcher. Building zero-knowledge proof verification & decentralized identity.',
     college: 'Netaji Subhas University of Technology (NSUT), Delhi',
     course: 'B.Tech Electronics & Communication Engineering',
@@ -184,7 +184,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '150d5497-5cd6-46c5-a5ac-a1c096e53611',
     username: 'meera_iyer',
     display_name: 'Meera Iyer',
-    avatar_url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=MeeraIyer&backgroundColor=1c1917',
+    avatar_url: '/avatars/meera-iyer.svg',
     bio: 'Distributed systems & smart campus microcontrollers enthusiast.',
     college: 'PES University (EC Campus), Bengaluru',
     course: 'B.TECH CSE',
@@ -222,7 +222,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '0353f415-7a43-4b0a-bea3-b84b01003d06',
     username: 'rhea_chawla',
     display_name: 'Rhea Chawla',
-    avatar_url: 'https://api.dicebear.com/7.x/micah/svg?seed=RheaChawla&backgroundColor=1f1d2b',
+    avatar_url: '/avatars/rhea-chawla.svg',
     bio: 'UI/UX Designer who codes. Bridging design tokens with React.',
     college: 'Thapar Institute of Engineering and Technology (TIET), Patiala',
     course: 'B.E. Computer Engineering',
@@ -337,23 +337,33 @@ export default function TeammatesPage() {
         } catch {}
         setFacultyUserIds(Array.from(knownFacultyIds));
 
-        // 1. Fetch genuine registered users from database, strictly excluding suspended accounts
-        const { data: profs } = await supabase
-          .from('profiles')
-          .select('*')
-          .or('is_suspended.is.null,is_suspended.eq.false')
-          .or('status.is.null,status.neq.suspended')
-          .order('updated_at', { ascending: false })
-          .limit(100);
+        // 1. Fetch genuine registered users and verifications in parallel
+        const [profsRes, vDataRes, sDataRes] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .or('is_suspended.is.null,is_suspended.eq.false')
+            .or('status.is.null,status.neq.suspended')
+            .order('updated_at', { ascending: false })
+            .limit(100),
+          supabase
+            .from('platform_settings')
+            .select('key, value')
+            .eq('key', 'linkedin_college_verifications'),
+          supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'student_id_verifications')
+            .maybeSingle(),
+        ]);
+
+        const profs = profsRes.data;
+        const vData = (vDataRes as any)?.data;
+        const sData = (sDataRes as any)?.data;
 
         // Fetch verified college affiliations registry from platform_settings
         const verifiedUserIds = new Set<string>();
         try {
-          const { data: vData } = await supabase
-            .from('platform_settings')
-            .select('key, value')
-            .eq('key', 'linkedin_college_verifications');
-
           if (Array.isArray(vData)) {
             for (const row of vData) {
               if (!Array.isArray(row.value)) continue;
@@ -368,13 +378,6 @@ export default function TeammatesPage() {
               }
             }
           }
-
-          // Also check student_id_verifications
-          const { data: sData } = await supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'student_id_verifications')
-            .maybeSingle();
 
           if (Array.isArray(sData?.value)) {
             for (const s of sData.value) {
