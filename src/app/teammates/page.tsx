@@ -45,7 +45,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '29359508-c755-424b-81a2-89e714577437',
     username: 'goyalmayank142',
     display_name: 'Mayank Goyal',
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+    avatar_url: 'https://api.dicebear.com/7.x/notionists/svg?seed=MayankGoyal&backgroundColor=0b1329',
     bio: 'Founder @ Kollabrix. Full-stack & systems developer building real-time collaboration engines and esports duels for collegiate hackathons.',
     college: 'Bosscoder School of Technology',
     course: 'B.Tech Computer Science & AI',
@@ -66,7 +66,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_arjun_08',
     username: 'arjun_ml_ai',
     display_name: 'Arjun Malhotra',
-    avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80',
+    avatar_url: 'https://api.dicebear.com/7.x/notionists/svg?seed=ArjunML&backgroundColor=0e1726',
     bio: 'Specializing in Edge AI, PyTorch & TensorRT. Building autonomous UAV vision & obstacle avoidance systems.',
     college: 'Delhi Technological University (DTU)',
     course: 'B.Tech Computer Engineering',
@@ -86,7 +86,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_ishaan_09',
     username: 'ishaan_devops',
     display_name: 'Ishaan Verma',
-    avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80',
+    avatar_url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=IshaanCloud&backgroundColor=1e293b',
     bio: 'Distributed systems fanatic & Go developer. Loving Kubernetes, high-concurrency microservices, and gRPC.',
     college: 'Vellore Institute of Technology (VIT), Vellore',
     course: 'B.Tech Information Technology',
@@ -106,7 +106,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_ananya_10',
     username: 'ananya_ux_proto',
     display_name: 'Ananya Sen',
-    avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80',
+    avatar_url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=AnanyaDesign&backgroundColor=1f1d2b',
     bio: 'Translating human empathy into frictionless design systems & interactive UI. Figma enthusiast and Tailwind craftsman.',
     college: 'Indraprastha Institute of Information Technology Delhi (IIIT-Delhi)',
     course: 'B.Tech Computer Science and Design (CSD)',
@@ -126,7 +126,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: 'usr_seed_ritika_11',
     username: 'ritika_web3',
     display_name: 'Ritika Saxena',
-    avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
+    avatar_url: 'https://api.dicebear.com/7.x/micah/svg?seed=RitikaWeb3&backgroundColor=181824',
     bio: 'Smart contract developer & cryptography researcher. Building zero-knowledge proof verification & decentralized identity.',
     college: 'Netaji Subhas University of Technology (NSUT), Delhi',
     course: 'B.Tech Electronics & Communication Engineering',
@@ -184,7 +184,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '150d5497-5cd6-46c5-a5ac-a1c096e53611',
     username: 'meera_iyer',
     display_name: 'Meera Iyer',
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    avatar_url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=MeeraIyer&backgroundColor=1c1917',
     bio: 'Distributed systems & smart campus microcontrollers enthusiast.',
     college: 'PES University (EC Campus), Bengaluru',
     course: 'B.TECH CSE',
@@ -203,7 +203,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '6d9032dc-c599-4dbc-97b8-d4abf62aef2f',
     username: 'mehrakartik763',
     display_name: 'Kartik Mehra',
-    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    avatar_url: 'https://lh3.googleusercontent.com/a/ACg8ocKUMFn4wcqE9d1PYumD06FlzGhFjJmtDbz9O9T23lz0iNl3lw=s96-c',
     bio: 'Cybersecurity researcher & CTF player. Securing modern web apps.',
     college: 'KIET Ghaziabad',
     course: 'B.TECH CSE',
@@ -222,7 +222,7 @@ const FALLBACK_STUDENT_PROFILES: Profile[] = [
     user_id: '0353f415-7a43-4b0a-bea3-b84b01003d06',
     username: 'rhea_chawla',
     display_name: 'Rhea Chawla',
-    avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    avatar_url: 'https://api.dicebear.com/7.x/micah/svg?seed=RheaChawla&backgroundColor=1f1d2b',
     bio: 'UI/UX Designer who codes. Bridging design tokens with React.',
     college: 'Thapar Institute of Engineering and Technology (TIET), Patiala',
     course: 'B.E. Computer Engineering',
@@ -252,7 +252,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
-  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v6');
+  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v7');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
     cachedProfiles && cachedProfiles.length > 0
@@ -421,7 +421,7 @@ export default function TeammatesPage() {
           // Genuine registered student users from the database are displayed
           if (activeProfs.length > 0) {
             setAllProfiles(activeProfs);
-            setPageCache('kollabrix_teammates_real_v6', activeProfs);
+            setPageCache('kollabrix_teammates_real_v7', activeProfs);
           } else {
             setAllProfiles(FALLBACK_STUDENT_PROFILES);
           }
@@ -491,11 +491,13 @@ export default function TeammatesPage() {
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
+      localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v6');
       sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
+      sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v6');
     } catch {}
   }, []);
 

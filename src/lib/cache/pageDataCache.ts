@@ -375,8 +375,8 @@ export async function prefetchExploreData(): Promise<void> {
         return proj;
       });
 
-      setPageCache('linkora_explore_projects_v6', verifiedProjects);
-      setPageCache('linkora_explore_count_v6', count || verifiedProjects.length);
+      setPageCache('linkora_explore_projects_v7', verifiedProjects);
+      setPageCache('linkora_explore_count_v7', count || verifiedProjects.length);
     }
   } catch {}
 }
@@ -444,7 +444,7 @@ export async function prefetchTeammatesData(): Promise<void> {
         })
         .filter((p) => p.college_verified === true);
 
-      setPageCache('kollabrix_teammates_real_v6', activeProfs);
+      setPageCache('kollabrix_teammates_real_v7', activeProfs);
     }
   } catch {}
 }
