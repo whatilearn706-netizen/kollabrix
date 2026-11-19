@@ -68,14 +68,14 @@ export function LandingHero() {
           muted
           playsInline
           preload="auto"
-          poster="/brand/hero-celestial-horizon.webp"
-          className="absolute inset-0 w-full h-full object-cover object-[center_38%] scale-[1.12] sm:scale-[1.22] lg:scale-[1.28] filter brightness-[1.12] contrast-[1.08] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
+          poster="/brand/hero-celestial-horizon-v3.webp"
+          className="absolute inset-0 w-full h-full object-cover object-[center_36%] scale-[1.04] sm:scale-[1.06] lg:scale-[1.08] filter brightness-[1.10] contrast-[1.06] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
         >
-          <source src="/videos/hero-celestial-horizon.webm" type="video/webm" />
-          <source src="/videos/hero-celestial-horizon.mp4" type="video/mp4" />
+          <source src="/videos/hero-celestial-horizon-v3.webm" type="video/webm" />
+          <source src="/videos/hero-celestial-horizon-v3.mp4" type="video/mp4" />
           {/* Fallback image if video element is unsupported */}
           <img
-            src="/brand/hero-celestial-horizon.webp"
+            src="/brand/hero-celestial-horizon-v3.webp"
             alt="Kollabrix Horizon"
             className="w-full h-full object-cover object-center"
           />
