@@ -58,17 +58,17 @@ const CARD_PALETTES = [
 ];
 
 // Exact continuous loop durations per card:
-// Card 1 -> 2: 20 sec
-// Card 2 -> 3: 17 sec
-// Card 3 -> 4: 19 sec
-// Card 4 -> 5: 22 sec
-// Card 5 -> 1: 18 sec
+// Card 1 -> 2: 6 sec
+// Card 2 -> 3: 4 sec
+// Card 3 -> 4: 5 sec
+// Card 4 -> 5: 4 sec
+// Card 5 -> 1: 8 sec
 const CARD_INTERVALS_MS = [
-  20000, // 1 to 2 after 20 sec
-  17000, // 2 to 3 after 17 sec
-  19000, // 3 to 4 after 19 sec
-  22000, // 4 to 5 after 22 sec
-  18000, // 5 to 1 after 18 sec
+  6000, // 1 to 2 after 6 sec
+  4000, // 2 to 3 after 4 sec
+  5000, // 3 to 4 after 5 sec
+  4000, // 4 to 5 after 4 sec
+  8000, // 5 to 1 after 8 sec
 ];
 
 export function FloatingProjectRibbon() {
