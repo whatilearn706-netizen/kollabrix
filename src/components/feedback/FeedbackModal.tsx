@@ -25,6 +25,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 declare global {
   interface Window {
     openLinkoraFeedback?: () => void;
+    openKollabrixFeedback?: () => void;
   }
 }
 
@@ -73,7 +74,10 @@ export function FeedbackModal() {
     const handleOpen = () => setIsOpen(true);
     window.addEventListener('open-linkora-feedback', handleOpen);
     window.addEventListener('linkora-feedback', handleOpen);
+    window.addEventListener('open-kollabrix-feedback', handleOpen);
+    window.addEventListener('kollabrix-feedback', handleOpen);
     window.openLinkoraFeedback = handleOpen;
+    window.openKollabrixFeedback = handleOpen;
 
     const checkHash = () => {
       if (typeof window !== 'undefined' && (window.location.hash === '#feedback' || window.location.hash === '#feedback-section')) {
@@ -87,6 +91,8 @@ export function FeedbackModal() {
     return () => {
       window.removeEventListener('open-linkora-feedback', handleOpen);
       window.removeEventListener('linkora-feedback', handleOpen);
+      window.removeEventListener('open-kollabrix-feedback', handleOpen);
+      window.removeEventListener('kollabrix-feedback', handleOpen);
       window.removeEventListener('hashchange', checkHash);
     };
   }, []);

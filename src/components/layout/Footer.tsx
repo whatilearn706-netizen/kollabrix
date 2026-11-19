@@ -91,12 +91,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a
-                  href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
+                <Link
+                  href="/feedback"
                   className="hover:opacity-100 transition-opacity font-medium text-violet-400 cursor-pointer text-left inline-block"
                 >
                   💬 Community Feedback
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
