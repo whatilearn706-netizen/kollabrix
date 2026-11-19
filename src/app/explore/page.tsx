@@ -509,71 +509,41 @@ export default function ExploreProjectsPage() {
   return (
     <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10 space-y-8">
       {/* Page Header */}
-      <div
-        style={{ borderColor: theme.borderColor }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-2">
         <div>
-          <div
-            style={{ color: theme.brandColor }}
-            className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider mb-1 font-bold"
-          >
-            <Compass className="w-4 h-4" />
-            <span>{theme.exploreBadgeText || 'Collegiate Project Directory'}</span>
+          <div className="flex items-center gap-1.5 text-xs font-mono font-semibold tracking-wider text-amber-500 uppercase mb-1">
+            <span>✦</span>
+            <span>CAMPUS BUILDER NETWORK</span>
           </div>
-          <h1
-            style={{ color: theme.headingColor }}
-            className="text-3xl sm:text-4xl font-black tracking-tight"
-          >
-            {theme.exploreTitle || 'Explore Active Projects'}
+          <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold tracking-tight text-white">
+            Explore Active Projects
           </h1>
-          <p
-            style={{ color: theme.bodyTextColor }}
-            className="mt-1 text-xs sm:text-sm opacity-80"
-          >
-            {theme.exploreSubtitle || 'Discover student-led initiatives seeking collaborators, filtered by skill, tech stack, and category.'}
+          <p className="mt-2 text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
+            Discover student-led initiatives seeking collaborators, filtered by skill, tech stack, and category.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setIsLoading(true);
-              fetchProjects();
-            }}
-            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
-            disabled={isLoading}
-            className="border-slate-200 text-slate-700 hover:text-slate-900 font-bold"
-          >
-            Refresh
-          </Button>
-
+        <div className="flex items-center gap-3 shrink-0 sm:pt-1">
           {!isFaculty && (
             user ? (
               <Link href="/projects/new">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<PlusCircle className="w-4 h-4" />}
-                  style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                  className="text-white font-bold shadow-xs transition-all"
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-[#121622] hover:bg-slate-800 text-slate-200 hover:text-white text-sm font-medium transition-all shadow-sm cursor-pointer"
                 >
-                  Start a Project
-                </Button>
+                  <span className="text-base leading-none font-semibold">+</span>
+                  <span>Submit a project</span>
+                </button>
               </Link>
             ) : (
-              <Button
-                variant="primary"
-                size="sm"
+              <button
+                type="button"
                 onClick={handleCreateProjectClick}
-                leftIcon={<PlusCircle className="w-4 h-4" />}
-                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="text-white font-bold shadow-xs transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-[#121622] hover:bg-slate-800 text-slate-200 hover:text-white text-sm font-medium transition-all shadow-sm cursor-pointer"
               >
-                Start a Project
-              </Button>
+                <span className="text-base leading-none font-semibold">+</span>
+                <span>Submit a project</span>
+              </button>
             )
           )}
         </div>
