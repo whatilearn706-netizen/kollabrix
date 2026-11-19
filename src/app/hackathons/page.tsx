@@ -599,34 +599,15 @@ export default function HackathonsPage() {
             type="button"
             onClick={() => {
               setHasUserSelectedTab(true);
-              setActiveTab('corporate');
-            }}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'corporate'
-                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-lg ring-2 ring-amber-400/50'
-                : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 shadow-2xs'
-            }`}
-          >
-            <Zap className={`w-3.5 h-3.5 ${activeTab === 'corporate' ? 'fill-current text-amber-200' : 'text-amber-600'}`} />
-            <span>Sponsored ({corporateHackathons.length})</span>
-            {corporateHackathons.length > 0 && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setHasUserSelectedTab(true);
               setActiveTab('all');
             }}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'all'
                 ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Competition ({competitionHackathons.length})
+            All Hackathons ({competitionHackathons.length})
           </button>
 
           <button
@@ -635,7 +616,7 @@ export default function HackathonsPage() {
               setHasUserSelectedTab(true);
               setActiveTab('private');
             }}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'private'
                 ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -651,7 +632,7 @@ export default function HackathonsPage() {
               setHasUserSelectedTab(true);
               setActiveTab('my-events');
             }}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'my-events'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -667,7 +648,7 @@ export default function HackathonsPage() {
               setHasUserSelectedTab(true);
               setActiveTab('saved');
             }}
-            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'saved'
                 ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -678,15 +659,36 @@ export default function HackathonsPage() {
           </button>
         </div>
 
-        <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer self-start sm:self-auto shrink-0">
-          <input
-            type="checkbox"
-            checked={onlyOpen}
-            onChange={(e) => setOnlyOpen(e.target.checked)}
-            className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-          />
-          <span>Open for Registration Only</span>
-        </label>
+        <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto flex-wrap sm:flex-nowrap">
+          <button
+            type="button"
+            onClick={() => {
+              setHasUserSelectedTab(true);
+              setActiveTab('corporate');
+            }}
+            className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'corporate'
+                ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-lg ring-2 ring-amber-400/50'
+                : 'text-amber-800 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-300/80 shadow-2xs'
+            }`}
+          >
+            <Zap className={`w-3.5 h-3.5 ${activeTab === 'corporate' ? 'fill-current text-amber-200' : 'text-amber-600'}`} />
+            <span>Sponsored ({corporateHackathons.length})</span>
+            {corporateHackathons.length > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping ml-0.5" />
+            )}
+          </button>
+
+          <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={onlyOpen}
+              onChange={(e) => setOnlyOpen(e.target.checked)}
+              className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+            />
+            <span>Open for Registration Only</span>
+          </label>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -815,7 +817,7 @@ export default function HackathonsPage() {
                   ? 'No Private Campus Hackathons Found'
                   : activeTab === 'my-events'
                   ? "You Haven't Enrolled in Any Hackathons Yet"
-                  : 'No Collegiate Competitions Available'}
+                  : 'No Hackathons Available'}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto font-medium">
                 {myHostedHackathons.length > 0 && activeTab === 'all'
