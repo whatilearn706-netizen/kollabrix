@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
       recentStudents: [] as any[],
     };
 
+    let availableProjects: any[] = [];
+
     if (isSupabaseConfigured()) {
       try {
         // 1. Fetch current Master Control Config
@@ -75,16 +77,18 @@ export async function GET(request: NextRequest) {
             customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(row.value.customSection || {}) },
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
+            featuredDeckCards: Array.isArray(row.value.featuredDeckCards) ? row.value.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
           };
         }
 
-        // 2. Fetch live metrics for the Executive CEO report
-        const [usersRes, projRes, appsRes, hackRes, profilesRes] = await Promise.allSettled([
+        // 2. Fetch live metrics for the Executive CEO report & available projects for featured deck
+        const [usersRes, projRes, appsRes, hackRes, profilesRes, availableProjectsRes] = await Promise.allSettled([
           client.from('profiles').select('user_id, username, display_name, role, skills, created_at', { count: 'exact' }).limit(50),
           client.from('projects').select('id, title, required_skills, status', { count: 'exact' }),
           client.from('applications').select('id', { count: 'exact' }),
           client.from('hackathons').select('id', { count: 'exact' }),
           client.from('profiles').select('user_id, username, display_name, role, skills').order('created_at', { ascending: false }).limit(60),
+          client.from('projects').select('id, title, category, status, current_team_size, desired_team_size, summary, technologies').order('created_at', { ascending: false }).limit(60),
         ]);
 
         const totalUsers = usersRes.status === 'fulfilled' && typeof usersRes.value.count === 'number' ? usersRes.value.count : 142;
@@ -129,6 +133,10 @@ export async function GET(request: NextRequest) {
             }))
           : [];
 
+        if (availableProjectsRes.status === 'fulfilled' && Array.isArray(availableProjectsRes.value.data)) {
+          availableProjects = availableProjectsRes.value.data;
+        }
+
         ceoStats = {
           totalUsers,
           totalProjects,
@@ -169,6 +177,7 @@ export async function GET(request: NextRequest) {
         success: true,
         config,
         ceoStats,
+        availableProjects,
       },
       { headers: NO_CACHE_HEADERS }
     );
@@ -207,6 +216,7 @@ export async function POST(request: NextRequest) {
       customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(incoming.customSection || {}) },
       studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(incoming.studentTools || {}) },
       visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(incoming.visualTemplates || {}) },
+      featuredDeckCards: Array.isArray(incoming.featuredDeckCards) ? incoming.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
     };
 
     let savedToDb = false;

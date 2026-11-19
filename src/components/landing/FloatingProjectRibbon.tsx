@@ -1,103 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ArrowUpRight, Sparkles, Users } from 'lucide-react';
-
-interface FloatingCardItem {
-  id: string;
-  number: string;
-  title: string;
-  category: string;
-  recruitingBadge: string;
-  badgeTone: 'emerald' | 'cyan' | 'violet' | 'amber';
-  college: string;
-  description: string;
-  tags: string[];
-  teamJoined: string;
-  artImage: string;
-  glowColor: string;
-  href: string;
-}
-
-const ACTIVE_CAMPUS_PROJECTS: FloatingCardItem[] = [
-  {
-    id: 'proj_devsync_ide',
-    number: '01',
-    title: 'DevSync IDE',
-    category: 'DEV TOOLS',
-    recruitingBadge: 'Recruiting • 1 Dev',
-    badgeTone: 'emerald',
-    college: 'Bosscoder School of Tech',
-    description: 'Real-time collaborative web IDE with shared cursors, live terminal execution & AI pair coding.',
-    tags: ['Next.js', 'Go', 'Docker'],
-    teamJoined: '2/4 Joined',
-    artImage: '/brand/card-art-1.webp',
-    glowColor: 'rgba(168, 85, 247, 0.45)', // Violet/Magenta glow
-    href: '/explore',
-  },
-  {
-    id: 'proj_aerovision_uav',
-    number: '02',
-    title: 'AeroVision UAV',
-    category: 'ROBOTICS & AI',
-    recruitingBadge: 'Recruiting • 2 Devs',
-    badgeTone: 'cyan',
-    college: 'IIT Delhi',
-    description: 'Autonomous campus drone tracking with edge-quantized YOLOv8 on Jetson Orin Nano.',
-    tags: ['Python', 'PyTorch', 'ROS2'],
-    teamJoined: '2/4 Joined',
-    artImage: '/brand/card-art-2.webp',
-    glowColor: 'rgba(148, 163, 184, 0.4)', // Silver/Chrome glow
-    href: '/explore',
-  },
-  {
-    id: 'proj_ecoroute_transit',
-    number: '03',
-    title: 'EcoRoute Transit',
-    category: 'SMART MOBILITY',
-    recruitingBadge: 'In Progress',
-    badgeTone: 'violet',
-    college: 'BITS Pilani',
-    description: 'Graph-optimized micro-mobility scheduler reducing student shuttle wait times by 40%.',
-    tags: ['FastAPI', 'Rust', 'Leaflet'],
-    teamJoined: '3/4 Joined',
-    artImage: '/brand/card-art-3.webp',
-    glowColor: 'rgba(56, 189, 248, 0.45)', // Opal/Aurora Sky glow
-    href: '/explore',
-  },
-  {
-    id: 'proj_finsafe_web3',
-    number: '04',
-    title: 'FinSafe Web3',
-    category: 'FINTECH / ZK',
-    recruitingBadge: 'Recruiting • 1 Dev',
-    badgeTone: 'cyan',
-    college: 'PES Bengaluru',
-    description: 'Zero-knowledge fraud prevention and micro-grant protocol for collegiate hackers.',
-    tags: ['Solidity', 'Next.js', 'ZK-Rollup'],
-    teamJoined: '2/3 Joined',
-    artImage: '/brand/card-art-4.webp',
-    glowColor: 'rgba(6, 182, 212, 0.45)', // Cyan/Magma glow
-    href: '/explore',
-  },
-  {
-    id: 'proj_neuroscan_ai',
-    number: '05',
-    title: 'NeuroScan AI',
-    category: 'HEALTH AI',
-    recruitingBadge: 'SIH Finalist',
-    badgeTone: 'amber',
-    college: 'KIET Ghaziabad',
-    description: 'Explainable deep learning pipeline for fast MRI brain lesion classification & triage.',
-    tags: ['PyTorch', 'FastAPI', 'React'],
-    teamJoined: '4/4 Joined',
-    artImage: '/brand/card-art-5.webp',
-    glowColor: 'rgba(245, 158, 11, 0.45)', // Amber/Gold glow
-    href: '/explore',
-  },
-];
+import { FeaturedDeckCardConfig, DEFAULT_FEATURED_DECK_CARDS } from '@/types/masterControl';
 
 // Fanned arc geometry for the 5-card deck
 const CARD_GEOMETRY = [
@@ -109,9 +16,32 @@ const CARD_GEOMETRY = [
 ];
 
 export function FloatingProjectRibbon() {
+  const [cards, setCards] = useState<FeaturedDeckCardConfig[]>(DEFAULT_FEATURED_DECK_CARDS);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const getBadgeDotColor = (tone: FloatingCardItem['badgeTone']) => {
+  // Fetch dynamic deck configuration from Admin Master Control
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/master-control', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (
+          isMounted &&
+          data?.config?.featuredDeckCards &&
+          Array.isArray(data.config.featuredDeckCards) &&
+          data.config.featuredDeckCards.length === 5
+        ) {
+          setCards(data.config.featuredDeckCards);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const getBadgeDotColor = (tone: FeaturedDeckCardConfig['badgeTone']) => {
     switch (tone) {
       case 'emerald':
         return 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]';
@@ -161,8 +91,8 @@ export function FloatingProjectRibbon() {
         {/* ============================================================== */}
         <div className="hidden lg:flex justify-center items-end relative py-12 px-4 [perspective:1400px]">
           <div className="flex items-center justify-center -space-x-8 xl:-space-x-10">
-            {ACTIVE_CAMPUS_PROJECTS.map((card, index) => {
-              const geom = CARD_GEOMETRY[index];
+            {cards.map((card, index) => {
+              const geom = CARD_GEOMETRY[index] || CARD_GEOMETRY[2];
               const isHovered = hoveredIndex === index;
               const hasAnyHover = hoveredIndex !== null;
 
@@ -176,7 +106,7 @@ export function FloatingProjectRibbon() {
 
               return (
                 <motion.div
-                  key={card.id}
+                  key={card.id || card.number}
                   style={{ zIndex: currentZ }}
                   animate={{
                     rotate: currentRotate,
@@ -195,7 +125,7 @@ export function FloatingProjectRibbon() {
                   className="relative flex-shrink-0 cursor-pointer origin-bottom will-change-transform"
                 >
                   <Link
-                    href={card.href}
+                    href={card.href || `/projects/${card.id}`}
                     className="group block w-[270px] xl:w-[295px] h-[420px] rounded-[28px] bg-[#0B0E15]/95 border border-white/[0.12] hover:border-white/40 overflow-hidden shadow-[0_20px_45px_rgba(0,0,0,0.8)] transition-all duration-300 flex flex-col justify-between"
                     style={{
                       boxShadow: isHovered
@@ -271,10 +201,10 @@ export function FloatingProjectRibbon() {
         {/* MOBILE / TABLET: Responsive Horizontal Snap Stream */}
         {/* ============================================================== */}
         <div className="lg:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory pb-6 scrollbar-none -mx-6 px-6">
-          {ACTIVE_CAMPUS_PROJECTS.map((card) => (
-            <div key={card.id} className="snap-center flex-shrink-0 w-[280px]">
+          {cards.map((card) => (
+            <div key={card.id || card.number} className="snap-center flex-shrink-0 w-[280px]">
               <Link
-                href={card.href}
+                href={card.href || `/projects/${card.id}`}
                 className="group block h-[410px] rounded-[26px] bg-[#0B0E15] border border-white/[0.12] hover:border-white/30 overflow-hidden shadow-xl flex flex-col justify-between"
               >
                 {/* Artwork Banner */}
@@ -333,3 +263,4 @@ export function FloatingProjectRibbon() {
     </section>
   );
 }
+

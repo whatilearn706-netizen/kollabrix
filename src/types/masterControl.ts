@@ -113,6 +113,100 @@ export const DEFAULT_VISUAL_TEMPLATES_CONFIG: VisualTemplatesConfig = {
   floatingDock: false,
 };
 
+export interface FeaturedDeckCardConfig {
+  id: string;
+  number: string;
+  title: string;
+  category: string;
+  recruitingBadge: string;
+  badgeTone: 'emerald' | 'cyan' | 'violet' | 'amber';
+  college: string;
+  description: string;
+  tags: string[];
+  teamJoined: string;
+  artImage: string;
+  glowColor: string;
+  href: string;
+}
+
+export const DEFAULT_FEATURED_DECK_CARDS: FeaturedDeckCardConfig[] = [
+  {
+    id: 'proj_devsync_ide',
+    number: '01',
+    title: 'DevSync IDE',
+    category: 'DEV TOOLS',
+    recruitingBadge: 'Recruiting • 1 Dev',
+    badgeTone: 'emerald',
+    college: 'Bosscoder School of Tech',
+    description: 'Real-time collaborative web IDE with shared cursors, live terminal execution & AI pair coding.',
+    tags: ['Next.js', 'Go', 'Docker'],
+    teamJoined: '2/4 Joined',
+    artImage: '/brand/card-art-1.webp',
+    glowColor: 'rgba(168, 85, 247, 0.45)',
+    href: '/projects/proj_devsync_ide',
+  },
+  {
+    id: 'proj_aerovision_uav',
+    number: '02',
+    title: 'AeroVision UAV',
+    category: 'ROBOTICS & AI',
+    recruitingBadge: 'Recruiting • 2 Devs',
+    badgeTone: 'cyan',
+    college: 'IIT Delhi',
+    description: 'Autonomous campus drone tracking with edge-quantized YOLOv8 on Jetson Orin Nano.',
+    tags: ['Python', 'PyTorch', 'ROS2'],
+    teamJoined: '2/4 Joined',
+    artImage: '/brand/card-art-2.webp',
+    glowColor: 'rgba(148, 163, 184, 0.4)',
+    href: '/projects/proj_aerovision_uav',
+  },
+  {
+    id: 'proj_ecoroute_transit',
+    number: '03',
+    title: 'EcoRoute Transit',
+    category: 'SMART MOBILITY',
+    recruitingBadge: 'In Progress',
+    badgeTone: 'violet',
+    college: 'BITS Pilani',
+    description: 'Graph-optimized micro-mobility scheduler reducing student shuttle wait times by 40%.',
+    tags: ['FastAPI', 'Rust', 'Leaflet'],
+    teamJoined: '3/4 Joined',
+    artImage: '/brand/card-art-3.webp',
+    glowColor: 'rgba(56, 189, 248, 0.45)',
+    href: '/projects/proj_ecoroute_transit',
+  },
+  {
+    id: 'proj_finsafe_web3',
+    number: '04',
+    title: 'FinSafe Web3',
+    category: 'FINTECH / ZK',
+    recruitingBadge: 'Recruiting • 1 Dev',
+    badgeTone: 'cyan',
+    college: 'PES Bengaluru',
+    description: 'Zero-knowledge fraud prevention and micro-grant protocol for collegiate hackers.',
+    tags: ['Solidity', 'Next.js', 'ZK-Rollup'],
+    teamJoined: '2/3 Joined',
+    artImage: '/brand/card-art-4.webp',
+    glowColor: 'rgba(6, 182, 212, 0.45)',
+    href: '/projects/proj_finsafe_web3',
+  },
+  {
+    id: 'proj_neuroscan_ai',
+    number: '05',
+    title: 'NeuroScan AI',
+    category: 'HEALTH AI',
+    recruitingBadge: 'SIH Finalist',
+    badgeTone: 'amber',
+    college: 'KIET Ghaziabad',
+    description: 'Explainable deep learning pipeline for fast MRI brain lesion classification & triage.',
+    tags: ['PyTorch', 'FastAPI', 'React'],
+    teamJoined: '4/4 Joined',
+    artImage: '/brand/card-art-5.webp',
+    glowColor: 'rgba(245, 158, 11, 0.45)',
+    href: '/projects/proj_neuroscan_ai',
+  },
+];
+
 export interface MasterControlConfig {
   banner: BroadcastBannerConfig;
   sections: HomepageSectionToggles;
@@ -123,9 +217,11 @@ export interface MasterControlConfig {
   customSection?: CustomSectionConfig;
   studentTools?: StudentToolsConfig;
   visualTemplates?: VisualTemplatesConfig;
+  featuredDeckCards?: FeaturedDeckCardConfig[];
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
+  featuredDeckCards: DEFAULT_FEATURED_DECK_CARDS,
   visualTemplates: DEFAULT_VISUAL_TEMPLATES_CONFIG,
   workspaceFeatures: {
     aiCloserKit: false,

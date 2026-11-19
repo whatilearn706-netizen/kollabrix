@@ -37,6 +37,7 @@ import {
   Sliders,
   Gift,
   Terminal,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -53,11 +54,13 @@ import {
   StudentToolsConfig,
   CustomSectionConfig,
   VisualTemplatesConfig,
+  FeaturedDeckCardConfig,
+  DEFAULT_FEATURED_DECK_CARDS,
   DEFAULT_VISUAL_TEMPLATES_CONFIG,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'templates' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'featuredDeck' | 'templates' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
@@ -177,6 +180,10 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
   const [newBadgeTitle, setNewBadgeTitle] = useState('🌟 Campus Innovator');
   const [newBadgeReason, setNewBadgeReason] = useState('Outstanding collegiate open-source contribution');
 
+  // Featured 3D Cards Deck state
+  const [availableProjects, setAvailableProjects] = useState<any[]>([]);
+  const [selectedDeckCardIndex, setSelectedDeckCardIndex] = useState<number>(0);
+
   // Load config on mount
   useEffect(() => {
     async function loadData() {
@@ -213,9 +220,13 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
               ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!,
               ...(data.config.visualTemplates || {}),
             },
+            featuredDeckCards: Array.isArray(data.config.featuredDeckCards) && data.config.featuredDeckCards.length === 5
+              ? data.config.featuredDeckCards
+              : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || DEFAULT_FEATURED_DECK_CARDS),
           };
           setConfig(merged);
           if (data.ceoStats) setCeoStats(data.ceoStats);
+          if (Array.isArray(data.availableProjects)) setAvailableProjects(data.availableProjects);
           try {
             localStorage.setItem('linkora_master_control_v1', JSON.stringify(merged));
           } catch (e) {}
@@ -390,6 +401,94 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
     setTimeout(() => setCopiedReport(false), 2500);
   };
 
+  // Artwork Presets for Featured 3D Deck
+  const ARTWORK_PRESETS = [
+    { label: '01: Cosmic Magenta Wave', url: '/brand/card-art-1.webp', glow: 'rgba(168, 85, 247, 0.45)' },
+    { label: '02: Frosted Minimalist Arc', url: '/brand/card-art-2.webp', glow: 'rgba(148, 163, 184, 0.4)' },
+    { label: '03: Prismatic Daylight Glow', url: '/brand/card-art-3.webp', glow: 'rgba(56, 189, 248, 0.45)' },
+    { label: '04: Cyber Fluid Swirl', url: '/brand/card-art-4.webp', glow: 'rgba(6, 182, 212, 0.45)' },
+    { label: '05: Golden Amber Horizon', url: '/brand/card-art-5.webp', glow: 'rgba(245, 158, 11, 0.45)' },
+  ];
+
+  // Featured 3D Deck Card Update Handlers
+  const handleUpdateDeckCard = (
+    index: number,
+    field: keyof FeaturedDeckCardConfig,
+    value: any
+  ) => {
+    const currentCards = [
+      ...(config.featuredDeckCards && config.featuredDeckCards.length === 5
+        ? config.featuredDeckCards
+        : DEFAULT_FEATURED_DECK_CARDS),
+    ];
+    if (currentCards[index]) {
+      currentCards[index] = {
+        ...currentCards[index],
+        [field]: value,
+      };
+      const updated = { ...config, featuredDeckCards: currentCards };
+      setConfig(updated);
+    }
+  };
+
+  const handleSelectProjectForCard = (cardIndex: number, projectId: string) => {
+    if (!projectId) return;
+    const proj = availableProjects.find((p) => p.id === projectId);
+    if (!proj) return;
+
+    const currentCards = [
+      ...(config.featuredDeckCards && config.featuredDeckCards.length === 5
+        ? config.featuredDeckCards
+        : DEFAULT_FEATURED_DECK_CARDS),
+    ];
+    if (!currentCards[cardIndex]) return;
+
+    // Determine status badge
+    let badgeText = 'Recruiting • 1 Dev';
+    let badgeTone: FeaturedDeckCardConfig['badgeTone'] = 'emerald';
+    if (proj.status === 'In Progress') {
+      badgeText = 'In Progress';
+      badgeTone = 'violet';
+    } else if (proj.status === 'Completed') {
+      badgeText = 'Completed';
+      badgeTone = 'cyan';
+    } else if (proj.desired_team_size && proj.current_team_size) {
+      const needed = proj.desired_team_size - proj.current_team_size;
+      badgeText = needed > 0 ? `Recruiting • ${needed} Dev${needed > 1 ? 's' : ''}` : 'Squad Full';
+      badgeTone = needed > 0 ? 'emerald' : 'amber';
+    }
+
+    const teamCount = proj.current_team_size && proj.desired_team_size
+      ? `${proj.current_team_size}/${proj.desired_team_size} Joined`
+      : '2/4 Joined';
+
+    const tags = Array.isArray(proj.technologies) && proj.technologies.length > 0
+      ? proj.technologies.slice(0, 3)
+      : currentCards[cardIndex].tags;
+
+    currentCards[cardIndex] = {
+      ...currentCards[cardIndex],
+      id: proj.id,
+      title: proj.title || currentCards[cardIndex].title,
+      category: (proj.category || 'PROJECT').toUpperCase(),
+      recruitingBadge: badgeText,
+      badgeTone: badgeTone,
+      description: proj.summary || currentCards[cardIndex].description,
+      tags: tags,
+      teamJoined: teamCount,
+      href: `/projects/${proj.id}`,
+    };
+
+    const updated = { ...config, featuredDeckCards: currentCards };
+    setConfig(updated);
+  };
+
+  const handleResetDeckCards = () => {
+    const updated = { ...config, featuredDeckCards: DEFAULT_FEATURED_DECK_CARDS };
+    setConfig(updated);
+    handleSave(updated);
+  };
+
   if (isLoading) {
     return (
       <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-12 text-center space-y-4 animate-pulse">
@@ -401,6 +500,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
   const subTabs = [
     { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
+    { id: 'featuredDeck' as SubTab, label: '🃏 Featured 3D Card Deck (5 Cards)', icon: Layers },
     { id: 'templates' as SubTab, label: '✨ Visual Templates (All 6 Live / Inactive)', icon: Palette },
     { id: 'studentTools' as SubTab, label: '🎁 Student Tools (Perks & Starter Kits)', icon: Gift },
     { id: 'custom' as SubTab, label: '🌟 Custom Spotlight Builder', icon: PlusCircle },
@@ -492,6 +592,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Jump:</span>
             {[
+              { id: 'module-featured-deck', label: '🃏 3D Card Deck (5 Cards)', color: 'hover:border-sky-400 text-sky-300' },
               { id: 'module-visual-templates', label: '✨ Visual Templates (6 Modules)', color: 'hover:border-amber-400 text-amber-300' },
               { id: 'module-student-tools', label: '🎁 Student Tools', color: 'hover:border-emerald-400 text-emerald-300' },
               { id: 'module-custom', label: '🌟 Spotlight Builder', color: 'hover:border-amber-400 text-amber-300' },
@@ -516,6 +617,404 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* FEATURED 3D CARD DECK MANAGER (5 HOMEPAGE HERO SHOWCASE CARDS)        */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'featuredDeck') && (
+        <div id="module-featured-deck" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24 shadow-elevated">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                  HOMEPAGE 3D FLOATING DECK
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  5 HERO SHOWCASE CARDS
+                </span>
+              </div>
+              <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+                <span>Featured 3D Card Deck Control</span>
+                <span className="text-xs font-normal text-slate-400 font-mono">(Card 01 through Card 05)</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-3xl">
+                Configure each of the 5 interactive floating cards rendered directly under the hero section on kollabrix.in.
+                Select an existing campus project from the database to auto-populate fields, or customize titles, categories, recruiting badges, college affiliations, and target links manually.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetDeckCards}
+                className="text-xs border-charcoal-700 hover:border-slate-500 text-slate-300"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Reset Defaults
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleSave()}
+                disabled={isSaving}
+                className="bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs"
+              >
+                <Save className="w-3.5 h-3.5 mr-1.5" />
+                {isSaving ? 'Publishing...' : 'Save Deck Configuration'}
+              </Button>
+            </div>
+          </div>
+
+          {/* 5-Card Selector Ribbon */}
+          <div>
+            <label className="block text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
+              Select Card To Edit:
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              {([0, 1, 2, 3, 4] as const).map((idx) => {
+                const card = (config.featuredDeckCards && config.featuredDeckCards[idx]) || DEFAULT_FEATURED_DECK_CARDS[idx];
+                const isSelected = selectedDeckCardIndex === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedDeckCardIndex(idx)}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-charcoal-800/90 border-sky-400/80 shadow-[0_0_20px_rgba(56,189,248,0.2)] ring-1 ring-sky-400/50'
+                        : 'bg-charcoal-950/60 border-charcoal-800 hover:border-charcoal-700 hover:bg-charcoal-900/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <span className={`text-base font-black font-heading ${isSelected ? 'text-sky-300' : 'text-slate-500'}`}>
+                        {card?.number || `0${idx + 1}`}
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 border border-white/[0.08] truncate max-w-[90px]">
+                        {card?.category || 'PROJECT'}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                        {card?.title || `Card 0${idx + 1}`}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5 font-mono">
+                        {card?.recruitingBadge || 'Active'}
+                      </p>
+                    </div>
+                    {isSelected && (
+                      <span className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-sky-500 via-brand-400 to-sky-500" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Active Card Editor & Live Preview Split */}
+          {(() => {
+            const currentCard = (config.featuredDeckCards && config.featuredDeckCards[selectedDeckCardIndex]) || DEFAULT_FEATURED_DECK_CARDS[selectedDeckCardIndex];
+            if (!currentCard) return null;
+
+            return (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pt-2">
+                {/* Form Controls Column (7 cols) */}
+                <div className="xl:col-span-7 space-y-4">
+                  {/* Database Auto-Fill Bar */}
+                  <div className="p-4 rounded-xl bg-charcoal-950/80 border border-sky-500/25 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-sky-300 flex items-center gap-1.5 font-mono">
+                        <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                        Auto-Fill From Database Project
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {availableProjects.length} live projects loaded
+                      </span>
+                    </div>
+                    <select
+                      value={availableProjects.some((p) => p.id === currentCard.id) ? currentCard.id : ''}
+                      onChange={(e) => handleSelectProjectForCard(selectedDeckCardIndex, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-charcoal-900 border border-charcoal-700 text-xs text-white focus:outline-none focus:border-sky-400 cursor-pointer"
+                    >
+                      <option value="">-- Choose a project to auto-fill this card --</option>
+                      {availableProjects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          [{p.category || 'PROJECT'}] {p.title} ({p.status || 'Active'})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Selecting an existing project will automatically update Title, Category, Status badge, Squad size, and link it directly to <code className="text-sky-300">/projects/[id]</code>.
+                    </p>
+                  </div>
+
+                  {/* Card Title & Target Link */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                        Card Title
+                      </label>
+                      <Input
+                        value={currentCard.title}
+                        onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'title', e.target.value)}
+                        placeholder="e.g. DevSync IDE"
+                        className="bg-charcoal-950 border-charcoal-800 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono flex items-center justify-between">
+                        <span>Target Destination Link</span>
+                        {currentCard.href && (
+                          <a
+                            href={currentCard.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-sky-400 hover:underline inline-flex items-center gap-1"
+                          >
+                            <span>Test</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </label>
+                      <Input
+                        value={currentCard.href}
+                        onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'href', e.target.value)}
+                        placeholder="e.g. /projects/proj_devsync_ide"
+                        className="bg-charcoal-950 border-charcoal-800 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category, College & Squad status */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                        Category Pill
+                      </label>
+                      <Input
+                        value={currentCard.category}
+                        onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'category', e.target.value.toUpperCase())}
+                        placeholder="e.g. DEV TOOLS"
+                        className="bg-charcoal-950 border-charcoal-800 text-xs uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                        College / Campus
+                      </label>
+                      <Input
+                        value={currentCard.college}
+                        onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'college', e.target.value)}
+                        placeholder="e.g. IIT Delhi"
+                        className="bg-charcoal-950 border-charcoal-800 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                        Squad Joined
+                      </label>
+                      <Input
+                        value={currentCard.teamJoined}
+                        onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'teamJoined', e.target.value)}
+                        placeholder="e.g. 2/4 Joined"
+                        className="bg-charcoal-950 border-charcoal-800 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Badge Text & Badge Tone */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                        Recruiting Status Badge
+                      </label>
+                      <Input
+                        value={currentCard.recruitingBadge}
+                        onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'recruitingBadge', e.target.value)}
+                        placeholder="e.g. Recruiting • 1 Dev"
+                        className="bg-charcoal-950 border-charcoal-800 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                        Badge Dot Tone
+                      </label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(['emerald', 'cyan', 'violet', 'amber'] as const).map((tone) => (
+                          <button
+                            key={tone}
+                            type="button"
+                            onClick={() => handleUpdateDeckCard(selectedDeckCardIndex, 'badgeTone', tone)}
+                            className={`px-2 py-1.5 rounded-lg border text-[11px] font-mono capitalize transition-all flex items-center justify-center gap-1.5 ${
+                              currentCard.badgeTone === tone
+                                ? 'bg-charcoal-800 border-white/40 text-white font-bold ring-1 ring-white/30'
+                                : 'bg-charcoal-950 border-charcoal-800 text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                tone === 'emerald'
+                                  ? 'bg-emerald-400'
+                                  : tone === 'cyan'
+                                  ? 'bg-cyan-400'
+                                  : tone === 'violet'
+                                  ? 'bg-violet-400'
+                                  : 'bg-amber-400'
+                              }`}
+                            />
+                            <span>{tone}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
+                      Card Narrative / Summary (2 Lines)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={currentCard.description}
+                      onChange={(e) => handleUpdateDeckCard(selectedDeckCardIndex, 'description', e.target.value)}
+                      placeholder="Brief elevator pitch of the project..."
+                      className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-800 text-xs text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  {/* Artwork Preset Selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 font-mono">
+                      Artwork Banner Preset
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {ARTWORK_PRESETS.map((preset, pIdx) => {
+                        const isPresetActive = currentCard.artImage === preset.url;
+                        return (
+                          <button
+                            key={pIdx}
+                            type="button"
+                            onClick={() => {
+                              handleUpdateDeckCard(selectedDeckCardIndex, 'artImage', preset.url);
+                              handleUpdateDeckCard(selectedDeckCardIndex, 'glowColor', preset.glow);
+                            }}
+                            className={`p-1.5 rounded-xl border text-left transition-all overflow-hidden ${
+                              isPresetActive
+                                ? 'bg-charcoal-800 border-sky-400 ring-1 ring-sky-400/50'
+                                : 'bg-charcoal-950 border-charcoal-800 hover:border-charcoal-700'
+                            }`}
+                          >
+                            <div className="h-12 w-full rounded-lg overflow-hidden bg-slate-900 mb-1">
+                              <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
+                            </div>
+                            <span className="block text-[10px] font-mono text-slate-300 truncate">
+                              Preset 0{pIdx + 1}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Card Visual Preview Column (5 cols) */}
+                <div className="xl:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-charcoal-950/80 border border-charcoal-800/80 relative">
+                  <div className="w-full flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-brand-400" />
+                      Live Homepage Preview (Card {currentCard.number})
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      Real-Time Sync
+                    </span>
+                  </div>
+
+                  {/* 1:1 Card Renderer */}
+                  <div
+                    className="w-[280px] h-[420px] rounded-[28px] bg-[#0B0E15] border border-white/[0.18] overflow-hidden shadow-[0_25px_50px_rgba(0,0,0,0.9)] flex flex-col justify-between transition-transform duration-300 relative"
+                    style={{
+                      boxShadow: `0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 35px ${currentCard.glowColor || 'rgba(56, 189, 248, 0.35)'}`,
+                    }}
+                  >
+                    {/* Top Artwork Banner */}
+                    <div className="relative h-44 w-full overflow-hidden rounded-t-[26px] bg-slate-900">
+                      <img
+                        src={currentCard.artImage}
+                        alt={currentCard.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0E15] via-transparent to-transparent opacity-80" />
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="relative p-5 pt-3 flex flex-col justify-between flex-1 overflow-hidden">
+                      {/* Giant Watermark */}
+                      <span className="absolute right-3.5 top-0 text-7xl font-black font-heading text-white/[0.05] select-none pointer-events-none tracking-tighter">
+                        {currentCard.number}
+                      </span>
+
+                      <div>
+                        {/* Meta */}
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-mono font-semibold tracking-wider uppercase bg-white/[0.07] border border-white/10 text-slate-300">
+                            {currentCard.category}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-slate-400">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                currentCard.badgeTone === 'emerald'
+                                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]'
+                                  : currentCard.badgeTone === 'amber'
+                                  ? 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.9)]'
+                                  : currentCard.badgeTone === 'violet'
+                                  ? 'bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.9)]'
+                                  : 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.9)]'
+                              }`}
+                            />
+                            {currentCard.recruitingBadge}
+                          </span>
+                        </div>
+
+                        {/* Title & College */}
+                        <h3 className="text-lg font-bold text-white tracking-tight line-clamp-1">
+                          {currentCard.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5 line-clamp-1">
+                          🏛️ {currentCard.college}
+                        </p>
+
+                        {/* Description */}
+                        <p className="text-xs text-slate-300/80 mt-2 line-clamp-2 leading-relaxed">
+                          {currentCard.description}
+                        </p>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-400">
+                          {currentCard.teamJoined}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/20 shadow-sm">
+                          <span>Explore</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 font-mono mt-4 text-center">
+                    Tapping &quot;Explore&quot; navigates users directly to <br />
+                    <span className="text-sky-400 font-semibold">{currentCard.href || `/projects/${currentCard.id}`}</span>
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
