@@ -1,11 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { CelestialHorizonCanvas } from './CelestialHorizonCanvas';
 
 const LINE_1 = 'Code. Team Up.';
 const LINE_2 = 'Win.';
@@ -13,7 +12,16 @@ const LINE_2 = 'Win.';
 export function LandingHero() {
   const { user } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
-  const [webGLFailed, setWebGLFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // Explicitly play video to satisfy Safari / WebKit and mobile autoplay policies
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {
+        // Safe fallback: poster image stays active
+      });
+    }
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -28,19 +36,30 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[92vh] flex flex-col justify-end pb-16 sm:pb-20 lg:pb-24 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
-      {/* Real-time Celestial Blue Horizon WebGL Canvas */}
-      <CelestialHorizonCanvas className="z-0" onWebGLActive={(active) => setWebGLFailed(!active)} />
+      {/* Cinematic Celestial Blue Horizon Video Background */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster="/brand/hero-celestial-horizon.webp"
+          className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[1.06] contrast-[1.04]"
+        >
+          <source src="/videos/hero-celestial-horizon.webm" type="video/webm" />
+          <source src="/videos/hero-celestial-horizon.mp4" type="video/mp4" />
+          {/* Fallback image if video element is unsupported */}
+          <img
+            src="/brand/hero-celestial-horizon.webp"
+            alt="Kollabrix Horizon"
+            className="w-full h-full object-cover"
+          />
+        </video>
+      </div>
 
-      {/* Hardware-Accelerated High-Definition Fallback Poster */}
-      {webGLFailed && (
-        <img
-          src="/brand/hero-celestial-horizon.webp"
-          alt="Celestial Horizon"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10 filter brightness-[1.08] contrast-[1.05]"
-        />
-      )}
-
-      {/* Atmospheric Vignette for deep contrast and seamless blend into page background */}
+      {/* Atmospheric Vignette for deep contrast and seamless blend into obsidian page background */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#090B10] via-transparent to-black/30 pointer-events-none z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_40%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
 
