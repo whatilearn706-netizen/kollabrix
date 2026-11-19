@@ -110,6 +110,48 @@ const DOCK_ITEMS: DockItem[] = [
   },
 ];
 
+const TONE_COLORS = {
+  amber: {
+    rim: 'rgba(245, 158, 11, 0.7)',
+    text: 'text-amber-400 group-hover:text-amber-300',
+    glow: 'rgba(245, 158, 11, 0.45)',
+  },
+  violet: {
+    rim: 'rgba(168, 85, 247, 0.7)',
+    text: 'text-violet-400 group-hover:text-violet-300',
+    glow: 'rgba(168, 85, 247, 0.45)',
+  },
+  emerald: {
+    rim: 'rgba(16, 185, 129, 0.7)',
+    text: 'text-emerald-400 group-hover:text-emerald-300',
+    glow: 'rgba(16, 185, 129, 0.45)',
+  },
+  cyan: {
+    rim: 'rgba(6, 182, 212, 0.7)',
+    text: 'text-cyan-400 group-hover:text-cyan-300',
+    glow: 'rgba(6, 182, 212, 0.45)',
+  },
+  brand: {
+    rim: 'rgba(99, 102, 241, 0.7)',
+    text: 'text-indigo-400 group-hover:text-indigo-300',
+    glow: 'rgba(99, 102, 241, 0.45)',
+  },
+  rose: {
+    rim: 'rgba(244, 63, 94, 0.7)',
+    text: 'text-rose-400 group-hover:text-rose-300',
+    glow: 'rgba(244, 63, 94, 0.45)',
+  },
+};
+
+// 5 3D Conveyor Track positions (Matching the curved conveyor in the Pinterest ref)
+const CONVEYOR_SLOTS = [
+  { x: 80, y: 55,  scale: 0.82, rotateX: 22,  rotateY: -12, zIndex: 12 }, // Position 0: Top entrance
+  { x: 60, y: 145, scale: 0.94, rotateX: 14,  rotateY: -7,  zIndex: 18 }, // Position 1: Upper approach
+  { x: 44, y: 240, scale: 1.15, rotateX: 0,   rotateY: 0,   zIndex: 30 }, // Position 2: THE PORTAL GATE (Active Center)
+  { x: 60, y: 335, scale: 0.94, rotateX: -14, rotateY: -7,  zIndex: 18 }, // Position 3: Lower exit
+  { x: 80, y: 425, scale: 0.82, rotateX: -22, rotateY: -12, zIndex: 12 }, // Position 4: Bottom terminus
+];
+
 interface AppItem {
   id: string;
   name: string;
@@ -240,14 +282,14 @@ export function KollabrixQuickDock() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Scroll index for the keycaps stack
+  // Scroll index for the conveyor track
   const [startIndex, setStartIndex] = useState<number>(0);
 
-  // Web Audio Context for realistic mechanical keyboard typing sound
+  // Web Audio Context for realistic kinetic portal conveyor sound
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastWheelTimeRef = useRef<number>(0);
 
-  // Hovered keycap state for floating tooltip card
+  // Hovered token state for floating callout card
   const [hoveredNode, setHoveredNode] = useState<{
     item: DockItem;
     nodeNumber: string;
@@ -261,8 +303,8 @@ export function KollabrixQuickDock() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isExamMode, setIsExamMode] = useState(false);
 
-  // Synthesize realistic mechanical keyboard typing sound via Web Audio API
-  const playKeyboardTypingSound = useCallback(() => {
+  // Synthesize kinetic magnetic portal activation + metallic coin snap
+  const playPortalConveySound = useCallback(() => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -276,60 +318,39 @@ export function KollabrixQuickDock() {
       }
 
       const now = ctx.currentTime;
-      // Realistic ±8% pitch variation simulating different keycap positions & switch tolerances
-      const pitchJitter = 0.92 + Math.random() * 0.16;
+      const pitch = 0.95 + Math.random() * 0.1;
 
-      // 1. Resonant Mechanical Thock (Plastic keycap bottoming out on PCB plate)
-      const thockOsc = ctx.createOscillator();
-      const thockGain = ctx.createGain();
-      const thockFilter = ctx.createBiquadFilter();
+      // 1. Kinetic Magnetic Portal Sweep (Warp pulse into the portal ring)
+      const sweepOsc = ctx.createOscillator();
+      const sweepGain = ctx.createGain();
+      sweepOsc.type = 'sine';
+      sweepOsc.frequency.setValueAtTime(260 * pitch, now);
+      sweepOsc.frequency.exponentialRampToValueAtTime(720 * pitch, now + 0.045);
 
-      thockOsc.type = 'triangle';
-      thockOsc.frequency.setValueAtTime(440 * pitchJitter, now);
-      thockOsc.frequency.exponentialRampToValueAtTime(140 * pitchJitter, now + 0.022);
+      sweepGain.gain.setValueAtTime(0.16, now);
+      sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
-      thockFilter.type = 'lowpass';
-      thockFilter.frequency.setValueAtTime(1400 * pitchJitter, now);
+      sweepOsc.connect(sweepGain);
+      sweepGain.connect(ctx.destination);
+      sweepOsc.start(now);
+      sweepOsc.stop(now + 0.055);
 
-      thockGain.gain.setValueAtTime(0.24, now);
-      thockGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+      // 2. Metallic Token Snap (Heavy coin docking onto magnetic rail)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(840 * pitch, now);
+      osc.frequency.exponentialRampToValueAtTime(180 * pitch, now + 0.025);
 
-      thockOsc.connect(thockFilter);
-      thockFilter.connect(thockGain);
-      thockGain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
 
-      thockOsc.start(now);
-      thockOsc.stop(now + 0.028);
-
-      // 2. Crisp Tactile Stem Click (Plastic leaf actuation snap)
-      const sampleRate = ctx.sampleRate;
-      const bufferSize = Math.floor(sampleRate * 0.007);
-      const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.22));
-      }
-
-      const clickSource = ctx.createBufferSource();
-      clickSource.buffer = buffer;
-
-      const clickFilter = ctx.createBiquadFilter();
-      clickFilter.type = 'bandpass';
-      clickFilter.frequency.setValueAtTime(4800 * pitchJitter, now);
-      clickFilter.Q.setValueAtTime(3.8, now);
-
-      const clickGain = ctx.createGain();
-      clickGain.gain.setValueAtTime(0.18, now);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
-
-      clickSource.connect(clickFilter);
-      clickFilter.connect(clickGain);
-      clickGain.connect(ctx.destination);
-
-      clickSource.start(now);
-      clickSource.stop(now + 0.014);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.035);
     } catch {
-      // Gracefully ignore audio errors if blocked by browser policy
+      // Graceful suppression
     }
   }, []);
 
@@ -358,27 +379,27 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
-  // Discrete keycap scroll steps
-  const scrollUp = useCallback(() => {
+  // Discrete conveyor steps
+  const conveyUp = useCallback(() => {
     setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
-    playKeyboardTypingSound();
-  }, [playKeyboardTypingSound]);
+    playPortalConveySound();
+  }, [playPortalConveySound]);
 
-  const scrollDown = useCallback(() => {
+  const conveyDown = useCallback(() => {
     setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
-    playKeyboardTypingSound();
-  }, [playKeyboardTypingSound]);
+    playPortalConveySound();
+  }, [playPortalConveySound]);
 
-  // Mechanical keyboard wheel scroll listener
+  // Conveyor wheel listener
   const handleWheel = (e: React.WheelEvent) => {
     const now = Date.now();
-    if (now - lastWheelTimeRef.current < 120) return; // Crisp mechanical keystroke pacing
+    if (now - lastWheelTimeRef.current < 130) return;
     if (Math.abs(e.deltaY) > 10) {
       lastWheelTimeRef.current = now;
       if (e.deltaY > 0) {
-        scrollDown();
+        conveyDown();
       } else {
-        scrollUp();
+        conveyUp();
       }
     }
   };
@@ -393,7 +414,7 @@ export function KollabrixQuickDock() {
           return;
         }
         e.preventDefault();
-        playKeyboardTypingSound();
+        playPortalConveySound();
         setIsAppsModalOpen((prev) => !prev);
       } else if (e.key === 'Escape' && isAppsModalOpen) {
         setIsAppsModalOpen(false);
@@ -401,7 +422,7 @@ export function KollabrixQuickDock() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAppsModalOpen, playKeyboardTypingSound]);
+  }, [isAppsModalOpen, playPortalConveySound]);
 
   // Hide on homepage, admin, control-center, battle arena, or during active proctored exam
   if (
@@ -414,20 +435,19 @@ export function KollabrixQuickDock() {
     return null;
   }
 
-  // 4 Visible mechanical keycap slots matching Image 2:
-  // Slot 0: Chalk White Keycap ("BREAK")
-  // Slot 1: Translucent Emerald Artisan Keycap ("THE") with internal cross stem
-  // Slot 2: Chalk White Keycap ("SCROLL")
-  // Slot 3: Mint Green Keycap (Mascot / Icon)
-  const visibleSlots = [0, 1, 2, 3].map((slotIdx) => {
+  // 5 Visible 3D conveyor slots (matching the Pinterest reference video)
+  const visibleSlots = CONVEYOR_SLOTS.map((slotConfig, slotIdx) => {
     const itemIndex = (startIndex + slotIdx) % DOCK_ITEMS.length;
     const item = DOCK_ITEMS[itemIndex];
     const nodeNumber = String(slotIdx + 1).padStart(2, '0');
+    const isPortalCenter = slotIdx === 2; // Position 2 is docked inside the glowing portal
     return {
       slotIdx,
       itemIndex,
       item,
       nodeNumber,
+      isPortalCenter,
+      pos: slotConfig,
     };
   });
 
@@ -440,133 +460,248 @@ export function KollabrixQuickDock() {
   return (
     <>
       {/* =========================================================================
-          MECHANICAL KEYCAPS DOCK (Matching 2nd Image Reference)
-          - Stack of physical mechanical keyboard keycaps:
-            • Chalk White Keycap ("BREAK")
-            • Translucent Emerald Artisan Keycap ("THE") with switch stem cross '+'
-            • Chalk White Keycap ("SCROLL")
-            • Mint Green Keycap (Mascot / Icon)
-            • Bottom ⌘ Command Keycap (Launchpad)
-          - Keyboard typing audio synthesized on scroll & click
-          - Fully transparent backdrop: text behind remains 100% readable
+          3D PORTAL CONVEYOR DOCK (Built directly from Pinterest ref https://pin.it/2OmYr4b65)
+          - Curved 3D isometric dark rail track with segmented micro-treads
+          - Center Illuminated Neon Portal Ring with fluid magenta/violet core aura
+          - Thick 3D metallic dark-chrome tokens with chamfered rims & neon lighting
+          - Token docked inside portal ring illuminates with full neon intensity
+          - Kinetic magnetic warp audio synthesis on conveyor scroll
+          - 100% transparent backdrop: page text behind remains fully accessible
          ========================================================================= */}
       <aside
-        aria-label="Mechanical Keycaps Quick Dock"
+        aria-label="3D Portal Conveyor Dock"
         onWheel={handleWheel}
-        className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
+        className="fixed right-2 sm:right-3 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
       >
-        <div className="relative flex flex-col items-center gap-2.5 p-1 bg-transparent pointer-events-none">
-          {/* Top Step Keycap Arrow (Scroll Up) */}
+        <div className="relative w-[130px] h-[480px] bg-transparent pointer-events-none">
+          {/* Top Step Arrow Button */}
           <button
             type="button"
-            onClick={scrollUp}
-            aria-label="Scroll keycaps up"
-            className="flex items-center justify-center w-7 h-5 rounded-md bg-[#131622]/80 hover:bg-white/20 border border-slate-700/60 text-slate-300 hover:text-white transition-all active:translate-y-0.5 pointer-events-auto cursor-pointer shadow-[0_2px_0_#090b12]"
+            onClick={conveyUp}
+            aria-label="Convey track up"
+            className="absolute top-1 right-8 z-30 w-7 h-5 flex items-center justify-center rounded-md bg-[#131622]/80 hover:bg-violet-600/80 border border-violet-500/30 text-violet-300 hover:text-white transition-all active:scale-90 cursor-pointer pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
           >
             <ChevronUp className="w-3.5 h-3.5" />
           </button>
 
-          {/* Vertical Keycaps Stack (4 Physical Keycaps matching Image 2) */}
-          <div className="flex flex-col items-center gap-2.5">
-            {visibleSlots.map(({ slotIdx, item, nodeNumber }) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+          {/* ============================================================== */}
+          {/* SVG 3D CONVEYOR RAIL & GLOWING PORTAL RING (Matching Reference)*/}
+          {/* ============================================================== */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+            viewBox="0 0 130 480"
+          >
+            <defs>
+              {/* Portal Radial Magenta Neon Glow */}
+              <radialGradient id="portalCoreGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#f472b6" stopOpacity="0.85" />
+                <stop offset="40%" stopColor="#d946ef" stopOpacity="0.75" />
+                <stop offset="75%" stopColor="#a855f7" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+              </radialGradient>
 
-              // Keycap Profile Styling matching Image 2
-              let keycapClasses = '';
-              let textColor = '';
-              let isArtisanEmerald = false;
+              {/* Linear Rail Track Gradient */}
+              <linearGradient id="railTrackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#64748b" stopOpacity="0.15" />
+                <stop offset="35%" stopColor="#c084fc" stopOpacity="0.5" />
+                <stop offset="50%" stopColor="#f472b6" stopOpacity="0.8" />
+                <stop offset="65%" stopColor="#c084fc" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#64748b" stopOpacity="0.15" />
+              </linearGradient>
 
-              if (slotIdx === 0 || slotIdx === 2) {
-                // CHALK WHITE KEYCAP (Like "BREAK" & "SCROLL" in Image 2)
-                keycapClasses =
-                  'bg-gradient-to-b from-[#ffffff] via-[#f8fafc] to-[#e2e8f0] border-t border-l border-white shadow-[0_5px_0_#94a3b8,0_10px_20px_rgba(0,0,0,0.65)] hover:shadow-[0_6px_0_#94a3b8,0_12px_22px_rgba(0,0,0,0.7)] active:translate-y-[3px] active:shadow-[0_2px_0_#94a3b8,0_4px_10px_rgba(0,0,0,0.5)]';
-                textColor = 'text-slate-900 group-hover:text-black';
-              } else if (slotIdx === 1) {
-                // TRANSLUCENT EMERALD ARTISAN KEYCAP (Like "THE" in Image 2)
-                isArtisanEmerald = true;
-                keycapClasses =
-                  'bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/60 shadow-[0_5px_0_#065f46,0_10px_22px_rgba(16,185,129,0.35)] hover:shadow-[0_6px_0_#065f46,0_12px_24px_rgba(16,185,129,0.45)] active:translate-y-[3px] active:shadow-[0_2px_0_#065f46,0_4px_10px_rgba(16,185,129,0.25)] backdrop-blur-md';
-                textColor = 'text-emerald-300 group-hover:text-emerald-200';
-              } else {
-                // MINT GREEN KEYCAP (Like bottom mascot keycap in Image 2)
-                keycapClasses =
-                  'bg-gradient-to-b from-[#34d399] to-[#059669] border-t border-l border-emerald-200/60 shadow-[0_5px_0_#064e3b,0_10px_20px_rgba(0,0,0,0.65)] hover:shadow-[0_6px_0_#064e3b,0_12px_22px_rgba(0,0,0,0.7)] active:translate-y-[3px] active:shadow-[0_2px_0_#064e3b,0_4px_10px_rgba(0,0,0,0.5)]';
-                textColor = 'text-slate-950 group-hover:text-black';
-              }
+              {/* Portal Neon Blur Filter */}
+              <filter id="neonHalo" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-              return (
-                <div
-                  key={`${item.id}-${slotIdx}`}
-                  className="pointer-events-auto"
-                  onMouseEnter={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setHoveredNode({
-                      item,
-                      nodeNumber: item.keyLabel || nodeNumber,
-                      x: rect.left,
-                      y: rect.top + rect.height / 2,
-                    });
+            {/* Subtle Curved Isometric Conveyor Track Bed */}
+            <path
+              d="M 80 50 Q 56 140 44 240 Q 56 340 80 430"
+              fill="none"
+              stroke="#0f172a"
+              strokeWidth="28"
+              strokeLinecap="round"
+              opacity="0.5"
+            />
+            {/* Textured Track Tread Dashes */}
+            <path
+              d="M 80 50 Q 56 140 44 240 Q 56 340 80 430"
+              fill="none"
+              stroke="#334155"
+              strokeWidth="24"
+              strokeDasharray="4 8"
+              strokeLinecap="round"
+              opacity="0.35"
+            />
+            {/* Glowing Rail Spine */}
+            <path
+              d="M 80 50 Q 56 140 44 240 Q 56 340 80 430"
+              fill="none"
+              stroke="url(#railTrackGrad)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+
+            {/* ============================================================== */}
+            {/* THE GLOWING CENTER PORTAL RING (Matching the Portal in Ref)    */}
+            {/* ============================================================== */}
+            <g transform="translate(44, 240)">
+              {/* Outer Radiant Ambient Blur */}
+              <ellipse
+                cx="0"
+                cy="0"
+                rx="38"
+                ry="18"
+                fill="url(#portalCoreGlow)"
+                className="animate-pulse"
+                style={{ animationDuration: '2.5s' }}
+              />
+
+              {/* Glowing Outer Hex / Oval Neon Ring */}
+              <ellipse
+                cx="0"
+                cy="0"
+                rx="34"
+                ry="15"
+                fill="none"
+                stroke="#e879f9"
+                strokeWidth="3"
+                filter="url(#neonHalo)"
+              />
+
+              {/* Inner Glowing Fluid Core */}
+              <ellipse
+                cx="0"
+                cy="0"
+                rx="28"
+                ry="11"
+                fill="#fae8ff"
+                opacity="0.45"
+                filter="url(#neonHalo)"
+              />
+
+              {/* Perspective Rim Cross Guide */}
+              <path
+                d="M -30 0 L 30 0"
+                stroke="#fdf4ff"
+                strokeWidth="1.5"
+                strokeDasharray="2 4"
+                opacity="0.6"
+              />
+            </g>
+          </svg>
+
+          {/* ============================================================== */}
+          {/* 5 3D METALLIC CONVEYOR TOKENS (Matching the Disks in Ref)      */}
+          {/* ============================================================== */}
+          {visibleSlots.map(({ slotIdx, item, nodeNumber, isPortalCenter, pos }) => {
+            const Icon = item.icon;
+            const toneConfig = TONE_COLORS[item.tone] || TONE_COLORS.amber;
+            const isRouteActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+
+            return (
+              <div
+                key={`${item.id}-${slotIdx}`}
+                style={{
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
+                  zIndex: pos.zIndex,
+                  transform: `translate(-50%, -50%) perspective(600px) rotateX(${pos.rotateX}deg) rotateY(${pos.rotateY}deg) scale(${pos.scale})`,
+                  transition: 'all 0.24s cubic-bezier(0.34, 1.4, 0.64, 1)',
+                }}
+                className="absolute pointer-events-auto"
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setHoveredNode({
+                    item,
+                    nodeNumber: isPortalCenter ? 'PORTAL' : nodeNumber,
+                    x: rect.left,
+                    y: rect.top + rect.height / 2,
+                  });
+                }}
+                onMouseLeave={() => setHoveredNode(null)}
+              >
+                <Link
+                  href={item.href}
+                  target={item.openInNewTab ? '_blank' : undefined}
+                  rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                  onClick={(e) => {
+                    if (!isPortalCenter) {
+                      e.preventDefault();
+                      // Convey clicked token into the portal ring
+                      setStartIndex((prev) => (prev + (slotIdx - 2) + DOCK_ITEMS.length) % DOCK_ITEMS.length);
+                      playPortalConveySound();
+                    } else {
+                      playPortalConveySound();
+                    }
                   }}
-                  onMouseLeave={() => setHoveredNode(null)}
+                  aria-label={`${item.label} Token`}
+                  className={`group relative flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer ${
+                    isPortalCenter
+                      ? 'w-13 h-13 sm:w-14 sm:h-14 bg-gradient-to-b from-[#2d3246] via-[#141824] to-[#090b12] border-2 border-fuchsia-400 shadow-[0_0_24px_rgba(217,70,239,0.95),0_0_48px_rgba(168,85,247,0.55),inset_0_2px_4px_rgba(255,255,255,0.4)] hover:scale-110 active:scale-95'
+                      : 'w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-b from-[#222738] via-[#121622] to-[#0a0d15] border border-slate-600/70 shadow-[0_6px_16px_rgba(0,0,0,0.85),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:border-violet-400 hover:scale-108 active:scale-95'
+                  }`}
+                  style={{
+                    boxShadow: isPortalCenter
+                      ? '0 0 25px rgba(217, 70, 239, 0.9), 0 0 45px rgba(168, 85, 247, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5)'
+                      : undefined,
+                  }}
                 >
-                  <Link
-                    href={item.href}
-                    target={item.openInNewTab ? '_blank' : undefined}
-                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    onClick={() => playKeyboardTypingSound()}
-                    aria-label={`${item.label} Keycap`}
-                    className={`group relative flex flex-col items-center justify-center w-12 h-12 sm:w-13 sm:h-13 rounded-2xl transition-all duration-150 cursor-pointer ${keycapClasses} ${
-                      isActive ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-black' : ''
+                  {/* Outer Beveled Chamfer Ring */}
+                  <div className="absolute inset-0.5 rounded-full border border-white/15 pointer-events-none" />
+
+                  {/* Neon Glow Rim for Center Portal Token */}
+                  {isPortalCenter && (
+                    <div className="absolute -inset-1 rounded-full border border-fuchsia-400/80 blur-xs pointer-events-none animate-pulse" />
+                  )}
+
+                  {/* Micro Index Pill Top-Left */}
+                  <span
+                    className={`absolute -top-1.5 -left-1 text-[8px] font-mono font-bold px-1 py-0.2 rounded-full border select-none ${
+                      isPortalCenter
+                        ? 'bg-fuchsia-500 text-white border-fuchsia-300 shadow-[0_0_8px_#d946ef]'
+                        : 'bg-[#090c14] text-slate-400 border-slate-700/80'
                     }`}
                   >
-                    {/* Keycap Dish Inner Highlight */}
-                    <div className="absolute inset-1 rounded-xl bg-gradient-to-b from-white/30 via-transparent to-black/10 pointer-events-none" />
+                    {item.keyLabel || nodeNumber}
+                  </span>
 
-                    {/* Translucent Artisan Internal Stem Cross '+' (For Emerald Keycap in Image 2) */}
-                    {isArtisanEmerald && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-                        {/* Circular Switch Stem Housing Ring */}
-                        <div className="w-5 h-5 rounded-full border border-emerald-300/40 flex items-center justify-center">
-                          {/* Cross Stem '+' */}
-                          <div className="w-2.5 h-0.5 bg-emerald-300/70 rounded-xs" />
-                          <div className="absolute w-0.5 h-2.5 bg-emerald-300/70 rounded-xs" />
-                        </div>
-                      </div>
-                    )}
+                  {/* Embossed Token Emblem */}
+                  <Icon
+                    className={`w-5 h-5 transition-transform duration-200 group-hover:scale-115 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] ${
+                      isPortalCenter
+                        ? 'text-fuchsia-200 group-hover:text-white scale-110'
+                        : isRouteActive
+                        ? 'text-amber-400'
+                        : toneConfig.text
+                    }`}
+                  />
 
-                    {/* Micro Sub-legend Top-Left */}
-                    <span
-                      className={`absolute top-1 left-1.5 text-[8px] font-mono font-bold tracking-tight select-none opacity-60 ${textColor}`}
-                    >
-                      {item.keyLabel || nodeNumber}
-                    </span>
+                  {/* Active Destination Indicator */}
+                  {isRouteActive && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-ping" />
+                  )}
+                </Link>
+              </div>
+            );
+          })}
 
-                    {/* Keycap Center Icon */}
-                    <Icon
-                      className={`relative z-10 w-4 h-4 transition-transform duration-150 group-hover:scale-110 drop-shadow-xs ${textColor}`}
-                    />
-
-                    {/* Active Page Glow Indicator */}
-                    {isActive && (
-                      <span className="absolute bottom-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b] animate-pulse" />
-                    )}
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Central Command ⌘ Keycap (Opens App Launcher Modal) */}
+          {/* Central ⌘ Command Launchpad Activator Token */}
           <div
-            className="pointer-events-auto mt-0.5"
+            style={{ left: '96px', top: '240px' }}
+            className="absolute -translate-y-1/2 z-30 pointer-events-auto"
             onMouseEnter={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setHoveredNode({
                 item: {
                   id: 'cmd',
                   label: 'Launchpad (⌘K)',
-                  sub: 'Search all platforms & tools',
+                  sub: 'Search all portals & tools',
                   href: '#',
                   icon: Command,
                   tone: 'violet',
@@ -581,23 +716,22 @@ export function KollabrixQuickDock() {
             <button
               type="button"
               onClick={() => {
-                playKeyboardTypingSound();
+                playPortalConveySound();
                 setIsAppsModalOpen(true);
               }}
               aria-label="Open Applications Launchpad"
-              className="group relative flex flex-col items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-b from-[#1c1b2b] to-[#100f1c] border-t border-l border-violet-400/40 shadow-[0_4px_0_#07060f,0_8px_16px_rgba(0,0,0,0.8)] text-violet-300 hover:text-white transition-all duration-150 active:translate-y-[2px] active:shadow-[0_2px_0_#07060f] cursor-pointer"
+              className="group relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-b from-[#261f3d] to-[#120f20] border border-violet-400/50 shadow-[0_0_12px_rgba(168,85,247,0.5)] text-violet-300 hover:text-white transition-all active:scale-90 cursor-pointer"
             >
-              <div className="absolute inset-1 rounded-xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-              <Command className="w-3.5 h-3.5 transition-transform group-hover:scale-110 group-hover:rotate-12" />
+              <Command className="w-3.5 h-3.5 transition-transform group-hover:scale-115 group-hover:rotate-12" />
             </button>
           </div>
 
-          {/* Bottom Step Keycap Arrow (Scroll Down) */}
+          {/* Bottom Step Arrow Button */}
           <button
             type="button"
-            onClick={scrollDown}
-            aria-label="Scroll keycaps down"
-            className="flex items-center justify-center w-7 h-5 rounded-md bg-[#131622]/80 hover:bg-white/20 border border-slate-700/60 text-slate-300 hover:text-white transition-all active:translate-y-0.5 pointer-events-auto cursor-pointer shadow-[0_2px_0_#090b12]"
+            onClick={conveyDown}
+            aria-label="Convey track down"
+            className="absolute bottom-1 right-8 z-30 w-7 h-5 flex items-center justify-center rounded-md bg-[#131622]/80 hover:bg-violet-600/80 border border-violet-500/30 text-violet-300 hover:text-white transition-all active:scale-90 cursor-pointer pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
           >
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
@@ -609,15 +743,15 @@ export function KollabrixQuickDock() {
         <div
           style={{
             top: `${hoveredNode.y}px`,
-            left: `${hoveredNode.x - 10}px`,
+            left: `${hoveredNode.x - 12}px`,
           }}
           className="fixed -translate-x-full -translate-y-1/2 pointer-events-none z-[9999] animate-in fade-in slide-in-from-right-2 duration-150"
         >
           <div className="relative flex items-center gap-2.5">
             {/* Callout Card */}
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0c101d]/95 border border-slate-700/80 shadow-[0_16px_40px_rgba(0,0,0,0.92)] text-white backdrop-blur-2xl whitespace-nowrap">
-              {/* Keycap Badge */}
-              <div className="w-6 h-6 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0b0e18]/95 border border-fuchsia-500/40 shadow-[0_16px_40px_rgba(0,0,0,0.92),0_0_20px_rgba(217,70,239,0.25)] text-white backdrop-blur-2xl whitespace-nowrap">
+              {/* Token Badge */}
+              <div className="w-6 h-6 rounded-md bg-fuchsia-500/20 border border-fuchsia-400/50 text-fuchsia-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0">
                 {hoveredNode.nodeNumber}
               </div>
 
@@ -636,8 +770,8 @@ export function KollabrixQuickDock() {
 
             {/* Dotted Leader Line */}
             <div className="flex items-center">
-              <div className="w-2.5 border-t-2 border-dotted border-amber-400/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
+              <div className="w-2.5 border-t-2 border-dotted border-fuchsia-400/80" />
+              <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_8px_#d946ef]" />
             </div>
           </div>
         </div>
