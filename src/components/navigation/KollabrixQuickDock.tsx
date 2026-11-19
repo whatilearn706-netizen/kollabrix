@@ -103,56 +103,50 @@ const DOCK_ITEMS: DockItem[] = [
 
 const TONE_STYLES = {
   amber: {
-    bg: 'bg-amber-500/15 hover:bg-amber-500/25',
-    border: 'border-amber-500/40 hover:border-amber-400',
+    bg: 'bg-amber-500/10 hover:bg-amber-500/20',
+    border: 'border-amber-500/50 hover:border-amber-400',
     text: 'text-amber-400 group-hover:text-amber-300',
     glow: 'rgba(245, 158, 11, 0.45)',
-    dot: 'bg-amber-400 text-amber-400',
   },
   violet: {
-    bg: 'bg-violet-500/15 hover:bg-violet-500/25',
-    border: 'border-violet-500/40 hover:border-violet-400',
+    bg: 'bg-violet-500/10 hover:bg-violet-500/20',
+    border: 'border-violet-500/50 hover:border-violet-400',
     text: 'text-violet-400 group-hover:text-violet-300',
     glow: 'rgba(168, 85, 247, 0.45)',
-    dot: 'bg-violet-400 text-violet-400',
   },
   emerald: {
-    bg: 'bg-emerald-500/15 hover:bg-emerald-500/25',
-    border: 'border-emerald-500/40 hover:border-emerald-400',
+    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
+    border: 'border-emerald-500/50 hover:border-emerald-400',
     text: 'text-emerald-400 group-hover:text-emerald-300',
     glow: 'rgba(16, 185, 129, 0.45)',
-    dot: 'bg-emerald-400 text-emerald-400',
   },
   cyan: {
-    bg: 'bg-cyan-500/15 hover:bg-cyan-500/25',
-    border: 'border-cyan-500/40 hover:border-cyan-400',
+    bg: 'bg-cyan-500/10 hover:bg-cyan-500/20',
+    border: 'border-cyan-500/50 hover:border-cyan-400',
     text: 'text-cyan-400 group-hover:text-cyan-300',
     glow: 'rgba(6, 182, 212, 0.45)',
-    dot: 'bg-cyan-400 text-cyan-400',
   },
   brand: {
-    bg: 'bg-indigo-500/15 hover:bg-indigo-500/25',
-    border: 'border-indigo-500/40 hover:border-indigo-400',
+    bg: 'bg-indigo-500/10 hover:bg-indigo-500/20',
+    border: 'border-indigo-500/50 hover:border-indigo-400',
     text: 'text-indigo-400 group-hover:text-indigo-300',
     glow: 'rgba(99, 102, 241, 0.45)',
-    dot: 'bg-indigo-400 text-indigo-400',
   },
   rose: {
-    bg: 'bg-rose-500/15 hover:bg-rose-500/25',
-    border: 'border-rose-500/40 hover:border-rose-400',
+    bg: 'bg-rose-500/10 hover:bg-rose-500/20',
+    border: 'border-rose-500/50 hover:border-rose-400',
     text: 'text-rose-400 group-hover:text-rose-300',
     glow: 'rgba(244, 63, 94, 0.45)',
-    dot: 'bg-rose-400 text-rose-400',
   },
 };
 
-// Exact circular arc node coordinates (Center X=288.9, Y=230, Radius=254)
+// 5 Circular clock positions along the arc
 const NODE_POSITIONS = [
-  { x: 106, y: 54 },  // Node 01 (top)
-  { x: 53,  y: 135 }, // Node 02 (upper-mid)
-  { x: 35,  y: 230 }, // Node 03 (apex / furthest to left)
-  { x: 53,  y: 325 }, // Node 04 (lower-mid)
-  { x: 106, y: 407 }, // Node 05 (bottom)
+  { x: 106, y: 54 },  // Node 01 (1 o'clock)
+  { x: 53,  y: 135 }, // Node 02 (2 o'clock)
+  { x: 35,  y: 230 }, // Node 03 (3 o'clock / apex)
+  { x: 53,  y: 325 }, // Node 04 (4 o'clock)
+  { x: 106, y: 407 }, // Node 05 (5 o'clock)
 ];
 
 interface AppItem {
@@ -285,8 +279,14 @@ export function KollabrixQuickDock() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Rotation start index: 5 nodes displayed from startIndex along circular dial
+  // Rotation start index (0 to 7) for clock dial
   const [startIndex, setStartIndex] = useState<number>(0);
+  const [tickTrigger, setTickTrigger] = useState<number>(0);
+
+  // Web Audio Context & Tick/Tock alternator for authentic clock sound
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const isTickRef = useRef<boolean>(true);
+  const lastWheelTimeRef = useRef<number>(0);
 
   // Hovered node state for floating callout card
   const [hoveredNode, setHoveredNode] = useState<{
@@ -301,6 +301,74 @@ export function KollabrixQuickDock() {
   const [activeCategory, setActiveCategory] = useState<'all' | 'competitions' | 'academics' | 'tools' | 'community'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isExamMode, setIsExamMode] = useState(false);
+
+  // Synthesize realistic mechanical clock tick/tock via Web Audio API
+  const playClockTick = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+      const isTick = isTickRef.current;
+      isTickRef.current = !isTick;
+
+      // 1. Primary mechanical escapement impulse (~1650Hz Tick, ~1320Hz Tock)
+      const baseFreq = isTick ? 1650 : 1320;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.35, now + 0.016);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.02);
+
+      // 2. High-frequency metallic gear click (filtered noise burst)
+      const sampleRate = ctx.sampleRate;
+      const bufferSize = Math.floor(sampleRate * 0.012);
+      const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+      }
+
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = buffer;
+
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.setValueAtTime(isTick ? 2400 : 2000, now);
+      bandpass.Q.setValueAtTime(4.0, now);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.09, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
+
+      noiseSource.connect(bandpass);
+      bandpass.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      noiseSource.start(now);
+      noiseSource.stop(now + 0.016);
+    } catch {
+      // Audio error suppressed gracefully
+    }
+  };
 
   // Check if exam arena or proctored exam is active
   useEffect(() => {
@@ -327,23 +395,32 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
-  // Mouse wheel rotation along circular arc
-  const handleWheel = (e: React.WheelEvent) => {
-    if (Math.abs(e.deltaY) > 16) {
-      if (e.deltaY > 0) {
-        setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
-      } else {
-        setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
-      }
-    }
-  };
-
+  // Discrete mechanical clock rotation step up
   const rotateUp = () => {
     setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
+    setTickTrigger((prev) => prev + 1);
+    playClockTick();
   };
 
+  // Discrete mechanical clock rotation step down
   const rotateDown = () => {
     setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
+    setTickTrigger((prev) => prev + 1);
+    playClockTick();
+  };
+
+  // Clock scroll listener (throttled to discrete ticks)
+  const handleWheel = (e: React.WheelEvent) => {
+    const now = Date.now();
+    if (now - lastWheelTimeRef.current < 140) return; // Crisp mechanical clock pacing
+    if (Math.abs(e.deltaY) > 12) {
+      lastWheelTimeRef.current = now;
+      if (e.deltaY > 0) {
+        rotateDown();
+      } else {
+        rotateUp();
+      }
+    }
   };
 
   // Global ⌘K / Ctrl+K keyboard shortcut opens macOS App Launcher
@@ -376,7 +453,7 @@ export function KollabrixQuickDock() {
     return null;
   }
 
-  // 5 active visible nodes mapped to the circular positions
+  // 5 active visible nodes mapped to the circular clock positions
   const visibleNodes = [0, 1, 2, 3, 4].map((slotIndex) => {
     const itemIndex = (startIndex + slotIndex) % DOCK_ITEMS.length;
     const item = DOCK_ITEMS[itemIndex];
@@ -399,102 +476,30 @@ export function KollabrixQuickDock() {
   return (
     <>
       {/* =========================================================================
-          CIRCULAR ARC QUICK DOCK (Exact Mirrored Match to 5-Pillar Arc in Dark Theme)
-          - Curved ribbon track curving to the left into the screen
-          - 5 circular node pods (01, 02, 03, 04, 05) with dark glass styling
-          - Circular wheel rotation via scroll or step arrows
-          - Hover leader lines pointing to leftward callout cards
-          - Central Command (⌘) launchpad trigger
+          CLOCK-STYLE CIRCULAR QUICK DOCK (100% Transparent, Clock Scroll & Sound)
+          - Transparent background: text underneath remains 100% readable & clickable
+          - Opaque blocking lines and ribbon completely removed
+          - Discrete clock rotation steps with mechanical tick-tock audio synthesis
+          - 5 floating circular clock markers (01, 02, 03, 04, 05)
+          - Central Command (⌘) hub
          ========================================================================= */}
       <aside
-        aria-label="Kollabrix Circular Quick Dock"
+        aria-label="Kollabrix Clock Dial Dock"
         onWheel={handleWheel}
-        className="fixed right-1 sm:right-3 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-auto"
+        className="fixed right-1 sm:right-3 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
       >
-        <div className="relative w-[155px] h-[460px]">
-          {/* SVG Background: Mirrored Curved Ribbon Track & Concentric Guide Lines */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
-            viewBox="0 0 160 460"
-            fill="none"
-          >
-            <defs>
-              {/* Glowing neon stroke gradient */}
-              <linearGradient id="arcGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
-              </linearGradient>
-
-              {/* Dark glass ribbon fill gradient */}
-              <linearGradient id="trackGlass" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#0a0d18" stopOpacity="0.95" />
-                <stop offset="50%" stopColor="#101424" stopOpacity="0.92" />
-                <stop offset="100%" stopColor="#0a0d18" stopOpacity="0.95" />
-              </linearGradient>
-
-              {/* Outer soft shadow filter */}
-              <filter id="arcShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="-4" dy="4" stdDeviation="12" floodColor="#000000" floodOpacity="0.7" />
-              </filter>
-            </defs>
-
-            {/* 1. Outer Accent Guide Line (Mirrored Image 1) */}
-            <path
-              d="M 125 35 A 278 278 0 0 0 125 425"
-              fill="none"
-              stroke="rgba(245, 158, 11, 0.22)"
-              strokeWidth="1.5"
-              strokeDasharray="6 4"
-            />
-
-            {/* 2. Main Curved Ribbon Track (Shadow + Body + Border) */}
-            <path
-              d="M 115 45 A 254 254 0 0 0 115 415"
-              fill="none"
-              stroke="url(#trackGlass)"
-              strokeWidth="50"
-              strokeLinecap="round"
-              filter="url(#arcShadow)"
-            />
-            <path
-              d="M 115 45 A 254 254 0 0 0 115 415"
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.12)"
-              strokeWidth="51"
-              strokeLinecap="round"
-            />
-
-            {/* 3. Glowing Center Line Track */}
-            <path
-              d="M 115 45 A 254 254 0 0 0 115 415"
-              fill="none"
-              stroke="url(#arcGlow)"
-              strokeWidth="1.5"
-              opacity="0.65"
-            />
-
-            {/* 4. Inner Concentric Arc Guide (Dashed line like Image 1) */}
-            <path
-              d="M 145 77 A 210 210 0 0 0 145 383"
-              fill="none"
-              stroke="rgba(56, 189, 248, 0.3)"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-            />
-          </svg>
-
-          {/* Top Rotation Step Arrow (Above Node 01) */}
+        <div className="relative w-[155px] h-[460px] bg-transparent pointer-events-none">
+          {/* Top Clock Step Arrow (Above Node 01) */}
           <button
             type="button"
             onClick={rotateUp}
-            aria-label="Rotate dial up"
-            className="absolute top-1 right-[26px] z-20 w-7 h-5 flex items-center justify-center text-amber-400 hover:text-white transition-all active:scale-90 cursor-pointer group"
+            aria-label="Rotate clock dial up"
+            className="absolute top-1 right-[26px] z-20 w-7 h-6 flex items-center justify-center rounded-full text-amber-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer pointer-events-auto group"
           >
             <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
           </button>
 
-          {/* 5 Circular Node Pods along the Arc (01, 02, 03, 04, 05) */}
+          {/* 5 Circular Clock Markers floating along the arc (01, 02, 03, 04, 05) */}
           {visibleNodes.map(({ slotIndex, item, nodeNumber, pos }) => {
             const Icon = item.icon;
             const style = TONE_STYLES[item.tone] || TONE_STYLES.amber;
@@ -506,8 +511,9 @@ export function KollabrixQuickDock() {
                 style={{
                   left: `${pos.x}px`,
                   top: `${pos.y}px`,
+                  transition: 'all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
-                className="absolute -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300"
+                className="absolute -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto"
                 onMouseEnter={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   setHoveredNode({
@@ -524,35 +530,35 @@ export function KollabrixQuickDock() {
                   target={item.openInNewTab ? '_blank' : undefined}
                   rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                   aria-label={`${nodeNumber} - ${item.label}`}
-                  className={`group relative flex items-center justify-center w-11 h-11 rounded-full border-2 transition-all duration-300 active:scale-95 focus:outline-none cursor-pointer ${
+                  className={`group relative flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 active:scale-90 focus:outline-none cursor-pointer ${
                     isActive
-                      ? 'border-amber-400 bg-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.55)] scale-105'
-                      : 'border-slate-700/80 hover:border-amber-400/90 bg-[#121626]/95 hover:bg-[#1a2138] shadow-[0_8px_20px_rgba(0,0,0,0.7)] hover:scale-110'
+                      ? 'border-amber-400 bg-amber-500/20 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
+                      : 'border-slate-700/80 hover:border-amber-400 bg-[#0e1220]/80 hover:bg-[#161c32]/95 backdrop-blur-xs shadow-[0_4px_16px_rgba(0,0,0,0.6)] hover:scale-110'
                   }`}
                 >
-                  {/* Micro Index Badge (01, 02, 03, 04, 05) */}
-                  <span className="absolute -top-1.5 -left-1 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-[#0a0d18] text-slate-300 border border-slate-700/80 shadow-xs select-none">
+                  {/* Clock Index Badge (01, 02, 03, 04, 05) */}
+                  <span className="absolute -top-1.5 -left-1 text-[9px] font-mono font-bold px-1 py-0.2 rounded-full bg-[#0a0d18] text-slate-300 border border-slate-700/80 select-none">
                     {nodeNumber}
                   </span>
 
                   {/* Icon */}
                   <Icon
-                    className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${style.text}`}
+                    className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${style.text}`}
                   />
 
                   {/* Active Page Indicator */}
                   {isActive && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse" />
                   )}
                 </Link>
               </div>
             );
           })}
 
-          {/* Central Command (⌘) Hub Button (Mirrors Image 1 Center Disc) */}
+          {/* Central Command (⌘) Clock Hub Button */}
           <div
             style={{ left: '116px', top: '230px' }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 z-20"
+            className="absolute -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto"
             onMouseEnter={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setHoveredNode({
@@ -575,38 +581,38 @@ export function KollabrixQuickDock() {
               type="button"
               onClick={() => setIsAppsModalOpen(true)}
               aria-label="Open Applications Launchpad"
-              className="relative flex items-center justify-center w-10 h-10 rounded-full border-2 border-violet-500/50 bg-[#141226]/95 hover:bg-violet-600 text-violet-400 hover:text-white transition-all duration-300 active:scale-95 group focus:outline-none shadow-[0_8px_24px_rgba(0,0,0,0.85)] hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] cursor-pointer"
+              className="relative flex items-center justify-center w-9 h-9 rounded-full border border-violet-500/40 bg-[#120f24]/85 hover:bg-violet-600 text-violet-400 hover:text-white transition-all duration-200 active:scale-95 group focus:outline-none shadow-[0_4px_16px_rgba(0,0,0,0.6)] hover:shadow-[0_0_16px_rgba(168,85,247,0.5)] cursor-pointer"
             >
-              <Command className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+              <Command className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
             </button>
           </div>
 
-          {/* Bottom Rotation Step Arrow (Below Node 05) */}
+          {/* Bottom Clock Step Arrow (Below Node 05) */}
           <button
             type="button"
             onClick={rotateDown}
-            aria-label="Rotate dial down"
-            className="absolute bottom-1 right-[26px] z-20 w-7 h-5 flex items-center justify-center text-amber-400 hover:text-white transition-all active:scale-90 cursor-pointer group"
+            aria-label="Rotate clock dial down"
+            className="absolute bottom-1 right-[26px] z-20 w-7 h-6 flex items-center justify-center rounded-full text-amber-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer pointer-events-auto group"
           >
             <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
           </button>
         </div>
       </aside>
 
-      {/* Floating Callout Card to the LEFT with Leader Pointer Line (Mirrors Image 1) */}
+      {/* Floating Callout Card to the LEFT with Leader Pointer Line */}
       {hoveredNode && (
         <div
           style={{
             top: `${hoveredNode.y}px`,
-            left: `${hoveredNode.x - 12}px`,
+            left: `${hoveredNode.x - 10}px`,
           }}
           className="fixed -translate-x-full -translate-y-1/2 pointer-events-none z-[9999] animate-in fade-in slide-in-from-right-2 duration-150"
         >
-          <div className="relative flex items-center gap-3">
+          <div className="relative flex items-center gap-2.5">
             {/* Callout Card */}
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#0c101d]/95 border border-slate-700/80 shadow-[0_16px_50px_rgba(0,0,0,0.92)] text-white backdrop-blur-2xl whitespace-nowrap">
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0c101d]/95 border border-slate-700/80 shadow-[0_16px_40px_rgba(0,0,0,0.92)] text-white backdrop-blur-2xl whitespace-nowrap">
               {/* Node Number Badge */}
-              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs flex items-center justify-center shrink-0">
                 {hoveredNode.nodeNumber}
               </div>
 
@@ -616,7 +622,7 @@ export function KollabrixQuickDock() {
                   {hoveredNode.item.label}
                 </span>
                 {hoveredNode.item.sub && (
-                  <span className="text-[11px] text-slate-400 font-medium leading-tight mt-0.5">
+                  <span className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">
                     {hoveredNode.item.sub}
                   </span>
                 )}
@@ -625,7 +631,7 @@ export function KollabrixQuickDock() {
 
             {/* Dotted Leader Line pointing directly to the hovered node */}
             <div className="flex items-center">
-              <div className="w-3 border-t-2 border-dotted border-amber-400/80" />
+              <div className="w-2.5 border-t-2 border-dotted border-amber-400/80" />
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
             </div>
           </div>
@@ -642,7 +648,7 @@ export function KollabrixQuickDock() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[580px] rounded-3xl bg-[#181614]/95 border border-white/12 shadow-[0_30px_100px_rgba(0,0,0,0.85)] p-6 backdrop-blur-3xl animate-in zoom-in-95 duration-200 text-white select-none"
+            className="w-full max-w-[580px] rounded-3xl bg-[#181614]/95 border border-white/12 shadow-[0_30px_100px_rgba(0,0,0,0.85)] p-6 backdrop-blur-3xl animate-in zoom-in-95 duration-200 text-white select-none pointer-events-auto"
           >
             {/* Window Top Bar: macOS Traffic Lights + Title */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
