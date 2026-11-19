@@ -15,12 +15,35 @@ export function LandingHero() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // Explicitly play video to satisfy Safari / WebKit and mobile autoplay policies
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Safe fallback: poster image stays active
-      });
-    }
+    // Explicitly configure and trigger video playback for WebKit, Safari and mobile policies
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('muted', '');
+
+    const startVideo = () => {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // If browser policy required a user gesture, listen to first interaction and resume
+          const onFirstInteraction = () => {
+            video.play().catch(() => {});
+            window.removeEventListener('pointerdown', onFirstInteraction);
+            window.removeEventListener('touchstart', onFirstInteraction);
+            window.removeEventListener('scroll', onFirstInteraction);
+          };
+          window.addEventListener('pointerdown', onFirstInteraction, { once: true });
+          window.addEventListener('touchstart', onFirstInteraction, { once: true });
+          window.addEventListener('scroll', onFirstInteraction, { once: true });
+        });
+      }
+    };
+
+    startVideo();
   }, []);
 
   const { scrollYProgress } = useScroll({
@@ -34,9 +57,9 @@ export function LandingHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[92vh] flex flex-col justify-end pb-16 sm:pb-20 lg:pb-24 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
+      className="relative min-h-[94vh] flex flex-col justify-end pb-16 sm:pb-20 lg:pb-24 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
-      {/* Cinematic Celestial Blue Horizon Video Background */}
+      {/* Cinematic Celestial Blue Horizon Video Background (Expansive 1.4x scale) */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
         <video
           ref={videoRef}
@@ -46,7 +69,7 @@ export function LandingHero() {
           playsInline
           preload="auto"
           poster="/brand/hero-celestial-horizon.webp"
-          className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[1.06] contrast-[1.04]"
+          className="absolute inset-0 w-full h-full object-cover object-[center_38%] scale-[1.12] sm:scale-[1.22] lg:scale-[1.28] filter brightness-[1.12] contrast-[1.08] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
         >
           <source src="/videos/hero-celestial-horizon.webm" type="video/webm" />
           <source src="/videos/hero-celestial-horizon.mp4" type="video/mp4" />
@@ -54,23 +77,23 @@ export function LandingHero() {
           <img
             src="/brand/hero-celestial-horizon.webp"
             alt="Kollabrix Horizon"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
           />
         </video>
       </div>
 
       {/* Atmospheric Vignette for deep contrast and seamless blend into obsidian page background */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#090B10] via-transparent to-black/30 pointer-events-none z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_40%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_40%,transparent_45%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
 
-      {/* Content — Auralis Inspired Split Editorial Layout */}
+      {/* Content — Auralis Inspired Split Editorial Layout (Shifted into Left Empty Space) */}
       <motion.div
         style={{ opacity: contentOpacity, y: contentY }}
-        className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12"
+        className="relative z-20 w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-end">
-          {/* Left Column: Frosted Pill Badge + Monumental Editorial Headline */}
-          <div className="lg:col-span-7">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-14 items-end">
+          {/* Left Column: Frosted Pill Badge + Monumental Editorial Headline Shifted to Outer Left */}
+          <div className="lg:col-span-7 xl:col-span-7">
             {/* Frosted Pill Badge */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -85,7 +108,7 @@ export function LandingHero() {
             </motion.div>
 
             {/* Headline with High-Contrast Editorial Styling */}
-            <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[0.94] select-none">
+            <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.25rem] 2xl:text-[7rem] font-bold text-white tracking-tight leading-[0.92] select-none">
               <motion.span
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -106,7 +129,7 @@ export function LandingHero() {
           </div>
 
           {/* Right Column: Subtitle + Two Big Doors CTAs + Bullets */}
-          <div className="lg:col-span-5 flex flex-col justify-end">
+          <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-end">
             {/* Subtitle */}
             <motion.p
               initial={{ opacity: 0, y: 16 }}
