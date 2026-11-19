@@ -161,6 +161,9 @@ export interface SponsoredMeta {
   submissionCutoff?: string;
   resultAnnouncement?: string;
   enableRecruiterQrPass?: boolean;
+  registrationUrl?: string;
+  externalRegistrationUrl?: string;
+  isExternalRegistration?: boolean;
 }
 
 export function getSponsorTheme(preset?: string): SponsorThemeStyle {
@@ -228,6 +231,15 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   let guidelinesUrl: string | undefined = hackathon?.guidelines_url || undefined;
   let submissionCutoff: string | undefined = hackathon?.submission_cutoff || undefined;
   let resultAnnouncement: string | undefined = hackathon?.result_announcement || undefined;
+  let registrationUrl: string | undefined =
+    hackathon?.registration_url ||
+    hackathon?.external_registration_url ||
+    (hackathon?.is_external_registration && hackathon?.website_url && !hackathon.website_url.includes('/h/') ? hackathon.website_url : undefined);
+  let isExternalRegistration: boolean = Boolean(
+    hackathon?.is_external_registration ||
+    hackathon?.isExternalRegistration ||
+    registrationUrl
+  );
 
   // Extract from HTML meta comment if present
   if (
@@ -279,6 +291,17 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (parsed.guidelines_url) guidelinesUrl = parsed.guidelines_url;
         if (parsed.submission_cutoff) submissionCutoff = parsed.submission_cutoff;
         if (parsed.result_announcement) resultAnnouncement = parsed.result_announcement;
+        if (parsed.registration_url) {
+          registrationUrl = parsed.registration_url;
+          isExternalRegistration = true;
+        }
+        if (parsed.external_registration_url) {
+          registrationUrl = parsed.external_registration_url;
+          isExternalRegistration = true;
+        }
+        if (parsed.is_external_registration !== undefined) {
+          isExternalRegistration = Boolean(parsed.is_external_registration);
+        }
         if (parsed.enable_recruiter_qr_pass !== undefined || parsed.enableRecruiterQrPass !== undefined) {
           (hackathon as any).enableRecruiterQrPass = Boolean(parsed.enable_recruiter_qr_pass ?? parsed.enableRecruiterQrPass);
         }
@@ -341,5 +364,8 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     submissionCutoff,
     resultAnnouncement,
     enableRecruiterQrPass: Boolean(hackathon?.enableRecruiterQrPass || hackathon?.enable_recruiter_qr_pass),
+    registrationUrl,
+    externalRegistrationUrl: registrationUrl,
+    isExternalRegistration,
   };
 }

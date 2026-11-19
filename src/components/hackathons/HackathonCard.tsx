@@ -20,6 +20,7 @@ import {
   Zap,
   Briefcase,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
@@ -72,6 +73,12 @@ export function HackathonCard({
   const logoUrl = sponsoredMeta.sponsorLogoUrl || hackathon.logo_url || hackathon.company_logo;
   const cardBanner = hackathon.banner_url || sponsoredMeta.bannerUrl;
   const ctaText = sponsoredMeta.customCtaText || 'Apply & Compete';
+  const externalRegUrl =
+    (hackathon as any).registration_url ||
+    (hackathon as any).external_registration_url ||
+    sponsoredMeta.registrationUrl ||
+    sponsoredMeta.externalRegistrationUrl ||
+    ((hackathon as any).is_external_registration && hackathon.website_url && !hackathon.website_url.includes('/h/') ? hackathon.website_url : null);
 
   return (
     <div
@@ -421,6 +428,31 @@ export function HackathonCard({
                 View Event Details
               </Button>
             </Link>
+          ) : externalRegUrl ? (
+            <a
+              href={
+                /^https?:\/\//i.test(externalRegUrl.trim())
+                  ? externalRegUrl.trim()
+                  : `https://${externalRegUrl.trim()}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 block"
+            >
+              <button
+                type="button"
+                style={!isSponsored ? { backgroundColor: theme.brandColor } : undefined}
+                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn cursor-pointer ${
+                  isSponsored
+                    ? `bg-gradient-to-r ${themeStyle.buttonGradient} shadow-lg ring-1 ring-white/20`
+                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 text-white hover:opacity-95'
+                }`}
+              >
+                <span>{sponsoredMeta.customCtaText || 'Register on Official Site'}</span>
+                <ExternalLink className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-200" />
+              </button>
+            </a>
           ) : (
             <Link href={`/hackathons/${hackathon.id}`} className="flex-1">
               <button
