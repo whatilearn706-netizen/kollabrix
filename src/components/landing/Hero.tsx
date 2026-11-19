@@ -3,9 +3,9 @@
 import { useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Swords, Users } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { QuantumLoomCanvas } from './QuantumLoomCanvas';
+import { CelestialHorizonCanvas } from './CelestialHorizonCanvas';
 
 const LINE_1 = 'Code. Team Up.';
 const LINE_2 = 'Win.';
@@ -21,144 +21,127 @@ export function LandingHero() {
   });
 
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const contentY = useTransform(scrollYProgress, [0, 0.5], [0, -60]);
+  const contentY = useTransform(scrollYProgress, [0, 0.5], [0, -50]);
 
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#000002] transform-gpu will-change-transform"
+      className="relative min-h-[92vh] flex flex-col justify-end pb-16 sm:pb-20 lg:pb-24 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
-      {/* Exact Realm 01 Quantum Loom of Consciousness WebGL Canvas (Optimized 60-120 FPS) */}
-      <QuantumLoomCanvas className="z-0" onWebGLActive={(active) => setWebGLFailed(!active)} />
+      {/* Real-time Celestial Blue Horizon WebGL Canvas */}
+      <CelestialHorizonCanvas className="z-0" onWebGLActive={(active) => setWebGLFailed(!active)} />
 
-      {/* Hardware-Accelerated Video Fallback: ONLY rendered if WebGL fails */}
+      {/* Hardware-Accelerated High-Definition Fallback Poster */}
       {webGLFailed && (
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="none"
-          poster="/brand/hero-quantum-loom-poster.webp"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10 filter brightness-[1.25] contrast-[1.18] saturate-[1.4]"
-        >
-          <source src="/videos/hero-quantum-loom.mp4" type="video/mp4" />
-        </video>
+        <img
+          src="/brand/hero-celestial-horizon.webp"
+          alt="Celestial Horizon"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none -z-10 filter brightness-[1.08] contrast-[1.05]"
+        />
       )}
 
-      {/* Radiant Atmosphere Vignette for pristine text readability & glowing depth */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_55%,rgba(0,0,2,0.50)_100%)] pointer-events-none z-10" />
+      {/* Atmospheric Vignette for deep contrast and seamless blend into page background */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#090B10] via-transparent to-black/30 pointer-events-none z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_40%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
 
-      {/* Content */}
+      {/* Content — Auralis Inspired Split Editorial Layout */}
       <motion.div
         style={{ opacity: contentOpacity, y: contentY }}
-        className="relative z-20 max-w-4xl mx-auto px-6 text-center"
+        className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12"
       >
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-          className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] backdrop-blur-md mb-8"
-        >
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span className="text-sm text-amber-200/90 font-medium tracking-wide">
-            1v1 Code Battle Arena & Hackathon Squad Finder
-          </span>
-        </motion.div>
-
-        {/* Headline with Hardware-Accelerated Cinematic Entrance */}
-        <div className="relative inline-block mb-7 overflow-hidden py-1">
-          <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] select-none">
-            <motion.span
-              initial={{ opacity: 0, y: 20 }}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-end">
+          {/* Left Column: Frosted Pill Badge + Monumental Editorial Headline */}
+          <div className="lg:col-span-7">
+            {/* Frosted Pill Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              className="block text-white"
+              transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
+              className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/[0.08] backdrop-blur-md mb-6"
             >
-              {LINE_1}
-            </motion.span>
-            <motion.span
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.18, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="block mt-1 landing-gradient-text"
-            >
-              {LINE_2}
-            </motion.span>
-          </h1>
+              <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)] animate-pulse" />
+              <span className="text-xs sm:text-sm text-sky-200 font-medium tracking-wide">
+                1v1 Battle Arena & Collegiate Hackathons
+              </span>
+            </motion.div>
 
-          {/* Sweeping Specular Photon Laser Light Streak */}
-          <motion.div
-            initial={{ left: '-15%', opacity: 0 }}
-            animate={{ left: '115%', opacity: [0, 1, 1, 0] }}
-            transition={{
-              delay: 0.04,
-              duration: 0.72,
-              ease: [0.25, 0.1, 0.25, 1],
-            }}
-            className="absolute top-0 bottom-0 w-12 pointer-events-none z-10 -skew-x-12 bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[2px] shadow-[0_0_35px_rgba(236,72,153,0.9)]"
-          />
+            {/* Headline with High-Contrast Editorial Styling */}
+            <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold text-white tracking-tight leading-[0.94] select-none">
+              <motion.span
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                className="block text-white"
+              >
+                {LINE_1}
+              </motion.span>
+              <motion.span
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="block mt-1 bg-gradient-to-r from-white via-sky-100 to-sky-300 bg-clip-text text-transparent"
+              >
+                {LINE_2}
+              </motion.span>
+            </h1>
+          </div>
+
+          {/* Right Column: Subtitle + Two Big Doors CTAs + Bullets */}
+          <div className="lg:col-span-5 flex flex-col justify-end">
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="text-base sm:text-lg text-slate-300/90 leading-relaxed font-normal mb-8 drop-shadow-md"
+            >
+              The fast-paced 1v1 coding arena & hackathon squad finder for college builders. Duel live in 3 minutes, recruit dream teammates, and build real projects together.
+            </motion.p>
+
+            {/* The Two Big Doors Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-wrap items-center gap-3.5 sm:gap-4"
+            >
+              <Link
+                href="/arena"
+                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_25px_rgba(255,255,255,0.35)] transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              >
+                <span>⚔️ Play 3-Min Code Duel</span>
+                <ArrowUpRight className="w-4 h-4 text-slate-950 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
+
+              <Link
+                href="/explore"
+                className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/[0.14] text-white text-sm sm:text-base font-semibold backdrop-blur-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+              >
+                <span>👥 Find Hackathon Squad</span>
+                <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </Link>
+            </motion.div>
+
+            {/* Feature Bullets */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-slate-400 font-mono mt-6"
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]" /> 3-Min 1v1 Duels
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" /> Hackathon Teammates
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" /> Verified GitHub Proof
+              </span>
+            </motion.div>
+          </div>
         </div>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ delay: 0.52, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="text-lg md:text-xl text-zinc-100 max-w-2xl mx-auto mb-10 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
-        >
-          The fast-paced 1v1 coding arena & hackathon squad finder for college builders. Duel live in 3 minutes, recruit dream teammates, and build real projects together.
-        </motion.p>
-
-        {/* The Two Big Doors CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.94 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.68, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-center justify-center gap-4 sm:gap-5 mb-8"
-        >
-          {/* Door 1: 3-Min Code Duel Arena */}
-          <Link
-            href="/arena"
-            className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm sm:text-base shadow-[0_0_30px_rgba(245,158,11,0.45)] border border-amber-300/40 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 cursor-pointer"
-          >
-            <Swords className="w-5 h-5 text-slate-950" />
-            <span>Play 3-Min Code Duel</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
-          </Link>
-
-          {/* Door 2: Find Hackathon Squad */}
-          <Link
-            href="/explore"
-            className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-200 text-sm sm:text-base font-bold hover:border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
-          >
-            <Users className="w-5 h-5 text-cyan-400" />
-            <span>Find Hackathon Squad</span>
-          </Link>
-        </motion.div>
-
-        {/* Simple clarity feature bullets */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.78, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-xs sm:text-sm text-slate-400 font-mono"
-        >
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" /> 3-Min 1v1 Duels
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" /> Hackathon Teammates
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" /> Verified GitHub Proof
-          </span>
-        </motion.div>
       </motion.div>
-
-      {/* Bottom gradient fade into dark section */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#090B10] to-transparent pointer-events-none" />
     </section>
   );
 }
