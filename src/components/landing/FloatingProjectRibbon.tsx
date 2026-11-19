@@ -57,9 +57,23 @@ const CARD_PALETTES = [
   },
 ];
 
+// Exact continuous loop durations per card:
+// Card 1 -> 2: 20 sec
+// Card 2 -> 3: 17 sec
+// Card 3 -> 4: 19 sec
+// Card 4 -> 5: 22 sec
+// Card 5 -> 1: 18 sec
+const CARD_INTERVALS_MS = [
+  20000, // 1 to 2 after 20 sec
+  17000, // 2 to 3 after 17 sec
+  19000, // 3 to 4 after 19 sec
+  22000, // 4 to 5 after 22 sec
+  18000, // 5 to 1 after 18 sec
+];
+
 export function FloatingProjectRibbon() {
   const [cards, setCards] = useState<FeaturedDeckCardConfig[]>(DEFAULT_FEATURED_DECK_CARDS);
-  const [activeIndex, setActiveIndex] = useState<number>(2); // Start at center card (03)
+  const [activeIndex, setActiveIndex] = useState<number>(0); // Start at Card 01
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const lastWheelTimeRef = useRef<number>(0);
   const touchStartXRef = useRef<number>(0);
@@ -99,6 +113,17 @@ export function FloatingProjectRibbon() {
   const goToCard = (index: number) => {
     setActiveIndex((index + totalCards) % totalCards);
   };
+
+  // Continuous auto-rotation loop matching exact sequence:
+  // 1 -> 2 (20s) -> 3 (17s) -> 4 (19s) -> 5 (22s) -> 1 (18s) continuously
+  useEffect(() => {
+    const duration = CARD_INTERVALS_MS[activeIndex % CARD_INTERVALS_MS.length] || 20000;
+    const timer = setTimeout(() => {
+      setActiveIndex((prev) => (prev + 1) % totalCards);
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [activeIndex, totalCards]);
 
   // Keyboard navigation when user interacts with carousel
   useEffect(() => {
