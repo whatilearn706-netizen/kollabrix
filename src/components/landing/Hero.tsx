@@ -3,12 +3,12 @@
 import { useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Swords, Users } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { QuantumLoomCanvas } from './QuantumLoomCanvas';
 
-const LINE_1 = 'Where Creators';
-const LINE_2 = 'Build Together.';
+const LINE_1 = 'Code. Team Up.';
+const LINE_2 = 'Win.';
 
 export function LandingHero() {
   const { user } = useAuth();
@@ -59,11 +59,11 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-          className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-md mb-8"
+          className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] backdrop-blur-md mb-8"
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
-          <span className="text-sm text-slate-400 font-medium tracking-wide">
-            The Collegiate Innovation Network
+          <span className="text-sm text-amber-200/90 font-medium tracking-wide">
+            1v1 Code Battle Arena & Hackathon Squad Finder
           </span>
         </motion.div>
 
@@ -108,47 +108,51 @@ export function LandingHero() {
           transition={{ delay: 0.52, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="text-lg md:text-xl text-zinc-100 max-w-2xl mx-auto mb-10 leading-relaxed font-normal drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
         >
-          Assemble dream teams, ship hackathon projects, and showcase your
-          engineering portfolio — all on one platform built for ambitious students.
+          The fast-paced 1v1 coding arena & hackathon squad finder for college builders. Duel live in 3 minutes, recruit dream teammates, and build real projects together.
         </motion.p>
 
-        {/* CTAs */}
+        {/* The Two Big Doors CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 16, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ delay: 0.68, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8"
+          className="flex flex-wrap items-center justify-center gap-4 sm:gap-5 mb-8"
         >
+          {/* Door 1: 3-Min Code Duel Arena */}
           <Link
-            href={user ? "/my-projects" : "/signup"}
-            className="group inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm sm:text-base shadow-[0_0_25px_rgba(245,158,11,0.4)] border border-amber-300/40 hover:scale-105 transition-all duration-200 cursor-pointer"
+            href="/arena"
+            className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-sm sm:text-base shadow-[0_0_30px_rgba(245,158,11,0.45)] border border-amber-300/40 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 cursor-pointer"
           >
-            Start Building
+            <Swords className="w-5 h-5 text-slate-950" />
+            <span>Play 3-Min Code Duel</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
           </Link>
+
+          {/* Door 2: Find Hackathon Squad */}
           <Link
             href="/explore"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/[0.12] bg-white/[0.03] text-slate-200 text-sm sm:text-base font-medium hover:border-white/25 hover:bg-white/[0.08] transition-all duration-300"
+            className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-200 text-sm sm:text-base font-bold hover:border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
           >
-            Explore Projects
+            <Users className="w-5 h-5 text-cyan-400" />
+            <span>Find Hackathon Squad</span>
           </Link>
         </motion.div>
 
-        {/* Feature bullets */}
+        {/* Simple clarity feature bullets */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.78, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400"
+          className="flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-xs sm:text-sm text-slate-400 font-mono"
         >
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Verified GitHub Proof
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" /> 3-Min 1v1 Duels
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" /> College Hackathons
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" /> Hackathon Teammates
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> Faculty Mentorship
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" /> Verified GitHub Proof
           </span>
         </motion.div>
       </motion.div>
