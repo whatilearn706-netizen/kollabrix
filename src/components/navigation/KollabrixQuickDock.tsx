@@ -103,63 +103,62 @@ const DOCK_ITEMS: DockItem[] = [
 
 const TONE_STYLES = {
   amber: {
-    bg: 'bg-amber-500/10 hover:bg-amber-500',
-    border: 'border-amber-500/35 hover:border-amber-400',
-    text: 'text-amber-500 hover:text-white',
-    ring: 'focus:ring-amber-400',
-    appGrad: 'from-amber-500 to-orange-600',
+    bg: 'bg-amber-500/15 hover:bg-amber-500/25',
+    border: 'border-amber-500/40 hover:border-amber-400',
+    text: 'text-amber-400 group-hover:text-amber-300',
+    glow: 'rgba(245, 158, 11, 0.45)',
+    dot: 'bg-amber-400 text-amber-400',
   },
   violet: {
-    bg: 'bg-violet-500/10 hover:bg-violet-500',
-    border: 'border-violet-500/35 hover:border-violet-400',
-    text: 'text-violet-500 hover:text-white',
-    ring: 'focus:ring-violet-400',
-    appGrad: 'from-violet-500 to-purple-600',
+    bg: 'bg-violet-500/15 hover:bg-violet-500/25',
+    border: 'border-violet-500/40 hover:border-violet-400',
+    text: 'text-violet-400 group-hover:text-violet-300',
+    glow: 'rgba(168, 85, 247, 0.45)',
+    dot: 'bg-violet-400 text-violet-400',
   },
   emerald: {
-    bg: 'bg-emerald-500/10 hover:bg-emerald-500',
-    border: 'border-emerald-500/35 hover:border-emerald-400',
-    text: 'text-emerald-500 hover:text-white',
-    ring: 'focus:ring-emerald-400',
-    appGrad: 'from-emerald-500 to-teal-600',
+    bg: 'bg-emerald-500/15 hover:bg-emerald-500/25',
+    border: 'border-emerald-500/40 hover:border-emerald-400',
+    text: 'text-emerald-400 group-hover:text-emerald-300',
+    glow: 'rgba(16, 185, 129, 0.45)',
+    dot: 'bg-emerald-400 text-emerald-400',
   },
   cyan: {
-    bg: 'bg-cyan-500/10 hover:bg-cyan-500',
-    border: 'border-cyan-500/35 hover:border-cyan-400',
-    text: 'text-cyan-500 hover:text-white',
-    ring: 'focus:ring-cyan-400',
-    appGrad: 'from-cyan-500 to-blue-600',
+    bg: 'bg-cyan-500/15 hover:bg-cyan-500/25',
+    border: 'border-cyan-500/40 hover:border-cyan-400',
+    text: 'text-cyan-400 group-hover:text-cyan-300',
+    glow: 'rgba(6, 182, 212, 0.45)',
+    dot: 'bg-cyan-400 text-cyan-400',
   },
   brand: {
-    bg: 'bg-indigo-500/10 hover:bg-indigo-500',
-    border: 'border-indigo-500/35 hover:border-indigo-400',
-    text: 'text-indigo-500 hover:text-white',
-    ring: 'focus:ring-indigo-400',
-    appGrad: 'from-indigo-500 to-violet-600',
+    bg: 'bg-indigo-500/15 hover:bg-indigo-500/25',
+    border: 'border-indigo-500/40 hover:border-indigo-400',
+    text: 'text-indigo-400 group-hover:text-indigo-300',
+    glow: 'rgba(99, 102, 241, 0.45)',
+    dot: 'bg-indigo-400 text-indigo-400',
   },
   rose: {
-    bg: 'bg-rose-500/10 hover:bg-rose-500',
-    border: 'border-rose-500/35 hover:border-rose-400',
-    text: 'text-rose-500 hover:text-white',
-    ring: 'focus:ring-rose-400',
-    appGrad: 'from-rose-500 to-pink-600',
+    bg: 'bg-rose-500/15 hover:bg-rose-500/25',
+    border: 'border-rose-500/40 hover:border-rose-400',
+    text: 'text-rose-400 group-hover:text-rose-300',
+    glow: 'rgba(244, 63, 94, 0.45)',
+    dot: 'bg-rose-400 text-rose-400',
   },
 };
 
-const TONE_DOTS: Record<string, string> = {
-  amber: 'bg-amber-400 text-amber-400',
-  violet: 'bg-purple-400 text-purple-400',
-  emerald: 'bg-emerald-400 text-emerald-400',
-  cyan: 'bg-cyan-400 text-cyan-400',
-  brand: 'bg-orange-500 text-orange-500',
-  rose: 'bg-rose-400 text-rose-400',
-};
+// Exact circular arc node coordinates (Center X=288.9, Y=230, Radius=254)
+const NODE_POSITIONS = [
+  { x: 106, y: 54 },  // Node 01 (top)
+  { x: 53,  y: 135 }, // Node 02 (upper-mid)
+  { x: 35,  y: 230 }, // Node 03 (apex / furthest to left)
+  { x: 53,  y: 325 }, // Node 04 (lower-mid)
+  { x: 106, y: 407 }, // Node 05 (bottom)
+];
 
-// macOS Launchpad Applications List
 interface AppItem {
   id: string;
   name: string;
-  category: 'all' | 'competitions' | 'academics' | 'tools' | 'community';
+  category: 'competitions' | 'academics' | 'tools' | 'community';
   href: string;
   icon: React.ElementType;
   gradient: string;
@@ -168,16 +167,32 @@ interface AppItem {
 
 const APPS_LIST: AppItem[] = [
   {
+    id: 'war',
+    name: 'Campus War',
+    category: 'competitions',
+    href: '/war',
+    icon: Swords,
+    gradient: 'from-amber-500 to-red-600',
+  },
+  {
+    id: 'arena',
+    name: 'Battle Arena',
+    category: 'competitions',
+    href: '/arena',
+    icon: Swords,
+    gradient: 'from-rose-500 to-purple-600',
+  },
+  {
     id: 'hackathons',
     name: 'Hackathons',
     category: 'competitions',
     href: '/hackathons',
     icon: Trophy,
-    gradient: 'from-amber-500 to-orange-600',
+    gradient: 'from-orange-500 to-amber-600',
   },
   {
     id: 'icpc',
-    name: 'Competitive Practice',
+    name: 'Practice',
     category: 'competitions',
     href: '/icpc',
     icon: Terminal,
@@ -189,10 +204,10 @@ const APPS_LIST: AppItem[] = [
     category: 'academics',
     href: '/problems',
     icon: Lightbulb,
-    gradient: 'from-violet-500 to-purple-600',
+    gradient: 'from-violet-500 to-fuchsia-600',
   },
   {
-    id: 'faculty',
+    id: 'teacher',
     name: 'Faculty Desk',
     category: 'academics',
     href: '/teacher/dashboard',
@@ -269,17 +284,17 @@ const APPS_LIST: AppItem[] = [
 export function KollabrixQuickDock() {
   const pathname = usePathname();
   const router = useRouter();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const [hoveredItem, setHoveredItem] = useState<DockItem | null>(null);
-  const [hoveredTooltip, setHoveredTooltip] = useState<{
-    label: string;
-    sub: string;
-    tone: string;
+  // Rotation start index: 5 nodes displayed from startIndex along circular dial
+  const [startIndex, setStartIndex] = useState<number>(0);
+
+  // Hovered node state for floating callout card
+  const [hoveredNode, setHoveredNode] = useState<{
+    item: DockItem;
+    nodeNumber: string;
+    x: number;
     y: number;
   } | null>(null);
-  const [canScrollUp, setCanScrollUp] = useState(false);
-  const [canScrollDown, setCanScrollDown] = useState(true);
 
   // macOS Applications launch modal
   const [isAppsModalOpen, setIsAppsModalOpen] = useState(false);
@@ -305,29 +320,30 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('linkora_exam_mode', handleExam);
   }, [pathname]);
 
-  // Monitor scroll position inside dock to toggle blur-fade animations and nudge arrows
-  const updateScrollState = () => {
-    if (!scrollContainerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    setCanScrollUp(scrollTop > 4);
-    setCanScrollDown(scrollTop < scrollHeight - clientHeight - 4);
-  };
-
+  // Clear hover card on window scroll
   useEffect(() => {
-    updateScrollState();
-  }, []);
-
-  // Clear hover tooltip on window scroll so it doesn't linger
-  useEffect(() => {
-    const handleWindowScroll = () => setHoveredTooltip(null);
+    const handleWindowScroll = () => setHoveredNode(null);
     window.addEventListener('scroll', handleWindowScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
-  const handleScrollNudge = (direction: 'up' | 'down') => {
-    if (!scrollContainerRef.current) return;
-    const delta = direction === 'up' ? -52 : 52;
-    scrollContainerRef.current.scrollBy({ top: delta, behavior: 'smooth' });
+  // Mouse wheel rotation along circular arc
+  const handleWheel = (e: React.WheelEvent) => {
+    if (Math.abs(e.deltaY) > 16) {
+      if (e.deltaY > 0) {
+        setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
+      } else {
+        setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
+      }
+    }
+  };
+
+  const rotateUp = () => {
+    setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
+  };
+
+  const rotateDown = () => {
+    setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
   };
 
   // Global ⌘K / Ctrl+K keyboard shortcut opens macOS App Launcher
@@ -360,6 +376,20 @@ export function KollabrixQuickDock() {
     return null;
   }
 
+  // 5 active visible nodes mapped to the circular positions
+  const visibleNodes = [0, 1, 2, 3, 4].map((slotIndex) => {
+    const itemIndex = (startIndex + slotIndex) % DOCK_ITEMS.length;
+    const item = DOCK_ITEMS[itemIndex];
+    const nodeNumber = String(slotIndex + 1).padStart(2, '0');
+    return {
+      slotIndex,
+      itemIndex,
+      item,
+      nodeNumber,
+      pos: NODE_POSITIONS[slotIndex],
+    };
+  });
+
   const filteredApps = APPS_LIST.filter((app) => {
     const matchesCategory = activeCategory === 'all' || app.category === activeCategory;
     const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -369,186 +399,241 @@ export function KollabrixQuickDock() {
   return (
     <>
       {/* =========================================================================
-          SIGNATURE SCROLLABLE VERTICAL QUICK DOCK (Exact match to user's Image 1 & 3)
-          - 4 items visible without scrolling
-          - Smooth scroll reveals AI Spark, Resources, Deadlines, Feedback
-          - Top & bottom blur fade gradients while scrolling
+          CIRCULAR ARC QUICK DOCK (Exact Mirrored Match to 5-Pillar Arc in Dark Theme)
+          - Curved ribbon track curving to the left into the screen
+          - 5 circular node pods (01, 02, 03, 04, 05) with dark glass styling
+          - Circular wheel rotation via scroll or step arrows
+          - Hover leader lines pointing to leftward callout cards
+          - Central Command (⌘) launchpad trigger
          ========================================================================= */}
       <aside
-        aria-label="Kollabrix Quick Portals"
-        className="fixed right-3.5 top-1/2 -translate-y-1/2 z-40 select-none hidden md:flex flex-col items-center animate-fade-in pointer-events-auto"
+        aria-label="Kollabrix Circular Quick Dock"
+        onWheel={handleWheel}
+        className="fixed right-1 sm:right-3 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-auto"
       >
-        <div className="relative rounded-full py-2.5 px-1.5 bg-white/92 dark:bg-stone-900/90 border border-slate-200/90 dark:border-stone-800 shadow-[0_16px_50px_rgba(0,0,0,0.16)] backdrop-blur-2xl flex flex-col items-center transition-all duration-300 hover:shadow-[0_20px_60px_rgba(245,158,11,0.22)]">
-
-          {/* Up Nudge Arrow (Appears when scrolled down) */}
-          <button
-            type="button"
-            onClick={() => handleScrollNudge('up')}
-            aria-label="Scroll up"
-            className={`w-7 h-4 flex items-center justify-center text-amber-500 transition-opacity duration-200 cursor-pointer ${
-              canScrollUp ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-            }`}
+        <div className="relative w-[155px] h-[460px]">
+          {/* SVG Background: Mirrored Curved Ribbon Track & Concentric Guide Lines */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+            viewBox="0 0 160 460"
+            fill="none"
           >
-            <ChevronUp className="w-3.5 h-3.5" />
-          </button>
+            <defs>
+              {/* Glowing neon stroke gradient */}
+              <linearGradient id="arcGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
+                <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
+              </linearGradient>
 
-          {/* Viewport: Exactly 4 Items Visible (~216px height) */}
-          <div className="relative w-[52px] h-[216px] overflow-hidden my-0.5">
+              {/* Dark glass ribbon fill gradient */}
+              <linearGradient id="trackGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0a0d18" stopOpacity="0.95" />
+                <stop offset="50%" stopColor="#101424" stopOpacity="0.92" />
+                <stop offset="100%" stopColor="#0a0d18" stopOpacity="0.95" />
+              </linearGradient>
 
-            {/* Top Blur Fade Gradient Overlay */}
-            <div
-              className={`absolute top-0 left-0 right-0 h-8 pointer-events-none z-10 transition-opacity duration-300 backdrop-blur-[3px] bg-gradient-to-b from-white/95 dark:from-stone-900/95 to-transparent ${
-                canScrollUp ? 'opacity-100' : 'opacity-0'
-              }`}
+              {/* Outer soft shadow filter */}
+              <filter id="arcShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="-4" dy="4" stdDeviation="12" floodColor="#000000" floodOpacity="0.7" />
+              </filter>
+            </defs>
+
+            {/* 1. Outer Accent Guide Line (Mirrored Image 1) */}
+            <path
+              d="M 125 35 A 278 278 0 0 0 125 425"
+              fill="none"
+              stroke="rgba(245, 158, 11, 0.22)"
+              strokeWidth="1.5"
+              strokeDasharray="6 4"
             />
 
-            {/* Scrollable Container */}
-            <div
-              ref={scrollContainerRef}
-              onScroll={() => {
-                updateScrollState();
-                setHoveredTooltip(null);
-              }}
-              className="h-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-2.5 py-1 px-1 scroll-smooth"
-              style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-            >
-              {DOCK_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const style = TONE_STYLES[item.tone];
-                const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-
-                return (
-                  <div
-                    key={item.id}
-                    className="relative shrink-0"
-                    onMouseEnter={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoveredItem(item);
-                      setHoveredTooltip({
-                        label: item.label,
-                        sub: item.sub,
-                        tone: item.tone,
-                        y: rect.top + rect.height / 2,
-                      });
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredItem(null);
-                      setHoveredTooltip(null);
-                    }}
-                  >
-                    <Link
-                      href={item.href}
-                      target={item.openInNewTab ? '_blank' : undefined}
-                      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                      aria-label={item.label}
-                      className={`relative flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-300 active:scale-90 group focus:outline-none ${style.bg} ${style.border} ${style.text} ${
-                        isActive ? 'ring-2 ring-amber-400 shadow-md scale-105' : ''
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
-
-                      {isActive && (
-                        <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" />
-                      )}
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Bottom Blur Fade Gradient Overlay */}
-            <div
-              className={`absolute bottom-0 left-0 right-0 h-8 pointer-events-none z-10 transition-opacity duration-300 backdrop-blur-[3px] bg-gradient-to-t from-white/95 dark:from-stone-900/95 to-transparent ${
-                canScrollDown ? 'opacity-100' : 'opacity-0'
-              }`}
+            {/* 2. Main Curved Ribbon Track (Shadow + Body + Border) */}
+            <path
+              d="M 115 45 A 254 254 0 0 0 115 415"
+              fill="none"
+              stroke="url(#trackGlass)"
+              strokeWidth="50"
+              strokeLinecap="round"
+              filter="url(#arcShadow)"
             />
-          </div>
+            <path
+              d="M 115 45 A 254 254 0 0 0 115 415"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.12)"
+              strokeWidth="51"
+              strokeLinecap="round"
+            />
 
-          {/* Down Nudge Arrow (Appears when more items below, with gentle bob) */}
+            {/* 3. Glowing Center Line Track */}
+            <path
+              d="M 115 45 A 254 254 0 0 0 115 415"
+              fill="none"
+              stroke="url(#arcGlow)"
+              strokeWidth="1.5"
+              opacity="0.65"
+            />
+
+            {/* 4. Inner Concentric Arc Guide (Dashed line like Image 1) */}
+            <path
+              d="M 145 77 A 210 210 0 0 0 145 383"
+              fill="none"
+              stroke="rgba(56, 189, 248, 0.3)"
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+            />
+          </svg>
+
+          {/* Top Rotation Step Arrow (Above Node 01) */}
           <button
             type="button"
-            onClick={() => handleScrollNudge('down')}
-            aria-label="Scroll down"
-            className={`w-7 h-4 flex items-center justify-center text-amber-500 transition-opacity duration-200 cursor-pointer ${
-              canScrollDown ? 'opacity-100 pointer-events-auto animate-pulse' : 'opacity-0 pointer-events-none'
-            }`}
+            onClick={rotateUp}
+            aria-label="Rotate dial up"
+            className="absolute top-1 right-[26px] z-20 w-7 h-5 flex items-center justify-center text-amber-400 hover:text-white transition-all active:scale-90 cursor-pointer group"
           >
-            <ChevronDown className="w-3.5 h-3.5" />
+            <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
           </button>
 
-          {/* Divider Line */}
-          <div className="w-5 h-[1px] bg-slate-200 dark:bg-stone-800 my-1" />
+          {/* 5 Circular Node Pods along the Arc (01, 02, 03, 04, 05) */}
+          {visibleNodes.map(({ slotIndex, item, nodeNumber, pos }) => {
+            const Icon = item.icon;
+            const style = TONE_STYLES[item.tone] || TONE_STYLES.amber;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
 
-          {/* Bottom ⌘ (Command) Applications Trigger Button */}
+            return (
+              <div
+                key={`${item.id}-${slotIndex}`}
+                style={{
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
+                }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300"
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setHoveredNode({
+                    item,
+                    nodeNumber,
+                    x: rect.left,
+                    y: rect.top + rect.height / 2,
+                  });
+                }}
+                onMouseLeave={() => setHoveredNode(null)}
+              >
+                <Link
+                  href={item.href}
+                  target={item.openInNewTab ? '_blank' : undefined}
+                  rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                  aria-label={`${nodeNumber} - ${item.label}`}
+                  className={`group relative flex items-center justify-center w-11 h-11 rounded-full border-2 transition-all duration-300 active:scale-95 focus:outline-none cursor-pointer ${
+                    isActive
+                      ? 'border-amber-400 bg-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.55)] scale-105'
+                      : 'border-slate-700/80 hover:border-amber-400/90 bg-[#121626]/95 hover:bg-[#1a2138] shadow-[0_8px_20px_rgba(0,0,0,0.7)] hover:scale-110'
+                  }`}
+                >
+                  {/* Micro Index Badge (01, 02, 03, 04, 05) */}
+                  <span className="absolute -top-1.5 -left-1 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-[#0a0d18] text-slate-300 border border-slate-700/80 shadow-xs select-none">
+                    {nodeNumber}
+                  </span>
+
+                  {/* Icon */}
+                  <Icon
+                    className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${style.text}`}
+                  />
+
+                  {/* Active Page Indicator */}
+                  {isActive && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse" />
+                  )}
+                </Link>
+              </div>
+            );
+          })}
+
+          {/* Central Command (⌘) Hub Button (Mirrors Image 1 Center Disc) */}
           <div
-            className="relative"
+            style={{ left: '116px', top: '230px' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 z-20"
             onMouseEnter={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
-              setHoveredItem({
-                id: 'cmd',
-                label: 'Applications (⌘K)',
-                sub: 'Launchpad Grid',
-                href: '#',
-                icon: Command,
-                tone: 'violet',
-              });
-              setHoveredTooltip({
-                label: 'Applications (⌘K)',
-                sub: 'macOS Launchpad Grid',
-                tone: 'violet',
+              setHoveredNode({
+                item: {
+                  id: 'cmd',
+                  label: 'Applications (⌘K)',
+                  sub: 'macOS Launchpad Grid',
+                  href: '#',
+                  icon: Command,
+                  tone: 'violet',
+                },
+                nodeNumber: '⌘',
+                x: rect.left,
                 y: rect.top + rect.height / 2,
               });
             }}
-            onMouseLeave={() => {
-              setHoveredItem(null);
-              setHoveredTooltip(null);
-            }}
+            onMouseLeave={() => setHoveredNode(null)}
           >
             <button
               type="button"
               onClick={() => setIsAppsModalOpen(true)}
               aria-label="Open Applications Launchpad"
-              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-violet-400/40 bg-violet-500/15 text-violet-600 dark:text-violet-400 hover:bg-violet-600 hover:text-white transition-all duration-300 active:scale-90 group focus:outline-none shadow-sm cursor-pointer"
+              className="relative flex items-center justify-center w-10 h-10 rounded-full border-2 border-violet-500/50 bg-[#141226]/95 hover:bg-violet-600 text-violet-400 hover:text-white transition-all duration-300 active:scale-95 group focus:outline-none shadow-[0_8px_24px_rgba(0,0,0,0.85)] hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] cursor-pointer"
             >
               <Command className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
             </button>
           </div>
+
+          {/* Bottom Rotation Step Arrow (Below Node 05) */}
+          <button
+            type="button"
+            onClick={rotateDown}
+            aria-label="Rotate dial down"
+            className="absolute bottom-1 right-[26px] z-20 w-7 h-5 flex items-center justify-center text-amber-400 hover:text-white transition-all active:scale-90 cursor-pointer group"
+          >
+            <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+          </button>
         </div>
       </aside>
 
-      {/* Floating Tooltip to the LEFT of the hovered logo
-          Positioned outside <aside> so CSS transform does NOT offset its viewport Y coordinates! */}
-      {hoveredTooltip && (
+      {/* Floating Callout Card to the LEFT with Leader Pointer Line (Mirrors Image 1) */}
+      {hoveredNode && (
         <div
-          style={{ top: `${hoveredTooltip.y}px` }}
-          className="fixed right-[72px] -translate-y-1/2 pointer-events-none z-[9999] animate-in fade-in slide-in-from-right-2 duration-150"
+          style={{
+            top: `${hoveredNode.y}px`,
+            left: `${hoveredNode.x - 12}px`,
+          }}
+          className="fixed -translate-x-full -translate-y-1/2 pointer-events-none z-[9999] animate-in fade-in slide-in-from-right-2 duration-150"
         >
-          <div className="relative flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-stone-900/95 dark:bg-[#0B0D14]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-white backdrop-blur-2xl whitespace-nowrap">
-            <span className={`w-2 h-2 rounded-full ${TONE_DOTS[hoveredTooltip.tone] || 'bg-amber-400'} shadow-[0_0_8px_currentColor] shrink-0`} />
-            <div className="flex flex-col text-left">
-              <span className="text-xs font-bold text-white tracking-wide leading-tight">
-                {hoveredTooltip.label}
-              </span>
-              {hoveredTooltip.sub && (
-                <span className="text-[10px] text-stone-300 font-medium leading-tight">
-                  {hoveredTooltip.sub}
+          <div className="relative flex items-center gap-3">
+            {/* Callout Card */}
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-[#0c101d]/95 border border-slate-700/80 shadow-[0_16px_50px_rgba(0,0,0,0.92)] text-white backdrop-blur-2xl whitespace-nowrap">
+              {/* Node Number Badge */}
+              <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                {hoveredNode.nodeNumber}
+              </div>
+
+              {/* Text Information */}
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold text-white tracking-tight leading-tight">
+                  {hoveredNode.item.label}
                 </span>
-              )}
+                {hoveredNode.item.sub && (
+                  <span className="text-[11px] text-slate-400 font-medium leading-tight mt-0.5">
+                    {hoveredNode.item.sub}
+                  </span>
+                )}
+              </div>
             </div>
-            {/* Caret pointing right directly into the hovered logo button */}
-            <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-stone-900 dark:bg-[#0B0D14] border-r border-t border-white/20" />
+
+            {/* Dotted Leader Line pointing directly to the hovered node */}
+            <div className="flex items-center">
+              <div className="w-3 border-t-2 border-dotted border-amber-400/80" />
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
+            </div>
           </div>
         </div>
       )}
 
       {/* =========================================================================
-          macOS APPLICATIONS LAUNCHPAD MODAL (Exact match to user's Image 4)
-          - Dark frosted glass squircle container
-          - Top category pills (All, Competitions, Academics, Tools, Community)
-          - Gorgeous squircle app icons with title underneath
+          macOS APPLICATIONS LAUNCHPAD MODAL
          ========================================================================= */}
       {isAppsModalOpen && (
         <div
@@ -576,45 +661,56 @@ export function KollabrixQuickDock() {
                 </h3>
               </div>
 
-              {/* Search Mini-Bar */}
-              <div className="relative w-44">
-                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter apps..."
-                  className="w-full pl-8 pr-3 py-1 text-xs rounded-xl bg-white/8 border border-white/10 text-white placeholder:text-stone-400 focus:outline-none focus:border-amber-400/50"
-                  autoFocus
-                />
-              </div>
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setIsAppsModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-stone-300 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {/* Category Filter Pills (macOS Tab Strip) */}
-            <div className="flex items-center gap-1.5 py-3 overflow-x-auto scrollbar-none border-b border-white/8 text-[11px] font-bold">
-              {[
-                { id: 'all', label: 'All Portals' },
-                { id: 'competitions', label: 'Competitions' },
-                { id: 'academics', label: 'Academics' },
-                { id: 'tools', label: 'Tools & AI' },
-                { id: 'community', label: 'Community' },
-              ].map((tab) => (
+            {/* Search Input */}
+            <div className="relative mt-4">
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search portals, tools, or challenges..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="w-full rounded-2xl bg-white/6 border border-white/10 pl-10 pr-4 py-2 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-amber-400/80 focus:bg-white/10 transition-all"
+              />
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 mt-3 pb-1 overflow-x-auto scrollbar-none">
+              {(
+                [
+                  { id: 'all', label: 'All' },
+                  { id: 'competitions', label: 'Competitions' },
+                  { id: 'academics', label: 'Academics' },
+                  { id: 'tools', label: 'Tools' },
+                  { id: 'community', label: 'Community' },
+                ] as const
+              ).map((cat) => (
                 <button
-                  key={tab.id}
+                  key={cat.id}
                   type="button"
-                  onClick={() => setActiveCategory(tab.id as any)}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                    activeCategory === tab.id
-                      ? 'bg-white/20 text-white shadow-sm'
-                      : 'text-stone-400 hover:text-white hover:bg-white/8'
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                    activeCategory === cat.id
+                      ? 'bg-amber-500 text-stone-950 shadow-md font-bold'
+                      : 'bg-white/6 hover:bg-white/10 text-stone-300'
                   }`}
                 >
-                  {tab.label}
+                  {cat.label}
                 </button>
               ))}
             </div>
 
-            {/* App Icon Grid (macOS Squircle Icons with Labels) */}
+            {/* Grid of Apps (macOS Launchpad style) */}
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 py-5 max-h-[380px] overflow-y-auto">
               {filteredApps.map((app) => {
                 const Icon = app.icon;
