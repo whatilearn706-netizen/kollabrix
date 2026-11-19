@@ -2988,11 +2988,11 @@ export function FullArenaExperience({
       )}
 
       {/* Main Arena Viewport */}
-      <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-start lg:justify-center items-center p-4 sm:p-6 lg:p-8">
+      <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-start items-center p-4 sm:p-6 lg:p-8">
         
         {/* ================= STEP 0: MULTIPLAYER ARENA COMMAND CENTER (HERO + TACTICAL COMBAT GATEWAY) ================= */}
         {step === 0 && (
-          <div className="w-full max-w-7xl 2xl:max-w-[1540px] mx-auto space-y-6 sm:space-y-8 animate-fadeIn pb-12">
+          <div className="w-full max-w-7xl 2xl:max-w-[1540px] mx-auto space-y-6 sm:space-y-8 animate-fadeIn pt-2 pb-12">
             {/* Top Hero Section: Code. Compete. Win. */}
             <div className="relative rounded-3xl p-6 sm:p-8 lg:p-10 bg-gradient-to-r from-slate-950 via-slate-900/90 to-purple-950/30 border border-slate-800 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 lg:gap-10">
               {/* Left Hero Content */}
@@ -3044,10 +3044,10 @@ export function FullArenaExperience({
               </div>
 
               {/* Right Hero Graphic: Futuristic Cyber Coders VS */}
-              <div className="relative shrink-0 w-full md:w-80 lg:w-[420px] xl:w-[480px] flex items-center justify-center">
+              <div className="relative shrink-0 w-full md:w-96 lg:w-[460px] xl:w-[520px] flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/10 blur-3xl rounded-full pointer-events-none" />
                 <img
-                  src="/brand/arena-coders-vs.jpg"
+                  src="/brand/arena-coders-vs.jpg?v=2"
                   alt="Multiplayer Coding Battle"
                   className="relative z-10 w-full h-auto rounded-2xl border border-cyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.3)] object-cover"
                 />
