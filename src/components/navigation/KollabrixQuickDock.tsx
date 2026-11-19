@@ -29,8 +29,16 @@ interface DockItem {
   sub: string;
   href: string;
   icon: React.ElementType;
-  keyLabel?: string;
-  tone: 'amber' | 'violet' | 'emerald' | 'cyan' | 'brand' | 'rose';
+  keyLabel: string;
+  // Coin color theme matching Pinterest reference (new_dock_ref.jpg)
+  coinColor: {
+    bg: string;
+    border: string;
+    reed: string;
+    glow: string;
+    indicator: string;
+    text: string;
+  };
   openInNewTab?: boolean;
 }
 
@@ -42,7 +50,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/war',
     icon: Swords,
     keyLabel: 'WAR',
-    tone: 'brand',
+    coinColor: {
+      // Purple / Violet coin (matches "ecommpay" coin in reference)
+      bg: 'from-[#7c3aed] via-[#6d28d9] to-[#4c1d95]',
+      border: 'border-[#a78bfa]',
+      reed: '#5b21b6',
+      glow: 'rgba(139, 92, 246, 0.65)',
+      indicator: 'bg-[#a855f7] shadow-[0_0_10px_#a855f7]',
+      text: 'text-white',
+    },
   },
   {
     id: 'hackathons',
@@ -51,7 +67,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/hackathons',
     icon: Trophy,
     keyLabel: 'HACK',
-    tone: 'amber',
+    coinColor: {
+      // Golden Amber / Yellow coin (matches yellow coin in reference)
+      bg: 'from-[#f59e0b] via-[#d97706] to-[#b45309]',
+      border: 'border-[#fcd34d]',
+      reed: '#92400e',
+      glow: 'rgba(245, 158, 11, 0.65)',
+      indicator: 'bg-[#fbbf24] shadow-[0_0_10px_#fbbf24]',
+      text: 'text-amber-950',
+    },
   },
   {
     id: 'icpc',
@@ -60,7 +84,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/icpc',
     icon: Terminal,
     keyLabel: 'CODE',
-    tone: 'cyan',
+    coinColor: {
+      // Royal Azure Blue coin (matches "Rapyd" coin in reference)
+      bg: 'from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a]',
+      border: 'border-[#60a5fa]',
+      reed: '#172554',
+      glow: 'rgba(37, 99, 235, 0.65)',
+      indicator: 'bg-[#38bdf8] shadow-[0_0_10px_#38bdf8]',
+      text: 'text-white',
+    },
   },
   {
     id: 'problems',
@@ -69,7 +101,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/problems',
     icon: Lightbulb,
     keyLabel: 'SPEC',
-    tone: 'violet',
+    coinColor: {
+      // Dark Titanium / Slate Black coin (matches "Braintree" coin in reference)
+      bg: 'from-[#334155] via-[#1e293b] to-[#0f172a]',
+      border: 'border-[#64748b]',
+      reed: '#020617',
+      glow: 'rgba(100, 116, 139, 0.55)',
+      indicator: 'bg-[#94a3b8] shadow-[0_0_10px_#94a3b8]',
+      text: 'text-slate-100',
+    },
   },
   {
     id: 'faculty',
@@ -78,7 +118,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/teacher/dashboard',
     icon: GraduationCap,
     keyLabel: 'DESK',
-    tone: 'emerald',
+    coinColor: {
+      // Emerald Green coin (matches green indicator in reference)
+      bg: 'from-[#10b981] via-[#059669] to-[#047857]',
+      border: 'border-[#6ee7b7]',
+      reed: '#064e3b',
+      glow: 'rgba(16, 185, 129, 0.65)',
+      indicator: 'bg-[#34d399] shadow-[0_0_10px_#34d399]',
+      text: 'text-emerald-950',
+    },
   },
   {
     id: 'resources',
@@ -87,7 +135,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/resources',
     icon: BookOpen,
     keyLabel: 'DOCS',
-    tone: 'brand',
+    coinColor: {
+      // Chalk White / Platinum Silver coin (matches white coin in reference)
+      bg: 'from-[#f8fafc] via-[#e2e8f0] to-[#cbd5e1]',
+      border: 'border-white',
+      reed: '#94a3b8',
+      glow: 'rgba(255, 255, 255, 0.55)',
+      indicator: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
+      text: 'text-slate-900',
+    },
     openInNewTab: true,
   },
   {
@@ -97,7 +153,15 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/deadlines',
     icon: Clock,
     keyLabel: 'TIME',
-    tone: 'rose',
+    coinColor: {
+      // Crimson Coral Red coin (matches red coin in reference)
+      bg: 'from-[#ef4444] via-[#dc2626] to-[#991b1b]',
+      border: 'border-[#fca5a5]',
+      reed: '#7f1d1d',
+      glow: 'rgba(239, 68, 68, 0.65)',
+      indicator: 'bg-[#f87171] shadow-[0_0_10px_#f87171]',
+      text: 'text-white',
+    },
   },
   {
     id: 'feedback',
@@ -106,50 +170,16 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/feedback',
     icon: MessageSquare,
     keyLabel: 'CHAT',
-    tone: 'violet',
+    coinColor: {
+      // Electric Cyan / Neon Blue coin
+      bg: 'from-[#06b6d4] via-[#0891b2] to-[#155e75]',
+      border: 'border-[#67e8f9]',
+      reed: '#164e63',
+      glow: 'rgba(6, 182, 212, 0.65)',
+      indicator: 'bg-[#22d3ee] shadow-[0_0_10px_#22d3ee]',
+      text: 'text-cyan-950',
+    },
   },
-];
-
-const TONE_COLORS = {
-  amber: {
-    rim: 'rgba(245, 158, 11, 0.7)',
-    text: 'text-amber-400 group-hover:text-amber-300',
-    glow: 'rgba(245, 158, 11, 0.45)',
-  },
-  violet: {
-    rim: 'rgba(168, 85, 247, 0.7)',
-    text: 'text-violet-400 group-hover:text-violet-300',
-    glow: 'rgba(168, 85, 247, 0.45)',
-  },
-  emerald: {
-    rim: 'rgba(16, 185, 129, 0.7)',
-    text: 'text-emerald-400 group-hover:text-emerald-300',
-    glow: 'rgba(16, 185, 129, 0.45)',
-  },
-  cyan: {
-    rim: 'rgba(6, 182, 212, 0.7)',
-    text: 'text-cyan-400 group-hover:text-cyan-300',
-    glow: 'rgba(6, 182, 212, 0.45)',
-  },
-  brand: {
-    rim: 'rgba(99, 102, 241, 0.7)',
-    text: 'text-indigo-400 group-hover:text-indigo-300',
-    glow: 'rgba(99, 102, 241, 0.45)',
-  },
-  rose: {
-    rim: 'rgba(244, 63, 94, 0.7)',
-    text: 'text-rose-400 group-hover:text-rose-300',
-    glow: 'rgba(244, 63, 94, 0.45)',
-  },
-};
-
-// 5 3D Conveyor Track positions (Matching the curved conveyor in the Pinterest ref)
-const CONVEYOR_SLOTS = [
-  { x: 80, y: 55,  scale: 0.82, rotateX: 22,  rotateY: -12, zIndex: 12 }, // Position 0: Top entrance
-  { x: 60, y: 145, scale: 0.94, rotateX: 14,  rotateY: -7,  zIndex: 18 }, // Position 1: Upper approach
-  { x: 44, y: 240, scale: 1.15, rotateX: 0,   rotateY: 0,   zIndex: 30 }, // Position 2: THE PORTAL GATE (Active Center)
-  { x: 60, y: 335, scale: 0.94, rotateX: -14, rotateY: -7,  zIndex: 18 }, // Position 3: Lower exit
-  { x: 80, y: 425, scale: 0.82, rotateX: -22, rotateY: -12, zIndex: 12 }, // Position 4: Bottom terminus
 ];
 
 interface AppItem {
@@ -282,14 +312,24 @@ export function KollabrixQuickDock() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Scroll index for the conveyor track
-  const [startIndex, setStartIndex] = useState<number>(0);
+  // Active Coin Index (the coin that pops up into the floating position)
+  const [activeIndex, setActiveIndex] = useState<number>(0);
 
-  // Web Audio Context for realistic kinetic portal conveyor sound
+  // Sync active coin with current route on load / navigation
+  useEffect(() => {
+    const foundIndex = DOCK_ITEMS.findIndex(
+      (item) => pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href))
+    );
+    if (foundIndex !== -1) {
+      setActiveIndex(foundIndex);
+    }
+  }, [pathname]);
+
+  // Web Audio Context for authentic coin clink & mechanical slot sound
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastWheelTimeRef = useRef<number>(0);
 
-  // Hovered token state for floating callout card
+  // Hovered coin state for floating callout card
   const [hoveredNode, setHoveredNode] = useState<{
     item: DockItem;
     nodeNumber: string;
@@ -303,8 +343,8 @@ export function KollabrixQuickDock() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isExamMode, setIsExamMode] = useState(false);
 
-  // Synthesize kinetic magnetic portal activation + metallic coin snap
-  const playPortalConveySound = useCallback(() => {
+  // Synthesize realistic coin pop-up chime & mechanical slot click via Web Audio API
+  const playCoinSlideSound = useCallback(() => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -320,35 +360,35 @@ export function KollabrixQuickDock() {
       const now = ctx.currentTime;
       const pitch = 0.95 + Math.random() * 0.1;
 
-      // 1. Kinetic Magnetic Portal Sweep (Warp pulse into the portal ring)
-      const sweepOsc = ctx.createOscillator();
-      const sweepGain = ctx.createGain();
-      sweepOsc.type = 'sine';
-      sweepOsc.frequency.setValueAtTime(260 * pitch, now);
-      sweepOsc.frequency.exponentialRampToValueAtTime(720 * pitch, now + 0.045);
+      // 1. High-frequency Coin Clink / Chime (Metallic resonance)
+      const bellOsc = ctx.createOscillator();
+      const bellGain = ctx.createGain();
+      bellOsc.type = 'sine';
+      bellOsc.frequency.setValueAtTime(1450 * pitch, now);
+      bellOsc.frequency.exponentialRampToValueAtTime(750 * pitch, now + 0.05);
 
-      sweepGain.gain.setValueAtTime(0.16, now);
-      sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      bellGain.gain.setValueAtTime(0.18, now);
+      bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
 
-      sweepOsc.connect(sweepGain);
-      sweepGain.connect(ctx.destination);
-      sweepOsc.start(now);
-      sweepOsc.stop(now + 0.055);
+      bellOsc.connect(bellGain);
+      bellGain.connect(ctx.destination);
+      bellOsc.start(now);
+      bellOsc.stop(now + 0.065);
 
-      // 2. Metallic Token Snap (Heavy coin docking onto magnetic rail)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(840 * pitch, now);
-      osc.frequency.exponentialRampToValueAtTime(180 * pitch, now + 0.025);
+      // 2. Mechanical Slot Click (Crisp slide into rack)
+      const clickOsc = ctx.createOscillator();
+      const clickGain = ctx.createGain();
+      clickOsc.type = 'triangle';
+      clickOsc.frequency.setValueAtTime(540 * pitch, now);
+      clickOsc.frequency.exponentialRampToValueAtTime(160 * pitch, now + 0.025);
 
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      clickGain.gain.setValueAtTime(0.22, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.035);
+      clickOsc.connect(clickGain);
+      clickGain.connect(ctx.destination);
+      clickOsc.start(now);
+      clickOsc.stop(now + 0.035);
     } catch {
       // Graceful suppression
     }
@@ -379,27 +419,43 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
-  // Discrete conveyor steps
-  const conveyUp = useCallback(() => {
-    setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
-    playPortalConveySound();
-  }, [playPortalConveySound]);
+  // Discrete coin slide step up / down
+  const nextCoin = useCallback(() => {
+    setActiveIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
+    playCoinSlideSound();
+  }, [playCoinSlideSound]);
 
-  const conveyDown = useCallback(() => {
-    setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
-    playPortalConveySound();
-  }, [playPortalConveySound]);
+  const prevCoin = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
+    playCoinSlideSound();
+  }, [playCoinSlideSound]);
 
-  // Conveyor wheel listener
+  const selectCoin = useCallback(
+    (index: number, navigate: boolean = false) => {
+      setActiveIndex(index);
+      playCoinSlideSound();
+      if (navigate) {
+        const item = DOCK_ITEMS[index];
+        if (item.openInNewTab) {
+          window.open(item.href, '_blank', 'noopener,noreferrer');
+        } else {
+          router.push(item.href);
+        }
+      }
+    },
+    [playCoinSlideSound, router]
+  );
+
+  // Mouse wheel scroll listener
   const handleWheel = (e: React.WheelEvent) => {
     const now = Date.now();
     if (now - lastWheelTimeRef.current < 130) return;
     if (Math.abs(e.deltaY) > 10) {
       lastWheelTimeRef.current = now;
       if (e.deltaY > 0) {
-        conveyDown();
+        nextCoin();
       } else {
-        conveyUp();
+        prevCoin();
       }
     }
   };
@@ -414,7 +470,7 @@ export function KollabrixQuickDock() {
           return;
         }
         e.preventDefault();
-        playPortalConveySound();
+        playCoinSlideSound();
         setIsAppsModalOpen((prev) => !prev);
       } else if (e.key === 'Escape' && isAppsModalOpen) {
         setIsAppsModalOpen(false);
@@ -422,7 +478,7 @@ export function KollabrixQuickDock() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAppsModalOpen, playPortalConveySound]);
+  }, [isAppsModalOpen, playCoinSlideSound]);
 
   // Hide on homepage, admin, control-center, battle arena, or during active proctored exam
   if (
@@ -435,19 +491,17 @@ export function KollabrixQuickDock() {
     return null;
   }
 
-  // 5 Visible 3D conveyor slots (matching the Pinterest reference video)
-  const visibleSlots = CONVEYOR_SLOTS.map((slotConfig, slotIdx) => {
-    const itemIndex = (startIndex + slotIdx) % DOCK_ITEMS.length;
-    const item = DOCK_ITEMS[itemIndex];
-    const nodeNumber = String(slotIdx + 1).padStart(2, '0');
-    const isPortalCenter = slotIdx === 2; // Position 2 is docked inside the glowing portal
+  // Active floating coin
+  const activeCoin = DOCK_ITEMS[activeIndex];
+  const ActiveIcon = activeCoin.icon;
+
+  // Slotted coins on the rack (4 slots below the active coin)
+  const slottedCoins = [1, 2, 3, 4].map((offset) => {
+    const itemIndex = (activeIndex + offset) % DOCK_ITEMS.length;
     return {
-      slotIdx,
+      offset,
       itemIndex,
-      item,
-      nodeNumber,
-      isPortalCenter,
-      pos: slotConfig,
+      item: DOCK_ITEMS[itemIndex],
     };
   });
 
@@ -460,278 +514,201 @@ export function KollabrixQuickDock() {
   return (
     <>
       {/* =========================================================================
-          3D PORTAL CONVEYOR DOCK (Built directly from Pinterest ref https://pin.it/2OmYr4b65)
-          - Curved 3D isometric dark rail track with segmented micro-treads
-          - Center Illuminated Neon Portal Ring with fluid magenta/violet core aura
-          - Thick 3D metallic dark-chrome tokens with chamfered rims & neon lighting
-          - Token docked inside portal ring illuminates with full neon intensity
-          - Kinetic magnetic warp audio synthesis on conveyor scroll
-          - 100% transparent backdrop: page text behind remains fully accessible
+          SLOT MACHINE COIN RACK DOCK (Built directly from Pinterest ref https://pin.it/3QmZ3zEso)
+          - Floating active 3D coin pops up into mid-air above its slot
+          - Authentic reeded coin edges with vertical ridges along circumference
+          - Mechanical modular slot rack with vertical coin slots & illuminated indicator buttons
+          - Slotted coins sit neatly queued with protruding reeded edges
+          - Transparent backdrop: page content behind remains 100% visible & readable
+          - Coin clink & mechanical slide audio synthesis on scroll
          ========================================================================= */}
       <aside
-        aria-label="3D Portal Conveyor Dock"
+        aria-label="3D Coin Rack Dock"
         onWheel={handleWheel}
-        className="fixed right-2 sm:right-3 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
+        className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
       >
-        <div className="relative w-[130px] h-[480px] bg-transparent pointer-events-none">
+        <div className="relative flex flex-col items-center gap-3 bg-transparent pointer-events-none">
           {/* Top Step Arrow Button */}
           <button
             type="button"
-            onClick={conveyUp}
-            aria-label="Convey track up"
-            className="absolute top-1 right-8 z-30 w-7 h-5 flex items-center justify-center rounded-md bg-[#131622]/80 hover:bg-violet-600/80 border border-violet-500/30 text-violet-300 hover:text-white transition-all active:scale-90 cursor-pointer pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+            onClick={prevCoin}
+            aria-label="Scroll coin rack up"
+            className="flex items-center justify-center w-7 h-5 rounded-md bg-[#131622]/85 hover:bg-violet-600/80 border border-slate-700/60 text-slate-300 hover:text-white transition-all active:scale-90 cursor-pointer pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
           >
             <ChevronUp className="w-3.5 h-3.5" />
           </button>
 
           {/* ============================================================== */}
-          {/* SVG 3D CONVEYOR RAIL & GLOWING PORTAL RING (Matching Reference)*/}
+          {/* 1. THE FLOATING ACTIVE COIN (Hovering in air above slot rack)  */}
           {/* ============================================================== */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
-            viewBox="0 0 130 480"
-          >
-            <defs>
-              {/* Portal Radial Magenta Neon Glow */}
-              <radialGradient id="portalCoreGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#f472b6" stopOpacity="0.85" />
-                <stop offset="40%" stopColor="#d946ef" stopOpacity="0.75" />
-                <stop offset="75%" stopColor="#a855f7" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
-              </radialGradient>
-
-              {/* Linear Rail Track Gradient */}
-              <linearGradient id="railTrackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#64748b" stopOpacity="0.15" />
-                <stop offset="35%" stopColor="#c084fc" stopOpacity="0.5" />
-                <stop offset="50%" stopColor="#f472b6" stopOpacity="0.8" />
-                <stop offset="65%" stopColor="#c084fc" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#64748b" stopOpacity="0.15" />
-              </linearGradient>
-
-              {/* Portal Neon Blur Filter */}
-              <filter id="neonHalo" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Subtle Curved Isometric Conveyor Track Bed */}
-            <path
-              d="M 80 50 Q 56 140 44 240 Q 56 340 80 430"
-              fill="none"
-              stroke="#0f172a"
-              strokeWidth="28"
-              strokeLinecap="round"
-              opacity="0.5"
-            />
-            {/* Textured Track Tread Dashes */}
-            <path
-              d="M 80 50 Q 56 140 44 240 Q 56 340 80 430"
-              fill="none"
-              stroke="#334155"
-              strokeWidth="24"
-              strokeDasharray="4 8"
-              strokeLinecap="round"
-              opacity="0.35"
-            />
-            {/* Glowing Rail Spine */}
-            <path
-              d="M 80 50 Q 56 140 44 240 Q 56 340 80 430"
-              fill="none"
-              stroke="url(#railTrackGrad)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-
-            {/* ============================================================== */}
-            {/* THE GLOWING CENTER PORTAL RING (Matching the Portal in Ref)    */}
-            {/* ============================================================== */}
-            <g transform="translate(44, 240)">
-              {/* Outer Radiant Ambient Blur */}
-              <ellipse
-                cx="0"
-                cy="0"
-                rx="38"
-                ry="18"
-                fill="url(#portalCoreGlow)"
-                className="animate-pulse"
-                style={{ animationDuration: '2.5s' }}
-              />
-
-              {/* Glowing Outer Hex / Oval Neon Ring */}
-              <ellipse
-                cx="0"
-                cy="0"
-                rx="34"
-                ry="15"
-                fill="none"
-                stroke="#e879f9"
-                strokeWidth="3"
-                filter="url(#neonHalo)"
-              />
-
-              {/* Inner Glowing Fluid Core */}
-              <ellipse
-                cx="0"
-                cy="0"
-                rx="28"
-                ry="11"
-                fill="#fae8ff"
-                opacity="0.45"
-                filter="url(#neonHalo)"
-              />
-
-              {/* Perspective Rim Cross Guide */}
-              <path
-                d="M -30 0 L 30 0"
-                stroke="#fdf4ff"
-                strokeWidth="1.5"
-                strokeDasharray="2 4"
-                opacity="0.6"
-              />
-            </g>
-          </svg>
-
-          {/* ============================================================== */}
-          {/* 5 3D METALLIC CONVEYOR TOKENS (Matching the Disks in Ref)      */}
-          {/* ============================================================== */}
-          {visibleSlots.map(({ slotIdx, item, nodeNumber, isPortalCenter, pos }) => {
-            const Icon = item.icon;
-            const toneConfig = TONE_COLORS[item.tone] || TONE_COLORS.amber;
-            const isRouteActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-
-            return (
-              <div
-                key={`${item.id}-${slotIdx}`}
-                style={{
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
-                  zIndex: pos.zIndex,
-                  transform: `translate(-50%, -50%) perspective(600px) rotateX(${pos.rotateX}deg) rotateY(${pos.rotateY}deg) scale(${pos.scale})`,
-                  transition: 'all 0.24s cubic-bezier(0.34, 1.4, 0.64, 1)',
-                }}
-                className="absolute pointer-events-auto"
-                onMouseEnter={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setHoveredNode({
-                    item,
-                    nodeNumber: isPortalCenter ? 'PORTAL' : nodeNumber,
-                    x: rect.left,
-                    y: rect.top + rect.height / 2,
-                  });
-                }}
-                onMouseLeave={() => setHoveredNode(null)}
-              >
-                <Link
-                  href={item.href}
-                  target={item.openInNewTab ? '_blank' : undefined}
-                  rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                  onClick={(e) => {
-                    if (!isPortalCenter) {
-                      e.preventDefault();
-                      // Convey clicked token into the portal ring
-                      setStartIndex((prev) => (prev + (slotIdx - 2) + DOCK_ITEMS.length) % DOCK_ITEMS.length);
-                      playPortalConveySound();
-                    } else {
-                      playPortalConveySound();
-                    }
-                  }}
-                  aria-label={`${item.label} Token`}
-                  className={`group relative flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer ${
-                    isPortalCenter
-                      ? 'w-13 h-13 sm:w-14 sm:h-14 bg-gradient-to-b from-[#2d3246] via-[#141824] to-[#090b12] border-2 border-fuchsia-400 shadow-[0_0_24px_rgba(217,70,239,0.95),0_0_48px_rgba(168,85,247,0.55),inset_0_2px_4px_rgba(255,255,255,0.4)] hover:scale-110 active:scale-95'
-                      : 'w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-b from-[#222738] via-[#121622] to-[#0a0d15] border border-slate-600/70 shadow-[0_6px_16px_rgba(0,0,0,0.85),inset_0_1px_2px_rgba(255,255,255,0.25)] hover:border-violet-400 hover:scale-108 active:scale-95'
-                  }`}
-                  style={{
-                    boxShadow: isPortalCenter
-                      ? '0 0 25px rgba(217, 70, 239, 0.9), 0 0 45px rgba(168, 85, 247, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5)'
-                      : undefined,
-                  }}
-                >
-                  {/* Outer Beveled Chamfer Ring */}
-                  <div className="absolute inset-0.5 rounded-full border border-white/15 pointer-events-none" />
-
-                  {/* Neon Glow Rim for Center Portal Token */}
-                  {isPortalCenter && (
-                    <div className="absolute -inset-1 rounded-full border border-fuchsia-400/80 blur-xs pointer-events-none animate-pulse" />
-                  )}
-
-                  {/* Micro Index Pill Top-Left */}
-                  <span
-                    className={`absolute -top-1.5 -left-1 text-[8px] font-mono font-bold px-1 py-0.2 rounded-full border select-none ${
-                      isPortalCenter
-                        ? 'bg-fuchsia-500 text-white border-fuchsia-300 shadow-[0_0_8px_#d946ef]'
-                        : 'bg-[#090c14] text-slate-400 border-slate-700/80'
-                    }`}
-                  >
-                    {item.keyLabel || nodeNumber}
-                  </span>
-
-                  {/* Embossed Token Emblem */}
-                  <Icon
-                    className={`w-5 h-5 transition-transform duration-200 group-hover:scale-115 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] ${
-                      isPortalCenter
-                        ? 'text-fuchsia-200 group-hover:text-white scale-110'
-                        : isRouteActive
-                        ? 'text-amber-400'
-                        : toneConfig.text
-                    }`}
-                  />
-
-                  {/* Active Destination Indicator */}
-                  {isRouteActive && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-ping" />
-                  )}
-                </Link>
-              </div>
-            );
-          })}
-
-          {/* Central ⌘ Command Launchpad Activator Token */}
           <div
-            style={{ left: '96px', top: '240px' }}
-            className="absolute -translate-y-1/2 z-30 pointer-events-auto"
+            className="relative flex flex-col items-center pointer-events-auto cursor-pointer group"
             onMouseEnter={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setHoveredNode({
-                item: {
-                  id: 'cmd',
-                  label: 'Launchpad (⌘K)',
-                  sub: 'Search all portals & tools',
-                  href: '#',
-                  icon: Command,
-                  tone: 'violet',
-                },
-                nodeNumber: '⌘K',
+                item: activeCoin,
+                nodeNumber: activeCoin.keyLabel,
                 x: rect.left,
                 y: rect.top + rect.height / 2,
               });
             }}
             onMouseLeave={() => setHoveredNode(null)}
           >
+            <Link
+              href={activeCoin.href}
+              target={activeCoin.openInNewTab ? '_blank' : undefined}
+              rel={activeCoin.openInNewTab ? 'noopener noreferrer' : undefined}
+              onClick={() => playCoinSlideSound()}
+              aria-label={`Active ${activeCoin.label} Coin`}
+              className="relative flex flex-col items-center justify-center w-[76px] h-[76px] sm:w-20 sm:h-20 rounded-full transition-all duration-300 active:scale-95 animate-in zoom-in-90 hover:scale-105"
+            >
+              {/* Outer Reeded Coin Edge (Vertical ridges around rim, matching ref) */}
+              <div
+                style={{
+                  boxShadow: `0 14px 35px -5px rgba(0,0,0,0.9), 0 0 30px ${activeCoin.coinColor.glow}`,
+                  backgroundImage: `repeating-conic-gradient(from 0deg, ${activeCoin.coinColor.reed} 0deg 3deg, rgba(255,255,255,0.2) 3deg 6deg)`,
+                }}
+                className="absolute inset-0 rounded-full p-[5px] transition-all duration-300"
+              >
+                {/* Raised Coin Outer Chamfer Rim */}
+                <div
+                  className={`relative w-full h-full rounded-full bg-gradient-to-br ${activeCoin.coinColor.bg} border-2 ${activeCoin.coinColor.border} p-2 flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-3px_5px_rgba(0,0,0,0.7)]`}
+                >
+                  {/* Subtle Inset Circular Groove (Like authentic minted coins) */}
+                  <div className="absolute inset-1 rounded-full border border-white/20 pointer-events-none" />
+
+                  {/* Micro Index Pill Top */}
+                  <span className="absolute -top-1 px-1.5 py-[1px] rounded-full bg-black/75 text-[8px] font-mono font-bold text-white border border-white/30 tracking-wider">
+                    {activeCoin.keyLabel}
+                  </span>
+
+                  {/* Center Coin Emblem */}
+                  <ActiveIcon
+                    className={`w-6 h-6 transition-transform duration-200 group-hover:scale-115 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] ${activeCoin.coinColor.text}`}
+                  />
+
+                  {/* Bottom Coin Title */}
+                  <span
+                    className={`text-[9px] font-bold tracking-tight font-heading mt-0.5 max-w-[60px] truncate drop-shadow-sm ${activeCoin.coinColor.text}`}
+                  >
+                    {activeCoin.keyLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Floating Drop Shadow / Light Cast beneath coin */}
+              <div
+                style={{
+                  background: `radial-gradient(ellipse 60% 40% at 50% 50%, ${activeCoin.coinColor.glow}, transparent 70%)`,
+                }}
+                className="absolute -bottom-4 w-16 h-4 pointer-events-none blur-[2px]"
+              />
+            </Link>
+          </div>
+
+          {/* ============================================================== */}
+          {/* 2. MECHANICAL SLOT RACK BASE (Matching credit coin rack in ref)*/}
+          {/* ============================================================== */}
+          <div className="relative w-[76px] sm:w-20 rounded-2xl bg-gradient-to-b from-[#181d2e]/95 via-[#101422]/95 to-[#090c14]/95 border border-slate-700/80 shadow-[0_16px_40px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.2)] p-2 backdrop-blur-xl flex flex-col items-center gap-2 pointer-events-auto">
+            {/* Top Rack Coin Slot Opening (Where active coin was elevated from) */}
+            <div className="w-full h-1.5 rounded-full bg-black/90 border border-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)] mb-1" />
+
+            {/* Slotted Coins (Stacked in vertical rack with reeded edge visible) */}
+            <div className="w-full flex flex-col gap-2">
+              {slottedCoins.map(({ offset, itemIndex, item }) => {
+                const Icon = item.icon;
+                const isRouteActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+
+                return (
+                  <div
+                    key={item.id}
+                    className="relative w-full flex items-center justify-between gap-1.5 p-1 rounded-xl bg-black/40 hover:bg-white/10 border border-slate-800/80 hover:border-slate-600 transition-all duration-150 cursor-pointer group"
+                    onClick={() => selectCoin(itemIndex, true)}
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setHoveredNode({
+                        item,
+                        nodeNumber: item.keyLabel,
+                        x: rect.left,
+                        y: rect.top + rect.height / 2,
+                      });
+                    }}
+                    onMouseLeave={() => setHoveredNode(null)}
+                  >
+                    {/* Protruding Slotted Coin Disk with Reeded Outer Edge */}
+                    <div
+                      style={{
+                        backgroundImage: `repeating-conic-gradient(from 0deg, ${item.coinColor.reed} 0deg 6deg, rgba(255,255,255,0.2) 6deg 12deg)`,
+                      }}
+                      className="relative w-7 h-7 rounded-full p-[2px] shadow-md shrink-0 transition-transform group-hover:scale-110"
+                    >
+                      <div
+                        className={`w-full h-full rounded-full bg-gradient-to-br ${item.coinColor.bg} border border-white/20 flex items-center justify-center`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${item.coinColor.text}`} />
+                      </div>
+                    </div>
+
+                    {/* Coin Label */}
+                    <span className="text-[10px] font-mono font-bold text-slate-300 group-hover:text-white truncate">
+                      {item.keyLabel}
+                    </span>
+
+                    {/* Illuminated Round Indicator Button on Rack Face (Matching Ref) */}
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full ${item.coinColor.indicator} shrink-0 transition-transform group-hover:scale-125`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Central ⌘ Command Launchpad Key on Rack Base */}
             <button
               type="button"
               onClick={() => {
-                playPortalConveySound();
+                playCoinSlideSound();
                 setIsAppsModalOpen(true);
               }}
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setHoveredNode({
+                  item: {
+                    id: 'cmd',
+                    label: 'Launchpad (⌘K)',
+                    sub: 'Search all portals & tools',
+                    href: '#',
+                    icon: Command,
+                    keyLabel: '⌘K',
+                    coinColor: {
+                      bg: 'from-[#4c1d95] to-[#1e1b4b]',
+                      border: 'border-violet-400',
+                      reed: '#2e1065',
+                      glow: 'rgba(168, 85, 247, 0.6)',
+                      indicator: 'bg-violet-400',
+                      text: 'text-white',
+                    },
+                  },
+                  nodeNumber: '⌘K',
+                  x: rect.left,
+                  y: rect.top + rect.height / 2,
+                });
+              }}
+              onMouseLeave={() => setHoveredNode(null)}
               aria-label="Open Applications Launchpad"
-              className="group relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-b from-[#261f3d] to-[#120f20] border border-violet-400/50 shadow-[0_0_12px_rgba(168,85,247,0.5)] text-violet-300 hover:text-white transition-all active:scale-90 cursor-pointer"
+              className="mt-1 w-full py-1.5 rounded-xl bg-gradient-to-b from-[#1e1b4b] to-[#0f0e1a] border border-violet-500/40 hover:border-violet-400 text-violet-300 hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.6)] flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer group"
             >
-              <Command className="w-3.5 h-3.5 transition-transform group-hover:scale-115 group-hover:rotate-12" />
+              <Command className="w-3.5 h-3.5 transition-transform group-hover:scale-110 group-hover:rotate-12" />
+              <span className="text-[9px] font-mono font-bold">APPS</span>
             </button>
           </div>
 
           {/* Bottom Step Arrow Button */}
           <button
             type="button"
-            onClick={conveyDown}
-            aria-label="Convey track down"
-            className="absolute bottom-1 right-8 z-30 w-7 h-5 flex items-center justify-center rounded-md bg-[#131622]/80 hover:bg-violet-600/80 border border-violet-500/30 text-violet-300 hover:text-white transition-all active:scale-90 cursor-pointer pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+            onClick={nextCoin}
+            aria-label="Scroll coin rack down"
+            className="flex items-center justify-center w-7 h-5 rounded-md bg-[#131622]/85 hover:bg-violet-600/80 border border-slate-700/60 text-slate-300 hover:text-white transition-all active:scale-90 cursor-pointer pointer-events-auto shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
           >
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
@@ -749,9 +726,14 @@ export function KollabrixQuickDock() {
         >
           <div className="relative flex items-center gap-2.5">
             {/* Callout Card */}
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0b0e18]/95 border border-fuchsia-500/40 shadow-[0_16px_40px_rgba(0,0,0,0.92),0_0_20px_rgba(217,70,239,0.25)] text-white backdrop-blur-2xl whitespace-nowrap">
-              {/* Token Badge */}
-              <div className="w-6 h-6 rounded-md bg-fuchsia-500/20 border border-fuchsia-400/50 text-fuchsia-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0c101d]/95 border border-slate-700/80 shadow-[0_16px_40px_rgba(0,0,0,0.92)] text-white backdrop-blur-2xl whitespace-nowrap">
+              {/* Coin Badge */}
+              <div
+                style={{
+                  boxShadow: `0 0 10px ${hoveredNode.item.coinColor.glow}`,
+                }}
+                className={`w-6 h-6 rounded-md bg-gradient-to-br ${hoveredNode.item.coinColor.bg} border border-white/30 text-white font-mono font-bold text-[10px] flex items-center justify-center shrink-0`}
+              >
                 {hoveredNode.nodeNumber}
               </div>
 
@@ -770,8 +752,8 @@ export function KollabrixQuickDock() {
 
             {/* Dotted Leader Line */}
             <div className="flex items-center">
-              <div className="w-2.5 border-t-2 border-dotted border-fuchsia-400/80" />
-              <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_8px_#d946ef]" />
+              <div className="w-2.5 border-t-2 border-dotted border-white/60" />
+              <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_#ffffff]" />
             </div>
           </div>
         </div>
