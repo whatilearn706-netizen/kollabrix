@@ -442,6 +442,9 @@ export async function POST(request: NextRequest) {
         guidelines_url = '',
         submission_cutoff = '',
         result_announcement = '',
+        registration_url = '',
+        external_registration_url = '',
+        is_external_registration = false,
       } = body;
 
       if (!company_name || !title) {
@@ -510,6 +513,9 @@ export async function POST(request: NextRequest) {
         guidelines_url: guidelines_url?.trim() || null,
         submission_cutoff: submission_cutoff?.trim() || null,
         result_announcement: result_announcement?.trim() || null,
+        registration_url: (registration_url || external_registration_url)?.trim() || null,
+        external_registration_url: (registration_url || external_registration_url)?.trim() || null,
+        is_external_registration: Boolean(is_external_registration || registration_url?.trim() || external_registration_url?.trim()),
         access_type,
         join_code: joinCode,
         min_team_size: 1,
@@ -532,7 +538,7 @@ export async function POST(request: NextRequest) {
         rules: (body.rules || '1. All code and designs must be created during the official hackathon timeline.\n2. Projects must address one of the released problem statements.\n3. Public GitHub repository with full commit history is required.\n4. Plagiarism leads to immediate disqualification.').trim(),
         themes: Array.isArray(themes) && themes.length > 0 ? themes : ['Enterprise Innovation', 'Cloud/AI Architecture'],
         prize_pool: prize_pool.trim() || '₹5,00,000 + Direct PPI Interviews',
-        website_url: `https://kollabrix.in/h/${joinCode}`,
+        website_url: (registration_url || external_registration_url)?.trim() || `https://kollabrix.in/h/${joinCode}`,
         banner_url: banner_url?.trim() || null,
         is_verified: true,
         status: 'Published',
@@ -586,6 +592,10 @@ export async function POST(request: NextRequest) {
         promo_video_url: promo_video_url?.trim() || null,
         custom_cta_text: custom_cta_text?.trim() || null,
         recruitment_perks: perksArray,
+        registration_url: (registration_url || external_registration_url)?.trim() || null,
+        external_registration_url: (registration_url || external_registration_url)?.trim() || null,
+        is_external_registration: Boolean(is_external_registration || registration_url?.trim() || external_registration_url?.trim()),
+        website_url: (registration_url || external_registration_url)?.trim() || insertedRecord.website_url,
       };
 
       // Also persist to masterConfigStorage 'hackathons' list so it syncs universally across deadlines and feeds
@@ -877,6 +887,9 @@ export async function POST(request: NextRequest) {
               banner_url: body.banner_url || metaObj.banner_url || null,
               logo_url: company_logo || metaObj.logo_url || null,
               enable_recruiter_qr_pass: Boolean(body.enable_recruiter_qr_pass ?? metaObj.enable_recruiter_qr_pass ?? false),
+              registration_url: body.registration_url !== undefined ? (body.registration_url?.trim() || null) : (metaObj.registration_url || null),
+              external_registration_url: body.registration_url !== undefined ? (body.registration_url?.trim() || null) : (metaObj.external_registration_url || null),
+              is_external_registration: body.is_external_registration !== undefined ? Boolean(body.is_external_registration) : Boolean(metaObj.is_external_registration),
             };
 
             const updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
@@ -886,6 +899,7 @@ export async function POST(request: NextRequest) {
               updated_at: new Date().toISOString(),
             };
             if (body.banner_url !== undefined) updatePayload.banner_url = body.banner_url?.trim() || null;
+            if (body.registration_url) updatePayload.website_url = body.registration_url.trim();
             if (body.title) updatePayload.title = body.title.trim();
             if (body.prize_pool) updatePayload.prize_pool = body.prize_pool.trim();
             if (body.mode) updatePayload.mode = body.mode;

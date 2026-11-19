@@ -348,6 +348,9 @@ export interface Hackathon {
   hiring_package?: string;
   custom_cta_text?: string;
   promo_video_url?: string;
+  registration_url?: string | null;
+  external_registration_url?: string | null;
+  is_external_registration?: boolean;
   theme_preset?: string;
   about_sponsor_headline?: string;
   about_sponsor_description?: string;

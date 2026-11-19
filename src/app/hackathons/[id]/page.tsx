@@ -316,6 +316,9 @@ export default function HackathonDetailPage() {
               enableRecruiterQrPass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (currentHack as any).enable_recruiter_qr_pass ?? (currentHack as any).enableRecruiterQrPass),
               tagline: meta.tagline || currentHack.tagline,
               custom_cta_text: meta.custom_cta_text || (currentHack as any).custom_cta_text,
+              registration_url: meta.registration_url || meta.external_registration_url || (currentHack as any).registration_url || null,
+              external_registration_url: meta.registration_url || meta.external_registration_url || (currentHack as any).external_registration_url || null,
+              is_external_registration: Boolean(meta.is_external_registration || meta.registration_url || meta.external_registration_url || (currentHack as any).is_external_registration),
               description: currentHack.description.replace(/\n\n<!-- HACKATHON_META:[\s\S]*?-->/g, '').trim(),
             };
           }
@@ -1938,55 +1941,103 @@ export default function HackathonDetailPage() {
 
                 {/* Primary Action Button */}
                 <div className="pt-1">
-                  {isEnrolled ? (
-                    isStarted ? (
-                      <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
-                        <button className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
-                          <span>Enter Hackathon</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </Link>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="w-full py-3.5 px-6 rounded-2xl bg-charcoal-800 border border-charcoal-700 text-slate-300 font-bold text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 cursor-not-allowed select-none">
-                          <Lock className="w-4 h-4 text-amber-400" />
-                          <span>Registered • Workspace Opens at Start Date</span>
+                  {(() => {
+                    const externalRegisterUrl =
+                      hackathon.registration_url ||
+                      (hackathon as any).external_registration_url ||
+                      sponsoredMeta.registrationUrl ||
+                      sponsoredMeta.externalRegistrationUrl ||
+                      ((hackathon as any).is_external_registration && hackathon.website_url && !hackathon.website_url.includes('/h/') ? hackathon.website_url : null);
+
+                    if (externalRegisterUrl) {
+                      return (
+                        <div className="space-y-2">
+                          <a
+                            id="enrollment-primary-action-btn"
+                            href={
+                              /^https?:\/\//i.test(externalRegisterUrl.trim())
+                                ? externalRegisterUrl.trim()
+                                : `https://${externalRegisterUrl.trim()}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
+                              countdown.isClosed
+                                ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
+                                : sponsoredMeta.isSponsored
+                                ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-cyan-500/25 ring-1 ring-cyan-300/40'
+                                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30'
+                            }`}
+                          >
+                            {countdown.isClosed ? (
+                              <span>Registration Closed</span>
+                            ) : (
+                              <span className="flex items-center gap-2 font-black">
+                                {sponsoredMeta.customCtaText || 'Register on Official Site'}
+                                <ExternalLink className="w-4 h-4" />
+                              </span>
+                            )}
+                          </a>
+                          {!countdown.isClosed && (
+                            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-0.5 font-medium">
+                              <ExternalLink className="w-3 h-3 text-cyan-400 shrink-0" />
+                              <span>Direct link to official registration portal (opens in new tab)</span>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-[11px] text-center text-slate-400 font-medium leading-relaxed">
-                          Hackathon officially begins on {formatEventDateTime(hackathon.start_date)}. Workspace unlocks at launch!
-                        </p>
-                      </div>
-                    )
-                  ) : (
-                    <button
-                      id="enrollment-primary-action-btn"
-                      onClick={handleRegister}
-                      disabled={isRegistering || countdown.isClosed || !eligibilityEvaluation.isEligible}
-                      className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
-                        countdown.isClosed || !eligibilityEvaluation.isEligible
-                          ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
-                          : sponsoredMeta.isSponsored
-                          ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-cyan-500/25 ring-1 ring-cyan-300/40 cursor-pointer active:scale-[0.98]'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 cursor-pointer active:scale-[0.98]'
-                      }`}
-                    >
-                      {isRegistering ? (
-                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                      ) : countdown.isClosed ? (
-                        <span>Registration Closed</span>
-                      ) : !eligibilityEvaluation.isEligible ? (
-                        <span>Not Eligible to Register</span>
-                      ) : hackathon.access_type === 'private' ? (
-                        <span>Enter Passcode &amp; Register</span>
-                      ) : sponsoredMeta.isSponsored ? (
-                        <span className="flex items-center gap-1.5 font-black">
-                          {sponsoredMeta.customCtaText || 'Register Now'} <ArrowRight className="w-4 h-4" />
-                        </span>
+                      );
+                    }
+
+                    return isEnrolled ? (
+                      isStarted ? (
+                        <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
+                          <button className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
+                            <span>Enter Hackathon</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </Link>
                       ) : (
-                        <span>Register</span>
-                      )}
-                    </button>
-                  )}
+                        <div className="space-y-2">
+                          <div className="w-full py-3.5 px-6 rounded-2xl bg-charcoal-800 border border-charcoal-700 text-slate-300 font-bold text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 cursor-not-allowed select-none">
+                            <Lock className="w-4 h-4 text-amber-400" />
+                            <span>Registered • Workspace Opens at Start Date</span>
+                          </div>
+                          <p className="text-[11px] text-center text-slate-400 font-medium leading-relaxed">
+                            Hackathon officially begins on {formatEventDateTime(hackathon.start_date)}. Workspace unlocks at launch!
+                          </p>
+                        </div>
+                      )
+                    ) : (
+                      <button
+                        id="enrollment-primary-action-btn"
+                        onClick={handleRegister}
+                        disabled={isRegistering || countdown.isClosed || !eligibilityEvaluation.isEligible}
+                        className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
+                          countdown.isClosed || !eligibilityEvaluation.isEligible
+                            ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
+                            : sponsoredMeta.isSponsored
+                            ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-cyan-500/25 ring-1 ring-cyan-300/40 cursor-pointer active:scale-[0.98]'
+                            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 cursor-pointer active:scale-[0.98]'
+                        }`}
+                      >
+                        {isRegistering ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        ) : countdown.isClosed ? (
+                          <span>Registration Closed</span>
+                        ) : !eligibilityEvaluation.isEligible ? (
+                          <span>Not Eligible to Register</span>
+                        ) : hackathon.access_type === 'private' ? (
+                          <span>Enter Passcode &amp; Register</span>
+                        ) : sponsoredMeta.isSponsored ? (
+                          <span className="flex items-center gap-1.5 font-black">
+                            {sponsoredMeta.customCtaText || 'Register Now'} <ArrowRight className="w-4 h-4" />
+                          </span>
+                        ) : (
+                          <span>Register</span>
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 {/* Registration Closes Indicator Card */}

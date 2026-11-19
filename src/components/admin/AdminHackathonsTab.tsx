@@ -91,6 +91,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     priority_rank: 10,
     banner_url: 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg',
     enable_recruiter_qr_pass: false,
+    is_external_registration: false,
+    registration_url: '',
+    custom_cta_text: 'Register on Official Site ↗',
   });
 
   const handleOpenCreateSponsored = () => {
@@ -130,6 +133,53 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       priority_rank: 10,
       banner_url: 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg',
       enable_recruiter_qr_pass: false,
+      is_external_registration: false,
+      registration_url: '',
+      custom_cta_text: 'ENLIST FOR PPI TRIALS',
+    });
+    setIsSponsoredModalOpen(true);
+  };
+
+  const handleOpenCreateExternal = () => {
+    setEditingHackathonId(null);
+    setSponsoredForm({
+      company_name: 'Campus Innovation Host',
+      company_logo: 'https://kollabrix.in/icon.png',
+      sponsor_website_url: '',
+      sponsor_tier: 'Official Host',
+      brand_color: '#06B6D4',
+      title: 'Global Collegiate Build Sprint 2026',
+      tagline: 'Register on Official Portal — National Engineering Sprint',
+      description: 'Official collegiate innovation challenge. Builders from across universities build high-velocity solutions and prototypes with direct access to grants and mentorship.',
+      rules: '1. All code and designs must be created during the official hackathon window.\n2. Registration must be completed on the official portal link.\n3. Public GitHub repository is required.\n4. Original work only.',
+      eligibility: 'Open to all undergraduate & postgraduate students, engineering developers, and collegiate builders.',
+      mode: 'Online',
+      location: 'Virtual / Official Portal Submissions',
+      start_date: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 16),
+      end_date: new Date(Date.now() + 86400000 * 4).toISOString().slice(0, 16),
+      registration_deadline: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 16),
+      submission_deadline: new Date(Date.now() + 86400000 * 4).toISOString().slice(0, 16),
+      submission_cutoff: 'Direct via Official Portal',
+      result_announcement: 'Announced on Official Portal',
+      min_team_size: 1,
+      max_team_size: 4,
+      team_size_label: '1 - 4 Builders',
+      prize_pool: '₹50,000 Equity-Free Winner Grant',
+      hashtags: '#CampusSystems, #AppliedAI, #DeveloperTooling, #OpenWeb',
+      about_sponsor_headline: 'Collegiate Innovation Arena.',
+      about_sponsor_description: 'Connecting student builders to national challenges and real-world technology ecosystems.',
+      benefit_1: 'Direct Winner Cash Grant & Swag',
+      benefit_2: 'Verified Proof-of-Work Certificate',
+      benefit_3: 'Direct Jury & Faculty Review',
+      benefit_4: 'Permanent Portfolio Feature',
+      gift_callout_text: 'Official Portal Registration Active',
+      guidelines_url: '',
+      priority_rank: 10,
+      banner_url: 'https://kollabrix.in/brand/kollabrix-fasttrack-sprint-16x9.jpg',
+      enable_recruiter_qr_pass: false,
+      is_external_registration: true,
+      registration_url: '',
+      custom_cta_text: 'Register on Official Site ↗',
     });
     setIsSponsoredModalOpen(true);
   };
@@ -178,6 +228,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       priority_rank: meta.priorityRank || 10,
       banner_url: item.banner_url || '',
       enable_recruiter_qr_pass: Boolean(meta.enableRecruiterQrPass || false),
+      is_external_registration: Boolean(meta.isExternalRegistration || meta.registrationUrl || (item as any).registration_url || (item as any).is_external_registration),
+      registration_url: meta.registrationUrl || (item as any).registration_url || (item as any).website_url || '',
+      custom_cta_text: meta.customCtaText || (item as any).custom_cta_text || 'Register on Official Site ↗',
     });
     setIsSponsoredModalOpen(true);
   };
@@ -186,6 +239,14 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     e.preventDefault();
     if (!sponsoredForm.company_name.trim() || !sponsoredForm.title.trim()) {
       setStatusMessage({ type: 'error', text: 'Please provide company name and hackathon title.' });
+      return;
+    }
+
+    if (sponsoredForm.is_external_registration && !sponsoredForm.registration_url.trim()) {
+      setStatusMessage({
+        type: 'error',
+        text: 'Please provide the Registration Website Link (URL) where the Register button will redirect.',
+      });
       return;
     }
 
@@ -237,6 +298,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           priority_rank: sponsoredForm.priority_rank,
           banner_url: sponsoredForm.banner_url || undefined,
           enable_recruiter_qr_pass: Boolean(sponsoredForm.enable_recruiter_qr_pass),
+          is_external_registration: sponsoredForm.is_external_registration,
+          registration_url: sponsoredForm.registration_url.trim() || undefined,
+          custom_cta_text: sponsoredForm.custom_cta_text.trim() || (sponsoredForm.is_external_registration ? 'Register on Official Site ↗' : undefined),
         }),
       });
 
@@ -248,7 +312,9 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       setStatusMessage({
         type: 'success',
         text: isEdit
-          ? `✨ Sponsored Hackathon "${sponsoredForm.title}" updated live!`
+          ? `✨ Hackathon "${sponsoredForm.title}" updated live!`
+          : sponsoredForm.is_external_registration
+          ? `✨ Success! Hackathon "${sponsoredForm.title}" is now LIVE! Students clicking "Register" will go directly to ${sponsoredForm.registration_url}.`
           : `✨ Success! ${sponsoredForm.company_name} Sponsored Hackathon "${sponsoredForm.title}" is now LIVE with priority placement and custom theme!`,
       });
       setIsSponsoredModalOpen(false);
@@ -510,6 +576,15 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           <Button
             variant="primary"
             size="sm"
+            onClick={handleOpenCreateExternal}
+            className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black shadow-lg shadow-cyan-500/20 border border-cyan-400/40 cursor-pointer"
+            leftIcon={<Globe className="w-3.5 h-3.5 text-cyan-200" />}
+          >
+            🌐 Host Hackathon (External Registration Link)
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleOpenCreateSponsored}
             className="bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-lg shadow-amber-500/20 border border-amber-400/40"
             leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-200" />}
@@ -602,6 +677,25 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                           <span className="inline-flex items-center gap-1 mt-1 font-mono text-[10px] text-amber-300 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
                             ⚡ Sponsored ({extractSponsoredMeta(item).companyName || 'Corporate'}) • Priority #{extractSponsoredMeta(item).priorityRank}
                           </span>
+                        )}
+                        {Boolean(extractSponsoredMeta(item).isExternalRegistration || extractSponsoredMeta(item).registrationUrl || item.registration_url) && (
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] text-cyan-300 bg-cyan-500/15 border border-cyan-500/35 px-2 py-0.5 rounded-full font-bold">
+                              <Globe className="w-2.5 h-2.5" />
+                              <span>External Register Link</span>
+                            </span>
+                            {(extractSponsoredMeta(item).registrationUrl || item.registration_url || (item.website_url && !item.website_url.includes('/h/'))) && (
+                              <a
+                                href={extractSponsoredMeta(item).registrationUrl || item.registration_url || item.website_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-cyan-400 hover:text-cyan-300 hover:underline font-mono inline-flex items-center gap-0.5 truncate max-w-[180px]"
+                                title={extractSponsoredMeta(item).registrationUrl || item.registration_url || item.website_url}
+                              >
+                                <span>Portal URL ↗</span>
+                              </a>
+                            )}
+                          </div>
                         )}
                         {item.join_code && (
                           <span className="inline-block mt-1 font-mono text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
@@ -839,20 +933,97 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           maxWidth="5xl"
           title={
             editingHackathonId
-              ? `🎨 Customize Brand Theme & Placement: ${sponsoredForm.company_name || 'Hackathon'}`
+              ? `🎨 Customize Hackathon: ${sponsoredForm.title || sponsoredForm.company_name || 'Event'}`
+              : sponsoredForm.is_external_registration
+              ? '🌐 Host Hackathon with External Registration Link'
               : '🏢 Host Bespoke Corporate Sponsored Hackathon'
           }
         >
           <form onSubmit={handleCreateOrUpdateSponsored} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-500/30 text-xs text-amber-200 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Bespoke Brand Placement Engine</span>
-              </div>
-              <p className="text-[11px] leading-relaxed text-slate-300">
-                Configure every sponsor&apos;s unique brand identity, visual atmosphere, hiring tracks, compensation guarantee, and video briefing. Faculty hackathons never appear here.
-              </p>
+            {/* Registration Mode Selector */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2 rounded-2xl bg-charcoal-900 border border-charcoal-750">
+              <button
+                type="button"
+                onClick={() => setSponsoredForm({ ...sponsoredForm, is_external_registration: false })}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  !sponsoredForm.is_external_registration
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                <span>Internal Platform Registration (Kollabrix Workspace)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSponsoredForm({ ...sponsoredForm, is_external_registration: true })}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  sponsoredForm.is_external_registration
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span>External Website Registration (Redirects Register Button)</span>
+              </button>
             </div>
+
+            {/* Dedicated External Registration Target Box */}
+            {sponsoredForm.is_external_registration ? (
+              <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/50 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Globe className="w-4 h-4 text-cyan-400" />
+                    <span>External Registration Target (Where the Register button redirects)</span>
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                    Direct Redirect Active
+                  </span>
+                </div>
+                <p className="text-[11px] text-cyan-200/90 leading-relaxed">
+                  When students open this hackathon and tap <strong>&quot;Register&quot;</strong>, they will be taken directly to the website link specified below in a new tab (e.g. Unstop, Devfolio, Google Forms, official college portal).
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-8">
+                    <label className="block text-[11px] font-bold text-white mb-1">
+                      Registration Website Link (URL) <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      required={sponsoredForm.is_external_registration}
+                      placeholder="https://unstop.com/hackathons/... or https://devfolio.co/..."
+                      value={sponsoredForm.registration_url}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, registration_url: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-cyan-500/60 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-300 font-mono text-[11px] font-bold"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-bold text-white mb-1">
+                      Register Button Text
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Register on Official Site ↗"
+                      value={sponsoredForm.custom_cta_text}
+                      onChange={(e) => setSponsoredForm({ ...sponsoredForm, custom_cta_text: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-charcoal-900 border border-cyan-500/60 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-300 font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-500/30 text-xs text-amber-200 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Bespoke Brand Placement Engine</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-300">
+                  Configure every sponsor&apos;s unique brand identity, visual atmosphere, hiring tracks, compensation guarantee, and video briefing.
+                </p>
+              </div>
+            )}
 
             {/* 3D Wave Keynote Sponsor Studio */}
             <div className="space-y-4">
@@ -1481,10 +1652,24 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                 variant="primary"
                 type="submit"
                 isLoading={isSubmittingSponsored}
-                className="bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-lg"
-                leftIcon={<Sparkles className="w-4 h-4 text-amber-200" />}
+                className={
+                  sponsoredForm.is_external_registration
+                    ? 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black shadow-lg shadow-cyan-500/20'
+                    : 'bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-black shadow-lg'
+                }
+                leftIcon={
+                  sponsoredForm.is_external_registration ? (
+                    <Globe className="w-4 h-4 text-cyan-200" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-amber-200" />
+                  )
+                }
               >
-                {editingHackathonId ? 'Save Brand Customization' : 'Launch Sponsored Challenge'}
+                {editingHackathonId
+                  ? 'Save Hackathon Changes'
+                  : sponsoredForm.is_external_registration
+                  ? '🚀 Publish Hackathon (External Register Link)'
+                  : 'Launch Sponsored Challenge'}
               </Button>
             </div>
           </form>
