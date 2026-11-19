@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
-const LINE_1 = 'Code. Team Up.';
-const LINE_2 = 'Win.';
+const LINE_1 = 'Code.';
+const LINE_2 = 'Team Up. Win.';
 
 export function LandingHero() {
   const { user } = useAuth();
@@ -57,7 +57,7 @@ export function LandingHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[94vh] flex flex-col justify-end pb-16 sm:pb-20 lg:pb-24 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
+      className="relative min-h-[90vh] lg:min-h-[92vh] flex flex-col justify-end pb-10 sm:pb-12 lg:pb-14 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
       {/* Cinematic Celestial Blue Horizon Video Background (Expansive 1.4x scale) */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
@@ -86,20 +86,20 @@ export function LandingHero() {
       <div className="absolute inset-0 bg-gradient-to-t from-[#090B10] via-transparent to-black/30 pointer-events-none z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_40%,transparent_45%,rgba(0,0,2,0.65)_100%)] pointer-events-none z-10" />
 
-      {/* Content — Auralis Inspired Split Editorial Layout (Shifted into Left Empty Space) */}
+      {/* Content — Auralis Inspired Split Editorial Layout (Lower Level + Wide Fluid Left Alignment) */}
       <motion.div
         style={{ opacity: contentOpacity, y: contentY }}
         className="relative z-20 w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20"
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-14 items-end">
-          {/* Left Column: Frosted Pill Badge + Monumental Editorial Headline Shifted to Outer Left */}
+          {/* Left Column: Frosted Pill Badge + Row 1: "Code." / Row 2: "Team Up. Win." */}
           <div className="lg:col-span-7 xl:col-span-7">
             {/* Frosted Pill Badge */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-              className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/[0.08] backdrop-blur-md mb-6"
+              className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/[0.08] backdrop-blur-md mb-3.5"
             >
               <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)] animate-pulse" />
               <span className="text-xs sm:text-sm text-sky-200 font-medium tracking-wide">
@@ -107,8 +107,8 @@ export function LandingHero() {
               </span>
             </motion.div>
 
-            {/* Headline with High-Contrast Editorial Styling */}
-            <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.25rem] 2xl:text-[7rem] font-bold text-white tracking-tight leading-[0.92] select-none">
+            {/* Headline: Row 1 = Code. | Row 2 = Team Up. Win. (Guaranteed single line on row 2) */}
+            <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5rem] xl:text-[5.75rem] font-bold text-white tracking-tight leading-[0.94] select-none">
               <motion.span
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -121,9 +121,10 @@ export function LandingHero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="block mt-1 bg-gradient-to-r from-white via-sky-100 to-sky-300 bg-clip-text text-transparent"
+                className="block mt-1 whitespace-nowrap"
               >
-                {LINE_2}
+                <span className="text-white">Team Up. </span>
+                <span className="bg-gradient-to-r from-white via-sky-100 to-sky-300 bg-clip-text text-transparent">Win.</span>
               </motion.span>
             </h1>
           </div>
@@ -135,7 +136,7 @@ export function LandingHero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="text-base sm:text-lg text-slate-300/90 leading-relaxed font-normal mb-8 drop-shadow-md"
+              className="text-base sm:text-lg text-slate-300/90 leading-relaxed font-normal mb-6 drop-shadow-md"
             >
               The fast-paced 1v1 coding arena & hackathon squad finder for college builders. Duel live in 3 minutes, recruit dream teammates, and build real projects together.
             </motion.p>
