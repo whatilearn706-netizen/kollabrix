@@ -95,10 +95,9 @@ const DOCK_ITEMS: DockItem[] = [
     id: 'feedback',
     label: 'Community Feedback',
     sub: 'Direct Suggestions & Ideas',
-    href: 'mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback',
+    href: '/feedback',
     icon: MessageSquare,
     tone: 'violet',
-    openInNewTab: true,
   },
 ];
 
@@ -261,10 +260,9 @@ const APPS_LIST: AppItem[] = [
     id: 'feedback',
     name: 'Feedback',
     category: 'community',
-    href: 'mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback',
+    href: '/feedback',
     icon: MessageSquare,
     gradient: 'from-purple-500 to-pink-600',
-    openInNewTab: true,
   },
 ];
 

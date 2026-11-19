@@ -457,14 +457,14 @@ export function Navbar() {
                       </>
                     )}
 
-                    <a
-                      href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
+                    <Link
+                      href="/feedback"
                       onClick={() => setUserDropdownOpen(false)}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold text-left cursor-pointer"
                     >
                       <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
                       <span>Community Feedback</span>
-                    </a>
+                    </Link>
 
                     <div className="my-1 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
@@ -644,14 +644,14 @@ export function Navbar() {
               <span>AI Spark Studio</span>
             </Link>
 
-            <a
-              href="mailto:whatilearn706@gmail.com?subject=Kollabrix%20Community%20Feedback"
+            <Link
+              href="/feedback"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-left cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 text-amber-500" />
               <span>Community Feedback</span>
-            </a>
+            </Link>
 
             {isFaculty && (
               <Link
