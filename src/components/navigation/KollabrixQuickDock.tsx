@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -29,6 +29,7 @@ interface DockItem {
   sub: string;
   href: string;
   icon: React.ElementType;
+  keyLabel?: string;
   tone: 'amber' | 'violet' | 'emerald' | 'cyan' | 'brand' | 'rose';
   openInNewTab?: boolean;
 }
@@ -40,6 +41,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Inter-College Clash & Bounties',
     href: '/war',
     icon: Swords,
+    keyLabel: 'WAR',
     tone: 'brand',
   },
   {
@@ -48,6 +50,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Arena & Squad Matchmaking',
     href: '/hackathons',
     icon: Trophy,
+    keyLabel: 'HACK',
     tone: 'amber',
   },
   {
@@ -56,6 +59,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Placement OAs & Speedrun',
     href: '/icpc',
     icon: Terminal,
+    keyLabel: 'CODE',
     tone: 'cyan',
   },
   {
@@ -64,6 +68,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Professor Engineering Briefs',
     href: '/problems',
     icon: Lightbulb,
+    keyLabel: 'SPEC',
     tone: 'violet',
   },
   {
@@ -72,6 +77,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Educator Desk & Review',
     href: '/teacher/dashboard',
     icon: GraduationCap,
+    keyLabel: 'DESK',
     tone: 'emerald',
   },
   {
@@ -80,6 +86,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Curated Roadmaps & Compilers',
     href: '/resources',
     icon: BookOpen,
+    keyLabel: 'DOCS',
     tone: 'brand',
     openInNewTab: true,
   },
@@ -89,6 +96,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Live Hackathon Countdowns',
     href: '/deadlines',
     icon: Clock,
+    keyLabel: 'TIME',
     tone: 'rose',
   },
   {
@@ -97,56 +105,9 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Direct Suggestions & Ideas',
     href: '/feedback',
     icon: MessageSquare,
+    keyLabel: 'CHAT',
     tone: 'violet',
   },
-];
-
-const TONE_STYLES = {
-  amber: {
-    bg: 'bg-amber-500/10 hover:bg-amber-500/20',
-    border: 'border-amber-500/50 hover:border-amber-400',
-    text: 'text-amber-400 group-hover:text-amber-300',
-    glow: 'rgba(245, 158, 11, 0.45)',
-  },
-  violet: {
-    bg: 'bg-violet-500/10 hover:bg-violet-500/20',
-    border: 'border-violet-500/50 hover:border-violet-400',
-    text: 'text-violet-400 group-hover:text-violet-300',
-    glow: 'rgba(168, 85, 247, 0.45)',
-  },
-  emerald: {
-    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
-    border: 'border-emerald-500/50 hover:border-emerald-400',
-    text: 'text-emerald-400 group-hover:text-emerald-300',
-    glow: 'rgba(16, 185, 129, 0.45)',
-  },
-  cyan: {
-    bg: 'bg-cyan-500/10 hover:bg-cyan-500/20',
-    border: 'border-cyan-500/50 hover:border-cyan-400',
-    text: 'text-cyan-400 group-hover:text-cyan-300',
-    glow: 'rgba(6, 182, 212, 0.45)',
-  },
-  brand: {
-    bg: 'bg-indigo-500/10 hover:bg-indigo-500/20',
-    border: 'border-indigo-500/50 hover:border-indigo-400',
-    text: 'text-indigo-400 group-hover:text-indigo-300',
-    glow: 'rgba(99, 102, 241, 0.45)',
-  },
-  rose: {
-    bg: 'bg-rose-500/10 hover:bg-rose-500/20',
-    border: 'border-rose-500/50 hover:border-rose-400',
-    text: 'text-rose-400 group-hover:text-rose-300',
-    glow: 'rgba(244, 63, 94, 0.45)',
-  },
-};
-
-// 5 Circular clock positions along the arc
-const NODE_POSITIONS = [
-  { x: 106, y: 54 },  // Node 01 (1 o'clock)
-  { x: 53,  y: 135 }, // Node 02 (2 o'clock)
-  { x: 35,  y: 230 }, // Node 03 (3 o'clock / apex)
-  { x: 53,  y: 325 }, // Node 04 (4 o'clock)
-  { x: 106, y: 407 }, // Node 05 (5 o'clock)
 ];
 
 interface AppItem {
@@ -279,16 +240,14 @@ export function KollabrixQuickDock() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Rotation start index (0 to 7) for clock dial
+  // Scroll index for the keycaps stack
   const [startIndex, setStartIndex] = useState<number>(0);
-  const [tickTrigger, setTickTrigger] = useState<number>(0);
 
-  // Web Audio Context & Tick/Tock alternator for authentic clock sound
+  // Web Audio Context for realistic mechanical keyboard typing sound
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const isTickRef = useRef<boolean>(true);
   const lastWheelTimeRef = useRef<number>(0);
 
-  // Hovered node state for floating callout card
+  // Hovered keycap state for floating tooltip card
   const [hoveredNode, setHoveredNode] = useState<{
     item: DockItem;
     nodeNumber: string;
@@ -302,8 +261,8 @@ export function KollabrixQuickDock() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isExamMode, setIsExamMode] = useState(false);
 
-  // Synthesize realistic mechanical clock tick/tock via Web Audio API
-  const playClockTick = () => {
+  // Synthesize realistic mechanical keyboard typing sound via Web Audio API
+  const playKeyboardTypingSound = useCallback(() => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -317,58 +276,62 @@ export function KollabrixQuickDock() {
       }
 
       const now = ctx.currentTime;
-      const isTick = isTickRef.current;
-      isTickRef.current = !isTick;
+      // Realistic ±8% pitch variation simulating different keycap positions & switch tolerances
+      const pitchJitter = 0.92 + Math.random() * 0.16;
 
-      // 1. Primary mechanical escapement impulse (~1650Hz Tick, ~1320Hz Tock)
-      const baseFreq = isTick ? 1650 : 1320;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      // 1. Resonant Mechanical Thock (Plastic keycap bottoming out on PCB plate)
+      const thockOsc = ctx.createOscillator();
+      const thockGain = ctx.createGain();
+      const thockFilter = ctx.createBiquadFilter();
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.35, now + 0.016);
+      thockOsc.type = 'triangle';
+      thockOsc.frequency.setValueAtTime(440 * pitchJitter, now);
+      thockOsc.frequency.exponentialRampToValueAtTime(140 * pitchJitter, now + 0.022);
 
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+      thockFilter.type = 'lowpass';
+      thockFilter.frequency.setValueAtTime(1400 * pitchJitter, now);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      thockGain.gain.setValueAtTime(0.24, now);
+      thockGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
 
-      osc.start(now);
-      osc.stop(now + 0.02);
+      thockOsc.connect(thockFilter);
+      thockFilter.connect(thockGain);
+      thockGain.connect(ctx.destination);
 
-      // 2. High-frequency metallic gear click (filtered noise burst)
+      thockOsc.start(now);
+      thockOsc.stop(now + 0.028);
+
+      // 2. Crisp Tactile Stem Click (Plastic leaf actuation snap)
       const sampleRate = ctx.sampleRate;
-      const bufferSize = Math.floor(sampleRate * 0.012);
+      const bufferSize = Math.floor(sampleRate * 0.007);
       const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.22));
       }
 
-      const noiseSource = ctx.createBufferSource();
-      noiseSource.buffer = buffer;
+      const clickSource = ctx.createBufferSource();
+      clickSource.buffer = buffer;
 
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.setValueAtTime(isTick ? 2400 : 2000, now);
-      bandpass.Q.setValueAtTime(4.0, now);
+      const clickFilter = ctx.createBiquadFilter();
+      clickFilter.type = 'bandpass';
+      clickFilter.frequency.setValueAtTime(4800 * pitchJitter, now);
+      clickFilter.Q.setValueAtTime(3.8, now);
 
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.09, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
+      const clickGain = ctx.createGain();
+      clickGain.gain.setValueAtTime(0.18, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
 
-      noiseSource.connect(bandpass);
-      bandpass.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
+      clickSource.connect(clickFilter);
+      clickFilter.connect(clickGain);
+      clickGain.connect(ctx.destination);
 
-      noiseSource.start(now);
-      noiseSource.stop(now + 0.016);
+      clickSource.start(now);
+      clickSource.stop(now + 0.014);
     } catch {
-      // Audio error suppressed gracefully
+      // Gracefully ignore audio errors if blocked by browser policy
     }
-  };
+  }, []);
 
   // Check if exam arena or proctored exam is active
   useEffect(() => {
@@ -395,30 +358,27 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
-  // Discrete mechanical clock rotation step up
-  const rotateUp = () => {
+  // Discrete keycap scroll steps
+  const scrollUp = useCallback(() => {
     setStartIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
-    setTickTrigger((prev) => prev + 1);
-    playClockTick();
-  };
+    playKeyboardTypingSound();
+  }, [playKeyboardTypingSound]);
 
-  // Discrete mechanical clock rotation step down
-  const rotateDown = () => {
+  const scrollDown = useCallback(() => {
     setStartIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
-    setTickTrigger((prev) => prev + 1);
-    playClockTick();
-  };
+    playKeyboardTypingSound();
+  }, [playKeyboardTypingSound]);
 
-  // Clock scroll listener (throttled to discrete ticks)
+  // Mechanical keyboard wheel scroll listener
   const handleWheel = (e: React.WheelEvent) => {
     const now = Date.now();
-    if (now - lastWheelTimeRef.current < 140) return; // Crisp mechanical clock pacing
-    if (Math.abs(e.deltaY) > 12) {
+    if (now - lastWheelTimeRef.current < 120) return; // Crisp mechanical keystroke pacing
+    if (Math.abs(e.deltaY) > 10) {
       lastWheelTimeRef.current = now;
       if (e.deltaY > 0) {
-        rotateDown();
+        scrollDown();
       } else {
-        rotateUp();
+        scrollUp();
       }
     }
   };
@@ -433,6 +393,7 @@ export function KollabrixQuickDock() {
           return;
         }
         e.preventDefault();
+        playKeyboardTypingSound();
         setIsAppsModalOpen((prev) => !prev);
       } else if (e.key === 'Escape' && isAppsModalOpen) {
         setIsAppsModalOpen(false);
@@ -440,7 +401,7 @@ export function KollabrixQuickDock() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAppsModalOpen]);
+  }, [isAppsModalOpen, playKeyboardTypingSound]);
 
   // Hide on homepage, admin, control-center, battle arena, or during active proctored exam
   if (
@@ -453,17 +414,20 @@ export function KollabrixQuickDock() {
     return null;
   }
 
-  // 5 active visible nodes mapped to the circular clock positions
-  const visibleNodes = [0, 1, 2, 3, 4].map((slotIndex) => {
-    const itemIndex = (startIndex + slotIndex) % DOCK_ITEMS.length;
+  // 4 Visible mechanical keycap slots matching Image 2:
+  // Slot 0: Chalk White Keycap ("BREAK")
+  // Slot 1: Translucent Emerald Artisan Keycap ("THE") with internal cross stem
+  // Slot 2: Chalk White Keycap ("SCROLL")
+  // Slot 3: Mint Green Keycap (Mascot / Icon)
+  const visibleSlots = [0, 1, 2, 3].map((slotIdx) => {
+    const itemIndex = (startIndex + slotIdx) % DOCK_ITEMS.length;
     const item = DOCK_ITEMS[itemIndex];
-    const nodeNumber = String(slotIndex + 1).padStart(2, '0');
+    const nodeNumber = String(slotIdx + 1).padStart(2, '0');
     return {
-      slotIndex,
+      slotIdx,
       itemIndex,
       item,
       nodeNumber,
-      pos: NODE_POSITIONS[slotIndex],
     };
   });
 
@@ -476,101 +440,138 @@ export function KollabrixQuickDock() {
   return (
     <>
       {/* =========================================================================
-          CLOCK-STYLE CIRCULAR QUICK DOCK (100% Transparent, Clock Scroll & Sound)
-          - Transparent background: text underneath remains 100% readable & clickable
-          - Opaque blocking lines and ribbon completely removed
-          - Discrete clock rotation steps with mechanical tick-tock audio synthesis
-          - 5 floating circular clock markers (01, 02, 03, 04, 05)
-          - Central Command (⌘) hub
+          MECHANICAL KEYCAPS DOCK (Matching 2nd Image Reference)
+          - Stack of physical mechanical keyboard keycaps:
+            • Chalk White Keycap ("BREAK")
+            • Translucent Emerald Artisan Keycap ("THE") with switch stem cross '+'
+            • Chalk White Keycap ("SCROLL")
+            • Mint Green Keycap (Mascot / Icon)
+            • Bottom ⌘ Command Keycap (Launchpad)
+          - Keyboard typing audio synthesized on scroll & click
+          - Fully transparent backdrop: text behind remains 100% readable
          ========================================================================= */}
       <aside
-        aria-label="Kollabrix Clock Dial Dock"
+        aria-label="Mechanical Keycaps Quick Dock"
         onWheel={handleWheel}
-        className="fixed right-1 sm:right-3 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
+        className="fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
       >
-        <div className="relative w-[155px] h-[460px] bg-transparent pointer-events-none">
-          {/* Top Clock Step Arrow (Above Node 01) */}
+        <div className="relative flex flex-col items-center gap-2.5 p-1 bg-transparent pointer-events-none">
+          {/* Top Step Keycap Arrow (Scroll Up) */}
           <button
             type="button"
-            onClick={rotateUp}
-            aria-label="Rotate clock dial up"
-            className="absolute top-1 right-[26px] z-20 w-7 h-6 flex items-center justify-center rounded-full text-amber-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer pointer-events-auto group"
+            onClick={scrollUp}
+            aria-label="Scroll keycaps up"
+            className="flex items-center justify-center w-7 h-5 rounded-md bg-[#131622]/80 hover:bg-white/20 border border-slate-700/60 text-slate-300 hover:text-white transition-all active:translate-y-0.5 pointer-events-auto cursor-pointer shadow-[0_2px_0_#090b12]"
           >
-            <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+            <ChevronUp className="w-3.5 h-3.5" />
           </button>
 
-          {/* 5 Circular Clock Markers floating along the arc (01, 02, 03, 04, 05) */}
-          {visibleNodes.map(({ slotIndex, item, nodeNumber, pos }) => {
-            const Icon = item.icon;
-            const style = TONE_STYLES[item.tone] || TONE_STYLES.amber;
-            const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+          {/* Vertical Keycaps Stack (4 Physical Keycaps matching Image 2) */}
+          <div className="flex flex-col items-center gap-2.5">
+            {visibleSlots.map(({ slotIdx, item, nodeNumber }) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
 
-            return (
-              <div
-                key={`${item.id}-${slotIndex}`}
-                style={{
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
-                  transition: 'all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}
-                className="absolute -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto"
-                onMouseEnter={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setHoveredNode({
-                    item,
-                    nodeNumber,
-                    x: rect.left,
-                    y: rect.top + rect.height / 2,
-                  });
-                }}
-                onMouseLeave={() => setHoveredNode(null)}
-              >
-                <Link
-                  href={item.href}
-                  target={item.openInNewTab ? '_blank' : undefined}
-                  rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                  aria-label={`${nodeNumber} - ${item.label}`}
-                  className={`group relative flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 active:scale-90 focus:outline-none cursor-pointer ${
-                    isActive
-                      ? 'border-amber-400 bg-amber-500/20 shadow-[0_0_18px_rgba(245,158,11,0.55)] scale-105'
-                      : 'border-slate-700/80 hover:border-amber-400 bg-[#0e1220]/80 hover:bg-[#161c32]/95 backdrop-blur-xs shadow-[0_4px_16px_rgba(0,0,0,0.6)] hover:scale-110'
-                  }`}
+              // Keycap Profile Styling matching Image 2
+              let keycapClasses = '';
+              let textColor = '';
+              let isArtisanEmerald = false;
+
+              if (slotIdx === 0 || slotIdx === 2) {
+                // CHALK WHITE KEYCAP (Like "BREAK" & "SCROLL" in Image 2)
+                keycapClasses =
+                  'bg-gradient-to-b from-[#ffffff] via-[#f8fafc] to-[#e2e8f0] border-t border-l border-white shadow-[0_5px_0_#94a3b8,0_10px_20px_rgba(0,0,0,0.65)] hover:shadow-[0_6px_0_#94a3b8,0_12px_22px_rgba(0,0,0,0.7)] active:translate-y-[3px] active:shadow-[0_2px_0_#94a3b8,0_4px_10px_rgba(0,0,0,0.5)]';
+                textColor = 'text-slate-900 group-hover:text-black';
+              } else if (slotIdx === 1) {
+                // TRANSLUCENT EMERALD ARTISAN KEYCAP (Like "THE" in Image 2)
+                isArtisanEmerald = true;
+                keycapClasses =
+                  'bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/60 shadow-[0_5px_0_#065f46,0_10px_22px_rgba(16,185,129,0.35)] hover:shadow-[0_6px_0_#065f46,0_12px_24px_rgba(16,185,129,0.45)] active:translate-y-[3px] active:shadow-[0_2px_0_#065f46,0_4px_10px_rgba(16,185,129,0.25)] backdrop-blur-md';
+                textColor = 'text-emerald-300 group-hover:text-emerald-200';
+              } else {
+                // MINT GREEN KEYCAP (Like bottom mascot keycap in Image 2)
+                keycapClasses =
+                  'bg-gradient-to-b from-[#34d399] to-[#059669] border-t border-l border-emerald-200/60 shadow-[0_5px_0_#064e3b,0_10px_20px_rgba(0,0,0,0.65)] hover:shadow-[0_6px_0_#064e3b,0_12px_22px_rgba(0,0,0,0.7)] active:translate-y-[3px] active:shadow-[0_2px_0_#064e3b,0_4px_10px_rgba(0,0,0,0.5)]';
+                textColor = 'text-slate-950 group-hover:text-black';
+              }
+
+              return (
+                <div
+                  key={`${item.id}-${slotIdx}`}
+                  className="pointer-events-auto"
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setHoveredNode({
+                      item,
+                      nodeNumber: item.keyLabel || nodeNumber,
+                      x: rect.left,
+                      y: rect.top + rect.height / 2,
+                    });
+                  }}
+                  onMouseLeave={() => setHoveredNode(null)}
                 >
-                  {/* Clock Index Badge (01, 02, 03, 04, 05) */}
-                  <span className="absolute -top-1.5 -left-1 text-[9px] font-mono font-bold px-1 py-0.2 rounded-full bg-[#0a0d18] text-slate-300 border border-slate-700/80 select-none">
-                    {nodeNumber}
-                  </span>
+                  <Link
+                    href={item.href}
+                    target={item.openInNewTab ? '_blank' : undefined}
+                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                    onClick={() => playKeyboardTypingSound()}
+                    aria-label={`${item.label} Keycap`}
+                    className={`group relative flex flex-col items-center justify-center w-12 h-12 sm:w-13 sm:h-13 rounded-2xl transition-all duration-150 cursor-pointer ${keycapClasses} ${
+                      isActive ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-black' : ''
+                    }`}
+                  >
+                    {/* Keycap Dish Inner Highlight */}
+                    <div className="absolute inset-1 rounded-xl bg-gradient-to-b from-white/30 via-transparent to-black/10 pointer-events-none" />
 
-                  {/* Icon */}
-                  <Icon
-                    className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${style.text}`}
-                  />
+                    {/* Translucent Artisan Internal Stem Cross '+' (For Emerald Keycap in Image 2) */}
+                    {isArtisanEmerald && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+                        {/* Circular Switch Stem Housing Ring */}
+                        <div className="w-5 h-5 rounded-full border border-emerald-300/40 flex items-center justify-center">
+                          {/* Cross Stem '+' */}
+                          <div className="w-2.5 h-0.5 bg-emerald-300/70 rounded-xs" />
+                          <div className="absolute w-0.5 h-2.5 bg-emerald-300/70 rounded-xs" />
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Active Page Indicator */}
-                  {isActive && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse" />
-                  )}
-                </Link>
-              </div>
-            );
-          })}
+                    {/* Micro Sub-legend Top-Left */}
+                    <span
+                      className={`absolute top-1 left-1.5 text-[8px] font-mono font-bold tracking-tight select-none opacity-60 ${textColor}`}
+                    >
+                      {item.keyLabel || nodeNumber}
+                    </span>
 
-          {/* Central Command (⌘) Clock Hub Button */}
+                    {/* Keycap Center Icon */}
+                    <Icon
+                      className={`relative z-10 w-4 h-4 transition-transform duration-150 group-hover:scale-110 drop-shadow-xs ${textColor}`}
+                    />
+
+                    {/* Active Page Glow Indicator */}
+                    {isActive && (
+                      <span className="absolute bottom-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b] animate-pulse" />
+                    )}
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Central Command ⌘ Keycap (Opens App Launcher Modal) */}
           <div
-            style={{ left: '116px', top: '230px' }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+            className="pointer-events-auto mt-0.5"
             onMouseEnter={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setHoveredNode({
                 item: {
                   id: 'cmd',
-                  label: 'Applications (⌘K)',
-                  sub: 'macOS Launchpad Grid',
+                  label: 'Launchpad (⌘K)',
+                  sub: 'Search all platforms & tools',
                   href: '#',
                   icon: Command,
                   tone: 'violet',
                 },
-                nodeNumber: '⌘',
+                nodeNumber: '⌘K',
                 x: rect.left,
                 y: rect.top + rect.height / 2,
               });
@@ -579,22 +580,26 @@ export function KollabrixQuickDock() {
           >
             <button
               type="button"
-              onClick={() => setIsAppsModalOpen(true)}
+              onClick={() => {
+                playKeyboardTypingSound();
+                setIsAppsModalOpen(true);
+              }}
               aria-label="Open Applications Launchpad"
-              className="relative flex items-center justify-center w-9 h-9 rounded-full border border-violet-500/40 bg-[#120f24]/85 hover:bg-violet-600 text-violet-400 hover:text-white transition-all duration-200 active:scale-95 group focus:outline-none shadow-[0_4px_16px_rgba(0,0,0,0.6)] hover:shadow-[0_0_16px_rgba(168,85,247,0.5)] cursor-pointer"
+              className="group relative flex flex-col items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-b from-[#1c1b2b] to-[#100f1c] border-t border-l border-violet-400/40 shadow-[0_4px_0_#07060f,0_8px_16px_rgba(0,0,0,0.8)] text-violet-300 hover:text-white transition-all duration-150 active:translate-y-[2px] active:shadow-[0_2px_0_#07060f] cursor-pointer"
             >
-              <Command className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-12" />
+              <div className="absolute inset-1 rounded-xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              <Command className="w-3.5 h-3.5 transition-transform group-hover:scale-110 group-hover:rotate-12" />
             </button>
           </div>
 
-          {/* Bottom Clock Step Arrow (Below Node 05) */}
+          {/* Bottom Step Keycap Arrow (Scroll Down) */}
           <button
             type="button"
-            onClick={rotateDown}
-            aria-label="Rotate clock dial down"
-            className="absolute bottom-1 right-[26px] z-20 w-7 h-6 flex items-center justify-center rounded-full text-amber-400 hover:text-white hover:bg-white/10 transition-all active:scale-90 cursor-pointer pointer-events-auto group"
+            onClick={scrollDown}
+            aria-label="Scroll keycaps down"
+            className="flex items-center justify-center w-7 h-5 rounded-md bg-[#131622]/80 hover:bg-white/20 border border-slate-700/60 text-slate-300 hover:text-white transition-all active:translate-y-0.5 pointer-events-auto cursor-pointer shadow-[0_2px_0_#090b12]"
           >
-            <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
         </div>
       </aside>
@@ -611,8 +616,8 @@ export function KollabrixQuickDock() {
           <div className="relative flex items-center gap-2.5">
             {/* Callout Card */}
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0c101d]/95 border border-slate-700/80 shadow-[0_16px_40px_rgba(0,0,0,0.92)] text-white backdrop-blur-2xl whitespace-nowrap">
-              {/* Node Number Badge */}
-              <div className="w-6 h-6 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+              {/* Keycap Badge */}
+              <div className="w-6 h-6 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0">
                 {hoveredNode.nodeNumber}
               </div>
 
@@ -629,7 +634,7 @@ export function KollabrixQuickDock() {
               </div>
             </div>
 
-            {/* Dotted Leader Line pointing directly to the hovered node */}
+            {/* Dotted Leader Line */}
             <div className="flex items-center">
               <div className="w-2.5 border-t-2 border-dotted border-amber-400/80" />
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
