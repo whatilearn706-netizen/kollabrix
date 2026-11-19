@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
             customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(row.value.customSection || {}) },
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
+            featuredDeckCards: Array.isArray(row.value.featuredDeckCards) ? row.value.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
           };
         }
       } catch (dbErr) {
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
             customSection: { ...DEFAULT_MASTER_CONTROL_CONFIG.customSection, ...(parsed.customSection || {}) },
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(parsed.studentTools || {}) },
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(parsed.visualTemplates || {}) },
+            featuredDeckCards: Array.isArray(parsed.featuredDeckCards) ? parsed.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
           };
         } catch (e) {}
       }
