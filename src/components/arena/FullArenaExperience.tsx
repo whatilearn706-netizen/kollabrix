@@ -2988,28 +2988,28 @@ export function FullArenaExperience({
       )}
 
       {/* Main Arena Viewport */}
-      <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-center items-center p-4 sm:p-6">
+      <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-start lg:justify-center items-center p-4 sm:p-6 lg:p-8">
         
         {/* ================= STEP 0: MULTIPLAYER ARENA COMMAND CENTER (HERO + TACTICAL COMBAT GATEWAY) ================= */}
         {step === 0 && (
-          <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8 animate-fadeIn pb-12">
+          <div className="w-full max-w-7xl 2xl:max-w-[1540px] mx-auto space-y-6 sm:space-y-8 animate-fadeIn pb-12">
             {/* Top Hero Section: Code. Compete. Win. */}
-            <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-950 via-slate-900/90 to-purple-950/30 border border-slate-800 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="relative rounded-3xl p-6 sm:p-8 lg:p-10 bg-gradient-to-r from-slate-950 via-slate-900/90 to-purple-950/30 border border-slate-800 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 lg:gap-10">
               {/* Left Hero Content */}
-              <div className="space-y-4 max-w-xl text-left z-10">
+              <div className="space-y-4 max-w-2xl xl:max-w-3xl flex-1 text-left z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.25)]">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   <span>MULTIPLAYER CODING BATTLE</span>
                 </div>
 
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight font-sans leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-black text-white tracking-tight font-sans leading-tight">
                   Code. Compete.{' '}
                   <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent filter drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">
                     Win.
                   </span>
                 </h1>
 
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans max-w-lg">
+                <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed font-sans max-w-xl">
                   Challenge your friends in real-time coding battles and show who&apos;s the true code champion!
                 </p>
 
@@ -3044,7 +3044,7 @@ export function FullArenaExperience({
               </div>
 
               {/* Right Hero Graphic: Futuristic Cyber Coders VS */}
-              <div className="relative shrink-0 w-full md:w-80 lg:w-96 flex items-center justify-center">
+              <div className="relative shrink-0 w-full md:w-80 lg:w-[420px] xl:w-[480px] flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/10 blur-3xl rounded-full pointer-events-none" />
                 <img
                   src="/brand/arena-coders-vs.jpg"
@@ -3055,57 +3055,14 @@ export function FullArenaExperience({
             </div>
 
             {/* Main Interactive Tactical Command Console (Image 1 Specs) */}
-            <div className="p-5 sm:p-7 md:p-8 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl space-y-6">
+            <div className="p-5 sm:p-7 md:p-8 lg:p-9 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl space-y-6">
               {/* Tab Navigation Strip */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTacticalSelectSound();
-                      setArenaTab('tournament');
-                    }}
-                    className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                      arenaTab === 'tournament'
-                        ? 'bg-slate-900 text-amber-300 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                        : 'bg-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
+                  <div className="px-4 py-2 rounded-xl font-mono text-xs font-bold bg-slate-900 text-amber-300 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.25)] flex items-center gap-2">
                     <Trophy className="w-3.5 h-3.5 text-amber-400" />
                     <span>Tournament</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTacticalSelectSound();
-                      setArenaTab('direct');
-                    }}
-                    className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                      arenaTab === 'direct'
-                        ? 'bg-slate-900 text-cyan-300 border border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.25)]'
-                        : 'bg-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Swords className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Direct Battle</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTacticalSelectSound();
-                      setArenaTab('practice');
-                    }}
-                    className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                      arenaTab === 'practice'
-                        ? 'bg-slate-900 text-emerald-300 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.25)]'
-                        : 'bg-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Practice Arena</span>
-                  </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">
@@ -3133,7 +3090,7 @@ export function FullArenaExperience({
                       <img
                         src="/brand/arena-binary-ronin-banner.jpg"
                         alt="Binary Ronin Speed Slicer"
-                        className="w-full h-32 sm:h-36 object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-36 sm:h-40 md:h-44 lg:h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60 pointer-events-none" />
                     </div>
