@@ -222,10 +222,11 @@ export function KollabrixQuickDock() {
   // Web Audio Context for authentic tactile UI clicks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastWheelTimeRef = useRef<number>(0);
+  const dockAsideRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  // Smoothly scroll active item into view inside the 3-4 item viewport
+  // Smoothly scroll active item into view inside the 4-item viewport
   useEffect(() => {
     const activeEl = itemRefs.current[activeIndex];
     if (activeEl && scrollContainerRef.current) {
@@ -321,20 +322,32 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
-  // Mouse wheel scroll to scrub active item
-  const handleWheel = (e: React.WheelEvent) => {
-    const now = Date.now();
-    if (now - lastWheelTimeRef.current < 120) return;
-    if (Math.abs(e.deltaY) > 8) {
-      lastWheelTimeRef.current = now;
-      playTactileClick();
-      if (e.deltaY > 0) {
-        setActiveIndex((prev) => (prev + 1) % DOCK_ITEMS.length);
-      } else {
-        setActiveIndex((prev) => (prev - 1 + DOCK_ITEMS.length) % DOCK_ITEMS.length);
+  // Dedicated wheel listener: prevents background page from jumping & smoothly scrolls the dock
+  useEffect(() => {
+    const asideEl = dockAsideRef.current;
+    if (!asideEl) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      container.scrollTop += e.deltaY;
+
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current > 80 && Math.abs(e.deltaY) > 1) {
+        lastWheelTimeRef.current = now;
+        playTactileClick();
       }
-    }
-  };
+    };
+
+    asideEl.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      asideEl.removeEventListener('wheel', onWheel);
+    };
+  }, [playTactileClick]);
 
   // Global ⌘K / Ctrl+K keyboard shortcut opens macOS App Launcher
   useEffect(() => {
@@ -384,15 +397,15 @@ export function KollabrixQuickDock() {
           - 100% transparent container background: page content behind remains fully readable
          ========================================================================= */}
       <aside
+        ref={dockAsideRef}
         aria-label="Pierre Sù Dark Theme Side Navigation Dock"
-        onWheel={handleWheel}
-        className="fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
+        className="fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-auto"
       >
         {/* Outer Translucent Glass Halo Pill */}
-        <div className="relative p-1 rounded-full bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(255,255,255,0.03)] backdrop-blur-2xl pointer-events-auto transition-all duration-300">
+        <div className="relative p-1.5 sm:p-2 rounded-full bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(255,255,255,0.03)] backdrop-blur-2xl transition-all duration-300">
           {/* Inner Matte Obsidian Capsule */}
-          <div className="relative flex flex-col items-center gap-1.5 p-1.5 rounded-full bg-gradient-to-b from-[#1b1c24] via-[#111218] to-[#0d0e14] border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
-            {/* Top Logo Key (Replaces Sparkle with Kollabrix Official Logo) */}
+          <div className="relative flex flex-col items-center gap-2 p-2 rounded-full bg-gradient-to-b from-[#1b1c24] via-[#111218] to-[#0d0e14] border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
+            {/* Top Logo Key (Prominent Kollabrix Official Logo) */}
             <button
               type="button"
               onClick={() => {
@@ -411,29 +424,26 @@ export function KollabrixQuickDock() {
               }}
               onMouseLeave={() => setHoveredNode(null)}
               aria-label="Open Kollabrix Launchpad"
-              className="relative flex items-center justify-center w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.1] transition-all duration-200 active:scale-95 group shadow-[inset_0_1px_2px_rgba(255,255,255,0.15)] cursor-pointer"
+              className="relative flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-b from-amber-500/20 via-white/[0.08] to-white/[0.02] border border-amber-500/35 hover:border-amber-400/60 hover:bg-amber-500/30 transition-all duration-200 active:scale-95 group shadow-[0_0_15px_rgba(245,158,11,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] cursor-pointer"
             >
-              <div className="w-5 h-5 relative shrink-0 flex items-center justify-center">
+              <div className="w-6.5 h-6.5 relative shrink-0 flex items-center justify-center">
                 <img
                   src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
                   alt="Kollabrix Logo"
-                  className="w-full h-full object-contain filter drop-shadow-[0_1px_8px_rgba(245,158,11,0.6)] transition-transform duration-300 group-hover:scale-110"
+                  className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.7)] transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
             </button>
 
             {/* Subtle Divider */}
-            <div className="w-5 h-[1px] bg-white/[0.1] my-0.5" />
+            <div className="w-6 h-[1px] bg-white/[0.12] my-0.5" />
 
-            {/* Scrollable Navigation Viewport (3-4 items visible with progressive blur scrolling on top & bottom) */}
-            <div className="relative w-full overflow-hidden flex flex-col items-center">
-              {/* Top Blur / Fade Gradient Overlay */}
-              <div className="pointer-events-none absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#1b1c24] to-transparent backdrop-blur-[2px] z-10" />
-
-              {/* Scroll Container */}
+            {/* Scrollable Navigation Viewport (Comfortably shows exactly 4 items with smooth top & bottom edge blur) */}
+            <div className="relative w-full rounded-full overflow-hidden flex flex-col items-center">
+              {/* Scroll Container: exactly 4 items height (4 * 48px + 3 * 10px = 222px + 8px py = 230px) */}
               <div
                 ref={scrollContainerRef}
-                className="flex flex-col items-center gap-1.5 max-h-[162px] overflow-y-auto overflow-x-hidden scrollbar-none py-1 scroll-smooth [mask-image:linear-gradient(to_bottom,transparent_0%,black_16%,black_84%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_16%,black_84%,transparent_100%)]"
+                className="flex flex-col items-center gap-2.5 h-[230px] max-h-[230px] overflow-y-auto overflow-x-hidden py-1 overscroll-contain [mask-image:linear-gradient(to_bottom,transparent_0%,black_18px,black_calc(100%-18px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_18px,black_calc(100%-18px),transparent_100%)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               >
                 {DOCK_ITEMS.map((item, index) => {
                   const Icon = item.icon;
@@ -469,12 +479,12 @@ export function KollabrixQuickDock() {
                       aria-label={item.label}
                       className={`relative flex items-center justify-center shrink-0 transition-all duration-300 cursor-pointer active:scale-95 ${
                         isHighlighted
-                          ? 'w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-full bg-white text-zinc-950 shadow-[0_8px_25px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
-                          : 'w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
+                          ? 'w-12 h-12 rounded-full bg-white text-zinc-950 shadow-[0_8px_25px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
+                          : 'w-12 h-12 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
                       }`}
                     >
                       <Icon
-                        className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform duration-200 ${
+                        className={`w-5.5 h-5.5 transition-transform duration-200 ${
                           isHighlighted ? 'scale-105 stroke-[2.2]' : 'group-hover:scale-110'
                         }`}
                       />
@@ -482,9 +492,6 @@ export function KollabrixQuickDock() {
                   );
                 })}
               </div>
-
-              {/* Bottom Blur / Fade Gradient Overlay */}
-              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[#0d0e14] to-transparent backdrop-blur-[2px] z-10" />
             </div>
           </div>
         </div>
