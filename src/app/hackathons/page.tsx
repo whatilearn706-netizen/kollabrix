@@ -53,7 +53,7 @@ export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<Hackathon[]>(() => cachedHackathons || []);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('corporate');
+  const [activeTab, setActiveTab] = useState<'all' | 'corporate' | 'private' | 'my-events' | 'saved'>('all');
   const [hasUserSelectedTab, setHasUserSelectedTab] = useState(false);
   const [timelineFilter, setTimelineFilter] = useState<'live' | 'past'>('live');
 
@@ -382,17 +382,6 @@ export default function HackathonsPage() {
     return tabScopedHackathons.filter((h) => isPastEvent(h)).length;
   }, [tabScopedHackathons]);
 
-  // Set default tab on load if only sponsored events exist
-  useEffect(() => {
-    if (!hasUserSelectedTab && hackathons.length > 0) {
-      const hasCompetitions = hackathons.some(
-        (h) => !extractSponsoredMeta(h).isSponsored && h.access_type !== 'private' && (!user?.id || h.creator_id !== user.id)
-      );
-      if (!hasCompetitions) {
-        setActiveTab('corporate');
-      }
-    }
-  }, [hackathons, hasUserSelectedTab, user?.id]);
 
   // Filtered list based on active tab, timeline (live vs past), and search filters
   const filteredHackathons = useMemo(() => {
