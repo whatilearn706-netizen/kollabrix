@@ -424,15 +424,13 @@ export function KollabrixQuickDock() {
               }}
               onMouseLeave={() => setHoveredNode(null)}
               aria-label="Open Kollabrix Launchpad"
-              className="relative flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-b from-amber-500/20 via-white/[0.08] to-white/[0.02] border border-amber-500/35 hover:border-amber-400/60 hover:bg-amber-500/30 transition-all duration-200 active:scale-95 group shadow-[0_0_15px_rgba(245,158,11,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] cursor-pointer"
+              className="relative flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-b from-amber-500/15 via-white/[0.06] to-white/[0.02] border border-amber-500/30 hover:border-amber-400/50 hover:bg-amber-500/25 transition-all duration-200 active:scale-95 group shadow-[0_0_12px_rgba(245,158,11,0.18),inset_0_1px_2px_rgba(255,255,255,0.18)] cursor-pointer overflow-hidden"
             >
-              <div className="w-6.5 h-6.5 relative shrink-0 flex items-center justify-center">
-                <img
-                  src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
-                  alt="Kollabrix Logo"
-                  className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.7)] transition-transform duration-300 group-hover:scale-110"
-                />
-              </div>
+              <img
+                src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
+                alt="Kollabrix Logo"
+                className="w-6 h-6 max-w-[24px] max-h-[24px] object-contain filter drop-shadow-[0_1px_6px_rgba(245,158,11,0.6)] transition-transform duration-300 group-hover:scale-110"
+              />
             </button>
 
             {/* Subtle Divider */}
