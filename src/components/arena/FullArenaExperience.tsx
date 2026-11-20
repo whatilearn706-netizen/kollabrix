@@ -2998,7 +2998,7 @@ export function FullArenaExperience({
         
         {/* ================= STEP 0: MULTIPLAYER ARENA COMMAND CENTER (HERO + TACTICAL COMBAT GATEWAY) ================= */}
         {step === 0 && (
-          <div className="w-full max-w-7xl 2xl:max-w-[1580px] mx-auto animate-fadeIn pt-2 pb-12">
+          <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto animate-fadeIn pt-2 pb-12">
             {/* 45% / 55% Vertical Split Layout matching user instructions & 2nd image theme */}
             <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8 w-full">
               

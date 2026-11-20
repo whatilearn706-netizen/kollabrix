@@ -233,15 +233,15 @@ function ArenaPageContent() {
         <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(14,165,233,0.18),transparent_70%)] pointer-events-none z-0" />
         <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle_at_20%_80%,rgba(37,99,235,0.12),transparent_65%)] pointer-events-none z-0" />
 
-        {/* Top Navigation Bar (Replicating Image 1 top bar) */}
-        <header className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 pt-8 pb-4 flex items-center justify-between">
-          {/* Left Brand Identity: "1v1 Arena | KOLLABRIX" (like "Web3 | RAIR" in Image 1) */}
+        {/* Top Navigation Bar (Replicating Image 1 top bar with edge-to-edge layout & dark/grey styling) */}
+        <header className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pt-8 pb-4 flex items-center justify-between">
+          {/* Left Brand Identity: "1v1 Arena | KOLLABRIX" */}
           <div className="flex items-center gap-3">
             <span className="text-base sm:text-lg font-bold text-white tracking-tight font-sans">
               1v1 Arena
             </span>
             <span className="text-white/25 font-light text-sm select-none">|</span>
-            <span className="text-xs sm:text-sm font-mono font-black tracking-widest text-cyan-400 uppercase">
+            <span className="text-xs sm:text-sm font-mono font-black tracking-widest text-slate-400 uppercase">
               KOLLABRIX
             </span>
           </div>
@@ -250,38 +250,39 @@ function ArenaPageContent() {
           <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/"
-              className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors px-3 py-1.5"
+              className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors px-3 py-1.5 font-mono"
             >
               Exit to Home
             </Link>
 
-            {/* Cyan Pill Button (Matching "Discover" in Image 1) */}
+            {/* Dark / Smoked Charcoal Frosted Glass Button (Replacing bright cyan) */}
             <button
               type="button"
               onClick={handleLaunchLobby}
-              className="px-5 sm:px-6 py-2 rounded-full bg-[#00a8ff] hover:bg-[#38bdf8] text-slate-950 font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,168,255,0.45)] transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-1.5"
+              className="group px-5 sm:px-6 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.18] hover:border-white/35 text-slate-200 hover:text-white font-mono font-bold text-xs sm:text-sm backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.6)] transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-2"
             >
-              <Swords className="w-3.5 h-3.5" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <Swords className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-colors" />
               <span>Live Lobby</span>
             </button>
           </div>
         </header>
 
-        {/* Hero Grid Container */}
-        <main className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-6 lg:py-12 flex-1 flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center w-full">
-            {/* Left Column: Heading + Description + Feature Pills + CTA (Exact Image 1 Layout) */}
-            <div className="lg:col-span-7 xl:col-span-6 flex flex-col justify-center text-left">
-              {/* Massive Editorial Headline: "Welcome To" / "1v1 Arena" */}
-              <h1 className="font-heading font-black tracking-tight leading-[0.98] select-none text-white text-5xl sm:text-6xl md:text-7xl xl:text-[5.5rem]">
+        {/* Hero Grid Container: Wide Full-Bleed Layout with No Empty Left/Right Margins */}
+        <main className="relative z-10 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 py-4 lg:py-8 flex-1 flex items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center w-full">
+            {/* Left Column: Heading + Description + Feature Pills + CTA */}
+            <div className="lg:col-span-7 xl:col-span-6 2xl:col-span-7 flex flex-col justify-center text-left">
+              {/* Massive Editorial Headline: "Welcome To" / "1v1 Arena" (Metallic Silver / Titanium Gradient) */}
+              <h1 className="font-heading font-black tracking-tight leading-[0.96] select-none text-white text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl 2xl:text-[5.8rem]">
                 <span className="block text-white">Welcome To</span>
-                <span className="block mt-2 bg-gradient-to-r from-[#38bdf8] via-[#60a5fa] to-[#3b82f6] bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(56,189,248,0.45)]">
+                <span className="block mt-2 bg-gradient-to-r from-slate-100 via-slate-300 to-slate-500 bg-clip-text text-transparent drop-shadow-[0_4px_30px_rgba(255,255,255,0.18)]">
                   1v1 Arena
                 </span>
               </h1>
 
               {/* Explanatory Paragraph ("show what it is") */}
-              <p className="text-slate-300/90 text-sm sm:text-base md:text-lg leading-relaxed mt-6 max-w-xl font-normal drop-shadow-sm">
+              <p className="text-slate-300/90 text-sm sm:text-base md:text-lg leading-relaxed mt-6 max-w-2xl font-normal drop-shadow-sm">
                 Battle Arena is the high-stakes live coding combat for collegiate builders. Duel
                 real-time in fast-paced 3-minute blitz sprints, solve algorithmic hurdles under
                 anti-cheat fog of war, and defeat campus rivals to climb the verified leaderboard.
@@ -320,7 +321,7 @@ function ArenaPageContent() {
                   <span className="text-slate-300">LIVE MULTIPLAYER SQUADS</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                  <Zap className="w-3.5 h-3.5 text-slate-300" />
                   <span>&lt;20MS LOW LATENCY</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
@@ -330,37 +331,37 @@ function ArenaPageContent() {
               </div>
             </div>
 
-            {/* Right Column: Character from Image 2 (Cosmic Electric Silhouette Entity) */}
-            <div className="lg:col-span-5 xl:col-span-6 relative flex items-center justify-center lg:justify-end mt-4 lg:mt-0">
-              <div className="relative w-full max-w-[500px] aspect-square flex items-center justify-center">
-                {/* Electric Cyan & Violet Radial Backlight */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(56,189,248,0.28),transparent_65%)] pointer-events-none" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_60%,rgba(147,51,234,0.18),transparent_60%)] pointer-events-none" />
+            {/* Right Column: Character Entity Expands to Lavishly Fill the Right Area */}
+            <div className="lg:col-span-5 xl:col-span-6 2xl:col-span-5 relative flex items-center justify-center lg:justify-end mt-4 lg:mt-0">
+              <div className="relative w-full max-w-[560px] lg:max-w-[620px] xl:max-w-[720px] 2xl:max-w-[800px] aspect-square flex items-center justify-center">
+                {/* Atmospheric Glow Highlights */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(56,189,248,0.22),transparent_65%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_60%,rgba(147,51,234,0.15),transparent_60%)] pointer-events-none" />
 
                 {/* Plasma Eye Trail Accent Glow */}
-                <div className="absolute top-[35%] left-[30%] w-36 h-20 bg-sky-400/25 blur-2xl rounded-full pointer-events-none animate-pulse" />
+                <div className="absolute top-[35%] left-[30%] w-36 h-20 bg-sky-400/20 blur-2xl rounded-full pointer-events-none animate-pulse" />
 
                 {/* The Character Image from 2nd Image */}
                 <div className="relative z-10 w-full h-full flex items-center justify-center">
                   <Image
                     src="/images/arena-cyber-entity.png"
                     alt="Kollabrix 1v1 Battle Arena Cyber Entity"
-                    width={560}
-                    height={560}
+                    width={760}
+                    height={760}
                     priority
                     className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)] select-none pointer-events-none"
                   />
                 </div>
 
                 {/* Floating Telemetry Badge Top Right */}
-                <div className="absolute top-4 right-2 sm:right-6 z-20 px-3 py-1.5 rounded-full bg-slate-950/80 border border-sky-400/30 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-sky-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                <div className="absolute top-4 right-2 sm:right-6 z-20 px-3 py-1.5 rounded-full bg-slate-950/80 border border-slate-700/60 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-slate-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                   <span>PILOT SENTINEL • ONLINE</span>
                 </div>
 
                 {/* Floating Telemetry Badge Bottom Left */}
-                <div className="absolute bottom-6 left-2 sm:left-6 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-purple-500/30 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-purple-200">
-                  <Flame className="w-3.5 h-3.5 text-purple-400" />
+                <div className="absolute bottom-6 left-2 sm:left-6 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700/60 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-slate-200">
+                  <Flame className="w-3.5 h-3.5 text-amber-400" />
                   <span>CIRCUIT 01 • SPEED SLICER</span>
                 </div>
               </div>
@@ -368,8 +369,8 @@ function ArenaPageContent() {
           </div>
         </main>
 
-        {/* Footer Sub-bar */}
-        <footer className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-6 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+        {/* Footer Sub-bar with Expanded Width */}
+        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 py-6 flex items-center justify-between text-[11px] text-slate-500 font-mono">
           <span>Kollabrix Esports Gateway • Anti-Cheat Fog of War Protected</span>
           <span className="hidden sm:inline">Engineered for Collegiate Hackers</span>
         </footer>
