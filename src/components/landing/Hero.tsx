@@ -107,6 +107,10 @@ export function LandingHero() {
         </video>
       </div>
 
+      {/* Seamless gradient overlays to cleanly conceal legacy third-party text while keeping the 3D TV console crystal clear */}
+      <div className="absolute inset-y-0 right-0 w-full lg:w-[58%] bg-gradient-to-l from-[#090B10] via-[#090B10]/95 to-transparent pointer-events-none z-[5]" />
+      <div className="absolute top-0 left-0 w-80 h-28 bg-gradient-to-b from-[#090B10] to-transparent pointer-events-none z-[5]" />
+
       {/* Subtle Bottom Vignette for seamless blend into subsequent sections */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#090B10] via-transparent to-transparent pointer-events-none z-10" />
 
