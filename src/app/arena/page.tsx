@@ -212,11 +212,26 @@ function ArenaPageContent() {
   // =========================================================================
   if (!showPlayLobby) {
     return (
-      <div className="min-h-screen bg-[#000000] text-white relative overflow-hidden select-none flex flex-col justify-between">
-        {/* Ambient Atmospheric Lighting matching Image 1 */}
-        <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(14,165,233,0.22),transparent_70%)] pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle_at_20%_80%,rgba(37,99,235,0.14),transparent_65%)] pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.85)_100%)] pointer-events-none z-0" />
+      <div className="min-h-screen bg-[#030611] text-white relative overflow-hidden select-none flex flex-col justify-between">
+        {/* Real Cosmic Orbital Background from 1st Image */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <Image
+            src="/images/arena-orbital-bg.jpg"
+            alt="Arena Cosmic Orbital Background"
+            fill
+            priority
+            quality={95}
+            className="object-cover object-center select-none"
+          />
+          {/* Atmospheric Vignette Overlays: Keeps text crisp & readable while blending edges seamlessly */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/60" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.65)_100%)]" />
+        </div>
+
+        {/* Ambient Atmospheric Glow Highlights */}
+        <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(14,165,233,0.18),transparent_70%)] pointer-events-none z-0" />
+        <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle_at_20%_80%,rgba(37,99,235,0.12),transparent_65%)] pointer-events-none z-0" />
 
         {/* Top Navigation Bar (Replicating Image 1 top bar) */}
         <header className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 pt-8 pb-4 flex items-center justify-between">
