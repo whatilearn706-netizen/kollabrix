@@ -99,12 +99,16 @@ export function LandingHero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-              className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/[0.08] backdrop-blur-md mb-3.5"
             >
-              <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)] animate-pulse" />
-              <span className="text-xs sm:text-sm text-sky-200 font-medium tracking-wide">
-                1v1 Battle Arena & Collegiate Hackathons
-              </span>
+              <Link
+                href="/arena"
+                className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/[0.08] hover:bg-sky-500/[0.18] hover:border-sky-400/50 backdrop-blur-md mb-3.5 transition-all group cursor-pointer"
+              >
+                <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)] animate-pulse" />
+                <span className="text-xs sm:text-sm text-sky-200 group-hover:text-white font-medium tracking-wide transition-colors">
+                  1v1 Battle Arena & Collegiate Hackathons →
+                </span>
+              </Link>
             </motion.div>
 
             {/* Headline: Row 1 = Code. | Row 2 = Team Up. Win. (Guaranteed single line on row 2) */}
