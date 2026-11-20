@@ -102,6 +102,7 @@ export function LandingHero() {
             >
               <Link
                 href="/arena"
+                prefetch={false}
                 className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-sky-400/25 bg-sky-500/[0.08] hover:bg-sky-500/[0.18] hover:border-sky-400/50 backdrop-blur-md mb-3.5 transition-all group cursor-pointer"
               >
                 <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)] animate-pulse" />
@@ -154,6 +155,7 @@ export function LandingHero() {
             >
               <Link
                 href="/arena"
+                prefetch={false}
                 className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_25px_rgba(255,255,255,0.35)] transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
               >
                 <span>⚔️ Play 3-Min Code Duel</span>
