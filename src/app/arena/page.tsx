@@ -325,34 +325,34 @@ function ArenaPageContent() {
 
             {/* Right Column: Character Entity Expands to Lavishly Fill the Right Area */}
             <div className="lg:col-span-5 xl:col-span-6 2xl:col-span-5 relative flex items-center justify-center lg:justify-end mt-4 lg:mt-0">
-              <div className="relative w-full max-w-[560px] lg:max-w-[620px] xl:max-w-[720px] 2xl:max-w-[800px] aspect-[4/3] flex items-center justify-center">
-                {/* Atmospheric Glow Highlights matching Cyan Neon Portal */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_50%,rgba(6,182,212,0.28),transparent_70%)] pointer-events-none" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_55%,rgba(14,165,233,0.18),transparent_60%)] pointer-events-none" />
+              <div className="relative w-full max-w-[560px] lg:max-w-[620px] xl:max-w-[720px] 2xl:max-w-[800px] aspect-[16/9] flex items-center justify-center rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-400/30 bg-[#060A14]/90 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-xl group transition-all duration-300 hover:border-sky-400/50">
+                {/* Atmospheric Glow Highlights matching Cyan Pixel Eyes & Golden Flora */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_52%_48%,rgba(6,182,212,0.28),transparent_65%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_75%,rgba(245,158,11,0.22),transparent_60%)] pointer-events-none" />
 
-                {/* The Character Image from 2nd Image */}
+                {/* The Character Image from 3rd Image (Clean, Sleek Retro Robot Sentinel) */}
                 <div className="relative z-10 w-full h-full flex items-center justify-center">
                   <Image
-                    src="/images/arena-portal-walker-v1.png"
-                    alt="Kollabrix 1v1 Battle Arena Cyber Portal Entity"
-                    width={800}
-                    height={600}
+                    src="/images/arena-retro-sentinel-v1.jpg"
+                    alt="Kollabrix 1v1 Battle Arena Retro Robot Sentinel"
+                    width={1024}
+                    height={576}
                     priority
                     unoptimized
-                    className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)] select-none pointer-events-none"
+                    className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                   />
                 </div>
 
                 {/* Floating Telemetry Badge Top Right */}
-                <div className="absolute top-4 right-2 sm:right-6 z-20 px-3 py-1.5 rounded-full bg-slate-950/80 border border-cyan-500/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-cyan-200">
+                <div className="absolute top-3.5 sm:top-4 right-3 sm:right-5 z-20 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-400/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-cyan-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                  <span>PORTAL SENTINEL • ONLINE</span>
+                  <span>RETRO SENTINEL • ONLINE</span>
                 </div>
 
                 {/* Floating Telemetry Badge Bottom Left */}
-                <div className="absolute bottom-6 left-2 sm:left-6 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-cyan-500/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-cyan-200">
-                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>CIRCUIT 01 • QUANTUM GATEWAY</span>
+                <div className="absolute bottom-3.5 sm:bottom-4 left-3 sm:left-5 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/85 border border-sky-400/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-sky-200">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>CIRCUIT 01 • MYSTIC GUARDIAN</span>
                 </div>
               </div>
             </div>
