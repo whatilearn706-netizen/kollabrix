@@ -59,7 +59,7 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] lg:min-h-[92vh] flex flex-col justify-end pb-10 sm:pb-12 lg:pb-14 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
-      {/* Cinematic Celestial Blue Horizon Video Background (Expansive 1.4x scale) */}
+      {/* Vibe-Coding Drifting Cards Video Background (Pinterest Reference) */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
         <video
           ref={videoRef}
@@ -68,15 +68,14 @@ export function LandingHero() {
           muted
           playsInline
           preload="auto"
-          poster="/brand/hero-celestial-horizon-v3.webp"
-          className="absolute inset-0 w-full h-full object-cover object-[center_36%] scale-[1.04] sm:scale-[1.06] lg:scale-[1.08] filter brightness-[1.10] contrast-[1.06] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
+          poster="/brand/hero-cosmos-poster.jpg"
+          className="absolute inset-0 w-full h-full object-cover object-center scale-[1.02] filter brightness-[1.05] contrast-[1.05] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
         >
-          <source src="/videos/hero-celestial-horizon-v3.webm" type="video/webm" />
-          <source src="/videos/hero-celestial-horizon-v3.mp4" type="video/mp4" />
+          <source src="/videos/hero-cosmos.mp4" type="video/mp4" />
           {/* Fallback image if video element is unsupported */}
           <img
-            src="/brand/hero-celestial-horizon-v3.webp"
-            alt="Kollabrix Horizon"
+            src="/brand/hero-cosmos-poster.jpg"
+            alt="Kollabrix Vibe Coding Horizon"
             className="w-full h-full object-cover object-center"
           />
         </video>
