@@ -206,19 +206,21 @@ function ArenaPageContent() {
   if (!showPlayLobby) {
     return (
       <div className="fixed inset-0 w-full h-full bg-[#030611] text-white overflow-hidden select-none flex flex-col justify-between">
-        {/* Full-Screen Edge-to-Edge Retro Sentinel Artwork (Image 2) */}
+        {/* Ultra-HD Edge-to-Edge Retro Sentinel Artwork (Image 2 - 2048x1152 HD, Vibrant & Crisp) */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
           <Image
-            src="/images/arena-retro-sentinel-v1.jpg"
+            src="/images/arena-retro-sentinel-hd.jpg"
             alt="Kollabrix 1v1 Battle Arena Retro Robot Sentinel"
             fill
             priority
-            quality={95}
-            className="object-cover object-center select-none"
+            quality={100}
+            className="object-cover object-center select-none filter contrast-[1.06] brightness-[1.04] saturate-[1.10]"
           />
-          {/* Subtle cinematic edge vignettes to keep top & bottom controls ultra-legible */}
-          <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+          {/* Soft directional shade on left to ensure high headline readability while leaving the 3D robot bright & vivid */}
+          <div className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-gradient-to-r from-black/75 via-black/35 to-transparent pointer-events-none" />
+          {/* Subtle top & bottom vignettes for sleek control integration */}
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/25 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
         </div>
 
         {/* Minimalist Top Navigation Header */}
@@ -255,21 +257,46 @@ function ArenaPageContent() {
           </div>
         </header>
 
-        {/* Center Canvas / Ambient View */}
-        <div className="relative z-10 flex-1" />
+        {/* Left-Aligned Headline & Description (Positioned directly in the blue marked box) */}
+        <main className="relative z-10 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 py-4 flex-1 flex items-center">
+          <div className="max-w-xl lg:max-w-2xl text-left">
+            {/* Category Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-200 text-xs font-mono font-medium mb-3 backdrop-blur-md shadow-md">
+              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.9)]" />
+              <span>COLLEGIATE 1V1 COMBAT</span>
+            </div>
 
-        {/* Floating Bottom HUD & Quick Action */}
-        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pb-6 sm:pb-10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Status Indicator */}
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/60 border border-cyan-500/30 backdrop-blur-md text-xs font-mono text-cyan-200 shadow-xl">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span className="font-semibold text-cyan-300">RETRO SENTINEL • ONLINE</span>
-            <span className="text-white/20 select-none">•</span>
-            <span className="text-amber-300">3-MIN LIVE DUELS</span>
-            <span className="text-white/20 select-none hidden md:inline">•</span>
-            <span className="text-emerald-400 hidden md:inline">ANTI-CHEAT FOG</span>
+            {/* Headline: Welcome To 1v1 Arena */}
+            <h1 className="font-heading font-black tracking-tight leading-[0.96] text-white text-5xl sm:text-6xl lg:text-7xl xl:text-8xl select-none">
+              <span className="block text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]">
+                Welcome To
+              </span>
+              <span className="block mt-1.5 bg-gradient-to-r from-cyan-200 via-sky-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_4px_30px_rgba(6,182,212,0.6)]">
+                1v1 Arena
+              </span>
+            </h1>
+
+            {/* Description under the blue marked area */}
+            <p className="text-slate-200/90 text-sm sm:text-base md:text-lg leading-relaxed mt-5 font-normal drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)] max-w-lg">
+              Battle Arena is the high-stakes live coding combat for collegiate builders. Duel real-time in fast-paced 3-minute blitz sprints, solve algorithmic hurdles under anti-cheat fog of war, and defeat campus rivals to climb the verified leaderboard.
+            </p>
+
+            {/* Quick Action Button below description */}
+            <div className="mt-7 flex items-center gap-4">
+              <button
+                type="button"
+                onClick={handleLaunchLobby}
+                className="group inline-flex items-center gap-2.5 px-7 py-3 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_35px_rgba(255,255,255,0.45)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <span>⚔️ Enter Battle Arena</span>
+                <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
+        </main>
 
+        {/* Floating Bottom Bar (Brown-marked status badge completely removed, only Start Duel button) */}
+        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pb-6 sm:pb-10 pt-4 flex items-center justify-end">
           {/* Start Battle Duel Button */}
           <button
             type="button"
