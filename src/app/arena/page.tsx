@@ -36,15 +36,7 @@ function ArenaPageContent() {
     return Boolean(roomParam);
   });
 
-  const [isLive, setIsLive] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kollabrix_arena_is_live');
-        if (stored !== null) return stored === 'true';
-      } catch {}
-    }
-    return true;
-  });
+  const [isLive, setIsLive] = useState<boolean>(true);
   const [maintenanceMessage, setMaintenanceMessage] = useState(
     'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
@@ -341,11 +333,12 @@ function ArenaPageContent() {
                 {/* The Character Image from 2nd Image */}
                 <div className="relative z-10 w-full h-full flex items-center justify-center">
                   <Image
-                    src="/images/arena-cyber-entity.png"
+                    src="/images/arena-portal-walker-v1.png"
                     alt="Kollabrix 1v1 Battle Arena Cyber Portal Entity"
                     width={800}
                     height={600}
                     priority
+                    unoptimized
                     className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)] select-none pointer-events-none"
                   />
                 </div>
