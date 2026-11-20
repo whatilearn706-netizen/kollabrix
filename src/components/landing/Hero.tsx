@@ -59,7 +59,7 @@ export function LandingHero() {
       ref={sectionRef}
       className="relative min-h-[90vh] lg:min-h-[92vh] flex flex-col justify-end pb-10 sm:pb-12 lg:pb-14 overflow-hidden bg-[#000002] transform-gpu will-change-transform"
     >
-      {/* Vibe-Coding Drifting Cards Video Background (Pinterest Reference) */}
+      {/* 3D Cyber Console / STR8FIRE Video Background (Pinterest Reference) */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
         <video
           ref={videoRef}
@@ -68,14 +68,14 @@ export function LandingHero() {
           muted
           playsInline
           preload="auto"
-          poster="/brand/hero-cosmos-poster.jpg"
-          className="absolute inset-0 w-full h-full object-cover object-center scale-[1.02] filter brightness-[1.05] contrast-[1.05] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
+          poster="/brand/hero-str8fire-poster.jpg"
+          className="absolute inset-0 w-full h-full object-cover object-center scale-[1.02] filter brightness-[1.02] contrast-[1.04] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
         >
-          <source src="/videos/hero-cosmos.mp4" type="video/mp4" />
+          <source src="/videos/hero-str8fire.mp4" type="video/mp4" />
           {/* Fallback image if video element is unsupported */}
           <img
-            src="/brand/hero-cosmos-poster.jpg"
-            alt="Kollabrix Vibe Coding Horizon"
+            src="/brand/hero-str8fire-poster.jpg"
+            alt="Kollabrix Cyber Gaming Horizon"
             className="w-full h-full object-cover object-center"
           />
         </video>
