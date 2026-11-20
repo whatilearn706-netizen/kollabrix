@@ -3011,11 +3011,6 @@ export function FullArenaExperience({
 
                 {/* 1. TOP SECTION (From 4th image): Code. Compete. Win. */}
                 <div className="space-y-3 relative z-10 text-left">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.25)]">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span>MULTIPLAYER CODING BATTLE</span>
-                  </div>
-
                   <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight font-sans leading-tight">
                     Code. Compete.{' '}
                     <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent filter drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">
@@ -3036,11 +3031,6 @@ export function FullArenaExperience({
                     alt="Coder in Battle Arena Duel"
                     className="w-full h-64 sm:h-72 md:h-80 lg:h-[340px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
                   />
-                  {/* Floating Telemetry Tag */}
-                  <div className="absolute bottom-3 left-3 z-20 px-3 py-1 rounded-full bg-black/80 border border-cyan-400/40 text-[10px] font-mono text-cyan-300 backdrop-blur-md flex items-center gap-1.5 shadow-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    <span>SYNCHRONIZED ARENA HUD • 60 FPS</span>
-                  </div>
                 </div>
 
                 {/* 3. BOTTOM SECTION: Buttons from 4th image (Below the 3rd image) */}
@@ -3072,19 +3062,6 @@ export function FullArenaExperience({
                       <Users className="w-4 h-4 text-cyan-400" />
                       <span>Join with Code</span>
                     </button>
-                  </div>
-
-                  {/* Micro telemetry footer on left column */}
-                  <div className="flex items-center gap-4 text-[11px] font-mono text-slate-400 pt-2 border-t border-white/[0.08]">
-                    <span className="flex items-center gap-1.5 text-cyan-300">
-                      <Zap className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>&lt;20ms Latency</span>
-                    </span>
-                    <span className="text-white/20">•</span>
-                    <span className="flex items-center gap-1.5 text-purple-300">
-                      <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Anti-Cheat Sentinel</span>
-                    </span>
                   </div>
                 </div>
               </div>
@@ -3174,7 +3151,7 @@ export function FullArenaExperience({
                       Select Code Duel Combat Format:
                     </label>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Format 1: 1v1 Solo */}
                       <button
                         type="button"
@@ -3221,31 +3198,6 @@ export function FullArenaExperience({
                         <div className="text-[10px] font-mono text-slate-300 font-bold">Squad</div>
                         <div className="text-[9px] font-mono text-purple-400 mt-1">Dual-Pilot Co-op</div>
                       </button>
-
-                      {/* Format 3: FFA Battle */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playTacticalSelectSound();
-                          setSelectedCombatFormat('ffa');
-                          setTeamSize('1v1');
-                        }}
-                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
-                          selectedCombatFormat === 'ffa'
-                            ? 'bg-black border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)] ring-1 ring-amber-400'
-                            : 'bg-black/60 border-white/[0.08] hover:border-slate-700 opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[8px] font-mono font-bold uppercase">
-                          Beta
-                        </div>
-                        <div className="flex items-center gap-1.5 text-amber-400 mb-1">
-                          <Flame className="w-4 h-4" />
-                          <span className="font-mono text-xs font-black uppercase tracking-tight">FFA Battle</span>
-                        </div>
-                        <div className="text-[10px] font-mono text-slate-300 font-bold">Royale</div>
-                        <div className="text-[9px] font-mono text-amber-400 mt-1">Free For All</div>
-                      </button>
                     </div>
                   </div>
 
@@ -3284,63 +3236,6 @@ export function FullArenaExperience({
                       <span>{authGateError}</span>
                     </div>
                   )}
-                </div>
-
-                {/* Tournament Circuit Card (BINARY RONIN Speed Slicer) */}
-                <div className="p-4 rounded-2xl bg-black/60 border border-purple-500/30 space-y-3 relative overflow-hidden z-10">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                      ✦ TOURNAMENT CIRCUIT
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      CIRCUIT 01
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                    {/* Banner */}
-                    <div className="sm:col-span-5 relative rounded-xl overflow-hidden border border-purple-500/30 group">
-                      <img
-                        src="/brand/arena-binary-ronin-banner.jpg"
-                        alt="Binary Ronin Speed Slicer"
-                        className="w-full h-24 sm:h-28 object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 pointer-events-none" />
-                    </div>
-
-                    {/* Stats & Telemetry */}
-                    <div className="sm:col-span-7 space-y-2">
-                      <div className="grid grid-cols-2 gap-2 font-mono">
-                        <div className="p-2 rounded-lg bg-black border border-amber-500/30 flex items-center gap-2">
-                          <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <div>
-                            <div className="text-[9px] text-slate-400">WIN RATE</div>
-                            <div className="text-xs font-black text-amber-300">98.4% <span className="text-emerald-400 text-[9px]">↑ 2.1%</span></div>
-                          </div>
-                        </div>
-
-                        <div className="p-2 rounded-lg bg-black border border-cyan-500/30 flex items-center gap-2">
-                          <Award className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                          <div>
-                            <div className="text-[9px] text-slate-400">GLOBAL RANK</div>
-                            <div className="text-xs font-black text-cyan-300">#42</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Glowing SVG Sparkline */}
-                      <svg viewBox="0 0 200 30" className="w-full h-6 overflow-visible">
-                        <path
-                          d="M 0,24 Q 30,28 60,18 T 120,12 T 170,6 T 200,3"
-                          fill="none"
-                          stroke="#34d399"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          className="filter drop-shadow-[0_0_6px_rgba(52,211,153,0.7)]"
-                        />
-                      </svg>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Bottom Master Action Bar */}
