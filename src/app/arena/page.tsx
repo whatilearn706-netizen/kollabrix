@@ -200,169 +200,85 @@ function ArenaPageContent() {
   }
 
   // =========================================================================
-  // 1. SHOWCASE MODE (Built to replicate Image 1 style with Image 2 Cosmic Character)
+  // 1. SHOWCASE MODE: Full-Screen Retro Robot Sentinel Visual (Image 2)
+  // Shown after user taps on Battle Arena from the homepage
   // =========================================================================
   if (!showPlayLobby) {
     return (
-      <div className="min-h-screen bg-[#030611] text-white relative overflow-hidden select-none flex flex-col justify-between">
-        {/* Real Cosmic Orbital Background from 1st Image */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 w-full h-full bg-[#030611] text-white overflow-hidden select-none flex flex-col justify-between">
+        {/* Full-Screen Edge-to-Edge Retro Sentinel Artwork (Image 2) */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
           <Image
-            src="/images/arena-orbital-bg.jpg"
-            alt="Arena Cosmic Orbital Background"
+            src="/images/arena-retro-sentinel-v1.jpg"
+            alt="Kollabrix 1v1 Battle Arena Retro Robot Sentinel"
             fill
             priority
             quality={95}
             className="object-cover object-center select-none"
           />
-          {/* Atmospheric Vignette Overlays: Keeps text crisp & readable while blending edges seamlessly */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-black/50" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/60" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.65)_100%)]" />
+          {/* Subtle cinematic edge vignettes to keep top & bottom controls ultra-legible */}
+          <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
         </div>
 
-        {/* Ambient Atmospheric Glow Highlights */}
-        <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(14,165,233,0.18),transparent_70%)] pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle_at_20%_80%,rgba(37,99,235,0.12),transparent_65%)] pointer-events-none z-0" />
-
-        {/* Top Navigation Bar (Replicating Image 1 top bar with edge-to-edge layout & dark/grey styling) */}
-        <header className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pt-8 pb-4 flex items-center justify-between">
-          {/* Left Brand Identity: "1v1 Arena | KOLLABRIX" */}
-          <div className="flex items-center gap-3">
-            <span className="text-base sm:text-lg font-bold text-white tracking-tight font-sans">
+        {/* Minimalist Top Navigation Header */}
+        <header className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pt-6 sm:pt-8 flex items-center justify-between">
+          {/* Brand Pill */}
+          <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-black/60 border border-white/15 backdrop-blur-md shadow-lg">
+            <span className="text-sm sm:text-base font-bold text-white tracking-tight font-sans">
               1v1 Arena
             </span>
             <span className="text-white/25 font-light text-sm select-none">|</span>
-            <span className="text-xs sm:text-sm font-mono font-black tracking-widest text-slate-400 uppercase">
+            <span className="text-xs sm:text-sm font-mono font-black tracking-widest text-slate-300 uppercase">
               KOLLABRIX
             </span>
           </div>
 
-          {/* Right Action Buttons */}
+          {/* Action Navigation */}
           <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/"
-              className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors px-3 py-1.5 font-mono"
+              className="px-4 py-2 rounded-full bg-black/60 hover:bg-black/80 border border-white/15 hover:border-white/30 text-xs sm:text-sm text-slate-300 hover:text-white font-mono backdrop-blur-md transition-all shadow-md"
             >
               Exit to Home
             </Link>
 
-            {/* Dark / Smoked Charcoal Frosted Glass Button (Replacing bright cyan) */}
             <button
               type="button"
               onClick={handleLaunchLobby}
-              className="group px-5 sm:px-6 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.18] hover:border-white/35 text-slate-200 hover:text-white font-mono font-bold text-xs sm:text-sm backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.6)] transition-all duration-150 active:scale-95 cursor-pointer flex items-center gap-2"
+              className="group px-5 sm:px-6 py-2 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-mono font-bold text-xs sm:text-sm shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              <Swords className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-colors" />
-              <span>Live Lobby</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <Swords className="w-3.5 h-3.5 text-slate-950" />
+              <span>Enter Live Arena</span>
             </button>
           </div>
         </header>
 
-        {/* Hero Grid Container: Wide Full-Bleed Layout with No Empty Left/Right Margins */}
-        <main className="relative z-10 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 py-4 lg:py-8 flex-1 flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center w-full">
-            {/* Left Column: Heading + Description + Feature Pills + CTA */}
-            <div className="lg:col-span-7 xl:col-span-6 2xl:col-span-7 flex flex-col justify-center text-left">
-              {/* Massive Editorial Headline: "Welcome To" / "1v1 Arena" (Vibrant Cyan Glow Gradient) */}
-              <h1 className="font-heading font-black tracking-tight leading-[0.96] select-none text-white text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl 2xl:text-[5.8rem]">
-                <span className="block text-white">Welcome To</span>
-                <span className="block mt-2 bg-gradient-to-r from-cyan-200 via-sky-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_4px_30px_rgba(6,182,212,0.45)]">
-                  1v1 Arena
-                </span>
-              </h1>
+        {/* Center Canvas / Ambient View */}
+        <div className="relative z-10 flex-1" />
 
-              {/* Explanatory Paragraph ("show what it is") */}
-              <p className="text-slate-300/90 text-sm sm:text-base md:text-lg leading-relaxed mt-6 max-w-2xl font-normal drop-shadow-sm">
-                Battle Arena is the high-stakes live coding combat for collegiate builders. Duel
-                real-time in fast-paced 3-minute blitz sprints, solve algorithmic hurdles under
-                anti-cheat fog of war, and defeat campus rivals to climb the verified leaderboard.
-              </p>
-
-              {/* Pills & CTA Row (Matching "NFTs", "Crypto", "Games" & "Find Your Niche" in Image 1) */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-8 sm:mt-10">
-                {/* Feature Pills */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-4 py-2 rounded-full border border-white/20 bg-white/[0.04] text-xs sm:text-sm text-slate-200 font-medium backdrop-blur-md">
-                    3-Min Blitz
-                  </span>
-                  <span className="px-4 py-2 rounded-full border border-white/20 bg-white/[0.04] text-xs sm:text-sm text-slate-200 font-medium backdrop-blur-md">
-                    Anti-Cheat Fog
-                  </span>
-                  <span className="px-4 py-2 rounded-full border border-white/20 bg-white/[0.04] text-xs sm:text-sm text-slate-200 font-medium backdrop-blur-md">
-                    Ranked Elo
-                  </span>
-                </div>
-
-                {/* Primary Pill Button (Matching "Find Your Niche" in Image 1) */}
-                <button
-                  type="button"
-                  onClick={handleLaunchLobby}
-                  className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_35px_rgba(255,255,255,0.45)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer ml-1"
-                >
-                  <span>⚔️ Enter Battle Arena</span>
-                  <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-
-              {/* Bottom Telemetry Strip */}
-              <div className="flex flex-wrap items-center gap-5 sm:gap-7 text-xs text-slate-400 font-mono mt-10 sm:mt-12 pt-6 border-t border-white/[0.08]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
-                  <span className="text-slate-300">LIVE MULTIPLAYER SQUADS</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-3.5 h-3.5 text-slate-300" />
-                  <span>&lt;20MS LOW LATENCY</span>
-                </div>
-                <div className="hidden sm:flex items-center gap-2">
-                  <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
-                  <span>ANTI-CHEAT SENTINEL</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Character Entity Expands to Lavishly Fill the Right Area */}
-            <div className="lg:col-span-5 xl:col-span-6 2xl:col-span-5 relative flex items-center justify-center lg:justify-end mt-4 lg:mt-0">
-              <div className="relative w-full max-w-[560px] lg:max-w-[620px] xl:max-w-[720px] 2xl:max-w-[800px] aspect-[16/9] flex items-center justify-center rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-400/30 bg-[#060A14]/90 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-xl group transition-all duration-300 hover:border-sky-400/50">
-                {/* Atmospheric Glow Highlights matching Cyan Pixel Eyes & Golden Flora */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_52%_48%,rgba(6,182,212,0.28),transparent_65%)] pointer-events-none" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_75%,rgba(245,158,11,0.22),transparent_60%)] pointer-events-none" />
-
-                {/* The Character Image from 3rd Image (Clean, Sleek Retro Robot Sentinel) */}
-                <div className="relative z-10 w-full h-full flex items-center justify-center">
-                  <Image
-                    src="/images/arena-retro-sentinel-v1.jpg"
-                    alt="Kollabrix 1v1 Battle Arena Retro Robot Sentinel"
-                    width={1024}
-                    height={576}
-                    priority
-                    unoptimized
-                    className="w-full h-full object-cover object-center select-none pointer-events-none transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-                  />
-                </div>
-
-                {/* Floating Telemetry Badge Top Right */}
-                <div className="absolute top-3.5 sm:top-4 right-3 sm:right-5 z-20 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-400/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-cyan-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                  <span>RETRO SENTINEL • ONLINE</span>
-                </div>
-
-                {/* Floating Telemetry Badge Bottom Left */}
-                <div className="absolute bottom-3.5 sm:bottom-4 left-3 sm:left-5 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/85 border border-sky-400/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-sky-200">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  <span>CIRCUIT 01 • MYSTIC GUARDIAN</span>
-                </div>
-              </div>
-            </div>
+        {/* Floating Bottom HUD & Quick Action */}
+        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pb-6 sm:pb-10 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Status Indicator */}
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/60 border border-cyan-500/30 backdrop-blur-md text-xs font-mono text-cyan-200 shadow-xl">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span className="font-semibold text-cyan-300">RETRO SENTINEL • ONLINE</span>
+            <span className="text-white/20 select-none">•</span>
+            <span className="text-amber-300">3-MIN LIVE DUELS</span>
+            <span className="text-white/20 select-none hidden md:inline">•</span>
+            <span className="text-emerald-400 hidden md:inline">ANTI-CHEAT FOG</span>
           </div>
-        </main>
 
-        {/* Footer Sub-bar with Expanded Width */}
-        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 py-6 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-          <span>Kollabrix Esports Gateway • Anti-Cheat Fog of War Protected</span>
-          <span className="hidden sm:inline">Engineered for Collegiate Hackers</span>
+          {/* Start Battle Duel Button */}
+          <button
+            type="button"
+            onClick={handleLaunchLobby}
+            className="group inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_40px_rgba(255,255,255,0.45)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <span>⚔️ Start 1v1 Battle Duel</span>
+            <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+          </button>
         </footer>
       </div>
     );
