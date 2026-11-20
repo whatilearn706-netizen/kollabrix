@@ -222,6 +222,19 @@ export function KollabrixQuickDock() {
   // Web Audio Context for authentic tactile UI clicks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastWheelTimeRef = useRef<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+
+  // Smoothly scroll active item into view inside the 3-4 item viewport
+  useEffect(() => {
+    const activeEl = itemRefs.current[activeIndex];
+    if (activeEl && scrollContainerRef.current) {
+      activeEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [activeIndex]);
 
   // Hover state for floating callout card
   const [hoveredNode, setHoveredNode] = useState<{
@@ -376,10 +389,10 @@ export function KollabrixQuickDock() {
         className="fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-none"
       >
         {/* Outer Translucent Glass Halo Pill */}
-        <div className="relative p-1.5 rounded-full bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(255,255,255,0.03)] backdrop-blur-2xl pointer-events-auto transition-all duration-300">
+        <div className="relative p-1 rounded-full bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(255,255,255,0.03)] backdrop-blur-2xl pointer-events-auto transition-all duration-300">
           {/* Inner Matte Obsidian Capsule */}
-          <div className="relative flex flex-col items-center gap-1.5 p-1.5 sm:p-2 rounded-full bg-gradient-to-b from-[#1b1c24] via-[#111218] to-[#0d0e14] border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
-            {/* Top Sparkle (✦) Key - Opens macOS Application Launcher */}
+          <div className="relative flex flex-col items-center gap-1.5 p-1.5 rounded-full bg-gradient-to-b from-[#1b1c24] via-[#111218] to-[#0d0e14] border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
+            {/* Top Logo Key (Replaces Sparkle with Kollabrix Official Logo) */}
             <button
               type="button"
               onClick={() => {
@@ -390,67 +403,88 @@ export function KollabrixQuickDock() {
                 const rect = e.currentTarget.getBoundingClientRect();
                 setHoveredNode({
                   id: 'apps',
-                  label: 'Application Launcher (⌘K)',
+                  label: 'Kollabrix Platform Hub (⌘K)',
                   sub: 'Search all portals & tools',
                   x: rect.left,
                   y: rect.top + rect.height / 2,
                 });
               }}
               onMouseLeave={() => setHoveredNode(null)}
-              aria-label="Open Applications Launchpad"
-              className="relative flex items-center justify-center w-11 h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.1] text-amber-300 hover:text-white transition-all duration-200 active:scale-95 group shadow-[inset_0_1px_2px_rgba(255,255,255,0.15)] cursor-pointer"
+              aria-label="Open Kollabrix Launchpad"
+              className="relative flex items-center justify-center w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.1] transition-all duration-200 active:scale-95 group shadow-[inset_0_1px_2px_rgba(255,255,255,0.15)] cursor-pointer"
             >
-              <Sparkles className="w-5 h-5 transition-transform duration-300 group-hover:scale-115 group-hover:rotate-12 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+              <div className="w-5 h-5 relative shrink-0 flex items-center justify-center">
+                <img
+                  src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
+                  alt="Kollabrix Logo"
+                  className="w-full h-full object-contain filter drop-shadow-[0_1px_8px_rgba(245,158,11,0.6)] transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
             </button>
 
             {/* Subtle Divider */}
-            <div className="w-6 h-[1px] bg-white/[0.1] my-0.5" />
+            <div className="w-5 h-[1px] bg-white/[0.1] my-0.5" />
 
-            {/* Navigation Icons Stack */}
-            <div className="flex flex-col items-center gap-1.5">
-              {DOCK_ITEMS.map((item, index) => {
-                const Icon = item.icon;
-                const isSelected = activeIndex === index;
-                const isRouteActive =
-                  pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-                const isHighlighted = isSelected || isRouteActive;
+            {/* Scrollable Navigation Viewport (3-4 items visible with progressive blur scrolling on top & bottom) */}
+            <div className="relative w-full overflow-hidden flex flex-col items-center">
+              {/* Top Blur / Fade Gradient Overlay */}
+              <div className="pointer-events-none absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#1b1c24] to-transparent backdrop-blur-[2px] z-10" />
 
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    target={item.openInNewTab ? '_blank' : undefined}
-                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    onClick={() => {
-                      setActiveIndex(index);
-                      playTactileClick();
-                    }}
-                    onMouseEnter={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoveredNode({
-                        id: item.id,
-                        label: item.label,
-                        sub: item.sub,
-                        x: rect.left,
-                        y: rect.top + rect.height / 2,
-                      });
-                    }}
-                    onMouseLeave={() => setHoveredNode(null)}
-                    aria-label={item.label}
-                    className={`relative flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-95 ${
-                      isHighlighted
-                        ? 'w-11 h-11 rounded-full bg-white text-zinc-950 shadow-[0_8px_25px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
-                        : 'w-11 h-11 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
-                    }`}
-                  >
-                    <Icon
-                      className={`w-5 h-5 transition-transform duration-200 ${
-                        isHighlighted ? 'scale-105 stroke-[2.2]' : 'group-hover:scale-110'
+              {/* Scroll Container */}
+              <div
+                ref={scrollContainerRef}
+                className="flex flex-col items-center gap-1.5 max-h-[162px] overflow-y-auto overflow-x-hidden scrollbar-none py-1 scroll-smooth [mask-image:linear-gradient(to_bottom,transparent_0%,black_16%,black_84%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_16%,black_84%,transparent_100%)]"
+              >
+                {DOCK_ITEMS.map((item, index) => {
+                  const Icon = item.icon;
+                  const isSelected = activeIndex === index;
+                  const isRouteActive =
+                    pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+                  const isHighlighted = isSelected || isRouteActive;
+
+                  return (
+                    <Link
+                      key={item.id}
+                      ref={(el) => {
+                        itemRefs.current[index] = el;
+                      }}
+                      href={item.href}
+                      target={item.openInNewTab ? '_blank' : undefined}
+                      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                      onClick={() => {
+                        setActiveIndex(index);
+                        playTactileClick();
+                      }}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setHoveredNode({
+                          id: item.id,
+                          label: item.label,
+                          sub: item.sub,
+                          x: rect.left,
+                          y: rect.top + rect.height / 2,
+                        });
+                      }}
+                      onMouseLeave={() => setHoveredNode(null)}
+                      aria-label={item.label}
+                      className={`relative flex items-center justify-center shrink-0 transition-all duration-300 cursor-pointer active:scale-95 ${
+                        isHighlighted
+                          ? 'w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-full bg-white text-zinc-950 shadow-[0_8px_25px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
+                          : 'w-9.5 h-9.5 sm:w-10 sm:h-10 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
                       }`}
-                    />
-                  </Link>
-                );
-              })}
+                    >
+                      <Icon
+                        className={`w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform duration-200 ${
+                          isHighlighted ? 'scale-105 stroke-[2.2]' : 'group-hover:scale-110'
+                        }`}
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Bottom Blur / Fade Gradient Overlay */}
+              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[#0d0e14] to-transparent backdrop-blur-[2px] z-10" />
             </div>
           </div>
         </div>
