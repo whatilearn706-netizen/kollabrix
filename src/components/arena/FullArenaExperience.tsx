@@ -2889,12 +2889,16 @@ export function FullArenaExperience({
   }
 
   return (
-    <div className="fixed inset-0 z-[9990] bg-[#05070e] text-slate-100 flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 z-[9990] bg-[#000000] text-slate-100 flex flex-col overflow-hidden select-none">
       {/* Real-time Animated Cyber Arena Background Canvas */}
       <ArenaBackgroundMatrix />
 
+      {/* Ambient lighting overlays matching 2nd image theme */}
+      <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(14,165,233,0.18),transparent_70%)] pointer-events-none z-0" />
+      <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle_at_20%_80%,rgba(37,99,235,0.12),transparent_65%)] pointer-events-none z-0" />
+
       {/* Top Cyber Navigation Bar */}
-      <header className="relative z-20 h-16 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between shrink-0">
+      <header className="relative z-20 h-16 border-b border-white/[0.08] bg-black/85 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 relative shrink-0 flex items-center justify-center">
             <img
@@ -2994,140 +2998,329 @@ export function FullArenaExperience({
         
         {/* ================= STEP 0: MULTIPLAYER ARENA COMMAND CENTER (HERO + TACTICAL COMBAT GATEWAY) ================= */}
         {step === 0 && (
-          <div className="w-full max-w-7xl 2xl:max-w-[1540px] mx-auto space-y-6 sm:space-y-8 animate-fadeIn pt-2 pb-12">
-            {/* Top Hero Section: Code. Compete. Win. */}
-            <div className="relative rounded-3xl p-6 sm:p-8 lg:p-10 bg-gradient-to-r from-slate-950 via-slate-900/90 to-purple-950/30 border border-slate-800 shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 lg:gap-10">
-              {/* Left Hero Content */}
-              <div className="space-y-4 max-w-2xl xl:max-w-3xl flex-1 text-left z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.25)]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>MULTIPLAYER CODING BATTLE</span>
+          <div className="w-full max-w-7xl 2xl:max-w-[1580px] mx-auto animate-fadeIn pt-2 pb-12">
+            {/* 45% / 55% Vertical Split Layout matching user instructions & 2nd image theme */}
+            <div className="flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8 w-full">
+              
+              {/* ============================================================== */}
+              {/* LEFT COLUMN (45%): 3RD IMAGE (HERO CODER) + 4TH IMAGE CONTENT  */}
+              {/* ============================================================== */}
+              <div className="w-full lg:w-[45%] flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-[#07080d]/95 border border-white/[0.1] shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_30px_rgba(14,165,233,0.06)] backdrop-blur-2xl relative overflow-hidden space-y-6">
+                {/* Ambient cyan glow */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+
+                {/* 1. TOP SECTION (From 4th image): Code. Compete. Win. */}
+                <div className="space-y-3 relative z-10 text-left">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>MULTIPLAYER CODING BATTLE</span>
+                  </div>
+
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight font-sans leading-tight">
+                    Code. Compete.{' '}
+                    <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent filter drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">
+                      Win.
+                    </span>
+                  </h1>
+
+                  <p className="text-xs sm:text-sm text-slate-300/85 leading-relaxed font-sans max-w-lg">
+                    Challenge your friends in real-time coding battles and show who&apos;s the true code champion!
+                  </p>
                 </div>
 
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-black text-white tracking-tight font-sans leading-tight">
-                  Code. Compete.{' '}
-                  <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent filter drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">
-                    Win.
-                  </span>
-                </h1>
-
-                <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed font-sans max-w-xl">
-                  Challenge your friends in real-time coding battles and show who&apos;s the true code champion!
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playArcadeCoinSound();
-                      setIsHost(true);
-                      setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
-                      setStep(2);
-                    }}
-                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer transition-all"
-                  >
-                    <Play className="w-4 h-4 fill-current" />
-                    <span>Create Tournament</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTacticalSelectSound();
-                      setShowJoinModal(true);
-                    }}
-                    className="px-5 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 font-mono text-xs font-bold tracking-wider active:scale-95 flex items-center gap-2 cursor-pointer transition-all shadow-md"
-                  >
-                    <Users className="w-4 h-4 text-cyan-400" />
-                    <span>Join with Code</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Hero Graphic: Futuristic Cyber Coders VS */}
-              <div className="relative shrink-0 w-full md:w-96 lg:w-[460px] xl:w-[520px] flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/10 blur-3xl rounded-full pointer-events-none" />
-                <img
-                  src="/brand/arena-coders-vs.jpg?v=2"
-                  alt="Multiplayer Coding Battle"
-                  className="relative z-10 w-full h-auto rounded-2xl border border-cyan-500/40 shadow-[0_0_40px_rgba(6,182,212,0.3)] object-cover"
-                />
-              </div>
-            </div>
-
-            {/* Main Interactive Tactical Command Console (Image 1 Specs) */}
-            <div className="p-5 sm:p-7 md:p-8 lg:p-9 rounded-3xl bg-slate-950/95 border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl space-y-6">
-              {/* Tab Navigation Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
-                <div className="flex items-center gap-2">
-                  <div className="px-4 py-2 rounded-xl font-mono text-xs font-bold bg-slate-900 text-amber-300 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.25)] flex items-center gap-2">
-                    <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tournament</span>
+                {/* 2. CENTER SECTION: 3RD IMAGE (Cyberpunk Coder with light burst) */}
+                <div className="relative w-full rounded-2xl overflow-hidden border border-cyan-500/30 shadow-[0_0_40px_rgba(6,182,212,0.25)] group z-10">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30 z-10 pointer-events-none" />
+                  <img
+                    src="/images/arena-coder-burst.jpg"
+                    alt="Coder in Battle Arena Duel"
+                    className="w-full h-64 sm:h-72 md:h-80 lg:h-[340px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {/* Floating Telemetry Tag */}
+                  <div className="absolute bottom-3 left-3 z-20 px-3 py-1 rounded-full bg-black/80 border border-cyan-400/40 text-[10px] font-mono text-cyan-300 backdrop-blur-md flex items-center gap-1.5 shadow-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    <span>SYNCHRONIZED ARENA HUD • 60 FPS</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">
-                  <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span>Live Now</span>
+                {/* 3. BOTTOM SECTION: Buttons from 4th image (Below the 3rd image) */}
+                <div className="space-y-4 relative z-10">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playArcadeCoinSound();
+                        setIsHost(true);
+                        setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                        setStep(2);
+                      }}
+                      className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center gap-2 cursor-pointer transition-all"
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Create Tournament</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playTacticalSelectSound();
+                        setShowJoinModal(true);
+                      }}
+                      className="px-5 py-3.5 rounded-xl bg-black/80 hover:bg-slate-900 border border-slate-700/80 text-slate-200 font-mono text-xs font-bold tracking-wider active:scale-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
+                    >
+                      <Users className="w-4 h-4 text-cyan-400" />
+                      <span>Join with Code</span>
+                    </button>
+                  </div>
+
+                  {/* Micro telemetry footer on left column */}
+                  <div className="flex items-center gap-4 text-[11px] font-mono text-slate-400 pt-2 border-t border-white/[0.08]">
+                    <span className="flex items-center gap-1.5 text-cyan-300">
+                      <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>&lt;20ms Latency</span>
+                    </span>
+                    <span className="text-white/20">•</span>
+                    <span className="flex items-center gap-1.5 text-purple-300">
+                      <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Anti-Cheat Sentinel</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Two-Column Balanced Tactical Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                {/* Left Pod: Binary Ronin & Performance Telemetry (Col 1-5) */}
-                <div className="lg:col-span-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-slate-900/90 via-slate-950 to-purple-950/20 border border-purple-500/30 flex flex-col justify-between space-y-4 shadow-lg relative overflow-hidden">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                        ✦ LIVE
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        CIRCUIT 01
-                      </span>
+              {/* ============================================================== */}
+              {/* RIGHT COLUMN (55%): OTHER TACTICAL SPECIFICATION & TOURNAMENT  */}
+              {/* ============================================================== */}
+              <div className="w-full lg:w-[55%] flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-[#07080d]/95 border border-white/[0.1] shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_30px_rgba(14,165,233,0.06)] backdrop-blur-2xl relative space-y-5">
+                {/* Ambient purple glow */}
+                <div className="absolute top-1/3 right-0 w-80 h-80 bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
+
+                {/* Tab Navigation Strip */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/[0.08] relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 rounded-xl font-mono text-xs font-bold bg-black border border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)] flex items-center gap-2">
+                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Tournament</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+                    <span>Live Now</span>
+                  </div>
+                </div>
+
+                {/* Engagement Specification Form */}
+                <div className="space-y-4 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span>ENGAGEMENT SPECIFICATION</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold">
+                      STEP 1 OF 3
+                    </span>
+                  </div>
+
+                  {/* Input Tactical Pilot Call-Sign */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
+                      <span>Tactical Pilot Call-Sign / Battle Tag:</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={hudVisible}
+                          onChange={(e) => setHudVisible(e.target.checked)}
+                          className="sr-only"
+                        />
+                        <span className="text-[9px] text-cyan-400">Visible in Arena HUD</span>
+                        <span className={`w-6 h-3 rounded-full transition-colors flex items-center px-0.5 ${hudVisible ? 'bg-cyan-500' : 'bg-slate-700'}`}>
+                          <span className={`w-2 h-2 rounded-full bg-white transition-transform ${hudVisible ? 'translate-x-3' : 'translate-x-0'}`} />
+                        </span>
+                      </label>
                     </div>
 
-                    {/* Binary Ronin Banner Graphic */}
-                    <div className="relative w-full rounded-xl overflow-hidden border border-purple-500/30 shadow-inner group">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400 font-mono text-xs select-none">
+                          🛡️
+                        </span>
+                        <input
+                          type="text"
+                          value={playerName}
+                          onChange={(e) => setPlayerName(e.target.value)}
+                          maxLength={24}
+                          placeholder="Enter tactical call-sign..."
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-black border border-white/[0.12] text-white font-mono text-xs sm:text-sm font-bold tracking-wider focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 shadow-inner"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={rollRandomCallSign}
+                        className="px-3.5 py-2.5 rounded-xl bg-black hover:bg-slate-900 border border-white/[0.12] text-cyan-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer shadow-sm"
+                        title="Generate randomized tactical battle handle"
+                      >
+                        <Dices className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Randomize</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Select Code Duel Combat Format: 3 Cards */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
+                      Select Code Duel Combat Format:
+                    </label>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* Format 1: 1v1 Solo */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setSelectedCombatFormat('1v1');
+                          setTeamSize('1v1');
+                        }}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
+                          selectedCombatFormat === '1v1'
+                            ? 'bg-black border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400'
+                            : 'bg-black/60 border-white/[0.08] hover:border-slate-700 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 text-cyan-400 mb-1">
+                          <Zap className="w-4 h-4 fill-current" />
+                          <span className="font-mono text-xs font-black uppercase tracking-tight">1 v 1 Solo</span>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-300 font-bold">Showdown</div>
+                        <div className="text-[9px] font-mono text-cyan-400 mt-1">Ultra Low Latency</div>
+                      </button>
+
+                      {/* Format 2: 2v2 Relay */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setSelectedCombatFormat('2v2');
+                          setTeamSize('2v2');
+                        }}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
+                          selectedCombatFormat === '2v2'
+                            ? 'bg-black border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.3)] ring-1 ring-purple-400'
+                            : 'bg-black/60 border-white/[0.08] hover:border-slate-700 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 text-[8px] font-mono font-bold uppercase">
+                          Popular
+                        </div>
+                        <div className="flex items-center gap-1.5 text-purple-400 mb-1">
+                          <Users className="w-4 h-4" />
+                          <span className="font-mono text-xs font-black uppercase tracking-tight">2 v 2 Relay</span>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-300 font-bold">Squad</div>
+                        <div className="text-[9px] font-mono text-purple-400 mt-1">Dual-Pilot Co-op</div>
+                      </button>
+
+                      {/* Format 3: FFA Battle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setSelectedCombatFormat('ffa');
+                          setTeamSize('1v1');
+                        }}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
+                          selectedCombatFormat === 'ffa'
+                            ? 'bg-black border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)] ring-1 ring-amber-400'
+                            : 'bg-black/60 border-white/[0.08] hover:border-slate-700 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[8px] font-mono font-bold uppercase">
+                          Beta
+                        </div>
+                        <div className="flex items-center gap-1.5 text-amber-400 mb-1">
+                          <Flame className="w-4 h-4" />
+                          <span className="font-mono text-xs font-black uppercase tracking-tight">FFA Battle</span>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-300 font-bold">Royale</div>
+                        <div className="text-[9px] font-mono text-amber-400 mt-1">Free For All</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Match Pace Selection */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase font-bold mr-1">
+                      PACING:
+                    </span>
+                    {[
+                      { label: 'Blitz (3m)', sec: 180 },
+                      { label: 'Competitive (5m)', sec: 300, isComp: true },
+                      { label: 'Marathon (10m)', sec: 600 },
+                    ].map((p) => (
+                      <button
+                        key={p.sec}
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setTimeLimit(p.sec);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          timeLimit === p.sec
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.25)]'
+                            : 'bg-black border border-white/[0.1] text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {p.isComp && <Zap className="w-3 h-3 text-amber-400 fill-current" />}
+                        <span>{p.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {authGateError && (
+                    <div className="p-3 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-mono flex items-center gap-2 animate-shake">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                      <span>{authGateError}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tournament Circuit Card (BINARY RONIN Speed Slicer) */}
+                <div className="p-4 rounded-2xl bg-black/60 border border-purple-500/30 space-y-3 relative overflow-hidden z-10">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                      ✦ TOURNAMENT CIRCUIT
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      CIRCUIT 01
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                    {/* Banner */}
+                    <div className="sm:col-span-5 relative rounded-xl overflow-hidden border border-purple-500/30 group">
                       <img
                         src="/brand/arena-binary-ronin-banner.jpg"
                         alt="Binary Ronin Speed Slicer"
-                        className="w-full h-36 sm:h-40 md:h-44 lg:h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-24 sm:h-28 object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 pointer-events-none" />
                     </div>
 
-                    {/* Format Badges */}
-                    <div className="flex items-center justify-center gap-2 text-[10px] font-mono">
-                      <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300">
-                        👥 2v2
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300">
-                        ⏱️ 3 Rounds
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-300 font-bold">
-                        📊 Competitive
-                      </span>
-                    </div>
-
-                    {/* Performance Telemetry */}
-                    <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                      <div className="flex items-center justify-between text-[10px] font-mono font-bold text-slate-400">
-                        <span># YOUR PERFORMANCE</span>
-                        <span className="text-emerald-400 font-bold">ACTIVE LEAGUE</span>
-                      </div>
-
+                    {/* Stats & Telemetry */}
+                    <div className="sm:col-span-7 space-y-2">
                       <div className="grid grid-cols-2 gap-2 font-mono">
-                        <div className="p-2 rounded-lg bg-slate-950/90 border border-amber-500/30 flex items-center gap-2">
-                          <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div className="p-2 rounded-lg bg-black border border-amber-500/30 flex items-center gap-2">
+                          <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                           <div>
                             <div className="text-[9px] text-slate-400">WIN RATE</div>
                             <div className="text-xs font-black text-amber-300">98.4% <span className="text-emerald-400 text-[9px]">↑ 2.1%</span></div>
                           </div>
                         </div>
 
-                        <div className="p-2 rounded-lg bg-slate-950/90 border border-cyan-500/30 flex items-center gap-2">
-                          <Award className="w-4 h-4 text-cyan-400 shrink-0" />
+                        <div className="p-2 rounded-lg bg-black border border-cyan-500/30 flex items-center gap-2">
+                          <Award className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                           <div>
                             <div className="text-[9px] text-slate-400">GLOBAL RANK</div>
                             <div className="text-xs font-black text-cyan-300">#42</div>
@@ -3136,270 +3329,59 @@ export function FullArenaExperience({
                       </div>
 
                       {/* Glowing SVG Sparkline */}
-                      <div className="pt-1">
-                        <svg viewBox="0 0 200 35" className="w-full h-8 overflow-visible">
-                          <path
-                            d="M 0,28 Q 30,32 60,22 T 120,14 T 170,8 T 200,4"
-                            fill="none"
-                            stroke="#34d399"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            className="filter drop-shadow-[0_0_6px_rgba(52,211,153,0.7)]"
-                          />
-                        </svg>
-                      </div>
+                      <svg viewBox="0 0 200 30" className="w-full h-6 overflow-visible">
+                        <path
+                          d="M 0,24 Q 30,28 60,18 T 120,12 T 170,6 T 200,3"
+                          fill="none"
+                          stroke="#34d399"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          className="filter drop-shadow-[0_0_6px_rgba(52,211,153,0.7)]"
+                        />
+                      </svg>
                     </div>
-                  </div>
-
-                  {/* Footnote Selectors (Format & Duration) */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 font-mono text-[10px] text-slate-400">
-                    <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 cursor-pointer transition-colors">
-                      <span className="text-slate-400">Format:</span>
-                      <select
-                        value={selectedCombatFormat}
-                        onChange={(e) => {
-                          const val = e.target.value as '1v1' | '2v2' | 'ffa';
-                          setSelectedCombatFormat(val);
-                          setTeamSize(val === '2v2' ? '2v2' : '1v1');
-                        }}
-                        className="bg-transparent text-cyan-300 font-bold focus:outline-none cursor-pointer text-[10px]"
-                      >
-                        <option value="1v1" className="bg-slate-900 text-white">1v1</option>
-                        <option value="2v2" className="bg-slate-900 text-white">2v2</option>
-                        <option value="ffa" className="bg-slate-900 text-white">FFA</option>
-                      </select>
-                    </label>
-
-                    <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 cursor-pointer transition-colors">
-                      <span className="text-slate-400">Duration:</span>
-                      <select
-                        value={timeLimit}
-                        onChange={(e) => setTimeLimit(Number(e.target.value))}
-                        className="bg-transparent text-amber-300 font-bold focus:outline-none cursor-pointer text-[10px]"
-                      >
-                        <option value={180} className="bg-slate-900 text-white">3 Mins</option>
-                        <option value={300} className="bg-slate-900 text-white">5 Mins</option>
-                        <option value={600} className="bg-slate-900 text-white">10 Mins</option>
-                      </select>
-                    </label>
                   </div>
                 </div>
 
-                {/* Right Pod: Engagement Specification (Col 6-12) */}
-                <div className="lg:col-span-7 p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 flex flex-col justify-between space-y-4 shadow-lg">
-                  <div className="space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5 text-amber-400" />
-                        <span>ENGAGEMENT SPECIFICATION</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        STEP 1 OF 3
-                      </span>
-                    </div>
+                {/* Bottom Master Action Bar */}
+                <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/[0.08] relative z-10">
+                  <button
+                    type="button"
+                    onClick={handleExitArena}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-black hover:bg-slate-900 border border-white/[0.12] text-slate-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Showcase</span>
+                  </button>
 
-                    {/* Input Tactical Pilot Call-Sign */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
-                        <span>Tactical Pilot Call-Sign / Battle Tag:</span>
-                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={hudVisible}
-                            onChange={(e) => setHudVisible(e.target.checked)}
-                            className="sr-only"
-                          />
-                          <span className="text-[9px] text-cyan-400">Visible in Arena HUD</span>
-                          <span className={`w-6 h-3 rounded-full transition-colors flex items-center px-0.5 ${hudVisible ? 'bg-cyan-500' : 'bg-slate-700'}`}>
-                            <span className={`w-2 h-2 rounded-full bg-white transition-transform ${hudVisible ? 'translate-x-3' : 'translate-x-0'}`} />
-                          </span>
-                        </label>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400 font-mono text-xs select-none">
-                            🛡️
-                          </span>
-                          <input
-                            type="text"
-                            value={playerName}
-                            onChange={(e) => setPlayerName(e.target.value)}
-                            maxLength={24}
-                            placeholder="Enter tactical call-sign..."
-                            className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs sm:text-sm font-bold tracking-wider focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 shadow-inner"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={rollRandomCallSign}
-                          className="px-3 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-cyan-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer shadow-sm"
-                          title="Generate randomized tactical battle handle"
-                        >
-                          <Dices className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Randomize</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Select Code Duel Combat Format: 3 Cards */}
-                    <div className="space-y-1.5">
-                      <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
-                        Select Code Duel Combat Format:
-                      </label>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                        {/* Format 1: 1v1 Solo Showdown */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playTacticalSelectSound();
-                            setSelectedCombatFormat('1v1');
-                            setTeamSize('1v1');
-                          }}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
-                            selectedCombatFormat === '1v1'
-                              ? 'bg-slate-950 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400'
-                              : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5 text-cyan-400 mb-1">
-                            <Zap className="w-4 h-4 fill-current" />
-                            <span className="font-mono text-xs font-black uppercase tracking-tight">1 v 1 Solo</span>
-                          </div>
-                          <div className="text-[10px] font-mono text-slate-300 font-bold">Showdown</div>
-                          <div className="text-[9px] font-mono text-cyan-400 mt-1">Ultra Low Latency</div>
-                        </button>
-
-                        {/* Format 2: 2v2 Relay Squad */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playTacticalSelectSound();
-                            setSelectedCombatFormat('2v2');
-                            setTeamSize('2v2');
-                          }}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
-                            selectedCombatFormat === '2v2'
-                              ? 'bg-slate-950 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.3)] ring-1 ring-purple-400'
-                              : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <div className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 text-[8px] font-mono font-bold uppercase">
-                            Popular
-                          </div>
-                          <div className="flex items-center gap-1.5 text-purple-400 mb-1">
-                            <Users className="w-4 h-4" />
-                            <span className="font-mono text-xs font-black uppercase tracking-tight">2 v 2 Relay</span>
-                          </div>
-                          <div className="text-[10px] font-mono text-slate-300 font-bold">Squad</div>
-                          <div className="text-[9px] font-mono text-purple-400 mt-1">Dual-Pilot Co-op</div>
-                        </button>
-
-                        {/* Format 3: FFA Battle Royale */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playTacticalSelectSound();
-                            setSelectedCombatFormat('ffa');
-                            setTeamSize('1v1');
-                          }}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
-                            selectedCombatFormat === 'ffa'
-                              ? 'bg-slate-950 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)] ring-1 ring-amber-400'
-                              : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <div className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[8px] font-mono font-bold uppercase">
-                            Beta
-                          </div>
-                          <div className="flex items-center gap-1.5 text-amber-400 mb-1">
-                            <Flame className="w-4 h-4" />
-                            <span className="font-mono text-xs font-black uppercase tracking-tight">FFA Battle</span>
-                          </div>
-                          <div className="text-[10px] font-mono text-slate-300 font-bold">Royale</div>
-                          <div className="text-[9px] font-mono text-amber-400 mt-1">Free For All</div>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Match Pace Selection */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <span className="text-[10px] font-mono text-slate-400 uppercase font-bold mr-1">
-                        PACING:
-                      </span>
-                      {[
-                        { label: 'Blitz (3m)', sec: 180 },
-                        { label: 'Competitive (5m)', sec: 300, isComp: true },
-                        { label: 'Marathon (10m)', sec: 600 },
-                      ].map((p) => (
-                        <button
-                          key={p.sec}
-                          type="button"
-                          onClick={() => {
-                            playTacticalSelectSound();
-                            setTimeLimit(p.sec);
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                            timeLimit === p.sec
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.25)]'
-                              : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          {p.isComp && <Zap className="w-3 h-3 text-amber-400 fill-current" />}
-                          <span>{p.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {authGateError && (
-                      <div className="p-3 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 text-xs font-mono flex items-center gap-2 animate-shake">
-                        <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
-                        <span>{authGateError}</span>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playArcadeCoinSound();
+                      setIsHost(true);
+                      if (arenaTab === 'practice') {
+                        setRoomCode(`SOLO-${Math.floor(1000 + Math.random() * 9000)}`);
+                      } else {
+                        setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                      }
+                      setStep(2);
+                    }}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.45)] active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
+                  >
+                    <span className="text-base">🚀</span>
+                    <span>Initialize Arena Combat Protocol</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              {/* Bottom Master Action Bar */}
-              <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800/80">
-                <button
-                  type="button"
-                  onClick={handleExitArena}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to Lobby</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    playArcadeCoinSound();
-                    setIsHost(true);
-                    if (arenaTab === 'practice') {
-                      setRoomCode(`SOLO-${Math.floor(1000 + Math.random() * 9000)}`);
-                    } else {
-                      setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
-                    }
-                    setStep(2);
-                  }}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 hover:brightness-110 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_0_35px_rgba(6,182,212,0.45)] active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  <span className="text-base">🚀</span>
-                  <span>Initialize Arena Combat Protocol</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
             </div>
 
             {/* Modal: Join Existing Room with Code or Link */}
             {showJoinModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-                <div className="w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-slate-950 border border-cyan-500/40 shadow-[0_0_60px_rgba(6,182,212,0.25)] space-y-5">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+                <div className="w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-[#07080d] border border-cyan-500/40 shadow-[0_0_60px_rgba(6,182,212,0.25)] space-y-5">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.1]">
                     <div className="flex items-center gap-2.5">
                       <span className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
                         <Users className="w-5 h-5" />
@@ -3441,7 +3423,7 @@ export function FullArenaExperience({
                           }
                         }}
                         placeholder="e.g. KBX-4634 or https://kollabrix.in/arena?room=..."
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-sm focus:border-cyan-400 focus:outline-none tracking-wider placeholder:text-slate-600 shadow-inner"
+                        className="w-full px-4 py-3 rounded-xl bg-black border border-white/[0.12] text-cyan-300 font-mono text-sm focus:border-cyan-400 focus:outline-none tracking-wider placeholder:text-slate-600 shadow-inner"
                       />
                     </div>
 
@@ -3457,7 +3439,7 @@ export function FullArenaExperience({
                     <button
                       type="button"
                       onClick={() => setShowJoinModal(false)}
-                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs font-bold transition-all cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-black hover:bg-slate-900 border border-white/[0.12] text-slate-300 font-mono text-xs font-bold transition-all cursor-pointer"
                     >
                       Cancel
                     </button>
