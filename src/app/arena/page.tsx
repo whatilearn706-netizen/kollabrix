@@ -273,10 +273,10 @@ function ArenaPageContent() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center w-full">
             {/* Left Column: Heading + Description + Feature Pills + CTA */}
             <div className="lg:col-span-7 xl:col-span-6 2xl:col-span-7 flex flex-col justify-center text-left">
-              {/* Massive Editorial Headline: "Welcome To" / "1v1 Arena" (Metallic Silver / Titanium Gradient) */}
+              {/* Massive Editorial Headline: "Welcome To" / "1v1 Arena" (Vibrant Cyan Glow Gradient) */}
               <h1 className="font-heading font-black tracking-tight leading-[0.96] select-none text-white text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl 2xl:text-[5.8rem]">
                 <span className="block text-white">Welcome To</span>
-                <span className="block mt-2 bg-gradient-to-r from-slate-100 via-slate-300 to-slate-500 bg-clip-text text-transparent drop-shadow-[0_4px_30px_rgba(255,255,255,0.18)]">
+                <span className="block mt-2 bg-gradient-to-r from-cyan-200 via-sky-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_4px_30px_rgba(6,182,212,0.45)]">
                   1v1 Arena
                 </span>
               </h1>
@@ -333,36 +333,33 @@ function ArenaPageContent() {
 
             {/* Right Column: Character Entity Expands to Lavishly Fill the Right Area */}
             <div className="lg:col-span-5 xl:col-span-6 2xl:col-span-5 relative flex items-center justify-center lg:justify-end mt-4 lg:mt-0">
-              <div className="relative w-full max-w-[560px] lg:max-w-[620px] xl:max-w-[720px] 2xl:max-w-[800px] aspect-square flex items-center justify-center">
-                {/* Atmospheric Glow Highlights */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(56,189,248,0.22),transparent_65%)] pointer-events-none" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_60%,rgba(147,51,234,0.15),transparent_60%)] pointer-events-none" />
-
-                {/* Plasma Eye Trail Accent Glow */}
-                <div className="absolute top-[35%] left-[30%] w-36 h-20 bg-sky-400/20 blur-2xl rounded-full pointer-events-none animate-pulse" />
+              <div className="relative w-full max-w-[560px] lg:max-w-[620px] xl:max-w-[720px] 2xl:max-w-[800px] aspect-[4/3] flex items-center justify-center">
+                {/* Atmospheric Glow Highlights matching Cyan Neon Portal */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_50%,rgba(6,182,212,0.28),transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_55%,rgba(14,165,233,0.18),transparent_60%)] pointer-events-none" />
 
                 {/* The Character Image from 2nd Image */}
                 <div className="relative z-10 w-full h-full flex items-center justify-center">
                   <Image
                     src="/images/arena-cyber-entity.png"
-                    alt="Kollabrix 1v1 Battle Arena Cyber Entity"
-                    width={760}
-                    height={760}
+                    alt="Kollabrix 1v1 Battle Arena Cyber Portal Entity"
+                    width={800}
+                    height={600}
                     priority
                     className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)] select-none pointer-events-none"
                   />
                 </div>
 
                 {/* Floating Telemetry Badge Top Right */}
-                <div className="absolute top-4 right-2 sm:right-6 z-20 px-3 py-1.5 rounded-full bg-slate-950/80 border border-slate-700/60 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-slate-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>PILOT SENTINEL • ONLINE</span>
+                <div className="absolute top-4 right-2 sm:right-6 z-20 px-3 py-1.5 rounded-full bg-slate-950/80 border border-cyan-500/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-cyan-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                  <span>PORTAL SENTINEL • ONLINE</span>
                 </div>
 
                 {/* Floating Telemetry Badge Bottom Left */}
-                <div className="absolute bottom-6 left-2 sm:left-6 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700/60 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-slate-200">
-                  <Flame className="w-3.5 h-3.5 text-amber-400" />
-                  <span>CIRCUIT 01 • SPEED SLICER</span>
+                <div className="absolute bottom-6 left-2 sm:left-6 z-20 px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-cyan-500/40 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-mono text-cyan-200">
+                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>CIRCUIT 01 • QUANTUM GATEWAY</span>
                 </div>
               </div>
             </div>
