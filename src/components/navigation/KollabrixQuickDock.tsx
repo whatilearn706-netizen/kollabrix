@@ -220,16 +220,20 @@ export function KollabrixQuickDock() {
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
   // Deck Fold State: when true, deck is outside; when false, whole deck is inside logo
-  const [isDeckOpen, setIsDeckOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kollabrix_quick_dock_open');
-      if (saved !== null) return saved === 'true';
-    }
-    return true; // Default to open/visible outside
-  });
+  const [isDeckOpen, setIsDeckOpen] = useState<boolean>(true);
+
+  // Auto-peek onboarding cues: show deck open for 2.5s on site open or /explore, then smoothly suck inside logo
+  const isHoveredRef = useRef(false);
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const userInteractedRef = useRef(false);
 
   const handleToggleDeck = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    userInteractedRef.current = true;
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
@@ -298,6 +302,30 @@ export function KollabrixQuickDock() {
     if (foundIndex !== -1) {
       setActiveIndex(foundIndex);
     }
+  }, [pathname]);
+
+  // Auto-peek onboarding cues: show deck open for 2.5s on site open or /explore, then smoothly suck inside logo
+  useEffect(() => {
+    // Show peek on website opening (/) or on (/explore)
+    if (pathname === '/' || pathname === '/explore') {
+      setIsDeckOpen(true);
+
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
+
+      autoCloseTimerRef.current = setTimeout(() => {
+        if (!isHoveredRef.current && !userInteractedRef.current) {
+          setIsDeckOpen(false);
+        }
+      }, 2500);
+    }
+
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
+    };
   }, [pathname]);
 
   // Synthesize crisp tactile UI pop sound via Web Audio API
@@ -407,9 +435,8 @@ export function KollabrixQuickDock() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAppsModalOpen, playTactileClick]);
 
-  // Hide on homepage, admin, control-center, battle arena, or during active proctored exam
+  // Hide on admin, control-center, battle arena, or during active proctored exam
   if (
-    pathname === '/' ||
     pathname?.startsWith('/control-center-7x9') ||
     pathname?.startsWith('/arena') ||
     pathname?.startsWith('/admin') ||
@@ -435,6 +462,20 @@ export function KollabrixQuickDock() {
       <div
         ref={dockAsideRef}
         aria-label="Kollabrix Quick Navigation Deck"
+        onMouseEnter={() => {
+          isHoveredRef.current = true;
+        }}
+        onMouseLeave={() => {
+          isHoveredRef.current = false;
+          if (!userInteractedRef.current && (pathname === '/' || pathname === '/explore')) {
+            if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+            autoCloseTimerRef.current = setTimeout(() => {
+              if (!isHoveredRef.current && !userInteractedRef.current) {
+                setIsDeckOpen(false);
+              }
+            }, 1200);
+          }
+        }}
         className="relative select-none flex items-center pointer-events-auto"
       >
         {/* The Official Logo Key Button (Shifted to right of Mayank Goyal) */}
@@ -474,7 +515,7 @@ export function KollabrixQuickDock() {
 
         {/* The Entire Deck: Sucks inside the logo when closed, emerges outside when open */}
         <div
-          className={`absolute right-0 top-full mt-2 z-50 select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right ${
+          className={`absolute right-0 top-full mt-2 z-50 select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right ${
             isDeckOpen
               ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto'
               : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'
