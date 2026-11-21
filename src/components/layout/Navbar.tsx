@@ -45,6 +45,7 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
 import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
+import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -496,6 +497,9 @@ export function Navbar() {
                   </div>
                 )}
               </div>
+
+              {/* Quick Navigation Dock — shifted directly right of user profile */}
+              <KollabrixQuickDock />
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -515,6 +519,7 @@ export function Navbar() {
               >
                 Join Free
               </button>
+              <KollabrixQuickDock />
             </div>
           )}
         </div>

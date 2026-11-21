@@ -219,10 +219,48 @@ export function KollabrixQuickDock() {
   // Active Index
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
+  // Deck Fold State: when true, deck is outside; when false, whole deck is inside logo
+  const [isDeckOpen, setIsDeckOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kollabrix_quick_dock_open');
+      if (saved !== null) return saved === 'true';
+    }
+    return true; // Default to open/visible outside
+  });
+
+  const handleToggleDeck = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.07);
+      }
+    } catch {}
+
+    setIsDeckOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('kollabrix_quick_dock_open', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   // Web Audio Context for authentic tactile UI clicks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastWheelTimeRef = useRef<number>(0);
-  const dockAsideRef = useRef<HTMLElement | null>(null);
+  const dockAsideRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
@@ -389,59 +427,67 @@ export function KollabrixQuickDock() {
   return (
     <>
       {/* =========================================================================
-          PIERRE SÙ DAY #14 DARK THEME SIDE NAVIGATION DOCK (https://pin.it/7hRmbSaQx)
-          - Translucent outer glass halo pill encasing the matte obsidian capsule
-          - Top Sparkle (✦) action well launching Applications Hub & AI Spark
-          - Sleek dark icons with contrasting tactile solid white circle for active item
-          - Crisp tactile click feedback on wheel scroll and navigation
-          - 100% transparent container background: page content behind remains fully readable
+          KOLLABRIX QUICK DOCK — SHIFTED TO RIGHT OF MAYANK GOYAL
+          - Top Kollabrix Logo Button sits right in navbar next to user profile
+          - Tap Logo Button -> Whole deck smoothly gets sucked inside the logo
+          - Tap Logo Button Again -> Whole deck springs outside and appears
          ========================================================================= */}
-      <aside
+      <div
         ref={dockAsideRef}
-        aria-label="Pierre Sù Dark Theme Side Navigation Dock"
-        className="fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 select-none hidden md:block pointer-events-auto"
+        aria-label="Kollabrix Quick Navigation Deck"
+        className="relative select-none flex items-center pointer-events-auto"
       >
-        {/* Outer Translucent Glass Halo Pill */}
-        <div className="relative p-1.5 sm:p-2 rounded-full bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(255,255,255,0.03)] backdrop-blur-2xl transition-all duration-300">
-          {/* Inner Matte Obsidian Capsule */}
-          <div className="relative flex flex-col items-center gap-2 p-2 rounded-full bg-gradient-to-b from-[#1b1c24] via-[#111218] to-[#0d0e14] border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
-            {/* Top Logo Key (Prominent Kollabrix Official Logo) */}
-            <button
-              type="button"
-              onClick={() => {
-                playTactileClick();
-                setIsAppsModalOpen(true);
-              }}
-              onMouseEnter={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setHoveredNode({
-                  id: 'apps',
-                  label: 'Kollabrix Platform Hub (⌘K)',
-                  sub: 'Search all portals & tools',
-                  x: rect.left,
-                  y: rect.top + rect.height / 2,
-                });
-              }}
-              onMouseLeave={() => setHoveredNode(null)}
-              aria-label="Open Kollabrix Launchpad"
-              className="relative flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-b from-amber-500/15 via-white/[0.06] to-white/[0.02] border border-amber-500/30 hover:border-amber-400/50 hover:bg-amber-500/25 transition-all duration-200 active:scale-95 group shadow-[0_0_12px_rgba(245,158,11,0.18),inset_0_1px_2px_rgba(255,255,255,0.18)] cursor-pointer overflow-hidden"
-            >
-              <img
-                src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
-                alt="Kollabrix Logo"
-                className="w-6 h-6 max-w-[24px] max-h-[24px] object-contain filter drop-shadow-[0_1px_6px_rgba(245,158,11,0.6)] transition-transform duration-300 group-hover:scale-110"
-              />
-            </button>
+        {/* The Official Logo Key Button (Shifted to right of Mayank Goyal) */}
+        <button
+          type="button"
+          onClick={handleToggleDeck}
+          onMouseEnter={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setHoveredNode({
+              id: 'dock-toggle',
+              label: isDeckOpen ? 'Tuck Deck Inside Logo' : 'Expand Deck Outside',
+              sub: 'Click to fold or reveal navigation dock',
+              x: rect.left,
+              y: rect.top + rect.height / 2,
+            });
+          }}
+          onMouseLeave={() => setHoveredNode(null)}
+          aria-label={isDeckOpen ? 'Tuck deck inside logo' : 'Expand deck outside'}
+          className={`relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition-all duration-300 active:scale-95 group cursor-pointer shadow-sm ${
+            isDeckOpen
+              ? 'bg-amber-500/20 border border-amber-400 text-white shadow-[0_0_12px_rgba(245,158,11,0.35)]'
+              : 'bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.14] hover:border-amber-400/50 text-slate-300'
+          }`}
+        >
+          <img
+            src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
+            alt="Kollabrix Quick Dock"
+            className={`w-5 h-5 max-w-[20px] max-h-[20px] object-contain filter drop-shadow-[0_1px_6px_rgba(245,158,11,0.6)] transition-all duration-300 ${
+              isDeckOpen ? 'scale-105' : 'group-hover:scale-110'
+            }`}
+          />
+          {/* Subtle amber indicator when deck is folded inside logo */}
+          {!isDeckOpen && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 border border-black animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+          )}
+        </button>
 
-            {/* Subtle Divider */}
-            <div className="w-6 h-[1px] bg-white/[0.12] my-0.5" />
-
-            {/* Scrollable Navigation Viewport (Comfortably shows exactly 4 items with smooth top & bottom edge blur) */}
-            <div className="relative w-full rounded-full overflow-hidden flex flex-col items-center">
-              {/* Scroll Container: exactly 4 items height (4 * 48px + 3 * 10px = 222px + 8px py = 230px) */}
+        {/* The Entire Deck: Sucks inside the logo when closed, emerges outside when open */}
+        <div
+          className={`absolute right-0 top-full mt-2 z-50 select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right ${
+            isDeckOpen
+              ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto'
+              : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'
+          }`}
+        >
+          {/* Outer Translucent Glass Halo Pill */}
+          <div className="relative p-1.5 rounded-3xl bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(245,158,11,0.08)] backdrop-blur-2xl">
+            {/* Inner Matte Obsidian Capsule */}
+            <div className="relative flex flex-col items-center gap-1.5 p-1.5 rounded-2xl bg-gradient-to-b from-[#1b1c24]/95 via-[#111218]/95 to-[#0d0e14]/95 border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
+              {/* Dock Items List */}
               <div
                 ref={scrollContainerRef}
-                className="flex flex-col items-center gap-2.5 h-[230px] max-h-[230px] overflow-y-auto overflow-x-hidden py-1 overscroll-contain [mask-image:linear-gradient(to_bottom,transparent_0%,black_18px,black_calc(100%-18px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_18px,black_calc(100%-18px),transparent_100%)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                className="flex flex-col items-center gap-1.5 max-h-[290px] overflow-y-auto overflow-x-hidden py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               >
                 {DOCK_ITEMS.map((item, index) => {
                   const Icon = item.icon;
@@ -475,14 +521,14 @@ export function KollabrixQuickDock() {
                       }}
                       onMouseLeave={() => setHoveredNode(null)}
                       aria-label={item.label}
-                      className={`relative flex items-center justify-center shrink-0 transition-all duration-300 cursor-pointer active:scale-95 ${
+                      className={`relative flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                         isHighlighted
-                          ? 'w-12 h-12 rounded-full bg-white text-zinc-950 shadow-[0_8px_25px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
-                          : 'w-12 h-12 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
+                          ? 'w-10 h-10 rounded-full bg-white text-zinc-950 shadow-[0_6px_20px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
+                          : 'w-10 h-10 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
                       }`}
                     >
                       <Icon
-                        className={`w-5.5 h-5.5 transition-transform duration-200 ${
+                        className={`w-5 h-5 transition-transform duration-200 ${
                           isHighlighted ? 'scale-105 stroke-[2.2]' : 'group-hover:scale-110'
                         }`}
                       />
@@ -490,10 +536,37 @@ export function KollabrixQuickDock() {
                   );
                 })}
               </div>
+
+              {/* Subtle Divider */}
+              <div className="w-5 h-[1px] bg-white/[0.12] my-0.5" />
+
+              {/* Hub Launcher Button (⌘K) */}
+              <button
+                type="button"
+                onClick={() => {
+                  playTactileClick();
+                  setIsAppsModalOpen(true);
+                }}
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setHoveredNode({
+                    id: 'apps',
+                    label: 'Platform Hub (⌘K)',
+                    sub: 'Search all portals & tools',
+                    x: rect.left,
+                    y: rect.top + rect.height / 2,
+                  });
+                }}
+                onMouseLeave={() => setHoveredNode(null)}
+                className="relative flex items-center justify-center w-10 h-10 rounded-full text-amber-400 hover:text-amber-300 hover:bg-amber-500/15 transition-all duration-200 active:scale-95 cursor-pointer"
+                aria-label="Open Platform Hub"
+              >
+                <Sparkles className="w-4 h-4 fill-current animate-pulse" />
+              </button>
             </div>
           </div>
         </div>
-      </aside>
+      </div>
 
       {/* Floating Callout Card to the LEFT with Leader Pointer Line */}
       {hoveredNode && (
