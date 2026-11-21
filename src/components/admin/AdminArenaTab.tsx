@@ -28,6 +28,7 @@ import {
   Trophy,
   Swords,
   Settings,
+  Bug,
 } from 'lucide-react';
 import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
 import { supabase } from '@/lib/supabase/client';
@@ -417,11 +418,31 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
   const filteredQuestions = questions.filter((q) => {
     if (selectedArena !== 'all' && q.arena !== selectedArena) return false;
-    if (
-      selectedTag !== 'all' &&
-      !q.tags.map((t) => t.toLowerCase().trim()).includes(selectedTag.toLowerCase().trim())
-    ) {
-      return false;
+    if (selectedTag !== 'all') {
+      const qTags = (q.tags || []).map((t) => t.toLowerCase().trim());
+      if (selectedTag === 'bug_html') {
+        if (!(q.arena === 'bug_hunt' && qTags.includes('html') && !qTags.includes('css') && !qTags.includes('javascript'))) {
+          return false;
+        }
+      } else if (selectedTag === 'bug_css') {
+        if (!(q.arena === 'bug_hunt' && qTags.includes('css') && !qTags.includes('javascript'))) {
+          return false;
+        }
+      } else if (selectedTag === 'bug_html_css_js') {
+        if (!(q.arena === 'bug_hunt' && qTags.includes('css') && qTags.includes('javascript'))) {
+          return false;
+        }
+      } else if (selectedTag === 'bug_html_js') {
+        if (!(q.arena === 'bug_hunt' && qTags.includes('javascript') && !qTags.includes('css'))) {
+          return false;
+        }
+      } else if (selectedTag === 'bug_web') {
+        if (!(q.arena === 'bug_hunt' && (q.bugDomain === 'web' || qTags.includes('bug_web') || Boolean(q.targetComponentHtml)))) {
+          return false;
+        }
+      } else if (!qTags.includes(selectedTag.toLowerCase().trim())) {
+        return false;
+      }
     }
     if (selectedDuration !== 'all' && Number(q.timeLimitSeconds) !== Number(selectedDuration)) {
       return false;
@@ -890,6 +911,120 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                   <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800">270 Qs</span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">Full Competitive Problem Bank</p>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Web UI Bug Hunt Presets */}
+          <div className="pt-2 border-t border-charcoal-800/80">
+            <span className="text-[11px] font-mono text-emerald-400 font-bold uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+              <Bug className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Web UI Bug Hunt Duels (HTML • CSS • JavaScript)</span>
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('bug_hunt');
+                  setSelectedTag('bug_html');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'bug_hunt' && selectedTag === 'bug_html'
+                    ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-amber-400">📄 HTML Bugs</span>
+                  <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('bug_hunt');
+                  setSelectedTag('bug_css');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'bug_hunt' && selectedTag === 'bug_css'
+                    ? 'bg-blue-500/20 border-blue-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-blue-400">🎨 HTML + CSS</span>
+                  <span className="text-[10px] bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded border border-blue-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Flex, Grid, Layout Bugs</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('bug_hunt');
+                  setSelectedTag('bug_html_css_js');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'bug_hunt' && selectedTag === 'bug_html_css_js'
+                    ? 'bg-yellow-500/20 border-yellow-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-yellow-400">⚡ HTML+CSS+JS</span>
+                  <span className="text-[10px] bg-yellow-950 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">DOM, Events, Async Bugs</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('bug_hunt');
+                  setSelectedTag('bug_html_js');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'bug_hunt' && selectedTag === 'bug_html_js'
+                    ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-emerald-400">📜 HTML + JS</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Logic, State, Input Bugs</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('bug_hunt');
+                  setSelectedTag('bug_web');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'bug_hunt' && selectedTag === 'bug_web'
+                    ? 'bg-rose-500/20 border-rose-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-rose-400">🔍 All Web Bugs</span>
+                  <span className="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded border border-rose-800">360 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Full Web UI Bug Matrix</p>
               </button>
             </div>
           </div>
@@ -1730,7 +1865,17 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
                 )}
                 {selectedTag !== 'all' && (
                   <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-                    #{selectedTag}
+                    {selectedTag === 'bug_html'
+                      ? '🐛 HTML Bugs (90)'
+                      : selectedTag === 'bug_css'
+                      ? '🎨 HTML+CSS Bugs (90)'
+                      : selectedTag === 'bug_html_css_js'
+                      ? '⚡ HTML+CSS+JS Bugs (90)'
+                      : selectedTag === 'bug_html_js'
+                      ? '📜 HTML+JS Bugs (90)'
+                      : selectedTag === 'bug_web'
+                      ? '🔍 All Web Bugs (360)'
+                      : `#${selectedTag}`}
                   </span>
                 )}
                 {selectedDuration !== 'all' && (
