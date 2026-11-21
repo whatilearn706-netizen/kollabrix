@@ -49,14 +49,14 @@ function ArenaPageContent() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Start mountain wind + eagle soundscape
+  // Start mountain wind atmospheric soundscape
   const startAmbiance = useCallback(() => {
     if (!audioEnabled) return;
     try {
       if (!ambientAudioRef.current && typeof Audio !== 'undefined') {
         const audio = new Audio('/sounds/arena-mountain-wind-eagle.wav');
         audio.loop = true;
-        audio.volume = 0.45;
+        audio.volume = 0.22;
         ambientAudioRef.current = audio;
       }
       if (ambientAudioRef.current) {
@@ -342,12 +342,12 @@ function ArenaPageContent() {
               type="button"
               onClick={toggleAudio}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-amber-400 text-xs font-mono text-slate-300 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg"
-              title="Toggle mountain wind & eagle soundscape"
+              title="Toggle atmospheric mountain soundscape"
             >
               {audioEnabled && isAudioPlaying ? (
                 <>
                   <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                  <span className="hidden sm:inline text-amber-300">Eagle &amp; Wind Ambiance</span>
+                  <span className="hidden sm:inline text-amber-300">Atmospheric Ambiance</span>
                   <span className="flex items-center gap-0.5 ml-1">
                     <span className="w-0.5 h-2.5 bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-0.5 h-3.5 bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />

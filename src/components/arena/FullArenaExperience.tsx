@@ -749,6 +749,15 @@ export function FullArenaExperience({
 
   // Exit Arena with confirmation and mutual opponent termination
   const handleExitArena = () => {
+    // In Lobby (Step 3), host can simply go back to Step 2 cleanly without scary warning
+    if (step === 3) {
+      if (isHost) {
+        setStep(2);
+      } else {
+        handleConfirmExit();
+      }
+      return;
+    }
     // If on Gateway (Step 0), Pilot Dossier (Step 1), Arena Picker (Step 2), or Victory (Step 6), exit immediately
     if (step < 3 || step === 6 || !roomCode) {
       try {
@@ -758,7 +767,7 @@ export function FullArenaExperience({
       onClose();
       return;
     }
-    // In Lobby (Step 3), Countdown (Step 4), or Battlefield (Step 5), ask confirmation
+    // In active match only (Countdown Step 4 or Battlefield Step 5), ask confirmation
     setShowExitConfirmModal(true);
   };
 
@@ -3048,11 +3057,6 @@ export function FullArenaExperience({
                   alt="The Proving Grounds Colosseum"
                   className="w-full h-32 sm:h-36 object-cover object-center transition-transform duration-500 group-hover:scale-105"
                 />
-                {/* Floating Telemetry Tag */}
-                <div className="absolute bottom-2 left-2 z-20 px-2.5 py-0.5 rounded-full bg-black/80 border border-amber-400/35 text-[9px] sm:text-[10px] font-mono text-amber-300 backdrop-blur-sm flex items-center gap-1.5 shadow-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span>SANCTUARY OF SPEED • ANTI-CHEAT 60 FPS</span>
-                </div>
               </div>
 
               {/* Quick Pilot Call-sign Tag */}
@@ -3102,19 +3106,6 @@ export function FullArenaExperience({
                     <Users className="w-3.5 h-3.5 text-amber-400" />
                     <span>Join with Code</span>
                   </button>
-                </div>
-
-                {/* Telemetry Footer */}
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-300 pt-1.5 border-t border-white/[0.1] drop-shadow-sm">
-                  <span className="flex items-center gap-1.5 text-amber-300/90">
-                    <Zap className="w-3 h-3 text-amber-400" />
-                    <span>&lt;20ms Latency</span>
-                  </span>
-                  <span className="text-white/20">•</span>
-                  <span className="flex items-center gap-1.5 text-amber-300/90">
-                    <ShieldCheck className="w-3 h-3 text-amber-400" />
-                    <span>Anti-Cheat Sentinel Shield</span>
-                  </span>
                 </div>
               </div>
             </div>
@@ -3886,7 +3877,13 @@ export function FullArenaExperience({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={handleExitArena}
+                onClick={() => {
+                  if (isHost) {
+                    setStep(2);
+                  } else {
+                    handleConfirmExit();
+                  }
+                }}
                 className="py-3 px-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
