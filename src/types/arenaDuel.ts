@@ -82,8 +82,11 @@ export interface DuelRoom {
   winnerTeamName?: string;
 }
 
+import { HTML_EASY_ARENA_QUESTIONS } from '@/lib/arena/defaultHtmlQuestions';
+
 // Built-in Default Questions for every tag combination!
 export const DEFAULT_ARENA_QUESTIONS: DuelQuestion[] = [
+  ...HTML_EASY_ARENA_QUESTIONS,
   // 0. Web Dev (HTML + CSS + JS Easy): Digital Counter App (Flagship Interactive Challenge)
   {
     id: 'q-web-digital-counter',

@@ -13,6 +13,7 @@ import {
   Layers,
   Radio,
   Eye,
+  Tag,
 } from 'lucide-react';
 import { DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
 import { ArenaRoom } from '@/lib/arena/roomStorage';
@@ -30,9 +31,10 @@ export function AdminTournamentGenerator({
 }: AdminTournamentGeneratorProps) {
   const [matchTitle, setMatchTitle] = useState('Discord 1v1 Showdown');
   const [arena, setArena] = useState<ArenaCategory>('web_dev');
+  const [techTag, setTechTag] = useState<string>('html');
   const [format, setFormat] = useState<'1v1' | '2v2'>('1v1');
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [timeLimit, setTimeLimit] = useState<number>(300);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
+  const [timeLimit, setTimeLimit] = useState<number>(180);
   const [selectedQuestionId, setSelectedQuestionId] = useState<string>('random');
   const [isGenerating, setIsGenerating] = useState(false);
   const [createdRoom, setCreatedRoom] = useState<ArenaRoom | null>(null);
@@ -40,10 +42,13 @@ export function AdminTournamentGenerator({
   const [copiedDiscordMsg, setCopiedDiscordMsg] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Filter available questions matching selected arena
-  const relevantQuestions = questions.filter(
-    (q) => q.arena === arena && (selectedQuestionId === 'random' || q.difficulty === difficulty)
-  );
+  // Filter available questions matching selected arena, difficulty, and tag
+  const relevantQuestions = questions.filter((q) => {
+    if (q.arena !== arena) return false;
+    if (difficulty && q.difficulty !== difficulty) return false;
+    if (techTag && !q.tags.map((t) => t.toLowerCase()).includes(techTag.toLowerCase())) return false;
+    return true;
+  });
 
   const generateRandomCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -77,10 +82,14 @@ export function AdminTournamentGenerator({
           timeLimit,
           selectedTags:
             arena === 'web_dev'
-              ? ['html', 'css']
+              ? techTag === 'html'
+                ? ['html']
+                : techTag === 'html,css'
+                ? ['html', 'css']
+                : ['html', 'css', 'javascript']
               : arena === 'algorithms'
-              ? ['java', 'python']
-              : ['web', 'css'],
+              ? [techTag || 'java']
+              : ['web', 'html'],
           question: specificQ,
         }),
       });
@@ -196,6 +205,43 @@ export function AdminTournamentGenerator({
             <option value="web_dev">Web Development (HTML/CSS)</option>
             <option value="algorithms">Algorithms (DSA & Logic)</option>
             <option value="bug_hunt">Bug Hunt (Debugging)</option>
+          </select>
+        </div>
+
+        {/* Technology Focus (Choose Option) */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Technology Focus</span>
+          </label>
+          <select
+            value={techTag}
+            onChange={(e) => {
+              setTechTag(e.target.value);
+              setSelectedQuestionId('random');
+            }}
+            className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-700 text-sm text-white focus:outline-none focus:border-rose-500 font-mono"
+          >
+            {arena === 'web_dev' && (
+              <>
+                <option value="html">HTML Only (Calibrated 3m / 5m / 10m)</option>
+                <option value="html,css">HTML + CSS (Layout & Styling)</option>
+                <option value="javascript">Full Stack (HTML + CSS + JS)</option>
+              </>
+            )}
+            {arena === 'algorithms' && (
+              <>
+                <option value="java">Java (OpenJDK 21)</option>
+                <option value="python">Python (3.12)</option>
+                <option value="cpp">C++ (C++20)</option>
+              </>
+            )}
+            {arena === 'bug_hunt' && (
+              <>
+                <option value="html">Web UI Bugs</option>
+                <option value="java">Logic & Code Bugs</option>
+              </>
+            )}
           </select>
         </div>
 
