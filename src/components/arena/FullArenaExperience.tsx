@@ -49,6 +49,8 @@ import {
   BookOpen,
   ChevronDown,
   ChevronUp,
+  AlertTriangle,
+  Minimize2,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
@@ -83,6 +85,8 @@ import {
   playCompileSuccessSound,
   playCompileErrorSound,
   playTacticalSelectSound,
+  playCheatWarningSiren,
+  playOpponentCheatRadarBeep,
 } from '@/lib/arena/soundEffects';
 import { evaluateWebCoordinateGraph, WebGraphEvaluation } from '@/lib/arena/webCoordinateGraph';
 import { verifyTestOutput } from '@/lib/arena/testCaseVerifier';
@@ -624,6 +628,151 @@ export function FullArenaExperience({
     const timer = setTimeout(() => setActivityNotification(null), 4500);
     return () => clearTimeout(timer);
   }, [activityNotification]);
+
+  // Fullscreen Management: Opens true fullscreen on "Start Match Now" for host and teammates
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs = Boolean(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isFs);
+    };
+
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  const enterArenaFullscreen = useCallback(() => {
+    try {
+      const docEl = document.documentElement;
+      if (!document.fullscreenElement && docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (!(document as any).webkitFullscreenElement && (docEl as any).webkitRequestFullscreen) {
+        (docEl as any).webkitRequestFullscreen();
+      }
+    } catch (err) {
+      console.warn('Fullscreen trigger note:', err);
+    }
+  }, []);
+
+  const toggleArenaFullscreen = useCallback(() => {
+    try {
+      if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        }
+      } else {
+        enterArenaFullscreen();
+      }
+    } catch {}
+  }, [enterArenaFullscreen]);
+
+  // Anti-Cheat Sentinel Screen / Tab Switch Detection
+  const [myCheatStrikes, setMyCheatStrikes] = useState<number>(0);
+  const [showCheatWarningModal, setShowCheatWarningModal] = useState<boolean>(false);
+  const [opponentCheatAlert, setOpponentCheatAlert] = useState<{
+    cheaterName: string;
+    strikes: number;
+    reason: string;
+    timestamp: number;
+  } | null>(null);
+  const lastCheatDetectTimeRef = useRef<number>(0);
+
+  // Auto-dismiss opponent cheat alert banner after 9 seconds if not manually dismissed
+  useEffect(() => {
+    if (!opponentCheatAlert) return;
+    const timer = setTimeout(() => setOpponentCheatAlert(null), 9000);
+    return () => clearTimeout(timer);
+  }, [opponentCheatAlert]);
+
+  // Tab & Window Switch Anti-Cheat Sentinel Guard (Only active in Live Duel Step 5)
+  useEffect(() => {
+    if (step !== 5) return;
+
+    const triggerCheatIncident = (reason: string) => {
+      const now = Date.now();
+      // Throttle rapid consecutive OS events (e.g. blur + visibilitychange within 1.5s)
+      if (now - lastCheatDetectTimeRef.current < 1500) return;
+      lastCheatDetectTimeRef.current = now;
+
+      setMyCheatStrikes((prev) => {
+        const next = prev + 1;
+
+        // 1. Play siren warning sound to local user who switched
+        playCheatWarningSiren();
+
+        // 2. Open prominent unmissable warning HUD modal
+        setShowCheatWarningModal(true);
+
+        // 3. Broadcast real-time cheat alert to opponent duelist
+        if (channelRef.current) {
+          try {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'cheat_alert',
+              payload: {
+                playerId: myPlayerId,
+                name: playerName,
+                strikes: next,
+                reason,
+                timestamp: Date.now(),
+              },
+            });
+          } catch {}
+        }
+
+        // 4. Record incident on room server ledger
+        if (roomCode) {
+          fetch('/api/arena/rooms/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: roomCode,
+              action: 'cheat_flag',
+              playerId: myPlayerId,
+              payload: {
+                cheaterId: myPlayerId,
+                cheaterName: playerName,
+                strikeCount: next,
+                reason,
+              },
+            }),
+          }).catch(() => {});
+        }
+
+        return next;
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        triggerCheatIncident('Tab switched / arena window hidden');
+      }
+    };
+
+    const handleWindowBlur = () => {
+      triggerCheatIncident('Focus lost / external application switched');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [step, myPlayerId, playerName, roomCode, playCheatWarningSiren]);
 
   // Session Restoration across Page Refreshes
   useEffect(() => {
@@ -1622,6 +1771,7 @@ export function FullArenaExperience({
 
     // If in Lobby (Step 3) and Host started match, advance joiner to Step 4 (Countdown) or Step 5 (Battlefield)
     if (currentStep === 3 && (incomingRoom.status === 'starting' || incomingRoom.status === 'in_progress')) {
+      enterArenaFullscreen();
       if (incomingRoom.question) {
         const q = enrichQuestion(incomingRoom.question);
         const matchTime = Number(incomingRoom.timeLimit) || Number(q.timeLimitSeconds) || 300;
@@ -1726,6 +1876,24 @@ export function FullArenaExperience({
           }
         }
       }
+
+      // Read real-time opponent anti-cheat flags from server room state
+      if (incomingRoom.cheatIncidents && incomingRoom.cheatIncidents.length > 0) {
+        const oppIncidents = incomingRoom.cheatIncidents.filter((inc: any) => inc.cheaterId !== myPlayerId);
+        if (oppIncidents.length > 0) {
+          const latest = oppIncidents[oppIncidents.length - 1];
+          setOpponentCheatAlert((prev) => {
+            if (prev && prev.timestamp >= new Date(latest.timestamp).getTime()) return prev;
+            playOpponentCheatRadarBeep();
+            return {
+              cheaterName: latest.cheaterName,
+              strikes: latest.strikeCount,
+              reason: latest.reason,
+              timestamp: new Date(latest.timestamp).getTime(),
+            };
+          });
+        }
+      }
     }
   };
 
@@ -1747,6 +1915,22 @@ export function FullArenaExperience({
         .on('broadcast', { event: 'room_sync' }, ({ payload }) => {
           if (!isMounted || !payload?.room) return;
           applyRoomDataState(payload.room);
+        })
+        .on('broadcast', { event: 'arena_fullscreen' }, () => {
+          if (!isMounted) return;
+          enterArenaFullscreen();
+        })
+        .on('broadcast', { event: 'cheat_alert' }, ({ payload }) => {
+          if (!isMounted || !payload) return;
+          if (payload.playerId !== myPlayerId) {
+            playOpponentCheatRadarBeep();
+            setOpponentCheatAlert({
+              cheaterName: payload.name || 'Opponent',
+              strikes: payload.strikes || 1,
+              reason: payload.reason || 'Switched screens / tabbed out',
+              timestamp: Date.now(),
+            });
+          }
         })
         .on('broadcast', { event: 'player_joined' }, ({ payload }) => {
           if (!isMounted) return;
@@ -2245,9 +2429,17 @@ export function FullArenaExperience({
 
     // Tell server to trigger match start for ALL participants in this room!
     try {
+      // Trigger true fullscreen immediately on user gesture
+      enterArenaFullscreen();
+
       // Immediate Sub-50ms WebSocket broadcast to opponent
       if (channelRef.current) {
         try {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'arena_fullscreen',
+            payload: {},
+          });
           channelRef.current.send({
             type: 'broadcast',
             event: 'room_sync',
@@ -2298,6 +2490,7 @@ export function FullArenaExperience({
     } else if (countdownNum === 'START!') {
       // Countdown finished: Transition to Battlefield (Step 5)
       const timer = setTimeout(() => {
+        enterArenaFullscreen();
         transitionStep(5);
 
         // Authoritatively notify server and all peers that match is in progress!
@@ -2960,16 +3153,35 @@ export function FullArenaExperience({
           </div>
         )}
 
-        {/* Exit Button */}
-        <button
-          type="button"
-          onClick={handleExitArena}
-          className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
-          title="Exit Battle Arena"
-        >
-          <X className="w-4 h-4" />
-          <span className="hidden sm:inline">Exit Arena</span>
-        </button>
+        {/* Right Header Actions: Fullscreen Toggle & Exit */}
+        <div className="flex items-center gap-2">
+          {step === 5 && (
+            <button
+              type="button"
+              onClick={toggleArenaFullscreen}
+              className={`p-2 px-3 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                isFullscreen
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                  : 'bg-black/60 hover:bg-slate-900 border-slate-700/80 text-slate-300 hover:text-white'
+              }`}
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{isFullscreen ? 'Fullscreen' : 'Fullscreen'}</span>
+            </button>
+          )}
+
+          {/* Exit Button */}
+          <button
+            type="button"
+            onClick={handleExitArena}
+            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
+            title="Exit Battle Arena"
+          >
+            <X className="w-4 h-4" />
+            <span className="hidden sm:inline">Exit Arena</span>
+          </button>
+        </div>
       </header>
 
       {/* Mobile Screen Guidance Banner */}
@@ -3611,13 +3823,13 @@ export function FullArenaExperience({
               </p>
             </div>
 
-            {/* Big Room Code Badge */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Big Room Code Badge (Warm Amber Glow Matching Step 2) */}
+            <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_25px_rgba(245,158,11,0.08)]">
               <div>
-                <span className="text-[10px] font-mono uppercase text-slate-400 font-bold">
+                <span className="text-[10px] font-mono uppercase text-slate-400 font-bold tracking-wider">
                   Private Duel Room Code:
                 </span>
-                <div className="text-2xl sm:text-3xl font-black font-mono text-cyan-400 tracking-wider">
+                <div className="text-2xl sm:text-3xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-300 tracking-wider drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
                   {roomCode}
                 </div>
               </div>
@@ -3626,16 +3838,16 @@ export function FullArenaExperience({
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5"
+                  className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-black/60 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-200 text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
                   <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-mono font-black transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.35)] cursor-pointer"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
                   <span>{copiedLink ? 'Link Copied!' : 'Copy Invite Link'}</span>
@@ -3643,22 +3855,22 @@ export function FullArenaExperience({
               </div>
             </div>
 
-            {/* PRACTICE BOT CHECKBOX TOGGLE */}
-            <label className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 cursor-pointer select-none transition-all">
+            {/* PRACTICE BOT CHECKBOX TOGGLE (Warm Amber Theme) */}
+            <label className="flex items-center justify-between p-3.5 rounded-2xl bg-black/60 border border-amber-500/25 hover:border-amber-500/50 cursor-pointer select-none transition-all">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors text-sm ${
                     isBotOpponentAdded
-                      ? 'bg-rose-500 text-white shadow-[0_0_12px_#f43f5e]'
-                      : 'bg-slate-800 text-slate-400'
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400'
                   }`}
                 >
-                  {isBotOpponentAdded ? assignedBotProfile.avatarEmoji : <Bot className="w-4 h-4" />}
+                  {isBotOpponentAdded ? assignedBotProfile.avatarEmoji : <Bot className="w-4 h-4 text-amber-400" />}
                 </div>
                 <div>
                   <p className="font-mono font-bold text-white text-xs flex items-center gap-1.5">
                     <span>Simulate Collegiate Opponent (Instant Match)</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
                       {assignedBotProfile.college}
                     </span>
                   </p>
@@ -3671,7 +3883,7 @@ export function FullArenaExperience({
                 type="checkbox"
                 checked={isBotOpponentAdded}
                 onChange={(e) => setIsBotOpponentAdded(e.target.checked)}
-                className="w-5 h-5 rounded-md border-slate-700 bg-slate-900 text-rose-500 focus:ring-rose-500 cursor-pointer"
+                className="w-5 h-5 rounded-md border-amber-500/40 bg-black text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
               />
             </label>
 
@@ -3704,11 +3916,11 @@ export function FullArenaExperience({
 
             {/* Roster Slots based on 1v1 vs 2v2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Team Alpha (Cyan) */}
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-cyan-500/30 space-y-3">
+              {/* Team Alpha (Warm Amber - Matching Step 2) */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/30 space-y-3 shadow-[0_0_20px_rgba(245,158,11,0.06)]">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <span className="font-mono text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  <span className="font-mono text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
                     {mySquad === 'alpha' ? 'Team Alpha (Your Squad)' : 'Team Alpha (Host Squad)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
@@ -3726,17 +3938,19 @@ export function FullArenaExperience({
                       (isHost && (!roomData?.alphaPlayers?.[0]?.id || roomData?.alphaPlayers?.[0]?.id === myPlayerId))
                     );
                     return (
-                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
+                      <div className="p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                          <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black flex items-center justify-center text-[11px] shadow-sm">
                             P1
                           </div>
                           <span className="text-white font-bold">{hostName}</span>
-                          <span className="text-[10px] text-cyan-400 font-semibold">
+                          <span className="text-[10px] text-amber-300 font-semibold">
                             {isP1Me ? '(You - Host)' : '(Host)'}
                           </span>
                         </div>
-                        <span className="text-[10px] text-emerald-400 font-bold">READY</span>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
+                          READY
+                        </span>
                       </div>
                     );
                   })()}
@@ -3748,22 +3962,24 @@ export function FullArenaExperience({
                         const p2 = roomData.alphaPlayers[1];
                         const isP2Me = Boolean(p2.id === myPlayerId);
                         return (
-                          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 flex items-center justify-between text-xs font-mono">
+                          <div className="p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-bold flex items-center justify-center text-[11px]">
+                              <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black flex items-center justify-center text-[11px] shadow-sm">
                                 P2
                               </div>
                               <span className="text-white font-bold">{p2.name}</span>
-                              <span className="text-[10px] text-cyan-400 font-semibold">
+                              <span className="text-[10px] text-amber-300 font-semibold">
                                 {isP2Me ? '(You - Navigator)' : '(Navigator)'}
                               </span>
                             </div>
-                            <span className="text-[10px] text-emerald-400 font-bold">READY</span>
+                            <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
+                              READY
+                            </span>
                           </div>
                         );
                       })()
                     ) : (
-                      <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-slate-700 flex items-center justify-between text-xs font-mono text-slate-400">
+                      <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-amber-500/20 flex items-center justify-between text-xs font-mono text-slate-400">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[11px]">
                             P2
@@ -3777,11 +3993,11 @@ export function FullArenaExperience({
                 </div>
               </div>
 
-              {/* Team Omega (Rose) */}
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-rose-500/30 space-y-3">
+              {/* Team Omega (Rose/Amber) */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-rose-500/30 space-y-3 shadow-[0_0_20px_rgba(244,63,94,0.06)]">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <span className="font-mono text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-400" />
+                    <span className="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
                     {mySquad === 'omega' ? 'Team Omega (Your Squad)' : 'Team Omega (Opponents)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
@@ -3839,7 +4055,7 @@ export function FullArenaExperience({
                         <span className="text-white font-bold">{assignedBotProfile.name}</span>
                         <span className="text-[10px] text-rose-300 font-semibold">({assignedBotProfile.college})</span>
                       </div>
-                      <span className="text-[10px] text-emerald-400 font-bold">READY</span>
+                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">READY</span>
                     </div>
 
                     {teamSize === '2v2' && (
@@ -3851,23 +4067,23 @@ export function FullArenaExperience({
                           <span className="text-white font-bold">Aryan Mehta</span>
                           <span className="text-[10px] text-rose-300 font-semibold">(NSUT Delhi)</span>
                         </div>
-                        <span className="text-[10px] text-emerald-400 font-bold">READY</span>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">READY</span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl bg-slate-900/40 border border-dashed border-rose-500/40 flex flex-col gap-2 text-xs font-mono">
+                  <div className="p-4 rounded-xl bg-black/60 border border-dashed border-amber-500/30 flex flex-col gap-2 text-xs font-mono">
                     <div className="flex items-center justify-between">
                       <span className="text-rose-400 font-bold flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
                         Waiting for Opponent...
                       </span>
-                      <span className="text-[10px] text-amber-400 font-bold bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded">
+                      <span className="text-[10px] text-amber-400 font-bold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded">
                         OPEN
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-300">
-                      Share room code <strong className="text-cyan-300">{roomCode}</strong> or copy the invite link above so a student can enter this match!
+                      Share room code <strong className="text-amber-300 font-mono font-bold tracking-wider">{roomCode}</strong> or copy the invite link above so a student can enter this match!
                     </p>
                   </div>
                 )}
@@ -3936,6 +4152,36 @@ export function FullArenaExperience({
         {/* ================= STEP 5: SPLIT-SCREEN REFINED COMBAT ARENA ================= */}
         {step === 5 && (
           <div className="w-full h-full flex flex-col gap-3 animate-fadeIn">
+            {/* Real-time Opponent Cheat Incident Notification Banner */}
+            {opponentCheatAlert && (
+              <div className="relative z-30 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-rose-950/95 via-red-900/95 to-amber-950/95 border-2 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.65)] backdrop-blur-xl flex items-center justify-between gap-3 text-white animate-in slide-in-from-top-4 duration-200 shrink-0 select-none">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-rose-500 flex items-center justify-center shrink-0 shadow-[0_0_15px_#f43f5e]">
+                    <ShieldAlert className="w-5 h-5 text-white animate-bounce" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-black text-[11px] uppercase tracking-wider text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/40">
+                        🚨 ANTI-CHEAT INTEGRITY BREACH
+                      </span>
+                      <span className="text-[11px] font-mono text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded">
+                        Opponent Strike {opponentCheatAlert.strikes} of 3
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-white mt-1 truncate">
+                      <strong className="text-amber-300 font-mono">{opponentCheatAlert.cheaterName}</strong> switched screens / tabbed away from the active duel arena!
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpponentCheatAlert(null)}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-mono font-bold transition-all shrink-0 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
             {/* Mission Objective Header with Collapsible Full Question Brief */}
             <div
               className={`p-3.5 rounded-2xl bg-slate-950/90 border transition-all duration-300 backdrop-blur-md shrink-0 select-none ${
@@ -4425,6 +4671,35 @@ export function FullArenaExperience({
                       <span>Zero-Cheating Shield</span>
                     </span>
                   </div>
+
+                  {/* Opponent Integrity Breach Flag */}
+                  {opponentCheatAlert && (
+                    <div className="p-2.5 rounded-xl bg-rose-950/90 border border-rose-500/70 shadow-[0_0_15px_rgba(244,63,94,0.35)] flex items-center justify-between gap-2 text-xs font-mono animate-pulse">
+                      <div className="flex items-center gap-2 text-rose-200 min-w-0">
+                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 animate-bounce" />
+                        <div className="truncate">
+                          <span className="font-black text-rose-300">CHEATING FLAGGED:</span>{' '}
+                          <span>{opponentCheatAlert.cheaterName} switched screens!</span>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-rose-500 text-slate-950 font-black text-[10px] shrink-0">
+                        Strike {opponentCheatAlert.strikes}/3
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Solo Practice Bot Automated Referee Flag if User Tabbed Out */}
+                  {isBotDuel && myCheatStrikes > 0 && (
+                    <div className="p-2.5 rounded-xl bg-amber-950/80 border border-amber-500/50 flex items-center justify-between gap-2 text-xs font-mono">
+                      <div className="flex items-center gap-2 text-amber-200">
+                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>🤖 Automated Referee: Tab switch flagged ({myCheatStrikes} strikes)</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-[10px]">
+                        Strike {myCheatStrikes}/3
+                      </span>
+                    </div>
+                  )}
 
                   {/* Opponent Progress Bar */}
                   <div className="space-y-1">
@@ -5242,6 +5517,53 @@ ${jsCode || ''}
                 Yes, Exit Arena
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= ANTI-CHEAT SENTINEL CHEATER WARNING MODAL ================= */}
+      {showCheatWarningModal && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/85 backdrop-blur-2xl animate-in fade-in duration-200 select-none">
+          <div className="w-full max-w-md p-6 sm:p-7 rounded-3xl bg-[#120608]/98 border-2 border-rose-500 shadow-[0_0_60px_rgba(244,63,94,0.65),0_0_100px_rgba(0,0,0,0.9)] text-white text-center space-y-5 animate-in zoom-in-95 duration-200">
+            {/* Siren Icon with Pulsing Halo */}
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-500/20 border-2 border-rose-500 flex items-center justify-center shadow-[0_0_30px_rgba(244,63,94,0.5)]">
+              <ShieldAlert className="w-9 h-9 text-rose-500 animate-pulse" />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-black uppercase tracking-wider bg-rose-500/20 border border-rose-500/40 text-rose-300">
+                <span>⚠️ ANTI-CHEAT SENTINEL WARNING</span>
+                <span>&bull;</span>
+                <span>STRIKE {myCheatStrikes} OF 3</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight font-serif">
+                Screen / Tab Switch Flagged!
+              </h3>
+              <p className="text-xs text-rose-200/90 leading-relaxed font-sans pt-1">
+                Navigating away from the active Proving Grounds duel violates fair-play integrity rules.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-black/60 border border-rose-500/30 text-left text-[11px] font-mono text-slate-300 space-y-1.5">
+              <div className="flex items-center gap-2 text-rose-400 font-bold">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>OPPONENT NOTIFIED IN REAL-TIME</span>
+              </div>
+              <p className="text-slate-400 leading-normal">
+                Your opponent has received an instant notification that you switched tabs / left the duel window. All window-switching incidents are permanently logged to the anti-cheat match ledger.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowCheatWarningModal(false);
+                enterArenaFullscreen();
+              }}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 via-orange-600 to-amber-600 hover:brightness-110 active:scale-[0.99] text-white font-mono font-black text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(244,63,94,0.5)] transition-all cursor-pointer"
+            >
+              I Understand &bull; Return to Arena
+            </button>
           </div>
         </div>
       )}

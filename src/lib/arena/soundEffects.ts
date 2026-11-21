@@ -376,3 +376,62 @@ export function playTacticalSelectSound() {
   } catch (e) {}
 }
 
+/**
+ * 12. Anti-Cheat Sentinel Warning Siren (Local Alert for Tab-Switcher)
+ * Rapid pulsing tactical alarm sweep (320Hz <-> 820Hz).
+ */
+export function playCheatWarningSiren() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(820, now + 0.14);
+    osc.frequency.exponentialRampToValueAtTime(320, now + 0.28);
+    osc.frequency.exponentialRampToValueAtTime(850, now + 0.42);
+    osc.frequency.exponentialRampToValueAtTime(280, now + 0.58);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.65);
+  } catch (e) {}
+}
+
+/**
+ * 13. Opponent Cheat Radar Alarm (Alert sent to Honest Player)
+ * High alert dual-tone radar breach ping.
+ */
+export function playOpponentCheatRadarBeep() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const now = ctx.currentTime;
+    [920, 1280].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+
+      gain.gain.setValueAtTime(0.12, now + idx * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.14);
+      osc.stop(now + idx * 0.14 + 0.22);
+    });
+  } catch (e) {}
+}
+
+
