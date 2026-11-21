@@ -308,13 +308,10 @@ function ArenaPageContent() {
       <div className="fixed inset-0 w-full h-full bg-[#030611] text-white overflow-hidden select-none flex flex-col justify-between">
         {/* Full-Screen Ultra-HD Proving Grounds Alpine Horizon */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-          <Image
+          <img
             src="/images/arena-proving-grounds-bg.jpg"
             alt="The Proving Grounds • Collegiate Speed Coding Combat"
-            fill
-            priority
-            quality={95}
-            className="object-cover object-center select-none filter contrast-[1.05] brightness-[0.92] saturate-[1.10]"
+            className="w-full h-full object-cover object-center select-none filter contrast-[1.05] brightness-[0.92] saturate-[1.10]"
           />
           {/* Symmetrical dark vignettes to focus user attention onto center portal */}
           <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 pointer-events-none" />
@@ -398,6 +395,7 @@ function ArenaPageContent() {
 
             {/* Interactive Circular Portal */}
             <button
+              id="begin-portal-btn"
               type="button"
               onClick={handleLaunchLobby}
               onMouseEnter={playHoverSound}
