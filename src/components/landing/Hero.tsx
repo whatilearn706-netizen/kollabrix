@@ -68,13 +68,13 @@ export function LandingHero() {
           muted
           playsInline
           preload="auto"
-          poster="/brand/hero-anatomy-poster.jpg?v=2"
+          poster="/brand/hero-anatomy-poster.jpg?v=3"
           className="absolute inset-0 w-full h-full object-cover object-center scale-[1.02] filter brightness-[1.04] contrast-[1.06] transform-gpu will-change-transform origin-center transition-transform duration-1000 ease-out"
         >
-          <source src="/videos/hero-anatomy-4k.mp4?v=2" type="video/mp4" />
+          <source src="/videos/hero-anatomy-4k.mp4?v=3" type="video/mp4" />
           {/* Fallback image if video element is unsupported */}
           <img
-            src="/brand/hero-anatomy-poster.jpg?v=2"
+            src="/brand/hero-anatomy-poster.jpg?v=3"
             alt="Kollabrix Anatomy Aesthetic Background"
             className="w-full h-full object-cover object-center"
           />
