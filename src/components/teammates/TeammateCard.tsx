@@ -73,7 +73,6 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                   className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${
                     isCardDark ? 'text-white site-heading-white' : ''
                   }`}
-                  title={profile.display_name}
                 >
                   {profile.display_name}
                 </Link>
@@ -150,7 +149,6 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
               borderColor: `${theme.brandColor}25`,
             }}
             className="px-3 py-1.5 rounded-xl border flex items-center justify-between gap-2 text-xs"
-            title={reasons.join(' • ')}
           >
             <div className="flex items-center gap-1.5 min-w-0">
               <Sparkles
@@ -168,6 +166,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
               <span
                 style={{ color: theme.brandColor }}
                 className="text-[10px] font-bold font-mono shrink-0 px-1.5 py-0.2 rounded-md bg-white/60 dark:bg-black/20"
+                title={reasons.slice(1).join(' • ')}
               >
                 +{reasons.length - 1}
               </span>
