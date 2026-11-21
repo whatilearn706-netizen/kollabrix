@@ -317,10 +317,10 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '', isLive = true
       className={`relative group cursor-pointer select-none shrink-0 transition-all duration-200 hover:scale-110 active:scale-90 flex items-center ${
         isLaunching ? 'scale-95 opacity-80' : ''
       } ${className}`}
-      title="⚔️ Battle Arena: 1v1 & 2v2 Live Code Duels (Click to Enter)"
+      title="⚔️ The Proving Grounds: 1v1 & 2v2 Live Code Duels (Click to Enter)"
       role="button"
       tabIndex={0}
-      aria-label="Enter Battle Arena: 1v1 & 2v2 Live Code Duels"
+      aria-label="Enter The Proving Grounds: 1v1 & 2v2 Live Code Duels"
     >
       {/* ================= REALISTIC METALLIC LAPTOP HOUSING ================= */}
       <div className="relative flex flex-col items-center">

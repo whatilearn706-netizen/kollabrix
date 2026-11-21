@@ -2912,7 +2912,7 @@ export function FullArenaExperience({
               <span className="font-mono font-black text-white text-base tracking-wider uppercase flex items-center gap-1.5">
                 <span className="text-amber-400">KOLLΛBRIX</span>
                 <span className="text-slate-500 font-normal">/</span>
-                <span>BATTLE ARENA</span>
+                <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent">THE PROVING GROUNDS</span>
               </span>
               {step > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">

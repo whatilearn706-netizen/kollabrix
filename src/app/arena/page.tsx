@@ -18,6 +18,9 @@ import {
   Zap,
   Flame,
   Trophy,
+  Volume2,
+  VolumeX,
+  Headphones,
 } from 'lucide-react';
 
 function ArenaPageContent() {
@@ -41,10 +44,50 @@ function ArenaPageContent() {
     'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
 
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Play crisp cyber duel launch sound
+  // Play resonant dual-harmonic cinematic portal launch sound
   const playEnterSound = useCallback(() => {
+    if (!audioEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(261.63, now);
+      osc1.frequency.exponentialRampToValueAtTime(523.25, now + 0.25);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(392.0, now);
+      osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.25);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.65);
+      osc2.stop(now + 0.65);
+    } catch {}
+  }, [audioEnabled]);
+
+  const playHoverSound = useCallback(() => {
+    if (!audioEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -59,19 +102,19 @@ function ArenaPageContent() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.08);
 
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.15);
+      osc.stop(now + 0.1);
     } catch {}
-  }, []);
+  }, [audioEnabled]);
 
   const checkArenaStatus = async () => {
     try {
@@ -200,112 +243,132 @@ function ArenaPageContent() {
   }
 
   // =========================================================================
-  // 1. SHOWCASE MODE: Full-Screen Retro Robot Sentinel Visual (Image 2)
-  // Shown after user taps on Battle Arena from the homepage
+  // 1. THE PROVING GROUNDS CINEMATIC GATEWAY (Middle-Earth Chrome Experiment Style)
+  // Symmetrical layout with epic mountain landscape, grand typography, and central pulsing BEGIN button
   // =========================================================================
   if (!showPlayLobby) {
     return (
       <div className="fixed inset-0 w-full h-full bg-[#030611] text-white overflow-hidden select-none flex flex-col justify-between">
-        {/* Ultra-HD Edge-to-Edge Retro Sentinel Artwork (Image 2 - 2048x1152 HD, Vibrant & Crisp) */}
+        {/* Full-Screen Ultra-HD Proving Grounds Alpine Horizon */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
           <Image
-            src="/images/arena-retro-sentinel-hd.jpg"
-            alt="Kollabrix 1v1 Battle Arena Retro Robot Sentinel"
+            src="/images/arena-proving-grounds-bg.jpg"
+            alt="The Proving Grounds • Collegiate Speed Coding Combat"
             fill
             priority
-            quality={100}
-            className="object-cover object-center select-none filter contrast-[1.06] brightness-[1.04] saturate-[1.10]"
+            quality={95}
+            className="object-cover object-center select-none filter contrast-[1.05] brightness-[0.92] saturate-[1.10]"
           />
-          {/* Soft directional shade on left to ensure high headline readability while leaving the 3D robot bright & vivid */}
-          <div className="absolute inset-y-0 left-0 w-full lg:w-1/2 bg-gradient-to-r from-black/75 via-black/35 to-transparent pointer-events-none" />
-          {/* Subtle top & bottom vignettes for sleek control integration */}
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/25 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
+          {/* Symmetrical dark vignettes to focus user attention onto center portal */}
+          <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
         </div>
 
         {/* Minimalist Top Navigation Header */}
         <header className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pt-6 sm:pt-8 flex items-center justify-between">
           {/* Brand Pill */}
-          <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-black/60 border border-white/15 backdrop-blur-md shadow-lg">
-            <span className="text-sm sm:text-base font-bold text-white tracking-tight font-sans">
-              1v1 Arena
-            </span>
-            <span className="text-white/25 font-light text-sm select-none">|</span>
-            <span className="text-xs sm:text-sm font-mono font-black tracking-widest text-slate-300 uppercase">
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-white/30 backdrop-blur-md transition-all text-slate-300 hover:text-white shadow-lg cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-white">
               KOLLABRIX
             </span>
-          </div>
+            <span className="text-white/20 select-none">|</span>
+            <span className="text-xs sm:text-sm font-sans font-medium text-slate-300">
+              Exit
+            </span>
+          </Link>
 
-          {/* Action Navigation */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link
-              href="/"
-              className="px-4 py-2 rounded-full bg-black/60 hover:bg-black/80 border border-white/15 hover:border-white/30 text-xs sm:text-sm text-slate-300 hover:text-white font-mono backdrop-blur-md transition-all shadow-md"
-            >
-              Exit to Home
-            </Link>
-
+          {/* Audio & Status Controls */}
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleLaunchLobby}
-              className="group px-5 sm:px-6 py-2 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-mono font-bold text-xs sm:text-sm shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+              onClick={() => setAudioEnabled(!audioEnabled)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-white/30 text-xs font-mono text-slate-300 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg"
+              title="Toggle sound effects"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <Swords className="w-3.5 h-3.5 text-slate-950" />
-              <span>Enter Live Arena</span>
+              {audioEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+              )}
+              <span className="hidden sm:inline">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
             </button>
           </div>
         </header>
 
-        {/* Left-Aligned Headline & Description (Positioned directly in the blue marked box) */}
-        <main className="relative z-10 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 py-4 flex-1 flex items-center">
-          <div className="max-w-xl lg:max-w-2xl text-left">
-            {/* Category Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-200 text-xs font-mono font-medium mb-3 backdrop-blur-md shadow-md">
-              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.9)]" />
-              <span>COLLEGIATE 1V1 COMBAT</span>
-            </div>
+        {/* Central Epic Stage: Symmetrical Cinematic Presentation (Middle-Earth Chrome Experiment) */}
+        <main className="relative z-10 w-full max-w-5xl mx-auto px-6 py-4 flex-1 flex flex-col items-center justify-center text-center">
+          {/* Poetic Pre-Title Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/50 border border-amber-400/30 text-amber-300 text-[10px] sm:text-xs font-mono tracking-[0.25em] uppercase mb-4 sm:mb-6 backdrop-blur-md shadow-lg animate-fadeIn">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+            <span>A JOURNEY THROUGH SPEED &amp; LOGIC</span>
+          </div>
 
-            {/* Headline: Welcome To 1v1 Arena */}
-            <h1 className="font-heading font-black tracking-tight leading-[0.96] text-white text-5xl sm:text-6xl lg:text-7xl xl:text-8xl select-none">
-              <span className="block text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]">
-                Welcome To
+          {/* Grand Cinematic Title */}
+          <h1 className="font-heading font-black tracking-[0.08em] sm:tracking-[0.15em] leading-[0.95] text-white text-4xl sm:text-6xl md:text-7xl lg:text-8xl select-none uppercase drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
+            <span className="bg-gradient-to-b from-white via-amber-100 to-amber-300/80 bg-clip-text text-transparent">
+              THE PROVING GROUNDS
+            </span>
+          </h1>
+
+          {/* Elegant Gold Separator Line */}
+          <div className="w-32 sm:w-56 h-[1px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent my-4 sm:my-6" />
+
+          {/* Poetic Subtitle */}
+          <p className="text-slate-200/90 text-xs sm:text-sm md:text-base font-mono uppercase tracking-[0.25em] max-w-xl text-center drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)]">
+            WHERE REAL BUILDERS ARE PROVEN UNDER TIME
+          </p>
+
+          {/* The Iconic Central BEGIN Circular Portal Button */}
+          <div className="mt-8 sm:mt-12 relative flex items-center justify-center">
+            {/* Ambient Pulsing Radar Rings */}
+            <div className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-amber-400/30 animate-ping pointer-events-none opacity-40" />
+            <div className="absolute w-36 h-36 sm:w-48 sm:h-48 rounded-full border border-white/10 animate-pulse pointer-events-none" />
+
+            {/* Interactive Circular Portal */}
+            <button
+              type="button"
+              onClick={handleLaunchLobby}
+              onMouseEnter={playHoverSound}
+              className="group relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-black/45 hover:bg-black/65 border border-white/40 hover:border-amber-400 text-white backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_35px_rgba(251,191,36,0.25)] hover:shadow-[0_0_55px_rgba(251,191,36,0.55)] flex flex-col items-center justify-center cursor-pointer select-none"
+            >
+              {/* Inner Decorative Accent Ring */}
+              <div className="absolute inset-1.5 sm:inset-2 rounded-full border border-white/15 group-hover:border-amber-400/40 transition-colors pointer-events-none" />
+
+              <span className="font-mono text-xs sm:text-sm font-bold tracking-[0.3em] uppercase text-white group-hover:text-amber-300 transition-colors">
+                BEGIN
               </span>
-              <span className="block mt-1.5 bg-gradient-to-r from-cyan-200 via-sky-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_4px_30px_rgba(6,182,212,0.6)]">
-                1v1 Arena
+              <span className="text-[9px] sm:text-[10px] font-mono text-slate-400 group-hover:text-amber-200/80 tracking-wider transition-colors mt-0.5">
+                ENTER ARENA
               </span>
-            </h1>
-
-            {/* Description under the blue marked area */}
-            <p className="text-slate-200/90 text-sm sm:text-base md:text-lg leading-relaxed mt-5 font-normal drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)] max-w-lg">
-              Battle Arena is the high-stakes live coding combat for collegiate builders. Duel real-time in fast-paced 3-minute blitz sprints, solve algorithmic hurdles under anti-cheat fog of war, and defeat campus rivals to climb the verified leaderboard.
-            </p>
-
-            {/* Quick Action Button below description */}
-            <div className="mt-7 flex items-center gap-4">
-              <button
-                type="button"
-                onClick={handleLaunchLobby}
-                className="group inline-flex items-center gap-2.5 px-7 py-3 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_35px_rgba(255,255,255,0.45)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
-              >
-                <span>⚔️ Enter Battle Arena</span>
-                <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+            </button>
           </div>
         </main>
 
-        {/* Floating Bottom Bar (Brown-marked status badge completely removed, only Start Duel button) */}
-        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pb-6 sm:pb-10 pt-4 flex items-center justify-end">
-          {/* Start Battle Duel Button */}
-          <button
-            type="button"
-            onClick={handleLaunchLobby}
-            className="group inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm sm:text-base shadow-[0_0_40px_rgba(255,255,255,0.45)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <span>⚔️ Start 1v1 Battle Duel</span>
-            <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
-          </button>
+        {/* Minimalist Chrome Experiment Style Footer */}
+        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pb-6 sm:pb-8 pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-400">
+          {/* Left: Powered By */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-400 tracking-wider">
+              KOLLABRIX &bull; COLLEGIATE CODE COMBAT
+            </span>
+          </div>
+
+          {/* Middle: Audio Recommendation */}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
+            <Headphones className="w-3.5 h-3.5 text-amber-400" />
+            <span>Best Experienced in Chrome &bull; 1v1 Speed Battle</span>
+          </div>
+
+          {/* Right: Live Ticker */}
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] text-slate-300">Live Campus Matchmaking Active</span>
+          </div>
         </footer>
       </div>
     );
