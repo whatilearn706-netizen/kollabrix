@@ -2895,19 +2895,22 @@ export function FullArenaExperience({
         <img
           src="/images/proving-grounds-overlook-bg.jpg"
           alt="The Proving Grounds Mountain Overlook"
-          className="w-full h-full object-cover object-center filter contrast-[1.04] brightness-[0.88] saturate-[1.06]"
+          className="w-full h-full object-cover object-[center_top] sm:object-center filter contrast-[1.02] brightness-[0.98] saturate-[1.05]"
         />
         {/* Soft edge vignettes to ensure HUD readability while keeping warrior & mountain crystal clear */}
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-2/5 bg-gradient-to-l from-black/40 via-black/15 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
       </div>
 
       {/* Subtle Ambient Golden Light Overlay */}
       <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(245,158,11,0.08),transparent_70%)] pointer-events-none z-0" />
 
       {/* Top Cyber Navigation Bar */}
-      <header className="relative z-20 h-16 border-b border-white/[0.08] bg-black/85 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0">
+      <header className={`relative z-20 h-16 border-b transition-colors px-4 sm:px-6 flex items-center justify-between shrink-0 ${
+        step === 0
+          ? 'border-white/[0.06] bg-black/45 backdrop-blur-md'
+          : 'border-white/[0.08] bg-black/85 backdrop-blur-xl'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 relative shrink-0 flex items-center justify-center">
             <img
@@ -3003,57 +3006,62 @@ export function FullArenaExperience({
       )}
 
       {/* Main Arena Viewport */}
-      <main className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col justify-start items-center p-4 sm:p-6 lg:p-8">
+      <main className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col items-center ${
+        step === 0
+          ? 'justify-end p-2 sm:p-4 lg:p-6 pb-2 sm:pb-4'
+          : 'justify-start p-4 sm:p-6 lg:p-8'
+      }`}>
         
         {/* ================= STEP 0: PROVING GROUNDS OVERLOOK (3RD IMAGE WARM TRANSPARENT CARD ON LOWER RIGHT) ================= */}
         {step === 0 && (
-          <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto min-h-[calc(100vh-6rem)] flex flex-col justify-end items-end pb-4 sm:pb-8 lg:pb-10 pr-0 sm:pr-4 lg:pr-8 animate-fadeIn">
+          <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto flex flex-col justify-end items-end pb-1 sm:pb-2 pr-0 sm:pr-2 lg:pr-4 animate-fadeIn pointer-events-none">
             {/* The Proving Grounds Colosseum Trial Card (Image 3 - Warmer, Transparent Glassmorphic Box) */}
-            <div className="w-full max-w-lg lg:max-w-[490px] xl:max-w-[520px] rounded-3xl bg-[#0b0e14]/55 border border-amber-400/30 shadow-[0_20px_60px_rgba(0,0,0,0.65),0_0_35px_rgba(245,158,11,0.1),inset_0_1px_1px_rgba(255,255,255,0.15)] backdrop-blur-2xl p-6 sm:p-7 relative overflow-hidden space-y-5">
+            <div className="pointer-events-auto w-full max-w-[420px] sm:max-w-[440px] lg:max-w-[450px] rounded-3xl bg-gradient-to-b from-[#181107]/45 via-[#120d05]/38 to-[#0a0703]/50 border border-amber-500/30 border-t-amber-300/40 border-l-amber-400/25 shadow-[0_16px_45px_rgba(0,0,0,0.5),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-md p-4 sm:p-5 relative overflow-hidden space-y-3 sm:space-y-3.5">
               {/* Subtle ambient warm sunbeam highlight within the glass */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-3xl rounded-full pointer-events-none" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.15),transparent_70%)] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.10),transparent_70%)] pointer-events-none" />
 
               {/* 1. TOP SECTION: Badge + Headline + Description */}
-              <div className="space-y-2.5 relative z-10 text-left">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/50 border border-amber-400/40 text-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <div className="space-y-1.5 relative z-10 text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-amber-400/35 text-amber-300 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                   <span>THE PROVING GROUNDS • LIVE ARENA</span>
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight font-serif leading-[1.15]">
+                <h1 className="text-xl sm:text-2xl lg:text-[25px] font-black text-white tracking-tight font-serif leading-[1.18]">
                   Enter The Colosseum.{' '}
-                  <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent filter drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">
+                  <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent filter drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]">
                     Prove Your Craft.
                   </span>
                 </h1>
 
-                <p className="text-xs sm:text-[13px] text-slate-200/90 leading-relaxed font-sans drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                <p className="text-[11px] sm:text-xs text-slate-200/90 leading-relaxed font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                   High-stakes algorithmic &amp; UI duels under fog-of-war encryption. Outcode campus rivals, prove your speed under time, and rise on the verified collegiate leaderboard.
                 </p>
               </div>
 
               {/* 2. CENTER SECTION: The Proving Grounds Colosseum Visual */}
-              <div className="relative w-full rounded-2xl overflow-hidden border border-amber-400/30 shadow-[0_0_30px_rgba(245,158,11,0.2)] group z-10">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 z-10 pointer-events-none" />
+              <div className="relative w-full rounded-2xl overflow-hidden border border-amber-400/30 shadow-[0_4px_25px_rgba(0,0,0,0.45)] group z-10">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-amber-500/10 z-10 pointer-events-none" />
                 <img
                   src="/images/arena-proving-grounds-colosseum.jpg"
                   alt="The Proving Grounds Colosseum"
-                  className="w-full h-48 sm:h-56 object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-32 sm:h-36 object-cover object-center transition-transform duration-500 group-hover:scale-105"
                 />
                 {/* Floating Telemetry Tag */}
-                <div className="absolute bottom-2.5 left-2.5 z-20 px-3 py-1 rounded-full bg-black/85 border border-amber-400/40 text-[10px] font-mono text-amber-300 backdrop-blur-md flex items-center gap-1.5 shadow-md">
+                <div className="absolute bottom-2 left-2 z-20 px-2.5 py-0.5 rounded-full bg-black/80 border border-amber-400/35 text-[9px] sm:text-[10px] font-mono text-amber-300 backdrop-blur-sm flex items-center gap-1.5 shadow-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   <span>SANCTUARY OF SPEED • ANTI-CHEAT 60 FPS</span>
                 </div>
               </div>
 
               {/* Quick Pilot Call-sign Tag */}
-              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-xs font-mono text-slate-300 relative z-10">
-                <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/35 border border-amber-500/15 text-[11px] font-mono text-slate-300 relative z-10">
+                <span className="text-[10px] text-slate-400 flex items-center gap-1">
                   <span className="text-amber-400">⚔️</span>
                   <span>Challenger:</span>
                 </span>
-                <span className="text-amber-300 font-bold truncate max-w-[180px]">
+                <span className="text-amber-300 font-bold truncate max-w-[170px]">
                   {playerName || 'Challenger'}
                 </span>
                 <button
@@ -3066,8 +3074,8 @@ export function FullArenaExperience({
               </div>
 
               {/* 3. BOTTOM SECTION: Buttons */}
-              <div className="space-y-3 relative z-10">
-                <div className="flex flex-wrap items-center gap-2.5">
+              <div className="space-y-2.5 relative z-10">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -3076,11 +3084,11 @@ export function FullArenaExperience({
                       setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
                       setStep(2);
                     }}
-                    className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-[0_0_25px_rgba(245,158,11,0.45)] flex items-center justify-center gap-2 cursor-pointer transition-all"
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center justify-center gap-1.5 cursor-pointer transition-all"
                   >
-                    <Trophy className="w-4 h-4 fill-current" />
+                    <Trophy className="w-3.5 h-3.5 fill-current" />
                     <span>CREATE TOURNAMENT</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
                   <button
@@ -3089,22 +3097,22 @@ export function FullArenaExperience({
                       playTacticalSelectSound();
                       setShowJoinModal(true);
                     }}
-                    className="py-3 px-4 rounded-xl bg-black/60 hover:bg-black/80 border border-amber-400/30 text-amber-200 font-mono text-xs font-bold tracking-wider backdrop-blur-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md"
+                    className="py-2.5 px-3.5 rounded-xl bg-black/45 hover:bg-black/65 border border-amber-400/35 text-amber-200 font-mono text-xs font-bold tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm"
                   >
-                    <Users className="w-4 h-4 text-amber-400" />
+                    <Users className="w-3.5 h-3.5 text-amber-400" />
                     <span>Join with Code</span>
                   </button>
                 </div>
 
                 {/* Telemetry Footer */}
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 pt-2 border-t border-white/[0.12] drop-shadow-sm">
-                  <span className="flex items-center gap-1.5 text-amber-300">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-300 pt-1.5 border-t border-white/[0.1] drop-shadow-sm">
+                  <span className="flex items-center gap-1.5 text-amber-300/90">
+                    <Zap className="w-3 h-3 text-amber-400" />
                     <span>&lt;20ms Latency</span>
                   </span>
-                  <span className="text-white/30">•</span>
-                  <span className="flex items-center gap-1.5 text-amber-300">
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-white/20">•</span>
+                  <span className="flex items-center gap-1.5 text-amber-300/90">
+                    <ShieldCheck className="w-3 h-3 text-amber-400" />
                     <span>Anti-Cheat Sentinel Shield</span>
                   </span>
                 </div>
