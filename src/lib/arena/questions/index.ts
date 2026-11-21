@@ -10,6 +10,7 @@ import { HTML_JS_HARD_ARENA_QUESTIONS } from './htmlJsHardQuestions';
 import { HTML_CSS_JS_EASY_ARENA_QUESTIONS } from './htmlCssJsEasyQuestions';
 import { HTML_CSS_JS_MEDIUM_ARENA_QUESTIONS } from './htmlCssJsMediumQuestions';
 import { HTML_CSS_JS_HARD_ARENA_QUESTIONS } from './htmlCssJsHardQuestions';
+import { ALL_ALGORITHM_ARENA_QUESTIONS } from './algorithms';
 
 export * from './htmlMediumQuestions';
 export * from './htmlHardQuestions';
@@ -22,14 +23,18 @@ export * from './htmlJsHardQuestions';
 export * from './htmlCssJsEasyQuestions';
 export * from './htmlCssJsMediumQuestions';
 export * from './htmlCssJsHardQuestions';
+export * from './algorithms';
 
 /**
- * All 330 Newly Calibrated Battle Arena Questions
+ * All 600+ Calibrated Battle Arena Questions
  * Covers:
- * - HTML: Medium, Hard (3m, 5m, 10m)
+ * - HTML: Easy, Medium, Hard (3m, 5m, 10m)
  * - HTML + CSS: Easy, Medium, Hard (3m, 5m, 10m)
  * - HTML + JS: Easy, Medium, Hard (3m, 5m, 10m)
  * - HTML + CSS + JS: Easy, Medium, Hard (3m, 5m, 10m)
+ * - Java: Easy, Medium, Hard (3m, 5m, 10m)
+ * - Python: Easy, Medium, Hard (3m, 5m, 10m)
+ * - C++: Easy, Medium, Hard (3m, 5m, 10m)
  */
 export const ALL_EXPANDED_ARENA_QUESTIONS: DuelQuestion[] = [
   ...HTML_MEDIUM_ARENA_QUESTIONS,
@@ -43,4 +48,5 @@ export const ALL_EXPANDED_ARENA_QUESTIONS: DuelQuestion[] = [
   ...HTML_CSS_JS_EASY_ARENA_QUESTIONS,
   ...HTML_CSS_JS_MEDIUM_ARENA_QUESTIONS,
   ...HTML_CSS_JS_HARD_ARENA_QUESTIONS,
+  ...ALL_ALGORITHM_ARENA_QUESTIONS,
 ];

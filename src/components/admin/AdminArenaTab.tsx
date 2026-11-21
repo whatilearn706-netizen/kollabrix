@@ -801,6 +801,98 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
               <p className="text-[10px] text-slate-400 mt-1">Complete 30 Question Bank</p>
             </button>
           </div>
+
+          {/* Quick Algorithm Duels Presets */}
+          <div className="pt-2 border-t border-charcoal-800/80">
+            <span className="text-[11px] font-mono text-amber-400 font-bold uppercase tracking-wider block mb-2">
+              ⚔️ Competitive Algorithm Duels (Java • Python • C++)
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('algorithms');
+                  setSelectedTag('java');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'algorithms' && selectedTag === 'java'
+                    ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-amber-400">☕ Java Duels</span>
+                  <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('algorithms');
+                  setSelectedTag('python');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'algorithms' && selectedTag === 'python'
+                    ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-emerald-400">🐍 Python Duels</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('algorithms');
+                  setSelectedTag('cpp');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'algorithms' && selectedTag === 'cpp'
+                    ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-cyan-400">⚡ C++ Duels</span>
+                  <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">90 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedArena('algorithms');
+                  setSelectedTag('all');
+                  setSelectedDifficulty('all');
+                  setSelectedDuration('all');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  selectedArena === 'algorithms' && selectedTag === 'all'
+                    ? 'bg-purple-500/20 border-purple-400 text-white shadow-md'
+                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold font-mono">
+                  <span className="text-purple-400">🏆 All Algorithms</span>
+                  <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800">270 Qs</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Full Competitive Problem Bank</p>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Detailed Options Filter Grid */}
