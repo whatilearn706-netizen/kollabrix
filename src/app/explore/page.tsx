@@ -47,7 +47,7 @@ export default function ExploreProjectsPage() {
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
-    const raw = getPageCache<Project[]>('linkora_explore_projects_v7');
+    const raw = getPageCache<Project[]>('linkora_explore_projects_v8');
     if (Array.isArray(raw) && raw.length > 0) {
       return raw.filter((p) => {
         if (!p) return false;
@@ -72,7 +72,7 @@ export default function ExploreProjectsPage() {
   });
 
   const [totalCount, setTotalCount] = useState<number>(() => {
-    const cachedCount = getPageCache<number>('linkora_explore_count_v7');
+    const cachedCount = getPageCache<number>('linkora_explore_count_v8');
     return typeof cachedCount === 'number' && cachedCount > 0 ? cachedCount : DEMO_PROJECTS.length;
   });
 
@@ -120,6 +120,8 @@ export default function ExploreProjectsPage() {
       localStorage.removeItem('linkora_cache_linkora_explore_count_v5');
       localStorage.removeItem('linkora_cache_linkora_explore_projects_v6');
       localStorage.removeItem('linkora_cache_linkora_explore_count_v6');
+      localStorage.removeItem('linkora_cache_linkora_explore_projects_v7');
+      localStorage.removeItem('linkora_cache_linkora_explore_count_v7');
       sessionStorage.removeItem('linkora_cache_linkora_explore_projects_p1');
       sessionStorage.removeItem('linkora_cache_linkora_explore_count_p1');
       sessionStorage.removeItem('linkora_cache_linkora_explore_projects_v4');
@@ -128,6 +130,8 @@ export default function ExploreProjectsPage() {
       sessionStorage.removeItem('linkora_cache_linkora_explore_count_v5');
       sessionStorage.removeItem('linkora_cache_linkora_explore_projects_v6');
       sessionStorage.removeItem('linkora_cache_linkora_explore_count_v6');
+      sessionStorage.removeItem('linkora_cache_linkora_explore_projects_v7');
+      sessionStorage.removeItem('linkora_cache_linkora_explore_count_v7');
     } catch {}
   }, []);
 
@@ -209,8 +213,8 @@ export default function ExploreProjectsPage() {
       setTotalCount(total);
       setProjects(paginated);
       if (isDefaultView) {
-        setPageCache('linkora_explore_projects_v7', paginated);
-        setPageCache('linkora_explore_count_v7', total);
+        setPageCache('linkora_explore_projects_v8', paginated);
+        setPageCache('linkora_explore_count_v8', total);
       }
       setIsLoading(false);
       return;
@@ -381,8 +385,8 @@ export default function ExploreProjectsPage() {
           setProjects(cleanDemo.slice(0, pageSize));
           setTotalCount(cleanDemo.length);
           if (isDefaultView) {
-            setPageCache('linkora_explore_projects_v7', cleanDemo.slice(0, pageSize));
-            setPageCache('linkora_explore_count_v7', cleanDemo.length);
+            setPageCache('linkora_explore_projects_v8', cleanDemo.slice(0, pageSize));
+            setPageCache('linkora_explore_count_v8', cleanDemo.length);
           }
         } else {
           const verifiedProjects = cleanData.map((proj) => {
@@ -399,8 +403,8 @@ export default function ExploreProjectsPage() {
           setProjects(verifiedProjects);
           setTotalCount(cleanData.length);
           if (isDefaultView) {
-            setPageCache('linkora_explore_projects_v7', verifiedProjects);
-            setPageCache('linkora_explore_count_v7', cleanData.length);
+            setPageCache('linkora_explore_projects_v8', verifiedProjects);
+            setPageCache('linkora_explore_count_v8', cleanData.length);
           }
         }
       }
@@ -411,8 +415,8 @@ export default function ExploreProjectsPage() {
       setProjects(fallback);
       setTotalCount(DEMO_PROJECTS.length);
       if (isDefaultView) {
-        setPageCache('linkora_explore_projects_v7', fallback);
-        setPageCache('linkora_explore_count_v7', DEMO_PROJECTS.length);
+        setPageCache('linkora_explore_projects_v8', fallback);
+        setPageCache('linkora_explore_count_v8', DEMO_PROJECTS.length);
       }
     } finally {
       hasLoadedRef.current = true;

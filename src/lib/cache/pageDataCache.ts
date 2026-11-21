@@ -375,8 +375,8 @@ export async function prefetchExploreData(): Promise<void> {
         return proj;
       });
 
-      setPageCache('linkora_explore_projects_v7', verifiedProjects);
-      setPageCache('linkora_explore_count_v7', count || verifiedProjects.length);
+      setPageCache('linkora_explore_projects_v8', verifiedProjects);
+      setPageCache('linkora_explore_count_v8', count || verifiedProjects.length);
     }
   } catch {}
 }
