@@ -3006,17 +3006,17 @@ export function FullArenaExperience({
       )}
 
       {/* Main Arena Viewport */}
-      <main className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col items-center ${
+      <main className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col ${
         step === 0
-          ? 'justify-end p-2 sm:p-4 lg:p-6 pb-2 sm:pb-4'
-          : 'justify-start p-4 sm:p-6 lg:p-8'
+          ? 'justify-end items-center sm:items-end p-3 sm:p-5 lg:p-6 pb-3 sm:pb-5'
+          : 'justify-start items-center p-4 sm:p-6 lg:p-8'
       }`}>
         
         {/* ================= STEP 0: PROVING GROUNDS OVERLOOK (3RD IMAGE WARM TRANSPARENT CARD ON LOWER RIGHT) ================= */}
         {step === 0 && (
-          <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto flex flex-col justify-end items-end pb-1 sm:pb-2 pr-0 sm:pr-2 lg:pr-4 animate-fadeIn pointer-events-none">
+          <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto flex flex-col justify-end items-center sm:items-end pb-1 sm:pb-2 pr-0 sm:pr-4 lg:pr-8 animate-fadeIn pointer-events-none">
             {/* The Proving Grounds Colosseum Trial Card (Image 3 - Warmer, Transparent Glassmorphic Box) */}
-            <div className="pointer-events-auto w-full max-w-[420px] sm:max-w-[440px] lg:max-w-[450px] rounded-3xl bg-gradient-to-b from-[#181107]/45 via-[#120d05]/38 to-[#0a0703]/50 border border-amber-500/30 border-t-amber-300/40 border-l-amber-400/25 shadow-[0_16px_45px_rgba(0,0,0,0.5),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-md p-4 sm:p-5 relative overflow-hidden space-y-3 sm:space-y-3.5">
+            <div className="pointer-events-auto w-full max-w-[420px] sm:max-w-[430px] lg:max-w-[440px] rounded-3xl bg-gradient-to-b from-[#181107]/45 via-[#120d05]/38 to-[#0a0703]/50 border border-amber-500/30 border-t-amber-300/40 border-l-amber-400/25 shadow-[0_16px_45px_rgba(0,0,0,0.5),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-md p-4 sm:p-5 relative overflow-hidden space-y-3 sm:space-y-3.5">
               {/* Subtle ambient warm sunbeam highlight within the glass */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.15),transparent_70%)] pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.10),transparent_70%)] pointer-events-none" />
