@@ -106,7 +106,7 @@ export function LandingHero() {
               >
                 <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)] animate-pulse" />
                 <span className="text-xs sm:text-sm text-sky-200 group-hover:text-white font-medium tracking-wide transition-colors">
-                  1v1 Battle Arena & Collegiate Hackathons →
+                  The Proving Grounds: 1v1 Code Combat →
                 </span>
               </Link>
             </motion.div>
