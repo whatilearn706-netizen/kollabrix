@@ -438,13 +438,11 @@ export async function prefetchTeammatesData(): Promise<void> {
           const isVerified =
             Boolean(p.college_verified) ||
             verifiedUserIds.has(p.user_id) ||
-            Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim())) ||
-            Boolean(p.college && p.college.trim().length > 0);
+            Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
           return { ...p, college_verified: isVerified };
-        })
-        .filter((p) => p.college_verified === true);
+        });
 
-      setPageCache('kollabrix_teammates_real_v7', activeProfs);
+      setPageCache('kollabrix_teammates_real_v8', activeProfs);
     }
   } catch {}
 }

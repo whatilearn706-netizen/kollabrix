@@ -399,7 +399,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
-  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v7');
+  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v8');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
     cachedProfiles && cachedProfiles.length > 0
@@ -559,19 +559,14 @@ export default function TeammatesPage() {
               const isVerified =
                 Boolean(p.college_verified) ||
                 verifiedUserIds.has(p.user_id) ||
-                Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim())) ||
-                Boolean(p.college && p.college.trim().length > 0);
+                Boolean(p.username && verifiedUserIds.has(p.username.toLowerCase().trim()));
               return { ...p, college_verified: isVerified };
-            })
-            .filter((p) => {
-              // Strictly display verified and active collegiate students in Teammates directory
-              return p.college_verified === true;
             });
 
           // Genuine registered student users from the database are displayed
           if (activeProfs.length > 0) {
             setAllProfiles(activeProfs);
-            setPageCache('kollabrix_teammates_real_v7', activeProfs);
+            setPageCache('kollabrix_teammates_real_v8', activeProfs);
           } else {
             setAllProfiles(FALLBACK_STUDENT_PROFILES);
           }
@@ -642,12 +637,14 @@ export default function TeammatesPage() {
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v6');
+      localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v7');
       sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v4');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v6');
+      sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v7');
     } catch {}
   }, []);
 
