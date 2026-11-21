@@ -48,6 +48,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedArena, setSelectedArena] = useState<ArenaCategory | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [selectedDuration, setSelectedDuration] = useState<number | 'all'>('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | 'all'>('all');
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -415,7 +417,21 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
   const filteredQuestions = questions.filter((q) => {
     if (selectedArena !== 'all' && q.arena !== selectedArena) return false;
-    if (selectedTag !== 'all' && !q.tags.includes(selectedTag)) return false;
+    if (
+      selectedTag !== 'all' &&
+      !q.tags.map((t) => t.toLowerCase().trim()).includes(selectedTag.toLowerCase().trim())
+    ) {
+      return false;
+    }
+    if (selectedDuration !== 'all' && Number(q.timeLimitSeconds) !== Number(selectedDuration)) {
+      return false;
+    }
+    if (
+      selectedDifficulty !== 'all' &&
+      (q.difficulty || 'medium').toLowerCase() !== selectedDifficulty.toLowerCase()
+    ) {
+      return false;
+    }
     return true;
   });
 
@@ -647,34 +663,246 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
       {/* ================= TAB 2: QUESTIONS & CHALLENGE ENGINE ================= */}
       {arenaActiveSubTab === 'questions' && (
         <div className="space-y-6 animate-fadeIn">
-      {/* Filter and Add Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-charcoal-900 border border-charcoal-800">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-mono text-slate-400 font-semibold mr-1">Arena:</span>
-          {(['all', 'web_dev', 'algorithms', 'bug_hunt'] as const).map((cat) => (
+      {/* Choose Options, Presets & Filter Bar */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-4">
+        {/* Header & Quick Action */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-charcoal-800">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Choose Options & Match Presets</span>
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Filter questions by duration, difficulty, and tags, or click a calibrated HTML challenge preset.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              key={cat}
               type="button"
-              onClick={() => setSelectedArena(cat)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                selectedArena === cat
-                  ? 'bg-rose-500 text-white shadow-sm'
-                  : 'bg-charcoal-800 text-slate-300 hover:bg-charcoal-750'
-              }`}
+              onClick={() => {
+                setSelectedArena('all');
+                setSelectedTag('all');
+                setSelectedDuration('all');
+                setSelectedDifficulty('all');
+              }}
+              className="px-3 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Reset all filters"
             >
-              {cat === 'all' ? 'All Arenas' : cat === 'web_dev' ? 'Web Dev' : cat === 'algorithms' ? 'DSA' : 'Bug Hunt'}
+              <RotateCw className="w-3 h-3" />
+              <span>Reset Options</span>
             </button>
-          ))}
+
+            <button
+              type="button"
+              onClick={() => setIsAddingNew(!isAddingNew)}
+              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isAddingNew ? 'Close Form' : 'Add New Duel Question'}</span>
+            </button>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsAddingNew(!isAddingNew)}
-          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{isAddingNew ? 'Close Form' : 'Add New Duel Question'}</span>
-        </button>
+        {/* Quick Presets for the 30 HTML Easy Questions */}
+        <div className="p-3 rounded-xl bg-charcoal-950/80 border border-cyan-500/20 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-yellow-400" />
+              <span>Calibrated Easy HTML Choose Option Presets:</span>
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              30 Sec Lead Time Calibration
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedArena('web_dev');
+                setSelectedTag('html');
+                setSelectedDifficulty('easy');
+                setSelectedDuration(180);
+              }}
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 180
+                  ? 'bg-rose-500/20 border-rose-400 text-white shadow-md'
+                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs font-bold font-mono">
+                <span className="text-rose-400">⚡ 3-Min Blitz</span>
+                <span className="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded border border-rose-800">180s</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">10 Quick HTML Challenges</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedArena('web_dev');
+                setSelectedTag('html');
+                setSelectedDifficulty('easy');
+                setSelectedDuration(300);
+              }}
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 300
+                  ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs font-bold font-mono">
+                <span className="text-amber-400">🔥 5-Min Competitive</span>
+                <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">300s</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">10 Core HTML Challenges</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedArena('web_dev');
+                setSelectedTag('html');
+                setSelectedDifficulty('easy');
+                setSelectedDuration(600);
+              }}
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 600
+                  ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
+                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs font-bold font-mono">
+                <span className="text-emerald-400">🏆 10-Min Marathon</span>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">600s</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">10 Deep HTML Blueprints</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedArena('web_dev');
+                setSelectedTag('html');
+                setSelectedDifficulty('easy');
+                setSelectedDuration('all');
+              }}
+              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 'all'
+                  ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-md'
+                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs font-bold font-mono">
+                <span className="text-cyan-400">🌐 All HTML Easy</span>
+                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">30 Qs</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Complete 30 Question Bank</p>
+            </button>
+          </div>
+        </div>
+
+        {/* Detailed Options Filter Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Arena Category */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Arena Category</label>
+            <div className="flex flex-wrap gap-1">
+              {(['all', 'web_dev', 'algorithms', 'bug_hunt'] as const).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedArena(cat)}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                    selectedArena === cat
+                      ? 'bg-rose-500 text-white font-bold shadow-sm'
+                      : 'bg-charcoal-950 text-slate-300 border border-charcoal-750 hover:bg-charcoal-800'
+                  }`}
+                >
+                  {cat === 'all' ? 'All' : cat === 'web_dev' ? 'Web Dev' : cat === 'algorithms' ? 'DSA' : 'Bug Hunt'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Duration / Pacing */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Match Duration</label>
+            <div className="flex flex-wrap gap-1">
+              {([
+                { val: 'all', label: 'All' },
+                { val: 180, label: '3m' },
+                { val: 300, label: '5m' },
+                { val: 600, label: '10m' },
+              ] as const).map((dur) => (
+                <button
+                  key={String(dur.val)}
+                  type="button"
+                  onClick={() => setSelectedDuration(dur.val)}
+                  className={`px-2.5 py-1 rounded-lg font-mono font-medium transition-all cursor-pointer ${
+                    selectedDuration === dur.val
+                      ? 'bg-cyan-600 text-white font-bold shadow-sm'
+                      : 'bg-charcoal-950 text-slate-300 border border-charcoal-750 hover:bg-charcoal-800'
+                  }`}
+                >
+                  {dur.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Difficulty */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Difficulty</label>
+            <div className="flex flex-wrap gap-1">
+              {([
+                { val: 'all', label: 'All' },
+                { val: 'easy', label: 'Easy' },
+                { val: 'medium', label: 'Medium' },
+                { val: 'hard', label: 'Hard' },
+              ] as const).map((diff) => (
+                <button
+                  key={diff.val}
+                  type="button"
+                  onClick={() => setSelectedDifficulty(diff.val)}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                    selectedDifficulty === diff.val
+                      ? diff.val === 'easy'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : diff.val === 'medium'
+                        ? 'bg-amber-600 text-white font-bold'
+                        : 'bg-rose-600 text-white font-bold'
+                      : 'bg-charcoal-950 text-slate-300 border border-charcoal-750 hover:bg-charcoal-800'
+                  }`}
+                >
+                  {diff.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tag Filter */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Technology Tag</label>
+            <div className="flex flex-wrap gap-1">
+              {(['all', 'html', 'css', 'javascript', 'java', 'python', 'cpp'] as const).map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSelectedTag(tag)}
+                  className={`px-2 py-0.5 rounded-md font-mono text-[11px] transition-all cursor-pointer ${
+                    selectedTag === tag
+                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
+                      : 'bg-charcoal-950 text-slate-400 border border-charcoal-750 hover:text-white'
+                  }`}
+                >
+                  {tag === 'all' ? 'All' : `#${tag}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* New Question Form */}
@@ -1395,9 +1623,50 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
       {/* Questions List */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-slate-400 font-mono px-1">
-          <span>Active Questions ({filteredQuestions.length})</span>
-          <span>Automatic random matchmaking based on tags</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 font-mono px-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-slate-200">
+              Active Questions ({filteredQuestions.length} of {questions.length})
+            </span>
+            {(selectedArena !== 'all' || selectedTag !== 'all' || selectedDuration !== 'all' || selectedDifficulty !== 'all') && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-slate-500">Filters:</span>
+                {selectedArena !== 'all' && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                    {selectedArena}
+                  </span>
+                )}
+                {selectedTag !== 'all' && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                    #{selectedTag}
+                  </span>
+                )}
+                {selectedDuration !== 'all' && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                    {Math.round(Number(selectedDuration) / 60)}m ({selectedDuration}s)
+                  </span>
+                )}
+                {selectedDifficulty !== 'all' && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                    {selectedDifficulty}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedArena('all');
+                    setSelectedTag('all');
+                    setSelectedDuration('all');
+                    setSelectedDifficulty('all');
+                  }}
+                  className="text-[10px] text-slate-400 hover:text-white underline ml-1 cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500">Automatic weighted scoring matchmaking</span>
         </div>
 
         {filteredQuestions.map((q) => (
