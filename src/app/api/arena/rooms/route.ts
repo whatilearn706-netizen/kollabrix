@@ -120,10 +120,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If the client provided a specific non-default admin question (e.g. Admin "Play" test), preserve it.
-      // Otherwise, authoritatively select the best question from the combined database pool (which prioritizes admin questions).
-      const isClientQuestionAdmin = question && !DEFAULT_ARENA_QUESTIONS.some((d) => d.id === question.id);
-      if (isClientQuestionAdmin) {
+      // Check if client provided a valid question that strictly matches the user's selected options
+      const clientTags = (question?.tags || []).map((t: string) => t.toLowerCase().trim());
+      const reqTags = (selectedTags || []).map((t: string) => t.toLowerCase().trim());
+      const requestedLang = reqTags.find((t: string) => ['cpp', 'c++', 'java', 'python'].includes(t));
+      const normLang = requestedLang === 'c++' ? 'cpp' : requestedLang;
+
+      const isClientMatch =
+        question &&
+        question.arena === arena &&
+        (!difficulty || (question.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase()) &&
+        (arena !== 'algorithms' || !normLang || (normLang === 'cpp' ? (clientTags.includes('cpp') || clientTags.includes('c++')) : clientTags.includes(normLang)));
+
+      if (isClientMatch) {
         finalQuestion = {
           ...question,
           timeLimitSeconds: matchDuration,

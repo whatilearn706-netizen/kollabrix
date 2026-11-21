@@ -1640,6 +1640,13 @@ export function FullArenaExperience({
         setJavaCode(enriched.starterJava || '// Your java solution\n');
         setCppCode(enriched.starterCpp || '// Your C++ solution\n');
         setTotalTests(computeExpectedQuestionTests(enriched));
+        if (arena === 'algorithms') {
+          if (effectiveTags.includes('cpp') || effectiveTags.includes('c++')) setActiveTab('cpp');
+          else if (effectiveTags.includes('python')) setActiveTab('python');
+          else setActiveTab('java');
+        } else if (arena === 'web_dev') {
+          setActiveTab('html');
+        }
 
         // Track seen question to guarantee non-repeating cycle for this category
         const matchingPoolIds = questionPool
@@ -1703,6 +1710,13 @@ export function FullArenaExperience({
             }
             const expectedTests = computeExpectedQuestionTests(q);
             setTotalTests(expectedTests);
+            if (arena === 'algorithms') {
+              if (effectiveTags.includes('cpp') || effectiveTags.includes('c++')) setActiveTab('cpp');
+              else if (effectiveTags.includes('python')) setActiveTab('python');
+              else setActiveTab('java');
+            } else if (arena === 'web_dev') {
+              setActiveTab('html');
+            }
           }
         }
         trackEvent('arena_room_created', { code: roomCode, format: teamSize, arena, difficulty });
@@ -2261,33 +2275,32 @@ export function FullArenaExperience({
         : selectedTags;
 
     const currentQ = roomData?.question || activeQuestion;
-    const isCurrentAdmin = currentQ && !DEFAULT_ARENA_QUESTIONS.some((d) => d.id === currentQ.id);
+    const reqTags = effectiveTags.map((t: string) => t.toLowerCase().trim());
+    const requestedLang = reqTags.find((t: string) => ['cpp', 'c++', 'java', 'python'].includes(t));
+    const normLang = requestedLang === 'c++' ? 'cpp' : requestedLang;
 
     const qTags = (currentQ?.tags || []).map((x: string) => x.toLowerCase().trim());
-    const reqTags = effectiveTags.map((t: string) => t.toLowerCase().trim());
 
-    // Strict tag matching: Question must satisfy all requested tags AND must not force unselected languages
-    const matchesAllRequested = reqTags.length === 0 || reqTags.every((t: string) => qTags.includes(t));
-    const hasUnwantedTags = qTags.some((t: string) => !reqTags.includes(t));
-    const isStrictTagMatch = matchesAllRequested && !hasUnwantedTags;
+    // Strict option matching: question must match user's chosen arena, language, and difficulty
+    const isArenaMatch = currentQ?.arena === arena;
+    const isDiffMatch = currentQ && (!difficulty || (currentQ.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase());
+    const isLangMatch =
+      arena !== 'algorithms' ||
+      !normLang ||
+      (normLang === 'cpp' ? (qTags.includes('cpp') || qTags.includes('c++')) : qTags.includes(normLang));
+    const isWebMatchStrict =
+      arena !== 'web_dev' ||
+      (!reqTags.includes('javascript') && !reqTags.includes('js')
+        ? !qTags.includes('javascript') && !qTags.includes('js')
+        : qTags.includes('javascript') || qTags.includes('js'));
 
-    const isDiffMatch =
-      currentQ && (!difficulty || (currentQ.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase());
-
-    if (
-      currentQ &&
-      currentQ.arena === arena &&
-      isDiffMatch &&
-      isStrictTagMatch &&
-      isCurrentAdmin &&
-      (arena !== 'bug_hunt' || !bugDomain || !currentQ.bugDomain || currentQ.bugDomain === bugDomain)
-    ) {
+    if (currentQ && isArenaMatch && isDiffMatch && isLangMatch && isWebMatchStrict) {
       chosen = {
         ...currentQ,
         timeLimitSeconds: matchDuration,
       };
     } else {
-      // 2. Fetch question matching exact arena, tags, difficulty, and duration
+      // 2. Fetch question strictly matching the user's selected options
       try {
         const seenIds = getStoredSeenQuestionIds();
         const queryParams = new URLSearchParams({
@@ -2304,24 +2317,14 @@ export function FullArenaExperience({
         if (res.ok) {
           const data = await res.json();
           if (data.questions && data.questions.length > 0) {
-            // Find top matching questions (filtering for strict exact criteria)
-            const topMatches = data.questions.filter((q: any) => {
-              const diffOk = (q.difficulty || 'medium').toLowerCase() === (difficulty || 'medium').toLowerCase();
-              const candTags = (q.tags || []).map((x: string) => x.toLowerCase().trim());
-              const tagsOk =
-                reqTags.length === 0 ||
-                (reqTags.every((t) => candTags.includes(t)) && !candTags.some((t: string) => !reqTags.includes(t)));
-              return diffOk && tagsOk;
+            chosen = selectBestQuestion(data.questions, {
+              arena,
+              bugDomain,
+              selectedTags: effectiveTags,
+              difficulty,
+              timeLimit: matchDuration,
+              seenQuestionIds: seenIds,
             });
-
-            // Separate unseen vs seen to guarantee non-repeating cycle
-            const seenSet = new Set(seenIds.map((id) => id.toLowerCase()));
-            const unseen = topMatches.filter((q: any) => q && q.id && !seenSet.has(q.id.toLowerCase()));
-            const pickPool = unseen.length > 0 ? unseen : topMatches;
-
-            chosen = pickPool.length > 0
-              ? pickPool[Math.floor(Math.random() * pickPool.length)]
-              : data.questions[0];
           }
         }
       } catch (e) {
@@ -2401,14 +2404,16 @@ export function FullArenaExperience({
       else if (selectedTags.includes('css')) setActiveTab('css');
       else setActiveTab('js');
     } else if (arena === 'algorithms') {
-      if (selectedTags.includes('python')) setActiveTab('python');
-      else if (selectedTags.includes('java')) setActiveTab('java');
-      else setActiveTab('cpp');
+      if (selectedTags.includes('cpp') || selectedTags.includes('c++')) setActiveTab('cpp');
+      else if (selectedTags.includes('python')) setActiveTab('python');
+      else setActiveTab('java');
     } else if (arena === 'bug_hunt') {
       if (bugDomain === 'web' || isWebMatch) {
         setActiveTab('css');
       } else {
-        setActiveTab('python');
+        if (selectedTags.includes('cpp') || selectedTags.includes('c++')) setActiveTab('cpp');
+        else if (selectedTags.includes('python')) setActiveTab('python');
+        else setActiveTab('java');
       }
     } else {
       setActiveTab('python');

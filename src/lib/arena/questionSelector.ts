@@ -11,95 +11,105 @@ export interface QuestionMatchCriteria {
 
 /**
  * Calculates a match score for a question against requested criteria.
- * Higher score = closer match.
+ * Higher score = closer match. Returns -10000 for hard disqualifications.
  */
 export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria): number {
   let score = 0;
 
   // 1. Arena filter (Hard requirement)
-  if (q.arena !== criteria.arena) {
-    return -1000;
+  if (criteria.arena && q.arena !== criteria.arena) {
+    return -10000;
   }
 
   // 2. Bug Domain filter for Bug Hunt
   if (criteria.arena === 'bug_hunt' && criteria.bugDomain) {
-    if (q.bugDomain && q.bugDomain !== criteria.bugDomain) {
-      return -500;
+    if (criteria.bugDomain === 'web') {
+      const isWeb = q.bugDomain === 'web' || Boolean(q.targetComponentHtml);
+      if (!isWeb) return -10000;
+    } else if (criteria.bugDomain === 'logic') {
+      const isLogic = q.bugDomain === 'logic' || !q.targetComponentHtml;
+      if (!isLogic) return -10000;
     }
   }
 
-  // 3. Difficulty scoring
-  const targetDiff = (criteria.difficulty || 'medium').toLowerCase();
-  const qDiff = (q.difficulty || 'medium').toLowerCase();
-
-  if (qDiff === targetDiff) {
-    score += 150; // Exact difficulty match gets high weight
-  } else if (
-    (targetDiff === 'medium' && (qDiff === 'easy' || qDiff === 'hard')) ||
-    (targetDiff === 'easy' && qDiff === 'medium') ||
-    (targetDiff === 'hard' && qDiff === 'medium')
-  ) {
-    score += 20; // Adjacent difficulty
-  } else {
-    score -= 60; // Opposite difficulty (e.g. easy requested, hard question)
-  }
-
-  // 4. Tags scoring (Strict match & heavy penalty for unselected/unwanted technologies)
   const targetTags = (criteria.selectedTags || [])
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
-
   const qTags = (q.tags || []).map((t) => t.trim().toLowerCase());
 
-  if (targetTags.length > 0) {
-    const matched = targetTags.filter((t) => qTags.includes(t));
-    const missing = targetTags.filter((t) => !qTags.includes(t));
-    const unwanted = qTags.filter((t) => !targetTags.includes(t));
+  // 3. Competitive Programming Language Filtering (Algorithms & Logic Bug Hunt)
+  // If user selected C++, question MUST be C++. If user selected Java, question MUST be Java. If Python, MUST be Python.
+  if (criteria.arena === 'algorithms' || (criteria.arena === 'bug_hunt' && criteria.bugDomain === 'logic')) {
+    const requestedLang = targetTags.find((t) => ['cpp', 'c++', 'java', 'python'].includes(t)) || 'java';
+    const normRequested = requestedLang === 'c++' ? 'cpp' : requestedLang;
 
-    // Heavy penalty for extra technologies the user specifically excluded
-    // E.g. User selected HTML only: questions requiring CSS or JS receive -150 each
-    if (unwanted.length > 0) {
-      score -= unwanted.length * 150;
-    }
+    const hasCppTag = qTags.includes('cpp') || qTags.includes('c++');
+    const hasJavaTag = qTags.includes('java');
+    const hasPythonTag = qTags.includes('python');
 
-    // Penalty for missing any of the user's requested tags
-    if (missing.length > 0) {
-      score -= missing.length * 60;
-    }
-
-    if (matched.length > 0) {
-      // Proportion of requested tags matched
-      score += Math.round((matched.length / targetTags.length) * 80);
-
-      // Exact match bonus: Question matches ALL requested tags and has ZERO unwanted tags
-      if (matched.length === targetTags.length && unwanted.length === 0) {
-        score += 200; // Perfect exact tag match
-      } else if (matched.length === targetTags.length) {
-        score += 50;
-      }
-    } else {
-      score -= 200; // Zero tags matched
+    if (normRequested === 'cpp') {
+      if (!hasCppTag && !q.starterCpp) return -10000;
+      if (hasCppTag) score += 500;
+    } else if (normRequested === 'java') {
+      if (!hasJavaTag && !q.starterJava) return -10000;
+      if (hasJavaTag) score += 500;
+    } else if (normRequested === 'python') {
+      if (!hasPythonTag && !q.starterPython) return -10000;
+      if (hasPythonTag) score += 500;
     }
   }
 
-  // 5. Time Limit matching score (Matches duration configured by admin / room)
+  // 4. Web Dev Topic Filtering (HTML, CSS, JavaScript)
+  if (criteria.arena === 'web_dev' || (criteria.arena === 'bug_hunt' && criteria.bugDomain === 'web')) {
+    const wantsJs = targetTags.includes('javascript') || targetTags.includes('js');
+    const wantsCss = targetTags.includes('css');
+
+    const hasJsTag = qTags.includes('javascript') || qTags.includes('js');
+    const hasCssTag = qTags.includes('css');
+
+    // If JS not wanted, disqualify JS questions
+    if (!wantsJs && hasJsTag) return -10000;
+    // If JS wanted, disqualify non-JS questions
+    if (wantsJs && !hasJsTag) return -10000;
+    // If CSS not wanted (HTML only), disqualify CSS questions
+    if (!wantsCss && hasCssTag) return -10000;
+
+    if (wantsJs && hasJsTag) score += 500;
+    if (wantsCss && hasCssTag) score += 300;
+    if (!wantsCss && !wantsJs) score += 400; // HTML-only bonus
+  }
+
+  // 5. Difficulty matching (Hard requirement preference)
+  if (criteria.difficulty) {
+    const targetDiff = criteria.difficulty.toLowerCase();
+    const qDiff = (q.difficulty || 'medium').toLowerCase();
+    if (qDiff === targetDiff) {
+      score += 300;
+    } else {
+      score -= 800; // Heavy penalty for wrong difficulty
+    }
+  }
+
+  // 6. Time Limit matching score (180s, 300s, 600s)
   if (criteria.timeLimit && q.timeLimitSeconds) {
     const targetTime = Number(criteria.timeLimit);
     const qTime = Number(q.timeLimitSeconds);
     if (qTime === targetTime) {
-      score += 100; // Exact duration match bonus!
+      score += 250;
     } else if (Math.abs(qTime - targetTime) <= 120) {
-      score += 30; // Close duration
+      score += 40;
     } else {
-      score -= 30; // Distant duration
+      score -= 100;
     }
   }
 
-  // 6. Admin custom questions prioritization
-  // If this question was created in the admin control center, prefer it heavily over default templates!
-  const isDefault = DEFAULT_ARENA_QUESTIONS.some((d) => d.id === q.id);
-  if (!isDefault) {
-    score += 300; // Massive boost for custom admin questions
+  // 7. Admin custom questions prioritization
+  // Only apply custom boost if score is already positive (matches the user's chosen options!)
+  if (score > 0) {
+    const isDefault = DEFAULT_ARENA_QUESTIONS.some((d) => d.id === q.id);
+    if (!isDefault) {
+      score += 50;
+    }
   }
 
   return score;
@@ -118,30 +128,40 @@ export function selectBestQuestion(
 ): DuelQuestion {
   const list = Array.isArray(allQuestions) && allQuestions.length > 0 ? allQuestions : DEFAULT_ARENA_QUESTIONS;
 
-  // Filter candidates that match arena (and bug domain if applicable)
-  const arenaPool = list.filter((q) => {
-    if (q.arena !== criteria.arena) return false;
-    if (criteria.arena === 'bug_hunt' && criteria.bugDomain && q.bugDomain) {
-      return q.bugDomain === criteria.bugDomain;
-    }
-    return true;
-  });
-
-  const pool = arenaPool.length > 0 ? arenaPool : list;
-
   // Score each candidate against criteria
-  let maxScore = -Infinity;
-  const scored = pool.map((q) => {
-    const s = scoreQuestion(q, criteria);
-    if (s > maxScore) maxScore = s;
-    return { question: q, score: s };
-  });
+  const scored = list
+    .map((q) => ({
+      question: q,
+      score: scoreQuestion(q, criteria),
+    }))
+    .filter((item) => item.score > -5000); // Discard all hard-disqualified questions!
 
-  // Top candidates: take questions matching top score threshold (exact match or near-exact match)
-  const topScoreThreshold = maxScore - 40;
-  const bestCandidates = scored
-    .filter((item) => item.score >= topScoreThreshold)
-    .map((item) => item.question);
+  let bestCandidates: DuelQuestion[] = [];
+
+  if (scored.length > 0) {
+    let maxScore = -Infinity;
+    for (const item of scored) {
+      if (item.score > maxScore) maxScore = item.score;
+    }
+    const topScoreThreshold = maxScore - 40;
+    bestCandidates = scored
+      .filter((item) => item.score >= topScoreThreshold)
+      .map((item) => item.question);
+  } else {
+    // Fallback: strictly filter by arena and language
+    const targetTags = (criteria.selectedTags || []).map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const requestedLang = targetTags.find((t) => ['cpp', 'c++', 'java', 'python'].includes(t));
+    const fallbackList = list.filter((q) => {
+      if (criteria.arena && q.arena !== criteria.arena) return false;
+      if (criteria.arena === 'algorithms' && requestedLang) {
+        const qTags = (q.tags || []).map((t) => t.trim().toLowerCase());
+        const norm = requestedLang === 'c++' ? 'cpp' : requestedLang;
+        return norm === 'cpp' ? (qTags.includes('cpp') || qTags.includes('c++')) : qTags.includes(norm);
+      }
+      return true;
+    });
+    bestCandidates = fallbackList.length > 0 ? fallbackList : list;
+  }
 
   const seenSet = new Set(
     (criteria.seenQuestionIds || []).map((id) => String(id).toLowerCase().trim())
@@ -159,7 +179,7 @@ export function selectBestQuestion(
   const chosen =
     candidatePool.length > 0
       ? candidatePool[Math.floor(Math.random() * candidatePool.length)]
-      : pool[Math.floor(Math.random() * pool.length)] || DEFAULT_ARENA_QUESTIONS[0];
+      : list[0];
 
   // Override timeLimitSeconds to strictly match the room's duration (e.g. 180s, 300s, 600s)
   const matchDuration = Number(criteria.timeLimit) || Number(chosen.timeLimitSeconds) || 300;
@@ -223,20 +243,22 @@ export function filterAndRankQuestions(
     (criteria.seenQuestionIds || []).map((id) => String(id).toLowerCase().trim())
   );
 
-  const scored = pool.map((q) => {
-    const s = scoreQuestion(q, criteria);
-    const isUnseen = q.id && !seenSet.has(q.id.toLowerCase().trim());
-    const jitter = Math.random();
-    return {
-      question: {
-        ...q,
-        timeLimitSeconds: criteria.timeLimit ? matchDuration : q.timeLimitSeconds,
-      },
-      score: s,
-      isUnseen,
-      jitter,
-    };
-  });
+  const scored = pool
+    .map((q) => {
+      const s = scoreQuestion(q, criteria);
+      const isUnseen = q.id && !seenSet.has(q.id.toLowerCase().trim());
+      const jitter = Math.random();
+      return {
+        question: {
+          ...q,
+          timeLimitSeconds: criteria.timeLimit ? matchDuration : q.timeLimitSeconds,
+        },
+        score: s,
+        isUnseen,
+        jitter,
+      };
+    })
+    .filter((item) => item.score > -5000); // Exclude all hard-disqualified questions!
 
   // Sort: Top score first, then unseen preferred, then randomized jitter (never static addition order)
   scored.sort((a, b) => {
