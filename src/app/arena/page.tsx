@@ -45,7 +45,64 @@ function ArenaPageContent() {
   );
 
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
+  const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Start mountain wind + eagle soundscape
+  const startAmbiance = useCallback(() => {
+    if (!audioEnabled) return;
+    try {
+      if (!ambientAudioRef.current && typeof Audio !== 'undefined') {
+        const audio = new Audio('/sounds/arena-mountain-wind-eagle.wav');
+        audio.loop = true;
+        audio.volume = 0.45;
+        ambientAudioRef.current = audio;
+      }
+      if (ambientAudioRef.current) {
+        ambientAudioRef.current.play().then(() => {
+          setIsAudioPlaying(true);
+        }).catch(() => {
+          // Browser prevented autoplay before interaction
+        });
+      }
+    } catch {}
+  }, [audioEnabled]);
+
+  const stopAmbiance = useCallback(() => {
+    if (ambientAudioRef.current) {
+      ambientAudioRef.current.pause();
+      setIsAudioPlaying(false);
+    }
+  }, []);
+
+  const toggleAudio = useCallback(() => {
+    setAudioEnabled(prev => {
+      const next = !prev;
+      if (next) {
+        setTimeout(startAmbiance, 50);
+      } else {
+        stopAmbiance();
+      }
+      return next;
+    });
+  }, [startAmbiance, stopAmbiance]);
+
+  // Unblock audio on first user touch/click/keypress anywhere on screen
+  useEffect(() => {
+    const handleGesture = () => {
+      if (audioEnabled) {
+        startAmbiance();
+      }
+    };
+    window.addEventListener('pointerdown', handleGesture, { once: true });
+    window.addEventListener('keydown', handleGesture, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', handleGesture);
+      window.removeEventListener('keydown', handleGesture);
+      stopAmbiance();
+    };
+  }, [audioEnabled, startAmbiance, stopAmbiance]);
 
   // Play resonant dual-harmonic cinematic portal launch sound
   const playEnterSound = useCallback(() => {
@@ -286,16 +343,26 @@ function ArenaPageContent() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setAudioEnabled(!audioEnabled)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-white/30 text-xs font-mono text-slate-300 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg"
-              title="Toggle sound effects"
+              onClick={toggleAudio}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-amber-400 text-xs font-mono text-slate-300 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg"
+              title="Toggle mountain wind & eagle soundscape"
             >
-              {audioEnabled ? (
-                <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+              {audioEnabled && isAudioPlaying ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span className="hidden sm:inline text-amber-300">Eagle &amp; Wind Ambiance</span>
+                  <span className="flex items-center gap-0.5 ml-1">
+                    <span className="w-0.5 h-2.5 bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-0.5 h-3.5 bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-0.5 h-2 bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </>
               ) : (
-                <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+                <>
+                  <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden sm:inline text-slate-400">Audio Muted (Tap to Play)</span>
+                </>
               )}
-              <span className="hidden sm:inline">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
             </button>
           </div>
         </header>
