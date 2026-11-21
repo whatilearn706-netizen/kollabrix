@@ -11,6 +11,7 @@ import { HTML_CSS_JS_EASY_ARENA_QUESTIONS } from './htmlCssJsEasyQuestions';
 import { HTML_CSS_JS_MEDIUM_ARENA_QUESTIONS } from './htmlCssJsMediumQuestions';
 import { HTML_CSS_JS_HARD_ARENA_QUESTIONS } from './htmlCssJsHardQuestions';
 import { ALL_ALGORITHM_ARENA_QUESTIONS } from './algorithms';
+import { ALL_BUG_HUNT_WEB_QUESTIONS } from './bughunt/web';
 
 export * from './htmlMediumQuestions';
 export * from './htmlHardQuestions';
@@ -24,9 +25,10 @@ export * from './htmlCssJsEasyQuestions';
 export * from './htmlCssJsMediumQuestions';
 export * from './htmlCssJsHardQuestions';
 export * from './algorithms';
+export * from './bughunt/web';
 
 /**
- * All 600+ Calibrated Battle Arena Questions
+ * All 990+ Calibrated Battle Arena Questions
  * Covers:
  * - HTML: Easy, Medium, Hard (3m, 5m, 10m)
  * - HTML + CSS: Easy, Medium, Hard (3m, 5m, 10m)
@@ -35,6 +37,7 @@ export * from './algorithms';
  * - Java: Easy, Medium, Hard (3m, 5m, 10m)
  * - Python: Easy, Medium, Hard (3m, 5m, 10m)
  * - C++: Easy, Medium, Hard (3m, 5m, 10m)
+ * - Web UI Bug Hunt: HTML, HTML+CSS, HTML+CSS+JS, HTML+JS (Easy, Medium, Hard: 3m, 5m, 10m)
  */
 export const ALL_EXPANDED_ARENA_QUESTIONS: DuelQuestion[] = [
   ...HTML_MEDIUM_ARENA_QUESTIONS,
@@ -49,4 +52,5 @@ export const ALL_EXPANDED_ARENA_QUESTIONS: DuelQuestion[] = [
   ...HTML_CSS_JS_MEDIUM_ARENA_QUESTIONS,
   ...HTML_CSS_JS_HARD_ARENA_QUESTIONS,
   ...ALL_ALGORITHM_ARENA_QUESTIONS,
+  ...ALL_BUG_HUNT_WEB_QUESTIONS,
 ];

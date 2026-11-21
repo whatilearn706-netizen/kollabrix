@@ -71,8 +71,10 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
     if (!wantsJs && hasJsTag) return -10000;
     // If JS wanted, disqualify non-JS questions
     if (wantsJs && !hasJsTag) return -10000;
-    // If CSS not wanted (HTML only), disqualify CSS questions
+    // If CSS not wanted (HTML only or HTML+JS), disqualify CSS questions
     if (!wantsCss && hasCssTag) return -10000;
+    // If CSS wanted, disqualify non-CSS questions
+    if (wantsCss && !hasCssTag) return -10000;
 
     if (wantsJs && hasJsTag) score += 500;
     if (wantsCss && hasCssTag) score += 300;
