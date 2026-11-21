@@ -121,6 +121,32 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'cheat_flag': {
+        const cheaterId = payload?.cheaterId || playerId;
+        const cheaterName = payload?.cheaterName || 'Player';
+        const strikeCount = Number(payload?.strikeCount) || 1;
+        const reason = payload?.reason || 'Screen / tab switch detected';
+
+        if (!room.cheatIncidents) {
+          room.cheatIncidents = [];
+        }
+
+        room.cheatIncidents.push({
+          cheaterId,
+          cheaterName,
+          strikeCount,
+          reason,
+          timestamp: now,
+        });
+
+        // Also record strikes directly on player roster entry
+        const alphaP = room.alphaPlayers.find((p) => p.id === cheaterId);
+        if (alphaP) alphaP.cheatStrikes = strikeCount;
+        const omegaP = room.omegaPlayers.find((p) => p.id === cheaterId);
+        if (omegaP) omegaP.cheatStrikes = strikeCount;
+        break;
+      }
+
       case 'match_won': {
         // Anti-Cheat Validation:
         // 1. Match must currently be active or starting

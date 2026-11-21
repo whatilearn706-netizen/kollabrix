@@ -23,6 +23,15 @@ export interface ArenaPlayer {
   testsPassed: number;
   wpm: number;
   lastActive: string;
+  cheatStrikes?: number;
+}
+
+export interface CheatIncident {
+  cheaterId: string;
+  cheaterName: string;
+  strikeCount: number;
+  reason: string;
+  timestamp: string;
 }
 
 export interface ArenaRoom {
@@ -43,6 +52,7 @@ export interface ArenaRoom {
   isBotEnabled?: boolean;
   isTournamentRoom?: boolean;
   matchTitle?: string;
+  cheatIncidents?: CheatIncident[];
   createdAt: string;
   updatedAt: string;
 }
