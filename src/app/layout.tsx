@@ -14,7 +14,6 @@ import { MaintenanceModeGate } from '@/components/common/MaintenanceModeGate';
 import { RestrictedWordsGuard } from '@/components/moderation/RestrictedWordsGuard';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { MandatoryOnboardingModal } from '@/components/profile/MandatoryOnboardingModal';
-import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { NetworkResilienceProvider } from '@/components/providers/NetworkResilienceProvider';
 // Lazy‑load Vercel analytics and SpeedInsights to avoid blocking first paint
@@ -354,7 +353,6 @@ export default function RootLayout({
                   <AuthModal />
                   <FeedbackModal />
                   <MandatoryOnboardingModal />
-                  <KollabrixQuickDock />
                 </MaintenanceModeGate>
               </RestrictedWordsGuard>
             </SiteThemeProvider>

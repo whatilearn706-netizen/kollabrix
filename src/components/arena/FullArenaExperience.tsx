@@ -2904,6 +2904,7 @@ export function FullArenaExperience({
         <img
           src="/images/proving-grounds-overlook-bg.jpg"
           alt="The Proving Grounds Mountain Overlook"
+          style={{ imageRendering: '-webkit-optimize-contrast' }}
           className="w-full h-full object-cover object-[center_top] sm:object-center filter contrast-[1.02] brightness-[0.98] saturate-[1.05]"
         />
         {/* Soft edge vignettes to ensure HUD readability while keeping warrior & mountain crystal clear */}
