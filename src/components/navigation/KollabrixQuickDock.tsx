@@ -21,6 +21,8 @@ import {
   GraduationCap,
   Clock,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface DockItem {
@@ -29,24 +31,27 @@ interface DockItem {
   sub: string;
   href: string;
   icon: React.ElementType;
+  tone: 'indigo' | 'amber' | 'cyan' | 'purple' | 'rose' | 'emerald' | 'sky';
   openInNewTab?: boolean;
 }
 
-// Dock items faithfully mapped to Pierre Sù Day #14 Dark Theme Side Navigation (https://pin.it/7hRmbSaQx)
+// Dock items faithfully mapped to the user's reference (Image 2)
 const DOCK_ITEMS: DockItem[] = [
-  {
-    id: 'hackathons',
-    label: 'College Hackathons',
-    sub: 'Arena & Squad Matchmaking',
-    href: '/hackathons',
-    icon: Trophy,
-  },
   {
     id: 'war',
     label: 'Campus War ⚔️',
     sub: 'Inter-College Clash & Bounties',
     href: '/war',
     icon: Swords,
+    tone: 'indigo',
+  },
+  {
+    id: 'hackathons',
+    label: 'College Hackathons',
+    sub: 'Arena & Squad Matchmaking',
+    href: '/hackathons',
+    icon: Trophy,
+    tone: 'amber',
   },
   {
     id: 'icpc',
@@ -54,6 +59,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Placement OAs & Speedrun',
     href: '/icpc',
     icon: Terminal,
+    tone: 'cyan',
   },
   {
     id: 'problems',
@@ -61,6 +67,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Professor Engineering Briefs',
     href: '/problems',
     icon: Lightbulb,
+    tone: 'purple',
   },
   {
     id: 'deadlines',
@@ -68,6 +75,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Live Hackathon Countdowns',
     href: '/deadlines',
     icon: Calendar,
+    tone: 'rose',
   },
   {
     id: 'resources',
@@ -75,6 +83,7 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Curated Roadmaps & Toolkits',
     href: '/resources',
     icon: FolderClosed,
+    tone: 'emerald',
     openInNewTab: true,
   },
   {
@@ -83,8 +92,75 @@ const DOCK_ITEMS: DockItem[] = [
     sub: 'Direct Suggestions & Ideas',
     href: '/feedback',
     icon: MessageSquare,
+    tone: 'sky',
   },
 ];
+
+const TONE_STYLES: Record<string, {
+  bg: string;
+  border: string;
+  text: string;
+  activeRing: string;
+  glow: string;
+  indicator: string;
+}> = {
+  indigo: {
+    bg: 'bg-indigo-500/15 hover:bg-indigo-500/25',
+    border: 'border-indigo-500/40 hover:border-indigo-400',
+    text: 'text-indigo-400 group-hover:text-indigo-300',
+    activeRing: 'ring-2 ring-indigo-400/80',
+    glow: 'shadow-[0_0_14px_rgba(99,102,241,0.45)]',
+    indicator: 'bg-indigo-400 shadow-[0_0_6px_#818cf8]',
+  },
+  amber: {
+    bg: 'bg-amber-500/15 hover:bg-amber-500/25',
+    border: 'border-amber-500/40 hover:border-amber-400',
+    text: 'text-amber-400 group-hover:text-amber-300',
+    activeRing: 'ring-2 ring-amber-400/80',
+    glow: 'shadow-[0_0_14px_rgba(245,158,11,0.45)]',
+    indicator: 'bg-amber-400 shadow-[0_0_6px_#f59e0b]',
+  },
+  cyan: {
+    bg: 'bg-cyan-500/15 hover:bg-cyan-500/25',
+    border: 'border-cyan-500/40 hover:border-cyan-400',
+    text: 'text-cyan-400 group-hover:text-cyan-300',
+    activeRing: 'ring-2 ring-cyan-400/80',
+    glow: 'shadow-[0_0_14px_rgba(6,182,212,0.45)]',
+    indicator: 'bg-cyan-400 shadow-[0_0_6px_#06b6d4]',
+  },
+  purple: {
+    bg: 'bg-purple-500/15 hover:bg-purple-500/25',
+    border: 'border-purple-500/40 hover:border-purple-400',
+    text: 'text-purple-400 group-hover:text-purple-300',
+    activeRing: 'ring-2 ring-purple-400/80',
+    glow: 'shadow-[0_0_14px_rgba(168,85,247,0.45)]',
+    indicator: 'bg-purple-400 shadow-[0_0_6px_#a855f7]',
+  },
+  rose: {
+    bg: 'bg-rose-500/15 hover:bg-rose-500/25',
+    border: 'border-rose-500/40 hover:border-rose-400',
+    text: 'text-rose-400 group-hover:text-rose-300',
+    activeRing: 'ring-2 ring-rose-400/80',
+    glow: 'shadow-[0_0_14px_rgba(244,63,94,0.45)]',
+    indicator: 'bg-rose-400 shadow-[0_0_6px_#f43f5e]',
+  },
+  emerald: {
+    bg: 'bg-emerald-500/15 hover:bg-emerald-500/25',
+    border: 'border-emerald-500/40 hover:border-emerald-400',
+    text: 'text-emerald-400 group-hover:text-emerald-300',
+    activeRing: 'ring-2 ring-emerald-400/80',
+    glow: 'shadow-[0_0_14px_rgba(16,185,129,0.45)]',
+    indicator: 'bg-emerald-400 shadow-[0_0_6px_#10b981]',
+  },
+  sky: {
+    bg: 'bg-sky-500/15 hover:bg-sky-500/25',
+    border: 'border-sky-500/40 hover:border-sky-400',
+    text: 'text-sky-400 group-hover:text-sky-300',
+    activeRing: 'ring-2 ring-sky-400/80',
+    glow: 'shadow-[0_0_14px_rgba(14,165,233,0.45)]',
+    indicator: 'bg-sky-400 shadow-[0_0_6px_#0ea5e9]',
+  },
+};
 
 interface AppItem {
   id: string;
@@ -294,6 +370,21 @@ export function KollabrixQuickDock() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isExamMode, setIsExamMode] = useState(false);
 
+  // Scroll visibility states for dock
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(true);
+
+  const updateScrollState = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    setCanScrollUp(scrollTop > 6);
+    setCanScrollDown(scrollTop < scrollHeight - clientHeight - 6);
+  }, []);
+
+  useEffect(() => {
+    updateScrollState();
+  }, [updateScrollState]);
+
   // Sync active dock item with current route
   useEffect(() => {
     const foundIndex = DOCK_ITEMS.findIndex(
@@ -401,6 +492,7 @@ export function KollabrixQuickDock() {
       if (!container) return;
 
       container.scrollTop += e.deltaY;
+      updateScrollState();
 
       const now = Date.now();
       if (now - lastWheelTimeRef.current > 80 && Math.abs(e.deltaY) > 1) {
@@ -521,90 +613,105 @@ export function KollabrixQuickDock() {
               : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'
           }`}
         >
-          {/* Outer Translucent Glass Halo Pill */}
-          <div className="relative p-1.5 rounded-3xl bg-white/[0.04] border border-white/[0.14] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_20px_rgba(245,158,11,0.08)] backdrop-blur-2xl">
-            {/* Inner Matte Obsidian Capsule */}
-            <div className="relative flex flex-col items-center gap-1.5 p-1.5 rounded-2xl bg-gradient-to-b from-[#1b1c24]/95 via-[#111218]/95 to-[#0d0e14]/95 border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(255,255,255,0.12),inset_0_-4px_8px_rgba(0,0,0,0.85)]">
-              {/* Dock Items List */}
-              <div
-                ref={scrollContainerRef}
-                className="flex flex-col items-center gap-1.5 max-h-[290px] overflow-y-auto overflow-x-hidden py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              >
-                {DOCK_ITEMS.map((item, index) => {
-                  const Icon = item.icon;
-                  const isSelected = activeIndex === index;
-                  const isRouteActive =
-                    pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-                  const isHighlighted = isSelected || isRouteActive;
+          {/* Sleek Dark Pill Capsule (Exact Match to User's Image 2) */}
+          <div className="relative rounded-full py-2.5 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
+            {/* Scrollable Container (Shows 4 items visible at ~196px height) */}
+            <div
+              ref={scrollContainerRef}
+              onScroll={updateScrollState}
+              className="flex flex-col items-center gap-2 max-h-[196px] overflow-y-auto overflow-x-hidden py-0.5 px-0.5 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {DOCK_ITEMS.map((item, index) => {
+                const Icon = item.icon;
+                const style = TONE_STYLES[item.tone] || TONE_STYLES.amber;
+                const isSelected = activeIndex === index;
+                const isRouteActive =
+                  pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+                const isHighlighted = isSelected || isRouteActive;
 
-                  return (
-                    <Link
-                      key={item.id}
-                      ref={(el) => {
-                        itemRefs.current[index] = el;
-                      }}
-                      href={item.href}
-                      target={item.openInNewTab ? '_blank' : undefined}
-                      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                      onClick={() => {
-                        setActiveIndex(index);
-                        playTactileClick();
-                      }}
-                      onMouseEnter={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setHoveredNode({
-                          id: item.id,
-                          label: item.label,
-                          sub: item.sub,
-                          x: rect.left,
-                          y: rect.top + rect.height / 2,
-                        });
-                      }}
-                      onMouseLeave={() => setHoveredNode(null)}
-                      aria-label={item.label}
-                      className={`relative flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
-                        isHighlighted
-                          ? 'w-10 h-10 rounded-full bg-white text-zinc-950 shadow-[0_6px_20px_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.6)] font-bold scale-105'
-                          : 'w-10 h-10 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.08]'
-                      }`}
-                    >
-                      <Icon
-                        className={`w-5 h-5 transition-transform duration-200 ${
-                          isHighlighted ? 'scale-105 stroke-[2.2]' : 'group-hover:scale-110'
-                        }`}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Subtle Divider */}
-              <div className="w-5 h-[1px] bg-white/[0.12] my-0.5" />
-
-              {/* Hub Launcher Button (⌘K) */}
-              <button
-                type="button"
-                onClick={() => {
-                  playTactileClick();
-                  setIsAppsModalOpen(true);
-                }}
-                onMouseEnter={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setHoveredNode({
-                    id: 'apps',
-                    label: 'Platform Hub (⌘K)',
-                    sub: 'Search all portals & tools',
-                    x: rect.left,
-                    y: rect.top + rect.height / 2,
-                  });
-                }}
-                onMouseLeave={() => setHoveredNode(null)}
-                className="relative flex items-center justify-center w-10 h-10 rounded-full text-amber-400 hover:text-amber-300 hover:bg-amber-500/15 transition-all duration-200 active:scale-95 cursor-pointer"
-                aria-label="Open Platform Hub"
-              >
-                <Sparkles className="w-4 h-4 fill-current animate-pulse" />
-              </button>
+                return (
+                  <Link
+                    key={item.id}
+                    ref={(el) => {
+                      itemRefs.current[index] = el;
+                    }}
+                    href={item.href}
+                    target={item.openInNewTab ? '_blank' : undefined}
+                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                    onClick={() => {
+                      setActiveIndex(index);
+                      playTactileClick();
+                    }}
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setHoveredNode({
+                        id: item.id,
+                        label: item.label,
+                        sub: item.sub,
+                        x: rect.left,
+                        y: rect.top + rect.height / 2,
+                      });
+                    }}
+                    onMouseLeave={() => setHoveredNode(null)}
+                    aria-label={item.label}
+                    className={`relative flex items-center justify-center shrink-0 w-10 h-10 rounded-full border transition-all duration-300 active:scale-90 group focus:outline-none cursor-pointer ${style.bg} ${style.border} ${style.text} ${
+                      isHighlighted
+                        ? `${style.activeRing} ${style.glow} scale-105`
+                        : 'hover:scale-105'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                    {isHighlighted && (
+                      <span className={`absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${style.indicator}`} />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
+
+            {/* Down Chevron Nudge Arrow (When more items exist below) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (scrollContainerRef.current) {
+                  scrollContainerRef.current.scrollBy({ top: 48, behavior: 'smooth' });
+                  playTactileClick();
+                }
+              }}
+              aria-label="Scroll dock down"
+              className={`flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-0.5 ${
+                canScrollDown ? 'opacity-100 animate-pulse pointer-events-auto' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {/* Subtle Divider Line */}
+            <div className="w-5 h-[1px] bg-white/10 my-0.5" />
+
+            {/* Bottom ⌘ Command Trigger Button (Exact match to Image 2: Purple circle with Orange Command icon) */}
+            <button
+              type="button"
+              onClick={() => {
+                playTactileClick();
+                setIsAppsModalOpen(true);
+              }}
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setHoveredNode({
+                  id: 'apps',
+                  label: 'Platform Hub (⌘K)',
+                  sub: 'Search all portals & tools',
+                  x: rect.left,
+                  y: rect.top + rect.height / 2,
+                });
+              }}
+              onMouseLeave={() => setHoveredNode(null)}
+              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/25 transition-all duration-300 active:scale-90 group focus:outline-none cursor-pointer shadow-sm"
+              aria-label="Open Platform Hub"
+            >
+              <Command className="w-5 h-5 text-amber-500 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+            </button>
           </div>
         </div>
       </div>
