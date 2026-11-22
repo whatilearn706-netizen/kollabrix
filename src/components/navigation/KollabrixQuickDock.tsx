@@ -377,8 +377,9 @@ export function KollabrixQuickDock() {
   const updateScrollState = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    setCanScrollUp(scrollTop > 6);
-    setCanScrollDown(scrollTop < scrollHeight - clientHeight - 6);
+    // Generous threshold to prevent subpixel edge-cases
+    setCanScrollUp(scrollTop > 16);
+    setCanScrollDown(scrollTop < scrollHeight - clientHeight - 20);
   }, []);
 
   useEffect(() => {
@@ -462,6 +463,21 @@ export function KollabrixQuickDock() {
       // Graceful suppression
     }
   }, []);
+
+  const scrollByItem = useCallback((direction: 'up' | 'down') => {
+    if (!scrollContainerRef.current) return;
+    playTactileClick();
+    const delta = direction === 'up' ? -48 : 48;
+    scrollContainerRef.current.scrollBy({ top: delta, behavior: 'smooth' });
+    setTimeout(updateScrollState, 250);
+  }, [playTactileClick, updateScrollState]);
+
+  const scrollToTop = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    playTactileClick();
+    scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(updateScrollState, 250);
+  }, [playTactileClick, updateScrollState]);
 
   // Check if exam arena or proctored exam is active
   useEffect(() => {
@@ -595,14 +611,19 @@ export function KollabrixQuickDock() {
           }`}
         >
           {/* Sleek Dark Pill Capsule (Exact Match to User's Image 2) */}
-          <div
-            onWheel={(e) => {
-              if (scrollContainerRef.current) {
-                scrollContainerRef.current.scrollTop += e.deltaY;
-              }
-            }}
-            className="relative rounded-full py-2 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center"
-          >
+          <div className="relative rounded-full py-2.5 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
+            {/* Top Chevron Up Nudge Arrow (When scrolled down) */}
+            {canScrollUp && (
+              <button
+                type="button"
+                onClick={() => scrollByItem('up')}
+                aria-label="Scroll dock up"
+                className="flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pb-1 hover:scale-110 active:scale-95"
+              >
+                <ChevronUp className="w-4 h-4 animate-pulse" />
+              </button>
+            )}
+
             {/* Scrollable Container (Shows EXACTLY 4 items visible with crisp snap) */}
             <div
               ref={scrollContainerRef}
@@ -664,27 +685,26 @@ export function KollabrixQuickDock() {
               })}
             </div>
 
-            {/* Scroll Nudge Button (Smart Down / Up Toggle) */}
-            <button
-              type="button"
-              onClick={() => {
-                if (!scrollContainerRef.current) return;
-                playTactileClick();
-                if (!canScrollDown && canScrollUp) {
-                  scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                } else {
-                  scrollContainerRef.current.scrollBy({ top: 48, behavior: 'smooth' });
-                }
-              }}
-              aria-label={!canScrollDown && canScrollUp ? 'Scroll to top' : 'Scroll down dock'}
-              className="flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-0.5 hover:scale-110 active:scale-95"
-            >
-              {!canScrollDown && canScrollUp ? (
-                <ChevronUp className="w-4 h-4 animate-bounce" />
-              ) : (
+            {/* Bottom Chevron Down / Up-to-top Nudge Arrow */}
+            {canScrollDown ? (
+              <button
+                type="button"
+                onClick={() => scrollByItem('down')}
+                aria-label="Scroll dock down"
+                className="flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-1 hover:scale-110 active:scale-95"
+              >
                 <ChevronDown className="w-4 h-4 animate-pulse" />
-              )}
-            </button>
+              </button>
+            ) : canScrollUp ? (
+              <button
+                type="button"
+                onClick={scrollToTop}
+                aria-label="Scroll back to top of dock"
+                className="flex items-center justify-center text-amber-500 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-1 hover:scale-110 active:scale-95"
+              >
+                <ChevronUp className="w-4 h-4 animate-bounce" />
+              </button>
+            ) : null}
 
             {/* Subtle Divider Line */}
             <div className="w-5 h-[1px] bg-white/10 my-0.5" />
