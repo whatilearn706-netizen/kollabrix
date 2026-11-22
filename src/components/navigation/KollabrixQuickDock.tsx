@@ -370,16 +370,15 @@ export function KollabrixQuickDock() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isExamMode, setIsExamMode] = useState(false);
 
-  // Scroll visibility states for dock
-  const [canScrollUp, setCanScrollUp] = useState(false);
-  const [canScrollDown, setCanScrollDown] = useState(true);
+  // Scroll visibility & direction tracking for dock
+  const [isAtBottom, setIsAtBottom] = useState(false);
 
   const updateScrollState = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    // Generous threshold to prevent subpixel edge-cases
-    setCanScrollUp(scrollTop > 16);
-    setCanScrollDown(scrollTop < scrollHeight - clientHeight - 20);
+    const maxScroll = scrollHeight - clientHeight;
+    // When scrolled past the halfway mark (~60px of 144px max scroll), toggle to "Back to Top" mode
+    setIsAtBottom(maxScroll > 0 && scrollTop >= maxScroll / 2);
   }, []);
 
   useEffect(() => {
@@ -464,20 +463,20 @@ export function KollabrixQuickDock() {
     }
   }, []);
 
-  const scrollByItem = useCallback((direction: 'up' | 'down') => {
+  // Toggle between Top view (Items 1-4) and Bottom view (Items 4-7)
+  const handleToggleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
     playTactileClick();
-    const delta = direction === 'up' ? -48 : 48;
-    scrollContainerRef.current.scrollBy({ top: delta, behavior: 'smooth' });
-    setTimeout(updateScrollState, 250);
-  }, [playTactileClick, updateScrollState]);
-
-  const scrollToTop = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-    playTactileClick();
-    scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(updateScrollState, 250);
-  }, [playTactileClick, updateScrollState]);
+    if (isAtBottom) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+    setTimeout(updateScrollState, 300);
+  }, [isAtBottom, playTactileClick, updateScrollState]);
 
   // Check if exam arena or proctored exam is active
   useEffect(() => {
@@ -611,31 +610,19 @@ export function KollabrixQuickDock() {
           }`}
         >
           {/* Sleek Dark Pill Capsule (Exact Match to User's Image 2) */}
-          <div className="relative rounded-full py-2.5 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
-            {/* Top Chevron Up Nudge Arrow (When scrolled down) */}
-            {canScrollUp && (
-              <button
-                type="button"
-                onClick={() => scrollByItem('up')}
-                aria-label="Scroll dock up"
-                className="flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pb-1 hover:scale-110 active:scale-95"
-              >
-                <ChevronUp className="w-4 h-4 animate-pulse" />
-              </button>
-            )}
-
-            {/* Scrollable Container (Shows EXACTLY 4 items visible with crisp snap) */}
+          <div className="relative rounded-full py-2 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
+            {/* Scrollable Container (Shows EXACTLY 4 items visible without awkward cutoffs) */}
             <div
               ref={scrollContainerRef}
               onScroll={() => {
                 updateScrollState();
                 const now = Date.now();
-                if (now - lastWheelTimeRef.current > 100) {
+                if (now - lastWheelTimeRef.current > 120) {
                   lastWheelTimeRef.current = now;
                   playTactileClick();
                 }
               }}
-              className="flex flex-col items-center gap-2 h-[184px] max-h-[184px] overflow-y-auto overflow-x-hidden p-0 scroll-smooth overscroll-contain snap-y snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="flex flex-col items-center gap-2 h-[184px] max-h-[184px] overflow-y-auto overflow-x-hidden p-0 overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               {DOCK_ITEMS.map((item, index) => {
                 const Icon = item.icon;
@@ -670,13 +657,13 @@ export function KollabrixQuickDock() {
                     }}
                     onMouseLeave={() => setHoveredNode(null)}
                     aria-label={item.label}
-                    className={`relative flex items-center justify-center shrink-0 w-10 h-10 rounded-full border transition-all duration-300 active:scale-90 group focus:outline-none cursor-pointer snap-start snap-always ${style.bg} ${style.border} ${style.text} ${
+                    className={`relative flex items-center justify-center shrink-0 w-10 h-10 rounded-full border transition-all duration-200 active:scale-90 group focus:outline-none cursor-pointer ${style.bg} ${style.border} ${style.text} ${
                       isHighlighted
                         ? `${style.activeRing} ${style.glow} scale-105`
                         : 'hover:scale-105'
                     }`}
                   >
-                    <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                    <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                     {isHighlighted && (
                       <span className={`absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${style.indicator}`} />
                     )}
@@ -685,26 +672,30 @@ export function KollabrixQuickDock() {
               })}
             </div>
 
-            {/* Bottom Chevron Down / Up-to-top Nudge Arrow */}
-            {canScrollDown ? (
-              <button
-                type="button"
-                onClick={() => scrollByItem('down')}
-                aria-label="Scroll dock down"
-                className="flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-1 hover:scale-110 active:scale-95"
-              >
-                <ChevronDown className="w-4 h-4 animate-pulse" />
-              </button>
-            ) : canScrollUp ? (
-              <button
-                type="button"
-                onClick={scrollToTop}
-                aria-label="Scroll back to top of dock"
-                className="flex items-center justify-center text-amber-500 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-1 hover:scale-110 active:scale-95"
-              >
-                <ChevronUp className="w-4 h-4 animate-bounce" />
-              </button>
-            ) : null}
+            {/* Smart Bottom Chevron Nudge Arrow (Exact match to Image 2: 1-click flips between More & Top) */}
+            <button
+              type="button"
+              onClick={handleToggleScroll}
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setHoveredNode({
+                  id: 'dock-scroll-nudge',
+                  label: isAtBottom ? 'Back to Top' : 'More Portals',
+                  sub: isAtBottom ? 'Click to return to top portals' : 'Click to view remaining portals',
+                  x: rect.left,
+                  y: rect.top + rect.height / 2,
+                });
+              }}
+              onMouseLeave={() => setHoveredNode(null)}
+              aria-label={isAtBottom ? 'Scroll back to top of dock' : 'Scroll down dock'}
+              className="relative flex items-center justify-center w-8 h-6 my-0.5 text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer hover:scale-110 active:scale-90 group focus:outline-none"
+            >
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-300 ease-out ${
+                  isAtBottom ? '-rotate-180 text-amber-400' : 'rotate-0 text-amber-500/80'
+                }`}
+              />
+            </button>
 
             {/* Subtle Divider Line */}
             <div className="w-5 h-[1px] bg-white/10 my-0.5" />
