@@ -385,6 +385,15 @@ export function KollabrixQuickDock() {
     updateScrollState();
   }, [updateScrollState]);
 
+  useEffect(() => {
+    if (isDeckOpen) {
+      const timer = setTimeout(() => {
+        updateScrollState();
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [isDeckOpen, updateScrollState]);
+
   // Sync active dock item with current route
   useEffect(() => {
     const foundIndex = DOCK_ITEMS.findIndex(
@@ -478,34 +487,6 @@ export function KollabrixQuickDock() {
     window.addEventListener('scroll', handleWindowScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
-
-  // Dedicated wheel listener: prevents background page from jumping & smoothly scrolls the dock
-  useEffect(() => {
-    const asideEl = dockAsideRef.current;
-    if (!asideEl) return;
-
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const container = scrollContainerRef.current;
-      if (!container) return;
-
-      container.scrollTop += e.deltaY;
-      updateScrollState();
-
-      const now = Date.now();
-      if (now - lastWheelTimeRef.current > 80 && Math.abs(e.deltaY) > 1) {
-        lastWheelTimeRef.current = now;
-        playTactileClick();
-      }
-    };
-
-    asideEl.addEventListener('wheel', onWheel, { passive: false });
-    return () => {
-      asideEl.removeEventListener('wheel', onWheel);
-    };
-  }, [playTactileClick]);
 
   // Global ⌘K / Ctrl+K keyboard shortcut opens macOS App Launcher
   useEffect(() => {
@@ -614,12 +595,26 @@ export function KollabrixQuickDock() {
           }`}
         >
           {/* Sleek Dark Pill Capsule (Exact Match to User's Image 2) */}
-          <div className="relative rounded-full py-2.5 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
-            {/* Scrollable Container (Shows 4 items visible at ~196px height) */}
+          <div
+            onWheel={(e) => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTop += e.deltaY;
+              }
+            }}
+            className="relative rounded-full py-2 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center"
+          >
+            {/* Scrollable Container (Shows EXACTLY 4 items visible with crisp snap) */}
             <div
               ref={scrollContainerRef}
-              onScroll={updateScrollState}
-              className="flex flex-col items-center gap-2 max-h-[196px] overflow-y-auto overflow-x-hidden py-0.5 px-0.5 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              onScroll={() => {
+                updateScrollState();
+                const now = Date.now();
+                if (now - lastWheelTimeRef.current > 100) {
+                  lastWheelTimeRef.current = now;
+                  playTactileClick();
+                }
+              }}
+              className="flex flex-col items-center gap-2 h-[184px] max-h-[184px] overflow-y-auto overflow-x-hidden p-0 scroll-smooth overscroll-contain snap-y snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               {DOCK_ITEMS.map((item, index) => {
                 const Icon = item.icon;
@@ -654,7 +649,7 @@ export function KollabrixQuickDock() {
                     }}
                     onMouseLeave={() => setHoveredNode(null)}
                     aria-label={item.label}
-                    className={`relative flex items-center justify-center shrink-0 w-10 h-10 rounded-full border transition-all duration-300 active:scale-90 group focus:outline-none cursor-pointer ${style.bg} ${style.border} ${style.text} ${
+                    className={`relative flex items-center justify-center shrink-0 w-10 h-10 rounded-full border transition-all duration-300 active:scale-90 group focus:outline-none cursor-pointer snap-start snap-always ${style.bg} ${style.border} ${style.text} ${
                       isHighlighted
                         ? `${style.activeRing} ${style.glow} scale-105`
                         : 'hover:scale-105'
@@ -669,21 +664,26 @@ export function KollabrixQuickDock() {
               })}
             </div>
 
-            {/* Down Chevron Nudge Arrow (When more items exist below) */}
+            {/* Scroll Nudge Button (Smart Down / Up Toggle) */}
             <button
               type="button"
               onClick={() => {
-                if (scrollContainerRef.current) {
+                if (!scrollContainerRef.current) return;
+                playTactileClick();
+                if (!canScrollDown && canScrollUp) {
+                  scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
                   scrollContainerRef.current.scrollBy({ top: 48, behavior: 'smooth' });
-                  playTactileClick();
                 }
               }}
-              aria-label="Scroll dock down"
-              className={`flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-0.5 ${
-                canScrollDown ? 'opacity-100 animate-pulse pointer-events-auto' : 'opacity-0 pointer-events-none'
-              }`}
+              aria-label={!canScrollDown && canScrollUp ? 'Scroll to top' : 'Scroll down dock'}
+              className="flex items-center justify-center text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer pt-0.5 hover:scale-110 active:scale-95"
             >
-              <ChevronDown className="w-4 h-4" />
+              {!canScrollDown && canScrollUp ? (
+                <ChevronUp className="w-4 h-4 animate-bounce" />
+              ) : (
+                <ChevronDown className="w-4 h-4 animate-pulse" />
+              )}
             </button>
 
             {/* Subtle Divider Line */}
