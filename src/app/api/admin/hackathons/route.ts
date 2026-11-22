@@ -10,6 +10,31 @@ import {
 } from '@/lib/admin/masterConfigStorage';
 import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
 
+/**
+ * Normalizes input date/time strings into an accurate UTC ISO timestamp.
+ * Handles client timezone offsets so that dates and times chosen by admins
+ * in their local timezone are never shifted by serverless UTC clocks.
+ */
+function parseToIso(dateStr?: string | null, clientTzOffsetMin?: number): string | null {
+  if (!dateStr) return null;
+  // If already full ISO with 'Z' or explicit +/- timezone offset
+  if (dateStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateStr)) {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  // If no timezone offset is in the string, adjust by client timezone offset if provided
+  if (typeof clientTzOffsetMin === 'number' && !isNaN(clientTzOffsetMin)) {
+    const normalized = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+    const utcBase = new Date(normalized + 'Z').getTime();
+    if (!isNaN(utcBase)) {
+      const realUtcMs = utcBase + (clientTzOffsetMin * 60 * 1000);
+      return new Date(realUtcMs).toISOString();
+    }
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
@@ -530,10 +555,10 @@ export async function POST(request: NextRequest) {
         description: (description || tagline || title).trim() + metaComment,
         mode,
         location: location.trim() || 'Global Online Hub',
-        start_date: new Date(start_date || Date.now()).toISOString(),
-        end_date: end_date ? new Date(end_date).toISOString() : null,
-        registration_deadline: new Date(registration_deadline || Date.now() + 14 * 86400000).toISOString(),
-        submission_deadline: (body.submission_deadline || results_date) ? new Date(body.submission_deadline || results_date).toISOString() : null,
+        start_date: parseToIso(start_date, body.clientTimezoneOffset) || new Date().toISOString(),
+        end_date: parseToIso(end_date, body.clientTimezoneOffset),
+        registration_deadline: parseToIso(registration_deadline, body.clientTimezoneOffset) || new Date(Date.now() + 14 * 86400000).toISOString(),
+        submission_deadline: parseToIso(body.submission_deadline || results_date, body.clientTimezoneOffset),
         eligibility: (body.eligibility || 'Open to all college students & engineering developers').trim(),
         rules: (body.rules || '1. All code and designs must be created during the official hackathon timeline.\n2. Projects must address one of the released problem statements.\n3. Public GitHub repository with full commit history is required.\n4. Plagiarism leads to immediate disqualification.').trim(),
         themes: Array.isArray(themes) && themes.length > 0 ? themes : ['Enterprise Innovation', 'Cloud/AI Architecture'],
@@ -904,10 +929,10 @@ export async function POST(request: NextRequest) {
             if (body.prize_pool) updatePayload.prize_pool = body.prize_pool.trim();
             if (body.mode) updatePayload.mode = body.mode;
             if (body.location) updatePayload.location = body.location;
-            if (body.start_date) updatePayload.start_date = new Date(body.start_date).toISOString();
-            if (body.end_date) updatePayload.end_date = new Date(body.end_date).toISOString();
-            if (body.registration_deadline) updatePayload.registration_deadline = new Date(body.registration_deadline).toISOString();
-            if (body.submission_deadline) updatePayload.submission_deadline = new Date(body.submission_deadline).toISOString();
+            if (body.start_date) updatePayload.start_date = parseToIso(body.start_date, body.clientTimezoneOffset) || new Date(body.start_date).toISOString();
+            if (body.end_date) updatePayload.end_date = parseToIso(body.end_date, body.clientTimezoneOffset);
+            if (body.registration_deadline) updatePayload.registration_deadline = parseToIso(body.registration_deadline, body.clientTimezoneOffset) || new Date(body.registration_deadline).toISOString();
+            if (body.submission_deadline) updatePayload.submission_deadline = parseToIso(body.submission_deadline, body.clientTimezoneOffset);
             if (body.rules) updatePayload.rules = body.rules;
             if (body.eligibility) updatePayload.eligibility = body.eligibility;
             if (body.min_team_size) updatePayload.min_team_size = parseInt(String(body.min_team_size)) || 1;

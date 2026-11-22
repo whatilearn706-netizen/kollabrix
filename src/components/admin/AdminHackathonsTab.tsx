@@ -36,6 +36,40 @@ import {
   getSponsorTheme,
 } from '@/lib/hackathons/sponsoredMeta';
 
+/**
+ * Converts an ISO string or Date into client-local datetime-local input string (YYYY-MM-DDTHH:mm).
+ * Preserves the exact user local time instead of slicing UTC.
+ */
+function toLocalDateTimeInput(dateVal?: string | Date | null): string {
+  if (!dateVal) return '';
+  const d = typeof dateVal === 'string' ? new Date(dateVal) : dateVal;
+  if (isNaN(d.getTime())) return '';
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+/**
+ * Converts a datetime-local input string (YYYY-MM-DDTHH:mm) into a true UTC ISO string
+ * based on the user's browser local timezone.
+ */
+function toUtcIso(val?: string | null): string | undefined {
+  if (!val) return undefined;
+  if (val.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(val)) {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? undefined : d.toISOString();
+  }
+  const [dPart, tPart = '00:00'] = val.split('T');
+  if (!dPart) return undefined;
+  const [y, m, d] = dPart.split('-').map(Number);
+  const [hh = 0, mm = 0] = tPart.split(':').map(Number);
+  const dateObj = new Date(y, m - 1, d, hh, mm, 0);
+  return isNaN(dateObj.getTime()) ? undefined : dateObj.toISOString();
+}
+
 interface AdminHackathonsTabProps {
   authToken?: string;
   adminEmail?: string;
@@ -155,10 +189,10 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       eligibility: 'Open to all undergraduate & postgraduate students, engineering developers, and collegiate builders.',
       mode: 'Online',
       location: 'Virtual / Official Portal Submissions',
-      start_date: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 16),
-      end_date: new Date(Date.now() + 86400000 * 4).toISOString().slice(0, 16),
-      registration_deadline: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 16),
-      submission_deadline: new Date(Date.now() + 86400000 * 4).toISOString().slice(0, 16),
+      start_date: toLocalDateTimeInput(new Date(Date.now() + 86400000 * 2)),
+      end_date: toLocalDateTimeInput(new Date(Date.now() + 86400000 * 4)),
+      registration_deadline: toLocalDateTimeInput(new Date(Date.now() + 86400000 * 2)),
+      submission_deadline: toLocalDateTimeInput(new Date(Date.now() + 86400000 * 4)),
       submission_cutoff: 'Direct via Official Portal',
       result_announcement: 'Announced on Official Portal',
       min_team_size: 1,
@@ -206,10 +240,10 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       eligibility: item.eligibility || 'Open to all college students & engineering developers.',
       mode: item.mode || 'Online',
       location: item.location || 'Decentralized Campus Cloud / Virtual Submissions',
-      start_date: item.start_date ? item.start_date.slice(0, 16) : '',
-      end_date: item.end_date ? item.end_date.slice(0, 16) : '',
-      registration_deadline: item.registration_deadline ? item.registration_deadline.slice(0, 16) : '',
-      submission_deadline: item.submission_deadline ? item.submission_deadline.slice(0, 16) : '',
+      start_date: toLocalDateTimeInput(item.start_date),
+      end_date: toLocalDateTimeInput(item.end_date),
+      registration_deadline: toLocalDateTimeInput(item.registration_deadline),
+      submission_deadline: toLocalDateTimeInput(item.submission_deadline),
       submission_cutoff: meta.submissionCutoff || '22 Nov 2026 • 03:00 am',
       result_announcement: meta.resultAnnouncement || '22 Nov 2026 • 06:00 pm',
       min_team_size: item.min_team_size || 1,
@@ -275,10 +309,11 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           eligibility: sponsoredForm.eligibility,
           mode: sponsoredForm.mode,
           location: sponsoredForm.location,
-          start_date: sponsoredForm.start_date || undefined,
-          end_date: sponsoredForm.end_date || undefined,
-          registration_deadline: sponsoredForm.registration_deadline || undefined,
-          submission_deadline: sponsoredForm.submission_deadline || undefined,
+          start_date: toUtcIso(sponsoredForm.start_date),
+          end_date: toUtcIso(sponsoredForm.end_date),
+          registration_deadline: toUtcIso(sponsoredForm.registration_deadline),
+          submission_deadline: toUtcIso(sponsoredForm.submission_deadline),
+          clientTimezoneOffset: new Date().getTimezoneOffset(),
           submission_cutoff: sponsoredForm.submission_cutoff,
           result_announcement: sponsoredForm.result_announcement,
           min_team_size: sponsoredForm.min_team_size,

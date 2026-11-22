@@ -444,6 +444,28 @@ export default function HackathonDetailPage() {
     return extractSponsoredMeta(hackathon);
   }, [hackathon]);
 
+  // External Registration Detection: When registration occurs on an external portal (Unstop, Devfolio, Google Forms, official site)
+  const externalRegistrationUrl = useMemo(() => {
+    if (!hackathon) return null;
+    return (
+      hackathon.registration_url ||
+      (hackathon as any).external_registration_url ||
+      sponsoredMeta.registrationUrl ||
+      sponsoredMeta.externalRegistrationUrl ||
+      ((hackathon as any).is_external_registration && hackathon.website_url && !hackathon.website_url.includes('/h/') ? hackathon.website_url : null) ||
+      (hackathon.website_url && !hackathon.website_url.includes('/h/') && (hackathon.website_url.startsWith('http://') || hackathon.website_url.startsWith('https://')) && (sponsoredMeta.customCtaText?.toLowerCase().includes('official') || sponsoredMeta.customCtaText?.toLowerCase().includes('register on')) ? hackathon.website_url : null)
+    );
+  }, [hackathon, sponsoredMeta]);
+
+  const isExternalRegistration = useMemo(() => {
+    if (!hackathon) return false;
+    return Boolean(
+      externalRegistrationUrl ||
+      sponsoredMeta.isExternalRegistration ||
+      (hackathon as any).is_external_registration
+    );
+  }, [hackathon, externalRegistrationUrl, sponsoredMeta]);
+
   const heroBanner = hackathon?.banner_url || sponsoredMeta.bannerUrl;
   const eventLogo = hackathon?.logo_url || hackathon?.company_logo || sponsoredMeta.sponsorLogoUrl;
 
@@ -1830,11 +1852,18 @@ export default function HackathonDetailPage() {
                 <span>{countdown.isClosed ? 'Registration Closed' : countdown.formatted}</span>
               </div>
 
-              {/* Floating Registered Counter on Top-Right (Red Marked Item - Real Database Count) */}
-              <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-charcoal-950 text-cyan-300 text-[11px] font-mono font-bold border border-charcoal-750 shadow-xl flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{displayRegisteredCount} Registered</span>
-              </div>
+              {/* Floating Registered Counter on Top-Right (Shown ONLY for internal platform-managed hackathons) */}
+              {!isExternalRegistration ? (
+                <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-charcoal-950 text-cyan-300 text-[11px] font-mono font-bold border border-charcoal-750 shadow-xl flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{displayRegisteredCount} Registered</span>
+                </div>
+              ) : (
+                <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-300 text-[11px] font-mono font-bold border border-cyan-500/40 shadow-xl flex items-center gap-1.5">
+                  <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Official Portal</span>
+                </div>
+              )}
 
               <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
                 
@@ -1912,10 +1941,12 @@ export default function HackathonDetailPage() {
                       <span className={`w-2 h-2 rounded-full ${countdown.isClosed ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'}`} />
                       <span>{countdown.isClosed ? 'Registration Closed' : 'Registration Open'}</span>
                     </span>
-                    <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>{displayRegisteredCount} Registered</span>
-                    </span>
+                    {!isExternalRegistration && (
+                      <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{displayRegisteredCount} Registered</span>
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -1942,12 +1973,7 @@ export default function HackathonDetailPage() {
                 {/* Primary Action Button */}
                 <div className="pt-1">
                   {(() => {
-                    const externalRegisterUrl =
-                      hackathon.registration_url ||
-                      (hackathon as any).external_registration_url ||
-                      sponsoredMeta.registrationUrl ||
-                      sponsoredMeta.externalRegistrationUrl ||
-                      ((hackathon as any).is_external_registration && hackathon.website_url && !hackathon.website_url.includes('/h/') ? hackathon.website_url : null);
+                    const externalRegisterUrl = externalRegistrationUrl;
 
                     if (externalRegisterUrl) {
                       return (
@@ -2064,16 +2090,18 @@ export default function HackathonDetailPage() {
                   </span>
                 </div>
 
-                {/* Registered Counter */}
-                <div className="flex items-center justify-center gap-2 text-xs text-slate-300 font-medium pt-1">
-                  <Users className="w-4 h-4 text-cyan-400" />
-                  <span>
-                    Registered:{' '}
-                    <strong className="text-white font-mono font-bold">
-                      {displayRegisteredCount}
-                    </strong>
-                  </span>
-                </div>
+                {/* Registered Counter: ONLY shown for platform-managed internal hackathons */}
+                {!isExternalRegistration && (
+                  <div className="flex items-center justify-center gap-2 text-xs text-slate-300 font-medium pt-1">
+                    <Users className="w-4 h-4 text-cyan-400" />
+                    <span>
+                      Registered:{' '}
+                      <strong className="text-white font-mono font-bold">
+                        {displayRegisteredCount}
+                      </strong>
+                    </span>
+                  </div>
+                )}
 
                 {/* Prize Pool & Timeline Mini Summary */}
                 <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2.5">
