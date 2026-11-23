@@ -189,7 +189,7 @@ export function LandingHero() {
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
         {/* Full-width Lorenzo Lottici Dark Celestial Horizon Backdrop */}
         <img
-          src="/brand/hero-celestial-horizon-v3.webp"
+          src="/brand/hero-dark-horizon-awwwards.webp"
           alt="Dark Celestial Horizon Atmosphere"
           className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.05]"
         />
