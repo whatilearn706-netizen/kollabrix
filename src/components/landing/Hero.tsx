@@ -189,7 +189,7 @@ export function LandingHero() {
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
         {/* Full-width Lorenzo Lottici Dark Celestial Horizon Backdrop */}
         <img
-          src="/brand/hero-dark-celestial-horizon.webp"
+          src="/brand/hero-celestial-horizon-v3.webp"
           alt="Dark Celestial Horizon Atmosphere"
           className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.05]"
         />
@@ -535,7 +535,7 @@ export function LandingHero() {
 
                 {/* 2. PHOTOREALISTIC MACBOOK HARDWARE FRAME (Awwwards Lorenzo Lottici Reference) */}
                 <img
-                  src="/brand/hero-awwwards-macbook-frame.webp"
+                  src="/brand/hero-macbook-lorenzo-v3.webp"
                   alt="Apple MacBook Pro Hardware Frame"
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20 drop-shadow-[0_40px_80px_rgba(0,0,0,0.98)]"
                 />
