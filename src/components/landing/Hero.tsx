@@ -14,9 +14,6 @@ import {
   MoreVertical,
   Clock,
   Crown,
-  Sparkles,
-  Laptop,
-  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
@@ -24,7 +21,7 @@ export function LandingHero() {
   const { user } = useAuth();
   const heroRef = useRef<HTMLElement>(null);
 
-  // Live 3D cursor tilt on the desktop arena for authentic physical perspective
+  // Live 3D cursor tilt on the physical monitor for authentic perspective
   const [tilt, setTilt] = useState({ x: -10, y: 3 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
@@ -33,8 +30,8 @@ export function LandingHero() {
     const xPct = (e.clientX - rect.left) / rect.width - 0.5;
     const yPct = (e.clientY - rect.top) / rect.height - 0.5;
     setTilt({
-      x: -10 + xPct * 8, // Smooth interactive 3D rotation
-      y: 3 - yPct * 6,
+      x: -10 + xPct * 7, // Subtle -10deg natural angle with +/-3.5deg interactive range
+      y: 3 - yPct * 5,
     });
   };
 
@@ -42,14 +39,14 @@ export function LandingHero() {
     setTilt({ x: -10, y: 3 });
   };
 
-  // Live Duel Match State (Simulates a real-time 1v1 battle like a video)
+  // Live Duel Match State (Simulates a real-time 1v1 battle)
   const [matchSeconds, setMatchSeconds] = useState(83); // 01:23
   const [leftTypedIdx, setLeftTypedIdx] = useState(0);
   const [rightTypedIdx, setRightTypedIdx] = useState(0);
   const [leftPassedTests, setLeftPassedTests] = useState(false);
   const [rightPassedTests, setRightPassedTests] = useState(false);
 
-  // Python Code for ZenCoder (Left Player Laptop)
+  // Python Code for ZenCoder (Left Player)
   const leftLines = [
     'def solve(n):',
     '    return n * 2',
@@ -57,7 +54,7 @@ export function LandingHero() {
     'print(solve(21))',
   ];
 
-  // Python Code for CodeRex (Right Player Laptop)
+  // Python Code for CodeRex (Right Player)
   const rightLines = [
     'def solve(n):',
     '    return n + 1',
@@ -76,7 +73,7 @@ export function LandingHero() {
     return () => clearInterval(timer);
   }, []);
 
-  // Left Laptop Typing loop
+  // Left Player Typing loop
   useEffect(() => {
     const totalChars = leftLines.join('\n').length;
     const interval = setInterval(() => {
@@ -91,7 +88,7 @@ export function LandingHero() {
     return () => clearInterval(interval);
   }, [leftLines]);
 
-  // Right Laptop Typing loop
+  // Right Player Typing loop
   useEffect(() => {
     const totalChars = rightLines.join('\n').length;
     const interval = setInterval(() => {
@@ -149,33 +146,29 @@ export function LandingHero() {
       ref={heroRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative min-h-[96vh] lg:min-h-screen flex flex-col justify-between pt-24 sm:pt-28 pb-6 sm:pb-8 px-4 sm:px-8 lg:px-14 overflow-hidden bg-[#06080d] text-white select-none"
+      className="relative min-h-[96vh] lg:min-h-screen flex flex-col justify-between pt-24 sm:pt-28 pb-6 sm:pb-8 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
-          AUTHENTIC REAL-LIFE DEVELOPER ROOM ENVIRONMENT BACKGROUND
-          Physical desk, warm amber shelf backlight, dark studio mood
+          PURE PITCH-BLACK STUDIO BACKGROUND WITH LUXURY SUBTLE AMBIENT LIGHTING
+          Clean, distraction-free, zero photo noise, zero AI artifacts
          ========================================================================= */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Real-life Workstation Desk Backdrop */}
-        <img
-          src="/brand/hero-real-desktop-clean.jpg"
-          alt="Developer Workstation Workspace"
-          className="w-full h-full object-cover object-center lg:object-right filter brightness-[1.02] contrast-[1.05]"
-        />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
+        {/* Subtle Warm Amber Glow behind the left headline */}
+        <div className="absolute top-[20%] left-[5%] w-[480px] h-[480px] bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Realistic Warm Amber Shelf Backlight (Top-Right of Room) */}
-        <div className="absolute top-[8%] right-[8%] w-[550px] h-[180px] bg-gradient-to-b from-amber-500/25 via-amber-400/15 to-transparent blur-3xl pointer-events-none" />
+        {/* Subtle Cyan / Electric Glow behind the right 3D monitor */}
+        <div className="absolute top-[18%] right-[10%] w-[600px] h-[500px] bg-gradient-to-bl from-cyan-500/10 via-purple-600/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
-        {/* Left Side Ambient Vignette for 100% Vector Typography Readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#06080d] via-[#06080d]/85 md:via-[#06080d]/50 to-transparent pointer-events-none" />
+        {/* Ultra-faint tech dot matrix for subtle engineering texture */}
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-25 pointer-events-none" />
 
-        {/* Top & Bottom Cinematic Dissolves */}
-        <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 inset-x-0 h-36 bg-gradient-to-t from-[#090B10] via-[#090B10]/80 to-transparent pointer-events-none" />
+        {/* Cinematic edge dissolves */}
+        <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
       </div>
 
       {/* =========================================================================
-          HERO MAIN CONTENT: HEADLINE (LEFT) & 3D DESKTOP WITH 2 LAPTOPS (RIGHT)
+          HERO MAIN CONTENT: HEADLINE (LEFT) & REALISTIC 3D DESKTOP MONITOR (RIGHT)
          ========================================================================= */}
       <motion.div
         style={{ opacity: contentOpacity, y: contentY }}
@@ -186,7 +179,7 @@ export function LandingHero() {
           {/* ================= LEFT COLUMN: TAGLINE & EDITORIAL HEADLINE ================= */}
           <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-center text-left">
             
-            {/* Pill Badge matching reference */}
+            {/* Pill Badge */}
             <motion.div
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
@@ -195,7 +188,7 @@ export function LandingHero() {
             >
               <Link
                 href="/arena"
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-black/70 hover:bg-black/90 text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.25)] transition-all cursor-pointer backdrop-blur-md"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-[#0f1118]/80 hover:bg-[#141824] text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer backdrop-blur-md"
               >
                 <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                 <span className="font-semibold text-slate-200">1v1 Coding Battle Arena</span>
@@ -254,330 +247,256 @@ export function LandingHero() {
             </motion.div>
           </div>
 
-          {/* ================= RIGHT COLUMN: 3D DESKTOP ARENA WITH 2 LAPTOPS CODING 1:1 ================= */}
+          {/* ================= RIGHT COLUMN: REALISTIC 3D DESKTOP WORKSTATION BATTLE ================= */}
           <div className="lg:col-span-7 xl:col-span-7 flex items-center justify-center lg:justify-end relative">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="w-full max-w-[900px] transition-transform duration-300 ease-out"
+              className="w-full max-w-[860px] transition-transform duration-300 ease-out"
               style={{
                 perspective: '1400px',
               }}
             >
-              {/* 3D Desktop Arena Chassis */}
-              <Link
-                href="/arena"
-                prefetch={false}
-                title="Click to launch 1v1 Battle Arena"
+              {/* Realistic Curved OLED Desktop Monitor Chassis with Real Stand Base */}
+              <div
                 style={{
                   transform: `perspective(1400px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
                   transformStyle: 'preserve-3d',
                 }}
-                className="block relative rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 bg-gradient-to-b from-slate-700/80 via-slate-900 to-black border border-slate-700/90 shadow-[0_30px_90px_rgba(0,0,0,0.98),0_0_50px_rgba(245,158,11,0.2)] hover:shadow-[0_35px_110px_rgba(0,0,0,0.98),0_0_70px_rgba(245,158,11,0.35)] transition-all duration-300 group cursor-pointer overflow-hidden"
+                className="relative transition-all duration-300"
               >
-                {/* Curved OLED Glass Sheen Reflection */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.035] to-transparent pointer-events-none z-30 rounded-2xl" />
+                {/* Physical Monitor Bezel & Chassis */}
+                <Link
+                  href="/arena"
+                  prefetch={false}
+                  title="Click to launch 1v1 Battle Arena"
+                  className="block relative rounded-2xl sm:rounded-3xl p-2 sm:p-2.5 bg-gradient-to-b from-neutral-700 via-neutral-900 to-black border border-neutral-700/80 shadow-[0_30px_90px_rgba(0,0,0,0.98),0_0_40px_rgba(6,182,212,0.12)] hover:shadow-[0_35px_110px_rgba(0,0,0,0.98),0_0_60px_rgba(245,158,11,0.25)] transition-all duration-300 group cursor-pointer overflow-hidden"
+                >
+                  {/* Subtle OLED Glass Sheen Reflection */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-30 rounded-2xl" />
 
-                {/* Inner Screen Display / Arena Stage */}
-                <div className="relative rounded-xl sm:rounded-2xl bg-[#070a12] border border-slate-800/90 overflow-hidden flex flex-col shadow-inner">
-                  
-                  {/* ================= DESKTOP TOP HUD BAR ================= */}
-                  <div className="h-10 sm:h-11 bg-[#0b0f19] px-3.5 sm:px-5 flex items-center justify-between border-b border-slate-800/80 select-none z-20">
-                    {/* Left: Brand Emblem & Stage Mode */}
-                    <div className="flex items-center gap-2 text-slate-200 font-bold tracking-wider text-xs sm:text-sm font-mono">
-                      <span className="text-amber-400 font-black text-sm">▲</span>
-                      <span>KOLLABRIX</span>
-                      <span className="text-slate-600">/</span>
-                      <span className="text-amber-400/90 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-                        1v1 BATTLE ARENA
-                      </span>
-                    </div>
-
-                    {/* Center: Live Battle Clock */}
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950 border border-slate-800/80 text-cyan-300 font-mono text-xs sm:text-sm font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                      <span>{formatTimer(matchSeconds)}</span>
-                    </div>
-
-                    {/* Right: Security & Utilities */}
-                    <div className="flex items-center gap-2.5 text-slate-400">
-                      <div className="hidden sm:flex items-center gap-1 text-[10px] font-mono text-emerald-400">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Fog of War Active</span>
-                      </div>
-                      <Volume2 className="w-3.5 h-3.5 hover:text-white transition-colors" />
-                      <Maximize2 className="w-3.5 h-3.5 hover:text-white transition-colors" />
-                      <MoreVertical className="w-3.5 h-3.5 hover:text-white transition-colors" />
-                    </div>
-                  </div>
-
-                  {/* ================= 3D ARENA STAGE: 2 LAPTOPS DUELING IN REAL-TIME ================= */}
-                  <div className="relative bg-gradient-to-b from-[#05070d] via-[#080c16] to-[#04060a] p-3 sm:p-5 pb-5 sm:pb-7 overflow-hidden">
+                  {/* Inner Screen Display */}
+                  <div className="relative rounded-xl sm:rounded-2xl bg-[#090c15] border border-neutral-800 overflow-hidden flex flex-col shadow-inner">
                     
-                    {/* Ambient Neon Duel Arena Grid Lines */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-
-                    {/* Center Glowing Electric VS Divider & Clash Energy */}
-                    <div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
-                      <div className="relative">
-                        <span className="font-black font-mono text-xl sm:text-3xl tracking-tighter bg-gradient-to-r from-cyan-400 via-white to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(6,182,212,0.95)] animate-pulse">
-                          VS
-                        </span>
-                        {/* Electric Lightning Flare */}
-                        <div className="absolute -inset-6 bg-gradient-to-r from-cyan-500/25 via-purple-500/20 to-pink-500/25 blur-2xl pointer-events-none" />
+                    {/* ================= MONITOR TOP HUD BAR ================= */}
+                    <div className="h-10 sm:h-11 bg-[#0d111c] px-3.5 sm:px-5 flex items-center justify-between border-b border-neutral-800 select-none z-20">
+                      
+                      {/* Left: Brand Emblem & Mode */}
+                      <div className="flex items-center gap-2 text-slate-200 font-bold tracking-wider text-xs sm:text-sm font-mono">
+                        <span className="text-amber-400 font-black text-sm">▲</span>
+                        <span>KOLLABRIX</span>
+                        <span className="text-neutral-600">/</span>
+                        <span className="text-neutral-400 font-normal text-[11px] sm:text-xs">PROVING GROUNDS</span>
                       </div>
-                      <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-950/90 border border-slate-700/60 text-slate-300">
-                        1:1 DUEL
-                      </span>
+
+                      {/* Center: Live Battle Clock */}
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black border border-neutral-800 text-cyan-300 font-mono text-xs sm:text-sm font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                        <span>{formatTimer(matchSeconds)}</span>
+                      </div>
+
+                      {/* Right: Audio, Fullscreen, Menu Utilities */}
+                      <div className="flex items-center gap-2.5 text-slate-400">
+                        <Volume2 className="w-3.5 h-3.5 hover:text-white transition-colors" />
+                        <Maximize2 className="w-3.5 h-3.5 hover:text-white transition-colors" />
+                        <MoreVertical className="w-3.5 h-3.5 hover:text-white transition-colors" />
+                      </div>
                     </div>
 
-                    {/* DUAL 3D LAPTOPS CONTAINER */}
-                    <div className="relative z-10 grid grid-cols-2 gap-3 sm:gap-6 items-start">
-
-                      {/* =========================================================================
-                          LAPTOP 1 (LEFT): ZenCoder (IIT Delhi • 96)
-                          Angled slightly right towards center duel
-                         ========================================================================= */}
-                      <div 
-                        style={{
-                          transform: 'perspective(900px) rotateY(11deg) rotateX(4deg)',
-                          transformStyle: 'preserve-3d',
-                        }}
-                        className="flex flex-col items-center transition-transform duration-200"
-                      >
-                        {/* 1. LAPTOP SCREEN / LID */}
-                        <div className="w-full rounded-t-xl sm:rounded-t-2xl bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 p-1 sm:p-1.5 border border-slate-600/70 shadow-[0_15px_35px_rgba(0,0,0,0.9)]">
-                          
-                          {/* Top Center Webcam Dot */}
-                          <div className="w-1.5 h-1.5 rounded-full bg-slate-950 border border-slate-700 mx-auto mb-1 opacity-80" />
-
-                          {/* Screen Bezel & Display */}
-                          <div className="rounded-lg sm:rounded-xl bg-[#06080e] border border-cyan-500/30 p-2 sm:p-3 flex flex-col gap-2 shadow-inner overflow-hidden">
-                            
-                            {/* Laptop Screen Top Header */}
-                            <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/70">
-                              <div className="flex items-center gap-1.5 sm:gap-2">
-                                <div className="relative">
-                                  <img
-                                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=60&h=60&fit=crop&crop=faces"
-                                    alt="ZenCoder"
-                                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-cyan-400/80 object-cover"
-                                  />
-                                  <Crown className="w-2.5 h-2.5 text-amber-400 fill-amber-400 absolute -top-1 -right-1" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[11px] sm:text-xs font-bold text-white leading-tight">ZenCoder</span>
-                                  <span className="text-[9px] text-cyan-400 font-mono hidden sm:inline">IIT Delhi</span>
-                                </div>
-                              </div>
-                              {/* Score Badge */}
-                              <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-[10px] sm:text-xs font-black font-mono text-cyan-300">
-                                96
-                              </span>
-                            </div>
-
-                            {/* File Tab */}
-                            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-slate-400">
-                              <span className="text-cyan-400 font-semibold">●</span>
-                              <span className="text-slate-300">main.py</span>
-                            </div>
-
-                            {/* Live Code Editor Screen */}
-                            <div className="rounded-md bg-[#04060a] border border-slate-800/80 p-2 font-mono text-[10px] sm:text-[11px] leading-relaxed min-h-[110px] sm:min-h-[135px] flex gap-2 sm:gap-2.5 text-slate-300">
-                              {/* Line Numbers */}
-                              <div className="select-none text-slate-600 font-mono text-right flex flex-col text-[10px]">
-                                <span>1</span>
-                                <span>2</span>
-                                <span>3</span>
-                                <span>4</span>
-                              </div>
-                              {/* Python Typing Animation */}
-                              <div className="flex-1 font-mono whitespace-pre overflow-x-hidden">
-                                {currentLeftLines.map((line, i) => (
-                                  <div key={i} className="text-cyan-200">
-                                    {line.includes('def') ? (
-                                      <span>
-                                        <span className="text-pink-400 font-bold">def </span>
-                                        <span className="text-amber-300">solve</span>(n):
-                                      </span>
-                                    ) : line.includes('return') ? (
-                                      <span>
-                                        &nbsp;&nbsp;<span className="text-pink-400">return </span>
-                                        <span>n * 2</span>
-                                      </span>
-                                    ) : line.includes('print') ? (
-                                      <span>
-                                        <span className="text-purple-400">print</span>(solve(21))
-                                      </span>
-                                    ) : (
-                                      line
-                                    )}
-                                  </div>
-                                ))}
-                                {/* Blinking Blue Cursor */}
-                                <span className="inline-block w-1 h-3 bg-cyan-400 animate-pulse ml-0.5 align-middle" />
-                              </div>
-                            </div>
-
-                            {/* Test Results */}
-                            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-emerald-400 font-bold">
-                              <CheckCircle2 className={`w-3 h-3 text-emerald-400 ${leftPassedTests ? 'animate-bounce' : ''}`} />
-                              <span>All tests passed!</span>
-                            </div>
-                          </div>
+                    {/* ================= REALISTIC SPLIT-SCREEN 1V1 CODING BATTLE ================= */}
+                    <div className="relative grid grid-cols-2 bg-[#05070d] p-3 sm:p-5 gap-3 sm:gap-4 overflow-hidden">
+                      
+                      {/* Center Glowing Electric VS Divider */}
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
+                        <div className="relative">
+                          <span className="font-black font-mono text-lg sm:text-2xl tracking-tighter bg-gradient-to-r from-cyan-400 via-white to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(6,182,212,0.95)] animate-pulse">
+                            VS
+                          </span>
+                          {/* Electric Lightning Flare */}
+                          <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 blur-xl pointer-events-none" />
                         </div>
-
-                        {/* 2. LAPTOP HINGE */}
-                        <div className="w-[88%] h-1 sm:h-1.5 bg-slate-950 border-x border-slate-700/80 shadow-md" />
-
-                        {/* 3. LAPTOP KEYBOARD BASE (DECK) IN 3D PERSPECTIVE */}
-                        <div
-                          style={{
-                            transform: 'perspective(400px) rotateX(55deg)',
-                            transformOrigin: 'top center',
-                          }}
-                          className="w-full h-12 sm:h-16 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 rounded-b-xl border border-slate-700/90 p-1.5 sm:p-2 flex flex-col justify-between shadow-[0_15px_30px_rgba(0,0,0,0.95)]"
-                        >
-                          {/* Simulated Backlit Keyboard Rows */}
-                          <div className="flex flex-col gap-0.5 sm:gap-1 px-1">
-                            <div className="h-1 sm:h-1.5 w-full bg-slate-950/90 rounded border border-cyan-500/20 shadow-[0_0_6px_rgba(6,182,212,0.3)]" />
-                            <div className="h-1 sm:h-1.5 w-full bg-slate-950/90 rounded border border-cyan-500/20 shadow-[0_0_6px_rgba(6,182,212,0.3)]" />
-                            <div className="h-1 sm:h-1.5 w-3/4 mx-auto bg-slate-950/90 rounded border border-cyan-500/20" />
-                          </div>
-
-                          {/* Metallic Glass Trackpad */}
-                          <div className="w-8 sm:w-12 h-2.5 sm:h-3.5 mx-auto bg-slate-950/80 rounded border border-slate-700/60 shadow-inner" />
-                        </div>
-
-                        {/* 4. UNDERGLOW NEON DESK REFLECTION */}
-                        <div className="w-[90%] h-2.5 bg-cyan-500/20 blur-md rounded-full mt-0.5" />
                       </div>
 
+                      {/* ================= LEFT IDE: ZenCoder (96) ================= */}
+                      <div className="flex flex-col gap-2 rounded-xl bg-[#0d111a] border border-neutral-800 p-3 sm:p-4 shadow-lg">
+                        
+                        {/* macOS Window Titlebar & Fighter Info */}
+                        <div className="flex items-center justify-between pb-2 border-b border-neutral-800/80">
+                          <div className="flex items-center gap-2">
+                            {/* Window Dots */}
+                            <div className="flex items-center gap-1 mr-1">
+                              <span className="w-2 h-2 rounded-full bg-rose-500/80" />
+                              <span className="w-2 h-2 rounded-full bg-amber-500/80" />
+                              <span className="w-2 h-2 rounded-full bg-emerald-500/80" />
+                            </div>
+                            {/* Avatar with Crown */}
+                            <div className="relative">
+                              <img
+                                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=60&h=60&fit=crop&crop=faces"
+                                alt="ZenCoder"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-cyan-400/80 object-cover"
+                              />
+                              <Crown className="w-3 h-3 text-amber-400 fill-amber-400 absolute -top-1.5 -right-1.5" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">ZenCoder</span>
+                              <span className="text-[10px] text-cyan-400/90 font-mono">IIT Delhi</span>
+                            </div>
+                          </div>
+                          {/* Rating Score Badge */}
+                          <span className="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-xs sm:text-sm font-black font-mono text-cyan-300">
+                            96
+                          </span>
+                        </div>
 
-                      {/* =========================================================================
-                          LAPTOP 2 (RIGHT): CodeRex (DTU Delhi • 84)
-                          Angled slightly left towards center duel
-                         ========================================================================= */}
-                      <div 
-                        style={{
-                          transform: 'perspective(900px) rotateY(-11deg) rotateX(4deg)',
-                          transformStyle: 'preserve-3d',
-                        }}
-                        className="flex flex-col items-center transition-transform duration-200"
-                      >
-                        {/* 1. LAPTOP SCREEN / LID */}
-                        <div className="w-full rounded-t-xl sm:rounded-t-2xl bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 p-1 sm:p-1.5 border border-slate-600/70 shadow-[0_15px_35px_rgba(0,0,0,0.9)]">
-                          
-                          {/* Top Center Webcam Dot */}
-                          <div className="w-1.5 h-1.5 rounded-full bg-slate-950 border border-slate-700 mx-auto mb-1 opacity-80" />
+                        {/* File Tab */}
+                        <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400 pt-0.5">
+                          <span className="text-cyan-400 font-bold">●</span>
+                          <span className="text-slate-200 font-medium">main.py</span>
+                          <span className="text-neutral-600">UTF-8</span>
+                        </div>
 
-                          {/* Screen Bezel & Display */}
-                          <div className="rounded-lg sm:rounded-xl bg-[#06080e] border border-purple-500/30 p-2 sm:p-3 flex flex-col gap-2 shadow-inner overflow-hidden">
-                            
-                            {/* Laptop Screen Top Header */}
-                            <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/70">
-                              <div className="flex items-center gap-1.5 sm:gap-2">
-                                <img
-                                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=faces"
-                                  alt="CodeRex"
-                                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-purple-400/80 object-cover"
-                                />
-                                <div className="flex flex-col">
-                                  <span className="text-[11px] sm:text-xs font-bold text-white leading-tight">CodeRex</span>
-                                  <span className="text-[9px] text-purple-400 font-mono hidden sm:inline">DTU Delhi</span>
-                                </div>
+                        {/* Real Code Editor with Line Numbers & Typing Animation */}
+                        <div className="rounded-lg bg-[#06080e] border border-neutral-800/90 p-2.5 sm:p-3 font-mono text-[11px] sm:text-[12px] leading-relaxed min-h-[140px] sm:min-h-[160px] flex gap-3 text-slate-300">
+                          {/* Line Numbers */}
+                          <div className="select-none text-neutral-600 font-mono text-right flex flex-col">
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                          </div>
+                          {/* Python Code Body with Animated Typing */}
+                          <div className="flex-1 font-mono whitespace-pre overflow-x-hidden">
+                            {currentLeftLines.map((line, i) => (
+                              <div key={i} className="text-cyan-200">
+                                {line.includes('def') ? (
+                                  <span>
+                                    <span className="text-pink-400 font-bold">def </span>
+                                    <span className="text-amber-300">solve</span>(n):
+                                  </span>
+                                ) : line.includes('return') ? (
+                                  <span>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-pink-400">return </span>
+                                    <span>n * 2</span>
+                                  </span>
+                                ) : line.includes('print') ? (
+                                  <span>
+                                    <span className="text-purple-400">print</span>(solve(21))
+                                  </span>
+                                ) : (
+                                  line
+                                )}
                               </div>
-                              {/* Score Badge */}
-                              <span className="px-1.5 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-[10px] sm:text-xs font-black font-mono text-purple-300">
-                                84
-                              </span>
-                            </div>
-
-                            {/* File Tab */}
-                            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-slate-400">
-                              <span className="text-purple-400 font-semibold">●</span>
-                              <span className="text-slate-300">main.py</span>
-                            </div>
-
-                            {/* Live Code Editor Screen */}
-                            <div className="rounded-md bg-[#04060a] border border-slate-800/80 p-2 font-mono text-[10px] sm:text-[11px] leading-relaxed min-h-[110px] sm:min-h-[135px] flex gap-2 sm:gap-2.5 text-slate-300">
-                              {/* Line Numbers */}
-                              <div className="select-none text-slate-600 font-mono text-right flex flex-col text-[10px]">
-                                <span>1</span>
-                                <span>2</span>
-                                <span>3</span>
-                                <span>4</span>
-                              </div>
-                              {/* Python Typing Animation */}
-                              <div className="flex-1 font-mono whitespace-pre overflow-x-hidden">
-                                {currentRightLines.map((line, i) => (
-                                  <div key={i} className="text-purple-200">
-                                    {line.includes('def') ? (
-                                      <span>
-                                        <span className="text-pink-400 font-bold">def </span>
-                                        <span className="text-amber-300">solve</span>(n):
-                                      </span>
-                                    ) : line.includes('return') ? (
-                                      <span>
-                                        &nbsp;&nbsp;<span className="text-pink-400">return </span>
-                                        <span>n + 1</span>
-                                      </span>
-                                    ) : line.includes('print') ? (
-                                      <span>
-                                        <span className="text-purple-400">print</span>(solve(21))
-                                      </span>
-                                    ) : (
-                                      line
-                                    )}
-                                  </div>
-                                ))}
-                                {/* Blinking Purple Cursor */}
-                                <span className="inline-block w-1 h-3 bg-purple-400 animate-pulse ml-0.5 align-middle" />
-                              </div>
-                            </div>
-
-                            {/* Test Results */}
-                            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-emerald-400 font-bold">
-                              <CheckCircle2 className={`w-3 h-3 text-emerald-400 ${rightPassedTests ? 'animate-bounce' : ''}`} />
-                              <span>All tests passed!</span>
-                            </div>
+                            ))}
+                            {/* Blinking Cyan Cursor */}
+                            <span className="inline-block w-1.5 h-3.5 bg-cyan-400 animate-pulse ml-0.5 align-middle" />
                           </div>
                         </div>
 
-                        {/* 2. LAPTOP HINGE */}
-                        <div className="w-[88%] h-1 sm:h-1.5 bg-slate-950 border-x border-slate-700/80 shadow-md" />
-
-                        {/* 3. LAPTOP KEYBOARD BASE (DECK) IN 3D PERSPECTIVE */}
-                        <div
-                          style={{
-                            transform: 'perspective(400px) rotateX(55deg)',
-                            transformOrigin: 'top center',
-                          }}
-                          className="w-full h-12 sm:h-16 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 rounded-b-xl border border-slate-700/90 p-1.5 sm:p-2 flex flex-col justify-between shadow-[0_15px_30px_rgba(0,0,0,0.95)]"
-                        >
-                          {/* Simulated Backlit Keyboard Rows */}
-                          <div className="flex flex-col gap-0.5 sm:gap-1 px-1">
-                            <div className="h-1 sm:h-1.5 w-full bg-slate-950/90 rounded border border-purple-500/20 shadow-[0_0_6px_rgba(168,85,247,0.3)]" />
-                            <div className="h-1 sm:h-1.5 w-full bg-slate-950/90 rounded border border-purple-500/20 shadow-[0_0_6px_rgba(168,85,247,0.3)]" />
-                            <div className="h-1 sm:h-1.5 w-3/4 mx-auto bg-slate-950/90 rounded border border-purple-500/20" />
-                          </div>
-
-                          {/* Metallic Glass Trackpad */}
-                          <div className="w-8 sm:w-12 h-2.5 sm:h-3.5 mx-auto bg-slate-950/80 rounded border border-slate-700/60 shadow-inner" />
+                        {/* Test Case Result Pill */}
+                        <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-emerald-400 font-bold pt-1">
+                          <CheckCircle2 className={`w-3.5 h-3.5 text-emerald-400 ${leftPassedTests ? 'animate-bounce' : ''}`} />
+                          <span>All tests passed! (3/3)</span>
                         </div>
-
-                        {/* 4. UNDERGLOW NEON DESK REFLECTION */}
-                        <div className="w-[90%] h-2.5 bg-purple-500/20 blur-md rounded-full mt-0.5" />
                       </div>
 
+                      {/* ================= RIGHT IDE: CodeRex (84) ================= */}
+                      <div className="flex flex-col gap-2 rounded-xl bg-[#0d111a] border border-neutral-800 p-3 sm:p-4 shadow-lg">
+                        
+                        {/* macOS Window Titlebar & Fighter Info */}
+                        <div className="flex items-center justify-between pb-2 border-b border-neutral-800/80">
+                          <div className="flex items-center gap-2">
+                            {/* Window Dots */}
+                            <div className="flex items-center gap-1 mr-1">
+                              <span className="w-2 h-2 rounded-full bg-rose-500/80" />
+                              <span className="w-2 h-2 rounded-full bg-amber-500/80" />
+                              <span className="w-2 h-2 rounded-full bg-emerald-500/80" />
+                            </div>
+                            {/* Avatar */}
+                            <img
+                              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=faces"
+                              alt="CodeRex"
+                              className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-purple-400/80 object-cover"
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">CodeRex</span>
+                              <span className="text-[10px] text-purple-400/90 font-mono">DTU Delhi</span>
+                            </div>
+                          </div>
+                          {/* Rating Score Badge */}
+                          <span className="px-2 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-xs sm:text-sm font-black font-mono text-purple-300">
+                            84
+                          </span>
+                        </div>
+
+                        {/* File Tab */}
+                        <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400 pt-0.5">
+                          <span className="text-purple-400 font-bold">●</span>
+                          <span className="text-slate-200 font-medium">main.py</span>
+                          <span className="text-neutral-600">UTF-8</span>
+                        </div>
+
+                        {/* Real Code Editor with Line Numbers & Typing Animation */}
+                        <div className="rounded-lg bg-[#06080e] border border-neutral-800/90 p-2.5 sm:p-3 font-mono text-[11px] sm:text-[12px] leading-relaxed min-h-[140px] sm:min-h-[160px] flex gap-3 text-slate-300">
+                          {/* Line Numbers */}
+                          <div className="select-none text-neutral-600 font-mono text-right flex flex-col">
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                          </div>
+                          {/* Python Code Body with Animated Typing */}
+                          <div className="flex-1 font-mono whitespace-pre overflow-x-hidden">
+                            {currentRightLines.map((line, i) => (
+                              <div key={i} className="text-purple-200">
+                                {line.includes('def') ? (
+                                  <span>
+                                    <span className="text-pink-400 font-bold">def </span>
+                                    <span className="text-amber-300">solve</span>(n):
+                                  </span>
+                                ) : line.includes('return') ? (
+                                  <span>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-pink-400">return </span>
+                                    <span>n + 1</span>
+                                  </span>
+                                ) : line.includes('print') ? (
+                                  <span>
+                                    <span className="text-purple-400">print</span>(solve(21))
+                                  </span>
+                                ) : (
+                                  line
+                                )}
+                              </div>
+                            ))}
+                            {/* Blinking Purple Cursor */}
+                            <span className="inline-block w-1.5 h-3.5 bg-purple-400 animate-pulse ml-0.5 align-middle" />
+                          </div>
+                        </div>
+
+                        {/* Test Case Result Pill */}
+                        <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-emerald-400 font-bold pt-1">
+                          <CheckCircle2 className={`w-3.5 h-3.5 text-emerald-400 ${rightPassedTests ? 'animate-bounce' : ''}`} />
+                          <span>All tests passed! (3/3)</span>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Monitor Bottom Accent Strip */}
+                    <div className="h-1 bg-gradient-to-r from-cyan-500 via-amber-400 to-purple-500 opacity-70" />
                   </div>
+                </Link>
 
-                  {/* Desktop Arena Bottom Accent Strip */}
-                  <div className="h-1 bg-gradient-to-r from-cyan-500 via-amber-400 to-purple-500 opacity-60" />
+                {/* Realistic Monitor Desk Stand Stem & Aluminum Base */}
+                <div className="flex flex-col items-center">
+                  {/* Stem */}
+                  <div className="w-16 h-4 bg-gradient-to-b from-neutral-800 to-neutral-900 border-x border-neutral-700 shadow-md" />
+                  {/* Flat Studio Aluminum Base */}
+                  <div className="w-48 h-2 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 rounded-full border border-neutral-600/70 shadow-[0_15px_35px_rgba(0,0,0,0.95)]" />
                 </div>
-              </Link>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -593,7 +512,7 @@ export function LandingHero() {
         transition={{ duration: 0.6, delay: 0.35 }}
         className="relative z-10 w-full max-w-[1550px] mx-auto mt-6 sm:mt-8"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 p-2 sm:p-2.5 rounded-2xl bg-black/80 border border-white/10 backdrop-blur-2xl shadow-[0_15px_40px_rgba(0,0,0,0.85)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2 sm:p-2.5 rounded-2xl bg-[#0c0f18]/90 border border-white/10 backdrop-blur-2xl shadow-[0_15px_40px_rgba(0,0,0,0.85)]">
           
           {/* Feature Pill 1: Real-time Coding Battle */}
           <Link
