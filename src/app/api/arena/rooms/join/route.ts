@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { joinPlayerToRoom, getRoom } from '@/lib/arena/roomStorage';
+import { joinPlayerToRoom, getRoom, normalizeRoomCode } from '@/lib/arena/roomStorage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -15,16 +15,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Room code or link is required' }, { status: 400 });
     }
 
-    // Extract code if user pasted a full URL (e.g. "https://kollabrix.in/arena?room=KBX-4634")
-    let cleanCode = String(code).trim();
-    if (cleanCode.includes('room=')) {
-      const match = cleanCode.match(/room=([A-Za-z0-9-]+)/);
-      if (match && match[1]) cleanCode = match[1];
-    } else if (cleanCode.includes('#join-')) {
-      cleanCode = cleanCode.split('#join-')[1];
+    const cleanCode = normalizeRoomCode(String(code));
+    if (!cleanCode) {
+      return NextResponse.json({ success: false, error: 'Please enter a valid room code or link' }, { status: 400 });
     }
-
-    cleanCode = cleanCode.replace(/\s+/g, '-').toUpperCase();
 
     const playerName = player?.name?.trim() || 'RivalCoder';
     const avatarIdx = Number(player?.avatarIdx) || 1;

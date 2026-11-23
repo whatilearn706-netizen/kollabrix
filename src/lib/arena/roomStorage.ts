@@ -115,21 +115,83 @@ export async function getAllActiveRooms(): Promise<Record<string, ArenaRoom>> {
 }
 
 /**
- * Get a specific room by code (e.g. KBX-4634)
+ * Normalizes input room codes, links, or digits into the canonical format (e.g. KBX-4634)
+ */
+export function normalizeRoomCode(raw: string): string {
+  if (!raw) return '';
+  let code = String(raw).trim();
+
+  // 1. Extract from full or relative URLs
+  if (code.includes('room=')) {
+    const match = code.match(/room=([A-Za-z0-9-]+)/i);
+    if (match && match[1]) code = match[1];
+  } else if (code.includes('#join-')) {
+    code = code.split('#join-')[1];
+  } else if (code.includes('/arena/')) {
+    const parts = code.split('/arena/');
+    if (parts[1]) code = parts[1].split(/[?#]/)[0];
+  }
+
+  // 2. Clean extra characters & whitespace
+  code = code.replace(/\s+/g, '-').replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
+
+  // 3. If user entered just 3 to 6 digits (e.g. "7396" or "4634")
+  if (/^\d{3,6}$/.test(code)) {
+    code = `KBX-${code}`;
+  }
+  // 4. If user entered "KBX" followed directly by digits without hyphen (e.g. "KBX7396")
+  else if (/^KBX\d+$/i.test(code)) {
+    code = `KBX-${code.slice(3)}`;
+  }
+
+  return code;
+}
+
+/**
+ * Get a specific room by code (e.g. KBX-4634, or 4-digit 4634, or invite URL)
  */
 export async function getRoom(code: string): Promise<ArenaRoom | null> {
   if (!code) return null;
-  const cleanCode = code.trim().toUpperCase();
+  const rawClean = code.trim().toUpperCase();
+  const normalized = normalizeRoomCode(code);
 
   // Always query database first to get authoritative shared state across all serverless containers
   const allRooms = await getAllActiveRooms();
-  if (allRooms[cleanCode]) {
-    return allRooms[cleanCode];
+
+  // 1. Exact match on normalized code (e.g. "KBX-7396")
+  if (normalized && allRooms[normalized]) {
+    return allRooms[normalized];
+  }
+
+  // 2. Exact match on raw clean code
+  if (allRooms[rawClean]) {
+    return allRooms[rawClean];
+  }
+
+  // 3. Suffix / digit matching for partial inputs (e.g. student typed "7396" for room "KBX-7396")
+  const inputDigits = rawClean.replace(/\D/g, '');
+  if (inputDigits.length >= 3) {
+    const matchedRoom = Object.values(allRooms).find((r) => {
+      if (!r || !r.code) return false;
+      const roomDigits = r.code.replace(/\D/g, '');
+      return (
+        roomDigits === inputDigits ||
+        r.code.toUpperCase() === normalized ||
+        r.code.toUpperCase().endsWith(`-${inputDigits}`) ||
+        r.code.replace(/[^A-Za-z0-9]/g, '').toUpperCase() === rawClean.replace(/[^A-Za-z0-9]/g, '')
+      );
+    });
+    if (matchedRoom) {
+      return matchedRoom;
+    }
   }
 
   // Fallback to memory cache
-  if (MEMORY_ROOMS.has(cleanCode)) {
-    return MEMORY_ROOMS.get(cleanCode)!;
+  if (normalized && MEMORY_ROOMS.has(normalized)) {
+    return MEMORY_ROOMS.get(normalized)!;
+  }
+  if (MEMORY_ROOMS.has(rawClean)) {
+    return MEMORY_ROOMS.get(rawClean)!;
   }
 
   return null;
@@ -229,10 +291,10 @@ export async function joinPlayerToRoom(
 ): Promise<{ success: boolean; room?: ArenaRoom; error?: string }> {
   const room = await getRoom(roomCode);
   if (!room) {
-    return { success: false, error: `Room ${roomCode.toUpperCase()} not found. Please verify the code or link.` };
+    return { success: false, error: `Room "${roomCode}" was not found or has expired. Please verify the code or link.` };
   }
 
-  const cleanCode = roomCode.trim().toUpperCase();
+  const cleanCode = room.code.trim().toUpperCase();
   const now = new Date().toISOString();
 
   // Deduplication check: Is this specific player already in alpha or omega?

@@ -1551,26 +1551,31 @@ export function FullArenaExperience({
 
   // Join existing room by code or invite link
   const handleJoinWithCodeOrLink = async (codeToJoin?: string) => {
-    if (!user) {
-      setJoinError('Sign-in required: Please log in or sign up to join this duel.');
-      openAuthModal('login');
-      return;
-    }
-
     let raw = (codeToJoin || joinCodeInput).trim();
     if (!raw) {
-      setJoinError('Please enter a room code (e.g. KBX-4634) or paste an invite link.');
+      setJoinError('Please enter a room code (e.g. KBX-4634 or 4634) or paste an invite link.');
       return;
     }
 
     if (raw.includes('room=')) {
-      const match = raw.match(/room=([A-Za-z0-9-]+)/);
+      const match = raw.match(/room=([A-Za-z0-9-]+)/i);
       if (match && match[1]) raw = match[1];
     } else if (raw.includes('#join-')) {
       raw = raw.split('#join-')[1];
+    } else if (raw.includes('/arena/')) {
+      const parts = raw.split('/arena/');
+      if (parts[1]) raw = parts[1].split(/[?#]/)[0];
     }
 
-    raw = raw.toUpperCase();
+    raw = raw.replace(/\s+/g, '-').replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
+    if (/^\d{3,6}$/.test(raw)) {
+      raw = `KBX-${raw}`;
+    } else if (/^KBX\d+$/i.test(raw)) {
+      raw = `KBX-${raw.slice(3)}`;
+    }
+
+    const activePlayerName = playerName || profile?.display_name || user?.user_metadata?.full_name || 'ClassmateRival';
+
     setIsJoiningRoom(true);
     setJoinError(null);
 
@@ -1582,7 +1587,7 @@ export function FullArenaExperience({
           code: raw,
           player: {
             id: myPlayerId,
-            name: playerName,
+            name: activePlayerName,
             avatarIdx: selectedAvatarIdx,
           },
         }),
@@ -1627,7 +1632,7 @@ export function FullArenaExperience({
                 type: 'broadcast',
                 event: 'player_joined',
                 payload: {
-                  name: playerName,
+                  name: activePlayerName,
                   team: 'omega',
                   playerId: myPlayerId,
                 },
@@ -1646,6 +1651,7 @@ export function FullArenaExperience({
           });
         } catch {}
 
+        setShowJoinModal(false); // Cleanly close modal only on success
         setStep(3); // Directly into Lobby!
       } else {
         setJoinError(data.error || `Room "${raw}" was not found or has expired. Please verify with your friend.`);
@@ -3529,17 +3535,19 @@ export function FullArenaExperience({
                       <input
                         type="text"
                         value={joinCodeInput}
-                        onChange={(e) => setJoinCodeInput(e.target.value)}
+                        onChange={(e) => {
+                          setJoinCodeInput(e.target.value);
+                          if (joinError) setJoinError(null);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            if (joinCodeInput.trim()) {
+                            if (joinCodeInput.trim() && !isJoiningRoom) {
                               handleJoinWithCodeOrLink();
-                              setShowJoinModal(false);
                             }
                           }
                         }}
-                        placeholder="e.g. KBX-4634 or https://kollabrix.in/arena?room=..."
+                        placeholder="e.g. KBX-4634, 4634, or invite link"
                         className="w-full px-4 py-3 rounded-xl bg-black border border-white/[0.12] text-amber-300 font-mono text-sm focus:border-amber-400 focus:outline-none tracking-wider placeholder:text-slate-600 shadow-inner"
                       />
                     </div>
@@ -3566,16 +3574,20 @@ export function FullArenaExperience({
                       disabled={isJoiningRoom || !joinCodeInput.trim()}
                       onClick={() => {
                         handleJoinWithCodeOrLink();
-                        setShowJoinModal(false);
                       }}
                       className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
                       {isJoiningRoom ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Connecting...</span>
+                        </>
                       ) : (
-                        <Play className="w-4 h-4 fill-current" />
+                        <>
+                          <Play className="w-4 h-4 fill-current" />
+                          <span>Enter Room &amp; Battle</span>
+                        </>
                       )}
-                      <span>Enter Room &amp; Battle</span>
                     </button>
                   </div>
                 </div>

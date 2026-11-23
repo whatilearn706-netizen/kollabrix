@@ -429,17 +429,7 @@ export function HackathonCard({
               </Button>
             </Link>
           ) : externalRegUrl ? (
-            <a
-              href={
-                /^https?:\/\//i.test(externalRegUrl.trim())
-                  ? externalRegUrl.trim()
-                  : `https://${externalRegUrl.trim()}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex-1 block"
-            >
+            <Link href={`/hackathons/${hackathon.id}`} className="flex-1 block">
               <button
                 type="button"
                 style={!isSponsored ? { backgroundColor: theme.brandColor } : undefined}
@@ -449,10 +439,10 @@ export function HackathonCard({
                     : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 text-white hover:opacity-95'
                 }`}
               >
-                <span>{sponsoredMeta.customCtaText || 'Register on Official Site'}</span>
+                <span>{sponsoredMeta.customCtaText || 'Register on Unstop'}</span>
                 <ExternalLink className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-200" />
               </button>
-            </a>
+            </Link>
           ) : (
             <Link href={`/hackathons/${hackathon.id}`} className="flex-1">
               <button
@@ -483,17 +473,6 @@ export function HackathonCard({
               </button>
             </Link>
           )}
-
-          {/* Details toggle */}
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            style={{ borderColor: theme.borderColor, color: theme.mutedTextColor }}
-            className="p-2 rounded-xl border hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all duration-150 shrink-0"
-            title={isExpanded ? 'Show Less' : 'View Rules & Rubric'}
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
         </div>
       </div>
     </div>
