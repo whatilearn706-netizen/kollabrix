@@ -360,6 +360,10 @@ export interface Hackathon {
   sponsor_website_url?: string;
   submission_cutoff?: string;
   result_announcement?: string;
+  custom_timeline?: any[];
+  customTimeline?: any[];
+  rawDescription?: string;
+  tracks?: any[];
   enable_recruiter_qr_pass?: boolean;
   enableRecruiterQrPass?: boolean;
 }

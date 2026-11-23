@@ -51,7 +51,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { extractSponsoredMeta } from '@/lib/hackathons/sponsoredMeta';
+import { extractSponsoredMeta, CustomTimelineStage } from '@/lib/hackathons/sponsoredMeta';
 import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModal';
 
 /**
@@ -81,17 +81,54 @@ function formatShortDate(dateStr?: string | null): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function parseCustomOrIsoDate(dateStr?: string | null): Date | null {
+  if (!dateStr || !dateStr.trim()) return null;
+  const trimmed = dateStr.trim();
+
+  // Handle DD/MM/YYYY or DD-MM-YYYY formats with optional time:
+  // e.g. "26/11/2026 11:59 PM" or "02/12/2026 6:00 PM" or "26/11/2026, 11:59 PM"
+  const ddmmyyyyMatch = trimmed.match(
+    /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})(?:(?:\s+|[•,at\s]+)(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([APap][Mm]))?)?/
+  );
+
+  if (ddmmyyyyMatch) {
+    const day = parseInt(ddmmyyyyMatch[1], 10);
+    const month = parseInt(ddmmyyyyMatch[2], 10) - 1;
+    const year = parseInt(ddmmyyyyMatch[3], 10);
+    let hour = ddmmyyyyMatch[4] ? parseInt(ddmmyyyyMatch[4], 10) : 0;
+    const min = ddmmyyyyMatch[5] ? parseInt(ddmmyyyyMatch[5], 10) : 0;
+    const sec = ddmmyyyyMatch[6] ? parseInt(ddmmyyyyMatch[6], 10) : 0;
+    const ampm = ddmmyyyyMatch[7] ? ddmmyyyyMatch[7].toUpperCase() : null;
+
+    if (ampm === 'PM' && hour < 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+  }
+
+  // Try standard ISO/RFC parsing
+  const isoDate = new Date(trimmed);
+  if (!isNaN(isoDate.getTime())) {
+    return isoDate;
+  }
+
+  return null;
+}
+
 function formatMilestoneDate(dateStr?: string | null): string {
   if (!dateStr || !dateStr.trim()) return 'TBA';
   const trimmed = dateStr.trim();
-  const d = new Date(trimmed);
-  if (!isNaN(d.getTime())) {
-    const dateFormatted = d.toLocaleDateString(undefined, {
-      month: 'short',
+  const parsed = parseCustomOrIsoDate(trimmed);
+  if (parsed) {
+    const dateFormatted = parsed.toLocaleDateString('en-GB', {
       day: 'numeric',
+      month: 'short',
       year: 'numeric',
     });
-    const timeFormatted = d.toLocaleTimeString(undefined, {
+    const timeFormatted = parsed.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -102,12 +139,42 @@ function formatMilestoneDate(dateStr?: string | null): string {
 }
 
 const milestoneColorClasses = [
-  { border: 'border-brand-500 text-brand-400', badge: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  { border: 'border-emerald-500 text-emerald-400', badge: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-  { border: 'border-purple-500 text-purple-400', badge: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-  { border: 'border-amber-500 text-amber-400 shadow-sm shadow-amber-500/20', badge: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  { border: 'border-cyan-500 text-cyan-400', badge: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
-  { border: 'border-rose-500 text-rose-400', badge: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+  {
+    orb: 'bg-cyan-500/15 border-2 border-cyan-400 text-cyan-300 shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)]',
+    badge: 'text-cyan-300 bg-cyan-950/80 border-cyan-800/80',
+    cardBorder: 'border-cyan-900/30 hover:border-cyan-500/50',
+    accentText: 'text-cyan-400',
+  },
+  {
+    orb: 'bg-purple-500/15 border-2 border-purple-400 text-purple-300 shadow-[0_0_15px_-3px_rgba(168,85,247,0.3)]',
+    badge: 'text-purple-300 bg-purple-950/80 border-purple-800/80',
+    cardBorder: 'border-purple-900/30 hover:border-purple-500/50',
+    accentText: 'text-purple-400',
+  },
+  {
+    orb: 'bg-amber-500/15 border-2 border-amber-400 text-amber-300 shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)]',
+    badge: 'text-amber-300 bg-amber-950/80 border-amber-800/80',
+    cardBorder: 'border-amber-900/30 hover:border-amber-500/50',
+    accentText: 'text-amber-400',
+  },
+  {
+    orb: 'bg-emerald-500/15 border-2 border-emerald-400 text-emerald-300 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]',
+    badge: 'text-emerald-300 bg-emerald-950/80 border-emerald-800/80',
+    cardBorder: 'border-emerald-900/30 hover:border-emerald-500/50',
+    accentText: 'text-emerald-400',
+  },
+  {
+    orb: 'bg-rose-500/15 border-2 border-rose-400 text-rose-300 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]',
+    badge: 'text-rose-300 bg-rose-950/80 border-rose-800/80',
+    cardBorder: 'border-rose-900/30 hover:border-rose-500/50',
+    accentText: 'text-rose-400',
+  },
+  {
+    orb: 'bg-blue-500/15 border-2 border-blue-400 text-blue-300 shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)]',
+    badge: 'text-blue-300 bg-blue-950/80 border-blue-800/80',
+    cardBorder: 'border-blue-900/30 hover:border-blue-500/50',
+    accentText: 'text-blue-400',
+  },
 ];
 
 
@@ -169,6 +236,9 @@ export default function HackathonDetailPage() {
               sponsor_website_url: meta.sponsor_website_url || (hack as any).sponsor_website_url,
               submission_cutoff: meta.submission_cutoff || (hack as any).submission_cutoff,
               result_announcement: meta.result_announcement || (hack as any).result_announcement,
+              custom_timeline: meta.custom_timeline || meta.customTimeline || (hack as any).custom_timeline,
+              customTimeline: meta.custom_timeline || meta.customTimeline || (hack as any).customTimeline,
+              rawDescription: hack.description,
               enable_recruiter_qr_pass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (hack as any).enable_recruiter_qr_pass ?? (hack as any).enableRecruiterQrPass),
               enableRecruiterQrPass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (hack as any).enable_recruiter_qr_pass ?? (hack as any).enableRecruiterQrPass),
               tagline: meta.tagline || (hack as any).tagline,
@@ -341,6 +411,10 @@ export default function HackathonDetailPage() {
               sponsor_website_url: meta.sponsor_website_url || (currentHack as any).sponsor_website_url,
               submission_cutoff: meta.submission_cutoff || (currentHack as any).submission_cutoff,
               result_announcement: meta.result_announcement || (currentHack as any).result_announcement,
+              custom_timeline: meta.custom_timeline || meta.customTimeline || (currentHack as any).custom_timeline,
+              customTimeline: meta.custom_timeline || meta.customTimeline || (currentHack as any).customTimeline,
+              tracks: meta.tracks || currentHack.tracks,
+              rawDescription: currentHack.description,
               enable_recruiter_qr_pass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (currentHack as any).enable_recruiter_qr_pass ?? (currentHack as any).enableRecruiterQrPass),
               enableRecruiterQrPass: Boolean(meta.enable_recruiter_qr_pass ?? meta.enableRecruiterQrPass ?? (currentHack as any).enable_recruiter_qr_pass ?? (currentHack as any).enableRecruiterQrPass),
               tagline: meta.tagline || currentHack.tagline,
@@ -472,6 +546,53 @@ export default function HackathonDetailPage() {
   const sponsoredMeta = useMemo(() => {
     return extractSponsoredMeta(hackathon);
   }, [hackathon]);
+
+  // Dynamic Timeline Stages with Fallback Defaults
+  const timelineStages: CustomTimelineStage[] = useMemo(() => {
+    if (Array.isArray(sponsoredMeta.customTimeline) && sponsoredMeta.customTimeline.length > 0) {
+      return sponsoredMeta.customTimeline;
+    }
+    if (Array.isArray((hackathon as any)?.custom_timeline) && (hackathon as any).custom_timeline.length > 0) {
+      return (hackathon as any).custom_timeline;
+    }
+    if (Array.isArray((hackathon as any)?.customTimeline) && (hackathon as any).customTimeline.length > 0) {
+      return (hackathon as any).customTimeline;
+    }
+    return [
+      {
+        title: 'Registration Deadline',
+        date: hackathon?.registration_deadline ? formatEventDateTime(hackathon.registration_deadline) : '',
+        description: 'All builders must register and finalize squad rosters before this deadline.',
+      },
+      {
+        title: 'Hackathon Opening Ceremony & Sprint Start',
+        date: hackathon?.start_date ? formatEventDateTime(hackathon.start_date) : '',
+        description: 'Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.',
+      },
+      {
+        title: 'Deliverable Submission Deadline',
+        date: hackathon?.submission_deadline
+          ? formatEventDateTime(hackathon.submission_deadline)
+          : (hackathon as any)?.submissionDeadline
+          ? formatEventDateTime((hackathon as any).submissionDeadline)
+          : hackathon?.end_date
+          ? formatEventDateTime(hackathon.end_date)
+          : 'Sprint Finale',
+        description: 'Submit repository link, architecture demo video, and interactive prototype for jury review.',
+      },
+      {
+        title: 'Result Declared & Winners Announced',
+        date: hackathon?.results_date
+          ? formatEventDateTime(hackathon.results_date)
+          : (hackathon as any)?.resultsDate
+          ? formatEventDateTime((hackathon as any).resultsDate)
+          : hackathon?.end_date
+          ? formatEventDateTime(hackathon.end_date)
+          : 'To Be Announced',
+        description: 'Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.',
+      },
+    ];
+  }, [sponsoredMeta.customTimeline, hackathon]);
 
   // External Registration Detection: When registration occurs on an external portal (Unstop, Devfolio, Google Forms, official site)
   const externalRegistrationUrl = useMemo(() => {
@@ -1616,136 +1737,110 @@ export default function HackathonDetailPage() {
 
             {activeTab === 'schedule' && (
               <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-6">
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-cyan-400" />
-                    <span>Official Timeline &amp; Milestones</span>
-                  </h3>
-                  <p className="text-xs text-slate-300 font-medium mt-1">
-                    Stay aligned with key submission cut-offs, mentor reviews, and jury evaluations.
-                  </p>
+                <div className="flex items-center justify-between gap-4 flex-wrap border-b border-charcoal-800/80 pb-4">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-cyan-400" />
+                      <span>Official Timeline &amp; Milestones</span>
+                    </h3>
+                    <p className="text-xs text-slate-300 font-medium mt-1">
+                      Key submission cut-offs, mentor reviews, and jury evaluations organized by phase.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-800/60 px-3 py-1 rounded-xl">
+                    {timelineStages.length} Stages • Verified Schedule
+                  </span>
                 </div>
 
-                <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-charcoal-800">
-                  {sponsoredMeta.customTimeline && sponsoredMeta.customTimeline.length > 0 ? (
-                    sponsoredMeta.customTimeline.map((stage, idx) => {
-                      const colorStyle = milestoneColorClasses[idx % milestoneColorClasses.length];
-                      return (
-                        <div key={idx} className="relative flex items-start gap-4">
+                <div className="space-y-4 sm:space-y-5 relative before:absolute before:inset-0 before:left-4 sm:before:left-5 before:w-0.5 before:bg-gradient-to-b before:from-cyan-500/50 before:via-purple-500/30 before:to-transparent">
+                  {timelineStages.map((stage, idx) => {
+                    const colorStyle = milestoneColorClasses[idx % milestoneColorClasses.length];
+                    const parsedDate = parseCustomOrIsoDate(stage.date);
+                    const formattedDate = formatMilestoneDate(stage.date);
+                    const isPassed = parsedDate ? parsedDate.getTime() < Date.now() : false;
+                    const isNextUpcoming =
+                      !isPassed &&
+                      (idx === 0 ||
+                        (parseCustomOrIsoDate(timelineStages[idx - 1]?.date)?.getTime() || 0) < Date.now());
+
+                    return (
+                      <div key={idx} className="relative flex items-start gap-3.5 sm:gap-5 group">
+                        {/* Step Number Orb */}
+                        <div className="relative shrink-0">
                           <div
-                            className={`w-7 h-7 rounded-full bg-charcoal-900 border-2 ${colorStyle.border} flex items-center justify-center text-xs font-bold shrink-0 z-10`}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl ${colorStyle.orb} flex items-center justify-center text-xs sm:text-sm font-black z-10`}
                           >
                             {idx + 1}
                           </div>
-                          <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 hover:border-charcoal-700/80 transition-colors">
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <h4 className="text-xs sm:text-sm font-bold text-white">{stage.title}</h4>
-                              {stage.date && (
-                                <span
-                                  className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border ${colorStyle.badge}`}
-                                >
-                                  {formatMilestoneDate(stage.date)}
+                        </div>
+
+                        {/* Milestone Card */}
+                        <div
+                          className={`flex-1 p-4 sm:p-5 rounded-2xl bg-charcoal-950/90 border ${colorStyle.cardBorder} transition-all space-y-3 shadow-md hover:shadow-lg`}
+                        >
+                          {/* Row 1: Stage Tag, Status badge, Date & Time badge */}
+                          <div className="flex items-center justify-between gap-2.5 flex-wrap border-b border-charcoal-850/80 pb-2.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className={`text-[10px] uppercase font-mono font-bold px-2.5 py-0.5 rounded-md border ${colorStyle.badge}`}
+                              >
+                                Stage {idx + 1}
+                              </span>
+
+                              {isPassed && (
+                                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>Concluded</span>
+                                </span>
+                              )}
+
+                              {isNextUpcoming && (
+                                <span className="text-[10px] font-mono text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-bold shadow-sm shadow-amber-500/20">
+                                  <Clock className="w-3 h-3 text-amber-400" />
+                                  <span>Active Stage</span>
+                                </span>
+                              )}
+
+                              {!isPassed && !isNextUpcoming && (
+                                <span className="text-[10px] font-mono text-slate-400 bg-charcoal-900 border border-charcoal-800 px-2 py-0.5 rounded-full">
+                                  Upcoming
                                 </span>
                               )}
                             </div>
-                            {stage.description && (
-                              <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
-                                {stage.description}
-                              </p>
+
+                            {/* Date Badge */}
+                            {formattedDate && (
+                              <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-slate-200 bg-charcoal-900/90 px-3 py-1 rounded-xl border border-charcoal-800">
+                                <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                <span>{formattedDate}</span>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <>
-                      {/* Step 1: Registration Deadline */}
-                      <div className="relative flex items-start gap-4">
-                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-brand-500 text-brand-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
-                          1
-                        </div>
-                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 className="text-xs font-bold text-white">Registration Deadline</h4>
-                            <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                              {formatEventDateTime(hackathon.registration_deadline)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
-                            All builders must register and finalize squad rosters before this deadline.
-                          </p>
-                        </div>
-                      </div>
 
-                      {/* Step 2: Hackathon Kickoff */}
-                      <div className="relative flex items-start gap-4">
-                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
-                          2
-                        </div>
-                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 className="text-xs font-bold text-white">Hackathon Opening Ceremony &amp; Sprint Start</h4>
-                            <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                              {formatEventDateTime(hackathon.start_date)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
-                            Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Step 3: Project Submissions */}
-                      <div className="relative flex items-start gap-4">
-                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-purple-500 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
-                          3
-                        </div>
-                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 className="text-xs font-bold text-white">Deliverable Submission Deadline</h4>
-                            <span className="text-[10px] font-mono text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
-                              {hackathon.submission_deadline
-                                ? formatEventDateTime(hackathon.submission_deadline)
-                                : (hackathon as any).submissionDeadline
-                                ? formatEventDateTime((hackathon as any).submissionDeadline)
-                                : hackathon.end_date
-                                ? formatEventDateTime(hackathon.end_date)
-                                : 'Sprint Finale'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
-                            Submit repository link, architecture demo video, and interactive prototype for jury review.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Step 4: Result Declared & Winners Announced */}
-                      <div className="relative flex items-start gap-4">
-                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-amber-500 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0 z-10 shadow-sm shadow-amber-500/20">
-                          4
-                        </div>
-                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                              <span>Result Declared &amp; Winners Announced</span>
+                          {/* Row 2: Milestone Title */}
+                          <div>
+                            <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                              {stage.title}
                             </h4>
-                            <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                              {hackathon.results_date
-                                ? formatEventDateTime(hackathon.results_date)
-                                : (hackathon as any).resultsDate
-                                ? formatEventDateTime((hackathon as any).resultsDate)
-                                : hackathon.end_date
-                                ? formatEventDateTime(hackathon.end_date)
-                                : 'To Be Announced'}
-                            </span>
                           </div>
-                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
-                            Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.
-                          </p>
+
+                          {/* Row 3: Description / Instructions */}
+                          {stage.description && (
+                            <div className="p-3 sm:p-3.5 rounded-xl bg-charcoal-900/60 border border-charcoal-850/80">
+                              <div className="flex items-start gap-2">
+                                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mt-0.5">
+                                  Instructions:
+                                </span>
+                                <p className="text-xs sm:text-[13px] text-slate-300 font-normal leading-relaxed">
+                                  {stage.description}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </>
-                  )}
+                    );
+                  })}
                 </div>
               </div>
             )}

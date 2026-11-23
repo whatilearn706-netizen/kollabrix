@@ -255,13 +255,15 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   );
 
   // Extract from HTML meta comment if present
-  if (
-    hackathon?.description &&
-    typeof hackathon.description === 'string' &&
-    hackathon.description.includes('<!-- HACKATHON_META:')
-  ) {
+  const descSource = (typeof hackathon?.rawDescription === 'string' && hackathon.rawDescription.includes('<!-- HACKATHON_META:'))
+    ? hackathon.rawDescription
+    : (typeof hackathon?.description === 'string' && hackathon.description.includes('<!-- HACKATHON_META:'))
+    ? hackathon.description
+    : null;
+
+  if (descSource) {
     try {
-      const rawMeta = hackathon.description.split('<!-- HACKATHON_META:')[1]?.split('-->')[0];
+      const rawMeta = descSource.split('<!-- HACKATHON_META:')[1]?.split('-->')[0];
       if (rawMeta) {
         const parsed = JSON.parse(rawMeta);
         if (parsed.is_sponsored || parsed.is_enterprise) isSponsored = true;

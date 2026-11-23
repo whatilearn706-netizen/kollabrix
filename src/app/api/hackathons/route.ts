@@ -114,6 +114,13 @@ export async function GET(request: NextRequest) {
         tagline: meta.tagline || h.tagline,
         promo_video_url: meta.promoVideoUrl || h.promo_video_url,
         custom_cta_text: meta.customCtaText || h.custom_cta_text,
+        custom_timeline: meta.customTimeline || h.custom_timeline || null,
+        customTimeline: meta.customTimeline || h.customTimeline || null,
+        submission_cutoff: meta.submissionCutoff || h.submission_cutoff || null,
+        result_announcement: meta.resultAnnouncement || h.result_announcement || null,
+        registration_url: meta.registrationUrl || h.registration_url || null,
+        external_registration_url: meta.externalRegistrationUrl || h.external_registration_url || null,
+        is_external_registration: Boolean(meta.isExternalRegistration || h.is_external_registration),
       };
     };
 
