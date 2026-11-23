@@ -304,8 +304,8 @@ export function LandingHero() {
       className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
-          MOTION VIDEO HERO BACKGROUND (Pinterest Reference Style: https://pin.it/3r2fGkahv)
-          Celestial Cosmos Horizon with Glowing Planet Crescent, Cometary Flare & Stardust
+          MOTION VIDEO HERO BACKGROUND (Pinterest Reference Style: https://pin.it/299AB5ISY)
+          Dark fluted titanium architectural wall with glowing dot-matrix vortex video
          ========================================================================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
         {/* Full-width Motion Reference Video Loop */}
@@ -315,16 +315,17 @@ export function LandingHero() {
           muted
           playsInline
           preload="auto"
-          poster="/brand/hero-celestial-poster.webp"
-          className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.05]"
+          poster="/brand/hero-bg-pinterest-reference.webp"
+          className="w-full h-full object-cover object-center filter brightness-[1.08] contrast-[1.05]"
         >
-          <source src="/videos/hero-celestial-cosmos.mp4" type="video/mp4" />
+          <source src="/videos/hero-dot-matrix-vortex.mp4" type="video/mp4" />
+          <source src="/videos/hero-background-pinterest.mp4" type="video/mp4" />
         </video>
 
         {/* Fallback Poster Image if Video is loading / suspended */}
         <img
-          src="/brand/hero-celestial-poster.webp"
-          alt=""
+          src="/brand/hero-bg-pinterest-reference.webp"
+          alt="Modern AI Startup Dark Atmosphere"
           className="absolute inset-0 w-full h-full object-cover object-center -z-10 opacity-60"
         />
 
