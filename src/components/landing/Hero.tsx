@@ -183,18 +183,25 @@ export function LandingHero() {
       className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
-          PURE BLACK STUDIO ATMOSPHERE (Lorenzo Lottici Awwwards Reference)
-          Minimal dark smoke, luxury ambient lighting, zero distraction
+          LORENZO LOTTICI DARK CELESTIAL HORIZON BACKGROUND
+          Distant monochromatic celestial sphere, foggy horizon, volumetric smoke
          ========================================================================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
+        {/* Full-width Lorenzo Lottici Dark Celestial Horizon Backdrop */}
+        <img
+          src="/brand/hero-dark-celestial-horizon.webp"
+          alt="Dark Celestial Horizon Atmosphere"
+          className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.05]"
+        />
+
         {/* Subtle Warm Amber Glow behind Headline */}
         <div className="absolute top-[22%] left-[4%] w-[500px] h-[500px] bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent rounded-full blur-[130px] pointer-events-none" />
 
         {/* Subtle Cyan / Electric Glow behind MacBook */}
         <div className="absolute top-[18%] right-[8%] w-[650px] h-[550px] bg-gradient-to-bl from-cyan-500/10 via-indigo-600/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
-        {/* Atmospheric mist texture */}
-        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:36px_36px] opacity-20 pointer-events-none" />
+        {/* Left Side Ambient Vignette for 100% Vector Headline Readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 md:via-black/35 to-transparent pointer-events-none" />
 
         {/* Top & Bottom Cinematic Dissolves */}
         <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
@@ -532,6 +539,9 @@ export function LandingHero() {
                   alt="Apple MacBook Pro Hardware Frame"
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20 drop-shadow-[0_40px_80px_rgba(0,0,0,0.98)]"
                 />
+
+                {/* 3. VOLUMETRIC SOFT SMOKE / MIST DRIFTING ACROSS BASE */}
+                <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 w-[85%] h-16 bg-gradient-to-t from-white/[0.04] via-slate-400/[0.02] to-transparent rounded-full blur-xl pointer-events-none z-30" />
               </Link>
             </motion.div>
           </div>
