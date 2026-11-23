@@ -41,37 +41,109 @@ export function LandingHero() {
   };
 
   // =========================================================================
-  // 3-MINUTE RIVALRY TIMELOOP DUEL ENGINE
-  // Round 1: Aditya (IIT Delhi) wins -> Knockout -> Round 2 Rematch: Rohan (DTU) counters!
+  // SIMULTANEOUS 1V1 COMPETITIVE PROGRAMMING DUEL ENGINE
+  // Both coders type code concurrently in real-time, racing for the knockout.
+  // Dynamic alternating/random winner cycle (Left -> Right -> Left -> Right -> Right...)
   // =========================================================================
-  const [battlePhase, setBattlePhase] = useState<'round1_duel' | 'round1_win' | 'round2_duel' | 'round2_win'>('round1_duel');
-  const [timerSeconds, setTimerSeconds] = useState(172); // 02:52
-  const [adityaCodeIdx, setAdityaCodeIdx] = useState(0);
-  const [rohanCodeIdx, setRohanCodeIdx] = useState(0);
+  const DUEL_PROBLEMS = [
+    {
+      title: 'Two Sum',
+      pyFile: 'two_sum.py',
+      cppFile: 'two_sum.cpp',
+      py: [
+        'def two_sum(nums, target):',
+        '    seen = {}',
+        '    for i, n in enumerate(nums):',
+        '        if target - n in seen:',
+        '            return [seen[target - n], i]',
+        '        seen[n] = i',
+      ],
+      cpp: [
+        'vector<int> solve(vector<int>& v, int t) {',
+        '    unordered_map<int, int> m;',
+        '    for (int i = 0; i < v.size(); i++) {',
+        '        if (m.count(t - v[i])) return {m[t-v[i]], i};',
+        '        m[v[i]] = i;',
+        '    }',
+        '}',
+      ],
+    },
+    {
+      title: 'Max Subarray',
+      pyFile: 'kadane.py',
+      cppFile: 'kadane.cpp',
+      py: [
+        'def max_sub(nums):',
+        '    curr = best = nums[0]',
+        '    for x in nums[1:]:',
+        '        curr = max(x, curr + x)',
+        '        best = max(best, curr)',
+        '    return best',
+      ],
+      cpp: [
+        'int maxSub(vector<int>& nums) {',
+        '    int cur = nums[0], best = nums[0];',
+        '    for (int i = 1; i < nums.size(); i++) {',
+        '        cur = max(nums[i], cur + nums[i]);',
+        '        best = max(best, cur);',
+        '    }',
+        '    return best;',
+        '}',
+      ],
+    },
+    {
+      title: 'Valid Parentheses',
+      pyFile: 'valid_parens.py',
+      cppFile: 'valid_parens.cpp',
+      py: [
+        'def is_valid(s):',
+        '    stk, m = [], {")": "(", "}": "{", "]": "["}',
+        '    for c in s:',
+        '        if c in m:',
+        '            if not stk or stk.pop() != m[c]: return False',
+        '        else: stk.append(c)',
+        '    return not stk',
+      ],
+      cpp: [
+        'bool isValid(string s) {',
+        '    stack<char> st;',
+        '    for (char c : s) {',
+        '        if (c == \'(\' || c == \'{\') st.push(c);',
+        '        else if (st.empty() || st.top() != c) return false;',
+        '        else st.pop();',
+        '    }',
+        '    return st.empty();',
+        '}',
+      ],
+    },
+  ];
+
+  // Alternating / unpredictable winner sequence so it feels 100% human and live
+  const WINNER_SEQUENCE: ('left' | 'right')[] = [
+    'left',
+    'right',
+    'left',
+    'right',
+    'right',
+    'left',
+    'left',
+    'right',
+  ];
+
+  const [timerSeconds, setTimerSeconds] = useState(172); // 02:52 match clock
+  const [roundCount, setRoundCount] = useState(0);
+  const [roundPhase, setRoundPhase] = useState<'duel' | 'win'>('duel');
+  const [currentWinner, setCurrentWinner] = useState<'left' | 'right'>('left');
+  const [adityaChars, setAdityaChars] = useState(0);
+  const [rohanChars, setRohanChars] = useState(0);
   const [adityaPassedTests, setAdityaPassedTests] = useState(false);
   const [rohanPassedTests, setRohanPassedTests] = useState(false);
+  const [adityaElo, setAdityaElo] = useState(1480);
+  const [rohanElo, setRohanElo] = useState(1420);
 
-  // Code for Aditya (Python Solution)
-  const adityaLines = [
-    'def two_sum(nums, target):',
-    '    seen = {}',
-    '    for i, n in enumerate(nums):',
-    '        if target - n in seen:',
-    '            return [seen[target - n], i]',
-    '        seen[n] = i',
-  ];
+  const currentProblem = DUEL_PROBLEMS[roundCount % DUEL_PROBLEMS.length];
 
-  // Code for Rohan (C++ Solution)
-  const rohanLines = [
-    'vector<int> solve(vector<int>& v, int t) {',
-    '    unordered_map<int,int> m;',
-    '    for(int i=0; i<v.size(); i++) {',
-    '        if(m.count(t - v[i])) return {m[t-v[i]], i};',
-    '        m[v[i]] = i;',
-    '    }',
-  ];
-
-  // Live ticking match clock
+  // Match clock ticking continuously
   useEffect(() => {
     const timer = setInterval(() => {
       setTimerSeconds((prev) => (prev <= 10 ? 172 : prev - 1));
@@ -79,81 +151,69 @@ export function LandingHero() {
     return () => clearInterval(timer);
   }, []);
 
-  // Timeloop Stage Cycle
+  // Continuous simultaneous dual coding timeloop
   useEffect(() => {
-    let t1: NodeJS.Timeout;
-    let t2: NodeJS.Timeout;
-    let t3: NodeJS.Timeout;
-    let t4: NodeJS.Timeout;
-
-    // Start Round 1 Duel
-    setBattlePhase('round1_duel');
+    const winnerThisRound = WINNER_SEQUENCE[roundCount % WINNER_SEQUENCE.length];
+    setCurrentWinner(winnerThisRound);
+    setRoundPhase('duel');
+    setAdityaChars(0);
+    setRohanChars(0);
     setAdityaPassedTests(false);
     setRohanPassedTests(false);
-    setAdityaCodeIdx(0);
-    setRohanCodeIdx(0);
 
-    // After 10s: Aditya knocks out Round 1
-    t1 = setTimeout(() => {
-      setAdityaPassedTests(true);
-      setBattlePhase('round1_win');
+    const pyTotal = currentProblem.py.join('\n').length;
+    const cppTotal = currentProblem.cpp.join('\n').length;
 
-      // After 4s celebration: Start Round 2 Rematch (Rohan's revenge)
-      t2 = setTimeout(() => {
-        setBattlePhase('round2_duel');
-        setAdityaPassedTests(false);
-        setRohanPassedTests(false);
-        setAdityaCodeIdx(0);
-        setRohanCodeIdx(0);
+    const DUEL_MS = 7500;
+    const CELEBRATE_MS = 3500;
+    const startTime = Date.now();
 
-        // After 10s: Rohan knocks out Round 2
-        t3 = setTimeout(() => {
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < DUEL_MS) {
+        // Active duel: BOTH are typing concurrently in real-time!
+        const progress = elapsed / DUEL_MS;
+
+        // Winner finishes at ~92% of duel time; runner-up finishes ~82% of code
+        const leftTarget = winnerThisRound === 'left' ? 1.0 : 0.82;
+        const rightTarget = winnerThisRound === 'right' ? 1.0 : 0.82;
+
+        const leftPct = Math.min(1.0, progress * (1.0 / 0.90) * leftTarget);
+        const rightPct = Math.min(1.0, progress * (1.0 / 0.90) * rightTarget);
+
+        setAdityaChars(Math.floor(leftPct * pyTotal));
+        setRohanChars(Math.floor(rightPct * cppTotal));
+
+        // When winner finishes tests just before knockout call
+        if (elapsed > DUEL_MS - 800) {
+          if (winnerThisRound === 'left') setAdityaPassedTests(true);
+          else setRohanPassedTests(true);
+        }
+      } else if (elapsed < DUEL_MS + CELEBRATE_MS) {
+        // Celebration phase
+        setRoundPhase('win');
+        if (winnerThisRound === 'left') {
+          setAdityaChars(pyTotal);
+          setAdityaPassedTests(true);
+        } else {
+          setRohanChars(cppTotal);
           setRohanPassedTests(true);
-          setBattlePhase('round2_win');
+        }
+      } else {
+        // Round concluded -> advance to next round!
+        clearInterval(interval);
+        if (winnerThisRound === 'left') {
+          setAdityaElo((prev) => prev + 24);
+        } else {
+          setRohanElo((prev) => prev + 26);
+        }
+        setRoundCount((prev) => prev + 1);
+      }
+    }, 45);
 
-          // After 4s celebration: Loop back to Round 1
-          t4 = setTimeout(() => {
-            setBattlePhase('round1_duel');
-            setAdityaPassedTests(false);
-            setRohanPassedTests(false);
-            setAdityaCodeIdx(0);
-            setRohanCodeIdx(0);
-          }, 4000);
-        }, 10000);
-      }, 4000);
-    }, 10000);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-    };
-  }, []);
-
-  // Aditya typing animation
-  useEffect(() => {
-    const full = adityaLines.join('\n').length;
-    const interval = setInterval(() => {
-      setAdityaCodeIdx((prev) => {
-        if (prev >= full) return full;
-        return prev + 1;
-      });
-    }, 70);
     return () => clearInterval(interval);
-  }, [adityaLines, battlePhase]);
-
-  // Rohan typing animation
-  useEffect(() => {
-    const full = rohanLines.join('\n').length;
-    const interval = setInterval(() => {
-      setRohanCodeIdx((prev) => {
-        if (prev >= full) return full;
-        return prev + 1;
-      });
-    }, 85);
-    return () => clearInterval(interval);
-  }, [rohanLines, battlePhase]);
+  }, [roundCount, currentProblem]);
 
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -161,12 +221,66 @@ export function LandingHero() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const sliceCode = (lines: string[], length: number) => {
-    return lines.join('\n').slice(0, length).split('\n');
+  const sliceCodeLines = (lines: string[], charCount: number) => {
+    return lines.join('\n').slice(0, charCount).split('\n');
   };
 
-  const adityaRendered = sliceCode(adityaLines, adityaCodeIdx);
-  const rohanRendered = sliceCode(rohanLines, rohanCodeIdx);
+  const adityaRendered = sliceCodeLines(currentProblem.py, adityaChars);
+  const rohanRendered = sliceCodeLines(currentProblem.cpp, rohanChars);
+
+  // Robust line syntax highlighter
+  const renderCodeTokens = (line: string, lang: 'py' | 'cpp') => {
+    const tokenRegex =
+      lang === 'py'
+        ? /\b(def|return|for|in|if|else|not|and|or)\b|\b(two_sum|max_sub|is_valid|enumerate|max)\b|(\d+)|([{}()[\],:;.<>|&+\-*\/!=%])|([a-zA-Z_]\w*)|(\s+)|(.)/g
+        : /\b(vector|int|unordered_map|return|for|if|else|bool|string|stack|auto)\b|\b(solve|maxSub|isValid|count|size|max|push|pop|empty)\b|(\d+)|([{}()[\],:;.<>|&+\-*\/!=%])|([a-zA-Z_]\w*)|(\s+)|(.)/g;
+
+    const parts: React.ReactNode[] = [];
+    let match: RegExpExecArray | null;
+    let key = 0;
+
+    while ((match = tokenRegex.exec(line)) !== null) {
+      const [full, kw, fn, num, punct, ident, space] = match;
+      if (kw) {
+        parts.push(
+          <span key={key++} className="text-pink-400 font-bold">
+            {kw}
+          </span>
+        );
+      } else if (fn) {
+        parts.push(
+          <span key={key++} className="text-amber-300 font-medium">
+            {fn}
+          </span>
+        );
+      } else if (num) {
+        parts.push(
+          <span key={key++} className="text-purple-300">
+            {num}
+          </span>
+        );
+      } else if (punct) {
+        parts.push(
+          <span key={key++} className="text-slate-400">
+            {punct}
+          </span>
+        );
+      } else if (ident) {
+        parts.push(
+          <span
+            key={key++}
+            className={lang === 'py' ? 'text-cyan-200' : 'text-purple-200'}
+          >
+            {ident}
+          </span>
+        );
+      } else {
+        parts.push(<span key={key++}>{full}</span>);
+      }
+    }
+
+    return parts.length > 0 ? parts : line;
+  };
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -344,7 +458,7 @@ export function LandingHero() {
                       <span>KOLLABRIX</span>
                       <span className="text-neutral-600">/</span>
                       <span className="text-amber-400/90 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
-                        1v1 DUEL
+                        ROUND {roundCount + 1} • {currentProblem.title.toUpperCase()}
                       </span>
                     </div>
 
@@ -362,8 +476,8 @@ export function LandingHero() {
                   {/* ARENA STAGE (DUAL SPLIT IDE OR KNOCKOUT WINNER BANNER) */}
                   <div className="relative flex-1 bg-[#05070d] p-2 sm:p-3 overflow-hidden flex flex-col justify-between">
                     
-                    {/* Centered VS Badge (Visible during duels) */}
-                    {(battlePhase === 'round1_duel' || battlePhase === 'round2_duel') && (
+                    {/* Centered VS Badge (Visible during active duels) */}
+                    {roundPhase === 'duel' && (
                       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
                         <span className="font-black font-mono text-sm sm:text-xl tracking-tighter bg-gradient-to-r from-cyan-400 via-white to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(6,182,212,0.95)] animate-pulse">
                           VS
@@ -374,8 +488,12 @@ export function LandingHero() {
                     {/* DUAL SPLIT-SCREEN IDEs */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 items-stretch">
                       
-                      {/* ================= FIGHTER 1: Aditya Verma (IIT Delhi • 1480 ELO) ================= */}
-                      <div className={`flex flex-col rounded-lg bg-[#0c0f18] border p-2 text-[10px] transition-all duration-300 ${battlePhase === 'round1_win' ? 'border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'border-neutral-800'}`}>
+                      {/* ================= FIGHTER 1: Aditya Verma (IIT Delhi) ================= */}
+                      <div className={`flex flex-col rounded-lg bg-[#0c0f18] border p-2 text-[10px] transition-all duration-300 ${
+                        roundPhase === 'win' && currentWinner === 'left'
+                          ? 'border-amber-400/90 shadow-[0_0_20px_rgba(245,158,11,0.35)] ring-1 ring-amber-400/30'
+                          : 'border-neutral-800'
+                      }`}>
                         {/* Header */}
                         <div className="flex items-center justify-between pb-1 border-b border-neutral-800/80">
                           <div className="flex items-center gap-1.5">
@@ -389,10 +507,10 @@ export function LandingHero() {
                             </div>
                             <div className="flex flex-col">
                               <span className="text-[10px] sm:text-xs font-bold text-white leading-tight">Aditya Verma</span>
-                              <span className="text-[8px] sm:text-[9px] text-cyan-400 font-mono">IIT Delhi • 1480</span>
+                              <span className="text-[8px] sm:text-[9px] text-cyan-400 font-mono">IIT Delhi • {adityaElo}</span>
                             </div>
                           </div>
-                          <span className="text-[9px] sm:text-[10px] font-mono text-slate-400">main.py</span>
+                          <span className="text-[9px] sm:text-[10px] font-mono text-slate-400">{currentProblem.pyFile}</span>
                         </div>
 
                         {/* Code Body */}
@@ -402,26 +520,17 @@ export function LandingHero() {
                             <span>2</span>
                             <span>3</span>
                             <span>4</span>
+                            <span>5</span>
                           </div>
                           <div className="flex-1 whitespace-pre overflow-hidden">
-                            {adityaRendered.slice(0, 4).map((line, i) => (
+                            {adityaRendered.slice(0, 5).map((line, i) => (
                               <div key={i} className="text-cyan-200 truncate">
-                                {line.includes('def') ? (
-                                  <span>
-                                    <span className="text-pink-400 font-bold">def </span>
-                                    <span className="text-amber-300">two_sum</span>(n,t):
-                                  </span>
-                                ) : line.includes('return') ? (
-                                  <span>
-                                    &nbsp;&nbsp;<span className="text-pink-400">return </span>
-                                    <span>[seen[t-n],i]</span>
-                                  </span>
-                                ) : (
-                                  line
+                                {renderCodeTokens(line, 'py')}
+                                {i === adityaRendered.slice(0, 5).length - 1 && roundPhase === 'duel' && (
+                                  <span className="inline-block w-1 h-2.5 bg-cyan-400 animate-pulse ml-0.5" />
                                 )}
                               </div>
                             ))}
-                            <span className="inline-block w-1 h-2.5 bg-cyan-400 animate-pulse ml-0.5" />
                           </div>
                         </div>
 
@@ -432,14 +541,20 @@ export function LandingHero() {
                               <CheckCircle2 className="w-2.5 h-2.5" />
                               <span>✔ 3/3 Tests Passed (0.04s)</span>
                             </span>
+                          ) : roundPhase === 'win' ? (
+                            <span className="text-slate-400 font-medium">⚡ Tests Running (2/3 Passed)</span>
                           ) : (
-                            <span className="text-slate-400">⚡ Typing at 110 WPM...</span>
+                            <span className="text-slate-400">⚡ Typing at 128 WPM...</span>
                           )}
                         </div>
                       </div>
 
-                      {/* ================= FIGHTER 2: Rohan Sharma (DTU Delhi • 1420 ELO) ================= */}
-                      <div className={`flex flex-col rounded-lg bg-[#0c0f18] border p-2 text-[10px] transition-all duration-300 ${battlePhase === 'round2_win' ? 'border-purple-400/80 shadow-[0_0_20px_rgba(168,85,247,0.3)]' : 'border-neutral-800'}`}>
+                      {/* ================= FIGHTER 2: Rohan Sharma (DTU Delhi) ================= */}
+                      <div className={`flex flex-col rounded-lg bg-[#0c0f18] border p-2 text-[10px] transition-all duration-300 ${
+                        roundPhase === 'win' && currentWinner === 'right'
+                          ? 'border-purple-400/90 shadow-[0_0_20px_rgba(168,85,247,0.35)] ring-1 ring-purple-400/30'
+                          : 'border-neutral-800'
+                      }`}>
                         {/* Header */}
                         <div className="flex items-center justify-between pb-1 border-b border-neutral-800/80">
                           <div className="flex items-center gap-1.5">
@@ -450,10 +565,10 @@ export function LandingHero() {
                             />
                             <div className="flex flex-col">
                               <span className="text-[10px] sm:text-xs font-bold text-white leading-tight">Rohan Sharma</span>
-                              <span className="text-[8px] sm:text-[9px] text-purple-400 font-mono">DTU Delhi • 1420</span>
+                              <span className="text-[8px] sm:text-[9px] text-purple-400 font-mono">DTU Delhi • {rohanElo}</span>
                             </div>
                           </div>
-                          <span className="text-[9px] sm:text-[10px] font-mono text-slate-400">solve.cpp</span>
+                          <span className="text-[9px] sm:text-[10px] font-mono text-slate-400">{currentProblem.cppFile}</span>
                         </div>
 
                         {/* Code Body */}
@@ -463,26 +578,17 @@ export function LandingHero() {
                             <span>2</span>
                             <span>3</span>
                             <span>4</span>
+                            <span>5</span>
                           </div>
                           <div className="flex-1 whitespace-pre overflow-hidden">
-                            {rohanRendered.slice(0, 4).map((line, i) => (
+                            {rohanRendered.slice(0, 5).map((line, i) => (
                               <div key={i} className="text-purple-200 truncate">
-                                {line.includes('vector') ? (
-                                  <span>
-                                    <span className="text-pink-400">vector&lt;int&gt; </span>
-                                    <span className="text-amber-300">solve</span>()
-                                  </span>
-                                ) : line.includes('return') ? (
-                                  <span>
-                                    &nbsp;&nbsp;<span className="text-pink-400">return </span>
-                                    <span>m[t-v[i]]</span>
-                                  </span>
-                                ) : (
-                                  line
+                                {renderCodeTokens(line, 'cpp')}
+                                {i === rohanRendered.slice(0, 5).length - 1 && roundPhase === 'duel' && (
+                                  <span className="inline-block w-1 h-2.5 bg-purple-400 animate-pulse ml-0.5" />
                                 )}
                               </div>
                             ))}
-                            <span className="inline-block w-1 h-2.5 bg-purple-400 animate-pulse ml-0.5" />
                           </div>
                         </div>
 
@@ -491,42 +597,44 @@ export function LandingHero() {
                           {rohanPassedTests ? (
                             <span className="text-emerald-400 font-bold flex items-center gap-1">
                               <CheckCircle2 className="w-2.5 h-2.5" />
-                              <span>✔ 3/3 Tests Passed (0.05s)</span>
+                              <span>✔ 3/3 Tests Passed (0.03s)</span>
                             </span>
+                          ) : roundPhase === 'win' ? (
+                            <span className="text-slate-400 font-medium">⚡ Tests Running (2/3 Passed)</span>
                           ) : (
-                            <span className="text-slate-400">⚡ Typing at 95 WPM...</span>
+                            <span className="text-slate-400">⚡ Typing at 122 WPM...</span>
                           )}
                         </div>
                       </div>
 
                     </div>
 
-                    {/* OVERLAY KNOCKOUT VICTORY BANNER (Alternates dynamically in the timeloop) */}
-                    {battlePhase === 'round1_win' && (
+                    {/* OVERLAY KNOCKOUT VICTORY BANNER (Dynamic winner alternation) */}
+                    {roundPhase === 'win' && currentWinner === 'left' && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="absolute inset-x-2 bottom-2 bg-gradient-to-r from-amber-950/90 via-black to-amber-950/90 border border-amber-400/80 rounded-md p-2 flex items-center justify-between text-[9px] sm:text-xs z-30 shadow-[0_0_25px_rgba(245,158,11,0.5)]"
+                        initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="absolute inset-x-2 bottom-2 bg-gradient-to-r from-amber-950/95 via-black to-amber-950/95 border border-amber-400/80 rounded-md p-2 flex items-center justify-between text-[9px] sm:text-xs z-30 shadow-[0_0_25px_rgba(245,158,11,0.5)] backdrop-blur-md"
                       >
                         <div className="flex items-center gap-1.5 font-bold text-amber-300">
                           <Trophy className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
-                          <span>🏆 ROUND 1 KNOCKOUT: Aditya Verma (IIT Delhi) WINS! (+24 ELO)</span>
+                          <span>🏆 ROUND {roundCount + 1} KNOCKOUT: Aditya Verma (IIT Delhi) WINS! (+24 ELO)</span>
                         </div>
-                        <span className="font-mono text-emerald-400 font-bold">1504 ELO</span>
+                        <span className="font-mono text-emerald-400 font-bold">{adityaElo + 24} ELO</span>
                       </motion.div>
                     )}
 
-                    {battlePhase === 'round2_win' && (
+                    {roundPhase === 'win' && currentWinner === 'right' && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="absolute inset-x-2 bottom-2 bg-gradient-to-r from-purple-950/90 via-black to-purple-950/90 border border-purple-400/80 rounded-md p-2 flex items-center justify-between text-[9px] sm:text-xs z-30 shadow-[0_0_25px_rgba(168,85,247,0.5)]"
+                        initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="absolute inset-x-2 bottom-2 bg-gradient-to-r from-purple-950/95 via-black to-purple-950/95 border border-purple-400/80 rounded-md p-2 flex items-center justify-between text-[9px] sm:text-xs z-30 shadow-[0_0_25px_rgba(168,85,247,0.5)] backdrop-blur-md"
                       >
                         <div className="flex items-center gap-1.5 font-bold text-purple-300">
                           <Swords className="w-3.5 h-3.5 text-purple-400 animate-bounce" />
-                          <span>⚔️ ROUND 2 REVENGE: Rohan Sharma (DTU) COUNTERS! (+22 ELO)</span>
+                          <span>⚔️ ROUND {roundCount + 1} KNOCKOUT: Rohan Sharma (DTU) COUNTERS! (+26 ELO)</span>
                         </div>
-                        <span className="font-mono text-emerald-400 font-bold">1442 ELO</span>
+                        <span className="font-mono text-emerald-400 font-bold">{rohanElo + 26} ELO</span>
                       </motion.div>
                     )}
 
