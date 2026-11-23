@@ -44,34 +44,68 @@ function ArenaPageContent() {
     'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
 
-  const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Start mountain wind atmospheric soundscape
+  // Start mountain wind atmospheric soundscape with smooth 1.5s volume fade-in
   const startAmbiance = useCallback(() => {
-    if (!audioEnabled) return;
     try {
+      if (fadeIntervalRef.current) {
+        clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+      }
+
       if (!ambientAudioRef.current && typeof Audio !== 'undefined') {
         const audio = new Audio('/sounds/arena-mountain-wind-eagle.wav');
         audio.loop = true;
-        audio.volume = 0.22;
+        audio.volume = 0.0;
         ambientAudioRef.current = audio;
       }
-      if (ambientAudioRef.current) {
-        ambientAudioRef.current.play().then(() => {
+
+      const audio = ambientAudioRef.current;
+      if (audio) {
+        audio.volume = 0.0;
+        audio.play().then(() => {
           setIsAudioPlaying(true);
+          // Smooth 1.5-second volume ramp up to 0.15 so it never startles listeners
+          const targetVolume = 0.15;
+          const steps = 30;
+          const stepTime = 1500 / steps;
+          let currentStep = 0;
+
+          fadeIntervalRef.current = setInterval(() => {
+            currentStep++;
+            if (ambientAudioRef.current) {
+              const nextVol = Math.min(targetVolume, (currentStep / steps) * targetVolume);
+              ambientAudioRef.current.volume = nextVol;
+              if (currentStep >= steps) {
+                if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+                fadeIntervalRef.current = null;
+              }
+            } else {
+              if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+              fadeIntervalRef.current = null;
+            }
+          }, stepTime);
         }).catch(() => {
-          // Browser prevented autoplay before interaction
+          // Browser prevented autoplay before explicit interaction
+          setIsAudioPlaying(false);
         });
       }
     } catch {}
-  }, [audioEnabled]);
+  }, []);
 
   const stopAmbiance = useCallback(() => {
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
     if (ambientAudioRef.current) {
       ambientAudioRef.current.pause();
+      ambientAudioRef.current.volume = 0.0;
       setIsAudioPlaying(false);
     }
   }, []);
@@ -88,21 +122,12 @@ function ArenaPageContent() {
     });
   }, [startAmbiance, stopAmbiance]);
 
-  // Unblock audio on first user touch/click/keypress anywhere on screen
+  // Clean up audio on unmount
   useEffect(() => {
-    const handleGesture = () => {
-      if (audioEnabled) {
-        startAmbiance();
-      }
-    };
-    window.addEventListener('pointerdown', handleGesture, { once: true });
-    window.addEventListener('keydown', handleGesture, { once: true });
     return () => {
-      window.removeEventListener('pointerdown', handleGesture);
-      window.removeEventListener('keydown', handleGesture);
       stopAmbiance();
     };
-  }, [audioEnabled, startAmbiance, stopAmbiance]);
+  }, [stopAmbiance]);
 
   // Play resonant dual-harmonic cinematic portal launch sound
   const playEnterSound = useCallback(() => {
@@ -341,13 +366,17 @@ function ArenaPageContent() {
             <button
               type="button"
               onClick={toggleAudio}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-amber-400 text-xs font-mono text-slate-300 hover:text-white backdrop-blur-md transition-all cursor-pointer shadow-lg"
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md transition-all cursor-pointer shadow-lg text-xs font-mono select-none ${
+                audioEnabled && isAudioPlaying
+                  ? 'bg-amber-500/20 border-amber-400/80 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                  : 'bg-black/60 hover:bg-black/80 border-white/20 hover:border-amber-400/60 text-slate-300 hover:text-white'
+              }`}
               title="Toggle atmospheric mountain soundscape"
             >
               {audioEnabled && isAudioPlaying ? (
                 <>
                   <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                  <span className="hidden sm:inline text-amber-300">Atmospheric Ambiance</span>
+                  <span className="text-amber-300 font-bold">Atmospheric Ambiance (Active) &bull; Click to Mute</span>
                   <span className="flex items-center gap-0.5 ml-1">
                     <span className="w-0.5 h-2.5 bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-0.5 h-3.5 bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -356,8 +385,8 @@ function ArenaPageContent() {
                 </>
               ) : (
                 <>
-                  <VolumeX className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="hidden sm:inline text-slate-400">Audio Muted (Tap to Play)</span>
+                  <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-slate-300 font-medium">🔇 Atmospheric Audio Off &bull; Click to Enable Ambiance</span>
                 </>
               )}
             </button>

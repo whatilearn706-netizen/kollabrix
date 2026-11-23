@@ -257,14 +257,14 @@ if (document.readyState === "loading") {
 }
 
 export const COLLEGIATE_BOT_PROFILES = [
-  { name: 'Aditya Verma', college: 'IIT Delhi', tag: 'IITD CSE', avatarIdx: 1, avatarEmoji: '🔥', baseWpm: 66 },
-  { name: 'Rohan Sharma', college: 'DTU Delhi', tag: 'DTU COE', avatarIdx: 2, avatarEmoji: '⚡', baseWpm: 62 },
-  { name: 'Tanvi Pillai', college: 'BITS Pilani', tag: 'BITS Goa', avatarIdx: 3, avatarEmoji: '🦊', baseWpm: 70 },
-  { name: 'Sneha Kulkarni', college: 'COEP Pune', tag: 'COEP IT', avatarIdx: 4, avatarEmoji: '🧠', baseWpm: 58 },
-  { name: 'Aryan Mehta', college: 'NSUT Delhi', tag: 'NSUT SE', avatarIdx: 5, avatarEmoji: '🐺', baseWpm: 64 },
-  { name: 'Divya Nair', college: 'NIT Trichy', tag: 'NITT CSE', avatarIdx: 6, avatarEmoji: '⚔️', baseWpm: 68 },
-  { name: 'Vikramaditya', college: 'IIIT Hyderabad', tag: 'IIITH CS', avatarIdx: 7, avatarEmoji: '👑', baseWpm: 72 },
-  { name: 'Ananya Roy', college: 'Jadavpur Univ', tag: 'JU CS', avatarIdx: 8, avatarEmoji: '🚀', baseWpm: 60 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 1, avatarEmoji: '🤖', baseWpm: 66 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 2, avatarEmoji: '🤖', baseWpm: 62 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 3, avatarEmoji: '🤖', baseWpm: 70 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 4, avatarEmoji: '🤖', baseWpm: 58 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 5, avatarEmoji: '🤖', baseWpm: 64 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 6, avatarEmoji: '🤖', baseWpm: 68 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 7, avatarEmoji: '🤖', baseWpm: 72 },
+  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 8, avatarEmoji: '🤖', baseWpm: 60 },
 ];
 
 interface AutoCompleteItem {
@@ -425,7 +425,7 @@ export function FullArenaExperience({
       border: 'border-emerald-400',
       glow: 'shadow-[0_0_25px_rgba(16,185,129,0.5)]',
       trait: 'Clean System Architecture',
-      rank: 'Challenger #08',
+      rank: 'Sentinel AI',
       badge: 'NEURAL FORGE',
     },
     {
@@ -1351,10 +1351,49 @@ export function FullArenaExperience({
   const opponentDisplayName = isRealOpponentPresent
     ? `${opponentPlayer?.name} (Opponent)`
     : isBotDuel
-      ? `${assignedBotProfile.name} • ${assignedBotProfile.college}`
+      ? '🤖 Kollabrix Sentinel (AI Challenger)'
       : mySquad === 'alpha'
-        ? (isBotOpponentAdded ? `${assignedBotProfile.name} • ${assignedBotProfile.college}` : 'Waiting for Opponent...')
+        ? (isBotOpponentAdded ? '🤖 Kollabrix Sentinel (AI Challenger)' : 'Waiting for Opponent...')
         : (roomData?.hostName ? `${roomData.hostName} (Host)` : 'Classmate Opponent');
+
+  // Transparent Matchmaking Timer (0-8s: Searching live campus builders; 8s+: Clear choice fallback)
+  const [matchSearchSeconds, setMatchSearchSeconds] = useState<number>(0);
+  const [hasPromptedBotChoice, setHasPromptedBotChoice] = useState<boolean>(false);
+
+  const targetTopicLabel = useMemo(() => {
+    const catName =
+      arena === 'algorithms'
+        ? 'DSA'
+        : arena === 'web_dev'
+        ? 'Web Dev'
+        : 'Bug Hunt';
+    const langTag = (selectedTags || []).find((t: string) =>
+      ['cpp', 'c++', 'java', 'python', 'javascript', 'js'].includes(t.toLowerCase())
+    );
+    const langName = langTag ? (langTag === 'cpp' ? 'C++' : langTag.toUpperCase()) : (arena === 'web_dev' ? 'HTML/CSS/JS' : 'Logic');
+    const diffName = (difficulty || 'medium').toUpperCase();
+    return `${catName} • ${langName} • ${diffName}`;
+  }, [arena, selectedTags, difficulty]);
+
+  useEffect(() => {
+    if (step !== 3 || isRealOpponentPresent || isBotOpponentAdded) {
+      setMatchSearchSeconds(0);
+      setHasPromptedBotChoice(false);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setMatchSearchSeconds((prev) => {
+        const next = prev + 1;
+        if (next >= 8 && !hasPromptedBotChoice) {
+          setHasPromptedBotChoice(true);
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [step, isRealOpponentPresent, isBotOpponentAdded, hasPromptedBotChoice]);
 
   // Determine if active match uses Web View (Live Preview & Output) or Compiler Terminal View
   const isWebMatch =
@@ -2245,7 +2284,7 @@ export function FullArenaExperience({
 
     if (!hasOpponent) {
       const confirmBot = confirm(
-        `No opponent has entered Room ${roomCode} yet!\n\nWould you like to turn ON the AI Practice Bot and start battling right now?\n\n(Click Cancel if you want to copy the room code / link and wait for a classmate.)`
+        `No human challenger has entered Room ${roomCode} yet!\n\nWould you like to duel 🤖 Kollabrix Sentinel (AI Challenger) right now?\n\n(Click Cancel if you want to copy the room code/link and wait for a classmate.)`
       );
       if (confirmBot) {
         setIsBotOpponentAdded(true);
@@ -3870,17 +3909,17 @@ export function FullArenaExperience({
                       : 'bg-slate-900 border border-slate-800 text-slate-400'
                   }`}
                 >
-                  {isBotOpponentAdded ? assignedBotProfile.avatarEmoji : <Bot className="w-4 h-4 text-amber-400" />}
+                  {isBotOpponentAdded ? '🤖' : <Bot className="w-4 h-4 text-amber-400" />}
                 </div>
                 <div>
                   <p className="font-mono font-bold text-white text-xs flex items-center gap-1.5">
-                    <span>Simulate Collegiate Opponent (Instant Match)</span>
+                    <span>Duel 🤖 Kollabrix Sentinel (AI Challenger)</span>
                     <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      {assignedBotProfile.college}
+                      AI CHALLENGER
                     </span>
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Duel {assignedBotProfile.name} ({assignedBotProfile.tag}) with real human typing bursts and Fog of War encryption.
+                    Practice mode against Kollabrix Sentinel with adaptive speed bursts and Fog of War encryption.
                   </p>
                 </div>
               </div>
@@ -4052,44 +4091,119 @@ export function FullArenaExperience({
                   </div>
                 ) : isBotOpponentAdded ? (
                   <div className="space-y-2">
-                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-rose-500 text-white font-bold flex items-center justify-center text-xs">
-                          {assignedBotProfile.avatarEmoji}
+                    <div className="p-3 rounded-xl bg-slate-900/90 border border-amber-500/40 flex items-center justify-between text-xs font-mono shadow-md">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
+                          🤖
                         </div>
-                        <span className="text-white font-bold">{assignedBotProfile.name}</span>
-                        <span className="text-[10px] text-rose-300 font-semibold">({assignedBotProfile.college})</span>
+                        <div>
+                          <span className="text-white font-bold block">🤖 Kollabrix Sentinel (AI Challenger)</span>
+                          <span className="text-[10px] text-amber-300 font-mono">Adaptive AI Bot &bull; Fog-of-War Encryption</span>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">READY</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsBotOpponentAdded(false)}
+                          className="text-[10px] text-slate-400 hover:text-rose-400 underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded">
+                          READY
+                        </span>
+                      </div>
                     </div>
 
                     {teamSize === '2v2' && (
-                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between text-xs font-mono">
+                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-rose-500 text-white font-bold flex items-center justify-center text-xs">
-                            🐺
+                          <div className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-xs">
+                            🤖
                           </div>
-                          <span className="text-white font-bold">Aryan Mehta</span>
-                          <span className="text-[10px] text-rose-300 font-semibold">(NSUT Delhi)</span>
+                          <span className="text-white font-bold">🤖 Sentinel Sub-Unit 2</span>
+                          <span className="text-[10px] text-amber-300 font-semibold">(AI Wingman)</span>
                         </div>
                         <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">READY</span>
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-black/60 border border-dashed border-amber-500/30 flex flex-col gap-2 text-xs font-mono">
+                ) : matchSearchSeconds < 8 && !hasPromptedBotChoice ? (
+                  /* 0-8s: Transparent Matchmaking Scanner */
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 text-xs font-mono animate-fadeIn">
                     <div className="flex items-center justify-between">
-                      <span className="text-rose-400 font-bold flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                        Waiting for Opponent...
+                      <span className="text-amber-300 font-bold flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                        <span>Searching for live campus builders in [{targetTopicLabel}]...</span>
                       </span>
-                      <span className="text-[10px] text-amber-400 font-bold bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded">
-                        OPEN
+                      <span className="text-[11px] font-mono text-amber-300 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 font-bold">
+                        {Math.max(0, 8 - matchSearchSeconds)}s
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-300">
-                      Share room code <strong className="text-amber-300 font-mono font-bold tracking-wider">{roomCode}</strong> or copy the invite link above so a student can enter this match!
+                    <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-amber-400 to-orange-500 h-full transition-all duration-1000 ease-linear"
+                        style={{ width: `${Math.min(100, ((matchSearchSeconds + 1) / 8) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 flex items-center justify-between">
+                      <span>Scanning active collegiate queue across campus networks...</span>
+                      <span className="text-slate-500">Room {roomCode}</span>
                     </p>
+                  </div>
+                ) : (
+                  /* 8s+: Clear choice fallback rather than stealthily dropping a bot */
+                  <div className="p-4 rounded-2xl bg-black/75 border border-amber-500/40 shadow-xl space-y-3 text-xs font-mono animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <span className="text-amber-300 font-bold flex items-center gap-2">
+                        <Users className="w-4 h-4 text-amber-400" />
+                        <span>No human challenger in [{targetTopicLabel}] queue</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 bg-black px-2 py-0.5 rounded border border-white/10 font-bold">
+                        {matchSearchSeconds}s elapsed
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      No other student is currently queued in this exact topic and difficulty. Choose how to proceed:
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {/* Choice 1: Duel Sentinel AI Bot */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsBotOpponentAdded(true);
+                          playArcadeCoinSound();
+                        }}
+                        className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer"
+                      >
+                        <span>🤖 Duel Sentinel AI Bot</span>
+                      </button>
+
+                      {/* Choice 2: Invite Classmate via Link */}
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>{copiedLink ? 'Link Copied!' : 'Invite Classmate via Link'}</span>
+                      </button>
+                    </div>
+
+                    {/* Choice 3: Keep Searching */}
+                    <div className="pt-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMatchSearchSeconds(0);
+                          setHasPromptedBotChoice(false);
+                        }}
+                        className="text-[11px] text-slate-400 hover:text-white underline font-mono cursor-pointer transition-colors"
+                      >
+                        🔄 Keep Searching for live human challenger
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

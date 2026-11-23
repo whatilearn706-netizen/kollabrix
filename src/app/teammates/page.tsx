@@ -395,7 +395,7 @@ function isCompleteProfile(p: Profile | null | undefined): boolean {
 
 export default function TeammatesPage() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
@@ -838,7 +838,17 @@ export default function TeammatesPage() {
   const handleOpenInvite = (candMatch: TeammateMatch) => {
     if (user && candMatch.profile.user_id === user.id) return;
 
-    // Global Verification Gate: Students must be verified to send teammate invitations
+    // 1. Unauthenticated visitors: open signup/login modal with 1 click
+    if (!user) {
+      if (openAuthModal) {
+        openAuthModal('signup');
+      } else {
+        router.push('/login?next=/teammates');
+      }
+      return;
+    }
+
+    // 2. Global Verification Gate: Students must be verified to send teammate invitations
     const isVerifiedUser = Boolean(
       profile?.college_verified ||
       (profile as any)?.student_verified ||
