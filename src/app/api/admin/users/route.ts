@@ -182,15 +182,16 @@ export async function GET(request: NextRequest) {
       throw new Error(listErr.message);
     }
 
-    // Fetch platform_settings suspended users registry and college verifications
+    // Fetch platform_settings suspended users registry, college verifications, and arena ELO ratings
     let suspendedUserIds: string[] = [];
     let suspendedUsersMap: Record<string, any> = {};
+    let arenaRatingsMap: Record<string, any> = {};
     const verifiedUserIds = new Set<string>();
     try {
       const { data: settingsRows } = await client
         .from('platform_settings')
         .select('key, value')
-        .in('key', ['match_scoring_config', 'linkedin_college_verifications']);
+        .in('key', ['match_scoring_config', 'linkedin_college_verifications', 'site_master_control_config', 'arena_user_ratings']);
 
       if (Array.isArray(settingsRows)) {
         for (const row of settingsRows) {
@@ -201,6 +202,10 @@ export async function GET(request: NextRequest) {
             if (row.value.suspended_users) {
               suspendedUsersMap = row.value.suspended_users;
             }
+          } else if (row.key === 'site_master_control_config' && row.value?.arena_user_ratings) {
+            arenaRatingsMap = { ...arenaRatingsMap, ...row.value.arena_user_ratings };
+          } else if (row.key === 'arena_user_ratings' && row.value) {
+            arenaRatingsMap = { ...arenaRatingsMap, ...row.value };
           } else if (row.key === 'linkedin_college_verifications' && Array.isArray(row.value)) {
             row.value.forEach((v: any) => {
               const isApproved =
@@ -339,6 +344,14 @@ export async function GET(request: NextRequest) {
         owned_projects_count: ownedProjects.length,
         memberships_count: memberships.length,
         hackathon_teams_count: hackathonTeams.length,
+        arena_rating: arenaRatingsMap[p.user_id]?.elo || 1200,
+        arena_stats: arenaRatingsMap[p.user_id] || {
+          elo: 1200,
+          matches: 0,
+          wins: 0,
+          losses: 0,
+          tier: 'Silver',
+        },
         owned_projects: ownedProjects,
         memberships: memberships,
         hackathon_teams: hackathonTeams,

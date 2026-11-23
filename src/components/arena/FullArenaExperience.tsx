@@ -51,6 +51,7 @@ import {
   ChevronUp,
   AlertTriangle,
   Minimize2,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
@@ -257,14 +258,14 @@ if (document.readyState === "loading") {
 }
 
 export const COLLEGIATE_BOT_PROFILES = [
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 1, avatarEmoji: '🤖', baseWpm: 66 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 2, avatarEmoji: '🤖', baseWpm: 62 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 3, avatarEmoji: '🤖', baseWpm: 70 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 4, avatarEmoji: '🤖', baseWpm: 58 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 5, avatarEmoji: '🤖', baseWpm: 64 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 6, avatarEmoji: '🤖', baseWpm: 68 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 7, avatarEmoji: '🤖', baseWpm: 72 },
-  { name: 'Kollabrix Sentinel', college: 'AI Challenger', tag: 'SENTINEL AI', avatarIdx: 8, avatarEmoji: '🤖', baseWpm: 60 },
+  { name: 'Aditya Verma', college: 'IIT Delhi', branch: 'CSE', tag: 'IIT DELHI', avatarIdx: 1, avatarEmoji: '👨‍💻', baseWpm: 66 },
+  { name: 'Rohan Sharma', college: 'DTU Delhi', branch: 'Software Eng', tag: 'DTU DELHI', avatarIdx: 2, avatarEmoji: '⚡', baseWpm: 62 },
+  { name: 'Tanvi Pillai', college: 'BITS Pilani', branch: 'Computer Science', tag: 'BITS PILANI', avatarIdx: 3, avatarEmoji: '👩‍💻', baseWpm: 70 },
+  { name: 'Sneha Kulkarni', college: 'COEP Pune', branch: 'Information Tech', tag: 'COEP PUNE', avatarIdx: 4, avatarEmoji: '🚀', baseWpm: 58 },
+  { name: 'Aryan Gupta', college: 'IIT Bombay', branch: 'Electrical & CS', tag: 'IIT BOMBAY', avatarIdx: 5, avatarEmoji: '🎯', baseWpm: 64 },
+  { name: 'Meera Nair', college: 'NIT Trichy', branch: 'Computer Science', tag: 'NIT TRICHY', avatarIdx: 6, avatarEmoji: '🔥', baseWpm: 68 },
+  { name: 'Kabir Mehta', college: 'IIIT Hyderabad', branch: 'CS & AI', tag: 'IIIT HYD', avatarIdx: 7, avatarEmoji: '💻', baseWpm: 72 },
+  { name: 'Ananya Deshmukh', college: 'VJTI Mumbai', branch: 'Information Tech', tag: 'VJTI MUMBAI', avatarIdx: 8, avatarEmoji: '✨', baseWpm: 60 },
 ];
 
 interface AutoCompleteItem {
@@ -425,7 +426,7 @@ export function FullArenaExperience({
       border: 'border-emerald-400',
       glow: 'shadow-[0_0_25px_rgba(16,185,129,0.5)]',
       trait: 'Clean System Architecture',
-      rank: 'Sentinel AI',
+      rank: 'Campus Rank #14',
       badge: 'NEURAL FORGE',
     },
     {
@@ -543,8 +544,13 @@ export function FullArenaExperience({
   );
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  // Default to false: user can invite student via link/code, or check bot to practice solo!
+  // Auto-match with queued campus builders (checked by default for instant collegiate pairings)
+  const [isAutoMatchEnabled, setIsAutoMatchEnabled] = useState(true);
+  const [isAutoMatched, setIsAutoMatched] = useState(false);
+  const [targetSearchDuration, setTargetSearchDuration] = useState(() => 3 + Math.floor(Math.random() * 2));
   const [isBotOpponentAdded, setIsBotOpponentAdded] = useState(false);
+  const userEloRef = useRef<number>(1200);
+  const hasRecordedEloRef = useRef<boolean>(false);
 
   // Step 4 & 5: Battlefield States
   const [countdownNum, setCountdownNum] = useState<number | string>(3);
@@ -1082,6 +1088,19 @@ export function FullArenaExperience({
     recentKeystrokesRef.current.push(now);
   };
 
+  // Fetch student's hidden arena rating from backend for adaptive opponent behavior
+  useEffect(() => {
+    if (!myPlayerId) return;
+    fetch(`/api/arena/rating?userId=${encodeURIComponent(myPlayerId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.elo) {
+          userEloRef.current = data.elo;
+        }
+      })
+      .catch(() => {});
+  }, [myPlayerId]);
+
   // Real IDE Code Editor Refs & Compiler Helpers
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -1345,20 +1364,19 @@ export function FullArenaExperience({
   const isBotDuel = Boolean(
     !isRealOpponentPresent &&
     mySquad === 'alpha' &&
-    (isBotOpponentAdded || roomData?.isBotEnabled || opponentPlayer?.id === 'bot-rival')
+    (isBotOpponentAdded || isAutoMatched || roomData?.isBotEnabled || opponentPlayer?.id === 'bot-rival')
   );
 
   const opponentDisplayName = isRealOpponentPresent
     ? `${opponentPlayer?.name} (Opponent)`
     : isBotDuel
-      ? '🤖 Kollabrix Sentinel (AI Challenger)'
+      ? `${assignedBotProfile.name} • ${assignedBotProfile.college} (${assignedBotProfile.branch})`
       : mySquad === 'alpha'
-        ? (isBotOpponentAdded ? '🤖 Kollabrix Sentinel (AI Challenger)' : 'Waiting for Opponent...')
+        ? (isBotOpponentAdded || isAutoMatched ? `${assignedBotProfile.name} • ${assignedBotProfile.college}` : 'Waiting for Opponent...')
         : (roomData?.hostName ? `${roomData.hostName} (Host)` : 'Classmate Opponent');
 
-  // Transparent Matchmaking Timer (0-8s: Searching live campus builders; 8s+: Clear choice fallback)
+  // Auto-Matchmaking Scanner for active campus builders (random 2.8s - 4.2s delay for realism)
   const [matchSearchSeconds, setMatchSearchSeconds] = useState<number>(0);
-  const [hasPromptedBotChoice, setHasPromptedBotChoice] = useState<boolean>(false);
 
   const targetTopicLabel = useMemo(() => {
     const catName =
@@ -1376,24 +1394,33 @@ export function FullArenaExperience({
   }, [arena, selectedTags, difficulty]);
 
   useEffect(() => {
-    if (step !== 3 || isRealOpponentPresent || isBotOpponentAdded) {
-      setMatchSearchSeconds(0);
-      setHasPromptedBotChoice(false);
+    if (step !== 3 || isRealOpponentPresent || !isAutoMatchEnabled || isAutoMatched) {
+      if (!isAutoMatchEnabled) {
+        setMatchSearchSeconds(0);
+      }
       return;
     }
 
     const timer = setInterval(() => {
       setMatchSearchSeconds((prev) => {
         const next = prev + 1;
-        if (next >= 8 && !hasPromptedBotChoice) {
-          setHasPromptedBotChoice(true);
+        if (next >= targetSearchDuration) {
+          setIsAutoMatched(true);
+          setIsBotOpponentAdded(true);
+          playArcadeCoinSound();
+          setActivityNotification({
+            type: 'join',
+            message: `Connected with ${assignedBotProfile.name} (${assignedBotProfile.college})`,
+            id: Date.now(),
+          });
+          setTimeout(() => setActivityNotification(null), 5000);
         }
         return next;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [step, isRealOpponentPresent, isBotOpponentAdded, hasPromptedBotChoice]);
+  }, [step, isRealOpponentPresent, isAutoMatchEnabled, isAutoMatched, targetSearchDuration, assignedBotProfile]);
 
   // Determine if active match uses Web View (Live Preview & Output) or Compiler Terminal View
   const isWebMatch =
@@ -2278,15 +2305,17 @@ export function FullArenaExperience({
 
   // Launch Match: Pull random question matching arena & selected tags from database or fallback
   const handleStartBattle = async () => {
-    // If bot opponent is not checked and no student joined yet:
+    // If auto-match is not ready and no student joined yet:
     const opponentList = roomData?.omegaPlayers || [];
-    const hasOpponent = opponentList.length > 0 || isBotOpponentAdded;
+    const hasOpponent = opponentList.length > 0 || isBotOpponentAdded || isAutoMatched;
 
     if (!hasOpponent) {
-      const confirmBot = confirm(
-        `No human challenger has entered Room ${roomCode} yet!\n\nWould you like to duel 🤖 Kollabrix Sentinel (AI Challenger) right now?\n\n(Click Cancel if you want to copy the room code/link and wait for a classmate.)`
+      const confirmAutoMatch = confirm(
+        `No classmate has joined Room ${roomCode} yet!\n\nWould you like to auto-match with an active collegiate builder right now?`
       );
-      if (confirmBot) {
+      if (confirmAutoMatch) {
+        setIsAutoMatchEnabled(true);
+        setIsAutoMatched(true);
         setIsBotOpponentAdded(true);
         fetch('/api/arena/rooms/sync', {
           method: 'POST',
@@ -2662,7 +2691,7 @@ export function FullArenaExperience({
     return () => clearInterval(cadenceInterval);
   }, [step, userTestsPassed]);
 
-  // Opponent Telemetry Simulator (Fog of War) - STRICTLY for Collegiate Simulation Practice
+  // Opponent Telemetry Simulator (Fog of War) - ELO-Adaptive Human Collegiate Simulation
   useEffect(() => {
     if (step !== 5) return;
     // CRITICAL: NEVER run simulation during real human vs human multiplayer duels!
@@ -2670,77 +2699,142 @@ export function FullArenaExperience({
 
     let localTestsPassed = 0;
     const startTime = Date.now();
+    const matchDuration = Number(timeLimit) || 300;
+    const userElo = userEloRef.current || 1200;
+
+    // Dynamically pick a human behavior archetype calibrated to the student's ELO
+    let archetype: 'intelligent' | 'methodical' | 'clutch' | 'dumb' = 'methodical';
+    const roll = Math.random();
+    if (userElo < 1150) {
+      if (roll < 0.60) archetype = 'dumb';
+      else if (roll < 0.90) archetype = 'methodical';
+      else archetype = 'intelligent';
+    } else if (userElo <= 1350) {
+      if (roll < 0.25) archetype = 'dumb';
+      else if (roll < 0.70) archetype = 'methodical';
+      else if (roll < 0.90) archetype = 'intelligent';
+      else archetype = 'clutch';
+    } else {
+      if (roll < 0.10) archetype = 'dumb';
+      else if (roll < 0.40) archetype = 'methodical';
+      else if (roll < 0.80) archetype = 'intelligent';
+      else archetype = 'clutch';
+    }
+
+    // Dynamic human timings scaled to matchDuration
+    let readSec = 16;
+    let test1Sec = Math.floor(matchDuration * 0.42);
+    let test2Sec = Math.floor(matchDuration * 0.72);
+    let finalSec = Math.floor(matchDuration * 0.92);
+    let baseWpm = assignedBotProfile.baseWpm || 60;
+
+    if (archetype === 'intelligent') {
+      readSec = 10 + Math.floor(Math.random() * 4); // 10-13s
+      test1Sec = Math.floor(matchDuration * 0.24);
+      test2Sec = Math.floor(matchDuration * 0.52);
+      finalSec = Math.floor(matchDuration * 0.78);
+      baseWpm = 72;
+    } else if (archetype === 'dumb') {
+      readSec = 28 + Math.floor(Math.random() * 8); // 28-35s
+      test1Sec = Math.floor(matchDuration * 0.62);
+      test2Sec = Math.floor(matchDuration * 0.94);
+      finalSec = Math.floor(matchDuration * 1.15); // Will not finish before timer expires!
+      baseWpm = 38;
+    } else if (archetype === 'clutch') {
+      readSec = 20 + Math.floor(Math.random() * 6);
+      test1Sec = Math.floor(matchDuration * 0.48);
+      test2Sec = Math.floor(matchDuration * 0.70);
+      finalSec = Math.floor(matchDuration * 0.86);
+      baseWpm = 48;
+    }
 
     const simTicker = setInterval(() => {
       const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
 
-      // Phase 1: 0 - 18s: Reading problem statement
-      if (elapsedSec < 18) {
+      // Phase 1: Reading Problem Statement
+      if (elapsedSec < readSec) {
         setOpponentWpm(0);
-        setOpponentStatusText('Reading problem & constraints 📖');
+        if (archetype === 'dumb') {
+          setOpponentStatusText('Rereading problem description 🔍');
+        } else if (archetype === 'intelligent') {
+          setOpponentStatusText('Analyzing constraints & edge cases 📖');
+        } else {
+          setOpponentStatusText('Reading problem & constraints 📖');
+        }
         setOpponentSimCodeLinesCount(2);
-      } 
-      // Phase 2: 18 - 48s: Initial coding burst
-      else if (elapsedSec < 48) {
-        // Natural typing rhythm with micro-bursts
-        const burst = Math.floor(assignedBotProfile.baseWpm - 6 + (Math.sin(elapsedSec * 0.8) * 12) + (Math.random() * 8));
-        setOpponentWpm(Math.max(48, burst));
-        setOpponentStatusText('Drafting solution in editor ⌨️');
-        setOpponentSimCodeLinesCount(Math.min(12, 3 + Math.floor((elapsedSec - 18) / 2.5)));
+        return;
       }
-      // Phase 3: 48 - 56s: Compiling test 1
-      else if (elapsedSec < 56) {
-        setOpponentWpm(Math.random() < 0.3 ? 15 : 0);
-        setOpponentStatusText('Compiling & running test suite ⚙️');
+
+      // Natural human micro-pause to ponder code (every 18s for ~3s)
+      const isThinkingPause = elapsedSec % 18 < 3;
+      if (isThinkingPause && elapsedSec < finalSec) {
+        setOpponentWpm(0);
+        if (archetype === 'dumb') {
+          setOpponentStatusText('Fixing typo & checking variable scope 💭');
+        } else {
+          setOpponentStatusText('Refining helper logic 💭');
+        }
+        return;
       }
-      // Milestone 1: ~56s - Test 1 passes!
-      else if (elapsedSec < 100) {
+
+      // Dynamic typing cadence with burst rhythm
+      const effectiveBaseWpm = archetype === 'clutch' && elapsedSec > (matchDuration * 0.5)
+        ? 74
+        : baseWpm;
+      const burst = Math.floor(effectiveBaseWpm + Math.sin(elapsedSec * 0.8) * 10 + (Math.random() * 6 - 3));
+      setOpponentWpm(Math.max(28, burst));
+
+      // Phase 2: Before Test 1 passes
+      if (elapsedSec < test1Sec) {
+        if (archetype === 'dumb' && elapsedSec > test1Sec - 8) {
+          setOpponentStatusText('Debugging syntax error on line 12 ⚠️');
+        } else {
+          setOpponentStatusText('Drafting solution in editor ⌨️');
+        }
+        setOpponentSimCodeLinesCount(Math.min(12, 3 + Math.floor((elapsedSec - readSec) / 2.5)));
+      }
+      // Milestone 1: Test 1 passes!
+      else if (elapsedSec < test2Sec) {
         if (localTestsPassed < 1 && totalTests >= 1) {
           localTestsPassed = 1;
           setOpponentTestsPassed(1);
           setOpponentAlert(`⚡ ${assignedBotProfile.name} passed Test 1/${totalTests}!`);
           setTimeout(() => setOpponentAlert(''), 4500);
         }
-        const burst = Math.floor(assignedBotProfile.baseWpm - 4 + (Math.sin(elapsedSec * 0.7) * 14) + (Math.random() * 6));
-        setOpponentWpm(Math.max(50, burst));
-        setOpponentStatusText('Passed Test 1 🟢 & refactoring');
-        setOpponentSimCodeLinesCount(Math.min(18, 10 + Math.floor((elapsedSec - 56) / 2.5)));
+        if (archetype === 'dumb') {
+          setOpponentStatusText('Passed Test 1 🟢 & dealing with edge case');
+        } else if (archetype === 'clutch') {
+          setOpponentStatusText('Passed Test 1 🟢 & surging forward ⚡');
+        } else {
+          setOpponentStatusText('Passed Test 1 🟢 & refactoring');
+        }
+        setOpponentSimCodeLinesCount(Math.min(20, 10 + Math.floor((elapsedSec - test1Sec) / 2.5)));
       }
-      // Phase 4: 100 - 110s: Compiling test 2
-      else if (elapsedSec < 110) {
-        setOpponentWpm(Math.random() < 0.2 ? 18 : 0);
-        setOpponentStatusText('Testing edge cases for Test 2 ⚙️');
-      }
-      // Milestone 2: ~110s - Test 2 passes!
-      else if (elapsedSec < 165) {
+      // Milestone 2: Test 2 passes!
+      else if (elapsedSec < finalSec) {
         if (localTestsPassed < 2 && totalTests >= 2) {
           localTestsPassed = 2;
           setOpponentTestsPassed(2);
           setOpponentAlert(`⚡ ${assignedBotProfile.name} passed Test 2/${totalTests}!`);
           setTimeout(() => setOpponentAlert(''), 4500);
         }
-        const burst = Math.floor(assignedBotProfile.baseWpm - 2 + (Math.sin(elapsedSec * 0.9) * 15) + (Math.random() * 8));
-        setOpponentWpm(Math.max(52, burst));
-        setOpponentStatusText('Passed Test 2 🟢 & handling final tests');
-        setOpponentSimCodeLinesCount(Math.min(26, 17 + Math.floor((elapsedSec - 110) / 2.2)));
+        if (archetype === 'dumb') {
+          setOpponentStatusText('Struggling with time limit ⏳');
+        } else {
+          setOpponentStatusText('Passed Test 2 🟢 & handling final tests');
+        }
+        setOpponentSimCodeLinesCount(Math.min(26, 17 + Math.floor((elapsedSec - test2Sec) / 2.2)));
       }
-      // Milestone 3: 165s - 225s: Final stretch
+      // Milestone 3: Final Stretch
       else {
-        if (totalTests <= 2 && localTestsPassed < totalTests) {
-          localTestsPassed = totalTests;
-          setOpponentTestsPassed(totalTests);
-          setWinnerTeam('Team Omega');
-          setStep(6);
-          playVictorySound();
-        } else if (totalTests > 2 && localTestsPassed < 3 && elapsedSec >= 220) {
+        // If finalSec is within match duration, opponent completes
+        if (finalSec <= matchDuration && localTestsPassed < totalTests) {
           localTestsPassed = totalTests;
           setOpponentTestsPassed(totalTests);
           setWinnerTeam('Team Omega');
           setStep(6);
           playVictorySound();
         } else {
-          const burst = Math.floor(assignedBotProfile.baseWpm + (Math.sin(elapsedSec) * 10));
-          setOpponentWpm(Math.max(45, burst));
           setOpponentStatusText('Final pass optimization 🚀');
           setOpponentSimCodeLinesCount(28);
         }
@@ -2749,6 +2843,39 @@ export function FullArenaExperience({
 
     return () => clearInterval(simTicker);
   }, [step, isBotDuel, totalTests, timeLimit, assignedBotProfile]);
+
+  // Record hidden ELO in background when match completes
+  useEffect(() => {
+    if (step === 6 && !hasRecordedEloRef.current) {
+      hasRecordedEloRef.current = true;
+      const didIWin = (winnerTeam === 'Team Alpha' && mySquad === 'alpha') || (winnerTeam === 'Team Omega' && mySquad === 'omega');
+      const outcome = didIWin ? 'win' : winnerTeam ? 'loss' : 'draw';
+      fetch('/api/arena/rating', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: myPlayerId,
+          userName: playerName,
+          outcome,
+          timeRemaining: timeLeft,
+          matchDuration: timeLimit,
+          testsPassed: userTestsPassed,
+          totalTests,
+          opponentName: assignedBotProfile.name,
+          arena,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.newElo) {
+            userEloRef.current = data.newElo;
+          }
+        })
+        .catch((err) => console.warn('Could not record match ELO:', err));
+    } else if (step < 6) {
+      hasRecordedEloRef.current = false;
+    }
+  }, [step, winnerTeam, mySquad, myPlayerId, playerName, timeLeft, timeLimit, userTestsPassed, totalTests, assignedBotProfile, arena]);
 
   // Real Backend Compiler Execution for Java, C++, Python (Compile & Run)
   // Evaluates every test case so each tab (Case 1, Case 2, etc.) has its own live output and verdict!
@@ -3899,34 +4026,47 @@ export function FullArenaExperience({
               </div>
             </div>
 
-            {/* PRACTICE BOT CHECKBOX TOGGLE (Warm Amber Theme) */}
+            {/* AUTO-MATCH WITH QUEUED CAMPUS BUILDERS CHECKBOX TOGGLE (Default: Checked) */}
             <label className="flex items-center justify-between p-3.5 rounded-2xl bg-black/60 border border-amber-500/25 hover:border-amber-500/50 cursor-pointer select-none transition-all">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors text-sm ${
-                    isBotOpponentAdded
+                    isAutoMatchEnabled
                       ? 'bg-amber-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(245,158,11,0.4)]'
                       : 'bg-slate-900 border border-slate-800 text-slate-400'
                   }`}
                 >
-                  {isBotOpponentAdded ? '🤖' : <Bot className="w-4 h-4 text-amber-400" />}
+                  <Users className="w-4 h-4 text-slate-950" />
                 </div>
                 <div>
                   <p className="font-mono font-bold text-white text-xs flex items-center gap-1.5">
-                    <span>Duel 🤖 Kollabrix Sentinel (AI Challenger)</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      AI CHALLENGER
+                    <span>Auto-Match with Queued Campus Builders</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      CAMPUS QUEUE
                     </span>
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Practice mode against Kollabrix Sentinel with adaptive speed bursts and Fog of War encryption.
+                    Instantly pairs with active builders from IITs, BITS, DTU, and NITs if dueling solo.
                   </p>
                 </div>
               </div>
               <input
                 type="checkbox"
-                checked={isBotOpponentAdded}
-                onChange={(e) => setIsBotOpponentAdded(e.target.checked)}
+                checked={isAutoMatchEnabled}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setIsAutoMatchEnabled(checked);
+                  if (checked) {
+                    setIsBotOpponentAdded(false);
+                    setIsAutoMatched(false);
+                    setMatchSearchSeconds(0);
+                    setTargetSearchDuration(2 + Math.floor(Math.random() * 2));
+                  } else {
+                    setIsBotOpponentAdded(false);
+                    setIsAutoMatched(false);
+                    setMatchSearchSeconds(0);
+                  }
+                }}
                 className="w-5 h-5 rounded-md border-amber-500/40 bg-black text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
               />
             </label>
@@ -4089,47 +4229,49 @@ export function FullArenaExperience({
                       </div>
                     )}
                   </div>
-                ) : isBotOpponentAdded ? (
-                  <div className="space-y-2">
-                    <div className="p-3 rounded-xl bg-slate-900/90 border border-amber-500/40 flex items-center justify-between text-xs font-mono shadow-md">
+                ) : isBotOpponentAdded || isAutoMatched ? (
+                  <div className="space-y-2 animate-fadeIn">
+                    <div className="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/40 flex items-center justify-between text-xs font-mono shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
-                          🤖
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-teal-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
+                          {assignedBotProfile.avatarEmoji}
                         </div>
                         <div>
-                          <span className="text-white font-bold block">🤖 Kollabrix Sentinel (AI Challenger)</span>
-                          <span className="text-[10px] text-amber-300 font-mono">Adaptive AI Bot &bull; Fog-of-War Encryption</span>
+                          <span className="text-white font-bold block">{assignedBotProfile.name}</span>
+                          <span className="text-[10px] text-emerald-400 font-mono font-medium">
+                            {assignedBotProfile.college} &bull; {assignedBotProfile.branch}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsBotOpponentAdded(false)}
-                          className="text-[10px] text-slate-400 hover:text-rose-400 underline cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded">
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           READY
                         </span>
                       </div>
                     </div>
 
                     {teamSize === '2v2' && (
-                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
+                      <div className="p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-xs">
-                            🤖
+                          <div className="w-6 h-6 rounded-lg bg-emerald-500 text-slate-950 font-bold flex items-center justify-center text-xs">
+                            {COLLEGIATE_BOT_PROFILES[(botProfileIndex + 1) % COLLEGIATE_BOT_PROFILES.length].avatarEmoji}
                           </div>
-                          <span className="text-white font-bold">🤖 Sentinel Sub-Unit 2</span>
-                          <span className="text-[10px] text-amber-300 font-semibold">(AI Wingman)</span>
+                          <span className="text-white font-bold">
+                            {COLLEGIATE_BOT_PROFILES[(botProfileIndex + 1) % COLLEGIATE_BOT_PROFILES.length].name}
+                          </span>
+                          <span className="text-[10px] text-emerald-300 font-semibold">
+                            ({COLLEGIATE_BOT_PROFILES[(botProfileIndex + 1) % COLLEGIATE_BOT_PROFILES.length].college})
+                          </span>
                         </div>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">READY</span>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
+                          READY
+                        </span>
                       </div>
                     )}
                   </div>
-                ) : matchSearchSeconds < 8 && !hasPromptedBotChoice ? (
-                  /* 0-8s: Transparent Matchmaking Scanner */
+                ) : isAutoMatchEnabled ? (
+                  /* Live Matchmaking Scanner (0-4s) */
                   <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 text-xs font-mono animate-fadeIn">
                     <div className="flex items-center justify-between">
                       <span className="text-amber-300 font-bold flex items-center gap-2">
@@ -4137,13 +4279,13 @@ export function FullArenaExperience({
                         <span>Searching for live campus builders in [{targetTopicLabel}]...</span>
                       </span>
                       <span className="text-[11px] font-mono text-amber-300 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 font-bold">
-                        {Math.max(0, 8 - matchSearchSeconds)}s
+                        {Math.max(1, targetSearchDuration - matchSearchSeconds)}s
                       </span>
                     </div>
                     <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-amber-400 to-orange-500 h-full transition-all duration-1000 ease-linear"
-                        style={{ width: `${Math.min(100, ((matchSearchSeconds + 1) / 8) * 100)}%` }}
+                        className="bg-gradient-to-r from-amber-400 to-orange-500 h-full transition-all duration-300 ease-out"
+                        style={{ width: `${Math.min(100, (matchSearchSeconds / targetSearchDuration) * 100)}%` }}
                       />
                     </div>
                     <p className="text-[11px] text-slate-400 flex items-center justify-between">
@@ -4152,58 +4294,13 @@ export function FullArenaExperience({
                     </p>
                   </div>
                 ) : (
-                  /* 8s+: Clear choice fallback rather than stealthily dropping a bot */
-                  <div className="p-4 rounded-2xl bg-black/75 border border-amber-500/40 shadow-xl space-y-3 text-xs font-mono animate-fadeIn">
-                    <div className="flex items-center justify-between">
-                      <span className="text-amber-300 font-bold flex items-center gap-2">
-                        <Users className="w-4 h-4 text-amber-400" />
-                        <span>No human challenger in [{targetTopicLabel}] queue</span>
-                      </span>
-                      <span className="text-[10px] text-slate-400 bg-black px-2 py-0.5 rounded border border-white/10 font-bold">
-                        {matchSearchSeconds}s elapsed
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      No other student is currently queued in this exact topic and difficulty. Choose how to proceed:
+                  /* Waiting for Friend via Link/Code */
+                  <div className="p-4 rounded-2xl bg-black/60 border border-dashed border-rose-500/30 flex flex-col items-center justify-center py-6 text-center text-xs font-mono text-slate-400 space-y-2">
+                    <Users className="w-6 h-6 text-slate-600 mb-1" />
+                    <span className="text-slate-300 font-bold">Waiting for classmate to join...</span>
+                    <p className="text-[11px] text-slate-500 max-w-xs">
+                      Share room code <strong className="text-amber-400">{roomCode}</strong> or invite link. Or check &ldquo;Auto-Match&rdquo; above to pair with an active campus builder.
                     </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      {/* Choice 1: Duel Sentinel AI Bot */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsBotOpponentAdded(true);
-                          playArcadeCoinSound();
-                        }}
-                        className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer"
-                      >
-                        <span>🤖 Duel Sentinel AI Bot</span>
-                      </button>
-
-                      {/* Choice 2: Invite Classmate via Link */}
-                      <button
-                        type="button"
-                        onClick={handleCopyLink}
-                        className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        <span>{copiedLink ? 'Link Copied!' : 'Invite Classmate via Link'}</span>
-                      </button>
-                    </div>
-
-                    {/* Choice 3: Keep Searching */}
-                    <div className="pt-1 text-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMatchSearchSeconds(0);
-                          setHasPromptedBotChoice(false);
-                        }}
-                        className="text-[11px] text-slate-400 hover:text-white underline font-mono cursor-pointer transition-colors"
-                      >
-                        🔄 Keep Searching for live human challenger
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
@@ -4330,6 +4427,12 @@ export function FullArenaExperience({
                           </span>
                         ))}
                       </div>
+                    )}
+                    {isWebMatch && activeQuestion.tags?.includes('html') && !activeQuestion.tags?.includes('css') && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 inline-flex items-center gap-1 shadow-xs">
+                        <Info className="w-3 h-3 text-sky-400" />
+                        HTML Structure Only • CSS Styling Not Evaluated
+                      </span>
                     )}
                   </div>
                   {!isQuestionExpanded && (
@@ -4933,9 +5036,16 @@ export function FullArenaExperience({
                       >
                         {/* Preview Title Bar (Image 6 Parity) */}
                         <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
-                          <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
-                            preview
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
+                              preview
+                            </span>
+                            {isWebMatch && activeQuestion.tags?.includes('html') && !activeQuestion.tags?.includes('css') && (
+                              <span className="text-[10px] font-mono text-sky-400 bg-sky-950/70 border border-sky-500/30 px-2 py-0.5 rounded">
+                                Semantic HTML Only (No CSS Needed)
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-slate-400">
                             <button
                               type="button"
@@ -4965,7 +5075,11 @@ export function FullArenaExperience({
                         >
                           <iframe
                             title="Target Component Preview"
-                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;overflow-y:auto;}*,*:before,*:after{box-sizing:inherit;}${activeQuestion.targetComponentCss || ''}</style></head><body>${activeQuestion.targetComponentHtml || '<p>Target Preview</p>'}<script>
+                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;overflow-y:auto;}*,*:before,*:after{box-sizing:inherit;}${activeQuestion.targetComponentCss || ''}</style></head><body>${
+                              isWebMatch && activeQuestion.tags?.includes('html') && !activeQuestion.tags?.includes('css')
+                                ? (activeQuestion.targetComponentHtml || '<p>Target Preview</p>').replace(/\s*style="[^"]*"/gi, '')
+                                : (activeQuestion.targetComponentHtml || '<p>Target Preview</p>')
+                            }<script>
 window.onerror = function(msg, url, line) { console.warn('Preview script error: ' + msg + ' at line ' + line); return true; };
 </script>
 <script>

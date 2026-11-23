@@ -732,6 +732,14 @@ export interface AdminUserListItem {
   owned_projects_count: number;
   memberships_count: number;
   hackathon_teams_count: number;
+  arena_rating?: number;
+  arena_stats?: {
+    elo: number;
+    matches: number;
+    wins: number;
+    losses: number;
+    tier?: string;
+  };
   owned_projects?: Array<{ id: string; title: string; status: string }>;
   memberships?: Array<{ id: string; project_id: string; project_title: string; role: string }>;
   hackathon_teams?: Array<{ id: string; team_name: string; hackathon_id: string; hackathon_title: string; role: string }>;

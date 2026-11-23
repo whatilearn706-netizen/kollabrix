@@ -905,6 +905,7 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                 <th className="py-3.5 px-4">Role</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-4">Campus & Course</th>
+                <th className="py-3.5 px-4 text-center">Arena ELO</th>
                 <th className="py-3.5 px-4 text-center">Projects Owned</th>
                 <th className="py-3.5 px-4 text-center">Team Memberships</th>
                 <th className="py-3.5 px-4 text-right">Moderation</th>
@@ -913,13 +914,13 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
             <tbody className="divide-y divide-charcoal-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     Loading users...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     No users found matching active criteria.
                   </td>
                 </tr>
@@ -1028,6 +1029,27 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                         </div>
                         <div className="text-[11px] text-slate-500 truncate max-w-[180px]">
                           {u.course || '—'}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex flex-col items-center gap-0.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold border shadow-xs ${
+                              (u.arena_rating || 1200) >= 1500
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                                : (u.arena_rating || 1200) >= 1300
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                : (u.arena_rating || 1200) >= 1100
+                                ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                                : 'bg-slate-800 text-slate-300 border-slate-700'
+                            }`}
+                          >
+                            ⚡ {u.arena_rating || 1200}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {u.arena_stats?.matches ? `${u.arena_stats.wins}W / ${u.arena_stats.losses}L` : 'Unranked'}
+                          </span>
                         </div>
                       </td>
 
@@ -1444,6 +1466,14 @@ export function AdminUsersTab({ currentAdminId = '', authToken, defaultSubTab = 
                     Suspension Notice: {selectedUser.suspension_reason}
                   </div>
                 )}
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    ⚔️ Arena ELO: {selectedUser.arena_rating || 1200}
+                  </span>
+                  <span className="text-slate-400 font-mono text-[11px]">
+                    Tier: {selectedUser.arena_stats?.tier || 'Silver'} ({selectedUser.arena_stats?.wins || 0}W - {selectedUser.arena_stats?.losses || 0}L)
+                  </span>
+                </div>
                 {selectedUser.email && (
                   <div className="pt-2 flex items-center gap-2 flex-wrap">
                     <span className="text-cyan-300 font-mono text-xs select-all font-semibold flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/30 px-2.5 py-1 rounded-lg">
