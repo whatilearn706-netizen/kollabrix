@@ -3499,100 +3499,6 @@ export function FullArenaExperience({
                 </div>
               </div>
             </div>
-
-            {/* Modal: Join Existing Room with Code or Link */}
-            {showJoinModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-                <div className="w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-[#0b0e14]/95 border border-amber-500/35 shadow-[0_0_60px_rgba(245,158,11,0.2)] space-y-5">
-                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.1]">
-                    <div className="flex items-center gap-2.5">
-                      <span className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                        <Users className="w-5 h-5" />
-                      </span>
-                      <div>
-                        <h3 className="text-lg font-black text-white font-mono uppercase tracking-tight">
-                          Join Existing Room
-                        </h3>
-                        <p className="text-[11px] font-mono text-slate-400">
-                          Enter your classmate&apos;s 4-digit code or paste invite link
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowJoinModal(false)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1 block">
-                        Room Code or Invite Link:
-                      </label>
-                      <input
-                        type="text"
-                        value={joinCodeInput}
-                        onChange={(e) => {
-                          setJoinCodeInput(e.target.value);
-                          if (joinError) setJoinError(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (joinCodeInput.trim() && !isJoiningRoom) {
-                              handleJoinWithCodeOrLink();
-                            }
-                          }
-                        }}
-                        placeholder="e.g. KBX-4634, 4634, or invite link"
-                        className="w-full px-4 py-3 rounded-xl bg-black border border-white/[0.12] text-amber-300 font-mono text-sm focus:border-amber-400 focus:outline-none tracking-wider placeholder:text-slate-600 shadow-inner"
-                      />
-                    </div>
-
-                    {joinError && (
-                      <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-mono flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>{joinError}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowJoinModal(false)}
-                      className="px-4 py-2.5 rounded-xl bg-black hover:bg-slate-900 border border-white/[0.12] text-slate-300 font-mono text-xs font-bold transition-all cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isJoiningRoom || !joinCodeInput.trim()}
-                      onClick={() => {
-                        handleJoinWithCodeOrLink();
-                      }}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-                    >
-                      {isJoiningRoom ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Connecting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-4 h-4 fill-current" />
-                          <span>Enter Room &amp; Battle</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -5809,6 +5715,112 @@ ${jsCode || ''}
             >
               I Understand &bull; Return to Arena
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Join Existing Room with Code or Link (Mounted at top-level with guaranteed pointer events & focus) */}
+      {showJoinModal && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowJoinModal(false);
+            }
+          }}
+          className="fixed inset-0 z-[100000] pointer-events-auto select-auto flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative z-10 pointer-events-auto select-auto w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-[#0b0e14] border border-amber-500/40 shadow-[0_0_60px_rgba(245,158,11,0.25)] space-y-5"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.1]">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  <Users className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-black text-white font-mono uppercase tracking-tight">
+                    Join Existing Room
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-400">
+                    Enter your classmate&apos;s 4-digit code or paste invite link
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJoinModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer pointer-events-auto"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                  Room Code or Invite Link:
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={joinCodeInput}
+                  onChange={(e) => {
+                    setJoinCodeInput(e.target.value);
+                    if (joinError) setJoinError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (joinCodeInput.trim() && !isJoiningRoom) {
+                        handleJoinWithCodeOrLink();
+                      }
+                    }
+                  }}
+                  placeholder="e.g. KBX-4634, 4634, or invite link"
+                  className="w-full px-4 py-3 rounded-xl bg-black border border-white/[0.15] text-amber-300 font-mono text-sm focus:border-amber-400 focus:outline-none tracking-wider placeholder:text-slate-600 shadow-inner select-text pointer-events-auto cursor-text"
+                />
+              </div>
+
+              {joinError && (
+                <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-mono flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{joinError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowJoinModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-black hover:bg-slate-900 border border-white/[0.12] text-slate-300 font-mono text-xs font-bold transition-all cursor-pointer pointer-events-auto"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={isJoiningRoom || !joinCodeInput.trim()}
+                onClick={() => {
+                  handleJoinWithCodeOrLink();
+                }}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer pointer-events-auto"
+              >
+                {isJoiningRoom ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Enter Room &amp; Battle</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
