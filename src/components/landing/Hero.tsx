@@ -172,8 +172,8 @@ export function LandingHero() {
   const { user } = useAuth();
   const heroRef = useRef<HTMLElement>(null);
 
-  // Live 3D cursor tilt on the physical MacBook for authentic Awwwards depth
-  const [tilt, setTilt] = useState({ x: -6, y: 2 });
+  // Live 3D cursor tilt on the physical centered MacBook for authentic Awwwards depth
+  const [tilt, setTilt] = useState({ x: 0, y: -2 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     if (!heroRef.current) return;
@@ -181,13 +181,13 @@ export function LandingHero() {
     const xPct = (e.clientX - rect.left) / rect.width - 0.5;
     const yPct = (e.clientY - rect.top) / rect.height - 0.5;
     setTilt({
-      x: -6 + xPct * 8, // Subtle interactive 3D rotation
-      y: 2 - yPct * 5,
+      x: xPct * 7, // Subtle interactive 3D yaw rotation (-3.5deg to +3.5deg)
+      y: -2 - yPct * 4, // Subtle interactive 3D pitch rotation
     });
   };
 
   const handleMouseLeave = () => {
-    setTilt({ x: -6, y: 2 });
+    setTilt({ x: 0, y: -2 });
   };
 
   const [timerSeconds, setTimerSeconds] = useState(172); // 02:52 match clock
@@ -315,14 +315,14 @@ export function LandingHero() {
           className="w-full h-full object-cover object-center filter brightness-[1.08] contrast-[1.05]"
         />
 
-        {/* Subtle Warm Amber Glow behind Headline */}
-        <div className="absolute top-[22%] left-[4%] w-[500px] h-[500px] bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent rounded-full blur-[130px] pointer-events-none" />
+        {/* Subtle Warm Amber Glow Centered above Headline */}
+        <div className="absolute top-[8%] left-1/2 -translate-x-1/2 w-[750px] h-[380px] bg-gradient-to-b from-amber-500/12 via-amber-600/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
-        {/* Subtle Cyan / Electric Glow behind MacBook */}
-        <div className="absolute top-[18%] right-[8%] w-[650px] h-[550px] bg-gradient-to-bl from-cyan-500/10 via-indigo-600/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
+        {/* Subtle Cyan / Electric Glow behind Centered MacBook */}
+        <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[850px] h-[550px] bg-gradient-to-t from-cyan-500/10 via-indigo-600/5 to-transparent rounded-full blur-[150px] pointer-events-none" />
 
-        {/* Left Side Ambient Vignette for 100% Vector Headline Readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 md:via-black/25 to-transparent pointer-events-none" />
+        {/* Subtle Vignette for 100% Vector Headline Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80 pointer-events-none" />
 
         {/* Top & Bottom Cinematic Dissolves */}
         <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
@@ -330,133 +330,126 @@ export function LandingHero() {
       </div>
 
       {/* =========================================================================
-          MAIN HERO CONTAINER
+          MAIN HERO CONTAINER (Centered Architecture)
          ========================================================================= */}
       <motion.div
         style={{ opacity: contentOpacity, y: contentY }}
-        className="relative z-10 w-full max-w-[1600px] mx-auto flex-1 flex flex-col justify-center my-auto"
+        className="relative z-10 w-full max-w-[1440px] mx-auto flex-1 flex flex-col items-center justify-start text-center my-auto"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-12 items-center">
-          
-          {/* ================= LEFT COLUMN: MONOLITHIC EDITORIAL HEADLINE ================= */}
-          <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-center text-left">
-            
-            {/* Live Campus Pill Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45 }}
-              className="mb-4 sm:mb-5"
-            >
-              <Link
-                href="/arena"
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-[#0e1017]/90 hover:bg-[#151926] text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer backdrop-blur-md"
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                <span className="font-semibold text-slate-200">1v1 Proctored Code Combat</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] ml-1 animate-pulse" />
-              </Link>
-            </motion.div>
+        {/* Live Campus Pill Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="mb-4 sm:mb-5"
+        >
+          <Link
+            href="/arena"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-[#0e1017]/90 hover:bg-[#151926] text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer backdrop-blur-md"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span className="font-semibold text-slate-200">1v1 Proctored Code Combat</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] ml-1 animate-pulse" />
+          </Link>
+        </motion.div>
 
-            {/* Monolithic Headline: Where Reputations Are Proven In Seconds. */}
-            <motion.h1
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.1 }}
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-[4.8rem] xl:text-[5.4rem] font-black tracking-tight leading-[0.94] text-white select-none"
-            >
-              <span className="block drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">Where</span>
-              <span className="block drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">Reputations</span>
-              <span className="block drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">Are Proven</span>
-              <span className="block bg-gradient-to-r from-[#FF7A00] via-[#FF9E00] to-[#FFB800] bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(255,122,0,0.45)]">
-                In Seconds.
-              </span>
-            </motion.h1>
+        {/* Monolithic Single-Row Headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.1 }}
+          className="text-3xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-[4.2rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2"
+        >
+          <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
+            Where Reputations Are Proven{' '}
+          </span>
+          <span className="inline lg:whitespace-nowrap bg-gradient-to-r from-amber-200 via-amber-400 to-[#FF7A00] bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(255,122,0,0.55)]">
+            In Seconds.
+          </span>
+        </motion.h1>
 
-            {/* High-Status Ego Tagline */}
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-6 text-base sm:text-lg text-slate-300 leading-relaxed font-normal max-w-lg drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
-            >
-              No resume fluff. No fake GitHub stars. Real-time 1v1 code combat under fog-of-war proctoring. Step into the arena and defend your campus.
-            </motion.p>
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
+        >
+          No resume fluff. No fake GitHub stars. Real-time 1v1 code combat under fog-of-war proctoring. Step into the arena and defend your campus.
+        </motion.p>
 
-            {/* Action Buttons: Start Battle & Challenge a Friend */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="mt-8 sm:mt-9 flex flex-wrap items-center gap-3.5 sm:gap-4"
-            >
-              {/* Primary Button */}
-              <Link
-                href="/arena"
-                className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-sm sm:text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-[0_0_30px_rgba(255,255,255,0.45)] cursor-pointer"
-              >
-                <Play className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
-                <span>Start Battle →</span>
-              </Link>
+        {/* Action Buttons: Start Battle & Challenge a Friend */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-6 sm:mt-7 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
+        >
+          {/* Primary Button */}
+          <Link
+            href="/arena"
+            className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-sm sm:text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-[0_0_30px_rgba(255,255,255,0.45)] cursor-pointer"
+          >
+            <Play className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+            <span>Start Battle →</span>
+          </Link>
 
-              {/* Secondary Button */}
-              <Link
-                href="/arena?action=create"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-white text-sm sm:text-base font-semibold backdrop-blur-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
-              >
-                <Users className="w-4 h-4 text-slate-300" />
-                <span>Challenge a Friend</span>
-              </Link>
-            </motion.div>
+          {/* Secondary Button */}
+          <Link
+            href="/arena?action=create"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-white text-sm sm:text-base font-semibold backdrop-blur-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+          >
+            <Users className="w-4 h-4 text-slate-300" />
+            <span>Challenge a Friend</span>
+          </Link>
+        </motion.div>
 
-            {/* Verified Campus Battle Badges */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="mt-7 flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400"
-            >
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Zero-Cheating Fog of War</span>
-              </div>
-              <span className="text-slate-700">•</span>
-              <div className="flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-amber-400" />
-                <span>0.04s Sandboxed Exec</span>
-              </div>
-              <span className="text-slate-700">•</span>
-              <div className="flex items-center gap-1.5">
-                <Trophy className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Live Campus ELO</span>
-              </div>
-            </motion.div>
+        {/* Verified Campus Battle Badges */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-400"
+        >
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Zero-Cheating Fog of War</span>
           </div>
+          <span className="text-slate-700">•</span>
+          <div className="flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5 text-amber-400" />
+            <span>0.04s Sandboxed Exec</span>
+          </div>
+          <span className="text-slate-700">•</span>
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Live Campus ELO</span>
+          </div>
+        </motion.div>
 
-          {/* ================= RIGHT COLUMN: PHOTOREALISTIC AWWWARDS MACBOOK (LORENZO LOTTICI STYLE) ================= */}
-          <div className="lg:col-span-7 xl:col-span-7 flex items-center justify-center lg:justify-end relative">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="w-full max-w-[920px] transition-transform duration-300 ease-out"
-              style={{
-                perspective: '1400px',
-              }}
-            >
-              {/* Interactive 3D Cursor Tilt Container */}
-              <Link
-                href="/arena"
-                prefetch={false}
-                title="Click to enter 1v1 Battle Arena"
-                style={{
-                  transform: `perspective(1400px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
-                  transformStyle: 'preserve-3d',
-                }}
-                className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer"
-              >
-                {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
-                <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner">
+        {/* ================= CENTERED PHOTOREALISTIC AWWWARDS MACBOOK ================= */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 24 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.25 }}
+          className="w-full max-w-[1020px] xl:max-w-[1140px] mt-8 sm:mt-11 transition-transform duration-300 ease-out mx-auto"
+          style={{
+            perspective: '1400px',
+          }}
+        >
+          {/* Interactive 3D Cursor Tilt Container */}
+          <Link
+            href="/arena"
+            prefetch={false}
+            title="Click to enter 1v1 Battle Arena"
+            style={{
+              transform: `perspective(1400px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
+              transformStyle: 'preserve-3d',
+            }}
+            className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer"
+          >
+            {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
+            <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left">
                   
                   {/* Top HUD: Brand & Live Match Clock */}
                   <div className="h-7 sm:h-9 bg-[#0b0e17] px-2.5 sm:px-3.5 flex items-center justify-between border-b border-neutral-800 text-[10px] sm:text-xs font-mono select-none z-10">
@@ -665,8 +658,6 @@ export function LandingHero() {
                 <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 w-[85%] h-16 bg-gradient-to-t from-white/[0.04] via-slate-400/[0.02] to-transparent rounded-full blur-xl pointer-events-none z-30" />
               </Link>
             </motion.div>
-          </div>
-        </div>
       </motion.div>
     </section>
   );
