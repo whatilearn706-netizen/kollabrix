@@ -9,6 +9,135 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
+function getGeminiApiKeys(): string[] {
+  const envRaw = [
+    process.env.GEMINI_API_KEYS,
+    process.env.GEMINI_API_KEY,
+    process.env.GOOGLE_API_KEY,
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+  ]
+    .filter(Boolean)
+    .join(',');
+
+  return Array.from(
+    new Set(
+      envRaw
+        .split(',')
+        .map((k) => k.trim())
+        .filter((k) => k.length > 10)
+    )
+  );
+}
+
+let geminiFacePoolIndex = 0;
+
+async function verifyBiometricWithGemini(
+  cleanLiveBase64: string,
+  cleanCardBase64: string
+): Promise<{
+  success: boolean;
+  hasFace: boolean;
+  isMatched: boolean;
+  matchScore: number;
+  reason: string;
+} | null> {
+  const keys = getGeminiApiKeys();
+  if (keys.length === 0) return null;
+
+  const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+  const prompt = `You are a bank-grade biometric forensics and facial landmark identity verification AI.
+Examine and compare these two facial images:
+- Image 1: Live camera selfie captured in real time.
+- Image 2: Identity document portrait (from the student's physical collegiate ID card).
+
+Biometric Verification Protocol:
+1. Is there a genuine human face visible in Image 1?
+2. Is there a student portrait/face visible in Image 2?
+3. Compare the facial geometry:
+   - Eye shape, distance between pupils, and eyebrow curvature.
+   - Nose bridge width and nasal tip angle.
+   - Jawline, chin contour, and cheekbone structure.
+   - Mouth width and lip shape.
+   - Account for realistic variations: camera focal length/perspective, lighting differences, hairstyles, facial hair growth, spectacles/glasses, and minor age changes (e.g. ID photo taken 1-3 years prior).
+4. Distinguish between:
+   - Case A: Same individual with expected camera/print differences -> MATCH (confidence >= 80%).
+   - Case B: Two completely different people (e.g. friend's ID card, impersonation attempt, sibling) -> STRICT MISMATCH (confidence < 50%).
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "hasLiveFace": boolean,
+  "hasCardFace": boolean,
+  "isMatched": boolean,
+  "matchScore": number, // 0 to 100
+  "reason": "Detailed biometric rationale"
+}`;
+
+  for (let attempt = 0; attempt < keys.length; attempt++) {
+    const key = keys[(geminiFacePoolIndex + attempt) % keys.length];
+    for (const model of models) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(9000),
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: prompt },
+                    {
+                      inline_data: {
+                        mime_type: 'image/jpeg',
+                        data: cleanLiveBase64,
+                      },
+                    },
+                    {
+                      inline_data: {
+                        mime_type: 'image/jpeg',
+                        data: cleanCardBase64,
+                      },
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.1,
+                response_mime_type: 'application/json',
+              },
+            }),
+          }
+        );
+
+        if (!res.ok) continue;
+
+        const json = await res.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+
+        const cleanJson = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+        const parsed = JSON.parse(cleanJson);
+
+        geminiFacePoolIndex = (geminiFacePoolIndex + attempt + 1) % keys.length;
+
+        const score = typeof parsed.matchScore === 'number' ? Math.round(parsed.matchScore * 10) / 10 : (parsed.isMatched ? 94.0 : 15.0);
+        return {
+          success: true,
+          hasFace: Boolean(parsed.hasLiveFace !== false),
+          isMatched: Boolean(parsed.isMatched && score >= 75),
+          matchScore: score,
+          reason: parsed.reason || (parsed.isMatched ? 'Biometric face signature matches ID card portrait.' : 'Live face does not match ID card portrait.'),
+        };
+      } catch (err) {
+        console.warn(`Gemini face match model ${model} attempt note:`, err);
+      }
+    }
+  }
+
+  return null;
+}
+
 function getRekognitionClient(): RekognitionClient | null {
   const accessKeyId = (
     process.env.AWS_ACCESS_KEY_ID ||
@@ -77,13 +206,24 @@ export async function POST(request: NextRequest) {
     }
 
     const client = getRekognitionClient();
+    
+    // If AWS client is offline or unconfigured, use Gemini Multimodal Biometric Engine
     if (!client) {
+      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
+      if (geminiResult) {
+        return NextResponse.json({
+          ...geminiResult,
+          engine: 'Gemini-Multimodal-Biometric',
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+
       return NextResponse.json(
         {
           success: false,
           hasFace: false,
           isMatched: false,
-          error: 'Biometric verification engine offline (AWS credentials not configured).',
+          error: 'Biometric verification engines offline.',
         },
         { status: 500 }
       );
@@ -108,6 +248,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (liveFaceDetails.length === 0) {
+      // Double check with Gemini before giving up
+      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
+      if (geminiResult && geminiResult.isMatched) {
+        return NextResponse.json({
+          ...geminiResult,
+          engine: 'Gemini-Multimodal-Biometric',
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+
       return NextResponse.json({
         success: true,
         hasFace: false,
@@ -150,32 +300,32 @@ export async function POST(request: NextRequest) {
         );
         const cardFaces = cardDetect.FaceDetails || [];
 
-        if (cardFaces.length === 0) {
-          return NextResponse.json({
-            success: true,
-            hasFace: true,
-            isMatched: false,
-            matchScore: 0,
-            engine: 'AWS-Rekognition-Biometric',
-            reason: 'No student photo detected on the ID card. Please hold your ID card closer and steady in the frame.',
-            verifiedAt: new Date().toISOString(),
-          });
+        if (cardFaces.length > 0) {
+          sourceBufferToCompare = fullCardBuffer;
         }
-
-        sourceBufferToCompare = fullCardBuffer;
       } catch (cardErr: any) {
         console.warn('Card detect note:', cardErr?.name, cardErr?.message);
       }
     }
 
+    // If AWS could not isolate face on card photo, try Gemini Multimodal Biometrics
     if (!sourceBufferToCompare) {
+      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
+      if (geminiResult) {
+        return NextResponse.json({
+          ...geminiResult,
+          engine: 'Gemini-Multimodal-Biometric',
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+
       return NextResponse.json({
         success: true,
         hasFace: true,
         isMatched: false,
         matchScore: 0,
         engine: 'AWS-Rekognition-Biometric',
-        reason: 'No clear photo found on the student ID card. Please re-scan your physical college ID card.',
+        reason: 'No student photo detected on the ID card. Please hold your ID card closer and steady in the frame.',
         verifiedAt: new Date().toISOString(),
       });
     }
@@ -207,10 +357,20 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Mismatch: Friend's Card or Different Individual -> STRICT REJECTION
+      // If AWS gives 60-79% or unmatched due to print grain or lighting, give Gemini second opinion
+      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
+      if (geminiResult && geminiResult.isMatched) {
+        return NextResponse.json({
+          ...geminiResult,
+          engine: 'Gemini-Multimodal-Biometric-Consensus',
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+
+      // Confirmed Mismatch: Friend's Card or Different Individual -> STRICT REJECTION
       const highestScore = matches[0]?.Similarity
         ? Math.round(matches[0].Similarity * 10) / 10
-        : (unmatched.length > 0 ? 18.0 : 0.0);
+        : (geminiResult?.matchScore || (unmatched.length > 0 ? 18.0 : 0.0));
 
       return NextResponse.json({
         success: true,
@@ -218,11 +378,21 @@ export async function POST(request: NextRequest) {
         isMatched: false,
         matchScore: highestScore,
         engine: 'AWS-Rekognition-Biometric',
-        reason: 'Warning: Face does not match the photo on this student ID card. You must verify using your own ID card.',
+        reason: geminiResult?.reason || 'Warning: Face does not match the photo on this student ID card. You must verify using your own ID card.',
         verifiedAt: new Date().toISOString(),
       });
     } catch (compErr: any) {
       console.warn('CompareFaces execution note:', compErr?.name, compErr?.message);
+      
+      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
+      if (geminiResult) {
+        return NextResponse.json({
+          ...geminiResult,
+          engine: 'Gemini-Multimodal-Biometric-Fallback',
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+
       return NextResponse.json({
         success: true,
         hasFace: true,

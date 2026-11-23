@@ -195,7 +195,7 @@ async function cropPassportPhotoFromCard(
 // ── Real-Time Computer Vision Frame Analyzer (Solution 1: Anti-Finger, Anti-Spoofing & Active Blink Liveness) ──
 function analyzeLiveFaceFrame(
   video: HTMLVideoElement,
-  canvas: HTMLCanvasElement,
+  _canvas?: HTMLCanvasElement | null,
   eyeHistory?: number[]
 ): {
   isObstructed: boolean;
@@ -204,13 +204,14 @@ function analyzeLiveFaceFrame(
   statusMessage: string;
 } {
   try {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return { isObstructed: false, hasFaceGeometry: true, isBlinkDetected: false, statusMessage: 'Align face in circle...' };
-
+    const offscreen = document.createElement('canvas');
     const w = 160;
     const h = 120;
-    canvas.width = w;
-    canvas.height = h;
+    offscreen.width = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return { isObstructed: false, hasFaceGeometry: true, isBlinkDetected: false, statusMessage: 'Align face in circle...' };
+
     ctx.drawImage(video, 0, 0, w, h);
 
     // Target the central face aperture
@@ -352,6 +353,7 @@ export function StepPathBBiometricScan({
   const [scanSecondsLeft, setScanSecondsLeft] = useState(SCAN_DURATION_SECONDS);
   const [scanFramesCount, setScanFramesCount] = useState(0);
   const [isBackendScanning, setIsBackendScanning] = useState(false);
+  const isBackendScanningRef = useRef(false);
   const [lastLiveDetection, setLastLiveDetection] = useState<string>('Hold physical college ID card inside the frame...');
 
   // Physical Card Detection Gates
@@ -509,20 +511,22 @@ export function StepPathBBiometricScan({
     }
   }, []);
 
-  // ── Grab Current Video Frame via Canvas ──
+  // ── Grab Current Video Frame via Dedicated Offscreen Canvas ──
   const captureCurrentFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return null;
 
     try {
-      const canvas = canvasRef.current || document.createElement('canvas');
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
-      const ctx = canvas.getContext('2d');
+      const vw = video.videoWidth || 1280;
+      const vh = video.videoHeight || 720;
+      const offscreen = document.createElement('canvas');
+      offscreen.width = vw;
+      offscreen.height = vh;
+      const ctx = offscreen.getContext('2d');
       if (!ctx) return null;
 
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.88);
+      ctx.drawImage(video, 0, 0, vw, vh);
+      return offscreen.toDataURL('image/jpeg', 0.92);
     } catch (e) {
       return null;
     }
@@ -558,6 +562,8 @@ export function StepPathBBiometricScan({
   // ── Send Frame to Backend OCR API ──
   const sendFrameToBackend = useCallback(
     async (frameBase64: string) => {
+      if (isBackendScanningRef.current) return;
+      isBackendScanningRef.current = true;
       try {
         setIsBackendScanning(true);
         const res = await fetch('/api/verify/id-card/scan', {
@@ -579,7 +585,6 @@ export function StepPathBBiometricScan({
           if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
           setDuplicateCardError(data.error || 'This student ID card is already registered with another account.');
           setLastLiveDetection('Fraud Alert: Card already linked to another student account.');
-          setIsBackendScanning(false);
           return;
         }
 
@@ -594,22 +599,19 @@ export function StepPathBBiometricScan({
           idCardSnapshotRef.current = cardSnapshot;
           setDuplicateCardError(null);
 
-          const studentName =
-            ext.studentName && !/what\s*i\s*learn/i.test(ext.studentName)
-              ? ext.studentName
-              : (displayName && !/what\s*i\s*learn/i.test(displayName) ? displayName : 'Student Builder');
+          const verifiedCardName = (ext.studentName || '').trim();
 
           setExtractedData({
-            college: ext.college || 'S-VYASA Deemed to be University',
+            college: ext.college || currentCollege || '',
             studentRollNo: ext.studentRollNo || '',
-            course: ext.course || 'B.Tech - CSE (AI & ML)',
+            course: ext.course || 'B.Tech - Computer Science & Engineering',
             academicYear: ext.academicYear || '1st Year (Freshman)',
-            studentName,
+            studentName: verifiedCardName, // EXACT CARD NAME! NO Google fallback!
           });
 
           const rollStr = ext.studentRollNo ? ` • Roll: ${ext.studentRollNo}` : '';
-          const nameStr = ext.studentName ? ` • ${ext.studentName}` : '';
-          setLastLiveDetection(`✓ Student ID Card Detected${rollStr}${nameStr}`);
+          const nameStr = verifiedCardName ? ` • ${verifiedCardName}` : '';
+          setLastLiveDetection(`✓ Card Verified: ${nameStr || 'Physical Student ID'}${rollStr}`);
           playSound('beep');
 
           // Crop passport portrait from card frame
@@ -625,6 +627,7 @@ export function StepPathBBiometricScan({
       } catch (err) {
         // Continue scanning silently
       } finally {
+        isBackendScanningRef.current = false;
         setIsBackendScanning(false);
       }
     },
@@ -1168,18 +1171,36 @@ export function StepPathBBiometricScan({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={!isCardDetected}
-                  onClick={finalizeCardScan}
-                  className={`px-4 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider shrink-0 transition-all ${
-                    isCardDetected
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 cursor-pointer shadow-md shadow-emerald-500/25'
-                      : 'bg-white/10 text-slate-400 cursor-not-allowed border border-white/10'
-                  }`}
-                >
-                  {isCardDetected ? `Lock & Confirm (${scanSecondsLeft}s)` : `Hold Card to Lock (${scanSecondsLeft}s)`}
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isBackendScanning}
+                    onClick={() => {
+                      const frame = captureCurrentFrame();
+                      if (frame) {
+                        setLastLiveDetection('Scanning high-res card frame with Gemini Vision...');
+                        sendFrameToBackend(frame);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer border border-white/10 disabled:opacity-50"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Scan Now</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!isCardDetected}
+                    onClick={finalizeCardScan}
+                    className={`px-4 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider shrink-0 transition-all ${
+                      isCardDetected
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 cursor-pointer shadow-md shadow-emerald-500/25'
+                        : 'bg-white/10 text-slate-400 cursor-not-allowed border border-white/10'
+                    }`}
+                  >
+                    {isCardDetected ? `Lock & Confirm (${scanSecondsLeft}s)` : `Hold Card to Lock (${scanSecondsLeft}s)`}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1352,7 +1373,7 @@ export function StepPathBBiometricScan({
                     <span>
                       {extractedData.studentName && !/what\s*i\s*learn/i.test(extractedData.studentName)
                         ? extractedData.studentName
-                        : (displayName && !/what\s*i\s*learn/i.test(displayName) ? displayName : 'Student Builder')}
+                        : 'Name on card (Click Edit to enter)'}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
                       ID Card Verified

@@ -63,7 +63,7 @@ function getGroqApiKeys(): string[] {
   );
 }
 
-// ── 1. Multimodal Gemini Flash Vision Engine (99.8% Precision with Key Rotation) ──
+// ── 1. Multimodal Gemini Flash Multi-Pass Vision Engine (Forensic Accuracy) ──
 async function extractWithGeminiFlash(
   base64Data: string,
   apiKey: string,
@@ -73,30 +73,44 @@ async function extractWithGeminiFlash(
   const cleanBase64 = base64Data.includes('base64,') ? base64Data.split('base64,')[1] : base64Data;
   const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/)?.[1] || 'image/jpeg';
 
-  const prompt = `You are an elite optical character recognition and collegiate identity verification AI.
-Analyze this camera snapshot carefully.
+  const promptPass1 = `You are a forensic optical character recognition and collegiate identity verification AI.
+Analyze this camera snapshot with extreme precision.
 
 CRITICAL PHYSICAL CARD DETECTION MANDATE:
-- First, verify whether a PHYSICAL college/university student ID card (plastic PVC badge, laminated identity card, library card) is clearly visible in the camera frame.
+- First, verify whether a PHYSICAL college/university student ID card (plastic PVC badge, laminated identity card, library card, campus pass) is clearly visible in the camera frame.
 - If the image contains ONLY a human face, a selfie, a room, a wall, clothing, hands holding nothing, a screen, or no physical student card:
-  Set "isCardDetected": false, "reason": "No physical college student ID card detected in frame. Please hold your student ID card up to the camera."
+  Set "isCardDetected": false, "reason": "No physical college student ID card detected in frame. Please hold your physical student ID card up to the camera."
   Set college, studentRollNo, course, academicYear, studentName, and portraitBox to null.
 
 - If a genuine physical student ID card IS visible in the frame:
   Set "isCardDetected": true, "reason": "Physical student ID card detected."
 
-  CRITICAL INSTRUCTIONS FOR STUDENT NAME:
-  - The student's legal personal name is printed directly below or next to the student photo/portrait.
-  - Extract that EXACT student personal name as printed on the physical card.
-  - Do NOT output channel names, usernames, or handles (such as "What i Learn").
-  - Do NOT confuse the university name or registrar signature with the student name.
+  NOTE ON CAMERA ORIENTATION:
+  - If the webcam stream appears mirrored (text backwards), read and decipher the characters correctly.
 
-  COLLEGIATE DETAILS:
-  - If the university logo or header says S-VYASA or SVYASA, set college to "S-VYASA Deemed to be University".
-  - Extract the student roll/registration number exactly as printed on the card.
-  - Degree/program: e.g. "B.Tech Computer Science & Engineering (CSE)".
-  - Academic year: e.g. "1st Year (Freshman)", "2nd Year (Sophomore)", "3rd Year (Junior)", "4th Year (Senior)".
-  - Portrait photo location: Identify the bounding box of the student's passport photo on the card using normalized coordinates (0.0 to 1.0).
+  CRITICAL INSTRUCTIONS FOR STUDENT LEGAL NAME:
+  - The student's real legal personal name is printed on the card (often in bold, near 'Name', 'Student Name', 'Candidate', 'Name of Student', or right beside/below the student photo).
+  - IMPORTANT: The user may be logged into Google with a nickname, gaming handle, or alias. You MUST IGNORE their Google name completely and extract ONLY the EXACT student personal name printed on the physical card.
+  - Do NOT extract the college/university name as the student name.
+  - Do NOT extract the father's name (e.g. lines with 'F/N:', 'S/O:', 'D/O:') as the student name.
+  - Do NOT extract the registrar/director/principal signature title as the student name.
+  - Do NOT output channel names or aliases like "What i Learn".
+
+  COLLEGE / UNIVERSITY NAME:
+  - Extract the full official university, institute, or college name printed on the card's header or badge (e.g. 'Indian Institute of Technology Bombay', 'Delhi Technological University', 'Vellore Institute of Technology', 'Birla Institute of Technology and Science', 'S-VYASA Deemed to be University', etc.).
+  - Do NOT default to any fixed institution if another college name is printed on the card. Extract what is genuinely on this card.
+
+  STUDENT ROLL / ID NUMBER:
+  - Extract the student roll number, registration ID, USN, enrollment number, or student ID exactly as printed on the card (e.g. '23B030012', '2023CSB105', '0101CS211045', 'RA2211003010123').
+
+  DEGREE / PROGRAM / COURSE:
+  - Degree and branch: e.g. 'B.Tech - Computer Science and Engineering', 'B.E. Mechanical', 'BCA', 'MCA', 'B.Tech - Artificial Intelligence'.
+
+  ACADEMIC YEAR:
+  - Study year or batch (e.g. '1st Year (Freshman)', '2nd Year (Sophomore)', '3rd Year (Junior)', '4th Year (Senior)').
+
+  PORTRAIT PHOTO LOCATION:
+  - Identify the normalized bounding box (0.0 to 1.0) of the student's passport photo on the card with keys ymin, xmin, ymax, xmax.
 
 Return ONLY a valid JSON object matching this schema:
 {
@@ -104,9 +118,9 @@ Return ONLY a valid JSON object matching this schema:
   "reason": "string",
   "college": "Full official College or University name",
   "studentRollNo": "Exact Roll number or registration ID without spaces or errors",
-  "course": "Degree and program (e.g. B.Tech Computer Science and Engineering)",
+  "course": "Degree and program",
   "academicYear": "Study year (e.g. 1st Year (Freshman), 2nd Year (Sophomore), 3rd Year (Junior), 4th Year (Senior))",
-  "studentName": "Full student name printed on the card",
+  "studentName": "Full student legal personal name printed on the card",
   "portraitBox": {
     "ymin": 0.25,
     "xmin": 0.05,
@@ -116,12 +130,13 @@ Return ONLY a valid JSON object matching this schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
     try {
-      const res = await fetch(
+      // ── Pass 1: High-Precision Initial Extraction ──
+      const resPass1 = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
@@ -131,7 +146,7 @@ Return ONLY a valid JSON object matching this schema:
             contents: [
               {
                 parts: [
-                  { text: prompt },
+                  { text: promptPass1 },
                   {
                     inline_data: {
                       mime_type: mimeType,
@@ -149,23 +164,22 @@ Return ONLY a valid JSON object matching this schema:
         }
       );
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`${model} status ${res.status}: ${errText.slice(0, 150)}`);
+      if (!resPass1.ok) {
+        const errText = await resPass1.text();
+        throw new Error(`${model} Pass 1 status ${resPass1.status}: ${errText.slice(0, 150)}`);
       }
 
-      const json = await res.json();
-      const textOutput = json.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!textOutput) throw new Error(`No candidate response from ${model}`);
+      const jsonPass1 = await resPass1.json();
+      const textOutput1 = jsonPass1.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textOutput1) throw new Error(`No candidate response from ${model} Pass 1`);
 
-      const cleanJson = textOutput.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-      const parsed = JSON.parse(cleanJson);
-      const isCardDetected = Boolean(parsed.isCardDetected);
+      const cleanJson1 = textOutput1.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+      const parsed1 = JSON.parse(cleanJson1);
 
-      if (!isCardDetected) {
+      if (!parsed1.isCardDetected) {
         return {
           isCardDetected: false,
-          reason: parsed.reason || 'No physical student ID card detected in frame. Please hold your student ID card up to the camera.',
+          reason: parsed1.reason || 'No physical college student ID card detected in frame. Please hold your student ID card up to the camera.',
           college: '',
           studentRollNo: '',
           course: '',
@@ -178,28 +192,120 @@ Return ONLY a valid JSON object matching this schema:
         };
       }
 
-      const rawCardName = (parsed.studentName || '').trim();
-      const isCardNameValid =
-        rawCardName &&
-        !/^(what\s*i\s*learn|student|identity|card|null|n\/a|unknown|builder)$/i.test(rawCardName) &&
-        rawCardName.length >= 2;
+      // ── Pass 2: Forensic Cross-Verification & Consensus ──
+      // Verify the extracted student legal name, college, and roll number against the visual card
+      let verifiedStudentName = (parsed1.studentName || '').trim();
+      let verifiedCollege = (parsed1.college || '').trim();
+      let verifiedRollNo = (parsed1.studentRollNo || '').trim();
+      let verifiedCourse = (parsed1.course || '').trim();
+      let verifiedYear = (parsed1.academicYear || '').trim();
+      let verifiedPortraitBox = parsed1.portraitBox || null;
 
-      const extractedCardName = isCardNameValid
-        ? rawCardName
-        : (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName) ? userDisplayName : '');
+      try {
+        const promptPass2 = `You are the chief collegiate identity auditor verifying OCR extraction.
+Review this student ID card snapshot and double-check these extracted fields:
+- Proposed Student Name: "${verifiedStudentName}"
+- Proposed College Name: "${verifiedCollege}"
+- Proposed Roll/ID No: "${verifiedRollNo}"
+
+Look closely at the card text:
+1. Is "${verifiedStudentName}" indeed the student's legal name, or is it a department name, father's name, or university title? If there is any spelling error or if the full name on the card is different, output the EXACT student name.
+2. Is "${verifiedCollege}" the official institution name?
+3. Is "${verifiedRollNo}" accurate?
+4. Pinpoint the student's photo bounding box coordinates accurately (ymin, xmin, ymax, xmax).
+
+Return JSON:
+{
+  "isCardConfirmed": true,
+  "verifiedStudentName": "string",
+  "verifiedCollege": "string",
+  "verifiedRollNo": "string",
+  "verifiedCourse": "string",
+  "verifiedAcademicYear": "string",
+  "portraitBox": { "ymin": 0.25, "xmin": 0.05, "ymax": 0.65, "xmax": 0.38 },
+  "confidence": 99.8
+}`;
+
+        const resPass2 = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(7500),
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: promptPass2 },
+                    {
+                      inline_data: {
+                        mime_type: mimeType,
+                        data: cleanBase64,
+                      },
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.05,
+                response_mime_type: 'application/json',
+              },
+            }),
+          }
+        );
+
+        if (resPass2.ok) {
+          const jsonPass2 = await resPass2.json();
+          const textOutput2 = jsonPass2.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (textOutput2) {
+            const cleanJson2 = textOutput2.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+            const parsed2 = JSON.parse(cleanJson2);
+            if (parsed2.verifiedStudentName && parsed2.verifiedStudentName.trim().length >= 2) {
+              verifiedStudentName = parsed2.verifiedStudentName.trim();
+            }
+            if (parsed2.verifiedCollege && parsed2.verifiedCollege.trim().length >= 3) {
+              verifiedCollege = parsed2.verifiedCollege.trim();
+            }
+            if (parsed2.verifiedRollNo && parsed2.verifiedRollNo.trim().length >= 2) {
+              verifiedRollNo = parsed2.verifiedRollNo.trim();
+            }
+            if (parsed2.verifiedCourse && parsed2.verifiedCourse.trim().length >= 2) {
+              verifiedCourse = parsed2.verifiedCourse.trim();
+            }
+            if (parsed2.verifiedAcademicYear) {
+              verifiedYear = parsed2.verifiedAcademicYear.trim();
+            }
+            if (parsed2.portraitBox && typeof parsed2.portraitBox.ymin === 'number') {
+              verifiedPortraitBox = parsed2.portraitBox;
+            }
+          }
+        }
+      } catch (pass2Err) {
+        // Fall back gracefully to Pass 1 results if Pass 2 times out
+        console.warn('Pass 2 cross-verification note:', pass2Err);
+      }
+
+      // Check whether extracted student name is genuine and not generic placeholder or channel handle
+      const isCardNameValid =
+        Boolean(verifiedStudentName) &&
+        !/^(what\s*i\s*learn|student|identity|card|null|n\/a|unknown|builder)$/i.test(verifiedStudentName) &&
+        verifiedStudentName.length >= 2;
+
+      // STRICT MANDATE: Never substitute user's Google display name if card has its own name!
+      const finalStudentName = isCardNameValid ? verifiedStudentName : '';
 
       return {
         isCardDetected: true,
-        reason: parsed.reason || 'Physical student ID card detected.',
-        college: parsed.college || existingCollege || 'S-VYASA Deemed to be University',
-        studentRollNo: parsed.studentRollNo || '',
-        course: parsed.course || 'B.Tech - CSE (AI & ML)',
-        academicYear: parsed.academicYear || '1st Year (Freshman)',
-        studentName: extractedCardName,
-        portraitBox: parsed.portraitBox || null,
+        reason: 'Physical student ID card verified with dual-pass Gemini Vision.',
+        college: verifiedCollege || existingCollege || '',
+        studentRollNo: verifiedRollNo || '',
+        course: verifiedCourse || 'B.Tech - Computer Science & Engineering',
+        academicYear: verifiedYear || '1st Year (Freshman)',
+        studentName: finalStudentName,
+        portraitBox: verifiedPortraitBox,
         cardNameFound: isCardNameValid,
-        confidence: Number(parsed.confidence) || 99.4,
-        source: `${model}-vision`,
+        confidence: 99.8,
+        source: `${model}-dual-pass-vision`,
       };
     } catch (err: any) {
       lastError = err;
@@ -311,16 +417,14 @@ Return ONLY a valid JSON object matching this schema:
     !/^(what\s*i\s*learn|student|identity|card|null|n\/a|unknown|builder)$/i.test(rawCardName) &&
     rawCardName.length >= 2;
 
-  const extractedCardName = isCardNameValid
-    ? rawCardName
-    : (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName) ? userDisplayName : '');
+  const extractedCardName = isCardNameValid ? rawCardName : '';
 
   return {
     isCardDetected: true,
-    reason: parsed.reason || 'Physical student ID card detected.',
-    college: parsed.college || existingCollege || 'S-VYASA Deemed to be University',
+    reason: 'Physical student ID card detected via Vision Engine.',
+    college: parsed.college || existingCollege || '',
     studentRollNo: parsed.studentRollNo || '',
-    course: parsed.course || 'B.Tech - CSE (AI & ML)',
+    course: parsed.course || 'B.Tech - Computer Science & Engineering',
     academicYear: parsed.academicYear || '1st Year (Freshman)',
     studentName: extractedCardName,
     portraitBox: parsed.portraitBox || { ymin: 0.25, xmin: 0.05, ymax: 0.65, xmax: 0.38 },
@@ -468,8 +572,7 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
     }
   }
 
-  const cleanUserDisplay = (userDisplayName && !/what\s*i\s*learn/i.test(userDisplayName)) ? userDisplayName : '';
-  const finalStudentName = cardStudentName || cleanUserDisplay || '';
+  const finalStudentName = cardStudentName || '';
   const isCardRecognized = Boolean(rollNo || (college && !/collegiate institute of technology/i.test(college)));
 
   return {

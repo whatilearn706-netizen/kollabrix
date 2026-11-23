@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
           college: cleanCollege,
           course: cleanCourse,
           academic_year: cleanYear,
+          college_verified: true,
           updated_at: now,
         };
         if (displayName) safeProfilePayload.display_name = displayName.trim();
