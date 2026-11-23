@@ -121,6 +121,13 @@ export interface SponsorTrack {
   description?: string;
 }
 
+export interface CustomTimelineStage {
+  id?: string;
+  title: string;
+  date: string;
+  description?: string;
+}
+
 export interface SponsoredMeta {
   isSponsored: boolean;
   companyName?: string;
@@ -160,6 +167,7 @@ export interface SponsoredMeta {
   guidelinesUrl?: string;
   submissionCutoff?: string;
   resultAnnouncement?: string;
+  customTimeline?: CustomTimelineStage[];
   enableRecruiterQrPass?: boolean;
   registrationUrl?: string;
   externalRegistrationUrl?: string;
@@ -231,6 +239,11 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
   let guidelinesUrl: string | undefined = hackathon?.guidelines_url || undefined;
   let submissionCutoff: string | undefined = hackathon?.submission_cutoff || undefined;
   let resultAnnouncement: string | undefined = hackathon?.result_announcement || undefined;
+  let customTimeline: CustomTimelineStage[] | undefined = Array.isArray(hackathon?.custom_timeline)
+    ? hackathon.custom_timeline
+    : Array.isArray(hackathon?.customTimeline)
+    ? hackathon.customTimeline
+    : undefined;
   let registrationUrl: string | undefined =
     hackathon?.registration_url ||
     hackathon?.external_registration_url ||
@@ -291,6 +304,11 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
         if (parsed.guidelines_url) guidelinesUrl = parsed.guidelines_url;
         if (parsed.submission_cutoff) submissionCutoff = parsed.submission_cutoff;
         if (parsed.result_announcement) resultAnnouncement = parsed.result_announcement;
+        if (Array.isArray(parsed.custom_timeline) && parsed.custom_timeline.length > 0) {
+          customTimeline = parsed.custom_timeline;
+        } else if (Array.isArray(parsed.customTimeline) && parsed.customTimeline.length > 0) {
+          customTimeline = parsed.customTimeline;
+        }
         if (parsed.registration_url) {
           registrationUrl = parsed.registration_url;
           isExternalRegistration = true;
@@ -363,6 +381,7 @@ export function extractSponsoredMeta(hackathon: any): SponsoredMeta {
     guidelinesUrl,
     submissionCutoff,
     resultAnnouncement,
+    customTimeline,
     enableRecruiterQrPass: Boolean(hackathon?.enableRecruiterQrPass || hackathon?.enable_recruiter_qr_pass),
     registrationUrl,
     externalRegistrationUrl: registrationUrl,

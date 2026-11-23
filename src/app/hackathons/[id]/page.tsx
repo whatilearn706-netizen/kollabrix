@@ -81,6 +81,35 @@ function formatShortDate(dateStr?: string | null): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function formatMilestoneDate(dateStr?: string | null): string {
+  if (!dateStr || !dateStr.trim()) return 'TBA';
+  const trimmed = dateStr.trim();
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    const dateFormatted = d.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const timeFormatted = d.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return `${dateFormatted} • ${timeFormatted}`;
+  }
+  return trimmed;
+}
+
+const milestoneColorClasses = [
+  { border: 'border-brand-500 text-brand-400', badge: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  { border: 'border-emerald-500 text-emerald-400', badge: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+  { border: 'border-purple-500 text-purple-400', badge: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+  { border: 'border-amber-500 text-amber-400 shadow-sm shadow-amber-500/20', badge: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  { border: 'border-cyan-500 text-cyan-400', badge: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
+  { border: 'border-rose-500 text-rose-400', badge: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+];
+
 
 export default function HackathonDetailPage() {
   const params = useParams();
@@ -1590,99 +1619,133 @@ export default function HackathonDetailPage() {
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                     <Clock className="w-5 h-5 text-cyan-400" />
-                    <span>Official Timeline & Milestones</span>
+                    <span>Official Timeline &amp; Milestones</span>
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-300 font-medium mt-1">
                     Stay aligned with key submission cut-offs, mentor reviews, and jury evaluations.
                   </p>
                 </div>
 
                 <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-charcoal-800">
-                  {/* Step 1: Registration Deadline */}
-                  <div className="relative flex items-start gap-4">
-                    <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-brand-500 text-brand-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
-                      1
-                    </div>
-                    <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h4 className="text-xs font-bold text-white">Registration Deadline</h4>
-                        <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                          {formatEventDateTime(hackathon.registration_deadline)}
-                        </span>
+                  {sponsoredMeta.customTimeline && sponsoredMeta.customTimeline.length > 0 ? (
+                    sponsoredMeta.customTimeline.map((stage, idx) => {
+                      const colorStyle = milestoneColorClasses[idx % milestoneColorClasses.length];
+                      return (
+                        <div key={idx} className="relative flex items-start gap-4">
+                          <div
+                            className={`w-7 h-7 rounded-full bg-charcoal-900 border-2 ${colorStyle.border} flex items-center justify-center text-xs font-bold shrink-0 z-10`}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 hover:border-charcoal-700/80 transition-colors">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <h4 className="text-xs sm:text-sm font-bold text-white">{stage.title}</h4>
+                              {stage.date && (
+                                <span
+                                  className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border ${colorStyle.badge}`}
+                                >
+                                  {formatMilestoneDate(stage.date)}
+                                </span>
+                              )}
+                            </div>
+                            {stage.description && (
+                              <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
+                                {stage.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <>
+                      {/* Step 1: Registration Deadline */}
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-brand-500 text-brand-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
+                          1
+                        </div>
+                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <h4 className="text-xs font-bold text-white">Registration Deadline</h4>
+                            <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              {formatEventDateTime(hackathon.registration_deadline)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
+                            All builders must register and finalize squad rosters before this deadline.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        All builders must register and finalize squad rosters before this deadline.
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Step 2: Hackathon Kickoff */}
-                  <div className="relative flex items-start gap-4">
-                    <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
-                      2
-                    </div>
-                    <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h4 className="text-xs font-bold text-white">Hackathon Opening Ceremony & Sprint Start</h4>
-                        <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                          {formatEventDateTime(hackathon.start_date)}
-                        </span>
+                      {/* Step 2: Hackathon Kickoff */}
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
+                          2
+                        </div>
+                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <h4 className="text-xs font-bold text-white">Hackathon Opening Ceremony &amp; Sprint Start</h4>
+                            <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                              {formatEventDateTime(hackathon.start_date)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
+                            Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Step 3: Project Submissions */}
-                  <div className="relative flex items-start gap-4">
-                    <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-purple-500 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
-                      3
-                    </div>
-                    <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h4 className="text-xs font-bold text-white">Deliverable Submission Deadline</h4>
-                        <span className="text-[10px] font-mono text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
-                          {hackathon.submission_deadline
-                            ? formatEventDateTime(hackathon.submission_deadline)
-                            : (hackathon as any).submissionDeadline
-                            ? formatEventDateTime((hackathon as any).submissionDeadline)
-                            : hackathon.end_date
-                            ? formatEventDateTime(hackathon.end_date)
-                            : 'Sprint Finale'}
-                        </span>
+                      {/* Step 3: Project Submissions */}
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-purple-500 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0 z-10">
+                          3
+                        </div>
+                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <h4 className="text-xs font-bold text-white">Deliverable Submission Deadline</h4>
+                            <span className="text-[10px] font-mono text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                              {hackathon.submission_deadline
+                                ? formatEventDateTime(hackathon.submission_deadline)
+                                : (hackathon as any).submissionDeadline
+                                ? formatEventDateTime((hackathon as any).submissionDeadline)
+                                : hackathon.end_date
+                                ? formatEventDateTime(hackathon.end_date)
+                                : 'Sprint Finale'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
+                            Submit repository link, architecture demo video, and interactive prototype for jury review.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Submit repository link, architecture demo video, and interactive prototype for jury review.
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Step 4: Result Declared & Winners Announced */}
-                  <div className="relative flex items-start gap-4">
-                    <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-amber-500 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0 z-10 shadow-sm shadow-amber-500/20">
-                      4
-                    </div>
-                    <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <span>Result Declared &amp; Winners Announced</span>
-                        </h4>
-                        <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                          {hackathon.results_date
-                            ? formatEventDateTime(hackathon.results_date)
-                            : (hackathon as any).resultsDate
-                            ? formatEventDateTime((hackathon as any).resultsDate)
-                            : hackathon.end_date
-                            ? formatEventDateTime(hackathon.end_date)
-                            : 'To Be Announced'}
-                        </span>
+                      {/* Step 4: Result Declared & Winners Announced */}
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-7 h-7 rounded-full bg-charcoal-900 border-2 border-amber-500 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0 z-10 shadow-sm shadow-amber-500/20">
+                          4
+                        </div>
+                        <div className="flex-1 p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>Result Declared &amp; Winners Announced</span>
+                            </h4>
+                            <span className="text-[10px] font-mono text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              {hackathon.results_date
+                                ? formatEventDateTime(hackathon.results_date)
+                                : (hackathon as any).resultsDate
+                                ? formatEventDateTime((hackathon as any).resultsDate)
+                                : hackathon.end_date
+                                ? formatEventDateTime(hackathon.end_date)
+                                : 'To Be Announced'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 font-normal leading-relaxed mt-1">
+                            Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.
-                      </p>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}

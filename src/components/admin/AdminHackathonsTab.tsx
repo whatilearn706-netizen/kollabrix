@@ -26,6 +26,7 @@ import {
   Briefcase,
   Play,
   Palette,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -34,6 +35,7 @@ import {
   SPONSOR_THEMES,
   SponsorThemePreset,
   getSponsorTheme,
+  CustomTimelineStage,
 } from '@/lib/hackathons/sponsoredMeta';
 
 /**
@@ -128,6 +130,28 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     is_external_registration: false,
     registration_url: '',
     custom_cta_text: 'Register on Official Site ↗',
+    custom_timeline: [
+      {
+        title: 'Registration Deadline',
+        date: '2026-11-21T20:30',
+        description: 'All builders must register and finalize squad rosters before this deadline.',
+      },
+      {
+        title: 'Hackathon Opening Ceremony & Sprint Start',
+        date: '2026-11-21T21:00',
+        description: 'Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.',
+      },
+      {
+        title: 'Deliverable Submission Deadline',
+        date: '22 Nov 2026 • 03:00 am',
+        description: 'Submit repository link, architecture demo video, and interactive prototype for jury review.',
+      },
+      {
+        title: 'Result Declared & Winners Announced',
+        date: '22 Nov 2026 • 06:00 pm',
+        description: 'Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.',
+      },
+    ] as CustomTimelineStage[],
   });
 
   const handleOpenCreateSponsored = () => {
@@ -170,6 +194,28 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       is_external_registration: false,
       registration_url: '',
       custom_cta_text: 'ENLIST FOR PPI TRIALS',
+      custom_timeline: [
+        {
+          title: 'Registration Deadline',
+          date: '2026-11-21T20:30',
+          description: 'All builders must register and finalize squad rosters before this deadline.',
+        },
+        {
+          title: 'Hackathon Opening Ceremony & Sprint Start',
+          date: '2026-11-21T21:00',
+          description: 'Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.',
+        },
+        {
+          title: 'Deliverable Submission Deadline',
+          date: '22 Nov 2026 • 03:00 am',
+          description: 'Submit repository link, architecture demo video, and interactive prototype for jury review.',
+        },
+        {
+          title: 'Result Declared & Winners Announced',
+          date: '22 Nov 2026 • 06:00 pm',
+          description: 'Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.',
+        },
+      ],
     });
     setIsSponsoredModalOpen(true);
   };
@@ -214,6 +260,28 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       is_external_registration: true,
       registration_url: '',
       custom_cta_text: 'Register on Official Site ↗',
+      custom_timeline: [
+        {
+          title: 'Registration Closes',
+          date: toLocalDateTimeInput(new Date(Date.now() + 86400000 * 2)),
+          description: 'Registration closes on official external portal.',
+        },
+        {
+          title: 'Hackathon Starts / Round 1',
+          date: toLocalDateTimeInput(new Date(Date.now() + 86400000 * 2)),
+          description: 'Challenge briefs unlocked and team prototyping begins.',
+        },
+        {
+          title: 'Submission Cut-off',
+          date: 'Direct via Official Portal',
+          description: 'Submit all deliverables, presentation decks, and repository links.',
+        },
+        {
+          title: 'Grand Finale & Results Announcement',
+          date: 'Announced on Official Portal',
+          description: 'Final evaluation, winner declarations, and awards release.',
+        },
+      ],
     });
     setIsSponsoredModalOpen(true);
   };
@@ -226,6 +294,36 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
     if (cleanDesc.includes('<!-- HACKATHON_META:')) {
       cleanDesc = cleanDesc.split('<!-- HACKATHON_META:')[0].trim();
     }
+
+    const initialStages: CustomTimelineStage[] =
+      Array.isArray(meta.customTimeline) && meta.customTimeline.length > 0
+        ? meta.customTimeline.map((st) => ({
+            title: st.title || '',
+            date: st.date || '',
+            description: st.description || '',
+          }))
+        : [
+            {
+              title: 'Registration Deadline',
+              date: item.registration_deadline ? toLocalDateTimeInput(item.registration_deadline) : '',
+              description: 'All builders must register and finalize squad rosters before this deadline.',
+            },
+            {
+              title: 'Hackathon Opening Ceremony & Sprint Start',
+              date: item.start_date ? toLocalDateTimeInput(item.start_date) : '',
+              description: 'Hacking commences! Access workspace boards, mentor sprint huddles, and challenge briefs.',
+            },
+            {
+              title: 'Deliverable Submission Deadline',
+              date: meta.submissionCutoff || (item.submission_deadline ? toLocalDateTimeInput(item.submission_deadline) : (item.end_date ? toLocalDateTimeInput(item.end_date) : '')),
+              description: 'Submit repository link, architecture demo video, and interactive prototype for jury review.',
+            },
+            {
+              title: 'Result Declared & Winners Announced',
+              date: meta.resultAnnouncement || (item.results_date ? toLocalDateTimeInput(item.results_date) : (item.end_date ? toLocalDateTimeInput(item.end_date) : '')),
+              description: 'Official faculty jury evaluations complete, final collegiate rankings published, and certificates released.',
+            },
+          ];
 
     setSponsoredForm({
       company_name: meta.companyName || item.organizer || '',
@@ -265,6 +363,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
       is_external_registration: Boolean(meta.isExternalRegistration || meta.registrationUrl || (item as any).registration_url || (item as any).is_external_registration),
       registration_url: meta.registrationUrl || (item as any).registration_url || (item as any).website_url || '',
       custom_cta_text: meta.customCtaText || (item as any).custom_cta_text || 'Register on Official Site ↗',
+      custom_timeline: initialStages,
     });
     setIsSponsoredModalOpen(true);
   };
@@ -336,6 +435,7 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
           is_external_registration: sponsoredForm.is_external_registration,
           registration_url: sponsoredForm.registration_url.trim() || undefined,
           custom_cta_text: sponsoredForm.custom_cta_text.trim() || (sponsoredForm.is_external_registration ? 'Register on Official Site ↗' : undefined),
+          custom_timeline: sponsoredForm.custom_timeline,
         }),
       });
 
@@ -1439,6 +1539,153 @@ export function AdminHackathonsTab({ authToken, adminEmail }: AdminHackathonsTab
                       onChange={(e) => setSponsoredForm({ ...sponsoredForm, result_announcement: e.target.value })}
                       className="w-full px-2.5 py-1.5 rounded-xl bg-charcoal-900 border border-charcoal-750 text-[11px] text-white font-mono"
                     />
+                  </div>
+                </div>
+
+                {/* DYNAMIC TIMELINE & MILESTONES BUILDER */}
+                <div className="pt-3 border-t border-charcoal-800 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Interactive Timeline Milestones (Live on Public Schedule Tab)</span>
+                      </span>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Customize names, dates, or add extra rounds (e.g. Round 1 PPT, Grand Finale at Campus, Results).
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newStage: CustomTimelineStage = {
+                          title: `Stage ${sponsoredForm.custom_timeline.length + 1}`,
+                          date: '',
+                          description: '',
+                        };
+                        setSponsoredForm({
+                          ...sponsoredForm,
+                          custom_timeline: [...sponsoredForm.custom_timeline, newStage],
+                        });
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-800/60 hover:border-cyan-600/80 rounded-lg flex items-center gap-1 transition-all"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Add Milestone</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {sponsoredForm.custom_timeline.map((stage, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl bg-charcoal-900/90 border border-charcoal-750 hover:border-charcoal-700 transition-colors space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                              {idx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              placeholder={`Milestone ${idx + 1} Name (e.g. Round 1 PPT Submission)`}
+                              value={stage.title}
+                              onChange={(e) => {
+                                const updated = [...sponsoredForm.custom_timeline];
+                                updated[idx] = { ...updated[idx], title: e.target.value };
+                                setSponsoredForm({ ...sponsoredForm, custom_timeline: updated });
+                              }}
+                              className="flex-1 px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs font-semibold text-white focus:border-cyan-500 transition-colors"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            title="Remove Milestone"
+                            onClick={() => {
+                              const updated = sponsoredForm.custom_timeline.filter((_, i) => i !== idx);
+                              setSponsoredForm({ ...sponsoredForm, custom_timeline: updated });
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-mono text-slate-400 mb-0.5">
+                              Date / Deadline (Datetime or Custom Label)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 12 Dec 2026 • 06:30 PM or 2026-12-12T18:30"
+                              value={stage.date}
+                              onChange={(e) => {
+                                const updated = [...sponsoredForm.custom_timeline];
+                                updated[idx] = { ...updated[idx], date: e.target.value };
+                                setSponsoredForm({ ...sponsoredForm, custom_timeline: updated });
+                              }}
+                              className="w-full px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-750 text-[11px] font-mono text-slate-200 focus:border-cyan-500 transition-colors"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-mono text-slate-400 mb-0.5">
+                              Stage Description / Activity
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Short details (e.g. PPT presentation & repo submission on portal)"
+                              value={stage.description || ''}
+                              onChange={(e) => {
+                                const updated = [...sponsoredForm.custom_timeline];
+                                updated[idx] = { ...updated[idx], description: e.target.value };
+                                setSponsoredForm({ ...sponsoredForm, custom_timeline: updated });
+                              }}
+                              className="w-full px-2.5 py-1 rounded-lg bg-charcoal-950 border border-charcoal-750 text-[11px] text-slate-200 focus:border-cyan-500 transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {sponsoredForm.custom_timeline.length === 0 && (
+                      <div className="p-3 text-center rounded-xl bg-charcoal-900 border border-dashed border-charcoal-750 text-slate-400 text-xs">
+                        No custom milestones added. Website will show standard 4-step schedule.
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSponsoredForm({
+                              ...sponsoredForm,
+                              custom_timeline: [
+                                {
+                                  title: 'Registration Deadline',
+                                  date: sponsoredForm.registration_deadline || '',
+                                  description: 'All builders must register before this deadline.',
+                                },
+                                {
+                                  title: 'Hackathon Opening Ceremony',
+                                  date: sponsoredForm.start_date || '',
+                                  description: 'Hacking commences! Challenge briefs unlocked.',
+                                },
+                                {
+                                  title: 'Deliverable Submission Deadline',
+                                  date: sponsoredForm.submission_cutoff || sponsoredForm.end_date || '',
+                                  description: 'Submit project demo video, repo link, and deck.',
+                                },
+                                {
+                                  title: 'Result Declared & Winners Announced',
+                                  date: sponsoredForm.result_announcement || sponsoredForm.end_date || '',
+                                  description: 'Jury evaluations complete and rankings released.',
+                                },
+                              ],
+                            });
+                          }}
+                          className="ml-2 text-cyan-400 font-semibold underline hover:text-cyan-300"
+                        >
+                          Populate Defaults
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

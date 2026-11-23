@@ -467,6 +467,7 @@ export async function POST(request: NextRequest) {
         guidelines_url = '',
         submission_cutoff = '',
         result_announcement = '',
+        custom_timeline = [],
         registration_url = '',
         external_registration_url = '',
         is_external_registration = false,
@@ -538,6 +539,28 @@ export async function POST(request: NextRequest) {
         guidelines_url: guidelines_url?.trim() || null,
         submission_cutoff: submission_cutoff?.trim() || null,
         result_announcement: result_announcement?.trim() || null,
+        custom_timeline: Array.isArray(custom_timeline) && custom_timeline.length > 0 ? custom_timeline : [
+          {
+            title: 'Registration Deadline',
+            date: registration_deadline || '',
+            description: 'All builders must register and finalize squad rosters before this deadline.'
+          },
+          {
+            title: 'Hackathon Opening Ceremony & Sprint Start',
+            date: start_date || '',
+            description: 'Hacking commences! Access workspace boards and problem briefs.'
+          },
+          {
+            title: 'Deliverable Submission Deadline',
+            date: submission_cutoff || end_date || '',
+            description: 'Submit repository link, architecture demo video, and interactive prototype.'
+          },
+          {
+            title: 'Result Declared & Winners Announced',
+            date: result_announcement || results_date || end_date || '',
+            description: 'Official faculty jury evaluations complete and final rankings published.'
+          }
+        ],
         registration_url: (registration_url || external_registration_url)?.trim() || null,
         external_registration_url: (registration_url || external_registration_url)?.trim() || null,
         is_external_registration: Boolean(is_external_registration || registration_url?.trim() || external_registration_url?.trim()),
@@ -846,6 +869,7 @@ export async function POST(request: NextRequest) {
         guidelines_url,
         submission_cutoff,
         result_announcement,
+        custom_timeline,
       } = body;
 
       const perksArray = Array.isArray(recruitment_perks)
@@ -855,6 +879,7 @@ export async function POST(request: NextRequest) {
         : [];
 
       const parsedPriority = parseInt(String(priority_rank)) || 10;
+      let updatedDesc = '';
 
       if (isSupabaseConfigured()) {
         try {
@@ -909,6 +934,11 @@ export async function POST(request: NextRequest) {
               guidelines_url: guidelines_url !== undefined ? guidelines_url : metaObj.guidelines_url,
               submission_cutoff: submission_cutoff !== undefined ? submission_cutoff : metaObj.submission_cutoff,
               result_announcement: result_announcement !== undefined ? result_announcement : metaObj.result_announcement,
+              custom_timeline: Array.isArray(custom_timeline)
+                ? custom_timeline
+                : Array.isArray(body.customTimeline)
+                ? body.customTimeline
+                : (metaObj.custom_timeline || metaObj.customTimeline || null),
               banner_url: body.banner_url || metaObj.banner_url || null,
               logo_url: company_logo || metaObj.logo_url || null,
               enable_recruiter_qr_pass: Boolean(body.enable_recruiter_qr_pass ?? metaObj.enable_recruiter_qr_pass ?? false),
@@ -917,7 +947,7 @@ export async function POST(request: NextRequest) {
               is_external_registration: body.is_external_registration !== undefined ? Boolean(body.is_external_registration) : Boolean(metaObj.is_external_registration),
             };
 
-            const updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
+            updatedDesc = `${cleanDesc}\n\n<!-- HACKATHON_META:${JSON.stringify(metaObj)} -->`;
 
             const updatePayload: any = {
               description: updatedDesc,
@@ -957,6 +987,7 @@ export async function POST(request: NextRequest) {
             if (h.id === hackathonId || h.join_code === hackathonId) {
               return {
                 ...h,
+                description: updatedDesc || h.description,
                 is_sponsored: true,
                 is_enterprise: true,
                 company_name,
@@ -971,6 +1002,7 @@ export async function POST(request: NextRequest) {
                 priority_rank: parsedPriority,
                 promo_video_url: promo_video_url || null,
                 custom_cta_text: custom_cta_text || null,
+                custom_timeline: Array.isArray(custom_timeline) ? custom_timeline : (h.custom_timeline || null),
               };
             }
             return h;
