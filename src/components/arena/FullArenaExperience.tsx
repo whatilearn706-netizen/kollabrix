@@ -3298,19 +3298,19 @@ export function FullArenaExperience({
 
   return (
     <div className="fixed inset-0 z-[9990] bg-[#02040a] text-slate-100 flex flex-col overflow-hidden select-none">
-      {/* 1st Image: High-Resolution Dark Fantasy Witcher Battlefield Landscape */}
+      {/* Background: Modern Architectural Fluted Amber Slats from Pinterest Reference (https://pin.it/5q9NmUGnU) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none bg-black">
         <picture>
-          <source srcSet="/images/arena-witcher-battleground-hd.webp" type="image/webp" />
+          <source srcSet="/images/arena-fluted-amber-background.webp" type="image/webp" />
           <img
-            src="/images/arena-witcher-battleground-hd.jpg"
-            alt="The Proving Grounds Medieval Battleground"
+            src="/images/arena-fluted-amber-background.jpg"
+            alt="The Proving Grounds Fluted Amber Arena Background"
             style={{ imageRendering: '-webkit-optimize-contrast' }}
-            className="w-full h-full object-cover object-center filter contrast-[1.08] brightness-[0.92] saturate-[1.05]"
+            className="w-full h-full object-cover object-center filter contrast-[1.08] brightness-[0.78] saturate-[1.12]"
           />
         </picture>
-        {/* Soft edge vignettes to ensure HUD readability while keeping swords & battlements crystal clear */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 pointer-events-none" />
+        {/* Vignette gradients to enhance command card contrast and focus */}
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/25 to-black/80 pointer-events-none" />
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
       </div>

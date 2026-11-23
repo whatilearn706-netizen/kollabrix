@@ -30,7 +30,7 @@ function ArenaPageContent() {
   const { user, profile } = useAuth();
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
-  // Opens directly into the Cinematic Witcher Battleground command center
+  // Opens directly into the Cinematic Proving Grounds Arena command center
   const [showPlayLobby, setShowPlayLobby] = useState<boolean>(true);
 
   const [isLive, setIsLive] = useState<boolean>(true);
