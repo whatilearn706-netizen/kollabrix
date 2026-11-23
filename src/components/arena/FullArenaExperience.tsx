@@ -88,6 +88,8 @@ import {
   playTacticalSelectSound,
   playCheatWarningSiren,
   playOpponentCheatRadarBeep,
+  playCyberSwordClashSound,
+  playBattleSlamSound,
 } from '@/lib/arena/soundEffects';
 import { evaluateWebCoordinateGraph, WebGraphEvaluation } from '@/lib/arena/webCoordinateGraph';
 import { verifyTestOutput } from '@/lib/arena/testCaseVerifier';
@@ -342,6 +344,10 @@ export function FullArenaExperience({
   // 6: Match Finished & Fog of War Lifted
   const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
   const stepRef = useRef<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+
+  // Split Command Deck: Right side (Image 6) unlocked state & box dissolve animation
+  const [isCreateUnlocked, setIsCreateUnlocked] = useState<boolean>(false);
+  const [isBoxDissolving, setIsBoxDissolving] = useState<boolean>(false);
 
   const transitionStep = (next: 0 | 1 | 2 | 3 | 4 | 5 | 6) => {
     stepRef.current = next;
@@ -2576,15 +2582,18 @@ export function FullArenaExperience({
       return () => clearTimeout(timer);
     } else if (countdownNum === 1) {
       const timer = setTimeout(() => {
-        playArcadeCoinSound();
+        playBattleSlamSound();
         setCountdownNum('START!');
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdownNum === 'START!') {
-      // Countdown finished: Transition to Battlefield (Step 5)
+      // Countdown finished: Play sword clash sound & dissolve command box
+      playCyberSwordClashSound();
+      setIsBoxDissolving(true);
       const timer = setTimeout(() => {
         enterArenaFullscreen();
         transitionStep(5);
+        setIsBoxDissolving(false);
 
         // Authoritatively notify server and all peers that match is in progress!
         if (roomCode && isHost) {
@@ -3289,20 +3298,54 @@ export function FullArenaExperience({
 
   return (
     <div className="fixed inset-0 z-[9990] bg-[#02040a] text-slate-100 flex flex-col overflow-hidden select-none">
-      {/* 1st Image: High-Resolution Proving Grounds Warrior Overlook Landscape */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-        <img
-          src="/images/proving-grounds-overlook-bg.jpg"
-          alt="The Proving Grounds Mountain Overlook"
-          style={{ imageRendering: '-webkit-optimize-contrast' }}
-          className="w-full h-full object-cover object-[center_top] sm:object-center filter contrast-[1.02] brightness-[0.98] saturate-[1.05]"
-        />
-        {/* Soft edge vignettes to ensure HUD readability while keeping warrior & mountain crystal clear */}
-        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
+      {/* 1st Image: High-Resolution Dark Fantasy Witcher Battlefield Landscape */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none bg-black">
+        <picture>
+          <source srcSet="/images/arena-witcher-battleground-hd.webp" type="image/webp" />
+          <img
+            src="/images/arena-witcher-battleground-hd.jpg"
+            alt="The Proving Grounds Medieval Battleground"
+            style={{ imageRendering: '-webkit-optimize-contrast' }}
+            className="w-full h-full object-cover object-center filter contrast-[1.08] brightness-[0.92] saturate-[1.05]"
+          />
+        </picture>
+        {/* Soft edge vignettes to ensure HUD readability while keeping swords & battlements crystal clear */}
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
       </div>
 
-      {/* Subtle Ambient Golden Light Overlay */}
+      {/* Floating Fiery Embers & Sparks Layer (Authentic Witcher Atmosphere) */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {[
+          { left: '8%', size: 4, dur: '7.5s', delay: '0s' },
+          { left: '16%', size: 3, dur: '9.2s', delay: '1.8s' },
+          { left: '24%', size: 5, dur: '6.8s', delay: '0.6s' },
+          { left: '33%', size: 3, dur: '10.5s', delay: '2.5s' },
+          { left: '42%', size: 4, dur: '8.1s', delay: '1.1s' },
+          { left: '53%', size: 6, dur: '7.2s', delay: '3.2s' },
+          { left: '61%', size: 3, dur: '9.8s', delay: '0.4s' },
+          { left: '72%', size: 5, dur: '6.5s', delay: '2.0s' },
+          { left: '81%', size: 4, dur: '8.9s', delay: '1.4s' },
+          { left: '89%', size: 3, dur: '11.0s', delay: '0.8s' },
+          { left: '95%', size: 5, dur: '7.0s', delay: '2.8s' },
+        ].map((ember, i) => (
+          <span
+            key={i}
+            className="arena-ember-spark"
+            style={{
+              left: ember.left,
+              width: `${ember.size}px`,
+              height: `${ember.size}px`,
+              animationDuration: ember.dur,
+              animationDelay: ember.delay,
+              bottom: '-20px',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Subtle Ambient Warm Ember Light Overlay */}
       <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(245,158,11,0.08),transparent_70%)] pointer-events-none z-0" />
 
       {/* Top Cyber Navigation Bar */}
@@ -3426,500 +3469,467 @@ export function FullArenaExperience({
 
       {/* Main Arena Viewport */}
       <main className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden flex flex-col ${
-        step === 0
-          ? 'justify-end items-center sm:items-end p-3 sm:p-5 lg:p-6 pb-3 sm:pb-5'
-          : 'justify-start items-center p-4 sm:p-6 lg:p-8'
+        step <= 4
+          ? 'justify-center items-center p-3 sm:p-5 lg:p-6'
+          : 'justify-start items-center p-2 sm:p-4'
       }`}>
-        
-        {/* ================= STEP 0: PROVING GROUNDS OVERLOOK (3RD IMAGE WARM TRANSPARENT CARD ON LOWER RIGHT) ================= */}
-        {step === 0 && (
-          <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto flex flex-col justify-end items-center sm:items-end pb-1 sm:pb-2 pr-0 sm:pr-4 lg:pr-8 animate-fadeIn pointer-events-none">
-            {/* The Proving Grounds Colosseum Trial Card (Image 3 - Warmer, Transparent Glassmorphic Box) */}
-            <div className="pointer-events-auto w-full max-w-[420px] sm:max-w-[430px] lg:max-w-[440px] rounded-3xl bg-gradient-to-b from-[#181107]/45 via-[#120d05]/38 to-[#0a0703]/50 border border-amber-500/30 border-t-amber-300/40 border-l-amber-400/25 shadow-[0_16px_45px_rgba(0,0,0,0.5),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-md p-4 sm:p-5 relative overflow-hidden space-y-3 sm:space-y-3.5">
-              {/* Subtle ambient warm sunbeam highlight within the glass */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.15),transparent_70%)] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.10),transparent_70%)] pointer-events-none" />
 
-              {/* 1. TOP SECTION: Badge + Headline + Description */}
-              <div className="space-y-1.5 relative z-10 text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-amber-400/35 text-amber-300 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                  <span>THE PROVING GROUNDS • LIVE ARENA</span>
-                </div>
+        {/* ================= STEPS 0-4: FLOATING RECTANGULAR COMMAND CENTER (IMAGE 1 & 2 WITCHER POSTER STYLE) ================= */}
+        {step <= 4 && (
+          <div className={`w-full max-w-[1140px] xl:max-w-[1240px] mx-auto my-auto transition-all duration-700 ease-out ${
+            isBoxDissolving
+              ? 'scale-110 opacity-0 blur-2xl pointer-events-none'
+              : 'scale-100 opacity-100 animate-fadeIn'
+          }`}>
+            <div className="relative w-full rounded-3xl bg-[#070913]/92 border border-amber-500/35 border-t-amber-400/40 border-l-amber-400/25 shadow-[0_0_80px_rgba(0,0,0,0.9),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] backdrop-blur-2xl p-5 sm:p-7 overflow-hidden">
+              {/* Subtle ambient warm ember highlights inside the command glass */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_70%)] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.08),transparent_70%)] pointer-events-none" />
 
-                <h1 className="text-xl sm:text-2xl lg:text-[25px] font-black text-white tracking-tight font-serif leading-[1.18]">
-                  Enter The Colosseum.{' '}
-                  <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent filter drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                    Prove Your Craft.
-                  </span>
-                </h1>
-
-                <p className="text-[11px] sm:text-xs text-slate-200/90 leading-relaxed font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                  High-stakes algorithmic &amp; UI duels under fog-of-war encryption. Outcode campus rivals, prove your speed under time, and rise on the verified collegiate leaderboard.
-                </p>
-              </div>
-
-              {/* 2. CENTER SECTION: The Proving Grounds Colosseum Visual */}
-              <div className="relative w-full rounded-2xl overflow-hidden border border-amber-400/30 shadow-[0_4px_25px_rgba(0,0,0,0.45)] group z-10">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-amber-500/10 z-10 pointer-events-none" />
-                <img
-                  src="/images/arena-proving-grounds-colosseum.jpg"
-                  alt="The Proving Grounds Colosseum"
-                  className="w-full h-32 sm:h-36 object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-
-              {/* Quick Pilot Call-sign Tag */}
-              <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/35 border border-amber-500/15 text-[11px] font-mono text-slate-300 relative z-10">
-                <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <span className="text-amber-400">⚔️</span>
-                  <span>Challenger:</span>
-                </span>
-                <span className="text-amber-300 font-bold truncate max-w-[170px]">
-                  {playerName || 'Challenger'}
-                </span>
-                <button
-                  type="button"
-                  onClick={rollRandomCallSign}
-                  className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono cursor-pointer"
-                >
-                  Change Tag
-                </button>
-              </div>
-
-              {/* 3. BOTTOM SECTION: Buttons */}
-              <div className="space-y-2.5 relative z-10">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playArcadeCoinSound();
-                      setIsHost(true);
-                      setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
-                      setStep(2);
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                  >
-                    <Trophy className="w-3.5 h-3.5 fill-current" />
-                    <span>CREATE TOURNAMENT</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTacticalSelectSound();
-                      setShowJoinModal(true);
-                    }}
-                    className="py-2.5 px-3.5 rounded-xl bg-black/45 hover:bg-black/65 border border-amber-400/35 text-amber-200 font-mono text-xs font-bold tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm"
-                  >
-                    <Users className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Join with Code</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 2: CHOOSE ARENA & TOPICS ================= */}
-        {step === 2 && (
-          <div className="w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-[#060813]/95 border border-amber-500/30 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_30px_rgba(245,158,11,0.08)] backdrop-blur-2xl animate-fadeIn space-y-6">
-            <div className="text-center space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/40 text-amber-300 inline-block shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                Step 2 of 3 &bull; Select Arena & Topics
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-serif">
-                Pick Arena &amp; Languages
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-400 font-sans">
-                Choose the domain and custom technology tags for the match.
-              </p>
-            </div>
-
-            {/* Arena Category Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                {
-                  id: 'web_dev',
-                  name: 'Web Dev',
-                  desc: 'Frontend UI layout replication & DOM interaction',
-                  icon: Globe,
-                },
-                {
-                  id: 'algorithms',
-                  name: 'Algorithms',
-                  desc: 'DSA & competitive logic (Java / Python / C++)',
-                  icon: Terminal,
-                },
-                {
-                  id: 'bug_hunt',
-                  name: 'Bug Hunt',
-                  desc: 'Diagnose & fix live broken component bugs',
-                  icon: Zap,
-                },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelectArena(item.id as ArenaCategory)}
-                  className={`p-3.5 rounded-2xl border text-left transition-all ${
-                    arena === item.id
-                      ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
-                      : 'bg-black/60 border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5 text-amber-400 mb-2" />
-                  <h4 className="font-mono font-bold text-white text-sm">{item.name}</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{item.desc}</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Arena-Specific Language / Topic Checkboxes */}
-            {/* 1. WEB DEV TOPICS (HTML REQUIRED / FIXED • CAN TOGGLE CSS & JAVASCRIPT) */}
-            {arena === 'web_dev' && (
-              <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/25 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Web Dev Topics:</span>
-                  </span>
-                  <span className="text-[11px] font-mono text-amber-400 font-bold">
-                    {selectedTags.includes('html') ? selectedTags.length : selectedTags.length + 1} selected
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'html', label: 'HTML', desc: 'Structure & semantic elements', isMandatory: true },
-                    { id: 'css', label: 'CSS', desc: 'Flexbox, grids & styling', isMandatory: false },
-                    { id: 'javascript', label: 'JavaScript', desc: 'DOM clicks & logic', isMandatory: false },
-                  ].map((topic) => {
-                    const isChecked = topic.isMandatory || selectedTags.includes(topic.id);
-                    return (
-                      <div
-                        key={topic.id}
-                        onClick={() => {
-                          if (topic.isMandatory) return; // Cannot untick HTML
-                          handleToggleTag(topic.id);
-                        }}
-                        className={`p-3 rounded-xl border transition-all flex items-start gap-2.5 select-none ${
-                          topic.isMandatory
-                            ? 'bg-amber-950/60 border-amber-400/80 text-white shadow-sm cursor-default'
-                            : isChecked
-                            ? 'bg-amber-950/50 border-amber-400 text-white shadow-sm cursor-pointer'
-                            : 'bg-black/60 border-slate-800 text-slate-400 hover:border-slate-700 cursor-pointer'
-                        }`}
-                      >
-                        <div
-                          className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
-                            isChecked
-                              ? 'bg-amber-500 border-amber-400 text-slate-950'
-                              : 'border-slate-600'
-                          }`}
-                        >
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+              {/* ================= STEP 0 / 2: SPLIT COMMAND DECK (IMAGE 5 LEFT + IMAGE 6 RIGHT WITH FROST BLUR) ================= */}
+              {(step === 0 || step === 2) && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
+                  {/* LEFT COLUMN: Image 5 - The Colosseum Mode & Profile Card */}
+                  <div className="lg:col-span-5 flex flex-col justify-between space-y-3.5 pr-0 lg:pr-4 border-b lg:border-b-0 lg:border-r border-amber-500/20 pb-5 lg:pb-0">
+                    <div className="space-y-3">
+                      {/* Badge + Headline */}
+                      <div className="space-y-1.5 text-left">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-amber-400/35 text-amber-300 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                          <span>THE PROVING GROUNDS • LIVE ARENA</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
-                          <p className="text-[10px] text-slate-400">{topic.desc}</p>
-                        </div>
+
+                        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight font-serif leading-[1.18]">
+                          Enter The Colosseum.{' '}
+                          <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent filter drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                            Prove Your Craft.
+                          </span>
+                        </h1>
+
+                        <p className="text-[11px] sm:text-xs text-slate-300/90 leading-relaxed font-sans">
+                          High-stakes algorithmic &amp; UI duels under fog-of-war encryption. Outcode campus rivals, prove your speed under time, and rise on the verified collegiate leaderboard.
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
-            {/* 2. ALGORITHMS / DSA LANGUAGE (SINGLE SELECT - CHOOSE 1: JAVA, PYTHON, OR C++) */}
-            {arena === 'algorithms' && (
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Select Language (Choose 1):</span>
-                  </span>
-                  <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase">
-                    {selectedTags[0] ? selectedTags[0].toUpperCase() : 'JAVA'}
-                  </span>
-                </div>
+                      {/* Colosseum Visual */}
+                      <div className="relative w-full rounded-2xl overflow-hidden border border-amber-400/30 shadow-[0_4px_25px_rgba(0,0,0,0.45)] group">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-amber-500/10 z-10 pointer-events-none" />
+                        <img
+                          src="/images/arena-proving-grounds-colosseum.jpg"
+                          alt="The Proving Grounds Colosseum"
+                          className="w-full h-32 sm:h-36 object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'java', label: 'Java', desc: 'Java 21 OpenJDK - Enterprise DSA' },
-                    { id: 'python', label: 'Python', desc: 'Python 3.12 - Fast prototyping' },
-                    { id: 'cpp', label: 'C++', desc: 'Modern C++ 20 - Ultra-fast competitive' },
-                  ].map((lang) => {
-                    const isSelected = selectedTags[0] === lang.id || (selectedTags.length === 1 && selectedTags.includes(lang.id));
-                    return (
+                      {/* Pilot Call-sign Tag */}
+                      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-black/50 border border-amber-500/20 text-xs font-mono text-slate-300">
+                        <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                          <span className="text-amber-400">⚔️</span>
+                          <span>Challenger:</span>
+                        </span>
+                        <span className="text-amber-300 font-bold truncate max-w-[150px]">
+                          {playerName || 'CyberCoder'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={rollRandomCallSign}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 underline font-mono cursor-pointer"
+                        >
+                          Change Tag
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons: Create Tournament vs Join with Code */}
+                    <div className="space-y-2 pt-2">
                       <button
-                        key={lang.id}
                         type="button"
                         onClick={() => {
-                          setSelectedTags([lang.id]);
-                          setActiveTab(lang.id as any);
+                          playBattleSlamSound();
+                          setIsCreateUnlocked(true);
+                          setIsHost(true);
+                          if (!roomCode) {
+                            setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                          }
                         }}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none text-left w-full ${
-                          isSelected
-                            ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        className={`w-full py-3 px-4 rounded-xl font-black font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          isCreateUnlocked
+                            ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-300 scale-[1.01]'
+                            : 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.35)]'
                         }`}
                       >
-                        <div
-                          className={`w-4 h-4 rounded-full mt-0.5 flex items-center justify-center shrink-0 border ${
-                            isSelected
-                              ? 'bg-cyan-500 border-cyan-400 text-slate-950'
-                              : 'border-slate-600'
-                          }`}
-                        >
-                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold font-mono text-white">{lang.label}</p>
-                          <p className="text-[10px] text-slate-400">{lang.desc}</p>
-                        </div>
+                        <Trophy className="w-4 h-4 fill-current" />
+                        <span>{isCreateUnlocked ? 'CONFIGURING TOURNAMENT ⚙️' : 'CREATE TOURNAMENT →'}</span>
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
-            {/* 3. BUG HUNT DOMAIN SELECTOR (NO ARBITRARY REACT/JS/PYTHON TAGS - REPLACED WITH WEB VS LOGIC DOMAINS) */}
-            {arena === 'bug_hunt' && (
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Bug Hunt Domain (From Admin Control Center):</span>
-                  </span>
-                  <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase">
-                    {bugDomain === 'web' ? 'Web UI Bug' : 'Logic Code Bug'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div
-                    onClick={() => {
-                      setBugDomain('web');
-                      setSelectedTags(['html', 'css']);
-                    }}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
-                      bugDomain === 'web'
-                        ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-md'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-md mt-0.5 flex items-center justify-center shrink-0 border ${
-                        bugDomain === 'web'
-                          ? 'bg-cyan-500 border-cyan-400 text-slate-950 font-bold'
-                          : 'border-slate-600'
-                      }`}
-                    >
-                      {bugDomain === 'web' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Web UI Bug Hunt</span>
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                        HTML, CSS & layout bugs. Includes live Target Component Preview & live Output render to visually verify fixes.
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTacticalSelectSound();
+                          setShowJoinModal(true);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-black/50 hover:bg-black/75 border border-amber-400/30 text-amber-200 font-mono text-xs font-bold tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
+                      >
+                        <Users className="w-4 h-4 text-amber-400" />
+                        <span>Join with Code</span>
+                      </button>
                     </div>
                   </div>
 
-                  <div
-                    onClick={() => {
-                      setBugDomain('logic');
-                      setSelectedTags(['java']);
-                    }}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
-                      bugDomain === 'logic'
-                        ? 'bg-rose-950/60 border-rose-400 text-white shadow-md'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-md mt-0.5 flex items-center justify-center shrink-0 border ${
-                        bugDomain === 'logic'
-                          ? 'bg-rose-500 border-rose-400 text-white font-bold'
-                          : 'border-slate-600'
-                      }`}
-                    >
-                      {bugDomain === 'logic' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Logic & Code Bug Hunt</span>
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                        Algorithms, memory, and boundary bugs in Python, Java, and C++. Includes real Judge0 compiler execution & test runner.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sub-language selector for chosen Bug Hunt Domain */}
-                <div className="pt-2 border-t border-slate-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                      Select Language to Hunt Bug ({bugDomain === 'web' ? 'Web UI' : 'Logic & Code'}):
-                    </label>
-                    {bugDomain === 'web' && (
-                      <span className="text-[11px] font-mono text-cyan-400 font-bold">
-                        {(selectedTags.includes('html') ? selectedTags : ['html', ...selectedTags]).length} selected
-                      </span>
+                  {/* RIGHT COLUMN: Image 6 - Arena & Topics Selection with Frost/Blur Overlay */}
+                  <div className="lg:col-span-7 relative flex flex-col justify-between space-y-4 pl-0 lg:pl-2">
+                    {/* Locked Frosted Overlay if not unlocked */}
+                    {!isCreateUnlocked && (
+                      <div
+                        onClick={() => {
+                          playBattleSlamSound();
+                          setIsCreateUnlocked(true);
+                          setIsHost(true);
+                          if (!roomCode) {
+                            setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
+                          }
+                        }}
+                        className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md bg-black/65 rounded-2xl border border-amber-500/25 cursor-pointer group shadow-[0_0_35px_rgba(0,0,0,0.85)]"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center mb-3 shadow-[0_0_25px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
+                          <Lock className="w-7 h-7 text-amber-400" />
+                        </div>
+                        <h4 className="font-mono font-bold text-white text-base tracking-wider uppercase">
+                          Arena &amp; Topics Locked
+                        </h4>
+                        <p className="text-xs text-slate-300 max-w-sm mt-2 leading-relaxed font-sans">
+                          Click <span className="text-amber-400 font-bold font-mono underline">CREATE TOURNAMENT</span> on the left to configure arena, languages &amp; battle parameters.
+                        </p>
+                        <span className="mt-4 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/40 font-mono text-xs font-bold group-hover:bg-amber-500/35 transition-colors shadow-sm">
+                          <span>Click to Unlock</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
                     )}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(bugDomain === 'web'
-                      ? [
-                          { id: 'html', label: 'HTML', desc: 'Structure Bugs', isMandatory: true },
-                          { id: 'css', label: 'CSS', desc: 'Styling & Layout', isMandatory: false },
-                          { id: 'javascript', label: 'JavaScript', desc: 'DOM & Click Bugs', isMandatory: false },
-                        ]
-                      : [
-                          { id: 'java', label: 'Java', desc: 'Enterprise Java Bugs', isMandatory: false },
-                          { id: 'python', label: 'Python', desc: 'Syntax & Logic Bugs', isMandatory: false },
-                          { id: 'cpp', label: 'C++', desc: 'Memory & Pointer Bugs', isMandatory: false },
-                        ]
-                    ).map((lang) => {
-                      const isMandatory = bugDomain === 'web' && lang.id === 'html';
-                      const isSelected = isMandatory || selectedTags.includes(lang.id);
-                      return (
-                        <button
-                          key={lang.id}
-                          type="button"
-                          onClick={() => {
-                            if (bugDomain === 'web') {
-                              if (isMandatory) return; // Cannot untick HTML - permanently fixed
-                              if (selectedTags.includes(lang.id)) {
-                                setSelectedTags(selectedTags.filter((t) => t !== lang.id));
-                              } else {
-                                const next = [...selectedTags, lang.id];
-                                setSelectedTags(next.includes('html') ? next : ['html', ...next]);
-                              }
-                            } else {
-                              // Single-select for Logic & Code Bug Hunt (only 1 tick: Java, Python, or C++)
-                              setSelectedTags([lang.id]);
-                            }
-                          }}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${
-                            isMandatory ? 'cursor-default' : 'cursor-pointer'
-                          } ${
-                            isSelected
-                              ? bugDomain === 'web'
-                                ? 'bg-cyan-950/70 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                : 'bg-rose-950/70 border-rose-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.2)]'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="font-mono font-bold text-xs text-white">{lang.label}</span>
-                            <span
-                              className={`w-4 h-4 ${
-                                bugDomain === 'web' ? 'rounded-md' : 'rounded-full'
-                              } border flex items-center justify-center text-[10px] ${
-                                isSelected
-                                  ? bugDomain === 'web'
-                                    ? 'border-cyan-400 bg-cyan-500 text-slate-950 font-bold'
-                                    : 'border-rose-400 bg-rose-500 text-slate-950 font-bold'
-                                  : 'border-slate-700 bg-slate-950/50'
-                              }`}
-                            >
-                              {isSelected ? '✓' : ''}
+
+                    {/* Interactive Arena Content (Blurred until Create Tournament clicked) */}
+                    <div className={`space-y-4 transition-all duration-500 ${
+                      !isCreateUnlocked ? 'filter blur-[7px] opacity-35 pointer-events-none select-none' : 'filter-none opacity-100'
+                    }`}>
+                      {/* Step Header */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/40 text-amber-300 inline-block shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                            Step 2 of 3 &bull; Select Arena &amp; Topics
+                          </span>
+                          {isCreateUnlocked && (
+                            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              UNLOCKED
+                            </span>
+                          )}
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-serif">
+                          Pick Arena &amp; Languages
+                        </h2>
+                        <p className="text-[11px] text-slate-400 font-sans">
+                          Choose duel discipline, tech stack, and match time limit.
+                        </p>
+                      </div>
+
+                      {/* Arena Category Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {[
+                          {
+                            id: 'web_dev',
+                            name: 'Web Dev',
+                            desc: 'Frontend layout & DOM interaction',
+                            icon: Globe,
+                          },
+                          {
+                            id: 'algorithms',
+                            name: 'Algorithms',
+                            desc: 'Competitive DSA (Java / Python / C++)',
+                            icon: Terminal,
+                          },
+                          {
+                            id: 'bug_hunt',
+                            name: 'Bug Hunt',
+                            desc: 'Diagnose & fix live broken code bugs',
+                            icon: Zap,
+                          },
+                        ].map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSelectArena(item.id as ArenaCategory)}
+                            className={`p-3 rounded-2xl border text-left transition-all ${
+                              arena === item.id
+                                ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                                : 'bg-black/60 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            <item.icon className="w-4 h-4 text-amber-400 mb-1.5" />
+                            <h4 className="font-mono font-bold text-white text-xs">{item.name}</h4>
+                            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2 leading-tight">{item.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* 1. WEB DEV TOPICS */}
+                      {arena === 'web_dev' && (
+                        <div className="p-3.5 rounded-2xl bg-black/60 border border-amber-500/25 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                              <Globe className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Web Dev Topics:</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-amber-400 font-bold">
+                              {selectedTags.includes('html') ? selectedTags.length : selectedTags.length + 1} selected
                             </span>
                           </div>
-                          <p className="text-[10px] text-slate-400">{lang.desc}</p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {[
+                              { id: 'html', label: 'HTML', desc: 'Structure & elements', isMandatory: true },
+                              { id: 'css', label: 'CSS', desc: 'Flexbox, grids & styling', isMandatory: false },
+                              { id: 'javascript', label: 'JavaScript', desc: 'DOM clicks & logic', isMandatory: false },
+                            ].map((topic) => {
+                              const isChecked = topic.isMandatory || selectedTags.includes(topic.id);
+                              return (
+                                <div
+                                  key={topic.id}
+                                  onClick={() => {
+                                    if (topic.isMandatory) return;
+                                    handleToggleTag(topic.id);
+                                  }}
+                                  className={`p-2.5 rounded-xl border transition-all flex items-start gap-2 select-none ${
+                                    topic.isMandatory
+                                      ? 'bg-amber-950/60 border-amber-400/80 text-white shadow-sm cursor-default'
+                                      : isChecked
+                                      ? 'bg-amber-950/50 border-amber-400 text-white shadow-sm cursor-pointer'
+                                      : 'bg-black/60 border-slate-800 text-slate-400 hover:border-slate-700 cursor-pointer'
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-3.5 h-3.5 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
+                                      isChecked
+                                        ? 'bg-amber-500 border-amber-400 text-slate-950'
+                                        : 'border-slate-600'
+                                    }`}
+                                  >
+                                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
+                                    <p className="text-[10px] text-slate-400">{topic.desc}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. ALGORITHMS / DSA LANGUAGE */}
+                      {arena === 'algorithms' && (
+                        <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                              <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Select Language (Choose 1):</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                              {selectedTags[0] ? selectedTags[0].toUpperCase() : 'JAVA'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {[
+                              { id: 'java', label: 'Java', desc: 'Java 21 OpenJDK - Enterprise DSA' },
+                              { id: 'python', label: 'Python', desc: 'Python 3.12 - Fast prototyping' },
+                              { id: 'cpp', label: 'C++', desc: 'Modern C++ 20 - Competitive' },
+                            ].map((lang) => {
+                              const isSelected = selectedTags[0] === lang.id || (selectedTags.length === 1 && selectedTags.includes(lang.id));
+                              return (
+                                <button
+                                  key={lang.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTags([lang.id]);
+                                    setActiveTab(lang.id as any);
+                                  }}
+                                  className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-start gap-2 select-none text-left w-full ${
+                                    isSelected
+                                      ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-3.5 h-3.5 rounded-full mt-0.5 flex items-center justify-center shrink-0 border ${
+                                      isSelected
+                                        ? 'bg-cyan-500 border-cyan-400 text-slate-950'
+                                        : 'border-slate-600'
+                                    }`}
+                                  >
+                                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold font-mono text-white">{lang.label}</p>
+                                    <p className="text-[10px] text-slate-400">{lang.desc}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. BUG HUNT DOMAIN */}
+                      {arena === 'bug_hunt' && (
+                        <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                              <span>Bug Hunt Domain:</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                              {bugDomain === 'web' ? 'Web UI Bug' : 'Logic Code Bug'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div
+                              onClick={() => {
+                                setBugDomain('web');
+                                setSelectedTags(['html', 'css']);
+                              }}
+                              className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
+                                bugDomain === 'web'
+                                  ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-md'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                              }`}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded-md mt-0.5 flex items-center justify-center shrink-0 border ${
+                                  bugDomain === 'web'
+                                    ? 'bg-cyan-500 border-cyan-400 text-slate-950 font-bold'
+                                    : 'border-slate-600'
+                                }`}
+                              >
+                                {bugDomain === 'web' && <Check className="w-3 h-3 stroke-[3]" />}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                                  <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span>Web UI Bug Hunt</span>
+                                </p>
+                                <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                                  HTML, CSS &amp; layout bugs with live DOM visual verification.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div
+                              onClick={() => {
+                                setBugDomain('logic');
+                                setSelectedTags(['java']);
+                              }}
+                              className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
+                                bugDomain === 'logic'
+                                  ? 'bg-rose-950/60 border-rose-400 text-white shadow-md'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                              }`}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded-md mt-0.5 flex items-center justify-center shrink-0 border ${
+                                  bugDomain === 'logic'
+                                    ? 'bg-rose-500 border-rose-400 text-white font-bold'
+                                    : 'border-slate-600'
+                                }`}
+                              >
+                                {bugDomain === 'logic' && <Check className="w-3 h-3 stroke-[3]" />}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                                  <Cpu className="w-3.5 h-3.5 text-rose-400" />
+                                  <span>Logic &amp; Code Bug</span>
+                                </p>
+                                <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                                  Boundary and syntax bugs with Judge0 sandboxed test runner.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Difficulty & Time Limit */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-400 mb-1">
+                            Difficulty Level:
+                          </label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {(['easy', 'medium', 'hard'] as const).map((diff) => (
+                              <button
+                                key={diff}
+                                type="button"
+                                onClick={() => setDifficulty(diff)}
+                                className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all ${
+                                  difficulty === diff
+                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                    : 'bg-black/60 text-slate-400 border border-slate-800'
+                                }`}
+                              >
+                                {diff}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-mono font-bold text-slate-400 mb-1">
+                            Match Duration:
+                          </label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {[
+                              { secs: 180, label: '3m' },
+                              { secs: 300, label: '5m' },
+                              { secs: 600, label: '10m' },
+                            ].map((t) => (
+                              <button
+                                key={t.secs}
+                                type="button"
+                                onClick={() => setTimeLimit(t.secs)}
+                                className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                                  timeLimit === t.secs
+                                    ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                    : 'bg-black/60 text-slate-400 border border-slate-800 hover:border-slate-700'
+                                }`}
+                              >
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Launch Next Button */}
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={handleHostCreateRoom}
+                          disabled={!isCreateUnlocked}
+                          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_30px_rgba(245,158,11,0.4)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span>Next: Room &amp; Invite Link</span>
+                          <ArrowRight className="w-4 h-4 text-slate-950" />
                         </button>
-                      );
-                    })}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Difficulty & Time Limit */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-mono font-bold text-slate-400 mb-1">
-                  Difficulty Level:
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['easy', 'medium', 'hard'] as const).map((diff) => (
-                    <button
-                      key={diff}
-                      type="button"
-                      onClick={() => setDifficulty(diff)}
-                      className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all ${
-                        difficulty === diff
-                          ? 'bg-amber-500 text-slate-950 shadow-sm'
-                          : 'bg-slate-950 text-slate-400 border border-slate-800'
-                      }`}
-                    >
-                      {diff}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono font-bold text-slate-400 mb-1">
-                  Match Duration:
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { secs: 180, label: '3m' },
-                    { secs: 300, label: '5m' },
-                    { secs: 600, label: '10m' },
-                  ].map((t) => (
-                    <button
-                      key={t.secs}
-                      type="button"
-                      onClick={() => setTimeLimit(t.secs)}
-                      className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
-                        timeLimit === t.secs
-                          ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                          : 'bg-black/70 text-slate-400 border border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Back & Next Buttons */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setStep(0)}
-                className="py-3 px-5 rounded-2xl bg-black hover:bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleHostCreateRoom}
-                className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_30px_rgba(245,158,11,0.4)] flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Next: Room &amp; Invite Link</span>
-                <ArrowRight className="w-4 h-4 text-slate-950" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 3: ROOM CODE, INVITE LINK & ROSTER LOBBY ================= */}
+        {/* ================= STEP 3: ROOM CODE, INVITE LINK & ROSTER LOBBY (IMAGE 7) ================= */}
         {step === 3 && (
-          <div className="w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-[#060813]/95 border border-amber-500/30 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_30px_rgba(245,158,11,0.08)] backdrop-blur-2xl animate-fadeIn space-y-6">
+          <div className="w-full max-w-3xl mx-auto space-y-6 relative z-10 animate-fadeIn">
             <div className="text-center space-y-2">
               <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/40 text-amber-300 inline-block shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                 Step 3 of 3 &bull; Private Room Ready
@@ -4250,7 +4260,8 @@ export function FullArenaExperience({
                 type="button"
                 onClick={() => {
                   if (isHost) {
-                    setStep(2);
+                    setStep(0);
+                    setIsCreateUnlocked(true);
                   } else {
                     handleConfirmExit();
                   }
@@ -4282,7 +4293,7 @@ export function FullArenaExperience({
 
         {/* ================= STEP 4: ADRENALINE COUNTDOWN ================= */}
         {step === 4 && (
-          <div className="flex flex-col items-center justify-center text-center animate-fadeIn py-12">
+          <div className="flex flex-col items-center justify-center text-center animate-fadeIn py-12 relative z-10">
             <div className="relative flex items-center justify-center mb-6">
               <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-cyan-500 opacity-40 blur-3xl animate-pulse" />
               <div
@@ -4300,6 +4311,9 @@ export function FullArenaExperience({
             <p className="mt-2 text-xs font-mono text-slate-400">
               Synchronizing code editor and Fog of War anti-cheat shield...
             </p>
+          </div>
+        )}
+            </div>
           </div>
         )}
 

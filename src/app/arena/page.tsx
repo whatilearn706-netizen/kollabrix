@@ -30,14 +30,8 @@ function ArenaPageContent() {
   const { user, profile } = useAuth();
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
-  // Toggle between 1v1 Arena Showcase (Image 1 style with Image 2 character) and the Live Match Lobby (Image 4)
-  const [showPlayLobby, setShowPlayLobby] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      return Boolean(urlParams.get('room') || urlParams.get('play') === 'true');
-    }
-    return Boolean(roomParam);
-  });
+  // Opens directly into the Cinematic Witcher Battleground command center
+  const [showPlayLobby, setShowPlayLobby] = useState<boolean>(true);
 
   const [isLive, setIsLive] = useState<boolean>(true);
   const [maintenanceMessage, setMaintenanceMessage] = useState(
@@ -243,14 +237,8 @@ function ArenaPageContent() {
       }
     } catch (e) {}
 
-    // Return to the 1v1 Showcase page
-    setShowPlayLobby(false);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('play');
-      url.searchParams.delete('room');
-      window.history.pushState({}, '', url.pathname);
-    }
+    // Return to Kollabrix homepage
+    router.push('/');
   };
 
   // If Arena is OFFLINE / UNDER MAINTENANCE (Admins bypass so they can build & test live):

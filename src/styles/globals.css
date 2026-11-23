@@ -701,3 +701,34 @@ body.icpc-exam-mode .floating-quick-dock {
   }
 }
 
+/* ========================================================
+   Witcher Cinematic Arena Floating Fiery Embers
+   ======================================================== */
+@keyframes emberDrift {
+  0% {
+    transform: translateY(105vh) translateX(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  75% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-15vh) translateX(35px) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.arena-ember-spark {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, #ffedd5 0%, #f59e0b 55%, #ea580c 85%, transparent 100%);
+  filter: drop-shadow(0 0 5px #f59e0b);
+  animation: emberDrift linear infinite;
+  will-change: transform, opacity;
+}
+
+
