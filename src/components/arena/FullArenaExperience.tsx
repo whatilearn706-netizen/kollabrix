@@ -1623,36 +1623,8 @@ export function FullArenaExperience({
         playTacticalSelectSound();
         trackEvent('arena_room_joined', { code: data.room.code, format: data.room.format, arena: data.room.arena });
 
-        // Immediately send player_joined and room_sync broadcast over WebSocket so host's screen updates in <40ms
-        try {
-          const joinChannel = supabase.channel(`arena_duel_${data.room.code}`);
-          joinChannel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-              joinChannel.send({
-                type: 'broadcast',
-                event: 'player_joined',
-                payload: {
-                  name: activePlayerName,
-                  team: 'omega',
-                  playerId: myPlayerId,
-                },
-              });
-              joinChannel.send({
-                type: 'broadcast',
-                event: 'room_sync',
-                payload: { room: data.room },
-              });
-              setTimeout(() => {
-                try {
-                  supabase.removeChannel(joinChannel);
-                } catch {}
-              }, 2000);
-            }
-          });
-        } catch {}
-
         setShowJoinModal(false); // Cleanly close modal only on success
-        setStep(3); // Directly into Lobby!
+        transitionStep(3); // Directly into Lobby!
       } else {
         setJoinError(data.error || `Room "${raw}" was not found or has expired. Please verify with your friend.`);
       }
@@ -1898,8 +1870,22 @@ export function FullArenaExperience({
       if (incomingRoom.status === 'in_progress') {
         transitionStep(5);
       } else {
+        const remainingUntilStart = incomingRoom.startedAt
+          ? new Date(incomingRoom.startedAt).getTime() - Date.now()
+          : 3000;
+
         transitionStep(4);
-        setCountdownNum(3);
+        if (remainingUntilStart > 2200) {
+          setCountdownNum(3);
+        } else if (remainingUntilStart > 1200) {
+          setCountdownNum(2);
+        } else if (remainingUntilStart > 200) {
+          setCountdownNum(1);
+        } else if (remainingUntilStart > -600) {
+          setCountdownNum('START!');
+        } else {
+          transitionStep(5);
+        }
       }
       return;
     }
@@ -1998,6 +1984,16 @@ export function FullArenaExperience({
       });
 
       channel
+        .on('broadcast', { event: 'match_starting' }, ({ payload }) => {
+          if (!isMounted) return;
+          enterArenaFullscreen();
+          if (payload?.room) {
+            applyRoomDataState(payload.room);
+          } else {
+            transitionStep(4);
+            setCountdownNum(3);
+          }
+        })
         .on('broadcast', { event: 'room_sync' }, ({ payload }) => {
           if (!isMounted || !payload?.room) return;
           applyRoomDataState(payload.room);
@@ -2098,19 +2094,31 @@ export function FullArenaExperience({
             });
           }
         })
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED' && !isHost) {
+            try {
+              channel.send({
+                type: 'broadcast',
+                event: 'player_joined',
+                payload: {
+                  name: playerName,
+                  team: 'omega',
+                  playerId: myPlayerId,
+                },
+              });
+            } catch {}
+          }
+        });
 
       channelRef.current = channel;
     } catch (wsErr) {
       console.warn('Realtime WebSocket init notice:', wsErr);
     }
 
-    // 2. High-performance WebSocket-first sync (Supports 1000+ simultaneous players):
-    // Real-time broadcasts handle room_sync, joins, leaves, countdowns, and progress.
-    // Heavy 800ms HTTP polling is removed; we keep a relaxed 12s safety check in lobby only,
-    // plus instant sync on tab switch, reducing HTTP server load by >95%.
+    // 2. High-performance WebSocket-first sync + 1s fast lobby failover
+    // In Lobby (Step 3), poll every 1s so both players launch in sync even on strict networks.
+    // Once in active match (Step 5), WebSockets handle live typing and polling is relaxed.
     const pollInterval = setInterval(async () => {
-      // In active match (Step 5+), skip HTTP polling completely — WebSockets handle 100% of live telemetry
       if (stepRef.current >= 5) return;
       if (typeof document !== 'undefined' && document.hidden) return;
       try {
@@ -2120,7 +2128,7 @@ export function FullArenaExperience({
         if (!isMounted || !data.room) return;
         applyRoomDataState(data.room);
       } catch (err) {}
-    }, 12000);
+    }, stepRef.current === 3 ? 1000 : 10000);
 
     // Instant sync when user switches tabs or focuses the window
     const handleFocusSync = async () => {
@@ -2521,13 +2529,19 @@ export function FullArenaExperience({
           });
           channelRef.current.send({
             type: 'broadcast',
+            event: 'match_starting',
+            payload: { room: updatedRoom, startedAt: matchStartedAt },
+          });
+          channelRef.current.send({
+            type: 'broadcast',
             event: 'room_sync',
             payload: { room: updatedRoom },
           });
         } catch {}
       }
 
-      await fetch('/api/arena/rooms/sync', {
+      // Non-blocking server sync to store starting state
+      fetch('/api/arena/rooms/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2535,11 +2549,11 @@ export function FullArenaExperience({
           action: 'start_match',
           payload: { question: finalChosen, timeLimit: matchDuration, startedAt: matchStartedAt },
         }),
-      });
+      }).catch(() => {});
       trackEvent('arena_match_started', { code: roomCode, format: teamSize, arena, difficulty });
     } catch {}
 
-    // Advance to countdown
+    // Advance to countdown immediately on host!
     transitionStep(4);
     setCountdownNum(3);
   };
@@ -3159,6 +3173,8 @@ export function FullArenaExperience({
         tags: activeQuestion.tags || selectedTags,
         jsCode,
         targetJs: activeQuestion.targetComponentJs,
+        starterHtml: activeQuestion.starterHtml,
+        starterCss: activeQuestion.starterCss,
       }
     );
     setWebEvaluation(evaluation);
@@ -3200,6 +3216,8 @@ export function FullArenaExperience({
         tags: activeQuestion.tags || selectedTags,
         jsCode,
         targetJs: activeQuestion.targetComponentJs,
+        starterHtml: activeQuestion.starterHtml,
+        starterCss: activeQuestion.starterCss,
       }
     );
     setWebEvaluation(evaluation);
@@ -3211,7 +3229,9 @@ export function FullArenaExperience({
       .map((r, i) => `[Test Case #${i + 1}] ${r.testName}\nStatus: ${r.passed ? '✓ PASSED' : '✗ FAILED'}\nDetails: ${r.message}`)
       .join('\n\n');
 
-    if (evaluation.passed) {
+    const canSubmit = evaluation.passed && evaluation.testsPassed === evaluation.totalTests && evaluation.totalTests > 0;
+
+    if (canSubmit) {
       playVictorySound();
       const winner = isHost ? 'Team Alpha' : 'Team Omega';
       setWinnerTeam(winner);
@@ -3227,7 +3247,7 @@ export function FullArenaExperience({
         `⛔ Submission Blocked: All ${evaluation.totalTests} test cases must pass before you can submit!\n\n` +
         `Current Status: ${evaluation.testsPassed} / ${evaluation.totalTests} Tests Passed.\n\n` +
         `${testSummary}\n\n` +
-        `Ensure all word spellings, CSS spatial coordinates (within ±30%), and interactive scripts pass before submitting!`
+        `Ensure all required elements, word spellings, and layouts pass before submitting!`
       );
     }
   };

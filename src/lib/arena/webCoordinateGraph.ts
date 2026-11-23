@@ -70,10 +70,13 @@ function isFuzzyWordMatch(target: string, candidate: string): boolean {
 }
 
 /**
- * Extracts distinct visible words from HTML (stripping tags, invisible head/title/meta, and attributes)
+ * Extracts distinct visible words from HTML (stripping tags, invisible head/title/meta, comments, and attributes)
  */
 export function extractTargetTextTokens(html: string): string[] {
   let content = html || '';
+
+  // CRITICAL: Strip HTML comments first so comment instructions are never extracted as student words
+  content = content.replace(/<!--[\s\S]*?-->/g, ' ');
 
   // Only extract visible canvas elements: strip invisible head, title, meta, link, script, style
   const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -87,6 +90,7 @@ export function extractTargetTextTokens(html: string): string[] {
   }
 
   const stripped = content
+    .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<[^>]+>/g, ' ')
@@ -200,12 +204,23 @@ export function evaluateWebCoordinateGraph(
     tags?: string[];
     jsCode?: string;
     targetJs?: string;
+    starterHtml?: string;
+    starterCss?: string;
   }
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
   const cleanCss = (cssCode || '').trim();
   const cleanJs = (options?.jsCode || '').trim();
   const cleanTargetJs = (options?.targetJs || '').trim();
+  const starterHtml = (options?.starterHtml || '').trim();
+  const starterCss = (options?.starterCss || '').trim();
+
+  // Strip all comments from student & starter code before evaluation
+  const htmlNoComments = cleanHtml.replace(/<!--[\s\S]*?-->/g, '').trim();
+  const starterHtmlNoComments = starterHtml.replace(/<!--[\s\S]*?-->/g, '').trim();
+  const cssNoComments = cleanCss.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  const starterCssNoComments = starterCss.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  const jsNoComments = cleanJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim();
 
   // Determine mode strictly based on question tags, fallback to target content
   const rawTags = (options?.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
@@ -225,23 +240,38 @@ export function evaluateWebCoordinateGraph(
     ? (rawTags.includes('javascript') || rawTags.includes('js'))
     : Boolean(cleanTargetJs && cleanTargetJs.length > 25 && !cleanTargetJs.startsWith('//'));
 
-  // 1. Immediate rejection if student code is virtually empty or just initial comment skeleton
-  const strippedCode = cleanHtml
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<div[^>]*><\/div>/g, '')
-    .replace(/\s+/g, '');
+  // 1. Strict starter & empty code validation
+  const isStarterHtmlUnchanged =
+    starterHtmlNoComments.length > 0 &&
+    htmlNoComments.replace(/\s+/g, '') === starterHtmlNoComments.replace(/\s+/g, '');
 
-  const hasMeaningfulHtml = strippedCode.length > 20;
-  const hasMeaningfulCss = cleanCss.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, '').length > 15;
+  const innerHtml = htmlNoComments
+    .replace(/<div[^>]*>[\s]*<\/div>/gi, '')
+    .replace(/<section[^>]*>[\s]*<\/section>/gi, '')
+    .replace(/<main[^>]*>[\s]*<\/main>/gi, '')
+    .replace(/<article[^>]*>[\s]*<\/article>/gi, '')
+    .trim();
+
+  const studentWords = extractTargetTextTokens(htmlNoComments);
+  const studentTagsCount = (htmlNoComments.match(/<[a-z0-9]+[^>]*>/gi) || []).length;
+  const hasMeaningfulHtml =
+    !isStarterHtmlUnchanged &&
+    htmlNoComments.length > 0 &&
+    (innerHtml.replace(/\s+/g, '').length > 5 || studentWords.length > 0 || studentTagsCount >= 2);
+
+  const isStarterCssUnchanged =
+    starterCssNoComments.length > 0 &&
+    cssNoComments.replace(/\s+/g, '') === starterCssNoComments.replace(/\s+/g, '');
+  const hasMeaningfulCss = !isStarterCssUnchanged && cssNoComments.replace(/\s+/g, '').length > 15;
 
   const results: WebGraphTestResult[] = [];
 
   // ================= TEST 1: HTML STRUCTURE & SPELLING / WORD FIDELITY =================
   if (hasHtmlTest) {
     const target = (targetHtml || '').toLowerCase();
-    const student = cleanHtml.toLowerCase();
+    const student = htmlNoComments.toLowerCase();
 
-    // Check structural elements
+    // Check structural elements on clean student HTML (no comment false positives!)
     const needsButton = target.includes('<button') || target.includes('type="button"');
     const hasButton = student.includes('<button') || student.includes('type="button"') || student.includes('class="btn');
 
@@ -257,15 +287,48 @@ export function evaluateWebCoordinateGraph(
     const needsList = target.includes('<ul') || target.includes('<ol') || target.includes('<li');
     const hasList = student.includes('<ul') || student.includes('<ol') || student.includes('<li');
 
-    // Verify text content and spelling match
-    const spellingCheck = verifyWordSpellingAndContent(cleanHtml, targetHtml || '');
+    const needsFieldset = target.includes('<fieldset');
+    const hasFieldset = student.includes('<fieldset');
+
+    const needsLegend = target.includes('<legend');
+    const hasLegend = student.includes('<legend');
+
+    const needsTable = target.includes('<table');
+    const hasTable = student.includes('<table');
+
+    const needsForm = target.includes('<form');
+    const hasForm = student.includes('<form');
+
+    const needsBlockquote = target.includes('<blockquote');
+    const hasBlockquote = student.includes('<blockquote');
+
+    // Verify text content and spelling match against clean student HTML
+    const spellingCheck = verifyWordSpellingAndContent(htmlNoComments, targetHtml || '');
 
     let structurePassed = hasMeaningfulHtml && (spellingCheck.passed || targetWordsCount(targetHtml || '') === 0);
     let structureMsg = `Passed: Semantic HTML structure constructed and target content/spelling matches (${spellingCheck.matchPercent}% word match).`;
 
-    if (!hasMeaningfulHtml) {
+    if (isStarterHtmlUnchanged) {
       structurePassed = false;
-      structureMsg = 'Failed: Code is empty. Write your HTML solution replicating the target component.';
+      structureMsg = 'Failed: Starter template is unmodified. Implement the required HTML elements to match the target preview.';
+    } else if (!hasMeaningfulHtml) {
+      structurePassed = false;
+      structureMsg = 'Failed: Solution is empty. Write your HTML solution replicating the target component.';
+    } else if (needsFieldset && !hasFieldset) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires semantic fieldset element (<fieldset>).';
+    } else if (needsLegend && !hasLegend) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires semantic legend element (<legend>).';
+    } else if (needsTable && !hasTable) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires a table element (<table>).';
+    } else if (needsForm && !hasForm) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires a form container (<form>).';
+    } else if (needsBlockquote && !hasBlockquote) {
+      structurePassed = false;
+      structureMsg = 'Failed: Target blueprint requires a blockquote element (<blockquote>).';
     } else if (needsButton && !hasButton) {
       structurePassed = false;
       structureMsg = 'Failed: Target blueprint requires interactive button element(s) (<button>).';
@@ -299,7 +362,7 @@ export function evaluateWebCoordinateGraph(
   // ================= TEST 2: CSS COORDINATE GRAPH & LAYOUT =================
   if (hasCssTest) {
     const target = (targetHtml || '').toLowerCase();
-    const studentCss = cleanCss.toLowerCase();
+    const studentCss = cssNoComments.toLowerCase();
 
     // Check if question has specific layout geometry requirements
     const is3CardsGrid =
@@ -393,8 +456,10 @@ export function evaluateWebCoordinateGraph(
   if (results.length === 0) {
     results.push({
       testName: 'HTML Structure & Content / Word Spelling Alignment',
-      passed: Boolean(cleanHtml && cleanHtml.length > 20),
-      message: 'Verified component structure and baseline tags.',
+      passed: Boolean(hasMeaningfulHtml),
+      message: hasMeaningfulHtml
+        ? 'Verified component structure and baseline tags.'
+        : 'Failed: Solution is empty. Write your HTML solution replicating the target component.',
     });
   }
 
