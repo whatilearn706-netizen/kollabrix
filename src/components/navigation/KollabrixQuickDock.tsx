@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -68,6 +69,14 @@ const DOCK_ITEMS: DockItem[] = [
     href: '/problems',
     icon: Lightbulb,
     tone: 'purple',
+  },
+  {
+    id: 'faculty',
+    label: 'Faculty Portal 🎓',
+    sub: 'Professor Verification & Dashboard',
+    href: '/teacher/dashboard',
+    icon: GraduationCap,
+    tone: 'emerald',
   },
   {
     id: 'deadlines',
@@ -215,7 +224,7 @@ const APPS_LIST: AppItem[] = [
   },
   {
     id: 'teacher',
-    name: 'Faculty Desk',
+    name: 'Faculty Portal',
     category: 'academics',
     href: '/teacher/dashboard',
     icon: GraduationCap,
@@ -363,6 +372,12 @@ export function KollabrixQuickDock() {
     x: number;
     y: number;
   } | null>(null);
+
+  // Hydration mount guard for portals
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // macOS Applications launchpad modal
   const [isAppsModalOpen, setIsAppsModalOpen] = useState(false);
@@ -610,7 +625,7 @@ export function KollabrixQuickDock() {
           }`}
         >
           {/* Sleek Dark Pill Capsule (Exact Match to User's Image 2) */}
-          <div className="relative rounded-full py-2 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
+          <div className="relative rounded-full py-2.5 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
             {/* Scrollable Container (Shows EXACTLY 4 items visible without awkward cutoffs) */}
             <div
               ref={scrollContainerRef}
@@ -622,7 +637,7 @@ export function KollabrixQuickDock() {
                   playTactileClick();
                 }
               }}
-              className="flex flex-col items-center gap-2 h-[184px] max-h-[184px] overflow-y-auto overflow-x-hidden p-0 overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="flex flex-col items-center gap-2.5 h-[196px] max-h-[196px] overflow-y-auto overflow-x-visible py-1.5 px-0.5 overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               {DOCK_ITEMS.map((item, index) => {
                 const Icon = item.icon;
@@ -728,17 +743,17 @@ export function KollabrixQuickDock() {
       </div>
 
       {/* Floating Callout Card to the LEFT with Leader Pointer Line */}
-      {hoveredNode && (
+      {mounted && typeof document !== 'undefined' && hoveredNode && createPortal(
         <div
           style={{
             top: `${hoveredNode.y}px`,
             left: `${hoveredNode.x - 12}px`,
           }}
-          className="fixed -translate-x-full -translate-y-1/2 pointer-events-none z-[9999] animate-in fade-in slide-in-from-right-2 duration-150"
+          className="fixed -translate-x-full -translate-y-1/2 pointer-events-none z-[99999] animate-in fade-in slide-in-from-right-2 duration-150"
         >
           <div className="relative flex items-center gap-2.5">
             {/* Callout Card */}
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0d0e14]/95 border border-white/15 shadow-[0_16px_40px_rgba(0,0,0,0.92),0_0_15px_rgba(255,255,255,0.05)] text-white backdrop-blur-2xl whitespace-nowrap">
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0d0e14]/98 border border-white/15 shadow-[0_16px_40px_rgba(0,0,0,0.95),0_0_15px_rgba(255,255,255,0.05)] text-white backdrop-blur-2xl whitespace-nowrap">
               {/* Text Information */}
               <div className="flex flex-col text-left">
                 <span className="text-xs font-bold text-white tracking-tight leading-tight">
@@ -758,23 +773,24 @@ export function KollabrixQuickDock() {
               <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_#ffffff]" />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* =========================================================================
           macOS APPLICATIONS LAUNCHPAD MODAL
          ========================================================================= */}
-      {isAppsModalOpen && (
+      {mounted && typeof document !== 'undefined' && isAppsModalOpen && createPortal(
         <div
           onClick={() => setIsAppsModalOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl animate-in fade-in duration-200"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-xl animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[580px] rounded-3xl bg-[#181614]/95 border border-white/12 shadow-[0_30px_100px_rgba(0,0,0,0.85)] p-6 backdrop-blur-3xl animate-in zoom-in-95 duration-200 text-white select-none pointer-events-auto"
+            className="w-full max-w-[580px] max-h-[90vh] flex flex-col rounded-3xl bg-[#181614]/98 border border-white/15 shadow-[0_30px_100px_rgba(0,0,0,0.95)] p-6 backdrop-blur-3xl animate-in zoom-in-95 duration-200 text-white select-none pointer-events-auto"
           >
             {/* Window Top Bar: macOS Traffic Lights + Title */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2.5">
                 {/* Traffic lights */}
                 <div className="flex items-center gap-1.5">
@@ -801,7 +817,7 @@ export function KollabrixQuickDock() {
             </div>
 
             {/* Search Input */}
-            <div className="relative mt-4">
+            <div className="relative mt-4 shrink-0">
               <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -814,7 +830,7 @@ export function KollabrixQuickDock() {
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 mt-3 pb-1 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-1.5 mt-3 pb-1 overflow-x-auto scrollbar-none shrink-0">
               {(
                 [
                   { id: 'all', label: 'All' },
@@ -840,7 +856,7 @@ export function KollabrixQuickDock() {
             </div>
 
             {/* Grid of Apps (macOS Launchpad style) */}
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 py-5 max-h-[380px] overflow-y-auto">
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 py-5 flex-1 overflow-y-auto overscroll-contain min-h-0 [scrollbar-width:thin]">
               {filteredApps.map((app) => {
                 const Icon = app.icon;
                 return (
@@ -874,12 +890,13 @@ export function KollabrixQuickDock() {
             </div>
 
             {/* Window Footer */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-stone-400">
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-stone-400 shrink-0">
               <span className="font-mono">Press <kbd className="bg-white/10 px-1 py-0.5 rounded text-[10px] text-white">ESC</kbd> to dismiss</span>
-              <span className="text-stone-400">Kollabrix Platform Hub</span>
+              <span className="text-stone-400 font-semibold">Kollabrix Platform Hub</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
