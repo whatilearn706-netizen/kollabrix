@@ -304,15 +304,28 @@ export function LandingHero() {
       className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
-          MODERN AI STARTUP HERO BACKGROUND (Pinterest Reference Style)
-          Dark fluted titanium architectural wall with glowing dot-matrix spiral vortex
+          MOTION VIDEO HERO BACKGROUND (Pinterest Reference Style: https://pin.it/3r2fGkahv)
+          Celestial Cosmos Horizon with Glowing Planet Crescent, Cometary Flare & Stardust
          ========================================================================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
-        {/* Full-width Pinterest Reference Backdrop */}
+        {/* Full-width Motion Reference Video Loop */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster="/brand/hero-celestial-poster.webp"
+          className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.05]"
+        >
+          <source src="/videos/hero-celestial-cosmos.mp4" type="video/mp4" />
+        </video>
+
+        {/* Fallback Poster Image if Video is loading / suspended */}
         <img
-          src="/brand/hero-bg-pinterest-reference.webp"
-          alt="Modern AI Startup Dark Atmosphere"
-          className="w-full h-full object-cover object-center filter brightness-[1.08] contrast-[1.05]"
+          src="/brand/hero-celestial-poster.webp"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center -z-10 opacity-60"
         />
 
         {/* Subtle Warm Amber Glow Centered above Headline */}
