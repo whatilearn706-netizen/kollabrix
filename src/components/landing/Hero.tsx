@@ -7,7 +7,6 @@ import {
   Play,
   Users,
   Zap,
-  Trophy,
   CheckCircle2,
   Volume2,
   Maximize2,
@@ -146,7 +145,7 @@ export function LandingHero() {
       ref={heroRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative min-h-[96vh] lg:min-h-screen flex flex-col justify-between pt-24 sm:pt-28 pb-6 sm:pb-8 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
+      className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
           PURE PITCH-BLACK STUDIO BACKGROUND WITH LUXURY SUBTLE AMBIENT LIGHTING
@@ -502,84 +501,6 @@ export function LandingHero() {
         </div>
       </motion.div>
 
-      {/* =========================================================================
-          BOTTOM FLOATING DOCK: STATS & SOCIAL PROOF PILL
-          Matches reference mockup with exact typography, badges, and avatars
-         ========================================================================= */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.35 }}
-        className="relative z-10 w-full max-w-[1550px] mx-auto mt-6 sm:mt-8"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 p-2 sm:p-2.5 rounded-2xl bg-[#0c0f18]/90 border border-white/10 backdrop-blur-2xl shadow-[0_15px_40px_rgba(0,0,0,0.85)]">
-          
-          {/* Feature Pill 1: Real-time Coding Battle */}
-          <Link
-            href="/arena"
-            className="flex items-center gap-2.5 px-3.5 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
-          >
-            <Zap className="w-4 h-4 text-cyan-400 fill-cyan-400" />
-            <div>
-              <div className="text-xs sm:text-sm font-bold text-white leading-tight">Real-time</div>
-              <div className="text-[10px] sm:text-[11px] text-slate-400 font-mono">Coding Battle</div>
-            </div>
-          </Link>
-
-          {/* Feature Pill 2: Global Leaderboard */}
-          <Link
-            href="/leaderboard"
-            className="flex items-center gap-2.5 px-3.5 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
-          >
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <div>
-              <div className="text-xs sm:text-sm font-bold text-white leading-tight">Global Leaderboard</div>
-              <div className="text-[10px] sm:text-[11px] text-slate-400 font-mono">Rise to the top</div>
-            </div>
-          </Link>
-
-          {/* Feature Pill 3: Play with Friends */}
-          <Link
-            href="/arena?action=create"
-            className="flex items-center gap-2.5 px-3.5 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
-          >
-            <Users className="w-4 h-4 text-indigo-400" />
-            <div>
-              <div className="text-xs sm:text-sm font-bold text-white leading-tight">Play with Friends</div>
-              <div className="text-[10px] sm:text-[11px] text-slate-400 font-mono">Together is better</div>
-            </div>
-          </Link>
-
-          {/* Social Proof: 4 Student Avatars + 10K students battling */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5">
-            <div className="flex -space-x-2">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
-                alt="Student Builder"
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-slate-900 object-cover"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces"
-                alt="Student Builder"
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-slate-900 object-cover"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=faces"
-                alt="Student Builder"
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-slate-900 object-cover"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=faces"
-                alt="Student Builder"
-                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-slate-900 object-cover"
-              />
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-slate-300 tracking-tight">
-              <strong className="text-white">+10K</strong> students are battling right now! <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)] ml-1" />
-            </span>
-          </div>
-        </div>
-      </motion.div>
     </section>
   );
 }
