@@ -304,15 +304,15 @@ export function LandingHero() {
       className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
-          LORENZO LOTTICI DARK CELESTIAL HORIZON BACKGROUND
-          Distant monochromatic celestial sphere, foggy horizon, volumetric smoke
+          MODERN AI STARTUP HERO BACKGROUND (Pinterest Reference Style)
+          Dark fluted titanium architectural wall with glowing dot-matrix spiral vortex
          ========================================================================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
-        {/* Full-width Lorenzo Lottici Dark Celestial Horizon Backdrop */}
+        {/* Full-width Pinterest Reference Backdrop */}
         <img
-          src="/brand/hero-dark-horizon-awwwards.webp"
-          alt="Dark Celestial Horizon Atmosphere"
-          className="w-full h-full object-cover object-center filter brightness-[1.05] contrast-[1.05]"
+          src="/brand/hero-bg-pinterest-reference.webp"
+          alt="Modern AI Startup Dark Atmosphere"
+          className="w-full h-full object-cover object-center filter brightness-[1.08] contrast-[1.05]"
         />
 
         {/* Subtle Warm Amber Glow behind Headline */}
@@ -322,7 +322,7 @@ export function LandingHero() {
         <div className="absolute top-[18%] right-[8%] w-[650px] h-[550px] bg-gradient-to-bl from-cyan-500/10 via-indigo-600/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
         {/* Left Side Ambient Vignette for 100% Vector Headline Readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 md:via-black/35 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 md:via-black/25 to-transparent pointer-events-none" />
 
         {/* Top & Bottom Cinematic Dissolves */}
         <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
