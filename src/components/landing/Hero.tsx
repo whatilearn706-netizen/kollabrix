@@ -18,6 +18,156 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
+// =========================================================================
+// SIMULTANEOUS 1V1 COMPETITIVE PROGRAMMING DUEL ENGINE
+// Both coders type code concurrently in real-time, racing for the knockout.
+// Dynamic alternating/random winner cycle (Left -> Right -> Left -> Right -> Right...)
+// Static module-level constants to guarantee rock-solid timer & effect stability.
+// =========================================================================
+const DUEL_PROBLEMS = [
+  {
+    title: 'Two Sum',
+    pyFile: 'two_sum.py',
+    cppFile: 'two_sum.cpp',
+    py: [
+      'def two_sum(nums, target):',
+      '    seen = {}',
+      '    for i, n in enumerate(nums):',
+      '        if target - n in seen:',
+      '            return [seen[target - n], i]',
+      '        seen[n] = i',
+    ],
+    cpp: [
+      'vector<int> solve(vector<int>& v, int t) {',
+      '    unordered_map<int, int> m;',
+      '    for (int i = 0; i < v.size(); i++) {',
+      '        if (m.count(t - v[i])) return {m[t-v[i]], i};',
+      '        m[v[i]] = i;',
+      '    }',
+      '}',
+    ],
+  },
+  {
+    title: 'Max Subarray',
+    pyFile: 'kadane.py',
+    cppFile: 'kadane.cpp',
+    py: [
+      'def max_sub(nums):',
+      '    curr = best = nums[0]',
+      '    for x in nums[1:]:',
+      '        curr = max(x, curr + x)',
+      '        best = max(best, curr)',
+      '    return best',
+    ],
+    cpp: [
+      'int maxSub(vector<int>& nums) {',
+      '    int cur = nums[0], best = nums[0];',
+      '    for (int i = 1; i < nums.size(); i++) {',
+      '        cur = max(nums[i], cur + nums[i]);',
+      '        best = max(best, cur);',
+      '    }',
+      '    return best;',
+      '}',
+    ],
+  },
+  {
+    title: 'Valid Parentheses',
+    pyFile: 'valid_parens.py',
+    cppFile: 'valid_parens.cpp',
+    py: [
+      'def is_valid(s):',
+      '    stk, m = [], {")": "(", "}": "{", "]": "["}',
+      '    for c in s:',
+      '        if c in m:',
+      '            if not stk or stk.pop() != m[c]: return False',
+      '        else: stk.append(c)',
+      '    return not stk',
+    ],
+    cpp: [
+      'bool isValid(string s) {',
+      '    stack<char> st;',
+      '    for (char c : s) {',
+      '        if (c == \'(\' || c == \'{\') st.push(c);',
+      '        else if (st.empty() || st.top() != c) return false;',
+      '        else st.pop();',
+      '    }',
+      '    return st.empty();',
+      '}',
+    ],
+  },
+];
+
+// Alternating / unpredictable winner sequence so it feels 100% human and live
+const WINNER_SEQUENCE: ('left' | 'right')[] = [
+  'left',
+  'right',
+  'left',
+  'right',
+  'right',
+  'left',
+  'left',
+  'right',
+];
+
+const sliceCodeLines = (lines: string[], charCount: number) => {
+  return lines.join('\n').slice(0, charCount).split('\n');
+};
+
+// Robust line syntax highlighter
+const renderCodeTokens = (line: string, lang: 'py' | 'cpp') => {
+  if (!line) return '';
+  const tokenRegex =
+    lang === 'py'
+      ? /\b(def|return|for|in|if|else|not|and|or)\b|\b(two_sum|max_sub|is_valid|enumerate|max)\b|(\d+)|([{}()[\],:;.<>|&+\-*\/!=%])|([a-zA-Z_]\w*)|(\s+)|(.)/g
+      : /\b(vector|int|unordered_map|return|for|if|else|bool|string|stack|auto)\b|\b(solve|maxSub|isValid|count|size|max|push|pop|empty)\b|(\d+)|([{}()[\],:;.<>|&+\-*\/!=%])|([a-zA-Z_]\w*)|(\s+)|(.)/g;
+
+  const parts: React.ReactNode[] = [];
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = tokenRegex.exec(line)) !== null) {
+    const [full, kw, fn, num, punct, ident] = match;
+    if (kw) {
+      parts.push(
+        <span key={key++} className="text-pink-400 font-bold">
+          {kw}
+        </span>
+      );
+    } else if (fn) {
+      parts.push(
+        <span key={key++} className="text-amber-300 font-medium">
+          {fn}
+        </span>
+      );
+    } else if (num) {
+      parts.push(
+        <span key={key++} className="text-purple-300">
+          {num}
+        </span>
+      );
+    } else if (punct) {
+      parts.push(
+        <span key={key++} className="text-slate-400">
+          {punct}
+        </span>
+      );
+    } else if (ident) {
+      parts.push(
+        <span
+          key={key++}
+          className={lang === 'py' ? 'text-cyan-200' : 'text-purple-200'}
+        >
+          {ident}
+        </span>
+      );
+    } else {
+      parts.push(<span key={key++}>{full}</span>);
+    }
+  }
+
+  return parts.length > 0 ? parts : line;
+};
+
 export function LandingHero() {
   const { user } = useAuth();
   const heroRef = useRef<HTMLElement>(null);
@@ -39,96 +189,6 @@ export function LandingHero() {
   const handleMouseLeave = () => {
     setTilt({ x: -6, y: 2 });
   };
-
-  // =========================================================================
-  // SIMULTANEOUS 1V1 COMPETITIVE PROGRAMMING DUEL ENGINE
-  // Both coders type code concurrently in real-time, racing for the knockout.
-  // Dynamic alternating/random winner cycle (Left -> Right -> Left -> Right -> Right...)
-  // =========================================================================
-  const DUEL_PROBLEMS = [
-    {
-      title: 'Two Sum',
-      pyFile: 'two_sum.py',
-      cppFile: 'two_sum.cpp',
-      py: [
-        'def two_sum(nums, target):',
-        '    seen = {}',
-        '    for i, n in enumerate(nums):',
-        '        if target - n in seen:',
-        '            return [seen[target - n], i]',
-        '        seen[n] = i',
-      ],
-      cpp: [
-        'vector<int> solve(vector<int>& v, int t) {',
-        '    unordered_map<int, int> m;',
-        '    for (int i = 0; i < v.size(); i++) {',
-        '        if (m.count(t - v[i])) return {m[t-v[i]], i};',
-        '        m[v[i]] = i;',
-        '    }',
-        '}',
-      ],
-    },
-    {
-      title: 'Max Subarray',
-      pyFile: 'kadane.py',
-      cppFile: 'kadane.cpp',
-      py: [
-        'def max_sub(nums):',
-        '    curr = best = nums[0]',
-        '    for x in nums[1:]:',
-        '        curr = max(x, curr + x)',
-        '        best = max(best, curr)',
-        '    return best',
-      ],
-      cpp: [
-        'int maxSub(vector<int>& nums) {',
-        '    int cur = nums[0], best = nums[0];',
-        '    for (int i = 1; i < nums.size(); i++) {',
-        '        cur = max(nums[i], cur + nums[i]);',
-        '        best = max(best, cur);',
-        '    }',
-        '    return best;',
-        '}',
-      ],
-    },
-    {
-      title: 'Valid Parentheses',
-      pyFile: 'valid_parens.py',
-      cppFile: 'valid_parens.cpp',
-      py: [
-        'def is_valid(s):',
-        '    stk, m = [], {")": "(", "}": "{", "]": "["}',
-        '    for c in s:',
-        '        if c in m:',
-        '            if not stk or stk.pop() != m[c]: return False',
-        '        else: stk.append(c)',
-        '    return not stk',
-      ],
-      cpp: [
-        'bool isValid(string s) {',
-        '    stack<char> st;',
-        '    for (char c : s) {',
-        '        if (c == \'(\' || c == \'{\') st.push(c);',
-        '        else if (st.empty() || st.top() != c) return false;',
-        '        else st.pop();',
-        '    }',
-        '    return st.empty();',
-        '}',
-      ],
-    },
-  ];
-
-  // Alternating / unpredictable winner sequence so it feels 100% human and live
-  const WINNER_SEQUENCE: ('left' | 'right')[] = [
-    'left',
-    'right',
-    'left',
-    'right',
-    'right',
-    'left',
-    'left',
-    'right',
-  ];
 
   const [timerSeconds, setTimerSeconds] = useState(172); // 02:52 match clock
   const [roundCount, setRoundCount] = useState(0);
@@ -161,8 +221,9 @@ export function LandingHero() {
     setAdityaPassedTests(false);
     setRohanPassedTests(false);
 
-    const pyTotal = currentProblem.py.join('\n').length;
-    const cppTotal = currentProblem.cpp.join('\n').length;
+    const problem = DUEL_PROBLEMS[roundCount % DUEL_PROBLEMS.length];
+    const pyTotal = problem.py.join('\n').length;
+    const cppTotal = problem.cpp.join('\n').length;
 
     const DUEL_MS = 7500;
     const CELEBRATE_MS = 3500;
@@ -213,7 +274,7 @@ export function LandingHero() {
     }, 45);
 
     return () => clearInterval(interval);
-  }, [roundCount, currentProblem]);
+  }, [roundCount]);
 
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -221,66 +282,12 @@ export function LandingHero() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const sliceCodeLines = (lines: string[], charCount: number) => {
-    return lines.join('\n').slice(0, charCount).split('\n');
-  };
-
   const adityaRendered = sliceCodeLines(currentProblem.py, adityaChars);
   const rohanRendered = sliceCodeLines(currentProblem.cpp, rohanChars);
-
-  // Robust line syntax highlighter
-  const renderCodeTokens = (line: string, lang: 'py' | 'cpp') => {
-    const tokenRegex =
-      lang === 'py'
-        ? /\b(def|return|for|in|if|else|not|and|or)\b|\b(two_sum|max_sub|is_valid|enumerate|max)\b|(\d+)|([{}()[\],:;.<>|&+\-*\/!=%])|([a-zA-Z_]\w*)|(\s+)|(.)/g
-        : /\b(vector|int|unordered_map|return|for|if|else|bool|string|stack|auto)\b|\b(solve|maxSub|isValid|count|size|max|push|pop|empty)\b|(\d+)|([{}()[\],:;.<>|&+\-*\/!=%])|([a-zA-Z_]\w*)|(\s+)|(.)/g;
-
-    const parts: React.ReactNode[] = [];
-    let match: RegExpExecArray | null;
-    let key = 0;
-
-    while ((match = tokenRegex.exec(line)) !== null) {
-      const [full, kw, fn, num, punct, ident, space] = match;
-      if (kw) {
-        parts.push(
-          <span key={key++} className="text-pink-400 font-bold">
-            {kw}
-          </span>
-        );
-      } else if (fn) {
-        parts.push(
-          <span key={key++} className="text-amber-300 font-medium">
-            {fn}
-          </span>
-        );
-      } else if (num) {
-        parts.push(
-          <span key={key++} className="text-purple-300">
-            {num}
-          </span>
-        );
-      } else if (punct) {
-        parts.push(
-          <span key={key++} className="text-slate-400">
-            {punct}
-          </span>
-        );
-      } else if (ident) {
-        parts.push(
-          <span
-            key={key++}
-            className={lang === 'py' ? 'text-cyan-200' : 'text-purple-200'}
-          >
-            {ident}
-          </span>
-        );
-      } else {
-        parts.push(<span key={key++}>{full}</span>);
-      }
-    }
-
-    return parts.length > 0 ? parts : line;
-  };
+  const adityaLinesPadded = Array.from({ length: 5 }, (_, i) => adityaRendered[i] || '');
+  const rohanLinesPadded = Array.from({ length: 5 }, (_, i) => rohanRendered[i] || '');
+  const adityaActiveLine = Math.min(4, Math.max(0, adityaRendered.length - 1));
+  const rohanActiveLine = Math.min(4, Math.max(0, rohanRendered.length - 1));
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -515,19 +522,22 @@ export function LandingHero() {
 
                         {/* Code Body */}
                         <div className="flex-1 font-mono text-[9px] sm:text-[10px] leading-relaxed pt-1 flex gap-1.5 text-slate-300 overflow-hidden">
-                          <div className="select-none text-neutral-600 text-right flex flex-col text-[8px] sm:text-[9px]">
-                            <span>1</span>
-                            <span>2</span>
-                            <span>3</span>
-                            <span>4</span>
-                            <span>5</span>
+                          <div className="select-none text-neutral-600 text-right flex flex-col text-[8px] sm:text-[9px] w-3">
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">1</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">2</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">3</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">4</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">5</span>
                           </div>
-                          <div className="flex-1 whitespace-pre overflow-hidden">
-                            {adityaRendered.slice(0, 5).map((line, i) => (
-                              <div key={i} className="text-cyan-200 truncate">
-                                {renderCodeTokens(line, 'py')}
-                                {i === adityaRendered.slice(0, 5).length - 1 && roundPhase === 'duel' && (
-                                  <span className="inline-block w-1 h-2.5 bg-cyan-400 animate-pulse ml-0.5" />
+                          <div className="flex-1 whitespace-pre overflow-hidden flex flex-col">
+                            {adityaLinesPadded.map((line, i) => (
+                              <div
+                                key={i}
+                                className="text-cyan-200 truncate h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px] flex items-center"
+                              >
+                                <span>{renderCodeTokens(line, 'py')}</span>
+                                {i === adityaActiveLine && roundPhase === 'duel' && (
+                                  <span className="inline-block w-1.5 h-3 bg-cyan-400 animate-pulse ml-0.5" />
                                 )}
                               </div>
                             ))}
@@ -573,19 +583,22 @@ export function LandingHero() {
 
                         {/* Code Body */}
                         <div className="flex-1 font-mono text-[9px] sm:text-[10px] leading-relaxed pt-1 flex gap-1.5 text-slate-300 overflow-hidden">
-                          <div className="select-none text-neutral-600 text-right flex flex-col text-[8px] sm:text-[9px]">
-                            <span>1</span>
-                            <span>2</span>
-                            <span>3</span>
-                            <span>4</span>
-                            <span>5</span>
+                          <div className="select-none text-neutral-600 text-right flex flex-col text-[8px] sm:text-[9px] w-3">
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">1</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">2</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">3</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">4</span>
+                            <span className="h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px]">5</span>
                           </div>
-                          <div className="flex-1 whitespace-pre overflow-hidden">
-                            {rohanRendered.slice(0, 5).map((line, i) => (
-                              <div key={i} className="text-purple-200 truncate">
-                                {renderCodeTokens(line, 'cpp')}
-                                {i === rohanRendered.slice(0, 5).length - 1 && roundPhase === 'duel' && (
-                                  <span className="inline-block w-1 h-2.5 bg-purple-400 animate-pulse ml-0.5" />
+                          <div className="flex-1 whitespace-pre overflow-hidden flex flex-col">
+                            {rohanLinesPadded.map((line, i) => (
+                              <div
+                                key={i}
+                                className="text-purple-200 truncate h-[15px] sm:h-[16px] leading-[15px] sm:leading-[16px] flex items-center"
+                              >
+                                <span>{renderCodeTokens(line, 'cpp')}</span>
+                                {i === rohanActiveLine && roundPhase === 'duel' && (
+                                  <span className="inline-block w-1.5 h-3 bg-purple-400 animate-pulse ml-0.5" />
                                 )}
                               </div>
                             ))}
