@@ -53,6 +53,7 @@ import {
   AlertTriangle,
   Minimize2,
   Info,
+  Upload,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
@@ -483,12 +484,99 @@ export function FullArenaExperience({
     'BINARY_FALCON',
   ];
 
+  // Proving Grounds Curated Combat Avatars
+  const PROVING_GROUNDS_AVATARS = useMemo(() => [
+    {
+      id: 'ronin',
+      name: 'Cyber Ronin',
+      image: '/images/arena-cyber-entity.png',
+      emoji: '🗡️',
+      border: 'border-amber-400',
+      glow: 'shadow-[0_0_15px_rgba(251,191,36,0.5)]',
+    },
+    {
+      id: 'sentinel',
+      name: 'Iron Sentinel',
+      image: '/images/arena-retro-sentinel-clean.png',
+      emoji: '🛡️',
+      border: 'border-cyan-400',
+      glow: 'shadow-[0_0_15px_rgba(34,211,238,0.5)]',
+    },
+    {
+      id: 'walker',
+      name: 'Portal Walker',
+      image: '/images/arena-portal-walker-v1.png',
+      emoji: '⚡',
+      border: 'border-purple-400',
+      glow: 'shadow-[0_0_15px_rgba(192,132,252,0.5)]',
+    },
+    {
+      id: 'coder',
+      name: 'Code Prodigy',
+      image: '/images/arena-coder-burst.jpg',
+      emoji: '🔥',
+      border: 'border-rose-400',
+      glow: 'shadow-[0_0_15px_rgba(251,113,133,0.5)]',
+    },
+    {
+      id: 'glitch',
+      name: 'Glitch Viper',
+      image: 'https://api.dicebear.com/7.x/bottts/svg?seed=GlitchViper&backgroundColor=b6e3f4,c0aede',
+      emoji: '🔮',
+      border: 'border-emerald-400',
+      glow: 'shadow-[0_0_15px_rgba(52,211,153,0.5)]',
+    },
+  ], []);
+
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>('ronin');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState<string>(currentUser?.avatarUrl || '');
+  const [avatarUrlInput, setAvatarUrlInput] = useState<string>('');
+
+  const activeAvatarImage = customAvatarUrl || PROVING_GROUNDS_AVATARS.find((a) => a.id === selectedAvatarId)?.image || PROVING_GROUNDS_AVATARS[0].image;
+
   const [selectedAvatarIdx, setSelectedAvatarIdx] = useState(0);
 
   // Step 1: Identity & Mode
   const [playerName, setPlayerName] = useState(
     currentUser?.displayName || currentUser?.username || 'CyberRonin'
   );
+
+  // Real-time username uniqueness check
+  const [usernameCheckStatus, setUsernameCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [usernameCheckMsg, setUsernameCheckMsg] = useState<string>('');
+
+  useEffect(() => {
+    const clean = (playerName || '').trim();
+    if (!clean || clean.length < 3) {
+      setUsernameCheckStatus('idle');
+      setUsernameCheckMsg(clean.length === 0 ? 'Enter a callsign' : 'Minimum 3 characters required');
+      return;
+    }
+
+    setUsernameCheckStatus('checking');
+    setUsernameCheckMsg('Checking availability...');
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/profile/check-username?username=${encodeURIComponent(clean)}&userId=${user?.id || ''}`
+        );
+        const data = await res.json();
+        if (data.available) {
+          setUsernameCheckStatus('available');
+          setUsernameCheckMsg(data.message || 'Callsign available for combat');
+        } else {
+          setUsernameCheckStatus('taken');
+          setUsernameCheckMsg(data.message || 'This username is already taken by another combatant');
+        }
+      } catch {
+        setUsernameCheckStatus('available');
+        setUsernameCheckMsg('Callsign accepted');
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [playerName, user?.id]);
   const [teamSize, setTeamSize] = useState<'1v1' | '2v2'>('1v1');
   const [arenaTab, setArenaTab] = useState<'tournament' | 'direct' | 'practice'>('tournament');
   const [showJoinModal, setShowJoinModal] = useState<boolean>(Boolean(initialRoomCode));
@@ -1652,6 +1740,7 @@ export function FullArenaExperience({
             id: myPlayerId,
             name: activePlayerName,
             avatarIdx: selectedAvatarIdx,
+            avatarUrl: activeAvatarImage,
           },
         }),
       });
@@ -1784,6 +1873,7 @@ export function FullArenaExperience({
         hostName: playerName || profile?.display_name || user?.user_metadata?.full_name || 'SquadLeader',
         hostId: myPlayerId,
         avatarIdx: selectedAvatarIdx,
+        avatarUrl: activeAvatarImage,
         format: teamSize,
         arena,
         bugDomain: arena === 'bug_hunt' ? bugDomain : undefined,
@@ -3547,54 +3637,223 @@ export function FullArenaExperience({
               {/* ================= STEP 0 / 2: SPLIT COMMAND DECK (IMAGE 5 LEFT + IMAGE 6 RIGHT WITH FROST BLUR) ================= */}
               {(step === 0 || step === 2) && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
-                  {/* LEFT COLUMN: Image 5 - The Colosseum Mode & Profile Card */}
-                  <div className="lg:col-span-5 flex flex-col justify-between space-y-3.5 pr-0 lg:pr-4 border-b lg:border-b-0 lg:border-r border-amber-500/20 pb-5 lg:pb-0">
-                    <div className="space-y-3">
+                  {/* LEFT COLUMN: Proving Ground, Avatar Selection & Profile Name Setup */}
+                  <div className="lg:col-span-5 flex flex-col justify-between space-y-4 pr-0 lg:pr-4 border-b lg:border-b-0 lg:border-r border-amber-500/20 pb-5 lg:pb-0">
+                    <div className="space-y-4">
                       {/* Badge + Headline */}
-                      <div className="space-y-1.5 text-left">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-amber-400/35 text-amber-300 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                      <div className="space-y-1 text-left">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-black/40 border border-amber-400/35 text-amber-300 font-mono text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                           <span>THE PROVING GROUNDS • LIVE ARENA</span>
                         </div>
 
-                        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight font-serif leading-[1.18]">
-                          Enter The Colosseum.{' '}
-                          <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent filter drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                            Prove Your Craft.
-                          </span>
+                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-serif">
+                          Proving Ground
                         </h1>
-
-                        <p className="text-[11px] sm:text-xs text-slate-300/90 leading-relaxed font-sans">
-                          High-stakes algorithmic &amp; UI duels under fog-of-war encryption. Outcode campus rivals, prove your speed under time, and rise on the verified collegiate leaderboard.
-                        </p>
                       </div>
 
-                      {/* Colosseum Visual */}
-                      <div className="relative w-full rounded-2xl overflow-hidden border border-amber-400/30 shadow-[0_4px_25px_rgba(0,0,0,0.45)] group">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-amber-500/10 z-10 pointer-events-none" />
-                        <img
-                          src="/images/arena-proving-grounds-colosseum.jpg"
-                          alt="The Proving Grounds Colosseum"
-                          className="w-full h-32 sm:h-36 object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                        />
+                      {/* Avatar Choose Section */}
+                      <div className="space-y-2 text-left">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+                            <span className="text-amber-400">⚡</span>
+                            <span>Choose Avatar:</span>
+                          </span>
+                          {customAvatarUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomAvatarUrl('');
+                                setAvatarUrlInput('');
+                              }}
+                              className="text-[10px] font-mono text-amber-400/80 hover:text-amber-300 underline cursor-pointer"
+                            >
+                              Reset to Presets
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Avatar Display + Presets */}
+                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/55 border border-amber-500/20 backdrop-blur-sm shadow-inner">
+                          {/* Active Preview */}
+                          <div className="relative shrink-0">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.45)] bg-slate-900 flex items-center justify-center">
+                              <img
+                                src={activeAvatarImage}
+                                alt="Active Combatant Avatar"
+                                className="w-full h-full object-cover object-center"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = '/images/arena-cyber-entity.png';
+                                }}
+                              />
+                            </div>
+                            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[10px] font-black shadow-sm">
+                              ✓
+                            </span>
+                          </div>
+
+                          {/* Presets Grid */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-mono text-slate-400 mb-1.5 flex items-center justify-between">
+                              <span>Select an avatar:</span>
+                            </div>
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                              {PROVING_GROUNDS_AVATARS.map((av, idx) => {
+                                const isSelected = !customAvatarUrl && selectedAvatarId === av.id;
+                                return (
+                                  <button
+                                    key={av.id}
+                                    type="button"
+                                    onClick={() => {
+                                      playTacticalSelectSound();
+                                      setSelectedAvatarId(av.id);
+                                      setSelectedAvatarIdx(idx);
+                                      setCustomAvatarUrl('');
+                                      setAvatarUrlInput('');
+                                    }}
+                                    title={av.name}
+                                    className={`relative shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border transition-all cursor-pointer ${
+                                      isSelected
+                                        ? 'border-amber-400 ring-2 ring-amber-400/60 scale-105 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+                                        : 'border-slate-800 hover:border-amber-400/50 opacity-60 hover:opacity-100 hover:scale-100'
+                                    }`}
+                                  >
+                                    <img
+                                      src={av.image}
+                                      alt={av.name}
+                                      className="w-full h-full object-cover object-center"
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Paste image URL or upload */}
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            value={avatarUrlInput}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setAvatarUrlInput(val);
+                              if (val.trim()) {
+                                setCustomAvatarUrl(val.trim());
+                              } else {
+                                setCustomAvatarUrl('');
+                              }
+                            }}
+                            placeholder="Paste avatar image URL (https://...)"
+                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-black/60 border border-amber-500/25 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 text-[11px] font-mono text-amber-200 placeholder:text-slate-500 transition-all outline-none"
+                          />
+                          <div className="absolute right-1.5 flex items-center">
+                            <label
+                              className="cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[10px] font-mono text-amber-300 font-bold transition-all flex items-center gap-1 active:scale-95"
+                              title="Upload avatar image from device"
+                            >
+                              <Upload className="w-3 h-3" />
+                              <span>Upload</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (file.size > 2 * 1024 * 1024) {
+                                      alert('Please select an image under 2MB.');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                      if (typeof reader.result === 'string') {
+                                        setCustomAvatarUrl(reader.result);
+                                        setAvatarUrlInput('Custom Avatar Uploaded');
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Pilot Call-sign Tag */}
-                      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-black/50 border border-amber-500/20 text-xs font-mono text-slate-300">
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                          <span className="text-amber-400">⚔️</span>
-                          <span>Challenger:</span>
-                        </span>
-                        <span className="text-amber-300 font-bold truncate max-w-[150px]">
-                          {playerName || 'CyberCoder'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={rollRandomCallSign}
-                          className="text-[11px] text-amber-400 hover:text-amber-300 underline font-mono cursor-pointer"
-                        >
-                          Change Tag
-                        </button>
+                      {/* Profile Name Section */}
+                      <div className="space-y-1.5 text-left">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+                            <span className="text-amber-400">⚔️</span>
+                            <span>Profile Name / Callsign:</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={rollRandomCallSign}
+                            className="text-[10px] font-mono text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                          >
+                            🎲 Randomize
+                          </button>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={playerName}
+                            maxLength={25}
+                            onChange={(e) => {
+                              const clean = e.target.value.replace(/[^a-zA-Z0-9_.-]/g, '');
+                              setPlayerName(clean);
+                            }}
+                            placeholder="Enter unique profile name..."
+                            className={`w-full px-3.5 py-2 rounded-xl bg-black/60 border font-mono text-xs font-bold transition-all outline-none ${
+                              usernameCheckStatus === 'taken'
+                                ? 'border-rose-500 text-rose-300 focus:ring-1 focus:ring-rose-500/50 bg-rose-950/20'
+                                : usernameCheckStatus === 'available'
+                                ? 'border-emerald-500/80 text-emerald-300 focus:ring-1 focus:ring-emerald-500/50'
+                                : 'border-amber-500/30 text-amber-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50'
+                            }`}
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            {usernameCheckStatus === 'checking' && (
+                              <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                            )}
+                            {usernameCheckStatus === 'taken' && (
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                            )}
+                            {usernameCheckStatus === 'available' && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Validation status feedback */}
+                        <div className="min-h-[16px] text-[10px] font-mono flex items-center gap-1">
+                          {usernameCheckStatus === 'checking' && (
+                            <span className="text-amber-400/90 flex items-center gap-1">
+                              <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                              Checking availability...
+                            </span>
+                          )}
+                          {usernameCheckStatus === 'taken' && (
+                            <span className="text-rose-400 font-bold flex items-center gap-1 animate-pulse">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              {usernameCheckMsg || 'This username is already taken by another user'}
+                            </span>
+                          )}
+                          {usernameCheckStatus === 'available' && (
+                            <span className="text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              {usernameCheckMsg || 'Callsign available for combat'}
+                            </span>
+                          )}
+                          {usernameCheckStatus === 'idle' && (
+                            <span className="text-slate-500">
+                              {usernameCheckMsg || 'Min 3 characters. Alphanumeric & underscores.'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -3602,7 +3861,12 @@ export function FullArenaExperience({
                     <div className="space-y-2 pt-2">
                       <button
                         type="button"
+                        disabled={usernameCheckStatus === 'taken' || !playerName.trim()}
                         onClick={() => {
+                          if (usernameCheckStatus === 'taken') {
+                            playCheatWarningSiren?.();
+                            return;
+                          }
                           playBattleSlamSound();
                           setIsCreateUnlocked(true);
                           setIsHost(true);
@@ -3611,13 +3875,21 @@ export function FullArenaExperience({
                           }
                         }}
                         className={`w-full py-3 px-4 rounded-xl font-black font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                          isCreateUnlocked
+                          usernameCheckStatus === 'taken'
+                            ? 'bg-rose-950/60 border border-rose-500/50 text-rose-300 opacity-80 cursor-not-allowed'
+                            : isCreateUnlocked
                             ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-300 scale-[1.01]'
                             : 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.35)]'
                         }`}
                       >
                         <Trophy className="w-4 h-4 fill-current" />
-                        <span>{isCreateUnlocked ? 'CONFIGURING TOURNAMENT ⚙️' : 'CREATE TOURNAMENT →'}</span>
+                        <span>
+                          {usernameCheckStatus === 'taken'
+                            ? 'NAME TAKEN — CHOOSE ANOTHER ⚠️'
+                            : isCreateUnlocked
+                            ? 'CONFIGURING TOURNAMENT ⚙️'
+                            : 'CREATE TOURNAMENT →'}
+                        </span>
                       </button>
 
                       <button
