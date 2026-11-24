@@ -105,21 +105,7 @@ export function Navbar() {
     return null;
   }
 
-  const handleStartProjectClick = () => {
-    if (!user) {
-      openAuthModal('signup');
-    } else {
-      router.push('/projects/new');
-    }
-  };
-
   const isFaculty = isFacultyUser(user, profile);
-  const isAdmin = Boolean(
-    profile?.role === 'admin' ||
-    user?.email?.toLowerCase().includes('whatilearn706') ||
-    user?.email?.toLowerCase().includes('goyalmayank142') ||
-    user?.email?.toLowerCase().includes('admin')
-  );
 
   const displayName =
     profile?.display_name ||
@@ -269,18 +255,6 @@ export function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2.5">
-              {/* Configurable Brand CTA Button (Admin Only) */}
-              {isAdmin && !isFaculty && (
-                <button
-                  type="button"
-                  onClick={handleStartProjectClick}
-                  className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 hover:from-white hover:to-slate-100 shadow-sm border border-white/40 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                >
-                  <PlusCircle className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
-                  <span>{theme.navbarCtaText || 'Start Project'}</span>
-                </button>
-              )}
-
               <NotificationBell />
 
               {/* Progressive Profiling: Non-intrusive finish profile pill if incomplete */}
@@ -651,39 +625,22 @@ export function Navbar() {
             )}
           </div>
 
-          <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
-
-          {user ? (
-            isAdmin && !isFaculty && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleStartProjectClick();
-                }}
-                style={{
-                  backgroundColor: theme.brandColor,
-                  borderRadius: theme.borderRadius,
-                }}
-                className="w-full flex items-center justify-center gap-2 py-3 text-white font-bold text-sm shadow-md"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>{theme.navbarCtaText || 'Start a Project'}</span>
-              </button>
-            )
-          ) : (
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openAuthModal('signup');
-                }}
-                className="w-full py-3 px-3 rounded-xl text-xs font-extrabold text-slate-950 bg-gradient-to-r from-white via-slate-100 to-slate-200 shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 text-center"
-              >
-                Join Free
-              </button>
-            </div>
+          {!user && (
+            <>
+              <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal('signup');
+                  }}
+                  className="w-full py-3 px-3 rounded-xl text-xs font-extrabold text-slate-950 bg-gradient-to-r from-white via-slate-100 to-slate-200 shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 text-center"
+                >
+                  Join Free
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
