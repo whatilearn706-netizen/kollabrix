@@ -183,7 +183,7 @@ export function LandingHero() {
       // Preload the arena's high-res background image so the transition is instant with zero asset flash
       if (typeof window !== 'undefined') {
         const bgImg = new window.Image();
-        bgImg.src = '/images/arena-fluted-amber-background.webp';
+        bgImg.src = '/images/arena-cosmic-fog-bg.webp';
         const colosseumImg = new window.Image();
         colosseumImg.src = '/images/arena-proving-grounds-colosseum.jpg';
       }

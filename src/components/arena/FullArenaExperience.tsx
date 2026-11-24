@@ -3445,21 +3445,21 @@ export function FullArenaExperience({
 
   return (
     <div className="fixed inset-0 z-[9990] bg-[#02040a] text-slate-100 flex flex-col overflow-hidden select-none">
-      {/* Background: Modern Architectural Fluted Amber Slats from Pinterest Reference (https://pin.it/5q9NmUGnU) */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none bg-black">
+      {/* Background: Deep Space Cosmic Constellation Wallpaper */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none bg-[#030611]">
         <picture>
-          <source srcSet="/images/arena-fluted-amber-background.webp" type="image/webp" />
+          <source srcSet="/images/arena-cosmic-fog-bg.webp" type="image/webp" />
           <img
-            src="/images/arena-fluted-amber-background.jpg"
-            alt="The Proving Grounds Fluted Amber Arena Background"
+            src="/images/arena-cosmic-fog-bg.jpg"
+            alt="The Proving Grounds Cosmic Constellation Arena Background"
             style={{ imageRendering: '-webkit-optimize-contrast' }}
-            className="w-full h-full object-cover object-center filter contrast-[1.08] brightness-[0.78] saturate-[1.12]"
+            className="w-full h-full object-cover object-center filter contrast-[1.06] brightness-[0.92]"
           />
         </picture>
         {/* Vignette gradients to enhance command card contrast and focus */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/25 to-black/80 pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/15 to-black/75 pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
       </div>
 
       {/* Floating Fiery Embers & Sparks Layer (Authentic Witcher Atmosphere) */}
@@ -3629,7 +3629,9 @@ export function FullArenaExperience({
               ? 'scale-110 opacity-0 blur-2xl pointer-events-none'
               : 'scale-100 opacity-100 animate-fadeIn'
           }`}>
-            <div className="relative w-full rounded-3xl bg-[#070914]/70 sm:bg-[#070914]/65 border border-amber-400/35 border-t-amber-300/45 border-l-white/20 shadow-[0_0_80px_rgba(0,0,0,0.85),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_2px_rgba(255,255,255,0.2)] backdrop-blur-3xl p-5 sm:p-7 overflow-hidden">
+            <div className="relative w-full rounded-3xl bg-[#080d1e]/40 sm:bg-[#080d1e]/35 border border-amber-400/40 border-t-white/35 shadow-[0_0_50px_rgba(245,158,11,0.2),0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_0_25px_rgba(245,158,11,0.06)] backdrop-blur-2xl p-5 sm:p-7 overflow-hidden">
+              {/* Glossy top-left reflective sheen */}
+              <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-white/[0.09] via-amber-400/[0.04] to-transparent rounded-full blur-2xl pointer-events-none" />
               {/* Subtle ambient warm ember highlights inside the command glass */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_70%)] pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.08),transparent_70%)] pointer-events-none" />
@@ -3638,7 +3640,7 @@ export function FullArenaExperience({
               {(step === 0 || step === 2) && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
                   {/* LEFT COLUMN: Proving Ground, Avatar Selection & Profile Name Setup */}
-                  <div className="lg:col-span-5 flex flex-col justify-between space-y-4 pr-0 lg:pr-4 border-b lg:border-b-0 lg:border-r border-amber-500/20 pb-5 lg:pb-0">
+                  <div className="lg:col-span-5 flex flex-col justify-between space-y-4 p-4 sm:p-5 rounded-2xl bg-[#050713]/40 border border-white/[0.08] backdrop-blur-md shadow-inner">
                     <div className="space-y-4">
                       {/* Badge + Headline */}
                       <div className="space-y-1 text-left">
@@ -3907,7 +3909,7 @@ export function FullArenaExperience({
                   </div>
 
                   {/* RIGHT COLUMN: Image 6 - Arena & Topics Selection with Frost/Blur Overlay */}
-                  <div className="lg:col-span-7 relative flex flex-col justify-between space-y-4 pl-0 lg:pl-2">
+                  <div className="lg:col-span-7 relative flex flex-col justify-between space-y-4 p-4 sm:p-5 rounded-2xl bg-[#050713]/40 border border-white/[0.08] backdrop-blur-md shadow-inner">
                     {/* Locked Frosted Overlay if not unlocked */}
                     {!isCreateUnlocked && (
                       <div
@@ -3923,7 +3925,7 @@ export function FullArenaExperience({
                             setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
                           }
                         }}
-                        className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md bg-black/65 rounded-2xl border border-amber-500/25 cursor-pointer group shadow-[0_0_35px_rgba(0,0,0,0.85)]"
+                        className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md bg-black/50 rounded-2xl border border-amber-500/25 cursor-pointer group shadow-[0_0_35px_rgba(0,0,0,0.6)]"
                       >
                         <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center mb-3 shadow-[0_0_25px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
                           <Lock className="w-7 h-7 text-amber-400" />
