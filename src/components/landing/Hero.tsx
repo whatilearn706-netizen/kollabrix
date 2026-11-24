@@ -371,8 +371,8 @@ export function LandingHero() {
           CLEAN DARK OBSIDIAN STUDIO BACKGROUND (Apple / Linear Ultra-Minimalist Style)
          ========================================================================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
-        {/* Subtle Warm Amber Glow Centered above Headline */}
-        <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[720px] h-[340px] bg-[radial-gradient(ellipse_at_center,rgba(251,191,36,0.10),transparent_70%)] blur-[120px] pointer-events-none" />
+        {/* Subtle Liquid Platinum / Silver Glow Centered above Headline */}
+        <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[720px] h-[340px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),rgba(226,232,240,0.03),transparent_70%)] blur-[120px] pointer-events-none" />
 
         {/* Subtle Cyan / Electric Atmosphere behind Centered 3D MacBook */}
         <div className="absolute top-[38%] left-1/2 -translate-x-1/2 w-[880px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.08),rgba(99,102,241,0.03),transparent_70%)] blur-[140px] pointer-events-none" />
@@ -402,7 +402,7 @@ export function LandingHero() {
           <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
             Where Reputations Are Proven{' '}
           </span>
-          <span className="inline lg:whitespace-nowrap bg-gradient-to-r from-amber-200 via-amber-400 to-[#FF7A00] bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(255,122,0,0.55)]">
+          <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-200 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(255,255,255,0.7)] font-black">
             In Seconds.
           </span>
         </motion.h1>
@@ -453,9 +453,9 @@ export function LandingHero() {
           {/* A. Dark Ambient Stage Shield: Creates soft depth separation behind the laptop */}
           <div className="absolute -inset-6 sm:-inset-10 bg-radial-gradient from-black/95 via-black/75 to-transparent rounded-[48px] blur-2xl pointer-events-none -z-10" />
 
-          {/* B. Dual Luminous Rim Backlight: Illuminates the MacBook lid from behind in cyan & amber */}
+          {/* B. Dual Luminous Rim Backlight: Illuminates the MacBook lid from behind in cyan & silver platinum */}
           <div className="absolute -top-10 sm:-top-16 left-1/2 -translate-x-1/2 w-[78%] h-36 bg-gradient-to-b from-cyan-500/25 via-indigo-600/10 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
-          <div className="absolute -top-4 sm:-top-8 left-1/2 -translate-x-1/2 w-[55%] h-24 bg-gradient-to-b from-amber-400/20 via-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="absolute -top-4 sm:-top-8 left-1/2 -translate-x-1/2 w-[55%] h-24 bg-gradient-to-b from-white/20 via-slate-400/10 to-transparent rounded-full blur-2xl pointer-events-none -z-10" />
 
           {/* C. Physical Ground Contact Shadow & Stage Elevation: Creates real physical separation from the background */}
           <div className="absolute -bottom-8 sm:-bottom-12 left-1/2 -translate-x-1/2 w-[92%] h-14 bg-black/95 rounded-[100%] blur-2xl pointer-events-none -z-10" />

@@ -72,7 +72,7 @@ export function StudioLightRig({
       {/* =========================================================================
           2. THE HORIZONTAL LIGHT BAR / TUBE (━)
           Directly matches the Powerupz / Triopixels reference:
-          Crisp white linear light bar with soft outer bloom and amber core nuance.
+          Crisp white linear light bar with soft outer bloom and liquid platinum core.
          ========================================================================= */}
       <div className="relative flex items-center justify-center">
         {/* Primary Light Bar Container */}
@@ -93,8 +93,8 @@ export function StudioLightRig({
               : 'none',
           }}
         >
-          {/* Subtle warm amber core highlight inside the tube (Kollabrix brand harmony) */}
-          <div className="absolute inset-y-0 left-1/4 right-1/4 bg-amber-100/90 rounded-full blur-[0.5px]" />
+          {/* Subtle liquid platinum / white core highlight inside the tube */}
+          <div className="absolute inset-y-0 left-1/4 right-1/4 bg-white/95 rounded-full blur-[0.5px]" />
         </motion.div>
 
         {/* Ambient Halo directly hugging the light bar */}
@@ -138,12 +138,12 @@ export function StudioLightRig({
               <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
             </linearGradient>
 
-            {/* Subtle amber ambient core inside the beam */}
+            {/* Subtle silver/platinum ambient core inside the beam */}
             <linearGradient id="amberCoreGradient" x1="50%" y1="0%" x2="50%" y2="100%">
-              <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.12" />
-              <stop offset="30%" stopColor="#F59E0B" stopOpacity="0.05" />
-              <stop offset="70%" stopColor="#F59E0B" stopOpacity="0.01" />
-              <stop offset="100%" stopColor="#F59E0B" stopOpacity="0" />
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.16" />
+              <stop offset="30%" stopColor="#E2E8F0" stopOpacity="0.06" />
+              <stop offset="70%" stopColor="#94A3B8" stopOpacity="0.015" />
+              <stop offset="100%" stopColor="#64748B" stopOpacity="0" />
             </linearGradient>
 
             {/* Edge-blur filter for soft realistic atmospheric falloff */}
@@ -171,7 +171,7 @@ export function StudioLightRig({
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[420px] sm:w-[600px] h-[360px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.18),rgba(255,255,255,0.04)_50%,transparent_80%)] blur-2xl pointer-events-none" />
 
         {/* Floor bounce illumination right above the laptop */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[720px] sm:w-[940px] h-[180px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),rgba(251,191,36,0.03)_50%,transparent_75%)] blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[720px] sm:w-[940px] h-[180px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),rgba(226,232,240,0.03)_50%,transparent_75%)] blur-3xl pointer-events-none" />
       </motion.div>
     </div>
   );
