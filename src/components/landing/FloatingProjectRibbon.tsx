@@ -223,7 +223,7 @@ export function FloatingProjectRibbon() {
         {/* ============================================================== */}
         {/* 3D REVOLVING CURVED CAROUSEL (Compact Medium Footprint) */}
         {/* ============================================================== */}
-        <div className="relative w-full h-[430px] sm:h-[460px] flex items-center justify-center [perspective:1400px]">
+        <div className="relative w-full h-[455px] sm:h-[490px] flex items-center justify-center [perspective:1400px]">
           {/* Navigation Arrows */}
           <button
             type="button"
@@ -266,25 +266,25 @@ export function FloatingProjectRibbon() {
               let zIndex = 30;
 
               if (diff === -1) {
-                translateX = -280;
+                translateX = -310;
                 rotateY = 48;
                 scale = 0.90;
                 opacity = 0.85;
                 zIndex = 20;
               } else if (diff === 1) {
-                translateX = 280;
+                translateX = 310;
                 rotateY = -48;
                 scale = 0.90;
                 opacity = 0.85;
                 zIndex = 20;
               } else if (diff === -2) {
-                translateX = -480;
+                translateX = -525;
                 rotateY = 62;
                 scale = 0.76;
                 opacity = 0.35;
                 zIndex = 10;
               } else if (diff === 2) {
-                translateX = 480;
+                translateX = 525;
                 rotateY = -62;
                 scale = 0.76;
                 opacity = 0.35;
@@ -324,7 +324,7 @@ export function FloatingProjectRibbon() {
                     e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`);
                     e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
                   }}
-                  className={`group/card absolute w-[275px] sm:w-[305px] md:w-[330px] h-[385px] sm:h-[415px] rounded-[22px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
+                  className={`group/card absolute w-[295px] sm:w-[335px] md:w-[365px] h-[415px] sm:h-[450px] rounded-[22px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
                     isCenter ? 'pointer-events-auto' : 'pointer-events-auto hover:opacity-95'
                   }`}
                   style={{
@@ -335,7 +335,11 @@ export function FloatingProjectRibbon() {
                 >
                   {/* 90% Obsidian / Carbon Dark Glass Substrate */}
                   <div
-                    className="relative w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-gradient-to-b from-[#0f141e] via-[#0a0d14] to-[#07090e] border border-white/[0.08] border-t-white/20 text-white rounded-[22px] overflow-hidden backdrop-blur-2xl"
+                    className={`relative w-full h-full p-5 sm:p-6 flex flex-col justify-between bg-gradient-to-b from-[#0f141e] via-[#0a0d14] to-[#07090e] text-white rounded-[22px] overflow-hidden backdrop-blur-2xl ${
+                      isCenter
+                        ? 'border-2 border-white/25 border-t-white/45'
+                        : 'border-[1.5px] border-white/[0.16] border-t-white/30'
+                    }`}
                   >
                     {/* Subtle micro-grid mesh + Cursor-reactive ray-traced spotlight */}
                     <div
