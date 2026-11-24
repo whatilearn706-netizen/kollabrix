@@ -515,7 +515,7 @@ export default function ExploreProjectsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-2">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-mono font-semibold tracking-wider text-amber-500 uppercase mb-1">
+          <div className="flex items-center gap-1.5 text-xs font-mono font-semibold tracking-wider text-slate-400 uppercase mb-1">
             <span>✦</span>
             <span>CAMPUS BUILDER NETWORK</span>
           </div>

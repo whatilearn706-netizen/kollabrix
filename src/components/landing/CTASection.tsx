@@ -21,7 +21,7 @@ export function LandingCTA() {
 
       {/* Central glow orb */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute w-[500px] h-[500px] rounded-full blur-[120px] bg-orange-600/[0.08] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 landing-orb-pulse" />
+        <div className="absolute w-[500px] h-[500px] rounded-full blur-[140px] bg-white/[0.06] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 landing-orb-pulse" />
       </div>
 
       {/* Dot grid */}
@@ -43,7 +43,9 @@ export function LandingCTA() {
       >
         <h2 className="font-heading text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
           Ready to build something{' '}
-          <span className="landing-gradient-text">amazing?</span>
+          <span className="inline bg-gradient-to-b from-white via-slate-200 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(255,255,255,0.7)] font-black">
+            amazing?
+          </span>
         </h2>
         <p className="text-lg text-slate-400 mb-10 max-w-xl mx-auto leading-relaxed">
           Join thousands of students who are already collaborating, competing,
@@ -51,10 +53,10 @@ export function LandingCTA() {
         </p>
         <Link
           href={user ? "/my-projects" : "/signup"}
-          className="group inline-flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-semibold text-lg landing-btn-glow"
+          className="group inline-flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold text-lg hover:from-white hover:to-white hover:scale-[1.03] active:scale-[0.97] shadow-[0_0_30px_rgba(255,255,255,0.45)] border border-white/60 transition-all cursor-pointer"
         >
           {user ? 'Go to Workspace' : "Get Started — It's Free"}
-          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200 text-slate-950" />
         </Link>
         <p className="mt-5 text-sm text-slate-600">No credit card required</p>
       </motion.div>

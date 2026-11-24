@@ -615,24 +615,25 @@ body.icpc-exam-mode .floating-quick-dock {
    Landing Page — Gradient Text Utility
    ======================================================== */
 .landing-gradient-text {
-  background: linear-gradient(135deg, #F59E0B 0%, #FB923C 35%, #FBBF24 70%, #FDE68A 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 45%, #94A3B8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.45));
 }
 
 /* ========================================================
    Landing Page — Button Glow Effect
    ======================================================== */
 .landing-btn-glow {
-  box-shadow: 0 0 20px -5px rgba(234, 88, 12, 0.4),
-              0 0 40px -10px rgba(217, 119, 6, 0.2);
+  box-shadow: 0 0 25px -5px rgba(255, 255, 255, 0.35),
+              0 0 45px -10px rgba(226, 232, 240, 0.2);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .landing-btn-glow:hover {
-  box-shadow: 0 0 30px -5px rgba(234, 88, 12, 0.6),
-              0 0 60px -10px rgba(217, 119, 6, 0.35);
+  box-shadow: 0 0 35px -5px rgba(255, 255, 255, 0.55),
+              0 0 65px -10px rgba(226, 232, 240, 0.35);
   transform: translateY(-1px);
 }
 

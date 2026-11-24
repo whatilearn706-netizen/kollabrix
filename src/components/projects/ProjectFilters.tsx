@@ -101,7 +101,7 @@ export function ProjectFilters({
                 onClick={() => onChange({ ...filters, category: cat.value, page: 1 })}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                    ? 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60'
                     : 'bg-[#121622]/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800/90'
                 }`}
               >
@@ -154,14 +154,14 @@ export function ProjectFilters({
           onClick={() => setIsFilterOpen(!isFilterOpen)}
           className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0 cursor-pointer ${
             hasActiveFilters
-              ? 'border border-amber-500/80 bg-amber-500/10 text-white hover:bg-amber-500/15'
+              ? 'border border-white/60 bg-white/10 text-white hover:bg-white/15 shadow-[0_0_12px_rgba(255,255,255,0.15)]'
               : 'border border-slate-700/80 bg-[#141926] text-slate-300 hover:text-white hover:border-slate-600'
           }`}
         >
-          <SlidersHorizontal className="w-4 h-4 text-amber-400 shrink-0" />
+          <SlidersHorizontal className="w-4 h-4 text-slate-200 shrink-0" />
           <span>Filters</span>
           {activeFilterCount > 0 && (
-            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-white/20 text-white border border-white/40">
               {activeFilterCount}
             </span>
           )}
@@ -299,7 +299,7 @@ export function ProjectFilters({
             <button
               type="button"
               onClick={() => onChange({ ...filters, status: 'All', page: 1 })}
-              className="px-3.5 py-1 rounded-full text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-300 flex items-center gap-1.5 hover:bg-amber-500/20 transition-all cursor-pointer"
+              className="px-3.5 py-1 rounded-full text-xs font-medium border border-white/20 bg-white/10 text-slate-200 flex items-center gap-1.5 hover:bg-white/15 transition-all cursor-pointer"
             >
               <span>{filters.status}</span>
               <X className="w-3.5 h-3.5 hover:text-white" />
@@ -311,7 +311,7 @@ export function ProjectFilters({
             <button
               type="button"
               onClick={() => onChange({ ...filters, difficulty: 'All', page: 1 })}
-              className="px-3.5 py-1 rounded-full text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-300 flex items-center gap-1.5 hover:bg-amber-500/20 transition-all cursor-pointer"
+              className="px-3.5 py-1 rounded-full text-xs font-medium border border-white/20 bg-white/10 text-slate-200 flex items-center gap-1.5 hover:bg-white/15 transition-all cursor-pointer"
             >
               <span>{filters.difficulty}</span>
               <X className="w-3.5 h-3.5 hover:text-white" />
@@ -323,7 +323,7 @@ export function ProjectFilters({
             <button
               type="button"
               onClick={() => onChange({ ...filters, skill: undefined, page: 1 })}
-              className="px-3.5 py-1 rounded-full text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-300 flex items-center gap-1.5 hover:bg-amber-500/20 transition-all cursor-pointer"
+              className="px-3.5 py-1 rounded-full text-xs font-medium border border-white/20 bg-white/10 text-slate-200 flex items-center gap-1.5 hover:bg-white/15 transition-all cursor-pointer"
             >
               <span>{filters.skill}</span>
               <X className="w-3.5 h-3.5 hover:text-white" />
@@ -335,7 +335,7 @@ export function ProjectFilters({
             <button
               type="button"
               onClick={() => onChange({ ...filters, technology: undefined, page: 1 })}
-              className="px-3.5 py-1 rounded-full text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-300 flex items-center gap-1.5 hover:bg-amber-500/20 transition-all cursor-pointer"
+              className="px-3.5 py-1 rounded-full text-xs font-medium border border-white/20 bg-white/10 text-slate-200 flex items-center gap-1.5 hover:bg-white/15 transition-all cursor-pointer"
             >
               <span>{filters.technology}</span>
               <X className="w-3.5 h-3.5 hover:text-white" />
