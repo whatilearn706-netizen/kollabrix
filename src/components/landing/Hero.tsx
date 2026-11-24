@@ -16,7 +16,6 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { BrandLogo } from '@/components/ui/BrandLogo';
 import { StudioLightRig } from './StudioLightRig';
 
 // =========================================================================
@@ -393,40 +392,6 @@ export function LandingHero() {
         style={{ opacity: contentOpacity, y: contentY }}
         className="relative z-10 w-full max-w-[1440px] mx-auto flex-1 flex flex-col items-center justify-start text-center my-auto"
       >
-        {/* Floating Mascot Emblem Tile (Directly illuminated in the spotlight beam from Triopixels Reference) */}
-        <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          className="mb-3.5 relative z-10"
-        >
-          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#0a0d14]/90 border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center p-2 group hover:border-amber-400/40 transition-colors">
-            {/* Specular Top Rim Highlight catching the overhead tube light */}
-            <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-            <BrandLogo size="sm" showWordmark={false} />
-          </div>
-        </motion.div>
-
-        {/* Live Campus Pill Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.35 }}
-          className="mb-4 sm:mb-5"
-        >
-          <Link
-            href="/arena"
-            prefetch={true}
-            onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
-            onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-[#0e1017]/90 hover:bg-[#151926] text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer backdrop-blur-md active:scale-95"
-          >
-            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span className="font-semibold text-slate-200">1v1 Proctored Code Combat</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] ml-1 animate-pulse" />
-          </Link>
-        </motion.div>
-
         {/* Monolithic Single-Row Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 22 }}

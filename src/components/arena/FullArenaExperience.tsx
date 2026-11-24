@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import {
   X,
@@ -334,6 +335,14 @@ export function FullArenaExperience({
   initialQuestion,
   currentUser,
 }: FullArenaExperienceProps) {
+  const router = useRouter();
+
+  // Eagerly prefetch the root route so clicking Exit Arena is instant and smooth
+  useEffect(() => {
+    try {
+      router.prefetch('/');
+    } catch {}
+  }, [router]);
   // Navigation Steps:
   // 0: Arena Gateway (Hero + Tactical Command Console - Image 1 Screen)
   // 1: Name & Team Size (1v1 / 2v2) - Tournament Command Center (Direct Entry)
@@ -923,8 +932,8 @@ export function FullArenaExperience({
     if (step < 3 || step === 6 || !roomCode) {
       try {
         sessionStorage.removeItem('kollabrix_arena_session');
-        window.history.replaceState(null, '', '/arena');
       } catch {}
+      router.push('/');
       onClose();
       return;
     }
@@ -1000,9 +1009,9 @@ export function FullArenaExperience({
     try {
       sessionStorage.removeItem('kollabrix_arena_session');
       if (roomCode) sessionStorage.removeItem(`arena_code_${roomCode}`);
-      window.history.replaceState(null, '', '/arena');
     } catch {}
 
+    router.push('/');
     onClose();
   };
 
@@ -3348,54 +3357,41 @@ export function FullArenaExperience({
       {/* Subtle Ambient Warm Ember Light Overlay */}
       <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(245,158,11,0.08),transparent_70%)] pointer-events-none z-0" />
 
-      {/* Top Cyber Navigation Bar */}
-      <header className={`relative z-20 h-16 border-b transition-colors px-4 sm:px-6 flex items-center justify-between shrink-0 ${
-        step === 0
-          ? 'border-white/[0.06] bg-black/45 backdrop-blur-md'
-          : 'border-white/[0.08] bg-black/85 backdrop-blur-xl'
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 relative shrink-0 flex items-center justify-center">
-            <img
-              src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
-              alt="Kollabrix Official Dual Ascent Aerospace Emblem"
-              className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]"
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-white text-base tracking-wider uppercase flex items-center gap-1.5">
-                <span className="text-amber-400">KOLLΛBRIX</span>
-                <span className="text-slate-500 font-normal">/</span>
-                <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent">THE PROVING GROUNDS</span>
-              </span>
-              {step > 0 && (
+      {/* Top Cyber Navigation Bar (Only in live combat Step 5 for timer and split-screen IDE HUD) */}
+      {step === 5 ? (
+        <header className="relative z-20 h-14 border-b border-white/[0.08] bg-black/85 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 relative shrink-0 flex items-center justify-center">
+              <img
+                src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
+                alt="Kollabrix Official Dual Ascent Aerospace Emblem"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-white text-sm tracking-wider uppercase flex items-center gap-1.5">
+                  <span className="text-amber-400">KOLLΛBRIX</span>
+                  <span className="text-slate-500 font-normal">/</span>
+                  <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent">THE PROVING GROUNDS</span>
+                </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">
                   {teamSize === '1v1' ? '1v1 DUEL' : '2v2 RELAY'}
                 </span>
-              )}
+              </div>
             </div>
-            <p className="text-[10px] font-mono text-slate-400 hidden sm:block">
-              {step === 0
-                ? 'Collegiate Esports Combat Gateway \u2022 Anti-Cheat Fog of War Protected'
-                : `Room ${roomCode} \u2022 Anti-Cheat Fog of War Protected`}
-            </p>
           </div>
-        </div>
 
-        {/* Center Timer when in Battle */}
-        {step === 5 && (
+          {/* Center Timer when in Battle */}
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
             <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span className="font-mono text-lg font-black text-amber-300 tracking-wider">
+            <span className="font-mono text-base font-black text-amber-300 tracking-wider">
               {formatTimer(timeLeft)}
             </span>
           </div>
-        )}
 
-        {/* Right Header Actions: Fullscreen Toggle & Exit */}
-        <div className="flex items-center gap-2">
-          {step === 5 && (
+          {/* Right Header Actions: Fullscreen Toggle & Exit */}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={toggleArenaFullscreen}
@@ -3407,22 +3403,36 @@ export function FullArenaExperience({
               title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
               {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{isFullscreen ? 'Fullscreen' : 'Fullscreen'}</span>
+              <span className="hidden sm:inline">Fullscreen</span>
             </button>
-          )}
 
-          {/* Exit Button */}
-          <button
-            type="button"
-            onClick={handleExitArena}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
-            title="Exit Battle Arena"
-          >
-            <X className="w-4 h-4" />
-            <span className="hidden sm:inline">Exit Arena</span>
-          </button>
-        </div>
-      </header>
+            <button
+              type="button"
+              onClick={handleExitArena}
+              onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
+              onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
+              className="p-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
+              title="Exit Battle Arena"
+            >
+              <X className="w-4 h-4" />
+              <span className="hidden sm:inline">Exit Arena</span>
+            </button>
+          </div>
+        </header>
+      ) : (
+        /* Floating Seamless Exit Button directly in the background (no top bar strip or dividing line) */
+        <button
+          type="button"
+          onClick={handleExitArena}
+          onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
+          onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
+          className="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 px-3.5 py-1.5 rounded-full bg-black/45 hover:bg-black/75 border border-white/15 hover:border-amber-400/50 text-slate-300 hover:text-white transition-all duration-150 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] flex items-center gap-1.5 text-xs font-mono cursor-pointer active:scale-95 group select-none"
+          title="Exit Battle Arena & Return to Homepage"
+        >
+          <X className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 transition-colors" />
+          <span>Exit Arena</span>
+        </button>
+      )}
 
       {/* Mobile Screen Guidance Banner */}
       {isMobileDevice && showMobileBanner && (

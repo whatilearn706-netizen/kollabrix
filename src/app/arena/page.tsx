@@ -215,6 +215,13 @@ function ArenaPageContent() {
     checkArenaStatus();
   }, []);
 
+  // Eagerly prefetch homepage so exiting the arena is instant and seamless
+  useEffect(() => {
+    try {
+      router.prefetch('/');
+    } catch {}
+  }, [router]);
+
   const handleLaunchLobby = () => {
     playEnterSound();
     setShowPlayLobby(true);
@@ -226,6 +233,9 @@ function ArenaPageContent() {
   };
 
   const handleClose = () => {
+    // Immediate instant client-side route transition
+    router.push('/');
+
     try {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('kollabrix_arena_session');
@@ -236,9 +246,6 @@ function ArenaPageContent() {
         });
       }
     } catch (e) {}
-
-    // Return to Kollabrix homepage
-    router.push('/');
   };
 
   // If Arena is OFFLINE / UNDER MAINTENANCE (Admins bypass so they can build & test live):
