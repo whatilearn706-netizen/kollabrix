@@ -917,29 +917,77 @@ export function FullArenaExperience({
     }
   }, [step, roomCode, isHost, myPlayerId, playerName]);
 
-  // Exit Arena with confirmation and mutual opponent termination
-  const handleExitArena = () => {
-    // In Lobby (Step 3), host can simply go back to Step 2 cleanly without scary warning
+  // Step-by-step Back Navigation: allows user to go back seamlessly from wherever they are
+  const handleBackNavigation = () => {
+    // 1. If any modal is open, close modal
+    if (showExitConfirmModal) {
+      setShowExitConfirmModal(false);
+      return;
+    }
+    if (showJoinModal) {
+      setShowJoinModal(false);
+      return;
+    }
+
+    // 2. In active match (Countdown Step 4 or Battlefield Step 5), ask confirmation before forfeit
+    if (step === 4 || step === 5) {
+      setShowExitConfirmModal(true);
+      return;
+    }
+
+    // 3. In Lobby (Step 3), host goes back to Step 0 with tournament unlocked; non-host leaves room
     if (step === 3) {
       if (isHost) {
-        setStep(2);
+        setStep(0);
+        setIsCreateUnlocked(true);
       } else {
         handleConfirmExit();
       }
       return;
     }
-    // If on Gateway (Step 0), Pilot Dossier (Step 1), Arena Picker (Step 2), or Victory (Step 6), exit immediately
-    if (step < 3 || step === 6 || !roomCode) {
+
+    // 4. In Victory / Result (Step 6), go back to arena gateway (Step 0)
+    if (step === 6) {
+      setStep(0);
+      setIsCreateUnlocked(false);
+      return;
+    }
+
+    // 5. In Step 1 or Step 2 (Tournament configuration)
+    if (step === 1 || step === 2) {
+      setStep(0);
+      setIsCreateUnlocked(false);
+      return;
+    }
+
+    // 6. On Step 0 (Gateway / Colosseum initial screen):
+    if (step === 0) {
+      // If tournament was unlocked and being configured on the right, back relocks it to pure colosseum card
+      if (isCreateUnlocked) {
+        setIsCreateUnlocked(false);
+        return;
+      }
+
+      // If at root of arena, back returns to previous page / homepage
       try {
         sessionStorage.removeItem('kollabrix_arena_session');
       } catch {}
-      router.push('/');
+
+      if (typeof window !== 'undefined' && window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
+        router.back();
+      } else {
+        router.push('/');
+      }
       onClose();
       return;
     }
-    // In active match only (Countdown Step 4 or Battlefield Step 5), ask confirmation
-    setShowExitConfirmModal(true);
+
+    // Fallback default
+    router.push('/');
+    onClose();
   };
+
+  const handleExitArena = handleBackNavigation;
 
   const handleConfirmExit = async () => {
     setShowExitConfirmModal(false);
@@ -3408,29 +3456,29 @@ export function FullArenaExperience({
 
             <button
               type="button"
-              onClick={handleExitArena}
+              onClick={handleBackNavigation}
               onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
               onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
               className="p-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
-              title="Exit Battle Arena"
+              title="Leave Battle"
             >
-              <X className="w-4 h-4" />
-              <span className="hidden sm:inline">Exit Arena</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400" />
+              <span className="hidden sm:inline">Back</span>
             </button>
           </div>
         </header>
       ) : (
-        /* Floating Seamless Exit Button directly in the background (no top bar strip or dividing line) */
+        /* Floating Back Button in the top-left background (Image 2 Blue Circle) */
         <button
           type="button"
-          onClick={handleExitArena}
+          onClick={handleBackNavigation}
           onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
           onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
-          className="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 px-3.5 py-1.5 rounded-full bg-black/45 hover:bg-black/75 border border-white/15 hover:border-amber-400/50 text-slate-300 hover:text-white transition-all duration-150 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] flex items-center gap-1.5 text-xs font-mono cursor-pointer active:scale-95 group select-none"
-          title="Exit Battle Arena & Return to Homepage"
+          className="fixed top-4 left-4 sm:top-6 sm:left-8 z-50 px-3.5 py-1.5 rounded-full bg-black/45 hover:bg-black/75 border border-white/15 hover:border-amber-400/50 text-slate-300 hover:text-white transition-all duration-150 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] flex items-center gap-1.5 text-xs font-mono cursor-pointer active:scale-95 group select-none"
+          title="Back"
         >
-          <X className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 transition-colors" />
-          <span>Exit Arena</span>
+          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 group-hover:-translate-x-0.5 transition-all" />
+          <span>Back</span>
         </button>
       )}
 

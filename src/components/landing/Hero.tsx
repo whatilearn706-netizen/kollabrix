@@ -178,7 +178,7 @@ export function LandingHero() {
   useEffect(() => {
     try {
       router.prefetch('/arena');
-      router.prefetch('/arena?action=create');
+      router.prefetch('/explore');
 
       // Preload the arena's high-res background image so the transition is instant with zero asset flash
       if (typeof window !== 'undefined') {
@@ -426,16 +426,16 @@ export function LandingHero() {
             <span>Start Battle →</span>
           </Link>
 
-          {/* Secondary Button */}
+          {/* Secondary Button: Find Squad */}
           <Link
-            href="/arena?action=create"
+            href="/explore"
             prefetch={true}
-            onMouseEnter={() => { try { router.prefetch('/arena?action=create'); } catch {} }}
-            onTouchStart={() => { try { router.prefetch('/arena?action=create'); } catch {} }}
+            onMouseEnter={() => { try { router.prefetch('/explore'); } catch {} }}
+            onTouchStart={() => { try { router.prefetch('/explore'); } catch {} }}
             className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-white text-sm sm:text-base font-semibold backdrop-blur-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.96] cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
           >
             <Users className="w-4 h-4 text-slate-300" />
-            <span>Challenge a Friend</span>
+            <span>Find Squad</span>
           </Link>
         </motion.div>
 
