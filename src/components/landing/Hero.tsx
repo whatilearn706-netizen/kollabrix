@@ -447,7 +447,7 @@ export function LandingHero() {
           initial={{ opacity: 0, scale: 0.96, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-6 sm:mt-8 transition-transform duration-300 ease-out mx-auto"
+          className="relative z-20 w-full max-w-[920px] xl:max-w-[1000px] -mt-2 sm:-mt-6 transition-transform duration-300 ease-out mx-auto"
           style={{
             perspective: '1400px',
           }}
@@ -476,15 +476,8 @@ export function LandingHero() {
             }}
             className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer"
           >
-            {/* SOLID CHASSIS & KEYBOARD BASE BACKING: 100% blocks video background dots through keyboard/body */}
-            <div
-              className="absolute left-[3.2%] top-[14.7%] w-[93.7%] h-[71%] bg-[#080a11] pointer-events-none z-10"
-              style={{
-                clipPath: 'polygon(7.5% 0%, 92.5% 0%, 92.5% 77%, 100% 90%, 98.5% 100%, 1.5% 100%, 0% 90%, 7.5% 77%)',
-              }}
-            />
             {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
-            <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left">
+            <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left z-10">
                   
                   {/* Top HUD: Brand & Live Match Clock */}
                   <div className="h-7 sm:h-9 bg-[#0b0e17] px-2.5 sm:px-3.5 flex items-center justify-between border-b border-neutral-800 text-[10px] sm:text-xs font-mono select-none z-10">
