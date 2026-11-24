@@ -161,18 +161,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
       return;
     }
 
-    // Check if user temporarily snoozed onboarding in this active browser session
-    const isSnoozed = typeof window !== 'undefined' && (
-      sessionStorage.getItem(`kollabrix_onboarding_snoozed_${user.id}`) === 'true'
-    );
-
-    if (isSnoozed) {
-      setIsOpen(false);
-      return;
-    }
-
-    // First-time logins, brand new registrations, or reset accounts MUST fill their profile details!
-    setIsOpen(true);
+    // Progressive Profiling: Never hijack or block the student's screen on login!
+    // Allow free exploration across the platform. The modal will only open when explicitly
+    // triggered via openProfileEditModal() (e.g. from navbar, settings, or action prompts).
+    setIsOpen(false);
   }, [user, profile, isLoading, forceOpen, mode]);
 
   // 3. Hydrate form fields from profile

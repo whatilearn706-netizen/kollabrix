@@ -277,6 +277,19 @@ export function Navbar() {
 
               <NotificationBell />
 
+              {/* Progressive Profiling: Non-intrusive finish profile pill if incomplete */}
+              {user && (!profile?.college || !profile?.skills?.length) && (
+                <button
+                  type="button"
+                  onClick={() => openProfileEditModal(1)}
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-500/50 transition-all cursor-pointer shadow-xs select-none"
+                  title="Add your college & skills to unlock instant squad matching"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Finish Profile</span>
+                </button>
+              )}
+
               {/* User Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
