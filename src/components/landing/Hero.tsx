@@ -305,42 +305,20 @@ export function LandingHero() {
       className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-20 sm:pt-24 pb-8 sm:pb-12 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
-          MOTION VIDEO HERO BACKGROUND (Pinterest Reference Style: https://pin.it/299AB5ISY)
-          Dark fluted titanium architectural wall with glowing dot-matrix vortex video
+          CLEAN DARK OBSIDIAN STUDIO BACKGROUND (Apple / Linear Ultra-Minimalist Style)
          ========================================================================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-black">
-        {/* Full-width Motion Reference Video Loop */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster="/brand/hero-bg-pinterest-reference.webp"
-          className="w-full h-full object-cover object-center filter brightness-[1.08] contrast-[1.05]"
-        >
-          <source src="/videos/hero-dot-matrix-vortex.mp4" type="video/mp4" />
-          <source src="/videos/hero-background-pinterest.mp4" type="video/mp4" />
-        </video>
-
-        {/* Fallback Poster Image if Video is loading / suspended */}
-        <img
-          src="/brand/hero-bg-pinterest-reference.webp"
-          alt="Modern AI Startup Dark Atmosphere"
-          className="absolute inset-0 w-full h-full object-cover object-center -z-10 opacity-60"
-        />
-
         {/* Subtle Warm Amber Glow Centered above Headline */}
-        <div className="absolute top-[8%] left-1/2 -translate-x-1/2 w-[750px] h-[380px] bg-gradient-to-b from-amber-500/12 via-amber-600/5 to-transparent rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[720px] h-[340px] bg-[radial-gradient(ellipse_at_center,rgba(251,191,36,0.10),transparent_70%)] blur-[120px] pointer-events-none" />
 
-        {/* Subtle Cyan / Electric Glow behind Centered MacBook */}
-        <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[850px] h-[550px] bg-gradient-to-t from-cyan-500/10 via-indigo-600/5 to-transparent rounded-full blur-[150px] pointer-events-none" />
+        {/* Subtle Cyan / Electric Atmosphere behind Centered 3D MacBook */}
+        <div className="absolute top-[38%] left-1/2 -translate-x-1/2 w-[880px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.08),rgba(99,102,241,0.03),transparent_70%)] blur-[140px] pointer-events-none" />
 
-        {/* Subtle Vignette for 100% Vector Headline Readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80 pointer-events-none" />
+        {/* Soft Radial Vignette for Contrast */}
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/40 to-black pointer-events-none" />
 
         {/* Top & Bottom Cinematic Dissolves */}
-        <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
       </div>
 
@@ -453,7 +431,7 @@ export function LandingHero() {
           }}
         >
           {/* ================= 3D STAGE ELEVATION & BACKLIGHTING ================= */}
-          {/* A. Dark Ambient Stage Shield: Blocks background video dots from washing out or blending with the laptop */}
+          {/* A. Dark Ambient Stage Shield: Creates soft depth separation behind the laptop */}
           <div className="absolute -inset-6 sm:-inset-10 bg-radial-gradient from-black/95 via-black/75 to-transparent rounded-[48px] blur-2xl pointer-events-none -z-10" />
 
           {/* B. Dual Luminous Rim Backlight: Illuminates the MacBook lid from behind in cyan & amber */}
