@@ -129,8 +129,8 @@ export function Step4Skills({
       <div className="space-y-2.5">
         <div>
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-            <Code2 className="w-3.5 h-3.5 text-amber-400" />
-            <span>Technical Skills (Select or write at least 2) <span className="text-amber-400">*</span></span>
+            <Code2 className="w-3.5 h-3.5 text-slate-300" />
+            <span>Technical Skills (Select or write at least 2) <span className="text-slate-400">*</span></span>
           </label>
         </div>
 
@@ -147,23 +147,23 @@ export function Step4Skills({
               }
             }}
             placeholder="Type any skill you know (e.g. Python, C++, Java, Figma, ML) & press Enter..."
-            className="flex-1 h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-all"
+            className="flex-1 h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 font-mono transition-all"
           />
           <button
             type="button"
             onClick={submitCustomSkill}
             disabled={!customSkill.trim()}
-            className="px-3.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs text-amber-300 flex items-center gap-1 font-semibold transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 text-xs text-white flex items-center gap-1 font-semibold transition-colors cursor-pointer disabled:opacity-40"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 text-white" />
             <span>Add</span>
           </button>
         </div>
 
         {/* Active Selected Skills Tray */}
         {skills.length > 0 ? (
-          <div className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1.5">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-amber-400/90 font-bold flex items-center justify-between">
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-1.5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center justify-between">
               <span>Your Selected Skills ({skills.length})</span>
               <span className="text-[9px] text-slate-400 font-sans font-normal">Click (✕) to remove</span>
             </div>
@@ -171,14 +171,14 @@ export function Step4Skills({
               {skills.map((s) => (
                 <span
                   key={s}
-                  className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-amber-100 font-semibold flex items-center gap-1.5 shadow-xs"
+                  className="text-xs px-2.5 py-1 rounded-lg bg-white/[0.12] border border-white/30 text-white font-semibold flex items-center gap-1.5 shadow-xs"
                 >
-                  <CheckCircle2 className="w-3 h-3 text-amber-300" />
+                  <CheckCircle2 className="w-3 h-3 text-slate-200" />
                   <span>{s}</span>
                   <button
                     type="button"
                     onClick={() => removeSkill(s)}
-                    className="ml-0.5 p-0.5 rounded-full hover:bg-amber-400/30 text-amber-300 hover:text-white transition-colors"
+                    className="ml-0.5 p-0.5 rounded-full hover:bg-white/20 text-slate-400 hover:text-white transition-colors"
                     title={`Remove ${s}`}
                   >
                     <X className="w-3 h-3" />
@@ -208,12 +208,12 @@ export function Step4Skills({
                   onClick={() => toggleSkill(s)}
                   className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
                     isSelected
-                      ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-semibold shadow-xs'
+                      ? 'bg-white/[0.14] border-white/40 text-white font-semibold shadow-xs'
                       : 'bg-white/[0.02] border-white/5 text-slate-400 hover:border-white/20 hover:text-white'
                   }`}
                 >
                   {isSelected ? (
-                    <CheckCircle2 className="w-3 h-3 text-amber-400" />
+                    <CheckCircle2 className="w-3 h-3 text-white" />
                   ) : (
                     <span className="text-slate-500">+</span>
                   )}
@@ -229,8 +229,8 @@ export function Step4Skills({
       <div className="space-y-2.5 pt-2 border-t border-white/5">
         <div>
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5 text-orange-400" />
-            <span>Interests &amp; Passion Areas (Select at least 1) <span className="text-amber-400">*</span></span>
+            <Compass className="w-3.5 h-3.5 text-slate-300" />
+            <span>Interests &amp; Passion Areas (Select at least 1) <span className="text-slate-400">*</span></span>
           </label>
         </div>
 
@@ -247,13 +247,13 @@ export function Step4Skills({
               }
             }}
             placeholder="Write custom interest (e.g. Web3, Game Dev, Robotics) & press Enter..."
-            className="flex-1 h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-all"
+            className="flex-1 h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono transition-all"
           />
           <button
             type="button"
             onClick={submitCustomInterest}
             disabled={!customInterest.trim()}
-            className="px-3.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-xs text-orange-300 flex items-center gap-1 font-semibold transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-xs text-white flex items-center gap-1 font-semibold transition-colors cursor-pointer disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add</span>
@@ -262,22 +262,22 @@ export function Step4Skills({
 
         {/* Active Selected Interests Tray */}
         {interests.length > 0 && (
-          <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-1.5">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-orange-400/90 font-bold flex items-center justify-between">
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-1.5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center justify-between">
               <span>Your Selected Interests ({interests.length})</span>
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
               {interests.map((item) => (
                 <span
                   key={item}
-                  className="text-xs px-2.5 py-1 rounded-lg bg-orange-500/25 border border-orange-400/60 text-orange-100 font-semibold flex items-center gap-1.5 shadow-xs"
+                  className="text-xs px-2.5 py-1 rounded-lg bg-white/[0.12] border border-white/30 text-white font-semibold flex items-center gap-1.5 shadow-xs"
                 >
-                  <CheckCircle2 className="w-3 h-3 text-orange-300" />
+                  <CheckCircle2 className="w-3 h-3 text-slate-300" />
                   <span>{item}</span>
                   <button
                     type="button"
                     onClick={() => removeInterest(item)}
-                    className="ml-0.5 p-0.5 rounded-full hover:bg-orange-400/30 text-orange-300 hover:text-white transition-colors"
+                    className="ml-0.5 p-0.5 rounded-full hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
                     title={`Remove ${item}`}
                   >
                     <X className="w-3 h-3" />
@@ -299,12 +299,12 @@ export function Step4Skills({
                 onClick={() => toggleInterest(item)}
                 className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
                   isSelected
-                    ? 'bg-orange-500/25 border-orange-400 text-orange-200 font-semibold shadow-xs'
+                    ? 'bg-white/[0.12] border-white/30 text-white font-semibold shadow-xs'
                     : 'bg-white/[0.02] border-white/5 text-slate-400 hover:border-white/20 hover:text-white'
                 }`}
               >
                 {isSelected ? (
-                  <CheckCircle2 className="w-3 h-3 text-orange-400" />
+                  <CheckCircle2 className="w-3 h-3 text-slate-200" />
                 ) : (
                   <span className="text-slate-500">+</span>
                 )}
@@ -319,8 +319,8 @@ export function Step4Skills({
       <div className="space-y-2.5 pt-2 border-t border-white/5">
         <div>
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-            <Briefcase className="w-3.5 h-3.5 text-amber-400" />
-            <span>Preferred Project Roles (Select at least 1) <span className="text-amber-400">*</span></span>
+            <Briefcase className="w-3.5 h-3.5 text-slate-300" />
+            <span>Preferred Project Roles (Select at least 1) <span className="text-slate-400">*</span></span>
           </label>
         </div>
 
@@ -337,13 +337,13 @@ export function Step4Skills({
               }
             }}
             placeholder="Write custom role (e.g. AI Researcher, Quantum Engineer) & press Enter..."
-            className="flex-1 h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-all"
+            className="flex-1 h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono transition-all"
           />
           <button
             type="button"
             onClick={submitCustomRole}
             disabled={!customRole.trim()}
-            className="px-3.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs text-amber-300 flex items-center gap-1 font-semibold transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-xs text-white flex items-center gap-1 font-semibold transition-colors cursor-pointer disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add</span>
@@ -352,22 +352,22 @@ export function Step4Skills({
 
         {/* Active Selected Roles Tray */}
         {preferredRoles.length > 0 && (
-          <div className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1.5">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-amber-400/90 font-bold flex items-center justify-between">
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-1.5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center justify-between">
               <span>Your Selected Roles ({preferredRoles.length})</span>
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
               {preferredRoles.map((role) => (
                 <span
                   key={role}
-                  className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-amber-100 font-semibold flex items-center gap-1.5 shadow-xs"
+                  className="text-xs px-2.5 py-1 rounded-lg bg-white/[0.12] border border-white/30 text-white font-semibold flex items-center gap-1.5 shadow-xs"
                 >
-                  <CheckCircle2 className="w-3 h-3 text-amber-300" />
+                  <CheckCircle2 className="w-3 h-3 text-slate-300" />
                   <span>{role}</span>
                   <button
                     type="button"
                     onClick={() => removeRole(role)}
-                    className="ml-0.5 p-0.5 rounded-full hover:bg-amber-400/30 text-amber-300 hover:text-white transition-colors"
+                    className="ml-0.5 p-0.5 rounded-full hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
                     title={`Remove ${role}`}
                   >
                     <X className="w-3 h-3" />
@@ -389,12 +389,12 @@ export function Step4Skills({
                 onClick={() => toggleRole(role)}
                 className={`text-xs px-2.5 py-1.5 rounded-lg border text-left transition-all flex items-center gap-1 cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-semibold shadow-xs'
+                    ? 'bg-white/[0.12] border-white/30 text-white font-semibold shadow-xs'
                     : 'bg-white/[0.02] border-white/5 text-slate-400 hover:border-white/20 hover:text-white'
                 }`}
               >
                 {isSelected ? (
-                  <CheckCircle2 className="w-3 h-3 text-amber-400" />
+                  <CheckCircle2 className="w-3 h-3 text-slate-200" />
                 ) : (
                   <span className="text-slate-500">+</span>
                 )}

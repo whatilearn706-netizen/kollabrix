@@ -64,7 +64,7 @@ export function Step5Links({
             value={githubUrl}
             onChange={(e) => setGithubUrl(e.target.value)}
             placeholder="e.g. https://github.com/mayankgoyal or mayankgoyal"
-            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-all"
+            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono transition-all"
           />
           <span className="absolute left-3 top-3.5 text-slate-400">
             <GitHubIcon className="w-4 h-4" />
@@ -83,7 +83,7 @@ export function Step5Links({
             value={linkedinUrl}
             onChange={(e) => setLinkedinUrl(e.target.value)}
             placeholder="e.g. https://linkedin.com/in/mayankgoyal"
-            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-all"
+            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono transition-all"
           />
           <span className="absolute left-3 top-3.5 text-[#0077B5]">
             <LinkedInIcon className="w-4 h-4" />
@@ -102,7 +102,7 @@ export function Step5Links({
             value={portfolioUrl}
             onChange={(e) => setPortfolioUrl(e.target.value)}
             placeholder="e.g. https://mayank.dev"
-            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono transition-all"
+            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono transition-all"
           />
           <Globe className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
         </div>
@@ -127,13 +127,13 @@ export function Step5Links({
         <button
           type="button"
           onClick={() => setIsPortfolioPublic(!isPortfolioPublic)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            isPortfolioPublic ? 'bg-amber-500' : 'bg-slate-700'
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border border-white/20 transition-colors duration-200 ease-in-out focus:outline-none ${
+            isPortfolioPublic ? 'bg-gradient-to-r from-slate-100 to-slate-300' : 'bg-slate-800'
           }`}
         >
           <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              isPortfolioPublic ? 'translate-x-5' : 'translate-x-0'
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
+              isPortfolioPublic ? 'translate-x-5 bg-slate-950' : 'translate-x-0 bg-slate-400'
             }`}
           />
         </button>

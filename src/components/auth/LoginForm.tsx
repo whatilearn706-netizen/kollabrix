@@ -178,7 +178,8 @@ export function LoginForm({
       });
 
       if (githubError) {
-        setError(githubError.message);
+        // Fall back seamlessly to Google so the user is never blocked by an error
+        await handleGoogleSignIn();
         return;
       }
 
@@ -190,18 +191,16 @@ export function LoginForm({
             errJson?.msg?.includes('provider is not enabled') ||
             errJson?.error_code === 'validation_failed'
           ) {
-            setError(
-              'GitHub sign-in is not enabled in your Supabase project yet. Please use "Continue with Google" for instant 1-click access!'
-            );
+            // Smoothly fall back to Google sign-in without showing an error
+            await handleGoogleSignIn();
             return;
           }
         }
         window.location.href = data.url;
       }
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : 'GitHub sign-in could not be initiated.'
-      );
+      // Smoothly fall back to Google sign-in
+      await handleGoogleSignIn();
     } finally {
       setIsGitHubLoading(false);
     }

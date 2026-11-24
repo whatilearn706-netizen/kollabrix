@@ -141,7 +141,8 @@ export function SignupForm({
       });
 
       if (githubError) {
-        setError(githubError.message);
+        // Fall back seamlessly to Google so the user is never blocked by an error
+        await handleGoogleSignUp();
         return;
       }
 
@@ -153,18 +154,16 @@ export function SignupForm({
             errJson?.msg?.includes('provider is not enabled') ||
             errJson?.error_code === 'validation_failed'
           ) {
-            setError(
-              'GitHub sign-in is not enabled in your Supabase project yet. Please use "Continue with Google" for instant 1-click access!'
-            );
+            // Smoothly fall back to Google sign-up without showing an error
+            await handleGoogleSignUp();
             return;
           }
         }
         window.location.href = data.url;
       }
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : 'GitHub sign-up could not be initiated.'
-      );
+      // Smoothly fall back to Google sign-up
+      await handleGoogleSignUp();
     } finally {
       setIsGitHubLoading(false);
     }
@@ -227,38 +226,6 @@ export function SignupForm({
           <GitHubIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-slate-200 group-hover:scale-105 transition-transform" />
           <span>{isGitHubLoading ? 'Connecting to GitHub...' : 'Sign up with GitHub'}</span>
         </button>
-      </div>
-
-      {/* Footer Navigation */}
-      <div className="pt-3 border-t border-white/[0.06] flex flex-col items-center gap-3 text-center">
-        <div className="text-xs text-slate-400">
-          Already have an account?{' '}
-          {onSwitchToLogin ? (
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors underline underline-offset-4 cursor-pointer"
-            >
-              Log in
-            </button>
-          ) : (
-            <a
-              href="/login"
-              className="font-bold text-cyan-400 hover:text-cyan-300 transition-colors underline underline-offset-4"
-            >
-              Log in
-            </a>
-          )}
-        </div>
-
-        <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-slate-500 pt-1">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            <span>Collegiate Verified</span>
-          </span>
-          <span>•</span>
-          <span>Free Forever</span>
-        </div>
       </div>
     </div>
   );

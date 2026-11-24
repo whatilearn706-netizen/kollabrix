@@ -703,27 +703,12 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/85 backdrop-blur-2xl animate-fade-in select-none">
       {/* Sleek Floating Modal Window */}
-      <div className="relative w-full max-w-2xl my-auto rounded-3xl bg-[#080C14] border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.95)] p-6 sm:p-8 text-white overflow-hidden">
-        {/* Top Radiant Edge Glow (Amber for Student, Purple for Faculty) */}
-        <div
-          className={`absolute top-0 left-0 right-0 h-[3px] transition-all duration-300 ${
-            userRoleType === 'faculty'
-              ? 'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-600 shadow-[0_0_18px_rgba(168,85,247,0.85)]'
-              : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-[0_0_18px_rgba(245,158,11,0.85)]'
-          }`}
-        />
+      <div className="relative w-full max-w-2xl my-auto rounded-3xl bg-[#0c1017]/95 border border-white/[0.1] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.9)] p-6 sm:p-8 text-white overflow-hidden">
+        {/* Subtle Top Rim Highlight (Real Coder Silver Detail) */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
         {/* Ambient Backlight Halo */}
-        <div
-          className={`absolute -top-32 -left-32 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-colors duration-300 ${
-            userRoleType === 'faculty' ? 'bg-purple-500/10' : 'bg-amber-500/10'
-          }`}
-        />
-        <div
-          className={`absolute -bottom-32 -right-32 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-colors duration-300 ${
-            userRoleType === 'faculty' ? 'bg-fuchsia-600/10' : 'bg-orange-600/10'
-          }`}
-        />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-32 bg-white/[0.04] blur-[80px] pointer-events-none" />
 
         {/* Success State Celebration */}
         {isSuccess ? (
@@ -754,7 +739,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               className={`mt-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md ${
                 userRoleType === 'faculty'
                   ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-purple-500/25'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-amber-500/25'
+                  : 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 font-black shadow-md border border-white/40'
               }`}
             >
               <span>{userRoleType === 'faculty' ? 'Go to Faculty Desk' : 'Enter Platform'}</span>
@@ -763,17 +748,11 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
           </div>
         ) : (
           <div className="space-y-6 relative z-10">
-            {/* Header: Segmented Progress Bar & Title + Role Switcher (Positioned exactly as marked) */}
+            {/* Header: Segmented Progress Bar & Title + Role Switcher (Silver Real-Coder Theme) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[10px] font-mono font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border transition-colors ${
-                      userRoleType === 'faculty'
-                        ? 'bg-purple-500/15 border-purple-500/30 text-purple-300'
-                        : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                    }`}
-                  >
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border bg-white/[0.06] border-white/10 text-slate-300">
                     Step {currentStep} of {maxSteps}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
@@ -792,7 +771,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 </button>
               </div>
 
-              {/* Dynamic Segmented Progress Line */}
+              {/* Dynamic Segmented Progress Line in Silver */}
               <div
                 className="grid gap-1.5"
                 style={{ gridTemplateColumns: `repeat(${maxSteps}, minmax(0, 1fr))` }}
@@ -805,13 +784,9 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                       key={s.id}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
                         isCurrent
-                          ? userRoleType === 'faculty'
-                            ? 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]'
-                            : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                          ? 'bg-gradient-to-r from-slate-100 to-slate-300 shadow-[0_0_8px_rgba(255,255,255,0.4)]'
                           : isPast
-                          ? userRoleType === 'faculty'
-                            ? 'bg-purple-500/40'
-                            : 'bg-amber-500/40'
+                          ? 'bg-white/40'
                           : 'bg-white/10'
                       }`}
                     />
@@ -819,7 +794,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                 })}
               </div>
 
-              {/* Step Title & Subtitle + Role Switcher Toggle (placed where marked) */}
+              {/* Step Title & Subtitle + Role Switcher Toggle */}
               <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black text-white tracking-tight">
@@ -830,18 +805,18 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                   </p>
                 </div>
 
-                {/* Role Switcher Button: Student vs Faculty */}
+                {/* Role Switcher Button: Student vs Faculty (Silver Real-Coder Theme) */}
                 <div className="inline-flex items-center p-1 rounded-2xl bg-white/[0.04] border border-white/10 shrink-0 self-start sm:self-auto shadow-inner">
                   <button
                     type="button"
                     onClick={() => handleRoleChange('student')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       userRoleType === 'student'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-amber-500/25'
+                        ? 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 font-black shadow-sm border border-white/40'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    <GraduationCap className="w-3.5 h-3.5" />
+                    <GraduationCap className="w-3.5 h-3.5 text-slate-950" />
                     <span>Student</span>
                   </button>
 
@@ -850,7 +825,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     onClick={() => handleRoleChange('faculty')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       userRoleType === 'faculty'
-                        ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-md shadow-purple-500/25'
+                        ? 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 font-black shadow-sm border border-white/40'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -1041,7 +1016,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                         type="button"
                         disabled={isSubmitting}
                         onClick={handleSaveProfile}
-                        className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
+                        className="h-10 px-3.5 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
                         title="Save entered details and finish now"
                       >
                         {isSubmitting ? 'Saving...' : 'Save & Finish'}
@@ -1050,14 +1025,10 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     <button
                       type="button"
                       onClick={handleNext}
-                      className={`h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer ${
-                        userRoleType === 'faculty'
-                          ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white shadow-purple-500/25'
-                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-amber-500/25'
-                      }`}
+                      className="h-10 px-5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 shadow-md border border-white/40 transition-all active:scale-[0.99] cursor-pointer"
                     >
                       <span>Next: {activeStepTitles[currentStep]?.tag || 'Next'}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
                     </button>
                   </>
                 ) : (
@@ -1070,7 +1041,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                           setCurrentStep(1);
                           setErrorMessage(null);
                         }}
-                        className="h-10 px-3 sm:px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
+                        className="h-10 px-3 sm:px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-slate-200 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
                         title="Cannot verify faculty? Switch to student profile"
                       >
                         <GraduationCap className="w-3.5 h-3.5" />
@@ -1081,22 +1052,18 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                       type="button"
                       disabled={isSubmitting}
                       onClick={handleSaveProfile}
-                      className={`h-10 px-6 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 cursor-pointer ${
-                        userRoleType === 'faculty'
-                          ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/25'
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25'
-                      }`}
+                      className="h-10 px-6 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 shadow-md border border-white/40 transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer"
                     >
                       {isSubmitting ? (
                         <span>Saving Profile...</span>
                       ) : userRoleType === 'faculty' && !isFacultyPasscodeVerified && !profile?.faculty_verified ? (
                         <>
-                          <Lock className="w-4 h-4 text-purple-200" />
+                          <Lock className="w-4 h-4 text-slate-900" />
                           <span>Verify to Complete</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="w-4 h-4" />
+                          <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[2.5]" />
                           <span>{userRoleType === 'faculty' ? 'Complete Faculty Setup' : 'Save & Complete Profile'}</span>
                         </>
                       )}

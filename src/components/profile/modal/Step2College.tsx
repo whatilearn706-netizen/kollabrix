@@ -93,9 +93,9 @@ export function Step2College({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-            <GraduationCap className="w-4 h-4 text-amber-400" />
+            <GraduationCap className="w-4 h-4 text-slate-300" />
             <span>College / University Name</span>
-            <span className="text-amber-400">*</span>
+            <span className="text-slate-400">*</span>
           </label>
           <span className="text-[10px] text-slate-400 font-mono">
             Type any college or pick below
@@ -109,7 +109,7 @@ export function Step2College({
             value={college}
             onChange={(e) => setCollege(e.target.value)}
             placeholder="e.g. Delhi Technological University (DTU) or IIT Bombay"
-            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-medium"
+            className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all font-medium"
           />
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
         </div>
@@ -129,7 +129,7 @@ export function Step2College({
                   onClick={() => setCollege(col)}
                   className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
                     isSelected
-                      ? 'bg-amber-500/25 border-amber-500 text-amber-200 font-semibold shadow-xs'
+                      ? 'bg-white/[0.12] border-white/30 text-white font-semibold shadow-xs'
                       : 'bg-white/[0.02] border-white/5 text-slate-400 hover:border-white/20 hover:text-white'
                   }`}
                 >
@@ -145,11 +145,11 @@ export function Step2College({
       <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3.5">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <ShieldCheck className="w-4 h-4 text-slate-300" />
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
               Student ID Card Verification
             </h4>
-            <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-mono">
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-slate-300 font-mono">
               Admin Verified
             </span>
           </div>
@@ -169,7 +169,7 @@ export function Step2College({
               value={studentRollNo}
               onChange={(e) => setStudentRollNo(e.target.value)}
               placeholder="e.g. 2K23/CO/245 or DTU/2024/091"
-              className="w-full h-9 px-3 pl-8 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+              className="w-full h-9 px-3 pl-8 rounded-lg bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono"
             />
             <IdCard className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
           </div>
@@ -185,19 +185,19 @@ export function Step2College({
         />
 
         {studentIdUrl ? (
-          /* PENDING VERIFICATION STATE (Amber) */
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+          /* PENDING VERIFICATION STATE */
+          <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/15 space-y-2">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 text-amber-400">
+                <div className="w-10 h-10 rounded-lg bg-white/[0.08] border border-white/15 flex items-center justify-center shrink-0 text-slate-200">
                   <Clock className="w-5 h-5 animate-pulse" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-amber-300">
+                    <span className="text-xs font-bold text-white">
                       Student ID Card Uploaded
                     </span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase font-black">
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/[0.08] text-slate-300 border border-white/15 uppercase font-black">
                       Verification Pending
                     </span>
                   </div>
@@ -228,7 +228,7 @@ export function Step2College({
 
             {/* Thumbnail preview if image */}
             {studentIdUrl.startsWith('http') && !studentIdUrl.endsWith('.pdf') && (
-              <div className="mt-1 pt-2 border-t border-amber-500/20 flex items-center gap-2">
+              <div className="mt-1 pt-2 border-t border-white/10 flex items-center gap-2">
                 <div className="w-12 h-8 rounded border border-white/10 overflow-hidden bg-black/40 shrink-0">
                   <img src={studentIdUrl} alt="Student ID" className="w-full h-full object-cover" />
                 </div>
@@ -241,16 +241,16 @@ export function Step2College({
         ) : (
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="cursor-pointer border-2 border-dashed border-white/10 hover:border-amber-500/40 rounded-xl p-4 text-center transition-all bg-white/[0.01] hover:bg-white/[0.03]"
+            className="cursor-pointer border-2 border-dashed border-white/10 hover:border-white/30 rounded-xl p-4 text-center transition-all bg-white/[0.01] hover:bg-white/[0.03]"
           >
             {isUploading ? (
               <div className="py-2 flex flex-col items-center justify-center gap-1.5">
-                <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+                <Loader2 className="w-6 h-6 text-slate-300 animate-spin" />
                 <span className="text-xs text-slate-300">Uploading and queuing ID card in admin center...</span>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-1">
-                <UploadCloud className="w-6 h-6 text-amber-400" />
+                <UploadCloud className="w-6 h-6 text-slate-300" />
                 <span className="text-xs font-bold text-white">
                   Click to upload Student ID card (Photo or PDF)
                 </span>

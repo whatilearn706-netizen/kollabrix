@@ -61,10 +61,10 @@ export function Step1Identity({
       {/* Avatar Picker & Header Section */}
       <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-white/[0.03] border border-white/5">
         <div className="relative group shrink-0">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-400 shadow-xl shadow-amber-500/20">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 bg-gradient-to-tr from-slate-200 via-slate-400 to-slate-200 shadow-md shadow-white/10">
             <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center">
               {isUploading ? (
-                <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
+                <Loader2 className="w-6 h-6 text-slate-300 animate-spin" />
               ) : avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -72,7 +72,7 @@ export function Step1Identity({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-3xl font-black text-amber-400 uppercase">
+                <span className="text-3xl font-black text-slate-100 uppercase">
                   {(displayName || username || 'K').slice(0, 1)}
                 </span>
               )}
@@ -84,9 +84,9 @@ export function Step1Identity({
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             aria-label="Change photo"
-            className="absolute bottom-0 right-0 p-2 rounded-full bg-slate-900 border border-white/20 text-slate-200 hover:text-white hover:border-amber-400 transition-colors shadow-lg"
+            className="absolute bottom-0 right-0 p-2 rounded-full bg-slate-900 border border-white/20 text-slate-200 hover:text-white hover:border-white/40 transition-colors shadow-lg"
           >
-            <Camera className="w-4 h-4 text-amber-400" />
+            <Camera className="w-4 h-4 text-slate-200" />
           </button>
           <input
             ref={fileInputRef}
@@ -106,7 +106,7 @@ export function Step1Identity({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-[11px] px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold hover:bg-amber-500/25 transition-all"
+              className="text-[11px] px-3 py-1 rounded-lg bg-white/[0.08] border border-white/20 text-slate-200 font-semibold hover:bg-white/[0.15] hover:text-white transition-all cursor-pointer"
             >
               {avatarUrl ? 'Change Photo' : 'Upload Photo'}
             </button>
@@ -114,7 +114,7 @@ export function Step1Identity({
               <button
                 type="button"
                 onClick={() => setAvatarUrl(null)}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1"
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Remove</span>
@@ -130,7 +130,7 @@ export function Step1Identity({
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="block text-xs font-bold text-slate-300">
-              Display Name <span className="text-amber-400">*</span>
+              Display Name <span className="text-slate-400">*</span>
             </label>
             {isVerified && (
               <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
@@ -149,7 +149,7 @@ export function Step1Identity({
               className={`w-full h-11 px-3.5 pl-9 rounded-xl border text-xs placeholder:text-slate-500 focus:outline-none transition-all ${
                 isVerified
                   ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300 cursor-not-allowed'
-                  : 'bg-white/[0.04] border border-white/10 text-white focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                  : 'bg-white/[0.04] border border-white/10 text-white focus:border-white/30 focus:ring-1 focus:ring-white/20'
               }`}
             />
             {isVerified ? (
@@ -167,7 +167,7 @@ export function Step1Identity({
 
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
-            Unique Username <span className="text-amber-400">*</span>
+            Unique Username <span className="text-slate-400">*</span>
           </label>
           <div className="relative">
             <input
@@ -176,7 +176,7 @@ export function Step1Identity({
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
               placeholder="e.g. mayankgoyal"
-              className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 font-mono transition-all"
+              className="w-full h-11 px-3.5 pl-9 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 font-mono transition-all"
             />
             <AtSign className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
           </div>
@@ -190,7 +190,7 @@ export function Step1Identity({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5 text-amber-400" />
+            <FileText className="w-3.5 h-3.5 text-slate-400" />
             <span>Short Bio</span>
           </label>
           <span className="text-[10px] font-mono text-slate-500">
@@ -203,7 +203,7 @@ export function Step1Identity({
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           placeholder="e.g. Passionate collegiate builder focusing on full-stack web and distributed systems. Excited to team up for hackathons!"
-          className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all resize-none"
+          className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all resize-none"
         />
       </div>
     </div>

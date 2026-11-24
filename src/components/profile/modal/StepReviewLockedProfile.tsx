@@ -77,14 +77,14 @@ export function StepReviewLockedProfile({
           </div>
         </div>
       ) : (
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+        <div className="p-4 rounded-2xl bg-[#0c1017] border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-slate-300 shrink-0">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-amber-300 tracking-wide uppercase">
+                <span className="text-xs font-black text-white tracking-wide uppercase">
                   Collegiate Verification: Skipped / Pending
                 </span>
               </div>
@@ -96,7 +96,7 @@ export function StepReviewLockedProfile({
           <button
             type="button"
             onClick={onGoToVerification}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shrink-0 flex items-center gap-1 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 font-black text-xs uppercase tracking-wider shrink-0 flex items-center gap-1 shadow-md border border-white/40 transition-all cursor-pointer"
           >
             <span>Verify (30s)</span>
             <ArrowRight className="w-3.5 h-3.5" />

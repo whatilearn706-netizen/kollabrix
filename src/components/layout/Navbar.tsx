@@ -268,7 +268,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={handleStartProjectClick}
-                  className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 hover:from-white hover:to-white shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 hover:from-white hover:to-slate-100 shadow-sm border border-white/40 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
                   <PlusCircle className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
                   <span>{theme.navbarCtaText || 'Start Project'}</span>
@@ -282,10 +282,10 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={() => openProfileEditModal(1)}
-                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-500/50 transition-all cursor-pointer shadow-xs select-none"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-white/[0.06] text-slate-200 border border-white/10 hover:bg-white/[0.1] hover:text-white hover:border-white/20 transition-all cursor-pointer shadow-xs select-none"
                   title="Add your college & skills to unlock instant squad matching"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                   <span>Finish Profile</span>
                 </button>
               )}

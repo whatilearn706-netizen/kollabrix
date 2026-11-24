@@ -916,7 +916,7 @@ export default function TeammatesPage() {
             <Link href="/projects/new">
               <button
                 type="button"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-400/40 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 shadow-sm border border-white/40 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 <FolderPlus className="w-4 h-4 text-slate-950 stroke-[2.5]" />
                 <span className="text-slate-950 font-black">Start New Project</span>
@@ -928,12 +928,12 @@ export default function TeammatesPage() {
 
       {/* Unverified Student Alert Banner */}
       {user && profile && !profile.college_verified && !user?.user_metadata?.college_verified && profile.role !== 'teacher' && (
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
+        <div className="p-4 rounded-2xl bg-[#0c1017]/95 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
           <div className="flex items-center gap-2.5">
-            <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+            <ShieldAlert className="w-5 h-5 text-slate-300 shrink-0" />
             <div>
-              <span className="font-bold text-amber-300 block">Your Profile is Unverified in Teammates</span>
-              <span className="text-slate-300 text-[11px]">
+              <span className="font-bold text-white block">Your Profile is Unverified in Teammates</span>
+              <span className="text-slate-400 text-[11px]">
                 Unverified student profiles are hidden from collegiate teammate search. Verify your physical college ID card &amp; Face ID to appear in search and receive hackathon invitations.
               </span>
             </div>
@@ -941,7 +941,7 @@ export default function TeammatesPage() {
           <button
             type="button"
             onClick={() => openProfileEditModal(4)}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shrink-0 cursor-pointer shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 font-black text-xs uppercase tracking-wider shrink-0 cursor-pointer shadow-md border border-white/40 transition-all flex items-center gap-1.5"
           >
             <span>Verify Student ID (30s)</span>
             <ArrowRight className="w-3.5 h-3.5" />

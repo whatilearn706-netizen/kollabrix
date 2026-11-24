@@ -946,10 +946,10 @@ export function StepPathBBiometricScan({
       {stage === 'consent' && (
         <div className="space-y-4 animate-fade-in">
           {/* Header Banner */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900/60 to-cyan-500/10 border border-emerald-500/20 space-y-2.5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Integrity & Privacy Checkpoint</span>
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0c1017] border border-white/10 space-y-2.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-[10px] font-bold text-slate-300 font-mono uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-300" />
+              <span>Integrity &amp; Privacy Checkpoint</span>
             </div>
             <div>
               <h3 className="text-base font-bold text-white tracking-tight">
@@ -964,7 +964,7 @@ export function StepPathBBiometricScan({
           {/* 3 Core Guarantees */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <div className="w-6 h-6 rounded-lg bg-white/[0.08] border border-white/15 flex items-center justify-center text-slate-200">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
               <h5 className="text-xs font-bold text-white">Verified Students Only</h5>
@@ -974,7 +974,7 @@ export function StepPathBBiometricScan({
             </div>
 
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
-              <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <div className="w-6 h-6 rounded-lg bg-white/[0.08] border border-white/15 flex items-center justify-center text-slate-200">
                 <ShieldCheck className="w-3.5 h-3.5" />
               </div>
               <h5 className="text-xs font-bold text-white">Anti-Proxy Fair Play</h5>
@@ -984,10 +984,10 @@ export function StepPathBBiometricScan({
             </div>
 
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
-              <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+              <div className="w-6 h-6 rounded-lg bg-white/[0.08] border border-white/15 flex items-center justify-center text-slate-200">
                 <Lock className="w-3.5 h-3.5" />
               </div>
-              <h5 className="text-xs font-bold text-white">Encrypted & Private</h5>
+              <h5 className="text-xs font-bold text-white">Encrypted &amp; Private</h5>
               <p className="text-[11px] text-slate-400 leading-snug">
                 Your ID card and selfie are encrypted and never shown publicly on your profile.
               </p>
@@ -995,13 +995,13 @@ export function StepPathBBiometricScan({
           </div>
 
           {/* 30-Second Roadmap */}
-          <div className="p-3.5 rounded-xl bg-slate-900/70 border border-white/10 space-y-2">
+          <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
             <span className="text-[10.5px] font-bold text-slate-300 uppercase tracking-wider font-mono">
               What Will Happen Next (Takes ~30 seconds)
             </span>
             <div className="space-y-1.5 text-xs">
               <div className="flex items-start gap-2.5">
-                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
+                <div className="w-4 h-4 rounded-full bg-white/10 text-slate-200 border border-white/20 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
                   1
                 </div>
                 <div className="text-slate-300 text-[11.5px]">
@@ -1009,7 +1009,7 @@ export function StepPathBBiometricScan({
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
-                <div className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
+                <div className="w-4 h-4 rounded-full bg-white/10 text-slate-200 border border-white/20 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
                   2
                 </div>
                 <div className="text-slate-300 text-[11.5px]">
@@ -1017,7 +1017,7 @@ export function StepPathBBiometricScan({
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
-                <div className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
+                <div className="w-4 h-4 rounded-full bg-white/10 text-slate-200 border border-white/20 flex items-center justify-center shrink-0 font-bold text-[10px] mt-0.5">
                   3
                 </div>
                 <div className="text-slate-300 text-[11.5px]">
@@ -1037,10 +1037,10 @@ export function StepPathBBiometricScan({
               <button
                 type="button"
                 onClick={() => setStage('card_continuous')}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md border border-white/40 transition-all cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
-                <span>Allow Camera & Start Verification</span>
+                <span>Allow Camera &amp; Start Verification</span>
                 <ArrowRight className="w-4 h-4 ml-0.5" />
               </button>
 

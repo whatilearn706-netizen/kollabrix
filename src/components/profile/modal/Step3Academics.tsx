@@ -22,8 +22,8 @@ export function Step3Academics({
       {/* 1. Academic Year Cards */}
       <div>
         <label className="block text-xs font-bold text-slate-200 mb-2 flex items-center gap-1.5">
-          <Calendar className="w-3.5 h-3.5 text-amber-400" />
-          <span>Academic Year <span className="text-amber-400">*</span></span>
+          <Calendar className="w-3.5 h-3.5 text-slate-300" />
+          <span>Academic Year <span className="text-slate-400">*</span></span>
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {ACADEMIC_YEARS.map((yr) => {
@@ -37,16 +37,16 @@ export function Step3Academics({
                 onClick={() => setAcademicYear(yr)}
                 className={`p-2.5 rounded-xl border text-left transition-all relative ${
                   isSelected
-                    ? 'bg-amber-500/20 border-amber-500 text-white shadow-xs'
+                    ? 'bg-white/[0.12] border-white/30 text-white shadow-xs font-semibold'
                     : 'bg-white/[0.02] border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
                 }`}
               >
                 <div className="text-xs font-bold truncate">{shortLabel}</div>
                 {subtitle && (
-                  <div className="text-[10px] text-amber-400/80 font-mono truncate">{subtitle}</div>
+                  <div className="text-[10px] text-slate-400 font-mono truncate">{subtitle}</div>
                 )}
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 shadow-sm" />
+                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white shadow-sm" />
                 )}
               </button>
             );
@@ -57,8 +57,8 @@ export function Step3Academics({
       {/* 2. Direct Degree & Specialization Input */}
       <div className="space-y-2">
         <label className="block text-xs font-bold text-slate-200 flex items-center gap-1.5">
-          <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
-          <span>Degree &amp; Specialization <span className="text-amber-400">*</span></span>
+          <GraduationCap className="w-3.5 h-3.5 text-slate-300" />
+          <span>Degree &amp; Specialization <span className="text-slate-400">*</span></span>
         </label>
 
         <div className="relative">
@@ -68,7 +68,7 @@ export function Step3Academics({
             value={course}
             onChange={(e) => setCourse(e.target.value)}
             placeholder="e.g. B.Tech Computer Science & Engineering, BCA, MBA, M.Tech, etc."
-            className="w-full h-11 px-3.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all font-medium"
+            className="w-full h-11 px-3.5 rounded-xl bg-white/[0.04] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all font-medium"
           />
         </div>
 
