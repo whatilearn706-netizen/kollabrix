@@ -61,6 +61,7 @@ import {
   DEFAULT_VISUAL_TEMPLATES_CONFIG,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
+import { analyzeBannerForBadge } from '@/lib/bannerToBadgeAI';
 
 type SubTab = 'all' | 'featuredDeck' | 'hackathonBadges' | 'templates' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
@@ -523,6 +524,12 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
         ...currentBadges[index],
         [field]: value,
       };
+      // Keep hostName & hostCollege in sync
+      if (field === 'hostCollege' && value) {
+        currentBadges[index].hostName = value;
+      } else if (field === 'hostName' && value && !currentBadges[index].hostCollege) {
+        currentBadges[index].hostCollege = value;
+      }
       const updated = { ...config, featuredHackathonBadges: currentBadges };
       setConfig(updated);
     }
@@ -540,14 +547,74 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
     ];
     if (!currentBadges[badgeIndex]) return;
 
+    const banner = hack.banner_url || hack.logo_url || '';
+    const analysis = analyzeBannerForBadge({
+      bannerUrl: banner,
+      title: hack.title || '',
+      organizer: hack.organizer || hack.location || '',
+      description: hack.description || '',
+      prizePool: hack.prize_pool || '',
+    });
+
+    const host = (hack.organizer || hack.location || 'CAMPUS INNOVATION').toUpperCase();
+
+    let formattedDate = currentBadges[badgeIndex].eventDate;
+    if (hack.start_date) {
+      try {
+        const d = new Date(hack.start_date);
+        const day = d.getDate();
+        const month = d.toLocaleDateString('en-US', { month: 'short' });
+        formattedDate = `${day} ${month}`;
+      } catch (e) {}
+    }
+
     currentBadges[badgeIndex] = {
       ...currentBadges[badgeIndex],
       hackathonId: hack.id,
       title: hack.title || currentBadges[badgeIndex].title,
-      hostName: (hack.organizer || hack.location || 'CAMPUS INNOVATION').toUpperCase(),
+      hostName: host,
+      hostCollege: host,
+      authorityBadge: analysis.authorityBadge,
+      editionBadge: analysis.editionBadge,
+      statusStripText: analysis.statusStripText,
+      statusStripTone: analysis.statusStripTone,
+      themeStyle: analysis.themeStyle,
+      pattern: analysis.pattern,
+      bannerUrl: banner || currentBadges[badgeIndex].bannerUrl || '',
+      eventDate: formattedDate,
       prizePool: hack.prize_pool || currentBadges[badgeIndex].prizePool,
       teamSize: `${hack.min_team_size || 1}-${hack.max_team_size || 4} Builders`,
       actionUrl: `/hackathons/${hack.id}`,
+    };
+
+    const updated = { ...config, featuredHackathonBadges: currentBadges };
+    setConfig(updated);
+  };
+
+  const handleAiAdaptBannerToBadge = (badgeIndex: number) => {
+    const currentBadges = [
+      ...(config.featuredHackathonBadges && config.featuredHackathonBadges.length > 0
+        ? config.featuredHackathonBadges
+        : DEFAULT_FEATURED_HACKATHON_BADGES),
+    ];
+    const b = currentBadges[badgeIndex];
+    if (!b) return;
+
+    const analysis = analyzeBannerForBadge({
+      bannerUrl: b.bannerUrl || '',
+      title: b.title || '',
+      organizer: b.hostCollege || b.hostName || '',
+      prizePool: b.prizePool || '',
+    });
+
+    currentBadges[badgeIndex] = {
+      ...b,
+      authorityBadge: analysis.authorityBadge,
+      editionBadge: analysis.editionBadge,
+      statusStripText: analysis.statusStripText,
+      statusStripTone: analysis.statusStripTone,
+      themeStyle: analysis.themeStyle,
+      pattern: analysis.pattern,
     };
 
     const updated = { ...config, featuredHackathonBadges: currentBadges };
@@ -1203,12 +1270,13 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
           {/* 5-Badge Slot Selector */}
           <div>
             <label className="block text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
-              Select Badge Slot To Edit:
+              Select Collegiate Hackathon Slot To Edit:
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
               {([0, 1, 2, 3, 4] as const).map((idx) => {
                 const badge = (config.featuredHackathonBadges && config.featuredHackathonBadges[idx]) || DEFAULT_FEATURED_HACKATHON_BADGES[idx];
                 const isSelected = selectedBadgeIndex === idx;
+                const tone = badge?.statusStripTone || (badge?.themeStyle === 'crimson' ? 'crimson' : badge?.themeStyle === 'teal' ? 'emerald' : badge?.themeStyle === 'gold' ? 'amber' : badge?.themeStyle === 'magenta' ? 'purple' : 'blue');
                 return (
                   <button
                     key={idx}
@@ -1224,20 +1292,23 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                       <div className="flex items-center justify-between text-[10px] font-mono mb-1.5">
                         <span className="font-bold text-slate-400">SLOT {idx + 1}</span>
                         <span className={`px-1.5 py-0.2 rounded uppercase font-semibold text-[9px] ${
-                          badge?.themeStyle === 'crimson' ? 'bg-rose-500/20 text-rose-300' :
-                          badge?.themeStyle === 'magenta' ? 'bg-fuchsia-500/20 text-fuchsia-300' :
-                          badge?.themeStyle === 'teal' ? 'bg-emerald-500/20 text-emerald-300' :
-                          badge?.themeStyle === 'cobalt' ? 'bg-blue-500/20 text-blue-300' :
-                          'bg-amber-500/20 text-amber-300'
+                          tone === 'crimson' ? 'bg-rose-500/20 text-rose-300' :
+                          tone === 'purple' ? 'bg-fuchsia-500/20 text-fuchsia-300' :
+                          tone === 'emerald' ? 'bg-emerald-500/20 text-emerald-300' :
+                          tone === 'amber' ? 'bg-amber-500/20 text-amber-300' :
+                          'bg-blue-500/20 text-blue-300'
                         }`}>
-                          {badge?.themeStyle || 'crimson'}
+                          {tone}
                         </span>
                       </div>
                       <div className="text-xs font-black text-white truncate">
-                        {badge?.passType || 'HACKER PASS'}
+                        {badge?.statusStripText || badge?.passType || 'STUDENT PASS'}
                       </div>
-                      <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5 font-medium">
                         {badge?.title || 'Hackathon Title'}
+                      </div>
+                      <div className="text-[9px] text-slate-500 truncate mt-0.5 font-mono">
+                        {badge?.hostCollege || badge?.hostName || 'COLLEGE'}
                       </div>
                     </div>
 
@@ -1260,16 +1331,24 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
             const currentBadge = (config.featuredHackathonBadges && config.featuredHackathonBadges[selectedBadgeIndex]) || DEFAULT_FEATURED_HACKATHON_BADGES[selectedBadgeIndex];
             if (!currentBadge) return null;
 
+            const tone = currentBadge.statusStripTone || (currentBadge.themeStyle === 'crimson' ? 'crimson' : currentBadge.themeStyle === 'teal' ? 'emerald' : currentBadge.themeStyle === 'gold' ? 'amber' : currentBadge.themeStyle === 'magenta' ? 'purple' : 'blue');
+            const bottomBarBg =
+              tone === 'blue' ? 'bg-sky-600' :
+              tone === 'emerald' ? 'bg-emerald-600' :
+              tone === 'amber' ? 'bg-amber-600' :
+              tone === 'crimson' ? 'bg-rose-600' :
+              'bg-purple-600';
+
             return (
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pt-2">
                 {/* Form Controls Column (7 cols) */}
                 <div className="xl:col-span-7 space-y-4">
-                  {/* Database Auto-Fill Bar */}
-                  <div className="p-4 rounded-xl bg-charcoal-950/80 border border-fuchsia-500/25 space-y-2">
+                  {/* Database Auto-Fill & Banner AI Bar */}
+                  <div className="p-4 rounded-xl bg-charcoal-950/80 border border-fuchsia-500/25 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-fuchsia-300 flex items-center gap-1.5 font-mono">
                         <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
-                        Auto-Fill From Database Hackathon
+                        1. Auto-Fill From Database Hackathon
                       </label>
                       <span className="text-[11px] text-slate-400 font-mono">
                         {availableHackathons.length} live hackathons loaded
@@ -1287,69 +1366,120 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                         </option>
                       ))}
                     </select>
+
+                    {/* Banner to Real Card AI Engine */}
+                    <div className="pt-2 border-t border-charcoal-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-brand-300 flex items-center gap-1.5 font-mono">
+                          <Palette className="w-3.5 h-3.5 text-brand-400" />
+                          2. AI Banner-to-Card Adaptation (Promo Banner &rarr; Physical Pass)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleAiAdaptBannerToBadge(selectedBadgeIndex)}
+                          className="px-3 py-1 rounded-md bg-gradient-to-r from-brand-500 to-fuchsia-500 hover:from-brand-400 hover:to-fuchsia-400 text-white text-[11px] font-mono font-bold flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>AI Auto-Adapt from Banner</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={currentBadge.bannerUrl || ''}
+                          onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'bannerUrl', e.target.value)}
+                          placeholder="Paste official hackathon promo banner URL (e.g. Unstop / Devfolio / Image link)"
+                          className="bg-charcoal-900 text-xs font-mono"
+                        />
+                        {currentBadge.bannerUrl && (
+                          <div className="w-12 h-8 rounded border border-charcoal-700 overflow-hidden shrink-0 bg-black">
+                            <img src={currentBadge.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Pasting the banner URL and clicking <strong>AI Auto-Adapt</strong> extracts the brand palette, sets the edition stamp box, and layers the artwork texture onto the physical lanyard pass.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Pass Type Stamp</label>
-                      <select
-                        value={currentBadge.passType}
-                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'passType', e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400"
-                      >
-                        <option value="HACKER PASS">HACKER PASS</option>
-                        <option value="STAFF PASS">STAFF PASS</option>
-                        <option value="MEDIA PASS">MEDIA PASS</option>
-                        <option value="VIP PASS">VIP PASS</option>
-                        <option value="BUILDER PASS">BUILDER PASS</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Visual Theme</label>
-                      <select
-                        value={currentBadge.themeStyle}
-                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'themeStyle', e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400"
-                      >
-                        <option value="crimson">Crimson Red (Artist Pass)</option>
-                        <option value="magenta">Magenta Nebula (Staff Pass)</option>
-                        <option value="teal">Cyber Teal (Media Pass)</option>
-                        <option value="cobalt">Cobalt Blue (Polka Matrix)</option>
-                        <option value="gold">Solar Gold (Paintbrush Burst)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Host Organization</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Host College / Campus (Image 2)</label>
                       <Input
-                        value={currentBadge.hostName}
-                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'hostName', e.target.value)}
-                        placeholder="e.g. TIH × E-CELL IIT BOMBAY"
-                        className="bg-charcoal-950 text-xs"
+                        value={currentBadge.hostCollege || currentBadge.hostName}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'hostCollege', e.target.value)}
+                        placeholder="e.g. NEW HORIZON COLLEGE OF ENGINEERING"
+                        className="bg-charcoal-950 text-xs font-semibold"
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Authority / Sponsoring Body</label>
+                      <Input
+                        value={currentBadge.authorityBadge || ''}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'authorityBadge', e.target.value)}
+                        placeholder="e.g. MoE Innovation Cell • AICTE"
+                        className="bg-charcoal-950 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1">Hackathon Title</label>
                       <Input
                         value={currentBadge.title}
                         onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'title', e.target.value)}
-                        placeholder="e.g. Physical AI Hackathon"
+                        placeholder="e.g. Smart India Hackathon 2026"
+                        className="bg-charcoal-950 text-xs font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Edition Stamp Box (Image 2)</label>
+                      <Input
+                        value={currentBadge.editionBadge || '#SIH Software Edition • GRAND FINALE 2026'}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'editionBadge', e.target.value)}
+                        placeholder="e.g. #SIH Software Edition • GRAND FINALE 2026"
                         className="bg-charcoal-950 text-xs"
                       />
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Bottom Status Strip Text (Signature Bar)</label>
+                      <Input
+                        value={currentBadge.statusStripText || currentBadge.passType || 'STUDENT PARTICIPANT'}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'statusStripText', e.target.value)}
+                        placeholder="e.g. STUDENT PARTICIPANT or APPLICATIONS OPEN"
+                        className="bg-charcoal-950 text-xs font-bold uppercase"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Bottom Strip Color Tone</label>
+                      <select
+                        value={tone}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'statusStripTone', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400 cursor-pointer"
+                      >
+                        <option value="blue">Blue (Govt / SIH Participant - Image 2)</option>
+                        <option value="emerald">Emerald Green (Applications Live)</option>
+                        <option value="amber">Solar Amber (Grand Finale / Cash Prize)</option>
+                        <option value="crimson">Crimson Red (Campus In-Person Finals)</option>
+                        <option value="purple">Neon Purple (AI & Web3 Innovation)</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Event Date Stamp</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Event Dates</label>
                       <Input
                         value={currentBadge.eventDate}
                         onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'eventDate', e.target.value)}
-                        placeholder="e.g. 15.01 or 25.12"
+                        placeholder="e.g. 11th - 12th December"
                         className="bg-charcoal-950 text-xs"
                       />
                     </div>
@@ -1359,17 +1489,17 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                       <Input
                         value={currentBadge.prizePool}
                         onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'prizePool', e.target.value)}
-                        placeholder="e.g. ₹1,50,000 Cash"
+                        placeholder="e.g. ₹1,50,000 Cash Pool"
                         className="bg-charcoal-950 text-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Status Pill</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Team Size / Mode</label>
                       <Input
-                        value={currentBadge.statusBadge}
-                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'statusBadge', e.target.value)}
-                        placeholder="e.g. Verified Collegiate"
+                        value={currentBadge.teamSize || '3-5 Members'}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'teamSize', e.target.value)}
+                        placeholder="e.g. 3-5 Members • In-Person"
                         className="bg-charcoal-950 text-xs"
                       />
                     </div>
@@ -1377,17 +1507,17 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Graphic Pattern</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Lanyard Fabric Theme</label>
                       <select
-                        value={currentBadge.pattern}
-                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'pattern', e.target.value)}
+                        value={currentBadge.themeStyle}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'themeStyle', e.target.value)}
                         className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400"
                       >
-                        <option value="curves">Crimson Fluid Wave</option>
-                        <option value="rings">Magenta Concentric Arcs</option>
-                        <option value="wave">Teal Cyber Wave Lines</option>
-                        <option value="circles">Blue Polka Dot Matrix</option>
-                        <option value="soundwave">Solar Paintbrush Burst</option>
+                        <option value="cobalt">Cobalt Blue (Collegiate Classic - Image 2)</option>
+                        <option value="crimson">Crimson Red (National Finals)</option>
+                        <option value="magenta">Magenta Neon (Agentic AI)</option>
+                        <option value="teal">Cyber Emerald (Speed Dev)</option>
+                        <option value="gold">Solar Gold (Global Pass)</option>
                       </select>
                     </div>
 
@@ -1403,46 +1533,99 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   </div>
                 </div>
 
-                {/* Live Preview Column (5 cols) */}
+                {/* Live Preview Column (5 cols) - Exact to Image 2 Physical Badge */}
                 <div className="xl:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 shadow-inner">
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-4 font-bold">
-                    Interactive Live Badge Preview
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-3 font-bold flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                    <span>3D Collegiate Badge Preview (Image 2 Style)</span>
                   </div>
 
-                  <div className="w-[220px] h-[340px] rounded-[22px] border border-white/20 bg-gradient-to-b from-stone-900 via-stone-950 to-black p-4 flex flex-col justify-between shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-2 rounded-full bg-black/90 border border-white/20" />
-                    
-                    <div className="pt-2 flex items-center justify-between text-[9px] font-mono text-slate-400">
-                      <span className="truncate max-w-[120px]">{currentBadge.hostName}</span>
-                      <span className="px-1.5 py-0.2 rounded bg-white/10 text-white">{currentBadge.statusBadge}</span>
+                  {/* Lanyard Strap & Clip Rigging */}
+                  <div className="flex flex-col items-center -mb-2 z-10">
+                    <div className="w-7 h-10 bg-gradient-to-b from-blue-700 to-blue-900 rounded-t-sm shadow-md relative overflow-hidden flex items-center justify-center">
+                      <div className="w-0.5 h-full border-l border-dashed border-black/40" />
+                    </div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-slate-700 -mt-1 shadow-xs" />
+                    {/* Metal swivel clip */}
+                    <div className="w-3.5 h-5 border-2 border-stone-800 rounded-b-full bg-stone-900 -mt-0.5 flex items-end justify-center pb-0.5 shadow-md">
+                      <div className="w-1.5 h-1.5 rounded-full bg-stone-600" />
+                    </div>
+                  </div>
+
+                  {/* Physical Badge Pass Body */}
+                  <div className="w-[235px] h-[375px] rounded-[22px] border border-white/20 bg-gradient-to-b from-[#0f172a] via-[#090d16] to-[#04060a] shadow-2xl relative overflow-hidden flex flex-col justify-between text-left select-none">
+                    {/* Background Banner Artwork Texture (If available) */}
+                    {currentBadge.bannerUrl && (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none mix-blend-screen filter saturate-150"
+                        style={{ backgroundImage: `url(${currentBadge.bannerUrl})` }}
+                      />
+                    )}
+
+                    {/* Laminated Gloss Diagonal Sheen */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.07] via-transparent to-white/[0.03] pointer-events-none" />
+
+                    {/* Punch slot hole at top-center for lanyard clip */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-7 h-2 rounded-full bg-black/95 border border-white/25 shadow-inner z-20" />
+
+                    {/* Badge Top Header: Host College & Governing Authority */}
+                    <div className="relative z-10 pt-4 px-3.5">
+                      <div className="flex items-center justify-between text-[8px] font-mono font-bold text-slate-400">
+                        <span className="truncate max-w-[130px] uppercase text-cyan-300">
+                          {currentBadge.authorityBadge || 'MOE INNOVATION CELL'}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono">
+                          {currentBadge.statusBadge || 'VERIFIED'}
+                        </span>
+                      </div>
+
+                      {/* Host College Name */}
+                      <div className="mt-2 text-[10px] font-black uppercase tracking-tight text-white leading-tight font-heading line-clamp-2">
+                        {currentBadge.hostCollege || currentBadge.hostName || 'COLLEGIATE CAMPUS'}
+                      </div>
                     </div>
 
-                    <div className="my-auto py-2">
-                      <h4 className="text-2xl font-black uppercase text-white leading-none font-heading">
-                        {currentBadge.passType.split(' ')[0]}<br />
-                        <span className="text-white/80">{currentBadge.passType.split(' ')[1] || 'PASS'}</span>
-                      </h4>
-                      <div className="text-lg font-mono font-bold text-white mt-2">
-                        {currentBadge.eventDate}
-                      </div>
-                      <p className="text-[11px] font-medium text-slate-300 mt-1.5 line-clamp-2">
+                    {/* Badge Center: Hackathon Identity & Edition Box (Image 2 style) */}
+                    <div className="relative z-10 px-3.5 my-auto py-1">
+                      {/* Hackathon Title */}
+                      <h4 className="text-base font-black text-white leading-snug font-heading drop-shadow-sm line-clamp-2">
                         {currentBadge.title}
-                      </p>
+                      </h4>
+
+                      {/* Official Edition Box (Orange/Green/Gradient pill box like SIH 2024) */}
+                      <div className="mt-2 p-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-emerald-500/20 border border-amber-400/40 shadow-xs">
+                        <div className="text-[9px] font-mono font-black text-amber-300 uppercase tracking-wide truncate">
+                          {currentBadge.editionBadge || '#SIH Software Edition • GRAND FINALE'}
+                        </div>
+                        <div className="text-xs font-black font-mono text-white mt-0.5">
+                          {currentBadge.eventDate}
+                        </div>
+                      </div>
+
+                      {/* Key Stats Row */}
+                      <div className="grid grid-cols-2 gap-2 mt-2 pt-1.5 border-t border-white/10 text-[9px] font-mono">
+                        <div>
+                          <div className="text-slate-400 uppercase text-[8px]">PRIZE POOL</div>
+                          <div className="font-bold text-amber-300 truncate">{currentBadge.prizePool}</div>
+                        </div>
+                        <div>
+                          <div className="text-slate-400 uppercase text-[8px]">TEAM SIZE</div>
+                          <div className="font-bold text-slate-200 truncate">{currentBadge.teamSize || '3-5 Members'}</div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
-                      <div>
-                        <div className="text-[9px] text-slate-500 font-mono">PRIZE POOL</div>
-                        <div className="text-[11px] font-black text-amber-300">{currentBadge.prizePool}</div>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-bold text-[10px]">
-                        View →
+                    {/* Solid Colored Bottom Strip (The Image 2 signature: STUDENT PARTICIPANT) */}
+                    <div className={`relative z-10 w-full py-2.5 px-3 ${bottomBarBg} flex items-center justify-between text-white shadow-md`}>
+                      <span className="text-xs font-black uppercase tracking-wider font-heading truncate drop-shadow-sm">
+                        {currentBadge.statusStripText || currentBadge.passType || 'STUDENT PARTICIPANT'}
                       </span>
+                      <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-slate-500 mt-4 text-center max-w-xs">
-                    Hovering over this badge on the landing page will trigger physical lanyard pendulum physics and subtle 3D lighting.
+                  <p className="text-[11px] text-slate-500 mt-3 text-center max-w-xs font-mono">
+                    Modeled directly from collegiate hackathon credentials (SIH 2024). Hanging live physics enabled.
                   </p>
                 </div>
               </div>

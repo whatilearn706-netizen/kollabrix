@@ -212,93 +212,136 @@ export interface FeaturedHackathonBadgeConfig {
   id: string;
   slot: number;
   hackathonId?: string;
-  hostName: string;
+  hostName: string; // for backward compat, alias to hostCollege
+  hostCollege?: string; // e.g. "NEW HORIZON COLLEGE OF ENGINEERING" (Image 2 style)
+  authorityBadge?: string; // e.g. "MoE Innovation Cell • AICTE"
   title: string;
-  passType: 'HACKER PASS' | 'STAFF PASS' | 'MEDIA PASS' | 'VIP PASS' | 'BUILDER PASS';
+  editionBadge?: string; // e.g. "#SIH Software Edition • GRAND FINALE 2026"
+  passType: string; // backward compat and secondary stamp
   eventDate: string;
   prizePool: string;
-  themeStyle: 'crimson' | 'magenta' | 'teal' | 'cobalt' | 'gold';
-  pattern: 'curves' | 'circles' | 'wave' | 'rings' | 'soundwave';
-  statusBadge: string;
-  teamSize: string;
+  mode?: string; // e.g. "Offline / In-Person Final"
+  teamSize: string; // e.g. "3-5 Members"
+  statusBadge: string; // pill tag e.g. "Verified Collegiate"
+  statusStripText?: string; // e.g. "STUDENT PARTICIPANT" (Image 2 bottom bar)
+  statusStripTone?: 'blue' | 'emerald' | 'amber' | 'crimson' | 'purple';
+  bannerUrl?: string; // Hackathon promo banner URL
+  logoUrl?: string; // Hackathon / College emblem
+  themeStyle: 'crimson' | 'magenta' | 'teal' | 'cobalt' | 'gold' | 'light_gloss' | 'dark_tactile';
+  pattern: 'curves' | 'circles' | 'wave' | 'rings' | 'soundwave' | 'grid' | 'hologram';
   actionUrl: string;
 }
 
 export const DEFAULT_FEATURED_HACKATHON_BADGES: FeaturedHackathonBadgeConfig[] = [
   {
-    id: 'badge_iit_bombay',
+    id: 'badge_sih_grand_finale',
     slot: 1,
     hackathonId: '3f99aa7c-597a-4e5e-b8b2-430a633bfa41',
+    hostCollege: 'NEW HORIZON COLLEGE OF ENGINEERING',
+    hostName: 'NEW HORIZON COLLEGE OF ENGINEERING',
+    authorityBadge: 'MoE Innovation Cell • AICTE',
+    title: 'Smart India Hackathon 2026',
+    editionBadge: '#SIH Software Edition • GRAND FINALE',
+    passType: 'STUDENT PARTICIPANT',
+    eventDate: '11th - 12th December',
+    prizePool: '₹1,50,000 Cash Pool',
+    mode: 'In-Person Grand Finale',
+    teamSize: '6 Members (1 Female Mandatory)',
+    statusBadge: 'Govt of India',
+    statusStripText: 'STUDENT PARTICIPANT',
+    statusStripTone: 'blue',
+    bannerUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80',
+    themeStyle: 'cobalt',
+    pattern: 'grid',
+    actionUrl: '/hackathons/3f99aa7c-597a-4e5e-b8b2-430a633bfa41',
+  },
+  {
+    id: 'badge_iit_bombay',
+    slot: 2,
+    hackathonId: '3f99aa7c-597a-4e5e-b8b2-430a633bfa41',
+    hostCollege: 'TIH × E-CELL IIT BOMBAY',
     hostName: 'TIH × E-CELL IIT BOMBAY',
+    authorityBadge: 'IIT Bombay Tech Innovation',
     title: 'Physical AI Hackathon',
-    passType: 'HACKER PASS',
-    eventDate: '15.01',
+    editionBadge: '#National Finals • 36-HR SPRINT',
+    passType: 'CAMPUS FINALIST',
+    eventDate: '15th - 16th January',
     prizePool: '₹1,50,000 Cash',
+    mode: 'Offline Campus Finals',
+    teamSize: '1-4 Builders',
+    statusBadge: 'Tier-1 Collegiate',
+    statusStripText: 'CAMPUS FINALIST',
+    statusStripTone: 'crimson',
+    bannerUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80',
     themeStyle: 'crimson',
     pattern: 'curves',
-    statusBadge: 'Verified Collegiate',
-    teamSize: '1-4 Builders',
     actionUrl: '/hackathons/3f99aa7c-597a-4e5e-b8b2-430a633bfa41',
   },
   {
     id: 'badge_lighthouse',
-    slot: 2,
+    slot: 3,
     hackathonId: '00f2a0f5-c875-453b-8744-ccf3fe693dc7',
-    hostName: 'CHANDIGARH UNIVERSITY × LIGHTHOUSE',
-    title: 'LightHouse - Agentic AI Hackathon',
-    passType: 'STAFF PASS',
-    eventDate: '25.12',
+    hostCollege: 'CHANDIGARH UNIVERSITY',
+    hostName: 'CHANDIGARH UNIVERSITY',
+    authorityBadge: 'LightHouse Innovation Hub',
+    title: 'LightHouse — Agentic AI Hackathon',
+    editionBadge: '#Autonomous Agents • ONLINE STAGE',
+    passType: 'OFFICIAL QUALIFIER',
+    eventDate: '25th December',
     prizePool: '₹5,10,000 Pool',
+    mode: 'Virtual Stage 1',
+    teamSize: '1-4 Builders',
+    statusBadge: 'Unstop Official',
+    statusStripText: 'OFFICIAL QUALIFIER',
+    statusStripTone: 'purple',
+    bannerUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
     themeStyle: 'magenta',
     pattern: 'rings',
-    statusBadge: 'Unstop Official',
-    teamSize: '1-4 Builders',
     actionUrl: '/hackathons/00f2a0f5-c875-453b-8744-ccf3fe693dc7',
   },
   {
     id: 'badge_code_relay',
-    slot: 3,
+    slot: 4,
     hackathonId: '351e6c54-af03-4f06-8867-3226a18d7c6e',
+    hostCollege: 'IIT BHUBANESWAR (WEBND)',
     hostName: 'IIT BHUBANESWAR (WEBND)',
+    authorityBadge: 'Webnd Student Chapter',
     title: 'Code Relay 5.0 — Speed Dev',
-    passType: 'MEDIA PASS',
-    eventDate: '05.02',
+    editionBadge: '#Algorithm Relay • LIVE STAGE',
+    passType: 'APPLICATIONS OPEN',
+    eventDate: '05th February',
     prizePool: '₹2,40,000+ Pool',
+    mode: 'In-Person & Virtual',
+    teamSize: '2-4 Builders',
+    statusBadge: 'Live On Campus',
+    statusStripText: 'APPLICATIONS OPEN',
+    statusStripTone: 'emerald',
+    bannerUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80',
     themeStyle: 'teal',
     pattern: 'wave',
-    statusBadge: 'Live On Campus',
-    teamSize: '2-4 Builders',
     actionUrl: '/hackathons/351e6c54-af03-4f06-8867-3226a18d7c6e',
   },
   {
     id: 'badge_festive_berlin',
-    slot: 4,
-    hackathonId: '43c9f5ab-d331-43bf-92dc-2b552cd60825',
-    hostName: 'WEMAKEDEVS × WEAREDEVELOPERS',
-    title: 'Festive Hacks 2026: Berlin VIP Trip',
-    passType: 'VIP PASS',
-    eventDate: '10.01',
-    prizePool: 'Berlin VIP Trip + ₹1L',
-    themeStyle: 'cobalt',
-    pattern: 'circles',
-    statusBadge: 'Global Edition',
-    teamSize: '1-4 Builders',
-    actionUrl: '/hackathons/43c9f5ab-d331-43bf-92dc-2b552cd60825',
-  },
-  {
-    id: 'badge_fasttrack_sprint',
     slot: 5,
-    hackathonId: '9892b319-0efa-4743-9411-afd6652ce3b5',
-    hostName: 'KOLLABRIX DIRECTORATE',
-    title: 'Collegiate FastTrack Sprint: Winter',
-    passType: 'BUILDER PASS',
-    eventDate: '30.12',
-    prizePool: 'Instant UPI Grant',
+    hackathonId: '43c9f5ab-d331-43bf-92dc-2b552cd60825',
+    hostCollege: 'WEMAKEDEVS GLOBAL',
+    hostName: 'WEMAKEDEVS GLOBAL',
+    authorityBadge: 'WeAreDevelopers Partner',
+    title: 'Festive Hacks: Berlin VIP Trip',
+    editionBadge: '#International Finals • BERLIN TRIP',
+    passType: 'GLOBAL CONTENDER',
+    eventDate: '10th January',
+    prizePool: 'Berlin VIP Trip + ₹1L',
+    mode: 'Hybrid Global',
+    teamSize: '1-4 Builders',
+    statusBadge: 'Global Pass',
+    statusStripText: 'GLOBAL CONTENDER',
+    statusStripTone: 'amber',
+    bannerUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
     themeStyle: 'gold',
-    pattern: 'soundwave',
-    statusBadge: 'Rapid Squad Match',
-    teamSize: '1-3 Builders',
-    actionUrl: '/hackathons/9892b319-0efa-4743-9411-afd6652ce3b5',
+    pattern: 'circles',
+    actionUrl: '/hackathons/43c9f5ab-d331-43bf-92dc-2b552cd60825',
   },
 ];
 
