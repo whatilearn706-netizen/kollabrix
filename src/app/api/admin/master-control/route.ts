@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
             featuredDeckCards: Array.isArray(row.value.featuredDeckCards) ? row.value.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
+            featuredHackathonBadges: Array.isArray(row.value.featuredHackathonBadges) ? row.value.featuredHackathonBadges : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || []),
           };
         }
 
@@ -217,6 +218,7 @@ export async function POST(request: NextRequest) {
       studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(incoming.studentTools || {}) },
       visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(incoming.visualTemplates || {}) },
       featuredDeckCards: Array.isArray(incoming.featuredDeckCards) ? incoming.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
+      featuredHackathonBadges: Array.isArray(incoming.featuredHackathonBadges) ? incoming.featuredHackathonBadges : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || []),
     };
 
     let savedToDb = false;

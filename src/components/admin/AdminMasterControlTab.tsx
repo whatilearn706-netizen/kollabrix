@@ -55,12 +55,14 @@ import {
   CustomSectionConfig,
   VisualTemplatesConfig,
   FeaturedDeckCardConfig,
+  FeaturedHackathonBadgeConfig,
   DEFAULT_FEATURED_DECK_CARDS,
+  DEFAULT_FEATURED_HACKATHON_BADGES,
   DEFAULT_VISUAL_TEMPLATES_CONFIG,
   DEFAULT_MASTER_CONTROL_CONFIG,
 } from '@/types/masterControl';
 
-type SubTab = 'all' | 'featuredDeck' | 'templates' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
+type SubTab = 'all' | 'featuredDeck' | 'hackathonBadges' | 'templates' | 'restricted' | 'workspace' | 'studentTools' | 'custom' | 'banner' | 'sections' | 'colleges' | 'badges' | 'ceo' | 'maintenance';
 
 interface AdminMasterControlTabProps {
   authToken?: string;
@@ -184,6 +186,10 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
   const [availableProjects, setAvailableProjects] = useState<any[]>([]);
   const [selectedDeckCardIndex, setSelectedDeckCardIndex] = useState<number>(0);
 
+  // Featured Hackathon Lanyard Badges state
+  const [availableHackathons, setAvailableHackathons] = useState<any[]>([]);
+  const [selectedBadgeIndex, setSelectedBadgeIndex] = useState<number>(0);
+
   // Load config on mount
   useEffect(() => {
     async function loadData() {
@@ -195,6 +201,15 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
 
         const res = await fetch('/api/admin/master-control', { headers });
         const data = await res.json();
+
+        // Also fetch live hackathons for auto-fill
+        fetch('/api/hackathons')
+          .then((r) => r.json())
+          .then((hData) => {
+            const list = Array.isArray(hData) ? hData : hData?.hackathons || [];
+            if (Array.isArray(list)) setAvailableHackathons(list);
+          })
+          .catch(() => {});
 
         if (res.ok && data.config) {
           const merged: MasterControlConfig = {
@@ -223,6 +238,9 @@ export function AdminMasterControlTab({ authToken, initialSubTab, onNavigateTab 
             featuredDeckCards: Array.isArray(data.config.featuredDeckCards) && data.config.featuredDeckCards.length === 5
               ? data.config.featuredDeckCards
               : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || DEFAULT_FEATURED_DECK_CARDS),
+            featuredHackathonBadges: Array.isArray(data.config.featuredHackathonBadges) && data.config.featuredHackathonBadges.length > 0
+              ? data.config.featuredHackathonBadges
+              : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || DEFAULT_FEATURED_HACKATHON_BADGES),
           };
           setConfig(merged);
           if (data.ceoStats) setCeoStats(data.ceoStats);
@@ -489,6 +507,59 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
     handleSave(updated);
   };
 
+  // Curated Hackathon Lanyard Passes Handlers
+  const handleUpdateBadge = (
+    index: number,
+    field: keyof FeaturedHackathonBadgeConfig,
+    value: any
+  ) => {
+    const currentBadges = [
+      ...(config.featuredHackathonBadges && config.featuredHackathonBadges.length > 0
+        ? config.featuredHackathonBadges
+        : DEFAULT_FEATURED_HACKATHON_BADGES),
+    ];
+    if (currentBadges[index]) {
+      currentBadges[index] = {
+        ...currentBadges[index],
+        [field]: value,
+      };
+      const updated = { ...config, featuredHackathonBadges: currentBadges };
+      setConfig(updated);
+    }
+  };
+
+  const handleSelectHackathonForBadge = (badgeIndex: number, hackathonId: string) => {
+    if (!hackathonId) return;
+    const hack = availableHackathons.find((h) => h.id === hackathonId);
+    if (!hack) return;
+
+    const currentBadges = [
+      ...(config.featuredHackathonBadges && config.featuredHackathonBadges.length > 0
+        ? config.featuredHackathonBadges
+        : DEFAULT_FEATURED_HACKATHON_BADGES),
+    ];
+    if (!currentBadges[badgeIndex]) return;
+
+    currentBadges[badgeIndex] = {
+      ...currentBadges[badgeIndex],
+      hackathonId: hack.id,
+      title: hack.title || currentBadges[badgeIndex].title,
+      hostName: (hack.organizer || hack.location || 'CAMPUS INNOVATION').toUpperCase(),
+      prizePool: hack.prize_pool || currentBadges[badgeIndex].prizePool,
+      teamSize: `${hack.min_team_size || 1}-${hack.max_team_size || 4} Builders`,
+      actionUrl: `/hackathons/${hack.id}`,
+    };
+
+    const updated = { ...config, featuredHackathonBadges: currentBadges };
+    setConfig(updated);
+  };
+
+  const handleResetBadges = () => {
+    const updated = { ...config, featuredHackathonBadges: DEFAULT_FEATURED_HACKATHON_BADGES };
+    setConfig(updated);
+    handleSave(updated);
+  };
+
   if (isLoading) {
     return (
       <div className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-12 text-center space-y-4 animate-pulse">
@@ -501,6 +572,7 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
   const subTabs = [
     { id: 'all' as SubTab, label: '⚡ All Modules (Full Studio)', icon: Sparkles },
     { id: 'featuredDeck' as SubTab, label: '🃏 Featured 3D Card Deck (5 Cards)', icon: Layers },
+    { id: 'hackathonBadges' as SubTab, label: '🎫 Curated Hackathon Passes (5 Badges)', icon: Trophy },
     { id: 'templates' as SubTab, label: '✨ Visual Templates (All 6 Live / Inactive)', icon: Palette },
     { id: 'studentTools' as SubTab, label: '🎁 Student Tools (Perks & Starter Kits)', icon: Gift },
     { id: 'custom' as SubTab, label: '🌟 Custom Spotlight Builder', icon: PlusCircle },
@@ -1010,6 +1082,306 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
                   <p className="text-[11px] text-slate-500 font-mono mt-4 text-center">
                     Tapping &quot;Explore&quot; navigates users directly to <br />
                     <span className="text-sky-400 font-semibold">{currentCard.href || `/projects/${currentCard.id}`}</span>
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* CURATED HACKATHON PASSES (5 HANGING LANYARD ID BADGES - IMAGE 2)     */}
+      {/* ==================================================================== */}
+      {(activeSubTab === 'all' || activeSubTab === 'hackathonBadges') && (
+        <div id="module-hackathon-badges" className="bg-charcoal-900 border border-charcoal-800 rounded-2xl p-6 space-y-6 scroll-mt-24 shadow-elevated">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+                  HOMEPAGE 3D LANYARD PASSES
+                </span>
+                <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  5 CURATED COLLEGIATE PASSES
+                </span>
+              </div>
+              <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+                <span>Curated Hackathon Passes Control</span>
+                <span className="text-xs font-normal text-slate-400 font-mono">(Badge 1 through Badge 5)</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-3xl">
+                Configure the 5 physical 3D hanging lanyard credentials rendered below the project section on kollabrix.in.
+                Select an existing hackathon from the database to auto-populate all fields, or customize pass stamp (HACKER PASS, STAFF PASS, etc.), date, prize pool, theme style, and target URLs.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetBadges}
+                className="text-xs border-charcoal-700 hover:border-slate-500 text-slate-300"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Reset Defaults
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleSave()}
+                disabled={isSaving}
+                className="bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs"
+              >
+                <Save className="w-3.5 h-3.5 mr-1.5" />
+                {isSaving ? 'Publishing...' : 'Save Badge Configuration'}
+              </Button>
+            </div>
+          </div>
+
+          {/* 5-Badge Slot Selector */}
+          <div>
+            <label className="block text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
+              Select Badge Slot To Edit:
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              {([0, 1, 2, 3, 4] as const).map((idx) => {
+                const badge = (config.featuredHackathonBadges && config.featuredHackathonBadges[idx]) || DEFAULT_FEATURED_HACKATHON_BADGES[idx];
+                const isSelected = selectedBadgeIndex === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedBadgeIndex(idx)}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-charcoal-800/90 border-fuchsia-400/80 shadow-[0_0_20px_rgba(217,70,239,0.2)] ring-1 ring-fuchsia-400/50'
+                        : 'bg-charcoal-950/60 border-charcoal-800 hover:border-charcoal-700 hover:bg-charcoal-900/60'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-mono mb-1.5">
+                        <span className="font-bold text-slate-400">SLOT {idx + 1}</span>
+                        <span className={`px-1.5 py-0.2 rounded uppercase font-semibold text-[9px] ${
+                          badge?.themeStyle === 'crimson' ? 'bg-rose-500/20 text-rose-300' :
+                          badge?.themeStyle === 'magenta' ? 'bg-fuchsia-500/20 text-fuchsia-300' :
+                          badge?.themeStyle === 'teal' ? 'bg-emerald-500/20 text-emerald-300' :
+                          badge?.themeStyle === 'cobalt' ? 'bg-blue-500/20 text-blue-300' :
+                          'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {badge?.themeStyle || 'crimson'}
+                        </span>
+                      </div>
+                      <div className="text-xs font-black text-white truncate">
+                        {badge?.passType || 'HACKER PASS'}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                        {badge?.title || 'Hackathon Title'}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-charcoal-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                      <span>{badge?.eventDate || 'DATE'}</span>
+                      <span className="font-bold text-amber-300 truncate">{badge?.prizePool || 'PRIZE'}</span>
+                    </div>
+
+                    {isSelected && (
+                      <span className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-fuchsia-500 via-rose-400 to-amber-500" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Active Badge Editor & Live Preview Split */}
+          {(() => {
+            const currentBadge = (config.featuredHackathonBadges && config.featuredHackathonBadges[selectedBadgeIndex]) || DEFAULT_FEATURED_HACKATHON_BADGES[selectedBadgeIndex];
+            if (!currentBadge) return null;
+
+            return (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pt-2">
+                {/* Form Controls Column (7 cols) */}
+                <div className="xl:col-span-7 space-y-4">
+                  {/* Database Auto-Fill Bar */}
+                  <div className="p-4 rounded-xl bg-charcoal-950/80 border border-fuchsia-500/25 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-fuchsia-300 flex items-center gap-1.5 font-mono">
+                        <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
+                        Auto-Fill From Database Hackathon
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {availableHackathons.length} live hackathons loaded
+                      </span>
+                    </div>
+                    <select
+                      value={availableHackathons.some((h) => h.id === currentBadge.hackathonId) ? currentBadge.hackathonId : ''}
+                      onChange={(e) => handleSelectHackathonForBadge(selectedBadgeIndex, e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-charcoal-900 border border-charcoal-700 text-xs text-white focus:outline-none focus:border-fuchsia-400 cursor-pointer"
+                    >
+                      <option value="">-- Choose a hackathon to auto-populate this badge --</option>
+                      {availableHackathons.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.title} ({h.organizer || h.location || 'Campus'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Pass Type Stamp</label>
+                      <select
+                        value={currentBadge.passType}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'passType', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400"
+                      >
+                        <option value="HACKER PASS">HACKER PASS</option>
+                        <option value="STAFF PASS">STAFF PASS</option>
+                        <option value="MEDIA PASS">MEDIA PASS</option>
+                        <option value="VIP PASS">VIP PASS</option>
+                        <option value="BUILDER PASS">BUILDER PASS</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Visual Theme</label>
+                      <select
+                        value={currentBadge.themeStyle}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'themeStyle', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400"
+                      >
+                        <option value="crimson">Crimson Red (Artist Pass)</option>
+                        <option value="magenta">Magenta Nebula (Staff Pass)</option>
+                        <option value="teal">Cyber Teal (Media Pass)</option>
+                        <option value="cobalt">Cobalt Blue (Polka Matrix)</option>
+                        <option value="gold">Solar Gold (Paintbrush Burst)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Host Organization</label>
+                      <Input
+                        value={currentBadge.hostName}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'hostName', e.target.value)}
+                        placeholder="e.g. TIH × E-CELL IIT BOMBAY"
+                        className="bg-charcoal-950 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Hackathon Title</label>
+                      <Input
+                        value={currentBadge.title}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'title', e.target.value)}
+                        placeholder="e.g. Physical AI Hackathon"
+                        className="bg-charcoal-950 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Event Date Stamp</label>
+                      <Input
+                        value={currentBadge.eventDate}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'eventDate', e.target.value)}
+                        placeholder="e.g. 15.01 or 25.12"
+                        className="bg-charcoal-950 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Total Prize Pool</label>
+                      <Input
+                        value={currentBadge.prizePool}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'prizePool', e.target.value)}
+                        placeholder="e.g. ₹1,50,000 Cash"
+                        className="bg-charcoal-950 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Status Pill</label>
+                      <Input
+                        value={currentBadge.statusBadge}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'statusBadge', e.target.value)}
+                        placeholder="e.g. Verified Collegiate"
+                        className="bg-charcoal-950 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Graphic Pattern</label>
+                      <select
+                        value={currentBadge.pattern}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'pattern', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-charcoal-950 border border-charcoal-750 text-xs text-white focus:outline-none focus:border-fuchsia-400"
+                      >
+                        <option value="curves">Crimson Fluid Wave</option>
+                        <option value="rings">Magenta Concentric Arcs</option>
+                        <option value="wave">Teal Cyber Wave Lines</option>
+                        <option value="circles">Blue Polka Dot Matrix</option>
+                        <option value="soundwave">Solar Paintbrush Burst</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Target Action Link</label>
+                      <Input
+                        value={currentBadge.actionUrl}
+                        onChange={(e) => handleUpdateBadge(selectedBadgeIndex, 'actionUrl', e.target.value)}
+                        placeholder="e.g. /hackathons/[id] or registration URL"
+                        className="bg-charcoal-950 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Preview Column (5 cols) */}
+                <div className="xl:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 shadow-inner">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-4 font-bold">
+                    Interactive Live Badge Preview
+                  </div>
+
+                  <div className="w-[220px] h-[340px] rounded-[22px] border border-white/20 bg-gradient-to-b from-stone-900 via-stone-950 to-black p-4 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-2 rounded-full bg-black/90 border border-white/20" />
+                    
+                    <div className="pt-2 flex items-center justify-between text-[9px] font-mono text-slate-400">
+                      <span className="truncate max-w-[120px]">{currentBadge.hostName}</span>
+                      <span className="px-1.5 py-0.2 rounded bg-white/10 text-white">{currentBadge.statusBadge}</span>
+                    </div>
+
+                    <div className="my-auto py-2">
+                      <h4 className="text-2xl font-black uppercase text-white leading-none font-heading">
+                        {currentBadge.passType.split(' ')[0]}<br />
+                        <span className="text-white/80">{currentBadge.passType.split(' ')[1] || 'PASS'}</span>
+                      </h4>
+                      <div className="text-lg font-mono font-bold text-white mt-2">
+                        {currentBadge.eventDate}
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-300 mt-1.5 line-clamp-2">
+                        {currentBadge.title}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
+                      <div>
+                        <div className="text-[9px] text-slate-500 font-mono">PRIZE POOL</div>
+                        <div className="text-[11px] font-black text-amber-300">{currentBadge.prizePool}</div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-bold text-[10px]">
+                        View →
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 mt-4 text-center max-w-xs">
+                    Hovering over this badge on the landing page will trigger physical lanyard pendulum physics and subtle 3D lighting.
                   </p>
                 </div>
               </div>

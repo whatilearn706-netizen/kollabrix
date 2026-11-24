@@ -207,6 +207,100 @@ export const DEFAULT_FEATURED_DECK_CARDS: FeaturedDeckCardConfig[] = [
   },
 ];
 
+export interface FeaturedHackathonBadgeConfig {
+  id: string;
+  slot: number;
+  hackathonId?: string;
+  hostName: string;
+  title: string;
+  passType: 'HACKER PASS' | 'STAFF PASS' | 'MEDIA PASS' | 'VIP PASS' | 'BUILDER PASS';
+  eventDate: string;
+  prizePool: string;
+  themeStyle: 'crimson' | 'magenta' | 'teal' | 'cobalt' | 'gold';
+  pattern: 'curves' | 'circles' | 'wave' | 'rings' | 'soundwave';
+  statusBadge: string;
+  teamSize: string;
+  actionUrl: string;
+}
+
+export const DEFAULT_FEATURED_HACKATHON_BADGES: FeaturedHackathonBadgeConfig[] = [
+  {
+    id: 'badge_iit_bombay',
+    slot: 1,
+    hackathonId: '3f99aa7c-597a-4e5e-b8b2-430a633bfa41',
+    hostName: 'TIH × E-CELL IIT BOMBAY',
+    title: 'Physical AI Hackathon',
+    passType: 'HACKER PASS',
+    eventDate: '15.01',
+    prizePool: '₹1,50,000 Cash',
+    themeStyle: 'crimson',
+    pattern: 'curves',
+    statusBadge: 'Verified Collegiate',
+    teamSize: '1-4 Builders',
+    actionUrl: '/hackathons/3f99aa7c-597a-4e5e-b8b2-430a633bfa41',
+  },
+  {
+    id: 'badge_lighthouse',
+    slot: 2,
+    hackathonId: '00f2a0f5-c875-453b-8744-ccf3fe693dc7',
+    hostName: 'CHANDIGARH UNIVERSITY × LIGHTHOUSE',
+    title: 'LightHouse - Agentic AI Hackathon',
+    passType: 'STAFF PASS',
+    eventDate: '25.12',
+    prizePool: '₹5,10,000 Pool',
+    themeStyle: 'magenta',
+    pattern: 'rings',
+    statusBadge: 'Unstop Official',
+    teamSize: '1-4 Builders',
+    actionUrl: '/hackathons/00f2a0f5-c875-453b-8744-ccf3fe693dc7',
+  },
+  {
+    id: 'badge_code_relay',
+    slot: 3,
+    hackathonId: '351e6c54-af03-4f06-8867-3226a18d7c6e',
+    hostName: 'IIT BHUBANESWAR (WEBND)',
+    title: 'Code Relay 5.0 — Speed Dev',
+    passType: 'MEDIA PASS',
+    eventDate: '05.02',
+    prizePool: '₹2,40,000+ Pool',
+    themeStyle: 'teal',
+    pattern: 'wave',
+    statusBadge: 'Live On Campus',
+    teamSize: '2-4 Builders',
+    actionUrl: '/hackathons/351e6c54-af03-4f06-8867-3226a18d7c6e',
+  },
+  {
+    id: 'badge_festive_berlin',
+    slot: 4,
+    hackathonId: '43c9f5ab-d331-43bf-92dc-2b552cd60825',
+    hostName: 'WEMAKEDEVS × WEAREDEVELOPERS',
+    title: 'Festive Hacks 2026: Berlin VIP Trip',
+    passType: 'VIP PASS',
+    eventDate: '10.01',
+    prizePool: 'Berlin VIP Trip + ₹1L',
+    themeStyle: 'cobalt',
+    pattern: 'circles',
+    statusBadge: 'Global Edition',
+    teamSize: '1-4 Builders',
+    actionUrl: '/hackathons/43c9f5ab-d331-43bf-92dc-2b552cd60825',
+  },
+  {
+    id: 'badge_fasttrack_sprint',
+    slot: 5,
+    hackathonId: '9892b319-0efa-4743-9411-afd6652ce3b5',
+    hostName: 'KOLLABRIX DIRECTORATE',
+    title: 'Collegiate FastTrack Sprint: Winter',
+    passType: 'BUILDER PASS',
+    eventDate: '30.12',
+    prizePool: 'Instant UPI Grant',
+    themeStyle: 'gold',
+    pattern: 'soundwave',
+    statusBadge: 'Rapid Squad Match',
+    teamSize: '1-3 Builders',
+    actionUrl: '/hackathons/9892b319-0efa-4743-9411-afd6652ce3b5',
+  },
+];
+
 export interface MasterControlConfig {
   banner: BroadcastBannerConfig;
   sections: HomepageSectionToggles;
@@ -218,10 +312,12 @@ export interface MasterControlConfig {
   studentTools?: StudentToolsConfig;
   visualTemplates?: VisualTemplatesConfig;
   featuredDeckCards?: FeaturedDeckCardConfig[];
+  featuredHackathonBadges?: FeaturedHackathonBadgeConfig[];
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
   featuredDeckCards: DEFAULT_FEATURED_DECK_CARDS,
+  featuredHackathonBadges: DEFAULT_FEATURED_HACKATHON_BADGES,
   visualTemplates: DEFAULT_VISUAL_TEMPLATES_CONFIG,
   workspaceFeatures: {
     aiCloserKit: false,

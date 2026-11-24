@@ -224,26 +224,26 @@ export function FloatingProjectRibbon() {
         </div>
 
         {/* ============================================================== */}
-        {/* 3D REVOLVING CURVED CAROUSEL (Built exactly like Pinterest ref)*/}
+        {/* 3D REVOLVING CURVED CAROUSEL (Compact Medium Footprint) */}
         {/* ============================================================== */}
-        <div className="relative w-full h-[540px] sm:h-[580px] flex items-center justify-center [perspective:1400px]">
+        <div className="relative w-full h-[430px] sm:h-[460px] flex items-center justify-center [perspective:1400px]">
           {/* Navigation Arrows */}
           <button
             type="button"
             onClick={prevCard}
             aria-label="Previous Project"
-            className="absolute left-2 sm:left-6 z-40 w-11 h-11 rounded-full bg-black/60 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center backdrop-blur-md shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="absolute left-2 sm:left-6 z-40 w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center backdrop-blur-md shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
 
           <button
             type="button"
             onClick={nextCard}
             aria-label="Next Project"
-            className="absolute right-2 sm:right-6 z-40 w-11 h-11 rounded-full bg-black/60 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center backdrop-blur-md shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            className="absolute right-2 sm:right-6 z-40 w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center backdrop-blur-md shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
 
           {/* Carousel Stage */}
@@ -261,11 +261,7 @@ export function FloatingProjectRibbon() {
               // Hide cards beyond 2 steps away
               if (Math.abs(diff) > 2) return null;
 
-              // 3D Geometry matching the Pinterest reference video:
-              // - Center card: flat facing front, scale 1.0, zIndex 30
-              // - Left card (diff -1): curved outward rotateY(52deg), translateX(-340px), scale 0.88, zIndex 20
-              // - Right card (diff 1): curved outward rotateY(-52deg), translateX(340px), scale 0.88, zIndex 20
-              // - Far cards (diff +-2): rotateY(68deg), translateX(+-560px), scale 0.72, zIndex 10
+              // 3D Geometry calibrated to comfortable medium scale:
               let translateX = 0;
               let rotateY = 0;
               let scale = 1;
@@ -273,28 +269,28 @@ export function FloatingProjectRibbon() {
               let zIndex = 30;
 
               if (diff === -1) {
-                translateX = -340;
-                rotateY = 52;
-                scale = 0.88;
-                opacity = 0.78;
+                translateX = -280;
+                rotateY = 48;
+                scale = 0.90;
+                opacity = 0.85;
                 zIndex = 20;
               } else if (diff === 1) {
-                translateX = 340;
-                rotateY = -52;
-                scale = 0.88;
-                opacity = 0.78;
+                translateX = 280;
+                rotateY = -48;
+                scale = 0.90;
+                opacity = 0.85;
                 zIndex = 20;
               } else if (diff === -2) {
-                translateX = -560;
-                rotateY = 68;
-                scale = 0.72;
-                opacity = 0.25;
+                translateX = -480;
+                rotateY = 62;
+                scale = 0.76;
+                opacity = 0.35;
                 zIndex = 10;
               } else if (diff === 2) {
-                translateX = 560;
-                rotateY = -68;
-                scale = 0.72;
-                opacity = 0.25;
+                translateX = 480;
+                rotateY = -62;
+                scale = 0.76;
+                opacity = 0.35;
                 zIndex = 10;
               }
 
@@ -321,18 +317,18 @@ export function FloatingProjectRibbon() {
                       goToCard(index);
                     }
                   }}
-                  className={`absolute w-[300px] sm:w-[350px] md:w-[380px] h-[480px] sm:h-[510px] rounded-[32px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
+                  className={`absolute w-[260px] sm:w-[290px] md:w-[315px] h-[385px] sm:h-[415px] rounded-[26px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
                     isCenter ? 'pointer-events-auto' : 'pointer-events-auto hover:opacity-95'
                   }`}
                   style={{
                     boxShadow: isCenter
-                      ? `0 35px 80px -15px rgba(0, 0, 0, 0.95), 0 0 50px ${palette.glow}`
-                      : '0 25px 60px -15px rgba(0, 0, 0, 0.85)',
+                      ? `0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 35px ${palette.glow}`
+                      : '0 20px 45px -15px rgba(0, 0, 0, 0.85)',
                   }}
                 >
-                  {/* Outer Card Body with Vibrant Gradient (Matching Pinterest) */}
+                  {/* Outer Card Body with Vibrant Gradient */}
                   <div
-                    className={`relative w-full h-full p-6 sm:p-7 flex flex-col justify-between bg-gradient-to-br ${palette.bg} border border-white/20 text-white rounded-[32px] overflow-hidden backdrop-blur-2xl`}
+                    className={`relative w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-gradient-to-br ${palette.bg} border border-white/20 text-white rounded-[26px] overflow-hidden backdrop-blur-2xl`}
                   >
                     {/* Chromatic Noise / Glass Refraction Overlay */}
                     <div className="absolute inset-0 bg-radial-gradient pointer-events-none opacity-40 mix-blend-overlay" />
@@ -340,19 +336,19 @@ export function FloatingProjectRibbon() {
 
                     {/* TOP BAR: Category & Recruiting Pill */}
                     <div className="relative z-10 flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase bg-black/40 border border-white/20 text-white backdrop-blur-md">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-black/40 border border-white/20 text-white backdrop-blur-md">
                         {card.category}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono text-white bg-black/35 border border-white/15 backdrop-blur-md">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono text-white bg-black/35 border border-white/15 backdrop-blur-md">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
                         {card.recruitingBadge}
                       </span>
                     </div>
 
-                    {/* CENTER HERO: Futuristic Radial Meter Dial (Exactly like the Pinterest 95th/720 video) */}
+                    {/* CENTER HERO: Futuristic Radial Meter Dial */}
                     <div className="relative z-10 my-auto flex flex-col items-center justify-center text-center">
                       {/* Radial Tick Dial with Project Number */}
-                      <div className="relative flex items-center justify-center w-36 h-36 sm:w-40 sm:h-40 mb-3">
+                      <div className="relative flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 mb-1.5">
                         {/* Circular Radial Ticks SVG */}
                         <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 120 120">
                           {/* Radial dash ring */}
@@ -382,42 +378,42 @@ export function FloatingProjectRibbon() {
 
                         {/* Center Metric Typography */}
                         <div className="flex flex-col items-center justify-center">
-                          <span className="text-4xl sm:text-5xl font-black font-heading text-white tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+                          <span className="text-3xl sm:text-4xl font-black font-heading text-white tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
                             {card.number}
                           </span>
-                          <span className="text-[10px] uppercase font-mono tracking-widest text-white/80 font-semibold mt-0.5">
+                          <span className="text-[9px] uppercase font-mono tracking-widest text-white/80 font-semibold mt-0.5">
                             CIRCUIT
                           </span>
                         </div>
                       </div>
 
                       {/* Project Title & College */}
-                      <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-heading drop-shadow-md line-clamp-1">
+                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight font-heading drop-shadow-md line-clamp-1">
                         {card.title}
                       </h3>
-                      <p className="text-xs sm:text-sm font-medium text-white/85 mt-1 flex items-center gap-1">
+                      <p className="text-[11px] sm:text-xs font-medium text-white/85 mt-0.5 flex items-center gap-1">
                         <span>🏛️</span>
                         <span className="line-clamp-1">{card.college}</span>
                       </p>
 
                       {/* Description */}
-                      <p className="text-xs sm:text-[13px] text-white/75 mt-2.5 max-w-[280px] line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] sm:text-xs text-white/75 mt-1.5 max-w-[250px] line-clamp-2 leading-relaxed">
                         {card.description}
                       </p>
                     </div>
 
                     {/* BOTTOM BAR: Tags & Interactive CTA */}
-                    <div className="relative z-10 pt-3 border-t border-white/15 flex items-center justify-between">
+                    <div className="relative z-10 pt-2.5 border-t border-white/15 flex items-center justify-between">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {card.tags.slice(0, 2).map((tag, tIdx) => (
                           <span
                             key={tIdx}
-                            className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-black/30 border border-white/15 text-white/90"
+                            className="px-2 py-0.5 rounded-md text-[9px] font-mono bg-black/30 border border-white/15 text-white/90"
                           >
                             {tag}
                           </span>
                         ))}
-                        <span className="text-[11px] font-mono text-white/70 ml-1">
+                        <span className="text-[10px] font-mono text-white/70 ml-1">
                           {card.teamJoined}
                         </span>
                       </div>
@@ -430,7 +426,7 @@ export function FloatingProjectRibbon() {
                             goToCard(index);
                           }
                         }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white text-slate-950 hover:bg-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] transition-all duration-200 active:scale-95 group/btn"
+                        className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-950 hover:bg-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] transition-all duration-200 active:scale-95 group/btn"
                       >
                         <span>Explore</span>
                         <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />

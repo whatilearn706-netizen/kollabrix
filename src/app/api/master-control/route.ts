@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(row.value.studentTools || {}) },
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
             featuredDeckCards: Array.isArray(row.value.featuredDeckCards) ? row.value.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
+            featuredHackathonBadges: Array.isArray(row.value.featuredHackathonBadges) ? row.value.featuredHackathonBadges : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || []),
           };
         }
       } catch (dbErr) {
@@ -85,6 +86,7 @@ export async function GET(request: NextRequest) {
             studentTools: { ...DEFAULT_MASTER_CONTROL_CONFIG.studentTools, ...(parsed.studentTools || {}) },
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(parsed.visualTemplates || {}) },
             featuredDeckCards: Array.isArray(parsed.featuredDeckCards) ? parsed.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
+            featuredHackathonBadges: Array.isArray(parsed.featuredHackathonBadges) ? parsed.featuredHackathonBadges : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || []),
           };
         } catch (e) {}
       }
