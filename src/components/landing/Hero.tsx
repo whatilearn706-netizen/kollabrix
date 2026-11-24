@@ -12,8 +12,6 @@ import {
   Crown,
   Sparkles,
   Swords,
-  ShieldCheck,
-  Flame,
   Trophy,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -361,22 +359,12 @@ export function LandingHero() {
           </span>
         </motion.h1>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
-        >
-          No resume fluff. No fake GitHub stars. Real-time 1v1 code combat under fog-of-war proctoring. Step into the arena and defend your campus.
-        </motion.p>
-
         {/* Action Buttons: Start Battle & Challenge a Friend */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
         >
           {/* Primary Button */}
           <Link
@@ -397,35 +385,12 @@ export function LandingHero() {
           </Link>
         </motion.div>
 
-        {/* Verified Campus Battle Badges */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-400"
-        >
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Zero-Cheating Fog of War</span>
-          </div>
-          <span className="text-slate-700">•</span>
-          <div className="flex items-center gap-1.5">
-            <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>0.04s Sandboxed Exec</span>
-          </div>
-          <span className="text-slate-700">•</span>
-          <div className="flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Live Campus ELO</span>
-          </div>
-        </motion.div>
-
         {/* ================= CENTERED PHOTOREALISTIC AWWWARDS MACBOOK (ELEVATED 3D STAGE) ================= */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="relative z-20 w-full max-w-[920px] xl:max-w-[1000px] -mt-2 sm:-mt-6 transition-transform duration-300 ease-out mx-auto"
+          className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-4 sm:mt-6 transition-transform duration-300 ease-out mx-auto"
           style={{
             perspective: '1400px',
           }}
